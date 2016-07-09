@@ -348,9 +348,9 @@ C<.flush> callback has been defined.
  int is_rotational (void *handle);
 
 This is called during the option negotiation phase to find out if the
-backing disk is a rotational medium (like a disk) or not (like an
-SSD).  If true, this may cause the client to reorder requests to make
-them more efficient for a slow rotating disk.
+backing disk is a rotational medium (like a traditional hard disk) or
+not (like an SSD).  If true, this may cause the client to reorder
+requests to make them more efficient for a slow rotating disk.
 
 If there is an error, C<.is_rotational> should call C<nbdkit_error>
 with an error message and return C<-1>.
