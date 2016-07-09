@@ -13,7 +13,7 @@ The key features are:
 * Well-documented, simple plugin API with a stable ABI guarantee.
   Let's you export "unconventional" block devices easily.
 
-* You can write plugins in C, Perl, Python or OCaml.
+* You can write plugins in C, Perl, Python, OCaml or Ruby.
 
 For documentation, see the docs/ directory.
 
