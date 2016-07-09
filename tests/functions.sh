@@ -1,6 +1,5 @@
-#!/bin/bash -
 # nbdkit
-# Copyright (C) 2014 Red Hat Inc.
+# Copyright (C) 2016 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,25 +30,10 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-set -e
-set -x
-source ./functions.sh
+# Some functions used by the tests.
 
-# Test nbdkit --run (captive nbdkit) option.
-
-rm -f captive.sock captive.out
-
-../src/nbdkit -U captive.sock `nbdkit_plugin example1` --run '
-    sleep 5; echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
-  ' > captive.out
-
-# Check the output.
-if [ "$(cat captive.out)" != "nbd=nbd:unix:$(pwd)/captive.sock
-port=
-socket=$(pwd)/captive.sock" ]; then
-    echo "$0: unexpected output"
-    cat captive.out
-    exit 1
-fi
-
-rm captive.sock captive.out
+# Return the path to a named nbdkit plugin.
+nbdkit_plugin ()
+{
+    echo "../plugins/$1/.libs/nbdkit-$1-plugin.so"
+}

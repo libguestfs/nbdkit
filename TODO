@@ -1,3 +1,5 @@
+* Listen on specific interfaces or protocols (eg. only IPv6).
+
 * Can we do language bindings using #!'s?
   You would enter:
     nbdkit foo [args]

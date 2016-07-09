@@ -1,6 +1,6 @@
 #!/bin/bash -
 # nbdkit
-# Copyright (C) 2014 Red Hat Inc.
+# Copyright (C) 2016 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,25 +31,53 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Every other test uses a Unix domain socket.  This tests nbdkit over
+# IPv4 localhost connections.
+#
+# XXX We should be able to test "just IPv6".  However there is
+# currently no option to listen only on particular interfaces.
+
 set -e
-set -x
 source ./functions.sh
 
-# Test nbdkit --run (captive nbdkit) option.
+# Don't fail if certain commands aren't available.
+if ! ss --version; then
+    echo "$0: 'ss' command not available"
+    exit 77
+fi
+if ! socat -h; then
+    echo "$0: 'socat' command not available"
+    exit 77
+fi
 
-rm -f captive.sock captive.out
+# Find an unused port to listen on.
+for port in `seq 49152 65535`; do
+    if ! ss -ltn | grep -sqE ":$port\b"; then break; fi
+done
+echo picked unused port $port
 
-../src/nbdkit -U captive.sock `nbdkit_plugin example1` --run '
-    sleep 5; echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
-  ' > captive.out
+../src/nbdkit -P ipv4.pid -p $port `nbdkit_plugin example1`
 
-# Check the output.
-if [ "$(cat captive.out)" != "nbd=nbd:unix:$(pwd)/captive.sock
-port=
-socket=$(pwd)/captive.sock" ]; then
-    echo "$0: unexpected output"
-    cat captive.out
+# We may have to wait a short time for the pid file to appear.
+for i in `seq 1 10`; do
+    if test -f ipv4.pid; then
+        break
+    fi
+    sleep 1
+done
+if ! test -f ipv4.pid; then
+    echo "$0: PID file was not created"
     exit 1
 fi
 
-rm captive.sock captive.out
+pid="$(cat ipv4.pid)"
+
+# Check the process exists.
+kill -s 0 $pid
+
+# Check we can connect to the socket.
+socat TCP:localhost:$port STDIO </dev/null
+
+# Kill the process.
+kill $pid
+rm ipv4.pid

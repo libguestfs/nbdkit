@@ -33,9 +33,8 @@
 
 set -e
 set -x
+source ./functions.sh
 
 # Test nbdkit -U - + captive nbdkit.
 
-../src/nbdkit -U - \
-    ../plugins/example1/.libs/nbdkit-example1-plugin.so \
-    --run 'sleep 5'
+../src/nbdkit -U - `nbdkit_plugin example1` --run 'sleep 5'

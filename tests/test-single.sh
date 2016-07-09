@@ -33,8 +33,9 @@
 
 set -e
 set -x
+source ./functions.sh
 
 # Test nbdkit -s option.
 # XXX Not sure what is a really good test of this.
 
-../src/nbdkit -s ../plugins/example1/.libs/nbdkit-example1-plugin.so </dev/null
+../src/nbdkit -s `nbdkit_plugin example1` </dev/null

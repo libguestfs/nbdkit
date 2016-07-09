@@ -32,8 +32,9 @@
 # SUCH DAMAGE.
 
 set -e
+source ./functions.sh
 
-output="$(../src/nbdkit ../plugins/file/.libs/nbdkit-file-plugin.so --help)"
+output="$(../src/nbdkit `nbdkit_plugin file` --help)"
 if [[ ! ( "$output" =~ "nbdkit file plugin" ) ]]; then
     echo "$0: unexpected output from nbdkit file --help"
     echo "$output"

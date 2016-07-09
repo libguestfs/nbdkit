@@ -33,14 +33,14 @@
 
 set -e
 set -x
+source ./functions.sh
 
 # Test nbdkit -f option.
 
 rm -f foreground.pid foreground.sock
 
 ../src/nbdkit \
-    -f -P foreground.pid -U foreground.sock \
-    ../plugins/example1/.libs/nbdkit-example1-plugin.so &
+    -f -P foreground.pid -U foreground.sock `nbdkit_plugin example1` &
 bg_pid=$!
 
 # We may have to wait a short time for the pid file to appear.

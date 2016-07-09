@@ -41,6 +41,7 @@ EXTRA_DIST = \
 	test-foreground.sh \
 	test-help.sh \
 	test-help-plugin.sh \
+	test-ipv4.sh \
 	test.pl \
 	test.py \
 	test_ocaml_plugin.ml \
@@ -48,20 +49,25 @@ EXTRA_DIST = \
 	test.rb \
 	test-single.sh \
 	test-start.sh \
-	test-random-sock.sh
+	test-random-sock.sh \
+	test-version.sh \
+	test-version-plugin.sh
 
 # Basic server command line and start-up tests.
 
 TESTS = \
 	test-help.sh \
 	test-help-plugin.sh \
+	test-version.sh \
+	test-version-plugin.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
 	test-start.sh \
 	test-foreground.sh \
 	test-single.sh \
 	test-captive.sh \
-	test-random-sock.sh
+	test-random-sock.sh \
+	test-ipv4.sh
 
 # In-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.

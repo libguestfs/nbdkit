@@ -32,12 +32,10 @@
 # SUCH DAMAGE.
 
 set -e
+source ./functions.sh
 
-output="$(
-    ../src/nbdkit \
-        ../plugins/example1/.libs/nbdkit-example1-plugin.so --dump-plugin
-        )"
-if [[ ! ( "$output" =~ ^path= ) ]]; then
+output="$(../src/nbdkit `nbdkit_plugin example1` --dump-plugin)"
+if [[ ! ( "$output" =~ name\=example1 ) ]]; then
     echo "$0: unexpected output from nbdkit --dump-plugin"
     echo "$output"
     exit 1
