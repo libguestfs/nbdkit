@@ -36,22 +36,38 @@ MAINTAINERCLEANFILES =
 EXTRA_DIST = \
 	README.tests \
 	test-captive.sh \
+	test-connect.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
+	test-file.sh \
 	test-foreground.sh \
+	test-gzip.sh \
 	test-help.sh \
 	test-help-plugin.sh \
 	test-ipv4.sh \
-	test.pl \
-	test.py \
+	test-newstyle.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
+	test-ocaml.sh \
+	test-oldstyle.sh \
+	test.pl \
+	test-perl.sh \
+	test.py \
+	test-python.sh \
 	test.rb \
 	test-single.sh \
 	test-start.sh \
 	test-random-sock.sh \
+	test-ruby.sh \
+	test-streaming.sh \
 	test-version.sh \
-	test-version-plugin.sh
+	test-version-plugin.sh \
+	test-xz.sh
+
+# Use 'make check' to run the ordinary tests.  To run all the tests
+# under valgrind, use the following rule:
+check-valgrind:
+	$(MAKE) VG="@VG@" check
 
 # Basic server command line and start-up tests.
 
@@ -87,11 +103,13 @@ check_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = test.c test.h
 libtest_la_CFLAGS = $(WARNINGS_CFLAGS)
 
-# Basic connection test.
-check_PROGRAMS = test-connect
-TESTS += test-connect
+check_PROGRAMS =
 check_DATA =
 check_SCRIPTS =
+
+# Basic connection test.
+check_PROGRAMS += test-connect
+TESTS += test-connect.sh
 
 test_connect_SOURCES = test-connect.c test.h
 test_connect_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -99,7 +117,7 @@ test_connect_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # file plugin test.
 check_PROGRAMS += test-file
-TESTS += test-file
+TESTS += test-file.sh
 check_DATA += file-data
 MAINTAINERCLEANFILES += file-data
 
@@ -114,7 +132,7 @@ file-data:
 
 # newstyle protocol test.
 check_PROGRAMS += test-newstyle
-TESTS += test-newstyle
+TESTS += test-newstyle.sh
 
 test_newstyle_SOURCES = test-newstyle.c test.h
 test_newstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -122,7 +140,7 @@ test_newstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # oldstyle protocol test.
 check_PROGRAMS += test-oldstyle
-TESTS += test-oldstyle
+TESTS += test-oldstyle.sh
 
 test_oldstyle_SOURCES = test-oldstyle.c test.h
 test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -133,7 +151,7 @@ if HAVE_ZLIB
 if HAVE_GUESTFISH
 
 check_PROGRAMS += test-gzip
-TESTS += test-gzip
+TESTS += test-gzip.sh
 check_DATA += disk disk.gz
 MAINTAINERCLEANFILES += disk disk.gz
 
@@ -158,7 +176,7 @@ if HAVE_LIBLZMA
 if HAVE_GUESTFISH
 
 check_PROGRAMS += test-xz
-TESTS += test-xz
+TESTS += test-xz.sh
 check_DATA += disk.xz
 MAINTAINERCLEANFILES += disk.xz
 
@@ -177,7 +195,7 @@ endif
 if HAVE_PERL
 
 check_PROGRAMS += test-perl
-TESTS += test-perl
+TESTS += test-perl.sh
 
 test_perl_SOURCES = test-lang-plugins.c test.h
 test_perl_CFLAGS = \
@@ -191,7 +209,7 @@ endif
 if HAVE_PYTHON
 
 check_PROGRAMS += test-python
-TESTS += test-python
+TESTS += test-python.sh
 
 test_python_SOURCES = test-lang-plugins.c test.h
 test_python_CFLAGS = \
@@ -205,7 +223,7 @@ endif
 if HAVE_OCAML
 
 check_PROGRAMS += test-ocaml
-TESTS += test-ocaml
+TESTS += test-ocaml.sh
 
 # This is somewhat different from the other tests because we have
 # to build an actual plugin here.
@@ -227,7 +245,7 @@ endif
 if HAVE_RUBY
 
 check_PROGRAMS += test-ruby
-TESTS += test-ruby
+TESTS += test-ruby.sh
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \
@@ -240,7 +258,7 @@ endif
 # streaming plugin test.
 check_PROGRAMS += test-streaming
 # Doesn't work:
-#TESTS += test-streaming
+#TESTS += test-streaming.sh
 
 test_streaming_SOURCES = test-streaming.c test.h
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)

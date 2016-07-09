@@ -109,6 +109,18 @@ or the configure test may be wrong.
 The code will still compile, but is likely to leak memory and other
 resources when it runs.])])
 
+dnl Check for valgrind.
+AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
+AS_IF([test "x$VALGRIND" != "xno"],[
+    # Substitute the whole valgrind command.
+    VG='$(VALGRIND) --vgdb=no --leak-check=full --error-exitcode=119 --suppressions=$(abs_top_srcdir)/valgrind-suppressions --trace-children=no --child-silent-after-fork=yes --run-libc-freeres=no'
+],[
+    # Valgrind is not installed, substitute something which will break.
+    VG=VALGRIND_IS_NOT_INSTALLED
+])
+AC_SUBST([VG])
+AM_SUBST_NOTMAKE([VG])
+
 dnl Check for Perl POD.
 AC_CHECK_PROG([POD2MAN], [pod2man], [pod2man], [no])
 AM_CONDITIONAL([HAVE_POD2MAN], [test "x$POD2MAN" != "xno"])

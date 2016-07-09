@@ -33,7 +33,7 @@
 
 set -e
 
-output="$(../src/nbdkit --version)"
+output="$($VG ../src/nbdkit --version)"
 if [[ ! ( "$output" =~ ^nbdkit\ 1\. ) ]]; then
     echo "$0: unexpected output from nbdkit --version"
     echo "$output"

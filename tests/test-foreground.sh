@@ -39,7 +39,7 @@ source ./functions.sh
 
 rm -f foreground.pid foreground.sock
 
-../src/nbdkit \
+$VG ../src/nbdkit \
     -f -P foreground.pid -U foreground.sock `nbdkit_plugin example1` &
 bg_pid=$!
 

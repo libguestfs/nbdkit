@@ -33,7 +33,7 @@
 
 set -e
 
-output="$(../src/nbdkit --dump-config)"
+output="$($VG ../src/nbdkit --dump-config)"
 if [[ ! ( "$output" =~ ^bindir= ) ]]; then
     echo "$0: unexpected output from nbdkit --dump-config"
     echo "$output"

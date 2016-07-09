@@ -78,6 +78,16 @@ For the OCaml plugin:
  - OCaml >= 4.02.2 which has support for shared libraries, see:
    http://caml.inria.fr/mantis/view.php?id=6693
 
+To test for memory leaks ('make check-valgrind'):
+
+ - valgrind
+
+For non-essential enhancements to the test suite:
+
+ - socat
+
+ - ss (from iproute package)
+
 After installing any dependencies:
 
   To build from tarball:         To build from git:
@@ -86,6 +96,7 @@ After installing any dependencies:
   ./configure                    ./configure
   make                           make
   make check                     make check
+  make check-valgrind            make check-valgrind
 
 Optionally run this as root to install everything:
 

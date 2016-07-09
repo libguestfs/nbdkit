@@ -40,3 +40,6 @@ EXTRA_DIST = \
 SUBDIRS = docs plugins include src tests
 
 CLEANFILES = *~
+
+check-valgrind:
+	$(MAKE) -C tests check-valgrind
