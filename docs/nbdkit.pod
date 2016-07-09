@@ -6,7 +6,8 @@ nbdkit - A toolkit for creating NBD servers
 
 =head1 SYNOPSIS
 
- nbdkit [--dump-config] [-e EXPORTNAME] [-f] [-g GROUP] [-i IPADDR]
+ nbdkit [--dump-config] [--dump-plugin]
+        [-e EXPORTNAME] [-f] [-g GROUP] [-i IPADDR]
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
         [--run CMD] [-s] [-U SOCKET] [-u USER] [-v] [-V]
         PLUGIN [key=value [key=value [...]]]
@@ -73,6 +74,10 @@ Display brief command line usage information and exit.
 =item B<--dump-config>
 
 Dump out the compile-time configuration values and exit.
+
+=item B<--dump-plugin>
+
+Dump out information about the plugin and exit.
 
 =item B<-e> EXPORTNAME
 

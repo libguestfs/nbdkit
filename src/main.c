@@ -89,6 +89,7 @@ static const char *short_options = "e:fg:i:nop:P:rsu:U:vV";
 static const struct option long_options[] = {
   { "help",       0, NULL, HELP_OPTION },
   { "dump-config",0, NULL, 0 },
+  { "dump-plugin",0, NULL, 0 },
   { "export",     1, NULL, 'e' },
   { "export-name",1, NULL, 'e' },
   { "exportname", 1, NULL, 'e' },
@@ -119,7 +120,8 @@ static const struct option long_options[] = {
 static void
 usage (void)
 {
-  printf ("nbdkit [--dump-config] [-e EXPORTNAME] [-f] [-g GROUP] [-i IPADDR]\n"
+  printf ("nbdkit [--dump-config] [--dump-plugin]\n"
+          "       [-e EXPORTNAME] [-f] [-g GROUP] [-i IPADDR]\n"
           "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
           "       [--run CMD] [-s] [-U SOCKET] [-u USER] [-v] [-V]\n"
           "       PLUGIN [key=value [key=value [...]]]\n"
@@ -151,7 +153,7 @@ main (int argc, char *argv[])
 {
   int c;
   int option_index;
-  int help = 0, version = 0;
+  int help = 0, version = 0, dump_plugin = 0;
 
   tls_init ();
 
@@ -165,6 +167,9 @@ main (int argc, char *argv[])
       if (strcmp (long_options[option_index].name, "dump-config") == 0) {
         dump_config ();
         exit (EXIT_SUCCESS);
+      }
+      else if (strcmp (long_options[option_index].name, "dump-plugin") == 0) {
+        dump_plugin = 1;
       }
       else if (strcmp (long_options[option_index].name, "run") == 0) {
         run = optarg;
@@ -261,6 +266,14 @@ main (int argc, char *argv[])
       display_version ();
       exit (EXIT_SUCCESS);
     }
+    if (dump_plugin) {
+      /* Incorrect use of --dump-plugin. */
+      fprintf (stderr,
+               "%s: use 'nbdkit plugin --dump-plugin' or\n"
+               "'nbdkit /path/to/plugin.so --dump-plugin'\n",
+               program_name);
+      exit (EXIT_FAILURE);
+    }
 
     /* Otherwise this is an error. */
     fprintf (stderr,
@@ -292,6 +305,29 @@ main (int argc, char *argv[])
 
     open_plugin_so (filename);
 
+    if (help) {
+      usage ();
+      printf ("\n%s:\n\n", filename);
+      plugin_usage ();
+      exit (EXIT_SUCCESS);
+    }
+
+    if (version) {
+      const char *v;
+
+      display_version ();
+      printf ("%s", plugin_name ());
+      if ((v = plugin_version ()) != NULL)
+        printf (" %s", v);
+      printf ("\n");
+      exit (EXIT_SUCCESS);
+    }
+
+    if (dump_plugin) {
+      plugin_dump_fields ();
+      exit (EXIT_SUCCESS);
+    }
+
     /* Find key=value configuration parameters for this plugin. */
     ++optind;
     while (optind < argc && (p = strchr (argv[optind], '=')) != NULL) {
@@ -302,19 +338,6 @@ main (int argc, char *argv[])
       plugin_config (argv[optind], p+1);
 
       ++optind;
-    }
-
-    if (help) {
-      usage ();
-      printf ("\n%s:\n\n", filename);
-      plugin_usage ();
-      exit (EXIT_SUCCESS);
-    }
-
-    if (version) {
-      display_version ();
-      plugin_version ();
-      exit (EXIT_SUCCESS);
     }
 
     plugin_config_complete ();

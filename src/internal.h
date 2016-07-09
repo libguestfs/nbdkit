@@ -88,7 +88,8 @@ extern void plugin_register (const char *_filename, void *_dl, struct nbdkit_plu
 extern void plugin_cleanup (void);
 extern const char *plugin_name (void);
 extern void plugin_usage (void);
-extern void plugin_version (void);
+extern const char *plugin_version (void);
+extern void plugin_dump_fields (void);
 extern void plugin_config (const char *key, const char *value);
 extern void plugin_config_complete (void);
 extern void plugin_lock_connection (void);

@@ -37,6 +37,7 @@ EXTRA_DIST = \
 	README.tests \
 	test-captive.sh \
 	test-dump-config.sh \
+	test-dump-plugin.sh \
 	test-foreground.sh \
 	test-help.sh \
 	test-help-plugin.sh \
@@ -55,6 +56,7 @@ TESTS = \
 	test-help.sh \
 	test-help-plugin.sh \
 	test-dump-config.sh \
+	test-dump-plugin.sh \
 	test-start.sh \
 	test-foreground.sh \
 	test-single.sh \

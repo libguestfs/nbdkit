@@ -189,15 +189,70 @@ plugin_usage (void)
   }
 }
 
-void
+const char *
 plugin_version (void)
 {
   assert (dl);
 
-  printf ("%s", plugin.name);
+  return plugin.version;
+}
+
+/* This implements the --dump-plugin option. */
+void
+plugin_dump_fields (void)
+{
+  char *path;
+
+  path = nbdkit_absolute_path (filename);
+  printf ("path=%s\n", path);
+  free (path);
+
+  printf ("name=%s\n", plugin.name);
   if (plugin.version)
-    printf (" %s", plugin.version);
+    printf ("version=%s\n", plugin.version);
+
+  printf ("api_version=%d\n", plugin._api_version);
+  printf ("struct_size=%" PRIu64 "\n", plugin._struct_size);
+  printf ("thread_model=");
+  switch (plugin._thread_model) {
+  case NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS:
+    printf ("serialize_connections");
+    break;
+  case NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS:
+    printf ("serialize_all_requests");
+    break;
+  case NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS:
+    printf ("serialize_requests");
+    break;
+  case NBDKIT_THREAD_MODEL_PARALLEL:
+    printf ("parallel");
+    break;
+  default:
+    printf ("%d # unknown thread model!", plugin._thread_model);
+    break;
+  }
   printf ("\n");
+
+#define HAS(field) if (plugin.field) printf ("has_%s=1\n", #field)
+  HAS (longname);
+  HAS (description);
+  HAS (load);
+  HAS (unload);
+  HAS (config);
+  HAS (config_complete);
+  HAS (config_help);
+  HAS (open);
+  HAS (close);
+  HAS (get_size);
+  HAS (can_write);
+  HAS (can_flush);
+  HAS (is_rotational);
+  HAS (can_trim);
+  HAS (pread);
+  HAS (pwrite);
+  HAS (flush);
+  HAS (trim);
+#undef HAS
 }
 
 void
