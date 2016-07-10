@@ -106,6 +106,8 @@ main (int argc, char *argv[])
       exit (EXIT_FAILURE);
   }
 
+  free (data);
+
   data = guestfs_pread_device (g, "/dev/sda", 8 * 512, 0, &size);
   if (!data)
     exit (EXIT_FAILURE);
