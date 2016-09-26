@@ -29,7 +29,7 @@
 # reconnect to the same server you should see the same disk.  You
 # could also put this into the handle, so there would be a fresh disk
 # per handle.
-disk = "\0" * (1024*1024);
+disk = bytearray(1024 * 1024)
 
 # This just prints the extra command line parameters, but real plugins
 # should parse them and reject any unknown parameters.
@@ -50,9 +50,9 @@ def get_size(h):
 
 def pread(h, count, offset):
     global disk
-    return bytearray (disk[offset:offset+count])
+    return disk[offset:offset+count]
 
 def pwrite(h, buf, offset):
     global disk
     end = offset + len (buf)
-    disk = disk[:offset] + buf + disk[end:]
+    disk[offset:end] = buf
