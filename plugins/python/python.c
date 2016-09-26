@@ -437,7 +437,7 @@ py_can_write (void *handle)
     Py_DECREF (r);
     return ret;
   }
-  /* No Perl can_write callback, but there's a Perl pwrite callback
+  /* No Python can_write callback, but there's a Python pwrite callback
    * defined, so return 1.  (In C modules, nbdkit would do this).
    */
   else if (callback_defined ("pwrite", NULL))
@@ -470,7 +470,7 @@ py_can_flush (void *handle)
     Py_DECREF (r);
     return ret;
   }
-  /* No Perl can_flush callback, but there's a Perl flush callback
+  /* No Python can_flush callback, but there's a Python flush callback
    * defined, so return 1.  (In C modules, nbdkit would do this).
    */
   else if (callback_defined ("flush", NULL))
@@ -531,7 +531,7 @@ py_can_trim (void *handle)
     Py_DECREF (r);
     return ret;
   }
-  /* No Perl can_trim callback, but there's a Perl trim callback
+  /* No Python can_trim callback, but there's a Python trim callback
    * defined, so return 1.  (In C modules, nbdkit would do this).
    */
   else if (callback_defined ("trim", NULL))
