@@ -133,7 +133,11 @@ py_config (const char *key, const char *value)
     /* Note that because closeit flag == 1, fp is now closed. */
 
     /* The script should define a module called __main__. */
+#ifdef HAVE_PYSTRING_FROMSTRING
     modname = PyString_FromString ("__main__");
+#else
+    modname = PyUnicode_FromString ("__main__");
+#endif
     module = PyImport_Import (modname);
     Py_DECREF (modname);
     if (!module) {
@@ -154,8 +158,13 @@ py_config (const char *key, const char *value)
     PyErr_Clear ();
 
     args = PyTuple_New (2);
+#ifdef HAVE_PYSTRING_FROMSTRING
     PyTuple_SetItem (args, 0, PyString_FromString (key));
     PyTuple_SetItem (args, 1, PyString_FromString (value));
+#else
+    PyTuple_SetItem (args, 0, PyUnicode_FromString (key));
+    PyTuple_SetItem (args, 1, PyUnicode_FromString (value));
+#endif
     r = PyObject_CallObject (fn, args);
     Py_DECREF (fn);
     Py_DECREF (args);

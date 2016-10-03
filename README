@@ -102,6 +102,16 @@ Optionally run this as root to install everything:
 
   make install
 
+Python
+------
+
+By default nbdkit uses the Python version of the Python interpreter
+called "python" on the current $PATH.  To use another version of
+Python you may need to set the PYTHON environment variable when
+configuring.  For example:
+
+ PYTHON=/usr/bin/python3 ./configure
+
 Tests
 -----
 

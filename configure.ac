@@ -201,7 +201,18 @@ AS_IF([test "x$PYTHON" != "xno" && test "x$enable_python" != "xno"],[
         ])
     ])
 
-    dnl XXX Could check these actually work.
+    dnl Check for various functions needed by the bindings.
+    old_LIBS="$LIBS"
+
+    PYTHON_BLDLIBRARY=`$PYTHON -c "import distutils.sysconfig; \
+        print (distutils.sysconfig.get_config_var('BLDLIBRARY'))"`
+    AC_CHECK_LIB([c],[PyString_FromString],
+                 [AC_DEFINE([HAVE_PYSTRING_FROMSTRING],1,
+                            [Found PyString_FromString in libpython.])],
+                 [],[$PYTHON_BLDLIBRARY])
+
+    LIBS="$old_LIBS"
+
 ])
 AM_CONDITIONAL([HAVE_PYTHON],[test "x$enable_python" != "xno" && test "x$PYTHON" != "xno"])
 AC_SUBST([PYTHON_CFLAGS])

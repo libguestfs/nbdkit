@@ -16,6 +16,15 @@ L<nbdkit(1)>, allowing you to write nbdkit plugins in Python.
 Broadly speaking, Python nbdkit plugins work like C ones, so you should
 read L<nbdkit-plugin(3)> first.
 
+=head2 PYTHON 2 AND PYTHON 3
+
+The Python plugin has to be compiled for either Python 2 or Python 3
+when building nbdkit.  You can set the C<PYTHON> environment variable
+to the desired interpreter, otherwise nbdkit will use the interpreter
+called C<python> on the current C<$PATH>.  For example:
+
+ PYTHON=/usr/bin/python3 ./configure
+
 =head2 USING A PYTHON NBDKIT PLUGIN
 
 Assuming you have a Python script which is an nbdkit plugin, you run it
