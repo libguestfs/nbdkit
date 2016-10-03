@@ -1,4 +1,4 @@
-disk = "\0" * (1024*1024);
+disk = bytearray (1024*1024);
 
 def config_complete():
     pass
@@ -24,12 +24,12 @@ def can_trim(h):
 
 def pread(h, count, offset):
     global disk
-    return bytearray (disk[offset:offset+count])
+    return disk[offset:offset+count]
 
 def pwrite(h, buf, offset):
     global disk
     end = offset + len (buf)
-    disk = disk[:offset] + buf + disk[end:]
+    disk[offset:end] = buf
 
 def flush(h):
     pass
