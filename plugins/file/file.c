@@ -41,6 +41,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <errno.h>
 
 #include <nbdkit-plugin.h>
 
@@ -248,6 +249,36 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   return 0;
 }
 
+/* Write data to the file. */
+static int
+file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+{
+  struct handle *h = handle;
+
+  if (wdelayms > 0) {
+    const struct timespec ts = {
+      .tv_sec = wdelayms / 1000,
+      .tv_nsec = (wdelayms * 1000000) % 1000000000
+    };
+    nanosleep (&ts, NULL);
+  }
+
+#ifdef FALLOC_FL_PUNCH_HOLE
+  if (may_trim) {
+    int r = fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+		       offset, count);
+    if (r == -1 && errno != EOPNOTSUPP) {
+      nbdkit_error ("pwrite: %m");
+    }
+    return r;
+  }
+#endif
+
+  /* Trigger a fall back to writing */
+  errno = EOPNOTSUPP;
+  return -1;
+}
+
 /* Flush the file to disk. */
 static int
 file_flush (void *handle)
@@ -275,6 +306,7 @@ static struct nbdkit_plugin plugin = {
   .get_size          = file_get_size,
   .pread             = file_pread,
   .pwrite            = file_pwrite,
+  .zero              = file_zero,
   .flush             = file_flush,
 };
 
