@@ -546,6 +546,13 @@ validate_request (struct connection *conn,
     return 0;
   }
 
+  /* Validate flags */
+  if (flags & ~NBD_CMD_FLAG_FUA) {
+    nbdkit_error ("invalid request: unknown flag (0x%x)", flags);
+    *error = EINVAL;
+    return 0;
+  }
+
   /* Refuse over-large read and write requests. */
   if ((cmd == NBD_CMD_WRITE || cmd == NBD_CMD_READ) &&
       count > MAX_REQUEST_SIZE) {
@@ -741,7 +748,7 @@ recv_request_send_reply (struct connection *conn)
   }
 
   cmd = be32toh (request.type);
-  flags = cmd;
+  flags = cmd & ~NBD_CMD_MASK_COMMAND;
   cmd &= NBD_CMD_MASK_COMMAND;
 
   offset = be64toh (request.offset);
