@@ -42,6 +42,7 @@
 #include <errno.h>
 #include <endian.h>
 #include <sys/types.h>
+#include <stddef.h>
 
 #include <pthread.h>
 
@@ -390,7 +391,7 @@ _negotiate_handshake_newstyle (struct connection *conn)
   uint16_t eflags;
   int fl;
 
-  gflags = NBD_FLAG_FIXED_NEWSTYLE;
+  gflags = NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES;
 
   debug ("newstyle negotiation: flags: global 0x%x", gflags);
 
@@ -409,8 +410,12 @@ _negotiate_handshake_newstyle (struct connection *conn)
     return -1;
   }
   cflags = be32toh (cflags);
-  /* ... which other than printing out, we ignore. */
+  /* ... which we check for accuracy. */
   debug ("newstyle negotiation: client flags: 0x%x", cflags);
+  if (cflags & ~gflags) {
+    nbdkit_error ("client requested unknown flags 0x%x", cflags);
+    return -1;
+  }
 
   /* Receive newstyle options. */
   if (_negotiate_handshake_newstyle_options (conn) == -1)
@@ -469,7 +474,10 @@ _negotiate_handshake_newstyle (struct connection *conn)
   handshake_finish.eflags = htobe16 (eflags);
 
   if (xwrite (conn->sockout,
-              &handshake_finish, sizeof handshake_finish) == -1) {
+              &handshake_finish,
+	      (cflags & NBD_FLAG_NO_ZEROES)
+	      ? offsetof (struct new_handshake_finish, zeroes)
+	      : sizeof handshake_finish) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }

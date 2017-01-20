@@ -84,6 +84,7 @@ struct new_handshake_finish {
 
 /* Global flags. */
 #define NBD_FLAG_FIXED_NEWSTYLE 1
+#define NBD_FLAG_NO_ZEROES      2
 
 /* Per-export flags. */
 #define NBD_FLAG_HAS_FLAGS   1
