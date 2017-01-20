@@ -180,6 +180,10 @@ _negotiate_handshake_oldstyle (struct connection *conn)
     eflags |= NBD_FLAG_READ_ONLY;
     conn->readonly = 1;
   }
+  if (!conn->readonly) {
+    eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
+  }
+
 
   fl = plugin_can_flush (conn);
   if (fl == -1)
@@ -442,6 +446,9 @@ _negotiate_handshake_newstyle (struct connection *conn)
     eflags |= NBD_FLAG_READ_ONLY;
     conn->readonly = 1;
   }
+  if (!conn->readonly) {
+    eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
+  }
 
   fl = plugin_can_flush (conn);
   if (fl == -1)
@@ -520,6 +527,7 @@ validate_request (struct connection *conn,
   case NBD_CMD_READ:
   case NBD_CMD_WRITE:
   case NBD_CMD_TRIM:
+  case NBD_CMD_WRITE_ZEROES:
     r = valid_range (conn, offset, count);
     if (r == -1)
       return -1;
@@ -547,8 +555,14 @@ validate_request (struct connection *conn,
   }
 
   /* Validate flags */
-  if (flags & ~NBD_CMD_FLAG_FUA) {
+  if (flags & ~(NBD_CMD_FLAG_FUA | NBD_CMD_FLAG_NO_HOLE)) {
     nbdkit_error ("invalid request: unknown flag (0x%x)", flags);
+    *error = EINVAL;
+    return 0;
+  }
+  if ((flags & NBD_CMD_FLAG_NO_HOLE) &&
+      cmd != NBD_CMD_WRITE_ZEROES) {
+    nbdkit_error ("invalid request: NO_HOLE flag needs WRITE_ZEROES request");
     *error = EINVAL;
     return 0;
   }
@@ -565,7 +579,7 @@ validate_request (struct connection *conn,
   /* Readonly connection? */
   if (conn->readonly &&
       (cmd == NBD_CMD_WRITE || cmd == NBD_CMD_FLUSH ||
-       cmd == NBD_CMD_TRIM)) {
+       cmd == NBD_CMD_TRIM || cmd == NBD_CMD_WRITE_ZEROES)) {
     nbdkit_error ("invalid request: write request on readonly connection");
     *error = EROFS;
     return 0;
@@ -641,6 +655,14 @@ _handle_request (struct connection *conn,
 
   case NBD_CMD_TRIM:
     r = plugin_trim (conn, count, offset);
+    if (r == -1) {
+      *error = errno ? errno : EIO;
+      return 0;
+    }
+    break;
+
+  case NBD_CMD_WRITE_ZEROES:
+    r = plugin_zero (conn, count, offset, !(flags & NBD_CMD_FLAG_NO_HOLE));
     if (r == -1) {
       *error = errno ? errno : EIO;
       return 0;

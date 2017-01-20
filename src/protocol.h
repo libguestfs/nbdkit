@@ -87,12 +87,13 @@ struct new_handshake_finish {
 #define NBD_FLAG_NO_ZEROES      2
 
 /* Per-export flags. */
-#define NBD_FLAG_HAS_FLAGS   1
-#define NBD_FLAG_READ_ONLY   2
-#define NBD_FLAG_SEND_FLUSH  4
-#define NBD_FLAG_SEND_FUA    8
-#define NBD_FLAG_ROTATIONAL 16
-#define NBD_FLAG_SEND_TRIM  32
+#define NBD_FLAG_HAS_FLAGS         (1 << 0)
+#define NBD_FLAG_READ_ONLY         (1 << 1)
+#define NBD_FLAG_SEND_FLUSH        (1 << 2)
+#define NBD_FLAG_SEND_FUA          (1 << 3)
+#define NBD_FLAG_ROTATIONAL        (1 << 4)
+#define NBD_FLAG_SEND_TRIM         (1 << 5)
+#define NBD_FLAG_SEND_WRITE_ZEROES (1 << 6)
 
 /* NBD options (new style handshake only). */
 #define NBD_OPT_EXPORT_NAME  1
@@ -130,8 +131,10 @@ struct reply {
 #define NBD_CMD_DISC              2 /* Disconnect. */
 #define NBD_CMD_FLUSH             3
 #define NBD_CMD_TRIM              4
+#define NBD_CMD_WRITE_ZEROES      6
 #define NBD_CMD_MASK_COMMAND 0xffff
-#define NBD_CMD_FLAG_FUA    (1<<16)
+#define NBD_CMD_FLAG_FUA     (1<<16)
+#define NBD_CMD_FLAG_NO_HOLE (2<<16)
 
 /* Error codes (previously errno).
  * See http://git.qemu.org/?p=qemu.git;a=commitdiff;h=ca4414804114fd0095b317785bc0b51862e62ebb
