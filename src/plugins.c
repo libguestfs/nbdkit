@@ -48,6 +48,9 @@
 static pthread_mutex_t connection_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t all_requests_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/* Maximum read or write request that we will handle. */
+#define MAX_REQUEST_SIZE (64 * 1024 * 1024)
+
 /* Currently the server can only load one plugin (see TODO).  Hence we
  * can just use globals to store these.
  */
@@ -252,6 +255,7 @@ plugin_dump_fields (void)
   HAS (pwrite);
   HAS (flush);
   HAS (trim);
+  HAS (zero);
 #undef HAS
 }
 
@@ -505,4 +509,50 @@ plugin_trim (struct connection *conn, uint32_t count, uint64_t offset)
     errno = EINVAL;
     return -1;
   }
+}
+
+int
+plugin_zero (struct connection *conn,
+             uint32_t count, uint64_t offset, int may_trim)
+{
+  assert (dl);
+  assert (conn->handle);
+  char *buf;
+  uint32_t limit;
+  int result;
+  int err;
+
+  debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d",
+         count, offset, may_trim);
+
+  if (!count)
+    return 0;
+  if (plugin.zero) {
+    errno = 0;
+    result = plugin.zero (conn->handle, count, offset, may_trim);
+    if (result == 0 || errno != EOPNOTSUPP)
+      return result;
+  }
+
+  assert (plugin.pwrite);
+  limit = count < MAX_REQUEST_SIZE ? count : MAX_REQUEST_SIZE;
+  buf = calloc (limit, 1);
+  if (!buf) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  while (count) {
+    result = plugin.pwrite (conn->handle, buf, limit, offset);
+    if (result < 0)
+      break;
+    count -= limit;
+    if (count < limit)
+      limit = count;
+  }
+
+  err = errno;
+  free (buf);
+  errno = err;
+  return result;
 }

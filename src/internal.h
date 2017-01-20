@@ -107,6 +107,7 @@ extern int plugin_pread (struct connection *conn, void *buf, uint32_t count, uin
 extern int plugin_pwrite (struct connection *conn, void *buf, uint32_t count, uint64_t offset);
 extern int plugin_flush (struct connection *conn);
 extern int plugin_trim (struct connection *conn, uint32_t count, uint64_t offset);
+extern int plugin_zero (struct connection *conn, uint32_t count, uint64_t offset, int may_trim);
 
 /* sockets.c */
 extern int *bind_unix_socket (size_t *);

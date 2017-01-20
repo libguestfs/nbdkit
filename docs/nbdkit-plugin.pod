@@ -432,6 +432,25 @@ callback.
 If there is an error, C<.trim> should call C<nbdkit_error> with an
 error message and return C<-1>.
 
+=head2 C<.zero>
+
+ int zero (void *handle, uint32_count, uint64_t offset, int may_trim);
+
+During the data serving phase, this callback is used to write C<count>
+bytes of zeroes at C<offset> in the backing store.  If C<may_trim> is
+non-zero, the operation can punch a hole instead of writing actual
+zero bytes, but only if subsequent reads from the hole read as zeroes.
+If this callback is omitted, or if it fails with errno set to
+EOPNOTSUPP, then C<.pwrite> will be used instead.
+
+The callback must write the whole C<count> bytes if it can.  The NBD
+protocol doesn't allow partial writes (instead, these would be
+errors).  If the whole C<count> bytes was written successfully, the
+callback should return C<0> to indicate there was I<no> error.
+
+If there is an error, C<.zero> should call C<nbdkit_error> with an
+error message and return C<-1>.
+
 =head1 THREADS
 
 Each nbdkit plugin must declare its thread safety model by defining
