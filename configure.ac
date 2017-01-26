@@ -37,6 +37,7 @@ AC_SYS_LARGEFILE
 
 dnl NB: Do not [quote] this parameter.
 AM_INIT_AUTOMAKE(foreign)
+AC_PROG_LIBTOOL
 LT_INIT
 
 dnl Check for basic C environment.
