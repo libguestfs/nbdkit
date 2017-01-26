@@ -60,7 +60,7 @@ if HAVE_POD2MAN
 man_MANS = nbdkit-ruby-plugin.3
 
 nbdkit-ruby-plugin.3: nbdkit-ruby-plugin.pod
-	$(POD2MAN) -u --stderr --section=3 --center=nbdkit --release=nbdkit --name=`basename $@ .3` $< $@
+	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@
 
 endif
 

@@ -123,6 +123,26 @@ AM_SUBST_NOTMAKE([VG])
 
 dnl Check for Perl POD.
 AC_CHECK_PROG([POD2MAN], [pod2man], [pod2man], [no])
+AS_IF([test "x$POD2MAN" != "xno"],[
+    POD2MAN_ARGS="--center=nbdkit --release=nbdkit"
+    # Check that pod2man supports --utf8 and --stderr options, and if so
+    # add them to $POD2MAN_ARGS.
+    AC_MSG_CHECKING([if $POD2MAN supports --utf8])
+    AS_IF([$POD2MAN --help 2>&1 | grep -s -q -- --utf8],[
+        AC_MSG_RESULT([yes])
+	POD2MAN_ARGS="$POD2MAN_ARGS --utf8"
+    ],[
+        AC_MSG_RESULT([no])
+    ])
+    AC_MSG_CHECKING([if $POD2MAN supports --stderr])
+    AS_IF([$POD2MAN --help 2>&1 | grep -s -q -- --stderr],[
+        AC_MSG_RESULT([yes])
+	POD2MAN_ARGS="$POD2MAN_ARGS --stderr"
+    ],[
+        AC_MSG_RESULT([no])
+    ])
+    AC_SUBST([POD2MAN_ARGS])
+])
 AM_CONDITIONAL([HAVE_POD2MAN], [test "x$POD2MAN" != "xno"])
 
 dnl Check for Perl, for embedding in the perl plugin.

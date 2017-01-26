@@ -41,10 +41,10 @@ man_MANS = \
 	nbdkit-plugin.3
 
 nbdkit.1: nbdkit.pod
-	$(POD2MAN) -u --stderr --section=1 --center=nbdkit --release=nbdkit --name=nbdkit $< $@
+	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=nbdkit $< $@
 
 nbdkit-plugin.3: nbdkit-plugin.pod
-	$(POD2MAN) -u --stderr --section=3 --center=nbdkit --release=nbdkit --name=nbdkit-plugin $< $@
+	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-plugin $< $@
 
 endif
 
