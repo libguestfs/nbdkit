@@ -32,6 +32,8 @@
 
 AC_INIT([nbdkit], [1.1.12])
 AC_CONFIG_MACRO_DIR([m4])
+m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],[],
+         [m4_define([AC_USE_SYSTEM_EXTENSIONS],[])])
 AC_USE_SYSTEM_EXTENSIONS
 AC_SYS_LARGEFILE
 
@@ -120,6 +122,8 @@ AS_IF([test "x$VALGRIND" != "xno"],[
     VG=VALGRIND_IS_NOT_INSTALLED
 ])
 AC_SUBST([VG])
+m4_ifdef([AM_SUBST_NOTMAKE],[],
+         [m4_define([AM_SUBST_NOTMAKE],[])])
 AM_SUBST_NOTMAKE([VG])
 
 dnl Check for Perl POD.
