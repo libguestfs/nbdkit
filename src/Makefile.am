@@ -61,6 +61,7 @@ nbdkit_CFLAGS = \
 nbdkit_LDADD = \
 	-ldl
 nbdkit_LDFLAGS = \
+	-pthread \
 	-rdynamic
 
 CLEANFILES = *~
