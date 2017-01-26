@@ -145,5 +145,6 @@ struct reply {
 #define NBD_ENOMEM     12
 #define NBD_EINVAL     22
 #define NBD_ENOSPC     28
+#define NBD_ESHUTDOWN 108
 
 #endif /* NBDKIT_PROTOCOL_H */

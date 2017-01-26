@@ -737,6 +737,10 @@ nbd_errno (int error)
   case EFBIG:
   case ENOSPC:
     return NBD_ENOSPC;
+#ifdef ESHUTDOWN
+  case ESHUTDOWN:
+    return NBD_ESHUTDOWN;
+#endif
   case EINVAL:
   default:
     return NBD_EINVAL;
