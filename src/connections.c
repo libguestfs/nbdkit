@@ -724,6 +724,7 @@ nbd_errno (int error)
   switch (error) {
   case 0:
     return NBD_SUCCESS;
+  case EROFS:
   case EPERM:
     return NBD_EPERM;
   case EIO:
