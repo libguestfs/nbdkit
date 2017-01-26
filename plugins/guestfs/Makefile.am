@@ -32,6 +32,8 @@
 
 EXTRA_DIST = nbdkit-guestfs-plugin.pod
 
+CLEANFILES = *~
+
 plugindir = $(libdir)/nbdkit/plugins
 
 if HAVE_LIBGUESTFS
@@ -55,6 +57,7 @@ nbdkit_guestfs_plugin_la_LDFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-guestfs-plugin.1
+CLEANFILES += $(man_MANS)
 
 nbdkit-guestfs-plugin.1: nbdkit-guestfs-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@
@@ -62,5 +65,3 @@ nbdkit-guestfs-plugin.1: nbdkit-guestfs-plugin.pod
 endif
 
 endif
-
-CLEANFILES = *~

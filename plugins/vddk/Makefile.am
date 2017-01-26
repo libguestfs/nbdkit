@@ -32,6 +32,8 @@
 
 EXTRA_DIST = nbdkit-vddk-plugin.pod
 
+CLEANFILES = *~
+
 plugindir = $(libdir)/nbdkit/plugins
 
 if HAVE_VDDK
@@ -55,6 +57,7 @@ nbdkit_vddk_plugin_la_LDFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-vddk-plugin.1
+CLEANFILES += $(man_MANS)
 
 nbdkit-vddk-plugin.1: nbdkit-vddk-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@
@@ -62,5 +65,3 @@ nbdkit-vddk-plugin.1: nbdkit-vddk-plugin.pod
 endif
 
 endif
-
-CLEANFILES = *~

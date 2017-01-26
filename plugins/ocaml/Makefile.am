@@ -35,6 +35,8 @@ EXTRA_DIST = \
 	NBDKit.ml \
 	nbdkit-ocaml-plugin.pod
 
+CLEANFILES = *~ *.cmi *.cmx
+
 if HAVE_OCAML
 
 ocamllibdir = $(OCAMLLIB)
@@ -68,6 +70,7 @@ libnbdkitocaml_la_CFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-ocaml-plugin.3
+CLEANFILES += $(man_MANS)
 
 nbdkit-ocaml-plugin.3: nbdkit-ocaml-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@
@@ -75,6 +78,3 @@ nbdkit-ocaml-plugin.3: nbdkit-ocaml-plugin.pod
 endif
 
 endif
-
-CLEANFILES = *~ *.cmi *.cmx
-

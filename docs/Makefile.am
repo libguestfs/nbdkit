@@ -34,11 +34,14 @@ EXTRA_DIST = \
 	nbdkit.pod \
 	nbdkit-plugin.pod
 
+CLEANFILES = *~
+
 if HAVE_POD2MAN
 
 man_MANS = \
 	nbdkit.1 \
 	nbdkit-plugin.3
+CLEANFILES += $(man_MANS)
 
 nbdkit.1: nbdkit.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=nbdkit $< $@
@@ -47,5 +50,3 @@ nbdkit-plugin.3: nbdkit-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-plugin $< $@
 
 endif
-
-CLEANFILES = *~

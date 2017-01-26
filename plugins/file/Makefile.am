@@ -32,6 +32,8 @@
 
 EXTRA_DIST = nbdkit-file-plugin.pod
 
+CLEANFILES = *~
+
 plugindir = $(libdir)/nbdkit/plugins
 
 plugin_LTLIBRARIES = nbdkit-file-plugin.la
@@ -50,10 +52,9 @@ nbdkit_file_plugin_la_LDFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-file-plugin.1
+CLEANFILES += $(man_MANS)
 
 nbdkit-file-plugin.1: nbdkit-file-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@
 
 endif
-
-CLEANFILES = *~

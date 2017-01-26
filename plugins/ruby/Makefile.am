@@ -34,6 +34,8 @@ EXTRA_DIST = \
 	nbdkit-ruby-plugin.pod \
 	example.rb
 
+CLEANFILES = *~
+
 plugindir = $(libdir)/nbdkit/plugins
 
 if HAVE_RUBY
@@ -58,6 +60,7 @@ nbdkit_ruby_plugin_la_LDFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-ruby-plugin.3
+CLEANFILES += $(man_MANS)
 
 nbdkit-ruby-plugin.3: nbdkit-ruby-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@
@@ -65,5 +68,3 @@ nbdkit-ruby-plugin.3: nbdkit-ruby-plugin.pod
 endif
 
 endif
-
-CLEANFILES = *~

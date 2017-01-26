@@ -32,6 +32,8 @@
 
 EXTRA_DIST = nbdkit-libvirt-plugin.pod
 
+CLEANFILES = *~
+
 plugindir = $(libdir)/nbdkit/plugins
 
 if HAVE_LIBVIRT
@@ -55,6 +57,7 @@ nbdkit_libvirt_plugin_la_LDFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-libvirt-plugin.1
+CLEANFILES += $(man_MANS)
 
 nbdkit-libvirt-plugin.1: nbdkit-libvirt-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@
@@ -62,5 +65,3 @@ nbdkit-libvirt-plugin.1: nbdkit-libvirt-plugin.pod
 endif
 
 endif
-
-CLEANFILES = *~

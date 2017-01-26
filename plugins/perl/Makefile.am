@@ -34,6 +34,8 @@ EXTRA_DIST = \
 	nbdkit-perl-plugin.pod \
 	example.pl
 
+CLEANFILES = *~
+
 plugindir = $(libdir)/nbdkit/plugins
 
 if HAVE_PERL
@@ -57,6 +59,7 @@ nbdkit_perl_plugin_la_LDFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-perl-plugin.3
+CLEANFILES += $(man_MANS)
 
 nbdkit-perl-plugin.3: nbdkit-perl-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@
@@ -64,5 +67,3 @@ nbdkit-perl-plugin.3: nbdkit-perl-plugin.pod
 endif
 
 endif
-
-CLEANFILES = *~

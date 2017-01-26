@@ -32,6 +32,8 @@
 
 EXTRA_DIST = nbdkit-streaming-plugin.pod
 
+CLEANFILES = *~
+
 plugindir = $(libdir)/nbdkit/plugins
 
 plugin_LTLIBRARIES = nbdkit-streaming-plugin.la
@@ -50,10 +52,9 @@ nbdkit_streaming_plugin_la_LDFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-streaming-plugin.1
+CLEANFILES += $(man_MANS)
 
 nbdkit-streaming-plugin.1: nbdkit-streaming-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@
 
 endif
-
-CLEANFILES = *~

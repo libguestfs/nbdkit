@@ -34,6 +34,8 @@ EXTRA_DIST = \
 	nbdkit-python-plugin.pod \
 	example.py
 
+CLEANFILES = *~
+
 plugindir = $(libdir)/nbdkit/plugins
 
 if HAVE_PYTHON
@@ -58,6 +60,7 @@ nbdkit_python_plugin_la_LDFLAGS = \
 if HAVE_POD2MAN
 
 man_MANS = nbdkit-python-plugin.3
+CLEANFILES += $(man_MANS)
 
 nbdkit-python-plugin.3: nbdkit-python-plugin.pod
 	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@
@@ -65,5 +68,3 @@ nbdkit-python-plugin.3: nbdkit-python-plugin.pod
 endif
 
 endif
-
-CLEANFILES = *~
