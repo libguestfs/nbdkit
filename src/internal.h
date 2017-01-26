@@ -47,6 +47,14 @@
 #define UNIX_PATH_MAX 108
 #endif
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
+#ifndef SOCK_CLOEXEC
+#define SOCK_CLOEXEC 0
+#endif
+
 /* main.c */
 extern const char *exportname;
 extern const char *ipaddr;
