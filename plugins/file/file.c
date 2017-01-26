@@ -254,6 +254,7 @@ static int
 file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
   struct handle *h = handle;
+  int r = -1;
 
   if (wdelayms > 0) {
     const struct timespec ts = {
@@ -265,18 +266,28 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
 #ifdef FALLOC_FL_PUNCH_HOLE
   if (may_trim) {
-    int r = fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
-		       offset, count);
+    r = fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+		   offset, count);
     if (r == -1 && errno != EOPNOTSUPP) {
-      nbdkit_error ("pwrite: %m");
+      nbdkit_error ("zero: %m");
     }
+    /* PUNCH_HOLE is older; if it is not supported, it is likely that
+       ZERO_RANGE will not work either, so fall back to write. */
     return r;
   }
 #endif
 
+#ifdef FALLOC_FL_ZERO_RANGE
+  r = fallocate (h->fd, FALLOC_FL_ZERO_RANGE, offset, count);
+  if (r == -1 && errno != EOPNOTSUPP) {
+    nbdkit_error ("zero: %m");
+  }
+#else
   /* Trigger a fall back to writing */
   errno = EOPNOTSUPP;
-  return -1;
+#endif
+
+  return r;
 }
 
 /* Flush the file to disk. */
