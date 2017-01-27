@@ -54,6 +54,23 @@
 static const char *script;
 static PyObject *module;
 
+static PyObject *
+set_error (PyObject *self, PyObject *args)
+{
+  int err;
+
+  if (!PyArg_ParseTuple(args, "i", &err))
+    return NULL;
+  nbdkit_set_error (err);
+  Py_RETURN_NONE;
+}
+
+static PyMethodDef NbdkitMethods[] = {
+  { "set_error", set_error, METH_VARARGS,
+    "Store an errno value prior to throwing an exception" },
+  { NULL }
+};
+
 /* Is a callback defined? */
 static int
 callback_defined (const char *name, PyObject **obj_rtn)
@@ -91,6 +108,7 @@ static void
 py_load (void)
 {
   Py_Initialize ();
+  Py_InitModule("nbdkit", NbdkitMethods);
 }
 
 static void

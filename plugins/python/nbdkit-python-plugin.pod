@@ -63,9 +63,22 @@ does not need to be executable.  In fact it's a good idea not to do
 that, because running the plugin directly as a Python script won't
 work.
 
+=head2 METHODS
+
+Your script may use C<import nbdkit> to have access to the following
+methods in the C<nbdkit> module:
+
+ nbdkit.set_error(I<err>)
+
+Record C<err> as the reason you are about to throw an exception. C<err>
+should correspond to usual errno values, where it may help to
+C<import errno>.
+
 =head2 EXCEPTIONS
 
-Python callbacks should throw exceptions to indicate errors.
+Python callbacks should throw exceptions to indicate errors.  Remember
+to use C<nbdkit.set_error> if you need to control which error is sent
+back to the client; if omitted, the client will see an error of C<EIO>.
 
 =head2 PYTHON CALLBACKS
 
@@ -158,7 +171,8 @@ disk starting at C<offset>.
 
 NBD only supports whole reads, so your function should try to read
 the whole region (perhaps requiring a loop).  If the read fails or
-is partial, your function should throw an exception.
+is partial, your function should throw an exception, optionally using
+C<nbdkit.set_error> first.
 
 =item C<pwrite>
 
@@ -174,7 +188,8 @@ C<offset>.
 
 NBD only supports whole writes, so your function should try to
 write the whole region (perhaps requiring a loop).  If the write
-fails or is partial, your function should throw an exception.
+fails or is partial, your function should throw an exception,
+ optionally using C<nbdkit.set_error> first.
 
 =item C<flush>
 
@@ -186,6 +201,9 @@ fails or is partial, your function should throw an exception.
 The body of your C<flush> function should do a L<sync(2)> or
 L<fdatasync(2)> or equivalent on the backing store.
 
+If the flush fails, your function should throw an exception, optionally
+using C<nbdkit.set_error> first.
+
 =item C<trim>
 
 (Optional)
@@ -194,7 +212,8 @@ L<fdatasync(2)> or equivalent on the backing store.
    # no return value
 
 The body of your C<trim> function should "punch a hole" in the
-backing store.
+backing store.  If the trim fails, your function should throw an
+exception, optionally using C<nbdkit.set_error> first.
 
 =back
 
@@ -210,7 +229,8 @@ constructs.
 =item Missing: C<errno_is_reliable>
 
 This is not needed because the process of gluing Python code into C cannot
-reliably use C<errno>.
+reliably use C<errno>.  Instead, call C<nbdkit.set_error> when reporting
+a failure.
 
 =item Missing: C<name>, C<version>, C<longname>, C<description>, C<config_help>
 
