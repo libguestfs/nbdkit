@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2016 Red Hat Inc.
+ * Copyright (C) 2013-2017 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,10 +47,19 @@
 #define NBDKIT_API_VERSION                            1
 
 struct nbdkit_plugin {
+  /* Do not set these fields directly; use NBDKIT_REGISTER_PLUGIN.
+   * They exist so that we can support plugins compiled against
+   * one version of the header with a runtime compiled against a
+   * different version with more (or fewer) fields.
+   */
   uint64_t _struct_size;
   int _api_version;
   int _thread_model;
 
+  /* Plugins are responsible for these fields; see the documentation
+   * for semantics, and which fields are optional. New fields will
+   * only be added at the end of the struct.
+   */
   const char *name;
   const char *longname;
   const char *version;
@@ -78,6 +87,8 @@ struct nbdkit_plugin {
   int (*flush) (void *handle);
   int (*trim) (void *handle, uint32_t count, uint64_t offset);
   int (*zero) (void *handle, uint32_t count, uint64_t offset, int may_trim);
+
+  int (*errno_is_reliable) (void *handle);
 
   /* int (*set_exportname) (void *handle, const char *exportname); */
 };

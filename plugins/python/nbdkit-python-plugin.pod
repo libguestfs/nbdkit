@@ -207,6 +207,11 @@ backing store.
 These are not needed because you can just use ordinary Python
 constructs.
 
+=item Missing: C<errno_is_reliable>
+
+This is not needed because the process of gluing Python code into C cannot
+reliably use C<errno>.
+
 =item Missing: C<name>, C<version>, C<longname>, C<description>, C<config_help>
 
 These are not yet supported.

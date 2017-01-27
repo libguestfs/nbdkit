@@ -498,7 +498,10 @@ negotiate_handshake (struct connection *conn)
   int r;
 
   plugin_lock_request (conn);
-  if (!newstyle)
+  conn->errno_is_reliable = plugin_errno_is_reliable (conn);
+  if (conn->errno_is_reliable < 0)
+    r = -1;
+  else if (!newstyle)
     r = _negotiate_handshake_oldstyle (conn);
   else
     r = _negotiate_handshake_newstyle (conn);
@@ -602,6 +605,18 @@ validate_request (struct connection *conn,
   return 1;                     /* Commands validates. */
 }
 
+/* Grab the appropriate error value.
+ */
+static int
+get_error (struct connection *conn)
+{
+  int ret = 0;
+
+  if (conn->errno_is_reliable)
+    ret = errno;
+  return ret ? ret : EIO;
+}
+
 /* This is called with the request lock held to actually execute the
  * request (by calling the plugin).  Note that the request fields have
  * been validated already in 'validate_request' so we don't have to
@@ -611,8 +626,7 @@ validate_request (struct connection *conn,
  * Only returns -1 if there is a fatal error and the connection cannot
  * continue.
  *
- * On read/write errors, sets *error to errno (or EIO if errno is not
- * set) and returns 0.
+ * On read/write errors, sets *error appropriately and returns 0.
  */
 static int
 _handle_request (struct connection *conn,
@@ -632,7 +646,7 @@ _handle_request (struct connection *conn,
   case NBD_CMD_READ:
     r = plugin_pread (conn, buf, count, offset);
     if (r == -1) {
-      *error = errno ? errno : EIO;
+      *error = get_error (conn);
       return 0;
     }
     break;
@@ -640,7 +654,7 @@ _handle_request (struct connection *conn,
   case NBD_CMD_WRITE:
     r = plugin_pwrite (conn, buf, count, offset);
     if (r == -1) {
-      *error = errno ? errno : EIO;
+      *error = get_error (conn);
       return 0;
     }
     break;
@@ -648,7 +662,7 @@ _handle_request (struct connection *conn,
   case NBD_CMD_FLUSH:
     r = plugin_flush (conn);
     if (r == -1) {
-      *error = errno ? errno : EIO;
+      *error = get_error (conn);
       return 0;
     }
     break;
@@ -656,7 +670,7 @@ _handle_request (struct connection *conn,
   case NBD_CMD_TRIM:
     r = plugin_trim (conn, count, offset);
     if (r == -1) {
-      *error = errno ? errno : EIO;
+      *error = get_error (conn);
       return 0;
     }
     break;
@@ -664,7 +678,7 @@ _handle_request (struct connection *conn,
   case NBD_CMD_WRITE_ZEROES:
     r = plugin_zero (conn, count, offset, !(flags & NBD_CMD_FLAG_NO_HOLE));
     if (r == -1) {
-      *error = errno ? errno : EIO;
+      *error = get_error (conn);
       return 0;
     }
     break;
@@ -676,7 +690,7 @@ _handle_request (struct connection *conn,
   if (flush_after_command) {
     r = plugin_flush (conn);
     if (r == -1) {
-      *error = errno ? errno : EIO;
+      *error = get_error (conn);
       return 0;
     }
   }

@@ -395,6 +395,21 @@ plugin_get_size (struct connection *conn)
 }
 
 int
+plugin_errno_is_reliable (struct connection *conn)
+{
+  assert (dl);
+  assert (conn->handle);
+
+  debug ("errno_is_reliable");
+
+  if (plugin.errno_is_reliable)
+    return plugin.errno_is_reliable (conn->handle);
+
+  /* Default to 1, for backwards compatibility (correct for C plugins) */
+  return 1;
+}
+
+int
 plugin_can_write (struct connection *conn)
 {
   assert (dl);

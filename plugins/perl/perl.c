@@ -584,6 +584,16 @@ perl_trim (void *handle, uint32_t count, uint64_t offset)
   return 0;
 }
 
+/* We can't guarantee that errno is stable across language binding
+ * glue code, so this callback is implemented in C only, and not
+ * exposed in Perl.
+ */
+static int
+perl_errno_is_reliable (void *handle)
+{
+  return 0;
+}
+
 #define perl_config_help \
   "script=<FILENAME>     (required) The Perl plugin to run.\n" \
   "[other arguments may be used by the plugin that you load]"
@@ -614,6 +624,8 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = perl_pwrite,
   .flush             = perl_flush,
   .trim              = perl_trim,
+
+  .errno_is_reliable = perl_errno_is_reliable,
 };
 
 NBDKIT_REGISTER_PLUGIN(plugin)

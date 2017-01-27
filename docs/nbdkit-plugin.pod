@@ -144,12 +144,19 @@ is called once just before the plugin is unloaded from memory.
 
 If there is an error in the plugin, the plugin should call
 C<nbdkit_error> with the error message, and then return an error
-indication from the callback, eg. NULL or -1.
+indication from the callback, eg. NULL or -1.  When a callback fails,
+the NBD protocol sends an error code to the client; the
+C<.errno_is_reliable> callback controls whether this error code
+will default to something based on C<errno>, or if it will just
+be hard-coded to C<EIO>.
 
 C<nbdkit_error> has the following prototype and works like
 L<printf(3)>:
 
  void nbdkit_error (const char *fs, ...);
+ void nbdkit_verror (const char *fs, va_list args);
+
+For convenience, C<nbdkit_error> preserves the value of C<errno>.
 
 =head1 FILENAMES AND PATHS
 
@@ -371,6 +378,24 @@ error message and return C<-1>.
 This callback is not required.  If omitted, then we return true iff a
 C<.trim> callback has been defined.
 
+=head2 C<.errno_is_reliable>
+
+ int errno_is_reliable (void *handle);
+
+This is called during the option negotiation phase to find out if the
+handle wants to reflect C<errno> to the client on failures, or to just
+hard-code C<EIO>.  Typically, a plugin written in C will want to use
+C<errno>, while a plugin written in any other language generally
+cannot control the value of C<errno> after the glue code of the
+language binding wrappers; therefore, this callback is not needed in
+the bindings of other languages.
+
+If there is an error, C<.errno_is_reliable> should call C<nbdkit_error>
+with an error message and return C<-1>.
+
+This callback is not required.  If omitted, then we return true for
+a plugin written in C, and false for plugins in other languages.
+
 =head2 C<.pread>
 
  int pread (void *handle, void *buf, uint32_t count, uint64_t offset);
@@ -440,7 +465,7 @@ During the data serving phase, this callback is used to write C<count>
 bytes of zeroes at C<offset> in the backing store.  If C<may_trim> is
 non-zero, the operation can punch a hole instead of writing actual
 zero bytes, but only if subsequent reads from the hole read as zeroes.
-If this callback is omitted, or if it fails with errno set to
+If this callback is omitted, or if it fails with C<errno> set to
 EOPNOTSUPP, then C<.pwrite> will be used instead.
 
 The callback must write the whole C<count> bytes if it can.  The NBD
@@ -523,7 +548,9 @@ C<nbdkit_debug>, which has the following prototype and works like
 L<printf(3)>:
 
  void nbdkit_debug (const char *fs, ...);
+ void nbdkit_vdebug (const char *fs, va_list args);
 
+For convenience, C<nbdkit_debug> preserves the value of C<errno>.
 Note that C<nbdkit_debug> only prints things when the server is in
 verbose mode (I<-v> option).
 
