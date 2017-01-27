@@ -24,6 +24,9 @@
 #   ><fs> mount /dev/sda1 /
 #   ><fs> [etc]
 
+import nbdkit
+import errno
+
 # This is the string used to store the emulated disk (initially all
 # zero bytes).  There is one disk per nbdkit instance, so if you
 # reconnect to the same server you should see the same disk.  You
@@ -56,3 +59,11 @@ def pwrite(h, buf, offset):
     global disk
     end = offset + len (buf)
     disk[offset:end] = buf
+
+def zero(h, count, offset, may_trim):
+    global disk
+    if may_trim:
+        disk[offset:offset+count] = bytearray(count)
+    else:
+        nbdkit.set_error(errno.EOPNOTSUPP)
+        raise Exception

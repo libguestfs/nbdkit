@@ -54,6 +54,8 @@
 static const char *script;
 static PyObject *module;
 
+static int last_error;
+
 static PyObject *
 set_error (PyObject *self, PyObject *args)
 {
@@ -62,6 +64,7 @@ set_error (PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "i", &err))
     return NULL;
   nbdkit_set_error (err);
+  last_error = err;
   Py_RETURN_NONE;
 }
 
@@ -441,6 +444,48 @@ py_trim (void *handle, uint32_t count, uint64_t offset)
 }
 
 static int
+py_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+{
+  PyObject *obj = handle;
+  PyObject *fn;
+  PyObject *args;
+  PyObject *r;
+
+  if (callback_defined ("zero", &fn)) {
+    PyErr_Clear ();
+
+    last_error = 0;
+    args = PyTuple_New (4);
+    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
+    PyTuple_SetItem (args, 0, obj);
+    PyTuple_SetItem (args, 1, PyLong_FromUnsignedLongLong (count));
+    PyTuple_SetItem (args, 2, PyLong_FromUnsignedLongLong (offset));
+    PyTuple_SetItem (args, 3, PyBool_FromLong (may_trim));
+    r = PyObject_CallObject (fn, args);
+    Py_DECREF (fn);
+    Py_DECREF (args);
+    if (last_error == EOPNOTSUPP) {
+      /* When user requests this particular error, we want to
+         gracefully fall back, and to accomodate both a normal return
+         and an exception. */
+      nbdkit_debug ("zero requested falling back to pwrite");
+      if (r)
+        Py_DECREF (r);
+      PyErr_Clear ();
+      return -1;
+    }
+    if (check_python_failure ("zero") == -1)
+      return -1;
+    Py_DECREF (r);
+    return 0;
+  }
+
+  nbdkit_debug ("zero missing, falling back to pwrite");
+  nbdkit_set_error (EOPNOTSUPP);
+  return -1;
+}
+
+static int
 py_can_write (void *handle)
 {
   PyObject *obj = handle;
@@ -607,6 +652,7 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = py_pwrite,
   .flush             = py_flush,
   .trim              = py_trim,
+  .zero              = py_zero,
 
   .errno_is_reliable = py_errno_is_reliable,
 };
