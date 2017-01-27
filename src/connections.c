@@ -610,9 +610,9 @@ validate_request (struct connection *conn,
 static int
 get_error (struct connection *conn)
 {
-  int ret = 0;
+  int ret = tls_get_error ();
 
-  if (conn->errno_is_reliable)
+  if (!ret && conn->errno_is_reliable)
     ret = errno;
   return ret ? ret : EIO;
 }
@@ -641,6 +641,10 @@ _handle_request (struct connection *conn,
   flush_after_command = (flags & NBD_CMD_FLAG_FUA) != 0;
   if (!conn->can_flush || conn->readonly)
     flush_after_command = false;
+
+  /* The plugin should call nbdkit_set_error() to request a particular
+     error, otherwise we fallback to errno or EIO. */
+  tls_set_error (0);
 
   switch (cmd) {
   case NBD_CMD_READ:

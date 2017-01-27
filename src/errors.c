@@ -131,3 +131,9 @@ nbdkit_error (const char *fs, ...)
 
   errno = err;
 }
+
+void
+nbdkit_set_error (int err)
+{
+  tls_set_error (err);
+}

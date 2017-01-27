@@ -536,7 +536,7 @@ plugin_zero (struct connection *conn,
   char *buf;
   uint32_t limit;
   int result;
-  int err;
+  int err = 0;
 
   debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d",
          count, offset, may_trim);
@@ -546,11 +546,17 @@ plugin_zero (struct connection *conn,
   if (plugin.zero) {
     errno = 0;
     result = plugin.zero (conn->handle, count, offset, may_trim);
-    if (result == 0 || errno != EOPNOTSUPP)
+    if (result == -1) {
+      err = tls_get_error ();
+      if (!err && conn->errno_is_reliable)
+        err = errno;
+    }
+    if (result == 0 || err != EOPNOTSUPP)
       return result;
   }
 
   assert (plugin.pwrite);
+  tls_set_error (0);
   limit = count < MAX_REQUEST_SIZE ? count : MAX_REQUEST_SIZE;
   buf = calloc (limit, 1);
   if (!buf) {

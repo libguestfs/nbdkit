@@ -143,12 +143,14 @@ is called once just before the plugin is unloaded from memory.
 =head1 ERROR HANDLING
 
 If there is an error in the plugin, the plugin should call
-C<nbdkit_error> with the error message, and then return an error
-indication from the callback, eg. NULL or -1.  When a callback fails,
-the NBD protocol sends an error code to the client; the
-C<.errno_is_reliable> callback controls whether this error code
-will default to something based on C<errno>, or if it will just
-be hard-coded to C<EIO>.
+C<nbdkit_error> to report an error message; additionally, if the
+callback is involved in serving data, the plugin should call
+C<nbdkit_set_error> to influence the error code that will be sent to
+the client.  These two functions can be called in either order.  Then,
+the callback should return the appropriate error indication, eg. NULL
+or -1.  If the call to C<nbdkit_set_error> is omitted while serving
+data, then the C<.errno_is_reliable> callback controls whether to fall
+back to the value of C<errno> or a hard-coded C<EIO>.
 
 C<nbdkit_error> has the following prototype and works like
 L<printf(3)>:
@@ -157,6 +159,12 @@ L<printf(3)>:
  void nbdkit_verror (const char *fs, va_list args);
 
 For convenience, C<nbdkit_error> preserves the value of C<errno>.
+
+C<nbdkit_set_error> can be called at any time, but only has an impact
+during callbacks for serving data, and only when the callback returns
+an indication of failure.  It has the following prototype:
+
+ void nbdkit_set_error (int err);
 
 =head1 FILENAMES AND PATHS
 
@@ -382,13 +390,18 @@ C<.trim> callback has been defined.
 
  int errno_is_reliable (void *handle);
 
-This is called during the option negotiation phase to find out if the
-handle wants to reflect C<errno> to the client on failures, or to just
-hard-code C<EIO>.  Typically, a plugin written in C will want to use
-C<errno>, while a plugin written in any other language generally
-cannot control the value of C<errno> after the glue code of the
-language binding wrappers; therefore, this callback is not needed in
-the bindings of other languages.
+This is called during the option negotiation phase to find out what
+errors to reflect to the client.  An error explicitly reported to
+C<nbdkit_set_error> takes precedence, but plugins written in C can
+often get by with implicitly using the value stored in C<errno>, when
+this callback returns true. On the other hand, a plugin written in any
+other language generally cannot control the value of C<errno> after
+the glue code of the language binding wrappers; returning false forces
+the use of C<EIO> as the fallback error rather than using an
+unreliable value in C<errno>.  This callback is not needed in the
+bindings of other languages.  The results of this callback do not
+matter if all data serving callbacks correctly call
+C<nbdkit_set_error>.
 
 If there is an error, C<.errno_is_reliable> should call C<nbdkit_error>
 with an error message and return C<-1>.
@@ -413,7 +426,8 @@ to indicate there was I<no> error.
 
 If there is an error (including a short read which couldn't be
 recovered from), C<.pread> should call C<nbdkit_error> with an error
-message and return C<-1>.
+message, and C<nbdkit_set_error> to record an appropriate error
+(unless C<errno> is sufficient), then return C<-1>.
 
 =head2 C<.pwrite>
 
@@ -432,7 +446,8 @@ callback should return C<0> to indicate there was I<no> error.
 
 If there is an error (including a short write which couldn't be
 recovered from), C<.pwrite> should call C<nbdkit_error> with an error
-message and return C<-1>.
+message, and C<nbdkit_set_error> to record an appropriate error
+(unless C<errno> is sufficient), then return C<-1>.
 
 =head2 C<.flush>
 
@@ -444,7 +459,8 @@ completely written to a permanent medium.  If that is not possible
 then you can omit this callback.
 
 If there is an error, C<.flush> should call C<nbdkit_error> with an
-error message and return C<-1>.
+error message, and C<nbdkit_set_error> to record an appropriate error
+(unless C<errno> is sufficient), then return C<-1>.
 
 =head2 C<.trim>
 
@@ -455,7 +471,8 @@ in the backing store.  If that is not possible then you can omit this
 callback.
 
 If there is an error, C<.trim> should call C<nbdkit_error> with an
-error message and return C<-1>.
+error message, and C<nbdkit_set_error> to record an appropriate error
+(unless C<errno> is sufficient), then return C<-1>.
 
 =head2 C<.zero>
 
@@ -465,8 +482,9 @@ During the data serving phase, this callback is used to write C<count>
 bytes of zeroes at C<offset> in the backing store.  If C<may_trim> is
 non-zero, the operation can punch a hole instead of writing actual
 zero bytes, but only if subsequent reads from the hole read as zeroes.
-If this callback is omitted, or if it fails with C<errno> set to
-EOPNOTSUPP, then C<.pwrite> will be used instead.
+If this callback is omitted, or if it fails with C<EOPNOTSUPP>
+(whether by C<nbdkit_set_error or C<errno>), then C<.pwrite> will be
+used instead.
 
 The callback must write the whole C<count> bytes if it can.  The NBD
 protocol doesn't allow partial writes (instead, these would be
@@ -474,7 +492,8 @@ errors).  If the whole C<count> bytes was written successfully, the
 callback should return C<0> to indicate there was I<no> error.
 
 If there is an error, C<.zero> should call C<nbdkit_error> with an
-error message and return C<-1>.
+error message, and C<nbdkit_set_error> to record an appropriate error
+(unless C<errno> is sufficient), then return C<-1>.
 
 =head1 THREADS
 

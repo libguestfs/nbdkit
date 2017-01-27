@@ -169,6 +169,8 @@ extern void tls_set_instance_num (size_t instance_num);
 extern void tls_set_sockaddr (struct sockaddr *addr, socklen_t addrlen);
 extern const char *tls_get_name (void);
 extern size_t tls_get_instance_num (void);
+extern void tls_set_error (int err);
+extern int tls_get_error (void);
 /*extern void tls_get_sockaddr ();*/
 
 /* utils.c */

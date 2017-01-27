@@ -44,8 +44,10 @@
 #include "nbdkit-plugin.h"
 #include "internal.h"
 
-/* Note currently all thread-local storage data is informational.
- * It's mainly used for smart error and debug messages.
+/* Note that most thread-local storage data is informational, used for
+ * smart error and debug messages on the server side.  However, error
+ * tracking can be used to influence which error is sent to the client
+ * in a reply.
  *
  * The main thread does not have any associated TLS, *unless* it is
  * serving a request (the '-s' option).
@@ -56,6 +58,7 @@ struct tls {
   size_t instance_num;          /* Can be 0. */
   struct sockaddr *addr;
   socklen_t addrlen;
+  int err;
 };
 
 static pthread_key_t tls_key;
@@ -149,4 +152,27 @@ tls_get_instance_num (void)
     return 0;
 
   return tls->instance_num;
+}
+
+void
+tls_set_error (int err)
+{
+  struct tls *tls = pthread_getspecific (tls_key);
+
+  if (tls)
+    tls->err = err;
+  else
+    errno = err;
+}
+
+/* This preserves errno, for convenience.
+ */
+int
+tls_get_error (void)
+{
+  int err = errno;
+  struct tls *tls = pthread_getspecific (tls_key);
+
+  errno = err;
+  return tls ? tls->err : 0;
 }
