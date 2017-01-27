@@ -190,6 +190,19 @@ file_get_size (void *handle)
     return -1;
   }
 
+  if (S_ISBLK (statbuf.st_mode)) {
+    off_t size;
+
+    /* Block device, so st_size will not be the true size. */
+    size = lseek (h->fd, 0, SEEK_END);
+    if (size == -1) {
+      nbdkit_error ("lseek (to find device size): %m");
+      return -1;
+    }
+    return size;
+  }
+
+  /* Else regular file. */
   return statbuf.st_size;
 }
 
