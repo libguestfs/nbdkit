@@ -192,9 +192,11 @@ This option implies I<--foreground>.
 Don't fork.  Handle a single NBD connection on stdin/stdout.  After
 stdin closes, the server exits.
 
-You can use this option to run nbdkit from inetd, systemd or similar
+You can use this option to run nbdkit from inetd or similar
 superservers; or just for testing; or if you want to run nbdkit in a
-non-conventional way.
+non-conventional way.  Note that if you want to run nbdkit from
+systemd, then it may be better to use L</SOCKET ACTIVATION> instead of
+this option.
 
 This option implies I<--foreground>.
 
@@ -262,6 +264,48 @@ the form of C<key=value>.  For example:
 To list all the options supported by a plugin, do:
 
  nbdkit --help file
+
+=head1 SOCKET ACTIVATION
+
+nbdkit supports socket activation (sometimes called systemd socket
+activation).  This is a simple protocol where instead of nbdkit itself
+opening the listening socket(s), the parent process (typically
+systemd) passes in pre-opened file descriptors.  Socket activation
+lets you serve infrequent NBD requests using a superserver without
+needing nbdkit to be running the whole time.
+
+Socket activation is triggered when both the C<LISTEN_FDS> and
+C<LISTEN_PID> environment variables are set.  In this mode using
+I<-i>, I<-p>, I<--run>, I<-s> or I<-U> flags on the command line is
+illegal and will cause an error.  Also in this mode nbdkit does not
+fork into the background (ie. I<-f> is implied).
+
+=head2 Using socket activation with systemd
+
+To use nbdkit with socket activation from systemd, create a unit file
+ending in C<.socket> (eg. C</etc/systemd/system/nbdkit.socket>)
+containing:
+
+ [Unit]
+ Description=NBDKit Network Block Device server
+ 
+ [Socket]
+ ListenStream=10809
+ 
+ [Install]
+ WantedBy=sockets.target
+
+There are various formats for the C<ListenStream> key.  See
+L<systemd.socket(5)> for more information.
+
+Also create a service unit (eg. C</etc/systemd/system/nbdkit.service>)
+containing:
+
+ [Service]
+ ExecStart=/usr/sbin/nbdkit file file=/path/to/serve
+
+For more information on systemd and socket activation, see
+L<http://0pointer.de/blog/projects/socket-activation.html>
 
 =head1 CAPTIVE NBDKIT
 
@@ -382,7 +426,22 @@ This signal is ignored.
 
 =back
 
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item C<LISTEN_FDS>
+
+=item C<LISTEN_PID>
+
+If present in the environment when nbdkit starts up, these trigger
+L</SOCKET ACTIVATION>.
+
+=back
+
 =head1 SEE ALSO
+
+Other nbdkit manual pages:
 
 L<nbdkit-plugin(3)>,
 L<nbdkit-curl-plugin(1)>,
@@ -397,6 +456,10 @@ L<nbdkit-perl-plugin(3)>,
 L<nbdkit-python-plugin(3)>,
 L<nbdkit-vddk-plugin(1)>.
 L<nbdkit-xz-plugin(1)>.
+
+Other manual pages of interest:
+
+L<systemd.socket(5)>.
 
 =head1 AUTHORS
 

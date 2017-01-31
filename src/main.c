@@ -54,6 +54,8 @@
 #include "nbdkit-plugin.h"
 #include "internal.h"
 
+#define FIRST_SOCKET_ACTIVATION_FD 3 /* defined by systemd ABI */
+
 static char *make_random_fifo (void);
 static void open_plugin_so (const char *filename);
 static void start_serving (void);
@@ -64,6 +66,7 @@ static void write_pidfile (void);
 static void fork_into_background (void);
 static uid_t parseuser (const char *);
 static gid_t parsegroup (const char *);
+static unsigned int get_socket_activation (void);
 
 const char *exportname;         /* -e */
 int foreground;                 /* -f */
@@ -77,6 +80,7 @@ int listen_stdin;               /* -s */
 char *unixsocket;               /* -U */
 const char *user, *group;       /* -u & -g */
 int verbose;                    /* -v */
+unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
 
 volatile int quit;
 
@@ -157,6 +161,9 @@ main (int argc, char *argv[])
 
   tls_init ();
 
+  /* Returns 0 if no socket activation, or the number of FDs. */
+  socket_activation = get_socket_activation ();
+
   for (;;) {
     c = getopt_long (argc, argv, short_options, long_options, &option_index);
     if (c == -1)
@@ -172,6 +179,11 @@ main (int argc, char *argv[])
         dump_plugin = 1;
       }
       else if (strcmp (long_options[option_index].name, "run") == 0) {
+        if (socket_activation) {
+          fprintf (stderr, "%s: cannot use socket activation with --run flag\n",
+                   program_name);
+          exit (EXIT_FAILURE);
+        }
         run = optarg;
         foreground = 1;
       }
@@ -196,6 +208,11 @@ main (int argc, char *argv[])
       break;
 
     case 'i':
+      if (socket_activation) {
+        fprintf (stderr, "%s: cannot use socket activation with -i flag\n",
+                 program_name);
+        exit (EXIT_FAILURE);
+      }
       ipaddr = optarg;
       break;
 
@@ -214,6 +231,11 @@ main (int argc, char *argv[])
       break;
 
     case 'p':
+      if (socket_activation) {
+        fprintf (stderr, "%s: cannot use socket activation with -p flag\n",
+                 program_name);
+        exit (EXIT_FAILURE);
+      }
       port = optarg;
       break;
 
@@ -222,10 +244,20 @@ main (int argc, char *argv[])
       break;
 
     case 's':
+      if (socket_activation) {
+        fprintf (stderr, "%s: cannot use socket activation with -s flag\n",
+                 program_name);
+        exit (EXIT_FAILURE);
+      }
       listen_stdin = 1;
       break;
 
     case 'U':
+      if (socket_activation) {
+        fprintf (stderr, "%s: cannot use socket activation with -U flag\n",
+                 program_name);
+        exit (EXIT_FAILURE);
+      }
       if (strcmp (optarg, "-") == 0)
         unixsocket = make_random_fifo ();
       else
@@ -454,6 +486,7 @@ start_serving (void)
 {
   int *socks;
   size_t nr_socks;
+  size_t i;
 
   /* If the user has mixed up -p/-U/-s options, then give an error.
    *
@@ -469,6 +502,27 @@ start_serving (void)
   }
 
   set_up_signals ();
+
+  /* Socket activation -- we are handling connections on pre-opened
+   * file descriptors [FIRST_SOCKET_ACTIVATION_FD ..
+   * FIRST_SOCKET_ACTIVATION_FD+nr_socks-1].
+   */
+  if (socket_activation) {
+    nr_socks = socket_activation;
+    debug ("using socket activation, nr_socks = %zu", nr_socks);
+    socks = malloc (sizeof (int) * nr_socks);
+    if (socks == NULL) {
+      perror ("malloc");
+      exit (EXIT_FAILURE);
+    }
+    for (i = 0; i < nr_socks; ++i)
+      socks[i] = FIRST_SOCKET_ACTIVATION_FD + i;
+    change_user ();
+    write_pidfile ();
+    accept_incoming_connections (socks, nr_socks);
+    free_listening_sockets (socks, nr_socks); /* also closes them */
+    return;
+  }
 
   /* Handling a single connection on stdin/stdout. */
   if (listen_stdin) {
@@ -751,4 +805,61 @@ parsegroup (const char *id)
   }
 
   return grp->gr_gid;
+}
+
+/* Returns 0 if no socket activation, or the number of FDs.
+ * See also virGetListenFDs in libvirt.org:src/util/virutil.c
+ */
+static unsigned int
+get_socket_activation (void)
+{
+  const char *s;
+  unsigned int pid;
+  unsigned int nr_fds;
+  unsigned int i;
+  int fd;
+
+  s = getenv ("LISTEN_PID");
+  if (s == NULL)
+    return 0;
+  if (sscanf (s, "%u", &pid) != 1) {
+    fprintf (stderr, "%s: malformed %s environment variable (ignored)\n",
+             program_name, "LISTEN_PID");
+    return 0;
+  }
+  if (pid != getpid ()) {
+    fprintf (stderr, "%s: %s was not for us (ignored)\n",
+             program_name, "LISTEN_PID");
+    return 0;
+  }
+
+  s = getenv ("LISTEN_FDS");
+  if (s == NULL)
+    return 0;
+  if (sscanf (s, "%u", &nr_fds) != 1) {
+    fprintf (stderr, "%s: malformed %s environment variable (ignored)\n",
+             program_name, "LISTEN_FDS");
+    return 0;
+  }
+
+  /* So these are not passed to any child processes we might start. */
+  unsetenv ("LISTEN_FDS");
+  unsetenv ("LISTEN_PID");
+
+  /* So the file descriptors don't leak into child processes. */
+  for (i = 0; i < nr_fds; ++i) {
+    fd = FIRST_SOCKET_ACTIVATION_FD + i;
+    if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
+      /* If we cannot set FD_CLOEXEC then it probably means the file
+       * descriptor is invalid, so socket activation has gone wrong
+       * and we should exit.
+       */
+      fprintf (stderr, "%s: socket activation: "
+               "invalid file descriptor fd = %d: %m\n",
+               program_name, fd);
+      exit (EXIT_FAILURE);
+    }
+  }
+
+  return nr_fds;
 }

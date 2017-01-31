@@ -83,7 +83,14 @@ TESTS = \
 	test-single.sh \
 	test-captive.sh \
 	test-random-sock.sh \
-	test-ipv4.sh
+	test-ipv4.sh \
+	test-socket-activation
+
+check_PROGRAMS = \
+	test-socket-activation
+
+test_socket_activation_SOURCES = test-socket-activation.c
+test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 
 # In-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.
@@ -103,7 +110,6 @@ check_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = test.c test.h
 libtest_la_CFLAGS = $(WARNINGS_CFLAGS)
 
-check_PROGRAMS =
 check_DATA =
 check_SCRIPTS =
 

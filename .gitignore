@@ -50,6 +50,7 @@ Makefile.in
 /tests/test-perl
 /tests/test-python
 /tests/test-ruby
+/tests/test-socket-activation
 /tests/test-streaming
 /tests/test-xz
 /test-driver
