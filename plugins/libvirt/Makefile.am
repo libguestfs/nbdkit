@@ -60,7 +60,9 @@ man_MANS = nbdkit-libvirt-plugin.1
 CLEANFILES += $(man_MANS)
 
 nbdkit-libvirt-plugin.1: nbdkit-libvirt-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@
+	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
 
 endif
 

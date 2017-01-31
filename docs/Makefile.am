@@ -44,9 +44,13 @@ man_MANS = \
 CLEANFILES += $(man_MANS)
 
 nbdkit.1: nbdkit.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=nbdkit $< $@
+	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=nbdkit $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
 
 nbdkit-plugin.3: nbdkit-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-plugin $< $@
+	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-plugin $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
 
 endif

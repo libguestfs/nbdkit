@@ -73,7 +73,9 @@ man_MANS = nbdkit-ocaml-plugin.3
 CLEANFILES += $(man_MANS)
 
 nbdkit-ocaml-plugin.3: nbdkit-ocaml-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@
+	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
 
 endif
 
