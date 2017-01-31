@@ -1,4 +1,5 @@
 use strict;
+use POSIX ();
 
 # Example Perl plugin.
 #
@@ -82,4 +83,19 @@ sub pwrite
     my $offset = shift;
 
     substr ($disk, $offset, $count) = $buf;
+}
+
+sub zero
+{
+    my $h = shift;
+    my $count = shift;
+    my $offset = shift;
+    my $may_trim = shift;
+
+    if ($may_trim) {
+	substr ($disk, $offset, $count) = "\0" x $count;
+    } else {
+	Nbdkit::set_error(POSIX::EOPNOTSUPP);
+	die "fall back to pwrite";
+    }
 }

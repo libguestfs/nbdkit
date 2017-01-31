@@ -141,12 +141,15 @@ check_perl_failure (void)
   return 0;
 }
 
+static int last_error;
+
 XS(set_error)
 {
   dXSARGS;
   /* Is it worth adding error checking for bad arguments? */
   if (items >= 1)
-    nbdkit_set_error (SvIV (ST (0)));
+    last_error = SvIV (ST (0));
+  nbdkit_set_error (last_error);
   XSRETURN_EMPTY;
 }
 
@@ -514,6 +517,45 @@ perl_can_trim (void *handle)
 }
 
 static int
+perl_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+{
+  dSP;
+
+  if (callback_defined ("zero")) {
+    last_error = 0;
+    ENTER;
+    SAVETMPS;
+    PUSHMARK (SP);
+    XPUSHs (handle);
+    XPUSHs (sv_2mortal (newSViv (count)));
+    XPUSHs (sv_2mortal (newSViv (offset)));
+    XPUSHs (sv_2mortal (newSViv (may_trim)));
+    PUTBACK;
+    call_pv ("zero", G_EVAL|G_SCALAR);
+    SPAGAIN;
+    PUTBACK;
+    FREETMPS;
+    LEAVE;
+
+    if (last_error == EOPNOTSUPP) {
+      /* When user requests this particular error, we want to
+	 gracefully fall back, and to accomodate both a normal return
+	 and an exception. */
+      nbdkit_debug ("zero requested falling back to pwrite");
+      return -1;
+    }
+    if (check_perl_failure () == -1)
+      return -1;
+
+    return 0;
+  }
+
+  nbdkit_debug ("zero falling back to pwrite");
+  nbdkit_set_error (EOPNOTSUPP);
+  return -1;
+}
+
+static int
 perl_is_rotational (void *handle)
 {
   dSP;
@@ -644,6 +686,7 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = perl_pwrite,
   .flush             = perl_flush,
   .trim              = perl_trim,
+  .zero              = perl_zero,
 
   .errno_is_reliable = perl_errno_is_reliable,
 };
