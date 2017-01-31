@@ -147,9 +147,10 @@ XS(set_error)
 {
   dXSARGS;
   /* Is it worth adding error checking for bad arguments? */
-  if (items >= 1)
+  if (items >= 1) {
     last_error = SvIV (ST (0));
-  nbdkit_set_error (last_error);
+    nbdkit_set_error (last_error);
+  }
   XSRETURN_EMPTY;
 }
 
@@ -539,8 +540,8 @@ perl_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
     if (last_error == EOPNOTSUPP) {
       /* When user requests this particular error, we want to
-	 gracefully fall back, and to accomodate both a normal return
-	 and an exception. */
+         gracefully fall back, and to accomodate both a normal return
+         and an exception. */
       nbdkit_debug ("zero requested falling back to pwrite");
       return -1;
     }

@@ -483,7 +483,7 @@ bytes of zeroes at C<offset> in the backing store.  If C<may_trim> is
 non-zero, the operation can punch a hole instead of writing actual
 zero bytes, but only if subsequent reads from the hole read as zeroes.
 If this callback is omitted, or if it fails with C<EOPNOTSUPP>
-(whether by C<nbdkit_set_error or C<errno>), then C<.pwrite> will be
+(whether by C<nbdkit_set_error> or C<errno>), then C<.pwrite> will be
 used instead.
 
 The callback must write the whole C<count> bytes if it can.  The NBD
