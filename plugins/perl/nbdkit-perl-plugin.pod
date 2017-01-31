@@ -60,11 +60,26 @@ and does I<not> need to be executable.  In fact it's a good idea
 I<not> to do that, because running the plugin directly as a Perl
 script won't work.
 
+=head2 METHODS
+
+Your script has access to the following methods in the C<Nbdkit>
+package (in fact, attempting to C<use Nbdkit;> will fail, the methods
+are already available):
+
+ Nbdkit::set_error(I<$err>)
+
+Record C<$err> as the reason you are about to throw an exception. C<$err>
+should correspond to usual errno values, where it may help to
+C<use POSIX();>.
+
 =head2 EXCEPTIONS
 
 Instead of returning error codes as in C, Perl callbacks should
 indicate problems by throwing Perl exceptions (ie. C<die>, C<croak>
 etc).  The Perl error message is captured and printed by nbdkit.
+Remember to use C<Nbdkit::set_error> if you need to control which
+error is sent back to the client; if omitted, the client will see an
+error of C<EIO>.
 
 =head2 32 vs 64 BIT
 
@@ -216,7 +231,8 @@ disk starting at C<$offset>.
 
 NBD only supports whole reads, so your function should try to read the
 whole region (perhaps requiring a loop).  If the read fails or is
-partial, your function should C<die>.
+partial, your function should C<die>, optionally using
+C<Nbdkit::set_error> first.
 
 =item C<pwrite>
 
@@ -237,7 +253,8 @@ C<$offset>.
 
 NBD only supports whole writes, so your function should try to write
 the whole region (perhaps requiring a loop).  If the write fails or is
-partial, your function should C<die>.
+partial, your function should C<die>, optionally using
+C<Nbdkit::set_error> first.
 
 =item C<flush>
 
@@ -252,7 +269,8 @@ partial, your function should C<die>.
 The body of your C<flush> function should do a L<sync(2)> or
 L<fdatasync(2)> or equivalent on the backing store.
 
-If there is an error, the function should call C<die>.
+If there is an error, the function should call C<die>, optionally using
+C<Nbdkit::set_error> first.
 
 =item C<trim>
 
@@ -269,7 +287,8 @@ If there is an error, the function should call C<die>.
 The body of your C<trim> function should "punch a hole" in the backing
 store.
 
-If there is an error, the function should call C<die>.
+If there is an error, the function should call C<die>, optionally using
+C<Nbdkit::set_error> first.
 
 =back
 
@@ -285,7 +304,8 @@ and C<END> constructs.
 =item Missing: C<errno_is_reliable>
 
 This is not needed because the process of gluing Perl code into C cannot
-reliably use C<errno>.
+reliably use C<errno>.  Instead, call C<Nbdkit::set_error> when reporting
+a failure.
 
 =item Missing: C<name>, C<version>, C<longname>, C<description>, C<config_help>
 

@@ -43,6 +43,7 @@
 #include <assert.h>
 #include <errno.h>
 
+#include <XSUB.h>
 #include <EXTERN.h>
 #include <perl.h>
 
@@ -140,6 +141,14 @@ check_perl_failure (void)
   return 0;
 }
 
+XS(set_error)
+{
+  dXSARGS;
+  /* Is it worth adding error checking for bad arguments? */
+  if (items >= 1)
+    nbdkit_set_error (SvIV (ST (0)));
+  XSRETURN_EMPTY;
+}
 
 EXTERN_C void boot_DynaLoader (pTHX_ CV *cv);
 
@@ -148,6 +157,7 @@ xs_init(pTHX)
 {
   char *file = __FILE__;
   newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
+  newXS("Nbdkit::set_error", set_error, file);
 }
 
 static int
