@@ -140,6 +140,16 @@ check_perl_failure (void)
   return 0;
 }
 
+
+EXTERN_C void boot_DynaLoader (pTHX_ CV *cv);
+
+static void
+xs_init(pTHX)
+{
+  char *file = __FILE__;
+  newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
+}
+
 static int
 perl_config (const char *key, const char *value)
 {
@@ -158,7 +168,7 @@ perl_config (const char *key, const char *value)
 
     /* Load the Perl script. */
     argv[1] = (char *) script;
-    if (perl_parse (my_perl, NULL, argc, argv, NULL) == -1) {
+    if (perl_parse (my_perl, xs_init, argc, argv, NULL) == -1) {
       nbdkit_error ("%s: error parsing this script", script);
       return -1;
     }
