@@ -71,6 +71,12 @@ check-valgrind:
 
 # Basic server command line and start-up tests.
 
+check_PROGRAMS =
+check_DATA =
+check_SCRIPTS =
+check_LTLIBRARIES =
+noinst_LTLIBRARIES =
+
 TESTS = \
 	test-help.sh \
 	test-help-plugin.sh \
@@ -86,24 +92,34 @@ TESTS = \
 	test-ipv4.sh \
 	test-socket-activation
 
-check_PROGRAMS = \
+check_PROGRAMS += \
 	test-socket-activation
 
 test_socket_activation_SOURCES = test-socket-activation.c
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 
 if HAVE_CXX
-# Test we can include the <nbdkit-plugin.h> header file from C++.
-# The test does nothing interesting, we're only interested if
-# it builds.
+# This builds a plugin using the C++ compiler.  The plugin
+# doesn't do anything interesting when run.
 TESTS += \
-	test-cxx
-check_PROGRAMS += \
-	test-cxx
+	test-cxx.sh
+# check_LTLIBRARIES won't build a shared library (see automake manual).
+# So we have to do this and add a dependency.
+noinst_LTLIBRARIES += \
+	test-cxx-plugin.la
+test-cxx.sh: test-cxx-plugin.la
 
-test_cxx_SOURCES = test-cxx.cpp
-test_cxx_CXXFLAGS = \
+test_cxx_plugin_la_SOURCES = \
+	test-cxx-plugin.cpp \
+	$(top_srcdir)/include/nbdkit-plugin.h
+test_cxx_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include
+test_cxx_plugin_la_CXXFLAGS = \
         $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_cxx_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere
 endif
 
 # In-depth tests need libguestfs, since that is a convenient way to
@@ -120,12 +136,9 @@ TESTS_ENVIRONMENT = \
 	LD_LIBRARY_PATH=../plugins/ocaml/.libs
 
 # Common test library.
-check_LTLIBRARIES = libtest.la
+check_LTLIBRARIES += libtest.la
 libtest_la_SOURCES = test.c test.h
 libtest_la_CFLAGS = $(WARNINGS_CFLAGS)
-
-check_DATA =
-check_SCRIPTS =
 
 # Basic connection test.
 check_PROGRAMS += test-connect

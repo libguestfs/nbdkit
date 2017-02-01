@@ -36,12 +36,12 @@
 #ifndef NBDKIT_PLUGIN_H
 #define NBDKIT_PLUGIN_H
 
+#include <stdarg.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdarg.h>
-#include <stdint.h>
 
 #define NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS     0
 #define NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS    1
@@ -108,7 +108,14 @@ extern void nbdkit_vdebug (const char *msg, va_list args);
 extern char *nbdkit_absolute_path (const char *path);
 extern int64_t nbdkit_parse_size (const char *str);
 
+#ifdef __cplusplus
+#define NBDKIT_CXX_LANG_C extern "C"
+#else
+#define NBDKIT_CXX_LANG_C /* nothing */
+#endif
+
 #define NBDKIT_REGISTER_PLUGIN(plugin)                                  \
+  NBDKIT_CXX_LANG_C                                                     \
   struct nbdkit_plugin *                                                \
   plugin_init (void)                                                    \
   {                                                                     \
