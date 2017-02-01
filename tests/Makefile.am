@@ -92,6 +92,20 @@ check_PROGRAMS = \
 test_socket_activation_SOURCES = test-socket-activation.c
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 
+if HAVE_CXX
+# Test we can include the <nbdkit-plugin.h> header file from C++.
+# The test does nothing interesting, we're only interested if
+# it builds.
+TESTS += \
+	test-cxx
+check_PROGRAMS += \
+	test-cxx
+
+test_cxx_SOURCES = test-cxx.cpp
+test_cxx_CXXFLAGS = \
+        $(WARNINGS_CFLAGS)
+endif
+
 # In-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.
 

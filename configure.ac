@@ -52,6 +52,17 @@ test "x$U" != "x" && AC_MSG_ERROR([Compiler not ANSI compliant])
 
 AM_PROG_CC_C_O
 
+dnl Check for C++ (optional, we just use this to test the header
+dnl can be included from C++ code).
+AC_PROG_CXX
+
+dnl The C++ compiler test is pretty useless because even if it fails
+dnl it sets CXX=g++.  So test the compiler actually works.
+AC_MSG_CHECKING([if the C++ compiler really really works])
+AS_IF([$CXX --version >&AS_MESSAGE_LOG_FD 2>&1],[have_cxx=yes],[have_cxx=no])
+AC_MSG_RESULT([$have_cxx])
+AM_CONDITIONAL([HAVE_CXX], [test "$have_cxx" = "yes"])
+
 AC_ARG_ENABLE([gcc-warnings],
     [AS_HELP_STRING([--enable-gcc-warnings],
                     [turn on lots of GCC warnings (for developers)])],

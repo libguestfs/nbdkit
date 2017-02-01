@@ -36,6 +36,10 @@
 #ifndef NBDKIT_PLUGIN_H
 #define NBDKIT_PLUGIN_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdarg.h>
 #include <stdint.h>
 
@@ -113,5 +117,9 @@ extern int64_t nbdkit_parse_size (const char *str);
     (plugin)._thread_model = THREAD_MODEL;                              \
     return &(plugin);                                                   \
   }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* NBDKIT_PLUGIN_H */
