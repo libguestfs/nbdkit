@@ -41,11 +41,34 @@
 
 #include <ruby.h>
 
+static VALUE nbdkit_module = Qnil;
+
+static VALUE
+set_error(VALUE self, VALUE arg)
+{
+  int err;
+  VALUE v;
+
+  if (TYPE(arg) == T_CLASS) {
+    v = rb_const_get(arg, rb_intern("Errno"));
+    err = NUM2INT(v);
+  } else if (TYPE(arg) == T_OBJECT) {
+    v = rb_funcall(arg, rb_intern("errno"), 0);
+    err = NUM2INT(v);
+  } else {
+    err = NUM2INT(arg);
+  }
+  nbdkit_set_error(err);
+  return Qnil;
+}
+
 static void
 plugin_rb_load (void)
 {
   ruby_init ();
   //ruby_init_loadpath (); - needed? XXX
+  nbdkit_module = rb_define_module("Nbdkit");
+  rb_define_module_function(nbdkit_module, "set_error", set_error, 1);
 }
 
 /* Wrapper to make fb_funcall2 (only slightly) less insane.

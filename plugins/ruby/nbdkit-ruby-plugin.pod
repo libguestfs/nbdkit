@@ -56,9 +56,26 @@ does not need to be executable.  In fact it's a good idea not to do
 that, because running the plugin directly as a Ruby script won't
 work.
 
+=head2 METHODS
+
+Your script has access to the C<Nbdkit> module, with the following
+singleton methods:
+
+ Nbdkit.set_error(I<err>)
+
+Record C<err> as the reason you are about to raise an
+exception. C<err> should either be a class that defines an C<Errno>
+constant (all of the subclasses of C<SystemCallError> in module
+C<Errno> have this property), an object that defines an C<errno>
+method with no arguments (all instances of C<SystemCallError> have
+this property), or an integer value corresponding to the usual errno
+values.
+
 =head2 EXCEPTIONS
 
-Ruby callbacks should throw exceptions to indicate errors.
+Ruby callbacks should throw exceptions to indicate errors. Remember
+to use C<Nbdkit.set_error> if you need to control which error is sent
+back to the client; if omitted, the client will see an error of C<EIO>.
 
 =head2 RUBY CALLBACKS
 
@@ -156,7 +173,8 @@ disk starting at C<offset>.
 
 NBD only supports whole reads, so your function should try to read
 the whole region (perhaps requiring a loop).  If the read fails or
-is partial, your function should throw an exception.
+is partial, your function should throw an exception, optionally using
+C<Nbdkit.set_error> first.
 
 =item C<pwrite>
 
@@ -173,7 +191,8 @@ C<offset>.
 
 NBD only supports whole writes, so your function should try to
 write the whole region (perhaps requiring a loop).  If the write
-fails or is partial, your function should throw an exception.
+fails or is partial, your function should throw an exception, optionally
+using C<Nbdkit.set_error> first.
 
 =item C<flush>
 
@@ -186,6 +205,9 @@ fails or is partial, your function should throw an exception.
 The body of your C<flush> function should do a L<sync(2)> or
 L<fdatasync(2)> or equivalent on the backing store.
 
+If the flush fails, your function should throw an exception, optionally
+using C<Nbdkit.set_error> first.
+
 =item C<trim>
 
 (Optional)
@@ -195,7 +217,8 @@ L<fdatasync(2)> or equivalent on the backing store.
  end
 
 The body of your C<trim> function should "punch a hole" in the
-backing store.
+backing store.  If the trim fails, your function should throw an
+exception, optionally using C<Nbdkit.set_error> first.
 
 =back
 
@@ -211,7 +234,8 @@ constructs.
 =item Missing: C<errno_is_reliable>
 
 This is not needed because the process of gluing Ruby code into C cannot
-reliably use C<errno>.
+reliably use C<errno>.  Instead, call C<Nbdkit.set_error> when reporting
+a failure.
 
 =item Missing: C<name>, C<version>, C<longname>, C<description>, C<config_help>
 
