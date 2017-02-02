@@ -24,6 +24,8 @@
 #   ><fs> mount /dev/sda1 /
 #   ><fs> [etc]
 
+include Nbdkit
+
 $disk = "\0" * (1024 * 1024)
 
 def config(key, value)
@@ -49,4 +51,13 @@ end
 def pwrite(h, buf, offset)
   # Hmm, is this using bytes or chars? XXX
   $disk[offset, buf.length] = buf
+end
+
+def zero(h, count, offset, may_trim)
+  if may_trim
+    $disk[offset, count] = "\0" * count
+  else
+    set_error(Errno::EOPNOTSUPP)
+    raise "falling back to pwrite"
+  end
 end

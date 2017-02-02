@@ -36,12 +36,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <errno.h>
 
 #include <nbdkit-plugin.h>
 
 #include <ruby.h>
 
 static VALUE nbdkit_module = Qnil;
+static int last_error;
 
 static VALUE
 set_error(VALUE self, VALUE arg)
@@ -58,6 +60,7 @@ set_error(VALUE self, VALUE arg)
   } else {
     err = NUM2INT(arg);
   }
+  last_error = err;
   nbdkit_set_error(err);
   return Qnil;
 }
@@ -367,6 +370,30 @@ plugin_rb_trim (void *handle, uint32_t count, uint64_t offset)
 }
 
 static int
+plugin_rb_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+{
+  volatile VALUE argv[4];
+
+  argv[0] = (VALUE) handle;
+  argv[1] = ULL2NUM (count);
+  argv[2] = ULL2NUM (offset);
+  argv[3] = may_trim ? Qtrue : Qfalse;
+  exception_happened = 0;
+  last_error = 0;
+  (void) funcall2 (Qnil, rb_intern ("zero"), 4, argv);
+  if (last_error == EOPNOTSUPP ||
+      exception_happened == EXCEPTION_NO_METHOD_ERROR) {
+    nbdkit_debug ("zero falling back to pwrite");
+    nbdkit_set_error (EOPNOTSUPP);
+    return -1;
+  }
+  else if (exception_happened == EXCEPTION_OTHER)
+    return -1;
+
+  return 0;
+}
+
+static int
 plugin_rb_can_write (void *handle)
 {
   volatile VALUE argv[1];
@@ -483,6 +510,7 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = plugin_rb_pwrite,
   .flush             = plugin_rb_flush,
   .trim              = plugin_rb_trim,
+  .zero              = plugin_rb_zero,
 
   .errno_is_reliable = plugin_rb_errno_is_reliable,
 };

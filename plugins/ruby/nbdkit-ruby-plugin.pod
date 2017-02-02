@@ -220,6 +220,26 @@ The body of your C<trim> function should "punch a hole" in the
 backing store.  If the trim fails, your function should throw an
 exception, optionally using C<Nbdkit.set_error> first.
 
+=item C<zero>
+
+(Optional)
+
+ def zero(h, count, offset, may_trim)
+   # no return value
+
+The body of your C<zero> function should ensure that C<count> bytes
+of the disk, starting at C<offset>, will read back as zero.  If
+C<may_trim> is true, the operation may be optimized as a trim as long
+as subsequent reads see zeroes.
+
+NBD only supports whole writes, so your function should try to
+write the whole region (perhaps requiring a loop).  If the write
+fails or is partial, your function should throw an exception,
+optionally using C<Nbdkit.set_error> first.  In particular, if
+you would like to automatically fall back to C<pwrite> (perhaps
+because there is nothing to optimize if C<may_trim> is false),
+use C<Nbdkit.set_error(Errno::EOPNOTSUPP)>.
+
 =back
 
 =head2 MISSING CALLBACKS
