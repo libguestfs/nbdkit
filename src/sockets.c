@@ -109,7 +109,7 @@ bind_tcpip_socket (size_t *nr_socks)
   struct addrinfo *a;
   int err, opt;
   int *socks = NULL;
-  bool addr_in_use;
+  bool addr_in_use = false;
 
   if (port == NULL)
     port = "10809";
