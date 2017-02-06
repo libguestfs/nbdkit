@@ -92,7 +92,7 @@ struct nbdkit_plugin {
   int (*trim) (void *handle, uint32_t count, uint64_t offset);
   int (*zero) (void *handle, uint32_t count, uint64_t offset, int may_trim);
 
-  int (*errno_is_reliable) (void *handle);
+  int errno_is_preserved;
 
   /* int (*set_exportname) (void *handle, const char *exportname); */
 };

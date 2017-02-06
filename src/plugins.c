@@ -236,6 +236,7 @@ plugin_dump_fields (void)
     break;
   }
   printf ("\n");
+  printf ("errno_is_preserved=%d\n", plugin.errno_is_preserved);
 
 #define HAS(field) if (plugin.field) printf ("has_%s=1\n", #field)
   HAS (longname);
@@ -350,6 +351,14 @@ plugin_unlock_request (struct connection *conn)
 }
 
 int
+plugin_errno_is_preserved (void)
+{
+  assert (dl);
+
+  return plugin.errno_is_preserved;
+}
+
+int
 plugin_open (struct connection *conn, int readonly)
 {
   void *handle;
@@ -392,21 +401,6 @@ plugin_get_size (struct connection *conn)
   debug ("get_size");
 
   return plugin.get_size (conn->handle);
-}
-
-int
-plugin_errno_is_reliable (struct connection *conn)
-{
-  assert (dl);
-  assert (conn->handle);
-
-  debug ("errno_is_reliable");
-
-  if (plugin.errno_is_reliable)
-    return plugin.errno_is_reliable (conn->handle);
-
-  /* Default to 1, for backwards compatibility (correct for C plugins) */
-  return 1;
 }
 
 int
@@ -548,7 +542,7 @@ plugin_zero (struct connection *conn,
     result = plugin.zero (conn->handle, count, offset, may_trim);
     if (result == -1) {
       err = tls_get_error ();
-      if (!err && conn->errno_is_reliable)
+      if (!err && plugin_errno_is_preserved ())
         err = errno;
     }
     if (result == 0 || err != EOPNOTSUPP)

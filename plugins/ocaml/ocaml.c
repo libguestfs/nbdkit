@@ -499,16 +499,6 @@ SET(pwrite)
 SET(flush)
 SET(trim)
 
-/* We can't guarantee that errno is stable across language binding
- * glue code, so this callback is implemented in C only, and not
- * exposed in OCaml.
- */
-static int
-plugin_ocaml_errno_is_reliable (void *handle)
-{
-  return 0;
-}
-
 /* We can't directly use NBDKIT_REGISTER_PLUGIN(). */
 struct nbdkit_plugin *
 plugin_init (void)
@@ -517,6 +507,5 @@ plugin_init (void)
     fprintf (stderr, "error: OCaml code did not call NBDKit.register_plugin\n");
     exit (EXIT_FAILURE);
   }
-  plugin.errno_is_reliable = plugin_ocaml_errno_is_reliable;
   return &plugin;
 }

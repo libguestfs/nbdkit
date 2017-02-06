@@ -612,16 +612,6 @@ py_can_trim (void *handle)
     return 0;
 }
 
-/* We can't guarantee that errno is stable across language binding
- * glue code, so this callback is implemented in C only, and not
- * exposed in Python.
- */
-static int
-py_errno_is_reliable (void *handle)
-{
-  return 0;
-}
-
 #define py_config_help \
   "script=<FILENAME>     (required) The Python plugin to run.\n" \
   "[other arguments may be used by the plugin that you load]"
@@ -653,8 +643,6 @@ static struct nbdkit_plugin plugin = {
   .flush             = py_flush,
   .trim              = py_trim,
   .zero              = py_zero,
-
-  .errno_is_reliable = py_errno_is_reliable,
 };
 
 NBDKIT_REGISTER_PLUGIN(plugin)

@@ -251,12 +251,6 @@ use C<Nbdkit.set_error(Errno::EOPNOTSUPP)>.
 These are not needed because you can just use ordinary Ruby
 constructs.
 
-=item Missing: C<errno_is_reliable>
-
-This is not needed because the process of gluing Ruby code into C cannot
-reliably use C<errno>.  Instead, call C<Nbdkit.set_error> when reporting
-a failure.
-
 =item Missing: C<name>, C<version>, C<longname>, C<description>, C<config_help>
 
 These are not yet supported.

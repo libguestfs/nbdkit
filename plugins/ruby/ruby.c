@@ -467,16 +467,6 @@ plugin_rb_can_trim (void *handle)
   return RTEST (rv);
 }
 
-/* We can't guarantee that errno is stable across language binding
- * glue code, so this callback is implemented in C only, and not
- * exposed in Ruby.
- */
-static int
-plugin_rb_errno_is_reliable (void *handle)
-{
-  return 0;
-}
-
 #define plugin_rb_config_help \
   "script=<FILENAME>     (required) The Ruby plugin to run.\n" \
   "[other arguments may be used by the plugin that you load]"
@@ -511,8 +501,6 @@ static struct nbdkit_plugin plugin = {
   .flush             = plugin_rb_flush,
   .trim              = plugin_rb_trim,
   .zero              = plugin_rb_zero,
-
-  .errno_is_reliable = plugin_rb_errno_is_reliable,
 };
 
 NBDKIT_REGISTER_PLUGIN(plugin)

@@ -147,10 +147,16 @@ C<nbdkit_error> to report an error message; additionally, if the
 callback is involved in serving data, the plugin should call
 C<nbdkit_set_error> to influence the error code that will be sent to
 the client.  These two functions can be called in either order.  Then,
-the callback should return the appropriate error indication, eg. NULL
-or -1.  If the call to C<nbdkit_set_error> is omitted while serving
-data, then the C<.errno_is_reliable> callback controls whether to fall
-back to the value of C<errno> or a hard-coded C<EIO>.
+the callback should return the appropriate error indication,
+eg. C<NULL> or C<-1>.
+
+If the call to C<nbdkit_set_error> is omitted while serving data, then
+the global variable C<errno> may be used.  For plugins which have
+C<.errno_is_preserved == 1> the core code will use C<errno>.  In
+plugins written in non-C languages, we usually cannot trust that
+C<errno> will not be overwritten when returning from that language to
+C.  In that case, either the plugin must call C<nbdkit_set_error> or
+hard-coded C<EIO> is used.
 
 C<nbdkit_error> has the following prototype and works like
 L<printf(3)>:
@@ -385,29 +391,6 @@ error message and return C<-1>.
 
 This callback is not required.  If omitted, then we return true iff a
 C<.trim> callback has been defined.
-
-=head2 C<.errno_is_reliable>
-
- int errno_is_reliable (void *handle);
-
-This is called during the option negotiation phase to find out what
-errors to reflect to the client.  An error explicitly reported to
-C<nbdkit_set_error> takes precedence, but plugins written in C can
-often get by with implicitly using the value stored in C<errno>, when
-this callback returns true. On the other hand, a plugin written in any
-other language generally cannot control the value of C<errno> after
-the glue code of the language binding wrappers; returning false forces
-the use of C<EIO> as the fallback error rather than using an
-unreliable value in C<errno>.  This callback is not needed in the
-bindings of other languages.  The results of this callback do not
-matter if all data serving callbacks correctly call
-C<nbdkit_set_error>.
-
-If there is an error, C<.errno_is_reliable> should call C<nbdkit_error>
-with an error message and return C<-1>.
-
-This callback is not required.  If omitted, then we return true for
-a plugin written in C, and false for plugins in other languages.
 
 =head2 C<.pread>
 

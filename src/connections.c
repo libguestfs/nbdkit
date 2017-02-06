@@ -498,10 +498,7 @@ negotiate_handshake (struct connection *conn)
   int r;
 
   plugin_lock_request (conn);
-  conn->errno_is_reliable = plugin_errno_is_reliable (conn);
-  if (conn->errno_is_reliable < 0)
-    r = -1;
-  else if (!newstyle)
+  if (!newstyle)
     r = _negotiate_handshake_oldstyle (conn);
   else
     r = _negotiate_handshake_newstyle (conn);
@@ -612,7 +609,7 @@ get_error (struct connection *conn)
 {
   int ret = tls_get_error ();
 
-  if (!ret && conn->errno_is_reliable)
+  if (!ret && plugin_errno_is_preserved ())
     ret = errno;
   return ret ? ret : EIO;
 }

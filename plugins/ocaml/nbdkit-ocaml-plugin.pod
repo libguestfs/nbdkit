@@ -89,17 +89,6 @@ handle struct in your plugin:
    printf "handle ID = %d\n" handle.h_id;
    (* ... *)
 
-=head2 MISSING CALLBACKS
-
-=over 4
-
-=item Missing: C<errno_is_reliable>
-
-This is not needed because the process of gluing OCaml code into C cannot
-reliably use C<errno>.
-
-=back
-
 =head2 THREADS
 
 The first parameter of C<NBDKit.register_plugin> is the thread model,

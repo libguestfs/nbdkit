@@ -120,7 +120,6 @@ struct connection {
   int can_flush;
   int is_rotational;
   int can_trim;
-  int errno_is_reliable;
 };
 
 extern int handle_single_connection (int sockin, int sockout);
@@ -141,10 +140,10 @@ extern void plugin_lock_connection (void);
 extern void plugin_unlock_connection (void);
 extern void plugin_lock_request (struct connection *conn);
 extern void plugin_unlock_request (struct connection *conn);
+extern int plugin_errno_is_preserved (void);
 extern int plugin_open (struct connection *conn, int readonly);
 extern void plugin_close (struct connection *conn);
 extern int64_t plugin_get_size (struct connection *conn);
-extern int plugin_errno_is_reliable (struct connection *conn);
 extern int plugin_can_write (struct connection *conn);
 extern int plugin_can_flush (struct connection *conn);
 extern int plugin_is_rotational (struct connection *conn);
