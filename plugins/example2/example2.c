@@ -193,6 +193,10 @@ static struct nbdkit_plugin plugin = {
   .close             = example2_close,
   .get_size          = example2_get_size,
   .pread             = example2_pread,
+  /* In this plugin, errno is preserved properly along error return
+   * paths from failed system calls.
+   */
+  .errno_is_preserved = 1,
 };
 
 NBDKIT_REGISTER_PLUGIN(plugin)

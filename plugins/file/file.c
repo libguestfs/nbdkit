@@ -336,6 +336,7 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = file_pwrite,
   .zero              = file_zero,
   .flush             = file_flush,
+  .errno_is_preserved = 1,
 };
 
 NBDKIT_REGISTER_PLUGIN(plugin)

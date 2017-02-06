@@ -256,6 +256,7 @@ static struct nbdkit_plugin plugin = {
   .get_size          = streaming_get_size,
   .pwrite            = streaming_pwrite,
   .pread             = streaming_pread,
+  .errno_is_preserved = 1,
 };
 
 NBDKIT_REGISTER_PLUGIN(plugin)
