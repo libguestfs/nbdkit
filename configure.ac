@@ -82,10 +82,12 @@ dnl Check if libc has program_invocation_short_name.
 AC_CHECK_DECLS([program_invocation_short_name], [], [], [#include <errno.h>])
 
 dnl Check if __attribute__((cleanup(...))) works.
-dnl XXX It would be nice to use AC_COMPILE_IFELSE here, but gcc just
-dnl emits a warning for attributes that it doesn't understand.
+dnl Set -Werror, otherwise gcc will only emit a warning for attributes
+dnl that it doesn't understand.
+acx_nbdkit_save_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} -Werror"
 AC_MSG_CHECKING([if __attribute__((cleanup(...))) works with this compiler])
-AC_RUN_IFELSE([
+AC_COMPILE_IFELSE([
 AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <stdlib.h>
@@ -122,6 +124,8 @@ or the configure test may be wrong.
 
 The code will still compile, but is likely to leak memory and other
 resources when it runs.])])
+dnl restore CFLAGS
+CFLAGS="${acx_nbdkit_save_CFLAGS}"
 
 dnl Check for valgrind.
 AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
