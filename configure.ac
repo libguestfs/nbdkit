@@ -157,6 +157,10 @@ AS_IF([test "x$POD2MAN" != "xno"],[
 ])
 AM_CONDITIONAL([HAVE_POD2MAN], [test "x$POD2MAN" != "xno"])
 
+AC_ARG_ENABLE([plugins],
+    [AS_HELP_STRING([--disable-plugins], [disable all bundled plugins])])
+AM_CONDITIONAL([HAVE_PLUGINS], [test "x$enable_plugins" != "xno"])
+
 dnl Check for Perl, for embedding in the perl plugin.
 AC_CHECK_PROG([PERL],[perl],[perl],[no])
 AC_ARG_ENABLE([perl],

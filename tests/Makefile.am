@@ -79,24 +79,30 @@ noinst_LTLIBRARIES =
 
 TESTS = \
 	test-help.sh \
-	test-help-plugin.sh \
 	test-version.sh \
+	test-dump-config.sh
+
+if HAVE_PLUGINS
+
+TESTS += \
+	test-help-plugin.sh \
 	test-version-plugin.sh \
-	test-dump-config.sh \
 	test-dump-plugin.sh \
 	test-start.sh \
-	test-foreground.sh \
 	test-single.sh \
 	test-captive.sh \
 	test-random-sock.sh \
 	test-ipv4.sh \
-	test-socket-activation
+	test-socket-activation \
+	test-foreground.sh
 
 check_PROGRAMS += \
 	test-socket-activation
 
 test_socket_activation_SOURCES = test-socket-activation.c
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
+
+endif
 
 if HAVE_CXX
 # This builds a plugin using the C++ compiler.  The plugin
@@ -140,6 +146,8 @@ check_LTLIBRARIES += libtest.la
 libtest_la_SOURCES = test.c test.h
 libtest_la_CFLAGS = $(WARNINGS_CFLAGS)
 
+if HAVE_PLUGINS
+
 # Basic connection test.
 check_PROGRAMS += test-connect
 TESTS += test-connect.sh
@@ -147,21 +155,6 @@ TESTS += test-connect.sh
 test_connect_SOURCES = test-connect.c test.h
 test_connect_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_connect_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-# file plugin test.
-check_PROGRAMS += test-file
-TESTS += test-file.sh
-check_DATA += file-data
-MAINTAINERCLEANFILES += file-data
-
-test_file_SOURCES = test-file.c test.h
-test_file_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-file-data:
-	rm -f $@ $@-t
-	for f in `seq 1 512`; do echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'; done > $@-t
-	mv $@-t $@
 
 # newstyle protocol test.
 check_PROGRAMS += test-newstyle
@@ -178,6 +171,21 @@ TESTS += test-oldstyle.sh
 test_oldstyle_SOURCES = test-oldstyle.c test.h
 test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# file plugin test.
+check_PROGRAMS += test-file
+TESTS += test-file.sh
+check_DATA += file-data
+MAINTAINERCLEANFILES += file-data
+
+test_file_SOURCES = test-file.c test.h
+test_file_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+file-data:
+	rm -f $@ $@-t
+	for f in `seq 1 512`; do echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'; done > $@-t
+	mv $@-t $@
 
 # gzip plugin test.
 if HAVE_ZLIB
@@ -297,4 +305,5 @@ test_streaming_SOURCES = test-streaming.c test.h
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
+endif
 endif

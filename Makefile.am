@@ -37,7 +37,16 @@ EXTRA_DIST = \
 	LICENSE \
 	m4/.gitignore
 
-SUBDIRS = docs plugins include src tests
+SUBDIRS = \
+	docs \
+	include \
+	src
+
+if HAVE_PLUGINS
+SUBDIRS += plugins
+endif
+
+SUBDIRS += tests
 
 CLEANFILES = *~
 
