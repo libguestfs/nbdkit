@@ -40,6 +40,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
+#include <termios.h>
 #include <errno.h>
 
 #include "nbdkit-plugin.h"
@@ -122,6 +123,76 @@ nbdkit_parse_size (const char *str)
 
   nbdkit_error ("could not parse size string (%s)", str);
   return -1;
+}
+
+/* Read a password from configuration value. */
+int
+nbdkit_read_password (const char *value, char **password)
+{
+  int tty, err;;
+  struct termios orig, temp;
+  ssize_t r;
+  size_t n;
+  FILE *fp;
+
+  /* Read from stdin. */
+  if (strcmp (value, "-") == 0) {
+    printf ("password: ");
+
+    /* Set no echo. */
+    tty = isatty (0);
+    if (tty) {
+      tcgetattr (0, &orig);
+      temp = orig;
+      temp.c_lflag &= ~ECHO;
+      tcsetattr (0, TCSAFLUSH, &temp);
+    }
+
+    r = getline (password, &n, stdin);
+    err = errno;
+
+    /* Restore echo. */
+    if (tty)
+      tcsetattr (0, TCSAFLUSH, &orig);
+
+    if (r == -1) {
+      errno = err;
+      nbdkit_error ("could not read password from stdin: %m");
+      return -1;
+    }
+    if (*password && r > 0 && (*password)[r-1] == '\n')
+      (*password)[r-1] = '\0';
+  }
+
+  /* Read password from a file. */
+  else if (value[0] == '+') {
+    fp = fopen (&value[1], "r");
+    if (fp == NULL) {
+      nbdkit_error ("open %s: %m", &value[1]);
+      return -1;
+    }
+    r = getline (password, &n, fp);
+    err = errno;
+    fclose (fp);
+    if (r == -1) {
+      errno = err;
+      nbdkit_error ("could not read password from file %s: %m", &value[1]);
+      return -1;
+    }
+    if (*password && r > 0 && (*password)[r-1] == '\n')
+      (*password)[r-1] = '\0';
+  }
+
+  /* Parameter is the password. */
+  else {
+    *password = strdup (value);
+    if (*password == NULL) {
+      nbdkit_error ("strdup: %m");
+      return -1;
+    }
+  }
+
+  return 0;
 }
 
 /* Write buffer to socket and either succeed completely (returns 0)

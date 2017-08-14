@@ -72,6 +72,12 @@ machines.
 
 Ask for the password (interactively) when nbdkit starts up.
 
+=item B<password=+FILENAME>
+
+Read the password from the named file.  This is the most secure method
+to supply a password, as long as you must set the permissions on the
+file appropriately.
+
 =item B<sslverify=0>
 
 Don't verify the SSL certificate of the remote host.

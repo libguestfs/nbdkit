@@ -107,6 +107,7 @@ extern void nbdkit_vdebug (const char *msg, va_list args);
 
 extern char *nbdkit_absolute_path (const char *path);
 extern int64_t nbdkit_parse_size (const char *str);
+extern int nbdkit_read_password (const char *value, char **password);
 
 #ifdef __cplusplus
 #define NBDKIT_CXX_LANG_C extern "C"

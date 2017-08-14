@@ -86,22 +86,8 @@ curl_config (const char *key, const char *value)
 
   else if (strcmp (key, "password") == 0) {
     free (password);
-    password = NULL;
-
-    if (strcmp (value, "-") == 0) {
-      ssize_t r;
-
-      printf ("password: ");
-      r = getline (&password, NULL, stdin);
-      if (r == -1) {
-        nbdkit_error ("could not read password from stdin: %m");
-        return -1;
-      }
-      if (password && r > 0 && password[r-1] == '\n')
-        password[r-1] = '\0';
-    }
-    else
-      password = strdup (value);
+    if (nbdkit_read_password (value, &password) == -1)
+      return -1;
   }
 
   else if (strcmp (key, "sslverify") == 0) {
