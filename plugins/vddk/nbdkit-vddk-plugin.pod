@@ -151,8 +151,24 @@ For VMware VCenter, this is a string beginning with C<"vm-">)
 (eg. C<vm=moref=vm-16>).  Across ESXi and vCenter the numbers are
 different even for the same virtual machine.
 
-To find the C<moref> of a VM, try using the C<moRefFinder.pl> script
-written by William Lam
+If you have libvirt E<ge> 3.7, the moref is available in the
+L<virsh(1)> C<dumpxml> output:
+
+ $ virsh -c 'esx://esxi.example.com?no_verify=1' dumpxml guestname
+ ...
+ <vmware:moref>2</vmware:moref>
+ ...
+
+or:
+
+ $ virsh -c 'vpx://vcenter.example.com/Datacenter/esxi.example.com?no_verify=1' \
+       dumpxml guestname
+ ...
+ <vmware:moref>vm-16</vmware:moref>
+ ...
+
+An alternative way to find the moref of a VM is using the
+C<moRefFinder.pl> script written by William Lam
 (L<http://www.virtuallyghetto.com/2011/11/vsphere-moref-managed-object-reference.html>
 L<https://blogs.vmware.com/vsphere/2012/02/uniquely-identifying-virtual-machines-in-vsphere-and-vcloud-part-2-technical.html>).
 
@@ -193,9 +209,9 @@ thumb print for validating the SSL certificate.  How to find the thumb
 print of a server is described in L</PARAMETERS> above.
 
 C<vm> is the Managed Object Reference ("moref") of the virtual
-machine.  To find this using the C<moRefFinder.pl> script, see
-L</PARAMETERS> above.  Note that it is different from the moref used
-by vCenter, and is just a single number.
+machine.  To find this using L<virsh(1)> or the C<moRefFinder.pl>
+script, see L</PARAMETERS> above.  Note that it is different from the
+moref used by vCenter, and is just a single number.
 
 C<file> is the actual file you want to open, usually in the form
 C<"[datastore] vmname/vmname.vmdk">.  You can find this from the
@@ -218,9 +234,9 @@ thumb print for validating the SSL certificate.  How to find the thumb
 print of a server is described in L</PARAMETERS> above.
 
 C<vm> is the Managed Object Reference ("moref") of the virtual
-machine.  To find this using the C<moRefFinder.pl> script, see
-L</PARAMETERS> above.  Note that it is different from the moref used
-by ESXi, and always begins with the prefix C<"vm-">.
+machine.  To find this using L<virsh(1)> or the C<moRefFinder.pl>
+script, see L</PARAMETERS> above.  Note that it is different from the
+moref used by ESXi, and always begins with the prefix C<"vm-">.
 
 C<file> is the actual file you want to open, usually in the form
 C<"[datastore] vmname/vmname.vmdk">.  You can find this from the
@@ -266,6 +282,7 @@ support this.
 L<plugins/vddk/vddk.c> in the nbdkit source tree,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
+L<virsh(1)>,
 L<https://www.vmware.com/support/developer/vddk/>
 
 =head1 AUTHORS
