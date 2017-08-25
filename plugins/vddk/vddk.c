@@ -105,9 +105,6 @@ error_function (const char *fs, va_list args)
   free (str);
 }
 
-/* XXX Load callback needs a way to return errors. */
-static int load_error = 0;
-
 /* Load and unload the plugin. */
 static void
 vddk_load (void)
@@ -122,7 +119,7 @@ vddk_load (void)
                            libdir, config);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_InitEx");
-    load_error = 1;
+    exit (EXIT_FAILURE);
   }
 }
 
@@ -190,11 +187,6 @@ vddk_open (int readonly)
   struct vddk_handle *h;
   VixError err;
   uint32_t flags;
-
-  if (load_error) {
-    nbdkit_error ("VDDK plugin could not be initialized");
-    return NULL;
-  }
 
   h = malloc (sizeof *h);
   if (h == NULL) {
