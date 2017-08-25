@@ -62,7 +62,7 @@ Run nbdkit like this to see all debugging messages:
 
 =head1 SEE ALSO
 
-L<vddk.c> in the nbdkit source tree,
+L<plugins/vddk/vddk.c> in the nbdkit source tree,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<https://www.vmware.com/support/developer/vddk/>
