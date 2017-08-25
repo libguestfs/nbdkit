@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2017 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -57,6 +58,9 @@ const char *libdir = VDDK_LIBDIR;
     nbdkit_error (fs ": %s", ##__VA_ARGS__, vddk_err_msg);      \
     VixDiskLib_FreeErrorText (vddk_err_msg);                    \
   } while (0)
+
+#define DEBUG_CALL(fn, fs, ...)                                 \
+  nbdkit_debug ("VDDK call: %s (" fs ")", fn, ##__VA_ARGS__)
 
 static void
 trim (char *str)
@@ -110,6 +114,9 @@ vddk_load (void)
 {
   VixError err;
 
+  DEBUG_CALL ("VixDiskLib_InitEx",
+              "%d, %d, &debug_fn, &error_fn, &error_fn, %s, %s",
+              VDDK_MAJOR, VDDK_MINOR, libdir, config ? : "NULL");
   err = VixDiskLib_InitEx (VDDK_MAJOR, VDDK_MINOR,
                            &debug_function, &error_function, &error_function,
                            libdir, config);
@@ -122,6 +129,7 @@ vddk_load (void)
 static void
 vddk_unload (void)
 {
+  DEBUG_CALL ("VixDiskLib_Exit", "");
   VixDiskLib_Exit ();
   free (filename);
   free (config);
@@ -204,6 +212,8 @@ vddk_open (int readonly)
   if (readonly)
     flags |= VIXDISKLIB_FLAG_OPEN_READ_ONLY;
 
+  DEBUG_CALL ("VixDiskLib_Open",
+              "connection, %s, %d, &handle", filename, flags);
   err = VixDiskLib_Open (h->connection, filename, flags, &h->handle);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Open: %s", filename);
@@ -213,6 +223,7 @@ vddk_open (int readonly)
   return h;
 
  err2:
+  DEBUG_CALL ("VixDiskLib_Disconnect", "connection");
   VixDiskLib_Disconnect (h->connection);
  err1:
   free (h);
@@ -225,7 +236,9 @@ vddk_close (void *handle)
 {
   struct vddk_handle *h = handle;
 
+  DEBUG_CALL ("VixDiskLib_Close", "handle");
   VixDiskLib_Close (h->handle);
+  DEBUG_CALL ("VixDiskLib_Disconnect", "connection");
   VixDiskLib_Disconnect (h->connection);
   free (h);
 }
@@ -241,6 +254,7 @@ vddk_get_size (void *handle)
   VixError err;
   uint64_t size;
 
+  DEBUG_CALL ("VixDiskLib_GetInfo", "handle, &info");
   err = VixDiskLib_GetInfo (h->handle, &info);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_GetInfo");
@@ -249,6 +263,7 @@ vddk_get_size (void *handle)
 
   size = info->capacity * (uint64_t)VIXDISKLIB_SECTOR_SIZE;
 
+  DEBUG_CALL ("VixDiskLib_FreeInfo", "info");
   VixDiskLib_FreeInfo (info);
 
   return (int64_t) size;
@@ -276,6 +291,8 @@ vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   offset /= VIXDISKLIB_SECTOR_SIZE;
   count /= VIXDISKLIB_SECTOR_SIZE;
 
+  DEBUG_CALL ("VixDiskLib_Read",
+              "handle, %" PRIu64 ", %" PRIu32 ", buffer", offset, count);
   err = VixDiskLib_Read (h->handle, offset, count, buf);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Read");
@@ -307,6 +324,8 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   offset /= VIXDISKLIB_SECTOR_SIZE;
   count /= VIXDISKLIB_SECTOR_SIZE;
 
+  DEBUG_CALL ("VixDiskLib_Write",
+              "handle, %" PRIu64 ", %" PRIu32 ", buffer", offset, count);
   err = VixDiskLib_Write (h->handle, offset, count, buf);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Write");
