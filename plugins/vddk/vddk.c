@@ -47,9 +47,21 @@
 #define VDDK_MAJOR 5
 #define VDDK_MINOR 1
 
-char *filename = NULL;
-char *config = NULL;
-const char *libdir = VDDK_LIBDIR;
+static char *config = NULL;                /* config */
+static const char *cookie = NULL;          /* cookie */
+static const char *filename = NULL;        /* file */
+static const char *libdir = VDDK_LIBDIR;   /* libdir */
+static int nfc_host_port = 0;              /* nfchostport */
+static char *password = NULL;              /* password */
+static int port = 0;                       /* port */
+static const char *server_name = NULL;     /* server */
+static const char *snapshot_moref = NULL;  /* snapshot */
+static const char *thumb_print = NULL;     /* thumbprint */
+static const char *transport_modes = NULL; /* transports */
+static const char *username = NULL;        /* user */
+static const char *vim_api_ver = NULL;     /* vimapiver */
+static const char *vmx_spec = NULL;        /* vm */
+static int is_remote = 0;
 
 #define VDDK_ERROR(err, fs, ...)                                \
   do {                                                          \
@@ -115,7 +127,9 @@ vddk_load (void)
               "%d, %d, &debug_fn, &error_fn, &error_fn, %s, %s",
               VDDK_MAJOR, VDDK_MINOR, libdir, config ? : "NULL");
   err = VixDiskLib_InitEx (VDDK_MAJOR, VDDK_MINOR,
-                           &debug_function, &error_function, &error_function,
+                           &debug_function, /* log function */
+                           &error_function, /* warn function */
+                           &error_function, /* panic function */
                            libdir, config);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_InitEx");
@@ -128,27 +142,71 @@ vddk_unload (void)
 {
   DEBUG_CALL ("VixDiskLib_Exit", "");
   VixDiskLib_Exit ();
-  free (filename);
   free (config);
+  free (password);
 }
 
 /* Configuration. */
 static int
 vddk_config (const char *key, const char *value)
 {
-  if (strcmp (key, "file") == 0) {
+  if (strcmp (key, "config") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
-    filename = nbdkit_absolute_path (value);
-    if (!filename)
-      return -1;
-  }
-  else if (strcmp (key, "config") == 0) {
+    free (config);
     config = nbdkit_absolute_path (value);
     if (!config)
       return -1;
   }
+  else if (strcmp (key, "cookie") == 0) {
+    cookie = value;
+  }
+  else if (strcmp (key, "file") == 0) {
+    /* NB: Don't convert this to an absolute path, because in the
+     * remote case this can be a path located on the VMware server.
+     * For local paths the user must supply an absolute path.
+     */
+    filename = value;
+  }
   else if (strcmp (key, "libdir") == 0) {
     libdir = value;
+  }
+  else if (strcmp (key, "nfchostport") == 0) {
+    if (sscanf (value, "%d", &nfc_host_port) != 1) {
+      nbdkit_error ("cannot parse nfchostport: %s", value);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "password") == 0) {
+    free (password);
+    if (nbdkit_read_password (value, &password) == -1)
+      return -1;
+  }
+  else if (strcmp (key, "port") == 0) {
+    if (sscanf (value, "%d", &port) != 1) {
+      nbdkit_error ("cannot parse port: %s", value);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "server") == 0) {
+    server_name = value;
+  }
+  else if (strcmp (key, "snapshot") == 0) {
+    snapshot_moref = value;
+  }
+  else if (strcmp (key, "thumbprint") == 0) {
+    thumb_print = value;
+  }
+  else if (strcmp (key, "transports") == 0) {
+    transport_modes = value;
+  }
+  else if (strcmp (key, "user") == 0) {
+    username = value;
+  }
+  else if (strcmp (key, "vimapiver") == 0) {
+    vim_api_ver = value;
+  }
+  else if (strcmp (key, "vm") == 0) {
+    vmx_spec = value;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -166,13 +224,42 @@ vddk_config_complete (void)
     return -1;
   }
 
+  /* For remote connections, check all the parameters have been
+   * passed.  Note that VDDK will segfault if parameters that it
+   * expects are NULL (and there's no real way to tell what parameters
+   * it is expecting).  This implements the same test that the VDDK
+   * sample program does.
+   */
+  is_remote =
+    server_name || username || password || cookie || thumb_print
+    || vim_api_ver || port || nfc_host_port || vmx_spec;
+
+  if (is_remote) {
+#define missing(test, param)                                            \
+    if (test) {                                                         \
+      nbdkit_error ("remote connection requested, missing parameter: %s", \
+                    param);                                             \
+      return -1;                                                        \
+    }
+    missing (!server_name, "server");
+    missing (!username, "user");
+    missing (!password, "password");
+    missing (!vmx_spec, "vm");
+#undef missing
+  }
+
   return 0;
 }
 
 #define vddk_config_help \
   "file=<FILENAME>     (required) The filename (eg. VMDK file) to serve.\n" \
-  "config=<FILENAME>   (optional) Location of VMware VDDK configuration file.\n" \
-  "libdir=<LIBRARY>    (optional) Location of VMware VDDK library."
+  "Many optional parameters are supported, see nbdkit-vddk-plugin(3)."
+
+/* XXX To really do threading correctly in accordance with the VDDK
+ * documentation, we must do all open/close calls from a single
+ * thread.  This is a huge pain.
+ */
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
 /* The per-connection handle. */
 struct vddk_handle {
@@ -187,6 +274,7 @@ vddk_open (int readonly)
   struct vddk_handle *h;
   VixError err;
   uint32_t flags;
+  VixDiskLibConnectParams params;
 
   h = malloc (sizeof *h);
   if (h == NULL) {
@@ -194,9 +282,44 @@ vddk_open (int readonly)
     return NULL;
   }
 
-  err = VixDiskLib_Connect (NULL, &h->connection);
+  memset (&params, 0, sizeof params);
+  if (is_remote) {
+    params.vmxSpec = (char *) vmx_spec;
+    params.serverName = (char *) server_name;
+    if (cookie == NULL) {
+      params.credType = VIXDISKLIB_CRED_UID;
+      params.creds.uid.userName = (char *) username;
+      params.creds.uid.password = password;
+    }
+    else {
+      params.credType = VIXDISKLIB_CRED_SESSIONID;
+      params.creds.sessionId.cookie = (char *) cookie;
+      params.creds.sessionId.userName = (char *) username;
+      params.creds.sessionId.key = password;
+    }
+    params.thumbPrint = (char *) thumb_print;
+    params.vimApiVer = (char *) vim_api_ver;
+    params.port = port;
+    params.nfcHostPort = nfc_host_port;
+  }
+
+  /* XXX Some documentation suggests we should call
+   * VixDiskLib_PrepareForAccess here.  However we need the true VM
+   * name to do that.
+   */
+
+  DEBUG_CALL ("VixDiskLib_ConnectEx",
+              "&params, %d, %s, %s, &connection",
+              readonly,
+              snapshot_moref ? : "NULL",
+              transport_modes ? : "NULL");
+  err = VixDiskLib_ConnectEx (&params,
+                              readonly,
+                              snapshot_moref,
+                              transport_modes,
+                              &h->connection);
   if (err != VIX_OK) {
-    VDDK_ERROR (err, "VixDiskLib_Connect");
+    VDDK_ERROR (err, "VixDiskLib_ConnectEx");
     goto err1;
   }
 
@@ -211,6 +334,9 @@ vddk_open (int readonly)
     VDDK_ERROR (err, "VixDiskLib_Open: %s", filename);
     goto err2;
   }
+
+  nbdkit_debug ("transport mode: %s",
+                VixDiskLib_GetTransportMode (h->handle));
 
   return h;
 
@@ -234,8 +360,6 @@ vddk_close (void *handle)
   VixDiskLib_Disconnect (h->connection);
   free (h);
 }
-
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
 
 /* Get the file size. */
 static int64_t

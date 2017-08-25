@@ -6,18 +6,18 @@ nbdkit-vddk-plugin - VMware VDDK plugin for nbdkit
 
 =head1 SYNOPSIS
 
- nbdkit vddk file=FILENAME
+ nbdkit vddk file=FILENAME [config=FILENAME] [libdir=LIBRARY]
+             [vm=moref=ID] [server=HOSTNAME] [user=USERNAME]
+             [password=PASSWORD | password=- | password=+FILENAME]
+             [cookie=COOKIE] [thumbprint=THUMBPRINT]
+             [vimapiver=APIVER] [port=PORT] [nfchostport=PORT]
+             [snapshot=MOREF] [transports=MODE:MODE:...]
 
 =head1 DESCRIPTION
 
 C<nbdkit-vddk-plugin> is a L<nbdkit(1)> plugin that serves files from
-VMware VMDK and other sources by using VMware's proprietary VDDK
-library.
-
-Currently it can only serve local VMDK files.  The required
-C<file=FILENAME> parameter should point to a VMDK file.  It would be
-relatively simple to extend this plugin to access ESX servers or
-Virtual Center.
+local VMware VMDK files, VMware ESXi servers, VMware VCenter servers,
+and other sources by using VMware's proprietary VDDK library.
 
 The plugin can serve read-only (if the I<-r> option is used) or
 read/write.
@@ -28,8 +28,8 @@ If the VDDK library (C<libvixDiskLib.so>) is located on a non-standard
 path, you may need to set C<LD_LIBRARY_PATH> or modify
 C</etc/ld.so.conf> before this plugin will work.
 
-The VDDK library may depend on C<libexpat.so.0> which you may have to
-install yourself.
+The VDDK library may depend on C<libexpat.so.0> or other libraries
+which you may have to install yourself.
 
 =head1 PARAMETERS
 
@@ -37,28 +37,229 @@ install yourself.
 
 =item B<config=FILENAME>
 
-This optional parameter lets you specify the name of the VDDK
-configuration file.
+Optional.  The name of the VDDK configuration file.
+
+=item B<cookie=COOKIE>
+
+Optional.  Cookie from existing authenticated session on the host.
 
 =item B<file=FILENAME>
 
-Set the name of the VMDK file to serve.  This parameter is required.
+Required.  Set the name of the VMDK file to serve.
+
+For local files you B<must> supply an absolute path.
+
+For remote files this is usually a path on the VMware server with the
+format C<"[datastore] path/to/file.vmdk">.  You can find the path
+using L<virsh(1)>.  For ESXi:
+
+ virsh -c 'esx://esxi.example.com?no_verify=1' dumpxml guestname
+
+For vCenter:
+
+ virsh -c 'vpx://vcenter.example.com/Datacenter/esxi.example.com?no_verify=1' \
+       dumpxml guestname
+
+If a VM has multiple disks, nbdkit can only serve one at a time.  To
+serve more than one you must run multiple copies of nbdkit.  (See
+L</NOTES> below).
 
 =item B<libdir=PATHNAME>
 
-This sets the path of the VMware VDDK library.  It must be an
-absolute path.
+Optional.  This sets the path of the VMware VDDK library.  It must be
+an absolute path.
 
 If the parameter is not given, then a hard-coded path determined at
 compile time is used.
 
+=item B<nfchostport=PORT>
+
+Optional.  Port used to establish an NFC connection to ESXi.  Defaults
+to 902.
+
+=item B<password=PASSWORD>
+
+Optional (required for remote connections).  Set the password to use
+when connecting to the remote server.
+
+Note that passing this on the command line is not secure on shared
+machines.
+
+=item B<password=->
+
+Optional (required for remote connections).  Ask for the password
+(interactively) when nbdkit starts up.
+
+=item B<password=+FILENAME>
+
+Optional (required for remote connections).  Read the password from
+the named file.  This is the most secure method to supply a password,
+as long as you set the permissions on the file appropriately.
+
+=item B<port=PORT>
+
+Optional.  The port on the VCenter/ESXi host.  Defaults to 443.
+
+=item B<server=HOSTNAME>
+
+Optional (required for remote connections).  The hostname or IP
+address of VCenter or ESXi host.
+
+=item B<snapshot=MOREF>
+
+Optional.  The Managed Object Reference of the snapshot.
+
+=item B<thumbprint=THUMBPRINT>
+
+Optional.  The SSL (SHA1) thumbprint for validating the SSL
+certificate.
+
+The format is
+C<xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx>
+(20 hex digit pairs).
+
+To extract this, log in to the ESXi hypervisor shell and run this
+command:
+
+ # openssl x509 -in /etc/vmware/ssl/rui.crt -fingerprint -sha1 -noout
+
+For VMware vCenter servers the thumbprint is printed on the text
+console of the server or is available by logging in to the server and
+using this command:
+
+ # openssl x509 -in /etc/vmware-vpx/ssl/rui.crt -fingerprint -sha1 -noout
+
+=item B<transports=MODE:MODE:...>
+
+Optional.  List of one or more transport modes to use.  Possible
+values include ‘nbd’, ‘nbdssl’, ‘san’, ‘hotadd’, ‘file’ (there may be
+others).  If not given, VDDK will try to choose the best transport
+mode.
+
+=item B<user=USERNAME>
+
+Optional (required for remote connections).  The username to connect
+to the remote server as.
+
+=item B<vm=moref=ID>
+
+Optional (required for remote connections).  The Managed Object
+Reference ("moref") of the virtual machine.
+
+For VMware ESXi hypervisors, this is a number (eg. C<vm=moref=2>).
+For VMware VCenter, this is a string beginning with C<"vm-">)
+(eg. C<vm=moref=vm-16>).  Across ESXi and vCenter the numbers are
+different even for the same virtual machine.
+
+To find the C<moref> of a VM, try using the C<moRefFinder.pl> script
+written by William Lam
+(L<http://www.virtuallyghetto.com/2011/11/vsphere-moref-managed-object-reference.html>
+L<https://blogs.vmware.com/vsphere/2012/02/uniquely-identifying-virtual-machines-in-vsphere-and-vcloud-part-2-technical.html>).
+
+=item B<vimapiver=APIVER>
+
+Optional.  Specify the VIM API version.  If not given it defaults to
+the current version.
+
 =back
+
+=head1 EXAMPLES
+
+=head2 Open a local VMDK file
+
+ nbdkit vddk file=/absolute/path/to/file.vmdk
+
+Note that when opening local files the C<file=> parameter B<must> be
+an absolute path.
+
+Because VDDK needs to take a lock on this file, the file must be on a
+writable filesystem (unless you use the I<-r> option).
+
+=head2 Open a file on a remote VMware ESXi hypervisor
+
+Connect directly to a VMware ESXi hypervisor and export a particular
+file:
+
+ nbdkit vddk user=root password=+/tmp/rootpw \
+             server=esxi.example.com thumbprint=xx:xx:xx:... \
+             vm=moref=2 \
+             file="[datastore1] Fedora/Fedora.vmdk"
+
+C<user> and C<password> must be specified.  Use C<password=+FILENAME>
+to provide the password securely in a file.
+
+C<server> is the hostname of the ESXi server.  C<thumbprint> is the
+thumb print for validating the SSL certificate.  How to find the thumb
+print of a server is described in L</PARAMETERS> above.
+
+C<vm> is the Managed Object Reference ("moref") of the virtual
+machine.  To find this using the C<moRefFinder.pl> script, see
+L</PARAMETERS> above.  Note that it is different from the moref used
+by vCenter, and is just a single number.
+
+C<file> is the actual file you want to open, usually in the form
+C<"[datastore] vmname/vmname.vmdk">.  You can find this from the
+L<virsh(1)> as described in L</PARAMETERS> above.
+
+=head2 Open a file on a remote VMware vCenter server
+
+Connect via VMware vCenter and export a particular file:
+
+ nbdkit vddk user=root password=vmware \
+             server=vcenter.example.com thumbprint=xx:xx:xx:... \
+             vm=moref=vm-16 \
+             file="[datastore1] Fedora/Fedora.vmdk"
+
+C<user> and C<password> must be specified.  Use C<password=+FILENAME>
+to provide the password securely in a file.
+
+C<server> is the hostname of the vCenter server.  C<thumbprint> is the
+thumb print for validating the SSL certificate.  How to find the thumb
+print of a server is described in L</PARAMETERS> above.
+
+C<vm> is the Managed Object Reference ("moref") of the virtual
+machine.  To find this using the C<moRefFinder.pl> script, see
+L</PARAMETERS> above.  Note that it is different from the moref used
+by ESXi, and always begins with the prefix C<"vm-">.
+
+C<file> is the actual file you want to open, usually in the form
+C<"[datastore] vmname/vmname.vmdk">.  You can find this from the
+L<virsh(1)> as described in L</PARAMETERS> above.
 
 =head1 DEBUGGING VDDK
 
+Debugging messages can be very helpful if you have problems connecting
+to VMware servers, or to find the list of available transport modes,
+or to diagnose SAN problems.
+
 Run nbdkit like this to see all debugging messages:
 
- nbdkit -f -v vddk file=FILENAME
+ nbdkit -f -v vddk file=FILENAME [...]
+
+=head1 NOTES
+
+=head2 Sector size limitation
+
+The VDDK plugin can only answer read/write requests on whole 512 byte
+sector boundaries.  This is because the VDDK Read and Write APIs only
+take sector numbers.
+
+The plugin could be extended in future to support byte granularity,
+but common NBD clients don't need it so it's not a priority.
+
+=head2 Threads
+
+Handling threads in the VDDK API is complex and does not map well to
+any of the thread models offered by nbdkit (see
+L<nbdkit-plugin(3)/THREADS>).  The plugin uses the nbdkit
+C<SERIALIZE_ALL_REQUESTS> model, but technically even this is not
+completely safe.  This is a subject of future work.
+
+=head2 Export names
+
+For VMs with multiple disks, it would be nice to map the disk names to
+NBD export names.  However nbdkit core will need to be extended to
+support this.
 
 =head1 SEE ALSO
 
@@ -73,7 +274,7 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013 Red Hat Inc.
+Copyright (C) 2013-2017 Red Hat Inc.
 
 =head1 LICENSE
 
