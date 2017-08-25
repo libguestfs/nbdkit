@@ -396,11 +396,13 @@ AS_IF([test "$with_vddk" = "yes"],[
     VDDK_LIBS="-lvixDiskLib"
     # XXX Warning: stupid VMware API.
     VDDK_LIBDIR="$libdir/vmware-vix-disklib"
+    AC_MSG_NOTICE([VDDK plugin enabled])
     ],[
     AS_IF([test "$with_vddk" != "no"], [
         VDDK_CFLAGS="-I$with_vddk/include"
         VDDK_LIBS="-L$with_vddk/lib$bits -lvixDiskLib"
         VDDK_LIBDIR="$with_vddk"
+        AC_MSG_NOTICE([VDDK plugin enabled from $with_vddk])
         ],
         [AC_MSG_NOTICE([VDDK plugin disabled])
     ])
