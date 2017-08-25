@@ -35,6 +35,7 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = \
 	.gitignore \
 	LICENSE \
+	valgrind-suppressions \
 	m4/.gitignore
 
 SUBDIRS = \

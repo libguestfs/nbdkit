@@ -30,7 +30,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-EXTRA_DIST = nbdkit-vddk-plugin.pod
+EXTRA_DIST = \
+	nbdkit-vddk-plugin.pod \
+	README.VDDK
 
 CLEANFILES = *~
 
