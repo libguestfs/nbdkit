@@ -78,6 +78,10 @@ For the OCaml plugin:
  - OCaml >= 4.02.2 which has support for shared libraries, see:
    http://caml.inria.fr/mantis/view.php?id=6693
 
+To run the test suite:
+
+ - bash
+
 To test for memory leaks ('make check-valgrind'):
 
  - valgrind
@@ -97,6 +101,9 @@ After installing any dependencies:
   make                           make
   make check                     make check
   make check-valgrind            make check-valgrind
+
+To run nbdkit from the source directory, use the top level ./nbdkit
+script.
 
 Optionally run this as root to install everything:
 

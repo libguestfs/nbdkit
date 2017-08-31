@@ -51,8 +51,7 @@ main (int argc, char *argv[])
   int r;
   char *data;
 
-  if (test_start_nbdkit (NBDKIT_PLUGIN ("xz"), "-r", "file=disk.xz",
-                         NULL) == -1)
+  if (test_start_nbdkit ("xz", "-r", "file=disk.xz", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

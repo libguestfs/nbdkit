@@ -55,8 +55,7 @@ main (int argc, char *argv[])
   size_t i, size;
 
   if (test_start_nbdkit ("-e", EXPORTNAME,
-                         "-n", NBDKIT_PLUGIN ("file"), "file=file-data",
-                         NULL) == -1)
+                         "-n", "file", "file=file-data", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

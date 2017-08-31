@@ -4,8 +4,7 @@
 
 # Run it from the build directory like this:
 #
-#   ./src/nbdkit -f -v ./plugins/ruby/.libs/nbdkit-ruby-plugin.so  \
-#       script=./plugins/ruby/example.rb test1=foo test2=bar
+#   ./nbdkit -f -v ruby script=./plugins/ruby/example.rb test1=foo test2=bar
 #
 # Or run it after installing nbdkit like this:
 #

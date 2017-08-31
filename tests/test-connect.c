@@ -53,7 +53,7 @@ main (int argc, char *argv[])
   char **parts;
   size_t i;
 
-  if (test_start_nbdkit (NBDKIT_PLUGIN ("example1"), NULL) == -1)
+  if (test_start_nbdkit ("example1", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

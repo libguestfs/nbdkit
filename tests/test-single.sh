@@ -38,4 +38,4 @@ source ./functions.sh
 # Test nbdkit -s option.
 # XXX Not sure what is a really good test of this.
 
-$VG ../src/nbdkit -s `nbdkit_plugin example1` </dev/null
+nbdkit -s example1 </dev/null

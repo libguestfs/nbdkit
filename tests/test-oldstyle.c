@@ -52,8 +52,7 @@ main (int argc, char *argv[])
   char *data;
   size_t i, size;
 
-  if (test_start_nbdkit ("-o", NBDKIT_PLUGIN ("file"), "file=file-data",
-                         NULL) == -1)
+  if (test_start_nbdkit ("-o", "file", "file=file-data", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

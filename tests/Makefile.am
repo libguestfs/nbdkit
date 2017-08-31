@@ -37,39 +37,28 @@ EXTRA_DIST = \
 	functions.sh \
 	README.tests \
 	test-captive.sh \
-	test-connect.sh \
 	test-cxx.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
-	test-file.sh \
 	test-foreground.sh \
-	test-gzip.sh \
 	test-help.sh \
 	test-help-plugin.sh \
 	test-ipv4.sh \
-	test-newstyle.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
-	test-ocaml.sh \
-	test-oldstyle.sh \
 	test.pl \
-	test-perl.sh \
 	test.py \
-	test-python.sh \
 	test.rb \
 	test-single.sh \
 	test-start.sh \
 	test-random-sock.sh \
-	test-ruby.sh \
-	test-streaming.sh \
 	test-version.sh \
-	test-version-plugin.sh \
-	test-xz.sh
+	test-version-plugin.sh
 
 # Use 'make check' to run the ordinary tests.  To run all the tests
 # under valgrind, use the following rule:
 check-valgrind:
-	$(MAKE) VG="@VG@" check
+	NBDKIT_VALGRIND=1 $(MAKE) check
 
 # Basic server command line and start-up tests.
 
@@ -78,6 +67,10 @@ check_DATA =
 check_SCRIPTS =
 check_LTLIBRARIES =
 noinst_LTLIBRARIES =
+
+# Ensure we're testing the local copy by running everything through
+# the nbdkit helper script in the top build directory.
+TESTS_ENVIRONMENT = PATH=$(abs_top_builddir):$(PATH)
 
 TESTS = \
 	test-help.sh \
@@ -137,7 +130,7 @@ if HAVE_LIBGUESTFS
 
 # Use the 'direct' backend, and ensure maximum libguestfs debugging is
 # written to the *.log files in case there is a problem.
-TESTS_ENVIRONMENT = \
+TESTS_ENVIRONMENT += \
 	LIBGUESTFS_ATTACH_METHOD=appliance \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
@@ -152,7 +145,7 @@ if HAVE_PLUGINS
 
 # Basic connection test.
 check_PROGRAMS += test-connect
-TESTS += test-connect.sh
+TESTS += test-connect
 
 test_connect_SOURCES = test-connect.c test.h
 test_connect_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -160,7 +153,7 @@ test_connect_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # newstyle protocol test.
 check_PROGRAMS += test-newstyle
-TESTS += test-newstyle.sh
+TESTS += test-newstyle
 
 test_newstyle_SOURCES = test-newstyle.c test.h
 test_newstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -168,7 +161,7 @@ test_newstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # oldstyle protocol test.
 check_PROGRAMS += test-oldstyle
-TESTS += test-oldstyle.sh
+TESTS += test-oldstyle
 
 test_oldstyle_SOURCES = test-oldstyle.c test.h
 test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -176,7 +169,7 @@ test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # file plugin test.
 check_PROGRAMS += test-file
-TESTS += test-file.sh
+TESTS += test-file
 check_DATA += file-data
 MAINTAINERCLEANFILES += file-data
 
@@ -194,7 +187,7 @@ if HAVE_ZLIB
 if HAVE_GUESTFISH
 
 check_PROGRAMS += test-gzip
-TESTS += test-gzip.sh
+TESTS += test-gzip
 check_DATA += disk disk.gz
 MAINTAINERCLEANFILES += disk disk.gz
 
@@ -219,7 +212,7 @@ if HAVE_LIBLZMA
 if HAVE_GUESTFISH
 
 check_PROGRAMS += test-xz
-TESTS += test-xz.sh
+TESTS += test-xz
 check_DATA += disk.xz
 MAINTAINERCLEANFILES += disk.xz
 
@@ -238,7 +231,7 @@ endif
 if HAVE_PERL
 
 check_PROGRAMS += test-perl
-TESTS += test-perl.sh
+TESTS += test-perl
 
 test_perl_SOURCES = test-lang-plugins.c test.h
 test_perl_CFLAGS = \
@@ -252,7 +245,7 @@ endif
 if HAVE_PYTHON
 
 check_PROGRAMS += test-python
-TESTS += test-python.sh
+TESTS += test-python
 
 test_python_SOURCES = test-lang-plugins.c test.h
 test_python_CFLAGS = \
@@ -266,7 +259,7 @@ endif
 if HAVE_OCAML
 
 check_PROGRAMS += test-ocaml
-TESTS += test-ocaml.sh
+TESTS += test-ocaml
 
 # This is somewhat different from the other tests because we have
 # to build an actual plugin here.
@@ -288,7 +281,7 @@ endif
 if HAVE_RUBY
 
 check_PROGRAMS += test-ruby
-TESTS += test-ruby.sh
+TESTS += test-ruby
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \
@@ -301,7 +294,7 @@ endif
 # streaming plugin test.
 check_PROGRAMS += test-streaming
 # Doesn't work:
-#TESTS += test-streaming.sh
+#TESTS += test-streaming
 
 test_streaming_SOURCES = test-streaming.c test.h
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)

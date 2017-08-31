@@ -39,7 +39,7 @@ source ./functions.sh
 
 rm -f captive.sock captive.out
 
-$VG ../src/nbdkit -U captive.sock `nbdkit_plugin example1` --run '
+nbdkit -U captive.sock example1 --run '
     sleep 5; echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
   ' > captive.out
 

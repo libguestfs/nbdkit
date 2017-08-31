@@ -1,0 +1,109 @@
+#!/bin/bash -
+# @configure_input@
+
+# Copyright (C) 2017 Red Hat Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# * Neither the name of Red Hat nor the names of its contributors may be
+# used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY RED HAT AND CONTRIBUTORS ''AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL RED HAT OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+#------------------------------------------------------------
+# This script lets you run nbdkit from the source directory.
+#
+# You can use either:
+#   ./nbdkit file [arg=value] [arg=value] ...
+# or:
+#   /path/to/nbdkit file [arg=value] [arg=value] ...
+#
+# Or you can set $PATH to include the nbdkit source directory and run
+# the bare "nbdkit" command without supplying the full path.
+#
+# The script modifies the bare plugin name (eg. "file") to be the full
+# path to the locally compiled plugin.  If you don't use this script
+# and run src/nbdkit directly then it will pick up the installed
+# plugins which is not usually what you want.
+#
+# This script is also used to run the tests (make check).
+#------------------------------------------------------------
+
+# The location of the source and build directories.  Absolute paths
+# are used so this script can be called from any location.
+s="$(cd @abs_srcdir@ && pwd)"
+b="$(cd @abs_builddir@ && pwd)"
+
+# Rewrite the bare module name on the command line.
+declare -a args
+i=0
+done=
+verbose=
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        # Flags that take an argument.  We must not rewrite the argument.
+        -e | --export* | -g | --group | -i | --ip* | -P | --pid* | -p | --port | --run | -U | --unix | -u | --user)
+            args[$i]="$1"
+            ((++i))
+            args[$i]="$2"
+            ((++i))
+            shift 2
+            ;;
+        -v | --verbose)
+            verbose=1
+            args[$i]="$1"
+            ((++i))
+            shift
+            ;;
+
+        # Anything else can be rewritten if it's purely alphanumeric,
+        # but there is only one module name so only rewrite once.
+        *)
+            if [ ! $done ] && [[ "$1" =~ ^[a-zA-Z0-9]+$ ]]; then
+                args[$i]="$b/plugins/$1/.libs/nbdkit-$1-plugin.so"
+                done=1
+            else
+                args[$i]="$1"
+            fi
+            ((++i))
+            shift
+            ;;
+    esac
+done
+
+# If -v flag was given on the command line, print the command.
+if [ $verbose ]; then
+    echo $b/src/nbdkit "${args[@]}"
+fi
+
+# If NBDKIT_VALGRIND=1 is set in the environment, then we run
+# the program under valgrind.  This is used by the tests.
+if [ "$NBDKIT_VALGRIND" ]; then
+    valgrind="@VALGRIND@ --vgdb=no --leak-check=full --error-exitcode=119 --suppressions=$s/valgrind-suppressions --trace-children=no --child-silent-after-fork=yes --run-libc-freeres=no"
+fi
+
+# Run the final command.
+exec $valgrind $b/src/nbdkit "${args[@]}"

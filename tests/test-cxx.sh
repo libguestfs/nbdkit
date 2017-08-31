@@ -35,4 +35,4 @@ set -e
 
 # We only really care that the plugin compiled, so we don't
 # need to run it properly.
-$VG ../src/nbdkit ./.libs/test-cxx-plugin.so --version
+nbdkit ./.libs/test-cxx-plugin.so --version

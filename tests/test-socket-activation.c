@@ -63,9 +63,6 @@
 
 #define NBDKIT_START_TIMEOUT 30 /* seconds */
 
-#define NBDKIT_PLUGIN(name) \
-  "../plugins/" name "/.libs/nbdkit-" name "-plugin.so"
-
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
 #include <errno.h>
@@ -151,12 +148,12 @@ main (int argc, char *argv[])
     snprintf (pid_str, sizeof pid_str, "%d", (int) getpid ());
     setenv ("LISTEN_PID", pid_str, 1);
 
-    execlp ("../src/nbdkit",
+    execlp ("nbdkit",
             "nbdkit",
             "-P", pidpath,
             "-o",
             "-v",
-            NBDKIT_PLUGIN ("example1"), NULL);
+            "example1", NULL);
     perror ("exec: nbdkit");
     _exit (EXIT_FAILURE);
   }

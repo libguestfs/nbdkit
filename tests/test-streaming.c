@@ -67,9 +67,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  if (test_start_nbdkit (NBDKIT_PLUGIN ("streaming"),
-                         "pipe=streaming.fifo",
-                         "size=640k",
+  if (test_start_nbdkit ("streaming", "pipe=streaming.fifo", "size=640k",
                          NULL) == -1)
     exit (EXIT_FAILURE);
 

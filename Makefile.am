@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2016 Red Hat Inc.
+# Copyright (C) 2013-2017 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = \
 	.gitignore \
 	LICENSE \
+	nbdkit.in \
 	valgrind-suppressions \
 	m4/.gitignore
 

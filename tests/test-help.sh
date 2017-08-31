@@ -33,7 +33,7 @@
 
 set -e
 
-output="$($VG ../src/nbdkit --help)"
+output="$(nbdkit --help)"
 if [[ ! ( "$output" =~ dump-config ) ]]; then
     echo "$0: unexpected output from nbdkit --help"
     echo "$output"

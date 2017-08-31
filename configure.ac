@@ -129,17 +129,6 @@ CFLAGS="${acx_nbdkit_save_CFLAGS}"
 
 dnl Check for valgrind.
 AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
-AS_IF([test "x$VALGRIND" != "xno"],[
-    # Substitute the whole valgrind command.
-    VG='$(VALGRIND) --vgdb=no --leak-check=full --error-exitcode=119 --suppressions=$(abs_top_srcdir)/valgrind-suppressions --trace-children=no --child-silent-after-fork=yes --run-libc-freeres=no'
-],[
-    # Valgrind is not installed, substitute something which will break.
-    VG=VALGRIND_IS_NOT_INSTALLED
-])
-AC_SUBST([VG])
-m4_ifdef([AM_SUBST_NOTMAKE],[],
-         [m4_define([AM_SUBST_NOTMAKE],[])])
-AM_SUBST_NOTMAKE([VG])
 
 dnl Check for Perl POD.
 AC_CHECK_PROG([POD2MAN], [pod2man], [pod2man], [no])
@@ -414,6 +403,8 @@ AM_CONDITIONAL([HAVE_VDDK],[test "x$VDDK_LIBS" != "x"])
 
 dnl Produce output files.
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([nbdkit],
+                [chmod +x,-w nbdkit])
 AC_CONFIG_FILES([Makefile
                  docs/Makefile
                  include/Makefile

@@ -36,6 +36,7 @@ Makefile.in
 /libtool
 /ltmain.sh
 /missing
+/nbdkit
 /src/nbdkit
 /stamp-h1
 /tests/disk

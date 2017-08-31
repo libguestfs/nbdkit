@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2016 Red Hat Inc.
+# Copyright (C) 2017 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,8 +32,4 @@
 
 # Some functions used by the tests.
 
-# Return the path to a named nbdkit plugin.
-nbdkit_plugin ()
-{
-    echo "../plugins/$1/.libs/nbdkit-$1-plugin.so"
-}
+# (Currently empty)

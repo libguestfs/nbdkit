@@ -4,8 +4,7 @@
 
 # Run it from the build directory like this:
 #
-#   ./src/nbdkit -f -v ./plugins/python/.libs/nbdkit-python-plugin.so  \
-#       script=./plugins/python/example.py test1=foo test2=bar
+#   ./nbdkit -f -v python script=./plugins/python/example.py test1=foo test2=bar
 #
 # Or run it after installing nbdkit like this:
 #

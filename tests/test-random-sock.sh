@@ -37,4 +37,4 @@ source ./functions.sh
 
 # Test nbdkit -U - + captive nbdkit.
 
-$VG ../src/nbdkit -U - `nbdkit_plugin example1` --run 'sleep 5'
+nbdkit -U - example1 --run 'sleep 5'

@@ -108,7 +108,7 @@ test_start_nbdkit (const char *arg, ...)
     va_end (args);
     argv[i] = NULL;
 
-    execvp ("../src/nbdkit", (char **) argv);
+    execvp ("nbdkit", (char **) argv);
     perror ("exec: nbdkit");
     _exit (EXIT_FAILURE);
   }

@@ -7,8 +7,7 @@ use POSIX ();
 
 # Run it from the build directory like this:
 #
-#   ./src/nbdkit -f -v ./plugins/perl/.libs/nbdkit-perl-plugin.so  \
-#       script=./plugins/perl/example.pl test1=foo test2=bar
+#   ./nbdkit -f -v perl script=./plugins/perl/example.pl test1=foo test2=bar
 #
 # Or run it after installing nbdkit like this:
 #

@@ -51,8 +51,7 @@ main (int argc, char *argv[])
   int r;
   char *data;
 
-  if (test_start_nbdkit (NBDKIT_PLUGIN ("gzip"), "-r", "file=disk.gz",
-                         NULL) == -1)
+  if (test_start_nbdkit ("gzip", "-r", "file=disk.gz", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

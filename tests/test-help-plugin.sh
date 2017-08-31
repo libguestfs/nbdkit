@@ -34,7 +34,7 @@
 set -e
 source ./functions.sh
 
-output="$($VG ../src/nbdkit `nbdkit_plugin file` --help)"
+output="$(nbdkit file --help)"
 if [[ ! ( "$output" =~ "nbdkit file plugin" ) ]]; then
     echo "$0: unexpected output from nbdkit file --help"
     echo "$output"

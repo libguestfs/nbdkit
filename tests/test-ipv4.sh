@@ -56,7 +56,7 @@ for port in `seq 49152 65535`; do
 done
 echo picked unused port $port
 
-$VG ../src/nbdkit -P ipv4.pid -p $port `nbdkit_plugin example1`
+nbdkit -P ipv4.pid -p $port example1
 
 # We may have to wait a short time for the pid file to appear.
 for i in `seq 1 10`; do

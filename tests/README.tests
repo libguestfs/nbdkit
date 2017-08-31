@@ -7,7 +7,7 @@ To test a plugin using libguestfs:
 
   - Call:
 
-    test_start_nbdkit (NBDKIT_PLUGIN ("name"), <plugin args ...>, NULL)
+    test_start_nbdkit ("plugin", <plugin args ...>, NULL)
 
     at the beginning.  This starts the nbdkit server.
 

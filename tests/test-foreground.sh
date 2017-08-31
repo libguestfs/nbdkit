@@ -39,8 +39,7 @@ source ./functions.sh
 
 rm -f foreground.pid foreground.sock
 
-$VG ../src/nbdkit \
-    -f -P foreground.pid -U foreground.sock `nbdkit_plugin example1` &
+nbdkit -f -P foreground.pid -U foreground.sock example1 &
 bg_pid=$!
 
 # We may have to wait a short time for the pid file to appear.
