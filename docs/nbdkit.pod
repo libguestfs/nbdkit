@@ -380,7 +380,7 @@ L</CAPTIVE NBDKIT> described in the previous section.
 
 Running nbdkit with this option, for example from a script:
 
- nbdkit --exit-with-parent plugin ...
+ nbdkit --exit-with-parent plugin ... &
 
 means that nbdkit will exit automatically if the parent program exits
 for any reason.  This can be used to avoid complicated cleanups or
