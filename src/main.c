@@ -47,6 +47,10 @@
 #include <sys/wait.h>
 #include <errno.h>
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #include <pthread.h>
 
 #include <dlfcn.h>
@@ -68,6 +72,7 @@ static uid_t parseuser (const char *);
 static gid_t parsegroup (const char *);
 static unsigned int get_socket_activation (void);
 
+int exit_with_parent;           /* --exit-with-parent */
 const char *exportname;         /* -e */
 int foreground;                 /* -f */
 const char *ipaddr;             /* -i */
@@ -94,6 +99,7 @@ static const struct option long_options[] = {
   { "help",       0, NULL, HELP_OPTION },
   { "dump-config",0, NULL, 0 },
   { "dump-plugin",0, NULL, 0 },
+  { "exit-with-parent", 0, NULL, 0 },
   { "export",     1, NULL, 'e' },
   { "export-name",1, NULL, 'e' },
   { "exportname", 1, NULL, 'e' },
@@ -125,7 +131,8 @@ static void
 usage (void)
 {
   printf ("nbdkit [--dump-config] [--dump-plugin]\n"
-          "       [-e EXPORTNAME] [-f] [-g GROUP] [-i IPADDR]\n"
+          "       [-e EXPORTNAME] [--exit-with-parent] [-f]\n"
+          "       [-g GROUP] [-i IPADDR]\n"
           "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
           "       [--run CMD] [-s] [-U SOCKET] [-u USER] [-v] [-V]\n"
           "       PLUGIN [key=value [key=value [...]]]\n"
@@ -177,6 +184,16 @@ main (int argc, char *argv[])
       }
       else if (strcmp (long_options[option_index].name, "dump-plugin") == 0) {
         dump_plugin = 1;
+      }
+      else if (strcmp (long_options[option_index].name, "exit-with-parent") == 0) {
+#ifdef PR_SET_PDEATHSIG
+        exit_with_parent = 1;
+        foreground = 1;
+#else
+        fprintf (stderr, "%s: --exit-with-parent is not implemented for this operating system\n",
+                 program_name);
+        exit (EXIT_FAILURE);
+#endif
       }
       else if (strcmp (long_options[option_index].name, "run") == 0) {
         if (socket_activation) {
@@ -325,6 +342,18 @@ main (int argc, char *argv[])
   /* If exportname was not set on the command line, use "". */
   if (exportname == NULL)
     exportname = "";
+
+  /* Implement --exit-with-parent early in case plugin initialization
+   * takes a long time and the parent exits during that time.
+   */
+#ifdef PR_SET_PDEATHSIG
+  if (exit_with_parent) {
+    if (prctl (PR_SET_PDEATHSIG, SIGTERM) == -1) {
+      perror ("prctl: PR_SET_PDEATHSIG");
+      exit (EXIT_FAILURE);
+    }
+  }
+#endif
 
   /* Remaining command line arguments define the plugins and plugin
    * configuration.  If --help or --version was specified, we still

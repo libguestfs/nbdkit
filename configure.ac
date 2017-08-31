@@ -127,6 +127,9 @@ resources when it runs.])])
 dnl restore CFLAGS
 CFLAGS="${acx_nbdkit_save_CFLAGS}"
 
+dnl Check for other headers, all optional.
+AC_CHECK_HEADERS([sys/prctl.h])
+
 dnl Check for valgrind.
 AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
 

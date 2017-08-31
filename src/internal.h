@@ -92,6 +92,7 @@
 #endif
 
 /* main.c */
+extern int exit_with_parent;
 extern const char *exportname;
 extern const char *ipaddr;
 extern int newstyle;

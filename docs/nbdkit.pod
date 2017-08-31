@@ -81,6 +81,15 @@ See L</PROBING CONFIGURATION AND PLUGINS> below.
 Dump out information about the plugin and exit.
 See L</PROBING CONFIGURATION AND PLUGINS> below.
 
+=item B<--exit-with-parent>
+
+If the parent process exits, we exit.  This can be used to avoid
+complicated cleanup or orphaned nbdkit processes.  There are some
+important caveats with this, see L</EXIT WITH PARENT> below.  An
+alternative to this is L</CAPTIVE NBDKIT> described below.
+
+This option implies I<--foreground>.
+
 =item B<-e> EXPORTNAME
 
 =item B<--export> EXPORTNAME
@@ -363,6 +372,34 @@ private captive nbdkit, then you should create a private random
 Unix socket, like this:
 
  nbdkit -U - plugin [args] --run '...'
+
+=head1 EXIT WITH PARENT
+
+The I<--exit-with-parent> option is almost the opposite of
+L</CAPTIVE NBDKIT> described in the previous section.
+
+Running nbdkit with this option, for example from a script:
+
+ nbdkit --exit-with-parent plugin ...
+
+means that nbdkit will exit automatically if the parent program exits
+for any reason.  This can be used to avoid complicated cleanups or
+orphaned nbdkit processes.
+
+I<--exit-with-parent> is incompatible with forking into the background
+(because when we fork into the background we lose track of the parent
+process).  Therefore I<-f> / I<--foreground> is implied.
+
+This is currently implemented using a feature of the Linux kernel, so
+it requires a Linux build of nbdkit and won't work on other operating
+systems (patches welcome to make it work).
+
+If the parent application is multithreaded, then (in the Linux
+implementation) if the parent I<thread> exits, that will cause nbdkit
+to exit.  Thus in multithreaded applications you usually want to run
+C<nbdkit --exit-with-parent> only from the main thread (unless you
+actually want nbdkit to exit with the thread, but that may not work
+reliably if we extend the implementation to other operating systems).
 
 =head1 NEW STYLE VS OLD STYLE PROTOCOL
 
