@@ -30,3 +30,22 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# This is a fairly unavoidable leak which happens when we fork
+# into the background.  The foreground process exits, but does
+# not free the malloc'd list of sockets.
+{
+  nbdkit_1
+  Memcheck:Leak
+  fun:malloc
+  fun:bind_unix_socket
+}
+
+# Accepting a connection starts a thread (which allocates a thread
+# stack).  However if we get a signal then there's no way to cleanly
+# exit all threads in progress, so the stack leaks.
+{
+  nbdkit_2
+  Memcheck:Leak
+  ...
+  fun:allocate_stack
+}

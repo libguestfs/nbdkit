@@ -51,6 +51,16 @@ main (int argc, char *argv[])
   int r;
   char *data;
 
+  /* These languages currently fail completely when run under
+   * valgrind, so skip them.
+   */
+  if (getenv ("NBDKIT_VALGRIND") != NULL &&
+      (strcmp (LANG, "python") == 0 ||
+       strcmp (LANG, "ruby") == 0)) {
+    fprintf (stderr, "%s test skipped under valgrind.\n", LANG);
+    exit (77);                  /* Tells automake to skip the test. */
+  }
+
   if (test_start_nbdkit (LANG, "script=" SCRIPT, NULL) == -1)
     exit (EXIT_FAILURE);
 
