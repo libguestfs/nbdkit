@@ -7,7 +7,8 @@ nbdkit - A toolkit for creating NBD servers
 =head1 SYNOPSIS
 
  nbdkit [--dump-config] [--dump-plugin]
-        [-e EXPORTNAME] [-f] [-g GROUP] [-i IPADDR]
+        [-e EXPORTNAME] [--exit-with-parent] [-f]
+        [-g GROUP] [-i IPADDR]
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
         [--run CMD] [-s] [-U SOCKET] [-u USER] [-v] [-V]
         PLUGIN [key=value [key=value [...]]]
