@@ -123,6 +123,13 @@ test_cxx_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared -rpath /nowhere
 endif
 
+# Exit with parent test.
+check_PROGRAMS += test-exit-with-parent
+TESTS += test-exit-with-parent
+
+test_exit_with_parent_SOURCES = test-exit-with-parent.c test.h
+test_exit_with_parent_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+
 # In-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.
 
