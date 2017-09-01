@@ -85,6 +85,30 @@ parse_delay (const char *value)
   }
 }
 
+static void
+delay (int ms)
+{
+  if (ms > 0) {
+    const struct timespec ts = {
+      .tv_sec = ms / 1000,
+      .tv_nsec = (ms * 1000000) % 1000000000
+    };
+    nanosleep (&ts, NULL);
+  }
+}
+
+static void
+read_delay (void)
+{
+  delay (rdelayms);
+}
+
+static void
+write_delay (void)
+{
+  delay (wdelayms);
+}
+
 /* Called for each key=value passed on the command line.  This plugin
  * only accepts file=<filename>, which is required.
  */
@@ -212,13 +236,7 @@ file_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
   struct handle *h = handle;
 
-  if (rdelayms > 0) {
-    const struct timespec ts = {
-      .tv_sec = rdelayms / 1000,
-      .tv_nsec = (rdelayms * 1000000) % 1000000000
-    };
-    nanosleep (&ts, NULL);
-  }
+  read_delay ();
 
   while (count > 0) {
     ssize_t r = pread (h->fd, buf, count, offset);
@@ -244,13 +262,7 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 {
   struct handle *h = handle;
 
-  if (wdelayms > 0) {
-    const struct timespec ts = {
-      .tv_sec = wdelayms / 1000,
-      .tv_nsec = (wdelayms * 1000000) % 1000000000
-    };
-    nanosleep (&ts, NULL);
-  }
+  write_delay ();
 
   while (count > 0) {
     ssize_t r = pwrite (h->fd, buf, count, offset);
@@ -275,13 +287,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 #endif
   int r = -1;
 
-  if (wdelayms > 0) {
-    const struct timespec ts = {
-      .tv_sec = wdelayms / 1000,
-      .tv_nsec = (wdelayms * 1000000) % 1000000000
-    };
-    nanosleep (&ts, NULL);
-  }
+  write_delay ();
 
 #ifdef FALLOC_FL_PUNCH_HOLE
   if (may_trim) {
