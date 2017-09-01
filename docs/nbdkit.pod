@@ -10,7 +10,8 @@ nbdkit - A toolkit for creating NBD servers
         [-e EXPORTNAME] [--exit-with-parent] [-f]
         [-g GROUP] [-i IPADDR]
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
-        [--run CMD] [-s] [-U SOCKET] [-u USER] [-v] [-V]
+        [--run CMD] [-s] [--selinux-label LABEL]
+        [-U SOCKET] [-u USER] [-v] [-V]
         PLUGIN [key=value [key=value [...]]]
 
 =head1 DESCRIPTION
@@ -211,6 +212,17 @@ systemd, then it may be better to use L</SOCKET ACTIVATION> instead of
 this option.
 
 This option implies I<--foreground>.
+
+=item B<--selinux-label> SOCKET-LABEL
+
+Apply the SELinux label C<SOCKET-LABEL> to the nbdkit listening
+socket.
+
+The common — perhaps only — use of this option is to allow libvirt
+guests which are using SELinux and sVirt confinement to access nbdkit
+Unix domain sockets:
+
+ nbdkit --selinux-label system_u:object_r:svirt_t:s0 ...
 
 =item B<-U> SOCKET
 

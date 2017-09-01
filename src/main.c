@@ -82,6 +82,7 @@ const char *port;               /* -p */
 int readonly;                   /* -r */
 char *run;                      /* --run */
 int listen_stdin;               /* -s */
+const char *selinux_label;      /* --selinux-label */
 char *unixsocket;               /* -U */
 const char *user, *group;       /* -u & -g */
 int verbose;                    /* -v */
@@ -118,6 +119,7 @@ static const struct option long_options[] = {
   { "read-only",  0, NULL, 'r' },
   { "readonly",   0, NULL, 'r' },
   { "run",        1, NULL, 0 },
+  { "selinux-label", 1, NULL, 0 },
   { "single",     0, NULL, 's' },
   { "stdin",      0, NULL, 's' },
   { "unix",       1, NULL, 'U' },
@@ -134,7 +136,8 @@ usage (void)
           "       [-e EXPORTNAME] [--exit-with-parent] [-f]\n"
           "       [-g GROUP] [-i IPADDR]\n"
           "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
-          "       [--run CMD] [-s] [-U SOCKET] [-u USER] [-v] [-V]\n"
+          "       [--run CMD] [-s] [--selinux-label LABEL]\n"
+          "       [-U SOCKET] [-u USER] [-v] [-V]\n"
           "       PLUGIN [key=value [key=value [...]]]\n"
           "\n"
           "Please read the nbdkit(1) manual page for full usage.\n");
@@ -203,6 +206,10 @@ main (int argc, char *argv[])
         }
         run = optarg;
         foreground = 1;
+      }
+      else if (strcmp (long_options[option_index].name, "selinux-label") == 0) {
+        selinux_label = optarg;
+        break;
       }
       else {
         fprintf (stderr, "%s: unknown long option: %s (%d)\n",

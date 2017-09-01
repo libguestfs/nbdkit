@@ -46,10 +46,44 @@
 #include <errno.h>
 #include <assert.h>
 
+#ifdef HAVE_SELINUX_SELINUX_H
+#include <selinux/selinux.h>
+#endif
+
 #include <pthread.h>
 
 #include "nbdkit-plugin.h"
 #include "internal.h"
+
+static void
+set_selinux_label (void)
+{
+  if (selinux_label) {
+#ifdef HAVE_LIBSELINUX
+    if (setsockcreatecon_raw (selinux_label) == -1) {
+      perror ("selinux-label: setsockcreatecon_raw");
+      exit (EXIT_FAILURE);
+    }
+#else
+    fprintf (stderr, "%s: --selinux-label option used, but this binary was compiled without SELinux support\n",
+             program_name);
+    exit (EXIT_FAILURE);
+#endif
+  }
+}
+
+static void
+clear_selinux_label (void)
+{
+#ifdef HAVE_LIBSELINUX
+  if (selinux_label) {
+    if (setsockcreatecon_raw (NULL) == -1) {
+      perror ("selinux-label: setsockcreatecon_raw(NULL)");
+      exit (EXIT_FAILURE);
+    }
+  }
+#endif
+}
 
 int *
 bind_unix_socket (size_t *nr_socks)
@@ -69,6 +103,8 @@ bind_unix_socket (size_t *nr_socks)
     exit (EXIT_FAILURE);
   }
 
+  set_selinux_label ();
+
   sock = socket (AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0);
   if (sock == -1) {
     perror ("socket");
@@ -87,6 +123,8 @@ bind_unix_socket (size_t *nr_socks)
     perror ("listen");
     exit (EXIT_FAILURE);
   }
+
+  clear_selinux_label ();
 
   ret = malloc (sizeof (int));
   if (!ret) {
@@ -133,6 +171,8 @@ bind_tcpip_socket (size_t *nr_socks)
   for (a = ai; a != NULL; a = a->ai_next) {
     int sock;
 
+    set_selinux_label ();
+
     sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
     if (sock == -1) {
       perror ("socket");
@@ -164,6 +204,8 @@ bind_tcpip_socket (size_t *nr_socks)
       perror ("listen");
       exit (EXIT_FAILURE);
     }
+
+    clear_selinux_label ();
 
     (*nr_socks)++;
     socks = realloc (socks, sizeof (int) * (*nr_socks));

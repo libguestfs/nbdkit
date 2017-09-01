@@ -65,7 +65,7 @@ verbose=
 while [ $# -gt 0 ]; do
     case "$1" in
         # Flags that take an argument.  We must not rewrite the argument.
-        -e | --export* | -g | --group | -i | --ip* | -P | --pid* | -p | --port | --run | -U | --unix | -u | --user)
+        -e | --export* | -g | --group | -i | --ip* | -P | --pid* | -p | --port | --run | --selinux-label | -U | --unix | -u | --user)
             args[$i]="$1"
             ((++i))
             args[$i]="$2"
