@@ -270,7 +270,9 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 static int
 file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
+#if defined(FALLOC_FL_PUNCH_HOLE) || defined(FALLOC_FL_ZERO_RANGE)
   struct handle *h = handle;
+#endif
   int r = -1;
 
   if (wdelayms > 0) {
