@@ -155,6 +155,9 @@ nbdkit_read_password (const char *value, char **password)
     if (tty)
       tcsetattr (0, TCSAFLUSH, &orig);
 
+    /* Complete the printf above. */
+    printf ("\n");
+
     if (r == -1) {
       errno = err;
       nbdkit_error ("could not read password from stdin: %m");
