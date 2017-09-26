@@ -63,17 +63,19 @@
 struct connection {
   pthread_mutex_t request_lock;
   void *handle;
+  void *crypto_session;
 
   uint64_t exportsize;
   int readonly;
   int can_flush;
   int is_rotational;
   int can_trim;
+  int using_tls;
 
   int sockin, sockout;
-  int (*recv) (struct connection *, void *buf, size_t len);
-  int (*send) (struct connection *, const void *buf, size_t len);
-  void (*close) (struct connection *);
+  connection_recv_function recv;
+  connection_send_function send;
+  connection_close_function close;
 };
 
 static struct connection *new_connection (int sockin, int sockout);
@@ -105,6 +107,40 @@ pthread_mutex_t *
 connection_get_request_lock (struct connection *conn)
 {
   return &conn->request_lock;
+}
+
+void
+connection_set_crypto_session (struct connection *conn, void *session)
+{
+  conn->crypto_session = session;
+}
+
+void *
+connection_get_crypto_session (struct connection *conn)
+{
+  return conn->crypto_session;
+}
+
+/* The code in crypto.c uses these three functions to replace the
+ * recv, send and close callbacks when a connection is upgraded to
+ * TLS.
+ */
+void
+connection_set_recv (struct connection *conn, connection_recv_function recv)
+{
+  conn->recv = recv;
+}
+
+void
+connection_set_send (struct connection *conn, connection_send_function send)
+{
+  conn->send = send;
+}
+
+void
+connection_set_close (struct connection *conn, connection_close_function close)
+{
+  conn->close = close;
 }
 
 static int
@@ -202,6 +238,14 @@ _negotiate_handshake_oldstyle (struct connection *conn)
   uint64_t exportsize;
   uint16_t gflags, eflags;
   int fl;
+
+  /* In --tls=require / FORCEDTLS mode, old style handshakes are
+   * rejected because they cannot support TLS.
+   */
+  if (tls == 2) {
+    nbdkit_error ("non-TLS client tried to connect in --tls=require mode");
+    return -1;
+  }
 
   r = plugin_get_size (conn);
   if (r == -1)
@@ -362,6 +406,17 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
     }
 
     option = be32toh (new_option.option);
+
+    /* In --tls=require / FORCEDTLS mode the only options allowed
+     * before TLS negotiation are NBD_OPT_ABORT and NBD_OPT_STARTTLS.
+     */
+    if (tls == 2 && !conn->using_tls &&
+        !(option == NBD_OPT_ABORT || option == NBD_OPT_STARTTLS)) {
+      if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_TLS_REQD))
+        return -1;
+      continue;
+    }
+
     switch (option) {
     case NBD_OPT_EXPORT_NAME:
       if (conn->recv (conn, data, optlen) == -1) {
@@ -402,6 +457,50 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         return -1;
       break;
 
+    case NBD_OPT_STARTTLS:
+      if (optlen != 0) {
+        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+            == -1)
+          return -1;
+        if (conn->recv (conn, data, optlen) == -1) {
+          nbdkit_error ("read: %m");
+          return -1;
+        }
+        continue;
+      }
+
+      if (tls == 0) {           /* --tls=off (NOTLS mode). */
+#ifdef HAVE_GNUTLS
+#define NO_TLS_REPLY NBD_REP_ERR_POLICY
+#else
+#define NO_TLS_REPLY NBD_REP_ERR_UNSUP
+#endif
+        if (send_newstyle_option_reply (conn, option, NO_TLS_REPLY) == -1)
+          return -1;
+      }
+      else /* --tls=on or --tls=require */ {
+        /* We can't upgrade to TLS twice on the same connection. */
+        if (conn->using_tls) {
+          if (send_newstyle_option_reply (conn, option,
+                                          NBD_REP_ERR_INVALID) == -1)
+            return -1;
+          continue;
+        }
+
+        /* We have to send the (unencrypted) reply before starting
+         * the handshake.
+         */
+        if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+          return -1;
+
+        /* Upgrade the connection to TLS.  Also performs access control. */
+        if (crypto_negotiate_tls (conn, conn->sockin, conn->sockout) == -1)
+          return -1;
+        conn->using_tls = 1;
+        debug ("using TLS on this connection");
+      }
+      break;
+
     default:
       /* Unknown option. */
       if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
@@ -423,6 +522,14 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
   if (nr_options >= MAX_NR_OPTIONS) {
     nbdkit_error ("client exceeded maximum number of options (%d)",
                   MAX_NR_OPTIONS);
+    return -1;
+  }
+
+  /* In --tls=require / FORCEDTLS mode, we must have upgraded to TLS
+   * by the time we finish option negotiation.  If not, give up.
+   */
+  if (tls == 2 && !conn->using_tls) {
+    nbdkit_error ("non-TLS client tried to connect in --tls=require mode");
     return -1;
   }
 

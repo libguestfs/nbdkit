@@ -46,6 +46,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <assert.h>
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -83,6 +84,9 @@ int readonly;                   /* -r */
 char *run;                      /* --run */
 int listen_stdin;               /* -s */
 const char *selinux_label;      /* --selinux-label */
+int tls;                        /* --tls : 0=off 1=on 2=require */
+const char *tls_certificates_dir; /* --tls-certificates */
+int tls_verify_peer;            /* --tls-verify-peer */
 char *unixsocket;               /* -U */
 const char *user, *group;       /* -u & -g */
 int verbose;                    /* -v */
@@ -122,6 +126,9 @@ static const struct option long_options[] = {
   { "selinux-label", 1, NULL, 0 },
   { "single",     0, NULL, 's' },
   { "stdin",      0, NULL, 's' },
+  { "tls",        1, NULL, 0 },
+  { "tls-certificates", 1, NULL, 0 },
+  { "tls-verify-peer", 0, NULL, 0 },
   { "unix",       1, NULL, 'U' },
   { "user",       1, NULL, 'u' },
   { "verbose",    0, NULL, 'v' },
@@ -137,6 +144,8 @@ usage (void)
           "       [-g GROUP] [-i IPADDR]\n"
           "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
           "       [--run CMD] [-s] [--selinux-label LABEL]\n"
+          "       [--tls=off|on|require] [--tls-certificates /path/to/certificates]\n"
+          "       [--tls-verify-peer]\n"
           "       [-U SOCKET] [-u USER] [-v] [-V]\n"
           "       PLUGIN [key=value [key=value [...]]]\n"
           "\n"
@@ -157,8 +166,14 @@ dump_config (void)
   printf ("%s=%s\n", "mandir", mandir);
   printf ("%s=%s\n", "name", PACKAGE_NAME);
   printf ("%s=%s\n", "plugindir", plugindir);
+  printf ("%s=%s\n", "root_tls_certificates_dir", root_tls_certificates_dir);
   printf ("%s=%s\n", "sbindir", sbindir);
   printf ("%s=%s\n", "sysconfdir", sysconfdir);
+#ifdef HAVE_GNUTLS
+  printf ("tls=yes\n");
+#else
+  printf ("tls=no\n");
+#endif
   printf ("%s=%s\n", "version", PACKAGE_VERSION);
 }
 
@@ -168,8 +183,18 @@ main (int argc, char *argv[])
   int c;
   int option_index;
   int help = 0, version = 0, dump_plugin = 0;
+  int tls_set_on_cli = 0;
 
   threadlocal_init ();
+
+  /* The default setting for TLS depends on whether we were
+   * compiled with GnuTLS.
+   */
+#ifdef HAVE_GNUTLS
+  tls = 1;
+#else
+  tls = 0;
+#endif
 
   /* Returns 0 if no socket activation, or the number of FDs. */
   socket_activation = get_socket_activation ();
@@ -209,6 +234,31 @@ main (int argc, char *argv[])
       }
       else if (strcmp (long_options[option_index].name, "selinux-label") == 0) {
         selinux_label = optarg;
+        break;
+      }
+      else if (strcmp (long_options[option_index].name, "tls") == 0) {
+        tls_set_on_cli = 1;
+        if (strcmp (optarg, "off") == 0 || strcmp (optarg, "0") == 0)
+          tls = 0;
+        else if (strcmp (optarg, "on") == 0 || strcmp (optarg, "1") == 0)
+          tls = 1;
+        else if (strcmp (optarg, "require") == 0 ||
+                 strcmp (optarg, "required") == 0 ||
+                 strcmp (optarg, "force") == 0)
+          tls = 2;
+        else {
+          fprintf (stderr, "%s: --tls flag must be off|on|require\n",
+                   program_name);
+          exit (EXIT_FAILURE);
+        }
+        break;
+      }
+      else if (strcmp (long_options[option_index].name, "tls-certificates") == 0) {
+        tls_certificates_dir = optarg;
+        break;
+      }
+      else if (strcmp (long_options[option_index].name, "tls-verify-peer") == 0) {
+        tls_verify_peer = 1;
         break;
       }
       else {
@@ -350,6 +400,18 @@ main (int argc, char *argv[])
   if (exportname == NULL)
     exportname = "";
 
+  /* --tls=require and oldstyle won't work. */
+  if (tls == 2 && newstyle == 0) {
+    fprintf (stderr,
+             "%s: cannot use oldstyle protocol (-o) and require TLS\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+
+  /* Initialize TLS. */
+  crypto_init (tls_set_on_cli);
+  assert (tls != -1);
+
   /* Implement --exit-with-parent early in case plugin initialization
    * takes a long time and the parent exits during that time.
    */
@@ -438,6 +500,8 @@ main (int argc, char *argv[])
     rmdir (random_fifo_dir);
     free (random_fifo_dir);
   }
+
+  crypto_free ();
 
   exit (EXIT_SUCCESS);
 }

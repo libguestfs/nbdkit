@@ -43,6 +43,7 @@ Makefile.in
 /tests/disk.gz
 /tests/disk.xz
 /tests/file-data
+/tests/pki
 /tests/test-connect
 /tests/test-exit-with-parent
 /tests/test-file

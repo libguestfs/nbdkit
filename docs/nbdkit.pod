@@ -11,6 +11,8 @@ nbdkit - A toolkit for creating NBD servers
         [-g GROUP] [-i IPADDR]
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
         [--run CMD] [-s] [--selinux-label LABEL]
+        [--tls=off|on|require] [--tls-certificates /path/to/certificates]
+        [--tls-verify-peer]
         [-U SOCKET] [-u USER] [-v] [-V]
         PLUGIN [key=value [key=value [...]]]
 
@@ -223,6 +225,25 @@ guests which are using SELinux and sVirt confinement to access nbdkit
 Unix domain sockets:
 
  nbdkit --selinux-label system_u:object_r:svirt_t:s0 ...
+
+=item B<--tls=off>
+
+=item B<--tls=on>
+
+=item B<--tls=require>
+
+Disable, enable or require TLS (authentication and encryption
+support).  See L</TLS> below.
+
+=item B<--tls-certificates> /path/to/certificates
+
+Set the path to the TLS certificates directory.  If not specified,
+some built-in paths are checked.  See L</TLS> below for more details.
+
+=item B<--tls-verify-peer>
+
+Enables TLS client certificate verification.  The default is I<not> to
+check the client's certificate.
 
 =item B<-U> SOCKET
 
@@ -437,6 +458,7 @@ Some common clients and the protocol they require:
  qemu >= 2.6                     client can talk either protocol
  nbd-client < 3.10               client can talk either protocol
  nbd-client >= 3.10              newstyle
+ any TLS (encrypted) client      newstyle
 
 If you use qemu E<le> 2.5 without the exportname field against a
 newstyle server, it will give the error:
@@ -457,6 +479,233 @@ If you want to claim compatibility with what the NBD proto.txt
 document says should be the case (which isn't based in reality), then
 you should always use newstyle when using port 10809, and use oldstyle
 on all other ports.
+
+=head1 TLS
+
+TLS (authentication and encryption, sometimes incorrectly called
+"SSL") is supported if nbdkit was compiled with GnuTLS.  This allows
+the server to verify that the client is allowed access, and to encrypt
+the contents of the protocol in transit over the network.
+
+TLS can be disabled or enabled by specifying either I<--tls=off> or
+I<--tls=on>.  With I<--tls=off>, if a client tries to use TLS to
+connect, it will be rejected by the server (in other words, as if the
+server doesn't support TLS).
+
+I<--tls=on> means that the client may choose to connect either with or
+without TLS.
+
+Because I<--tls=on> is subject to downgrade attacks where a malicious
+proxy pretends not to support TLS in order to force either the client
+or server to communicate in plaintext, you can also specify
+I<--tls=require>, where the server enables TLS B<and> rejects all
+non-TLS connection attempts.
+
+=head2 TLS with X.509 certificates
+
+When nbdkit starts up, it loads TLS certificates from some built-in
+paths, or from the directory specified by the I<--tls-certificates>
+option.
+
+Without I<--tls-certificates>, if nbdkit is started as a non-root user
+(note this does not include use of the I<-u> or I<-g> options), nbdkit
+looks in each of these paths in turn:
+
+ $HOME/.pki/nbdkit/
+ $HOME/.config/pki/nbdkit/
+
+Without I<--tls-certificates>, if nbdkit is started as root, nbkit
+looks in:
+
+ $sysconfdir/pki/nbdkit/
+
+(Use C<nbdkit --dump-config> and look at the
+C<root_tls_certificates_dir> setting to get the actual directory built
+into the binary.)
+
+You can override both directories above by using
+I<--tls-certificates /path/to/certificates>.
+
+In this directory, nbdkit expects to find several files:
+
+=over 4
+
+=item F<ca-cert.pem>
+
+The Certificate Authority certificate.
+
+=item F<server-cert.pem>
+
+The server certificate.
+
+=item F<server-key.pem>
+
+The server private key.
+
+=item F<ca-crl.pem>
+
+(Optional) The certificate revocation list.
+
+=back
+
+=head3 Setting up the Certificate Authority
+
+This step only needs to be done once per organization.  It may be that
+your organization already has a CA.
+
+ $ certtool --generate-privkey > ca-key.pem
+ $ chmod 0600 ca-key.pem
+
+The F<ca-key.pem> file is the CA private key and is I<extremely>
+sensitive data.  With possession of this key, anyone can create
+certificates pretending to be your organization!
+
+To create the CA certificate file:
+
+ $ cat > ca.info <<EOF
+ cn = Name of your organization
+ ca
+ cert_signing_key
+ EOF
+ $ certtool --generate-self-signed \
+            --load-privkey ca-key.pem \
+            --template ca.info \
+            --outfile ca-cert.pem
+
+=head3 Issuing a server certificate for the nbdkit server
+
+Each nbdkit server (or host) needs a secret key and certificate.
+
+ $ certtool --generate-privkey > server-key.pem
+ $ chmod 0600 server-key.pem
+
+The server key file is sensitive.  Setting the mode to C<0600> helps
+to prevent other users on the same machine from reading it.
+
+The server DNS name (C<cn> below) must be the fully qualified hostname
+— and the only hostname — that the client connects to.
+
+ $ cat > server.info <<EOF
+ organization = Name of your organization
+ cn = nbd-server.example.com
+ tls_www_server
+ encryption_key
+ signing_key
+ EOF
+ $ certtool --generate-certificate \
+            --load-ca-certificate ca-cert.pem \
+            --load-ca-privkey ca-key.pem \
+            --load-privkey server-key.pem \
+            --template server.info \
+            --outfile server-cert.pem
+
+=head3 Issuing and checking client certificates
+
+B<Note:>
+You don't need to create client certificates unless you want to check
+and limit which clients can connect to nbdkit.  nbdkit B<does not>
+check client certificates unless you specify the I<--tls-verify-peer>
+option on the command line.
+
+For each client you should generate a private key and a client
+certificate:
+
+ $ certtool --generate-privkey > client-key.pem
+ $ chmod 0600 client-key.pem
+
+The client key file is sensitive.
+
+The client DNS name (C<cn> below) is the client's name that nbdkit
+sees and checks.
+
+ $ cat > client.info <<EOF
+ country = US
+ state = New York
+ locality = New York
+ organization = Name of your organization
+ cn = client.example.com
+ tls_www_client
+ encryption_key
+ signing_key
+ EOF
+ $ certtool --generate-certificate \
+            --load-ca-certificate ca-cert.pem \
+            --load-ca-privkey ca-key.pem \
+            --load-privkey client-key.pem \
+            --template client.info \
+            --outfile client-cert.pem
+
+Client certificates do I<not> need to be present anywhere on the
+nbdkit host.  You don't need to copy them into nbdkit's TLS
+certificates directory.  The security comes from the fact that the
+client must present a client certificate signed by the Certificate
+Authority, and nbdkit can check this because it has the F<ca-cert.pem>
+file.
+
+To enable checking of client certificates, specify the
+I<--tls-verify-peer> option on the command line.  Clients which don't
+present a valid certificate (eg. not signed, incorrect signature) are
+denied.  Also denied are clients which present a valid certificate
+signed by another CA.  Also denied are clients with certificates added
+to the certificate revocation list (F<ca-crl.pem>).
+
+=head2 Default TLS behaviour
+
+If nbdkit was compiled without GnuTLS support, then TLS is disabled
+and TLS connections will be rejected (as if I<--tls=off> was specified
+on the command line).  Also it is impossible to turn on TLS in this
+scenario.  You can tell if nbdkit was compiled without GnuTLS support
+because C<nbdkit --dump-config> will contain C<tls=no>.
+
+If TLS certificates cannot be loaded either from the built-in path or
+from the directory specified by I<--tls-certificates>, then TLS
+defaults to disabled.  Turning TLS on will give a warning
+(I<--tls=on>) or error (I<--tls=require>) about the missing
+certificates.
+
+If TLS certificates can be loaded from the built-in path or from the
+I<--tls-certificates> directory, then TLS will by default be enabled
+(like I<--tls=on>), but it is not required.  Clients can choose
+whether or not to use TLS and whether or not to present certificates.
+
+TLS client certificates are I<not> checked by default unless you
+specify I<--tls-verify-peer>.
+
+Each of these defaults is insecure to some extent (including
+I<--tls=on> which could be subject to a downgrade attack), so if you
+expect TLS then it is best to specify the I<--tls> option that you
+require, and if you want to check client certificates, specify the
+I<--tls-verify-peer> option.
+
+=head2 Choice of TLS algorithms
+
+TLS has a bewildering choice of algorithms that can be used.  To
+enable you to choose a default set of algorithms, there is a configure
+setting C<--with-tls-priority>.  This defaults to C<NORMAL> which, to
+quote the GnuTLS documentation:
+
+=over 4
+
+"C<NORMAL> means all C<secure> ciphersuites.  The 256-bit ciphers are
+included as a fallback only.  The ciphers are sorted by security
+margin."
+
+=back
+
+You could also set the TLS priority so that it can be configured from
+a file at runtime:
+
+ ./configure --with-tls-priority=@SYSTEM
+
+means use the policy from F</etc/crypto-policies/config>.
+
+ ./configure --with-tls-priority=@NBDKIT,SYSTEM
+
+means use the policy from
+F</etc/crypto-policies/local.d/nbdkit.config> and fall back to
+F</etc/crypto-policies/config> if the first file does not exist.
+
+More information can be found in L<gnutls_priority_init(3)>.
 
 =head1 PROBING CONFIGURATION AND PLUGINS
 

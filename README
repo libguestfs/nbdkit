@@ -34,8 +34,12 @@ To build the man pages, you will need to install:
 
  - pod2man (included with perl)
 
-There are some *optional* libraries you may want to install for the
-plugins.
+There are some *optional* libraries you may want to install for
+plugins or extra features.
+
+For TLS support:
+
+ - gnutls >= 3.3.0
 
 For the gzip plugin:
 

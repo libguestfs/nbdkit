@@ -52,6 +52,7 @@ EXTRA_DIST = \
 	test-single.sh \
 	test-start.sh \
 	test-random-sock.sh \
+	test-tls.sh \
 	test-version.sh \
 	test-version-plugin.sh
 
@@ -87,6 +88,7 @@ TESTS += \
 	test-single.sh \
 	test-captive.sh \
 	test-random-sock.sh \
+	test-tls.sh \
 	test-ipv4.sh \
 	test-socket-activation \
 	test-foreground.sh
@@ -173,6 +175,11 @@ TESTS += test-oldstyle
 test_oldstyle_SOURCES = test-oldstyle.c test.h
 test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# PKI files for the TLS tests.
+check_DATA += pki/.stamp
+pki/.stamp: make-pki.sh
+	./make-pki.sh
 
 # file plugin test.
 check_PROGRAMS += test-file

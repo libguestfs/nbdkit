@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2016 Red Hat Inc.
+# Copyright (C) 2013-2017 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -132,6 +132,27 @@ AC_CHECK_HEADERS([selinux/selinux.h sys/prctl.h])
 
 dnl Check support for setsockcreatecon_raw (part of SELinux).
 AC_CHECK_LIB([selinux], [setsockcreatecon_raw], [], [:])
+
+dnl Check for GnuTLS (optional, for TLS support).
+PKG_CHECK_MODULES([GNUTLS], [gnutls >= 3.3.0], [
+    AC_SUBST([GNUTLS_CFLAGS])
+    AC_SUBST([GNUTLS_LIBS])
+    AC_DEFINE([HAVE_GNUTLS],[1],[gnutls found at compile time.])
+], [
+    AC_MSG_WARN([gnutls not found or < 3.3.0, TLS support will be disabled.])
+])
+
+AS_IF([test "$GNUTLS_LIBS" != ""],[
+    AC_MSG_CHECKING([for default TLS session priority string])
+    AC_ARG_WITH([tls-priority],[
+        AS_HELP_STRING([--with-tls-priority],
+                       [default TLS session priority string @<:@default=NORMAL@:>@])],
+        [tls_priority=$withval],
+        [tls_priority=NORMAL])
+    AC_MSG_RESULT([$tls_priority])
+    AC_DEFINE_UNQUOTED([TLS_PRIORITY],["$tls_priority"],
+                       [Default TLS session priority string])
+])
 
 dnl Check for valgrind.
 AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])

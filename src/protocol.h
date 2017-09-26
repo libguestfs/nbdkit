@@ -99,6 +99,7 @@ struct new_handshake_finish {
 #define NBD_OPT_EXPORT_NAME  1
 #define NBD_OPT_ABORT        2
 #define NBD_OPT_LIST         3
+#define NBD_OPT_STARTTLS     5
 
 #define NBD_REP_ACK          1
 #define NBD_REP_SERVER       2
@@ -106,6 +107,7 @@ struct new_handshake_finish {
 #define NBD_REP_ERR_POLICY   0x80000002
 #define NBD_REP_ERR_INVALID  0x80000003
 #define NBD_REP_ERR_PLATFORM 0x80000004
+#define NBD_REP_ERR_TLS_REQD 0x80000005
 
 /* Request (client -> server). */
 struct request {

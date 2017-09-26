@@ -37,6 +37,7 @@ sbin_PROGRAMS = nbdkit
 nbdkit_SOURCES = \
 	cleanup.c \
 	connections.c \
+	crypto.c \
 	errors.c \
 	internal.h \
 	main.c \
@@ -57,8 +58,10 @@ nbdkit_CPPFLAGS = \
 	-I$(top_srcdir)/include
 nbdkit_CFLAGS = \
 	-pthread \
-	$(WARNINGS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(GNUTLS_CFLAGS)
 nbdkit_LDADD = \
+	$(GNUTLS_LIBS) \
 	-ldl
 nbdkit_LDFLAGS = \
 	-pthread \
