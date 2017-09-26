@@ -97,7 +97,7 @@ extern const char *ipaddr;
 extern int newstyle;
 extern const char *port;
 extern int readonly;
-const char *selinux_label;
+extern const char *selinux_label;
 extern char *unixsocket;
 extern int verbose;
 
