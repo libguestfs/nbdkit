@@ -50,11 +50,11 @@
  * tracking can be used to influence which error is sent to the client
  * in a reply.
  *
- * The main thread does not have any associated TLS, *unless* it is
- * serving a request (the '-s' option).
+ * The main thread does not have any associated Thread Local Storage,
+ * *unless* it is serving a request (the '-s' option).
  */
 
-struct tls {
+struct threadlocal {
   const char *name;             /* Can be NULL. */
   size_t instance_num;          /* Can be 0. */
   struct sockaddr *addr;
@@ -62,23 +62,23 @@ struct tls {
   int err;
 };
 
-static pthread_key_t tls_key;
+static pthread_key_t threadlocal_key;
 
 static void
-free_tls (void *tlsv)
+free_threadlocal (void *threadlocalv)
 {
-  struct tls *tls = tlsv;
+  struct threadlocal *threadlocal = threadlocalv;
 
-  free (tls->addr);
-  free (tls);
+  free (threadlocal->addr);
+  free (threadlocal);
 }
 
 void
-tls_init (void)
+threadlocal_init (void)
 {
   int err;
 
-  err = pthread_key_create (&tls_key, free_tls);
+  err = pthread_key_create (&threadlocal_key, free_threadlocal);
   if (err != 0) {
     fprintf (stderr, "%s: pthread_key_create: %s\n",
              program_name, strerror (err));
@@ -87,81 +87,81 @@ tls_init (void)
 }
 
 void
-tls_new_server_thread (void)
+threadlocal_new_server_thread (void)
 {
-  struct tls *tls;
+  struct threadlocal *threadlocal;
 
-  tls = calloc (1, sizeof *tls);
-  if (tls == NULL) {
+  threadlocal = calloc (1, sizeof *threadlocal);
+  if (threadlocal == NULL) {
     perror ("malloc");
     exit (EXIT_FAILURE);
   }
-  pthread_setspecific (tls_key, tls);
+  pthread_setspecific (threadlocal_key, threadlocal);
 }
 
 void
-tls_set_name (const char *name)
+threadlocal_set_name (const char *name)
 {
-  struct tls *tls = pthread_getspecific (tls_key);
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
-  if (tls)
-    tls->name = name;
+  if (threadlocal)
+    threadlocal->name = name;
 }
 
 void
-tls_set_instance_num (size_t instance_num)
+threadlocal_set_instance_num (size_t instance_num)
 {
-  struct tls *tls = pthread_getspecific (tls_key);
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
-  if (tls)
-    tls->instance_num = instance_num;
+  if (threadlocal)
+    threadlocal->instance_num = instance_num;
 }
 
 void
-tls_set_sockaddr (struct sockaddr *addr, socklen_t addrlen)
+threadlocal_set_sockaddr (struct sockaddr *addr, socklen_t addrlen)
 {
-  struct tls *tls = pthread_getspecific (tls_key);
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
-  if (tls) {
-    free(tls->addr);
-    tls->addr = calloc (1, addrlen);
-    if (tls->addr == NULL) {
+  if (threadlocal) {
+    free(threadlocal->addr);
+    threadlocal->addr = calloc (1, addrlen);
+    if (threadlocal->addr == NULL) {
       perror ("calloc");
       exit (EXIT_FAILURE);
     }
-    memcpy(tls->addr, addr, addrlen);
+    memcpy(threadlocal->addr, addr, addrlen);
   }
 }
 
 const char *
-tls_get_name (void)
+threadlocal_get_name (void)
 {
-  struct tls *tls = pthread_getspecific (tls_key);
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
-  if (!tls)
+  if (!threadlocal)
     return NULL;
 
-  return tls->name;
+  return threadlocal->name;
 }
 
 size_t
-tls_get_instance_num (void)
+threadlocal_get_instance_num (void)
 {
-  struct tls *tls = pthread_getspecific (tls_key);
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
-  if (!tls)
+  if (!threadlocal)
     return 0;
 
-  return tls->instance_num;
+  return threadlocal->instance_num;
 }
 
 void
-tls_set_error (int err)
+threadlocal_set_error (int err)
 {
-  struct tls *tls = pthread_getspecific (tls_key);
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
-  if (tls)
-    tls->err = err;
+  if (threadlocal)
+    threadlocal->err = err;
   else
     errno = err;
 }
@@ -169,11 +169,11 @@ tls_set_error (int err)
 /* This preserves errno, for convenience.
  */
 int
-tls_get_error (void)
+threadlocal_get_error (void)
 {
   int err = errno;
-  struct tls *tls = pthread_getspecific (tls_key);
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
   errno = err;
-  return tls ? tls->err : 0;
+  return threadlocal ? threadlocal->err : 0;
 }

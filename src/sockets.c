@@ -255,9 +255,9 @@ start_thread (void *datav)
   debug ("accepted connection");
 
   /* Set thread-local data. */
-  tls_new_server_thread ();
-  tls_set_instance_num (data->instance_num);
-  tls_set_sockaddr (&data->addr, data->addrlen);
+  threadlocal_new_server_thread ();
+  threadlocal_set_instance_num (data->instance_num);
+  threadlocal_set_sockaddr (&data->addr, data->addrlen);
 
   handle_single_connection (data->sock, data->sock);
 

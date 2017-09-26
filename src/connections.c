@@ -76,7 +76,7 @@ _handle_single_connection (int sockin, int sockout)
   if (plugin_open (conn, readonly) == -1)
     goto err;
 
-  tls_set_name (plugin_name ());
+  threadlocal_set_name (plugin_name ());
 
   /* Handshake. */
   if (negotiate_handshake (conn) == -1)
@@ -607,7 +607,7 @@ validate_request (struct connection *conn,
 static int
 get_error (struct connection *conn)
 {
-  int ret = tls_get_error ();
+  int ret = threadlocal_get_error ();
 
   if (!ret && plugin_errno_is_preserved ())
     ret = errno;
@@ -641,7 +641,7 @@ _handle_request (struct connection *conn,
 
   /* The plugin should call nbdkit_set_error() to request a particular
      error, otherwise we fallback to errno or EIO. */
-  tls_set_error (0);
+  threadlocal_set_error (0);
 
   switch (cmd) {
   case NBD_CMD_READ:

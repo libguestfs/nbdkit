@@ -541,7 +541,7 @@ plugin_zero (struct connection *conn,
     errno = 0;
     result = plugin.zero (conn->handle, count, offset, may_trim);
     if (result == -1) {
-      err = tls_get_error ();
+      err = threadlocal_get_error ();
       if (!err && plugin_errno_is_preserved ())
         err = errno;
     }
@@ -550,7 +550,7 @@ plugin_zero (struct connection *conn,
   }
 
   assert (plugin.pwrite);
-  tls_set_error (0);
+  threadlocal_set_error (0);
   limit = count < MAX_REQUEST_SIZE ? count : MAX_REQUEST_SIZE;
   buf = calloc (limit, 1);
   if (!buf) {

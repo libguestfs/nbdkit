@@ -45,8 +45,8 @@
 static void
 prologue (const char *type)
 {
-  const char *name = tls_get_name ();
-  size_t instance_num = tls_get_instance_num ();
+  const char *name = threadlocal_get_name ();
+  size_t instance_num = threadlocal_get_instance_num ();
 
   fprintf (stderr, "%s: ", program_name);
 
@@ -135,5 +135,5 @@ nbdkit_error (const char *fs, ...)
 void
 nbdkit_set_error (int err)
 {
-  tls_set_error (err);
+  threadlocal_set_error (err);
 }

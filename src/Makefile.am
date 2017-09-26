@@ -43,7 +43,7 @@ nbdkit_SOURCES = \
 	plugins.c \
 	protocol.h \
 	sockets.c \
-	tls.c \
+	threadlocal.c \
 	utils.c \
 	$(top_srcdir)/include/nbdkit-plugin.h
 

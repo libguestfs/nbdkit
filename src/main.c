@@ -169,7 +169,7 @@ main (int argc, char *argv[])
   int option_index;
   int help = 0, version = 0, dump_plugin = 0;
 
-  tls_init ();
+  threadlocal_init ();
 
   /* Returns 0 if no socket activation, or the number of FDs. */
   socket_activation = get_socket_activation ();
@@ -564,7 +564,7 @@ start_serving (void)
   if (listen_stdin) {
     change_user ();
     write_pidfile ();
-    tls_new_server_thread ();
+    threadlocal_new_server_thread ();
     if (handle_single_connection (0, 1) == -1)
       exit (EXIT_FAILURE);
     return;
