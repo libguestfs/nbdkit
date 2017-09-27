@@ -75,8 +75,8 @@ static struct connection *new_connection (int sockin, int sockout);
 static void free_connection (struct connection *conn);
 static int negotiate_handshake (struct connection *conn);
 static int recv_request_send_reply (struct connection *conn);
-static int xread (int sock, void *buf, size_t len);
-static int xwrite (int sock, const void *buf, size_t len);
+static int xread (struct connection *, void *buf, size_t len);
+static int xwrite (struct connection *, const void *buf, size_t len);
 
 /* Accessors for public fields in the connection structure.
  * Everything else is private to this file.
@@ -254,7 +254,7 @@ _negotiate_handshake_oldstyle (struct connection *conn)
   handshake.gflags = htobe16 (gflags);
   handshake.eflags = htobe16 (eflags);
 
-  if (xwrite (conn->sockout, &handshake, sizeof handshake) == -1) {
+  if (xwrite (conn, &handshake, sizeof handshake) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
@@ -275,7 +275,7 @@ send_newstyle_option_reply (struct connection *conn,
   fixed_new_option_reply.reply = htobe32 (reply);
   fixed_new_option_reply.replylen = htobe32 (0);
 
-  if (xwrite (conn->sockout,
+  if (xwrite (conn,
               &fixed_new_option_reply, sizeof fixed_new_option_reply) == -1) {
     nbdkit_error ("write: %m");
     return -1;
@@ -298,18 +298,18 @@ send_newstyle_option_reply_exportname (struct connection *conn,
   fixed_new_option_reply.reply = htobe32 (reply);
   fixed_new_option_reply.replylen = htobe32 (name_len + sizeof (len));
 
-  if (xwrite (conn->sockout,
+  if (xwrite (conn,
               &fixed_new_option_reply, sizeof fixed_new_option_reply) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
 
   len = htobe32 (name_len);
-  if (xwrite (conn->sockout, &len, sizeof len) == -1) {
+  if (xwrite (conn, &len, sizeof len) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
-  if (xwrite (conn->sockout, exportname, name_len) == -1) {
+  if (xwrite (conn, exportname, name_len) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
@@ -328,7 +328,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
   char data[MAX_OPTION_LENGTH+1];
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
-    if (xread (conn->sockin, &new_option, sizeof new_option) == -1) {
+    if (xread (conn, &new_option, sizeof new_option) == -1) {
       nbdkit_error ("read: %m");
       return -1;
     }
@@ -353,7 +353,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
     option = be32toh (new_option.option);
     switch (option) {
     case NBD_OPT_EXPORT_NAME:
-      if (xread (conn->sockin, data, optlen) == -1) {
+      if (xread (conn, data, optlen) == -1) {
         nbdkit_error ("read: %m");
         return -1;
       }
@@ -374,7 +374,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
-        if (xread (conn->sockin, data, optlen) == -1) {
+        if (xread (conn, data, optlen) == -1) {
           nbdkit_error ("read: %m");
           return -1;
         }
@@ -395,7 +395,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       /* Unknown option. */
       if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
         return -1;
-      if (xread (conn->sockin, data, optlen) == -1) {
+      if (xread (conn, data, optlen) == -1) {
         nbdkit_error ("read: %m");
         return -1;
       }
@@ -438,13 +438,13 @@ _negotiate_handshake_newstyle (struct connection *conn)
   handshake.version = htobe64 (NEW_VERSION);
   handshake.gflags = htobe16 (gflags);
 
-  if (xwrite (conn->sockout, &handshake, sizeof handshake) == -1) {
+  if (xwrite (conn, &handshake, sizeof handshake) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
 
   /* Client now sends us its 32 bit flags word ... */
-  if (xread (conn->sockin, &cflags, sizeof cflags) == -1) {
+  if (xread (conn, &cflags, sizeof cflags) == -1) {
     nbdkit_error ("read: %m");
     return -1;
   }
@@ -515,7 +515,7 @@ _negotiate_handshake_newstyle (struct connection *conn)
   handshake_finish.exportsize = htobe64 (exportsize);
   handshake_finish.eflags = htobe16 (eflags);
 
-  if (xwrite (conn->sockout,
+  if (xwrite (conn,
               &handshake_finish,
 	      (cflags & NBD_FLAG_NO_ZEROES)
 	      ? offsetof (struct new_handshake_finish, zeroes)
@@ -808,7 +808,7 @@ recv_request_send_reply (struct connection *conn)
   CLEANUP_FREE char *buf = NULL;
 
   /* Read the request packet. */
-  r = xread (conn->sockin, &request, sizeof request);
+  r = xread (conn, &request, sizeof request);
   if (r == -1) {
     nbdkit_error ("read request: %m");
     return -1;
@@ -860,7 +860,7 @@ recv_request_send_reply (struct connection *conn)
 
   /* Receive the write data buffer. */
   if (cmd == NBD_CMD_WRITE) {
-    r = xread (conn->sockin, buf, count);
+    r = xread (conn, buf, count);
     if (r == -1) {
       nbdkit_error ("read data: %m");
       return -1;
@@ -891,7 +891,7 @@ recv_request_send_reply (struct connection *conn)
     debug ("sending error reply: %s", strerror (error));
   }
 
-  r = xwrite (conn->sockout, &reply, sizeof reply);
+  r = xwrite (conn, &reply, sizeof reply);
   if (r == -1) {
     nbdkit_error ("write reply: %m");
     return -1;
@@ -899,7 +899,7 @@ recv_request_send_reply (struct connection *conn)
 
   /* Send the read data buffer. */
   if (cmd == NBD_CMD_READ) {
-    r = xwrite (conn->sockout, buf, count);
+    r = xwrite (conn, buf, count);
     if (r == -1) {
       nbdkit_error ("write data: %m");
       return -1;
@@ -909,12 +909,13 @@ recv_request_send_reply (struct connection *conn)
   return 1;                     /* command processed ok */
 }
 
-/* Write buffer to socket and either succeed completely (returns 0)
- * or fail (returns -1).
+/* Write buffer to conn->sockout and either succeed completely
+ * (returns 0) or fail (returns -1).
  */
 static int
-xwrite (int sock, const void *vbuf, size_t len)
+xwrite (struct connection *conn, const void *vbuf, size_t len)
 {
+  int sock = conn->sockout;
   const char *buf = vbuf;
   ssize_t r;
 
@@ -932,12 +933,13 @@ xwrite (int sock, const void *vbuf, size_t len)
   return 0;
 }
 
-/* Read buffer from socket and either succeed completely (returns > 0),
- * read an EOF (returns 0), or fail (returns -1).
+/* Read buffer from conn->sockin and either succeed completely
+ * (returns > 0), read an EOF (returns 0), or fail (returns -1).
  */
 static int
-xread (int sock, void *vbuf, size_t len)
+xread (struct connection *conn, void *vbuf, size_t len)
 {
+  int sock = conn->sockin;
   char *buf = vbuf;
   ssize_t r;
   bool first_read = true;
