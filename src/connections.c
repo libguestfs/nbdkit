@@ -71,8 +71,8 @@ struct connection {
   int can_trim;
 
   int sockin, sockout;
-  int (*xread) (struct connection *, void *buf, size_t len);
-  int (*xwrite) (struct connection *, const void *buf, size_t len);
+  int (*recv) (struct connection *, void *buf, size_t len);
+  int (*send) (struct connection *, const void *buf, size_t len);
   void (*close) (struct connection *);
 };
 
@@ -81,9 +81,9 @@ static void free_connection (struct connection *conn);
 static int negotiate_handshake (struct connection *conn);
 static int recv_request_send_reply (struct connection *conn);
 
-/* Don't call these raw socket functions directly.  Use conn->xread etc. */
-static int raw_xread (struct connection *, void *buf, size_t len);
-static int raw_xwrite (struct connection *, const void *buf, size_t len);
+/* Don't call these raw socket functions directly.  Use conn->recv etc. */
+static int raw_recv (struct connection *, void *buf, size_t len);
+static int raw_send (struct connection *, const void *buf, size_t len);
 static void raw_close (struct connection *);
 
 /* Accessors for public fields in the connection structure.
@@ -171,8 +171,8 @@ new_connection (int sockin, int sockout)
   conn->sockout = sockout;
   pthread_mutex_init (&conn->request_lock, NULL);
 
-  conn->xread = raw_xread;
-  conn->xwrite = raw_xwrite;
+  conn->recv = raw_recv;
+  conn->send = raw_send;
   conn->close = raw_close;
 
   return conn;
@@ -263,7 +263,7 @@ _negotiate_handshake_oldstyle (struct connection *conn)
   handshake.gflags = htobe16 (gflags);
   handshake.eflags = htobe16 (eflags);
 
-  if (conn->xwrite (conn, &handshake, sizeof handshake) == -1) {
+  if (conn->send (conn, &handshake, sizeof handshake) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
@@ -284,9 +284,9 @@ send_newstyle_option_reply (struct connection *conn,
   fixed_new_option_reply.reply = htobe32 (reply);
   fixed_new_option_reply.replylen = htobe32 (0);
 
-  if (conn->xwrite (conn,
-                    &fixed_new_option_reply,
-                    sizeof fixed_new_option_reply) == -1) {
+  if (conn->send (conn,
+                  &fixed_new_option_reply,
+                  sizeof fixed_new_option_reply) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
@@ -308,19 +308,19 @@ send_newstyle_option_reply_exportname (struct connection *conn,
   fixed_new_option_reply.reply = htobe32 (reply);
   fixed_new_option_reply.replylen = htobe32 (name_len + sizeof (len));
 
-  if (conn->xwrite (conn,
-                    &fixed_new_option_reply,
-                    sizeof fixed_new_option_reply) == -1) {
+  if (conn->send (conn,
+                  &fixed_new_option_reply,
+                  sizeof fixed_new_option_reply) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
 
   len = htobe32 (name_len);
-  if (conn->xwrite (conn, &len, sizeof len) == -1) {
+  if (conn->send (conn, &len, sizeof len) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
-  if (conn->xwrite (conn, exportname, name_len) == -1) {
+  if (conn->send (conn, exportname, name_len) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
@@ -339,7 +339,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
   char data[MAX_OPTION_LENGTH+1];
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
-    if (conn->xread (conn, &new_option, sizeof new_option) == -1) {
+    if (conn->recv (conn, &new_option, sizeof new_option) == -1) {
       nbdkit_error ("read: %m");
       return -1;
     }
@@ -364,7 +364,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
     option = be32toh (new_option.option);
     switch (option) {
     case NBD_OPT_EXPORT_NAME:
-      if (conn->xread (conn, data, optlen) == -1) {
+      if (conn->recv (conn, data, optlen) == -1) {
         nbdkit_error ("read: %m");
         return -1;
       }
@@ -385,7 +385,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
-        if (conn->xread (conn, data, optlen) == -1) {
+        if (conn->recv (conn, data, optlen) == -1) {
           nbdkit_error ("read: %m");
           return -1;
         }
@@ -406,7 +406,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       /* Unknown option. */
       if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
         return -1;
-      if (conn->xread (conn, data, optlen) == -1) {
+      if (conn->recv (conn, data, optlen) == -1) {
         nbdkit_error ("read: %m");
         return -1;
       }
@@ -449,13 +449,13 @@ _negotiate_handshake_newstyle (struct connection *conn)
   handshake.version = htobe64 (NEW_VERSION);
   handshake.gflags = htobe16 (gflags);
 
-  if (conn->xwrite (conn, &handshake, sizeof handshake) == -1) {
+  if (conn->send (conn, &handshake, sizeof handshake) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
 
   /* Client now sends us its 32 bit flags word ... */
-  if (conn->xread (conn, &cflags, sizeof cflags) == -1) {
+  if (conn->recv (conn, &cflags, sizeof cflags) == -1) {
     nbdkit_error ("read: %m");
     return -1;
   }
@@ -526,11 +526,11 @@ _negotiate_handshake_newstyle (struct connection *conn)
   handshake_finish.exportsize = htobe64 (exportsize);
   handshake_finish.eflags = htobe16 (eflags);
 
-  if (conn->xwrite (conn,
-                    &handshake_finish,
-                    (cflags & NBD_FLAG_NO_ZEROES)
-                    ? offsetof (struct new_handshake_finish, zeroes)
-                    : sizeof handshake_finish) == -1) {
+  if (conn->send (conn,
+                  &handshake_finish,
+                  (cflags & NBD_FLAG_NO_ZEROES)
+                  ? offsetof (struct new_handshake_finish, zeroes)
+                  : sizeof handshake_finish) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
@@ -819,7 +819,7 @@ recv_request_send_reply (struct connection *conn)
   CLEANUP_FREE char *buf = NULL;
 
   /* Read the request packet. */
-  r = conn->xread (conn, &request, sizeof request);
+  r = conn->recv (conn, &request, sizeof request);
   if (r == -1) {
     nbdkit_error ("read request: %m");
     return -1;
@@ -871,7 +871,7 @@ recv_request_send_reply (struct connection *conn)
 
   /* Receive the write data buffer. */
   if (cmd == NBD_CMD_WRITE) {
-    r = conn->xread (conn, buf, count);
+    r = conn->recv (conn, buf, count);
     if (r == -1) {
       nbdkit_error ("read data: %m");
       return -1;
@@ -902,7 +902,7 @@ recv_request_send_reply (struct connection *conn)
     debug ("sending error reply: %s", strerror (error));
   }
 
-  r = conn->xwrite (conn, &reply, sizeof reply);
+  r = conn->send (conn, &reply, sizeof reply);
   if (r == -1) {
     nbdkit_error ("write reply: %m");
     return -1;
@@ -910,7 +910,7 @@ recv_request_send_reply (struct connection *conn)
 
   /* Send the read data buffer. */
   if (cmd == NBD_CMD_READ) {
-    r = conn->xwrite (conn, buf, count);
+    r = conn->send (conn, buf, count);
     if (r == -1) {
       nbdkit_error ("write data: %m");
       return -1;
@@ -924,7 +924,7 @@ recv_request_send_reply (struct connection *conn)
  * (returns 0) or fail (returns -1).
  */
 static int
-raw_xwrite (struct connection *conn, const void *vbuf, size_t len)
+raw_send (struct connection *conn, const void *vbuf, size_t len)
 {
   int sock = conn->sockout;
   const char *buf = vbuf;
@@ -948,7 +948,7 @@ raw_xwrite (struct connection *conn, const void *vbuf, size_t len)
  * (returns > 0), read an EOF (returns 0), or fail (returns -1).
  */
 static int
-raw_xread (struct connection *conn, void *vbuf, size_t len)
+raw_recv (struct connection *conn, void *vbuf, size_t len)
 {
   int sock = conn->sockin;
   char *buf = vbuf;
