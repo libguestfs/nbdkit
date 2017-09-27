@@ -35,6 +35,7 @@ MAINTAINERCLEANFILES =
 
 EXTRA_DIST = \
 	functions.sh \
+	make-pki.sh \
 	README.tests \
 	test-captive.sh \
 	test-cxx.sh \
