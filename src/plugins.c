@@ -330,7 +330,7 @@ plugin_lock_request (struct connection *conn)
 
   if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS) {
     debug ("acquire per-connection request lock");
-    pthread_mutex_lock (&conn->request_lock);
+    pthread_mutex_lock (connection_get_request_lock (conn));
   }
 }
 
@@ -341,7 +341,7 @@ plugin_unlock_request (struct connection *conn)
 
   if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS) {
     debug ("release per-connection request lock");
-    pthread_mutex_unlock (&conn->request_lock);
+    pthread_mutex_unlock (connection_get_request_lock (conn));
   }
 
   if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
@@ -364,7 +364,7 @@ plugin_open (struct connection *conn, int readonly)
   void *handle;
 
   assert (dl);
-  assert (conn->handle == NULL);
+  assert (connection_get_handle (conn) == NULL);
   assert (plugin.open != NULL);
 
   debug ("%s: open readonly=%d", filename, readonly);
@@ -373,7 +373,7 @@ plugin_open (struct connection *conn, int readonly)
   if (!handle)
     return -1;
 
-  conn->handle = handle;
+  connection_set_handle (conn, handle);
   return 0;
 }
 
@@ -381,38 +381,38 @@ void
 plugin_close (struct connection *conn)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
 
   debug ("close");
 
   if (plugin.close)
-    plugin.close (conn->handle);
+    plugin.close (connection_get_handle (conn));
 
-  conn->handle = NULL;
+  connection_set_handle (conn, NULL);
 }
 
 int64_t
 plugin_get_size (struct connection *conn)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
   assert (plugin.get_size != NULL);
 
   debug ("get_size");
 
-  return plugin.get_size (conn->handle);
+  return plugin.get_size (connection_get_handle (conn));
 }
 
 int
 plugin_can_write (struct connection *conn)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
 
   debug ("can_write");
 
   if (plugin.can_write)
-    return plugin.can_write (conn->handle);
+    return plugin.can_write (connection_get_handle (conn));
   else
     return plugin.pwrite != NULL;
 }
@@ -421,12 +421,12 @@ int
 plugin_can_flush (struct connection *conn)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
 
   debug ("can_flush");
 
   if (plugin.can_flush)
-    return plugin.can_flush (conn->handle);
+    return plugin.can_flush (connection_get_handle (conn));
   else
     return plugin.flush != NULL;
 }
@@ -435,12 +435,12 @@ int
 plugin_is_rotational (struct connection *conn)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
 
   debug ("is_rotational");
 
   if (plugin.is_rotational)
-    return plugin.is_rotational (conn->handle);
+    return plugin.is_rotational (connection_get_handle (conn));
   else
     return 0; /* assume false */
 }
@@ -449,12 +449,12 @@ int
 plugin_can_trim (struct connection *conn)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
 
   debug ("can_trim");
 
   if (plugin.can_trim)
-    return plugin.can_trim (conn->handle);
+    return plugin.can_trim (connection_get_handle (conn));
   else
     return plugin.trim != NULL;
 }
@@ -464,12 +464,12 @@ plugin_pread (struct connection *conn,
               void *buf, uint32_t count, uint64_t offset)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
   assert (plugin.pread != NULL);
 
   debug ("pread count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
-  return plugin.pread (conn->handle, buf, count, offset);
+  return plugin.pread (connection_get_handle (conn), buf, count, offset);
 }
 
 int
@@ -477,12 +477,12 @@ plugin_pwrite (struct connection *conn,
                void *buf, uint32_t count, uint64_t offset)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
 
   debug ("pwrite count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
   if (plugin.pwrite != NULL)
-    return plugin.pwrite (conn->handle, buf, count, offset);
+    return plugin.pwrite (connection_get_handle (conn), buf, count, offset);
   else {
     errno = EROFS;
     return -1;
@@ -493,12 +493,12 @@ int
 plugin_flush (struct connection *conn)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
 
   debug ("flush");
 
   if (plugin.flush != NULL)
-    return plugin.flush (conn->handle);
+    return plugin.flush (connection_get_handle (conn));
   else {
     errno = EINVAL;
     return -1;
@@ -509,12 +509,12 @@ int
 plugin_trim (struct connection *conn, uint32_t count, uint64_t offset)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
 
   debug ("trim count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
   if (plugin.trim != NULL)
-    return plugin.trim (conn->handle, count, offset);
+    return plugin.trim (connection_get_handle (conn), count, offset);
   else {
     errno = EINVAL;
     return -1;
@@ -526,7 +526,7 @@ plugin_zero (struct connection *conn,
              uint32_t count, uint64_t offset, int may_trim)
 {
   assert (dl);
-  assert (conn->handle);
+  assert (connection_get_handle (conn));
   char *buf;
   uint32_t limit;
   int result;
@@ -539,7 +539,7 @@ plugin_zero (struct connection *conn,
     return 0;
   if (plugin.zero) {
     errno = 0;
-    result = plugin.zero (conn->handle, count, offset, may_trim);
+    result = plugin.zero (connection_get_handle (conn), count, offset, may_trim);
     if (result == -1) {
       err = threadlocal_get_error ();
       if (!err && plugin_errno_is_preserved ())
@@ -559,7 +559,7 @@ plugin_zero (struct connection *conn,
   }
 
   while (count) {
-    result = plugin.pwrite (conn->handle, buf, limit, offset);
+    result = plugin.pwrite (connection_get_handle (conn), buf, limit, offset);
     if (result < 0)
       break;
     count -= limit;

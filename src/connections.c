@@ -59,10 +59,43 @@
 /* Maximum length of any option data (bytes). */
 #define MAX_OPTION_LENGTH 4096
 
+/* Connection structure. */
+struct connection {
+  pthread_mutex_t request_lock;
+  void *handle;
+  int sockin, sockout;
+  uint64_t exportsize;
+  int readonly;
+  int can_flush;
+  int is_rotational;
+  int can_trim;
+};
+
 static struct connection *new_connection (int sockin, int sockout);
 static void free_connection (struct connection *conn);
 static int negotiate_handshake (struct connection *conn);
 static int recv_request_send_reply (struct connection *conn);
+
+/* Accessors for public fields in the connection structure.
+ * Everything else is private to this file.
+ */
+void
+connection_set_handle (struct connection *conn, void *handle)
+{
+  conn->handle = handle;
+}
+
+void *
+connection_get_handle (struct connection *conn)
+{
+  return conn->handle;
+}
+
+pthread_mutex_t *
+connection_get_request_lock (struct connection *conn)
+{
+  return &conn->request_lock;
+}
 
 static int
 _handle_single_connection (int sockin, int sockout)

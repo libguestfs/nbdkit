@@ -112,18 +112,11 @@ extern void cleanup_free (void *ptr);
 #endif
 
 /* connections.c */
-struct connection {
-  int sockin, sockout;
-  pthread_mutex_t request_lock;
-  void *handle;
-  uint64_t exportsize;
-  int readonly;
-  int can_flush;
-  int is_rotational;
-  int can_trim;
-};
-
+struct connection;
 extern int handle_single_connection (int sockin, int sockout);
+extern void connection_set_handle (struct connection *conn, void *handle);
+extern void *connection_get_handle (struct connection *conn);
+extern pthread_mutex_t *connection_get_request_lock (struct connection *conn);
 
 /* errors.c */
 #define debug nbdkit_debug
