@@ -166,10 +166,6 @@ extern void threadlocal_set_error (int err);
 extern int threadlocal_get_error (void);
 /*extern void threadlocal_get_sockaddr ();*/
 
-/* utils.c */
-extern int xread (int sock, void *buf, size_t len);
-extern int xwrite (int sock, const void *buf, size_t len);
-
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
 #include <errno.h>

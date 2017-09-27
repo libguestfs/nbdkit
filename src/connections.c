@@ -75,6 +75,8 @@ static struct connection *new_connection (int sockin, int sockout);
 static void free_connection (struct connection *conn);
 static int negotiate_handshake (struct connection *conn);
 static int recv_request_send_reply (struct connection *conn);
+static int xread (int sock, void *buf, size_t len);
+static int xwrite (int sock, const void *buf, size_t len);
 
 /* Accessors for public fields in the connection structure.
  * Everything else is private to this file.
@@ -905,4 +907,59 @@ recv_request_send_reply (struct connection *conn)
   }
 
   return 1;                     /* command processed ok */
+}
+
+/* Write buffer to socket and either succeed completely (returns 0)
+ * or fail (returns -1).
+ */
+static int
+xwrite (int sock, const void *vbuf, size_t len)
+{
+  const char *buf = vbuf;
+  ssize_t r;
+
+  while (len > 0) {
+    r = write (sock, buf, len);
+    if (r == -1) {
+      if (errno == EINTR || errno == EAGAIN)
+        continue;
+      return -1;
+    }
+    buf += r;
+    len -= r;
+  }
+
+  return 0;
+}
+
+/* Read buffer from socket and either succeed completely (returns > 0),
+ * read an EOF (returns 0), or fail (returns -1).
+ */
+static int
+xread (int sock, void *vbuf, size_t len)
+{
+  char *buf = vbuf;
+  ssize_t r;
+  bool first_read = true;
+
+  while (len > 0) {
+    r = read (sock, buf, len);
+    if (r == -1) {
+      if (errno == EINTR || errno == EAGAIN)
+        continue;
+      return -1;
+    }
+    if (r == 0) {
+      if (first_read)
+        return 0;
+      /* Partial record read.  This is an error. */
+      errno = EBADMSG;
+      return -1;
+    }
+    first_read = false;
+    buf += r;
+    len -= r;
+  }
+
+  return 1;
 }
