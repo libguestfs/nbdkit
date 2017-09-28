@@ -184,6 +184,7 @@ main (int argc, char *argv[])
   int option_index;
   int help = 0, version = 0, dump_plugin = 0;
   int tls_set_on_cli = 0;
+  size_t count;
 
   threadlocal_init ();
 
@@ -486,6 +487,12 @@ main (int argc, char *argv[])
 
   start_serving ();
 
+  /* Wait, but not forever, for all threads to complete. */
+  debug ("waiting for running threads to complete");
+  for (count = 0; count < 5 && get_running_threads (); ++count)
+    sleep (1);
+  debug ("waited %zus for running threads to complete", count);
+
   plugin_cleanup ();
 
   free (unixsocket);
@@ -631,6 +638,12 @@ start_serving (void)
     threadlocal_new_server_thread ();
     if (handle_single_connection (0, 1) == -1)
       exit (EXIT_FAILURE);
+    /* When handling a single connection we reuse the main thread as
+     * the server thread.  We don't want to count it as a running
+     * thread, but it hasn't called pthread_exit(), so we need to
+     * explicitly decrement the running threads here.
+     */
+    decr_running_threads ();
     return;
   }
 

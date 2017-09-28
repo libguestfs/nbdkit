@@ -182,6 +182,9 @@ extern size_t threadlocal_get_instance_num (void);
 extern void threadlocal_set_error (int err);
 extern int threadlocal_get_error (void);
 /*extern void threadlocal_get_sockaddr ();*/
+extern size_t get_running_threads (void);
+extern void incr_running_threads (void);
+extern void decr_running_threads (void);
 
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1

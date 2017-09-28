@@ -71,6 +71,8 @@ free_threadlocal (void *threadlocalv)
 
   free (threadlocal->addr);
   free (threadlocal);
+
+  decr_running_threads ();
 }
 
 void
@@ -90,6 +92,8 @@ void
 threadlocal_new_server_thread (void)
 {
   struct threadlocal *threadlocal;
+
+  incr_running_threads ();
 
   threadlocal = calloc (1, sizeof *threadlocal);
   if (threadlocal == NULL) {
@@ -176,4 +180,35 @@ threadlocal_get_error (void)
 
   errno = err;
   return threadlocal ? threadlocal->err : 0;
+}
+
+/* These functions keep track of the number of running threads. */
+static pthread_mutex_t running_threads_lock = PTHREAD_MUTEX_INITIALIZER;
+static size_t running_threads = 0;
+
+size_t
+get_running_threads (void)
+{
+  size_t r;
+
+  pthread_mutex_lock (&running_threads_lock);
+  r = running_threads;
+  pthread_mutex_unlock (&running_threads_lock);
+  return r;
+}
+
+void
+incr_running_threads (void)
+{
+  pthread_mutex_lock (&running_threads_lock);
+  running_threads++;
+  pthread_mutex_unlock (&running_threads_lock);
+}
+
+void
+decr_running_threads (void)
+{
+  pthread_mutex_lock (&running_threads_lock);
+  running_threads--;
+  pthread_mutex_unlock (&running_threads_lock);
 }
