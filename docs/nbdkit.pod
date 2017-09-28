@@ -6,8 +6,7 @@ nbdkit - A toolkit for creating NBD servers
 
 =head1 SYNOPSIS
 
- nbdkit [--dump-config] [--dump-plugin]
-        [-e EXPORTNAME] [--exit-with-parent] [-f]
+ nbdkit [-e EXPORTNAME] [--exit-with-parent] [-f]
         [-g GROUP] [-i IPADDR]
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
         [--run CMD] [-s] [--selinux-label LABEL]
@@ -15,6 +14,10 @@ nbdkit - A toolkit for creating NBD servers
         [--tls-verify-peer]
         [-U SOCKET] [-u USER] [-v] [-V]
         PLUGIN [key=value [key=value [...]]]
+
+ nbdkit --dump-config
+
+ nbdkit PLUGIN --dump-plugin
 
 =head1 DESCRIPTION
 
@@ -49,19 +52,20 @@ C<$libdir> is set at compile time.  To print it out, do:
 
 =head1 EXAMPLES
 
-Serve file C<disk.img> on port 10809:
+Serve file F<disk.img> on port 10809:
 
  nbdkit file file=disk.img
 
-Run the example1 plugin and connect to it using L<guestfish(1)>:
-
- nbdkit example1
- guestfish --ro -a nbd://localhost
-
-Run the example3 plugin and connect to it using L<guestfish(1)>:
+Run the L<nbdkit-example3-plugin(1)> and connect to it using
+L<guestfish(1)>:
 
  nbdkit example3 size=1G
  guestfish --ro -a nbd://localhost
+
+Serve file F<disk.img> on port 10809, requiring clients to use
+encrypted (TLS) connections:
+
+ nbdkit --newstyle --tls=require file file=disk.img
 
 To display usage information about a specific plugin:
 
@@ -826,6 +830,9 @@ L<nbdkit-xz-plugin(1)>.
 
 Other manual pages of interest:
 
+L<gnutls_priority_init(3)>,
+L<guestfish(1)>,
+L<qemu(1)>,
 L<systemd.socket(5)>.
 
 =head1 AUTHORS
