@@ -215,6 +215,7 @@ AS_IF([test "x$PERL" != "xno" && test "x$enable_perl" != "xno"],[
     dnl Check for Perl LDOPTS.
     AC_MSG_CHECKING([for Perl embed LDOPTS])
     PERL_LDOPTS="$($PERL -MExtUtils::Embed -e 'ldopts')"
+    AC_MSG_RESULT([$PERL_LDOPTS])
 
     dnl XXX Could check these actually work.
 ])
