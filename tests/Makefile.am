@@ -133,6 +133,11 @@ TESTS += test-exit-with-parent
 test_exit_with_parent_SOURCES = test-exit-with-parent.c test.h
 test_exit_with_parent_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 
+# PKI files for the TLS tests.
+check_DATA += pki/.stamp
+pki/.stamp: $(srcdir)/make-pki.sh
+	$(srcdir)/make-pki.sh
+
 # In-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.
 
@@ -176,11 +181,6 @@ TESTS += test-oldstyle
 test_oldstyle_SOURCES = test-oldstyle.c test.h
 test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-# PKI files for the TLS tests.
-check_DATA += pki/.stamp
-pki/.stamp: make-pki.sh
-	./make-pki.sh
 
 # file plugin test.
 check_PROGRAMS += test-file
