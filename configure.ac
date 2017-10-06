@@ -152,6 +152,11 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
     AC_MSG_RESULT([$tls_priority])
     AC_DEFINE_UNQUOTED([TLS_PRIORITY],["$tls_priority"],
                        [Default TLS session priority string])
+
+    old_LIBS="$LIBS"
+    LIBS="$GNUTLS_LIBS $LIBS"
+    AC_CHECK_FUNCS([gnutls_session_set_verify_cert])
+    LIBS="$old_LIBS"
 ])
 
 dnl Check for valgrind.

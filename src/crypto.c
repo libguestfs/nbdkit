@@ -371,8 +371,13 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
    * certificates).
    */
   if (tls_verify_peer) {
+#ifdef HAVE_GNUTLS_SESSION_SET_VERIFY_CERT
     gnutls_certificate_server_set_request (*session, GNUTLS_CERT_REQUEST);
     gnutls_session_set_verify_cert (*session, NULL, 0);
+#else
+    nbdkit_error ("--tls-verify-peer: GnuTLS >= 3.4.6 is required for this feature");
+    goto error;
+#endif
   }
 
   /* Set up GnuTLS so it reads and writes on the raw sockets, and set
