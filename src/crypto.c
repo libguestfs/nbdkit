@@ -422,7 +422,7 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
 void
 crypto_init (int tls_set_on_cli)
 {
-  if (tls > 0)
+  if (tls > 0) {
     fprintf (stderr, "%s: TLS cannot be enabled because this binary was compiled without GnuTLS.\n",
              program_name);
     exit (EXIT_FAILURE);
