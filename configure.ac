@@ -153,9 +153,12 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
     AC_DEFINE_UNQUOTED([TLS_PRIORITY],["$tls_priority"],
                        [Default TLS session priority string])
 
+    # Check for APIs which may not be present.
     old_LIBS="$LIBS"
     LIBS="$GNUTLS_LIBS $LIBS"
-    AC_CHECK_FUNCS([gnutls_session_set_verify_cert])
+    AC_CHECK_FUNCS([\
+	gnutls_certificate_set_known_dh_params \
+	gnutls_session_set_verify_cert])
     LIBS="$old_LIBS"
 ])
 

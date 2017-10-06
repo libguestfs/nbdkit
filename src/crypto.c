@@ -227,7 +227,7 @@ crypto_init (int tls_set_on_cli)
   return;
 
  found_certificates:
-#if GNUTLS_VERSION_NUMBER >= 0x030506
+#ifdef HAVE_GNUTLS_CERTIFICATE_SET_KNOWN_DH_PARAMS
   gnutls_certificate_set_known_dh_params (x509_creds, GNUTLS_SEC_PARAM_MEDIUM);
 #endif
 
