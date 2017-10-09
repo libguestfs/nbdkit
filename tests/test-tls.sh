@@ -40,8 +40,12 @@ if ! ss --version; then
     echo "$0: 'ss' command not available"
     exit 77
 fi
-if ! qemu-img --help; then
+if ! command -v qemu-img > /dev/null; then
     echo "$0: 'qemu-img' command not available"
+    exit 77
+fi
+if ! qemu-img --help | grep -- --object; then
+    echo "$0: 'qemu-img' command does not have the --object option"
     exit 77
 fi
 
