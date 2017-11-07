@@ -11,6 +11,8 @@ account and download it from:
 This directory contains an nbdkit plugin which uses this library to
 export VMDK files and VMware disks over NBD.
 
+VDDK >= 6.5 is required.
+
 Note: VDDK can do NBD on its own, so nbdkit might not be needed unless
 you want the extra features and flexibility of nbdkit.
 
