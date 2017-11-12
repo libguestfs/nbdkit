@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2014 Red Hat Inc.
+# Copyright (C) 2017 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,20 +30,34 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = \
-	curl \
-	example1 \
-	example2 \
-	example3 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	nbd \
-	ocaml \
-	perl \
-	python \
-	ruby \
-	streaming \
-	vddk \
-	xz
+EXTRA_DIST = nbdkit-nbd-plugin.pod
+
+CLEANFILES = *~
+
+plugindir = $(libdir)/nbdkit/plugins
+
+plugin_LTLIBRARIES = nbdkit-nbd-plugin.la
+
+nbdkit_nbd_plugin_la_SOURCES = \
+	nbd.c \
+	$(top_srcdir)/include/nbdkit-plugin.h
+
+nbdkit_nbd_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/src
+nbdkit_nbd_plugin_la_CFLAGS = \
+	$(WARNINGS_CFLAGS)
+nbdkit_nbd_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared
+
+if HAVE_POD2MAN
+
+man_MANS = nbdkit-nbd-plugin.1
+CLEANFILES += $(man_MANS)
+
+nbdkit-nbd-plugin.1: nbdkit-nbd-plugin.pod
+	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
+
+endif

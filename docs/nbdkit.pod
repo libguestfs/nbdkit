@@ -463,6 +463,7 @@ Some common clients and the protocol they require:
  nbd-client < 3.10               client can talk either protocol
  nbd-client >= 3.10              newstyle
  any TLS (encrypted) client      newstyle
+ nbdkit nbd plugin               client can talk either protocol
 
 If you use qemu E<le> 2.5 without the exportname field against a
 newstyle server, it will give the error:
@@ -822,6 +823,7 @@ L<nbdkit-example3-plugin(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-gzip-plugin(1)>,
 L<nbdkit-libvirt-plugin(1)>,
+L<nbdkit-nbd-plugin(1)>,
 L<nbdkit-ocaml-plugin(3)>,
 L<nbdkit-perl-plugin(3)>,
 L<nbdkit-python-plugin(3)>,
