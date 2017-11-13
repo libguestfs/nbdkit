@@ -1016,7 +1016,7 @@ recv_request_send_reply (struct connection *conn)
   }
 
   /* Send the read data buffer. */
-  if (cmd == NBD_CMD_READ) {
+  if (cmd == NBD_CMD_READ && !error) {
     r = conn->send (conn, buf, count);
     if (r == -1) {
       nbdkit_error ("write data: %m");
