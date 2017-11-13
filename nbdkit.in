@@ -99,11 +99,16 @@ if [ $verbose ]; then
     echo $b/src/nbdkit "${args[@]}"
 fi
 
+prefix=
 # If NBDKIT_VALGRIND=1 is set in the environment, then we run
 # the program under valgrind.  This is used by the tests.
+# Similarly, if NBDKIT_GDB=1 is set in the environment, we run
+# the program under gdb, useful during development.
 if [ "$NBDKIT_VALGRIND" ]; then
-    valgrind="@VALGRIND@ --vgdb=no --leak-check=full --error-exitcode=119 --suppressions=$s/valgrind-suppressions --trace-children=no --child-silent-after-fork=yes --run-libc-freeres=no"
+    prefix="@VALGRIND@ --vgdb=no --leak-check=full --error-exitcode=119 --suppressions=$s/valgrind-suppressions --trace-children=no --child-silent-after-fork=yes --run-libc-freeres=no"
+elif [ "$NBDKIT_GDB" ]; then
+    prefix="gdb --args"
 fi
 
 # Run the final command.
-exec $valgrind $b/src/nbdkit "${args[@]}"
+exec $prefix $b/src/nbdkit "${args[@]}"
