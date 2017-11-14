@@ -224,8 +224,14 @@ free_connection (struct connection *conn)
 
   pthread_mutex_destroy (&conn->request_lock);
 
-  if (conn->handle)
-    plugin_close (conn);
+  /* Don't call the plugin again if quit has been set because the main
+   * thread will be in the process of unloading it.  The plugin.unload
+   * callback should always be called.
+   */
+  if (!quit) {
+    if (conn->handle)
+      plugin_close (conn);
+  }
 
   free (conn);
 }

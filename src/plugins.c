@@ -48,6 +48,7 @@
 
 static pthread_mutex_t connection_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t all_requests_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t unload_prevention_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 /* Maximum read or write request that we will handle. */
 #define MAX_REQUEST_SIZE (64 * 1024 * 1024)
@@ -155,6 +156,11 @@ void
 plugin_cleanup (void)
 {
   if (dl) {
+    /* Acquiring this lock prevents any plugin callbacks from running
+     * simultaneously.
+     */
+    pthread_rwlock_wrlock (&unload_prevention_lock);
+
     debug ("%s: unload", filename);
     if (plugin.unload)
       plugin.unload ();
@@ -163,6 +169,8 @@ plugin_cleanup (void)
     dl = NULL;
     free (filename);
     filename = NULL;
+
+    pthread_rwlock_unlock (&unload_prevention_lock);
   }
 }
 
@@ -299,8 +307,6 @@ plugin_config_complete (void)
 void
 plugin_lock_connection (void)
 {
-  assert (dl);
-
   if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
     debug ("%s: acquire connection lock", filename);
     pthread_mutex_lock (&connection_lock);
@@ -310,8 +316,6 @@ plugin_lock_connection (void)
 void
 plugin_unlock_connection (void)
 {
-  assert (dl);
-
   if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
     debug ("%s: release connection lock", filename);
     pthread_mutex_unlock (&connection_lock);
@@ -321,8 +325,6 @@ plugin_unlock_connection (void)
 void
 plugin_lock_request (struct connection *conn)
 {
-  assert (dl);
-
   if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
     debug ("acquire global request lock");
     pthread_mutex_lock (&all_requests_lock);
@@ -332,12 +334,16 @@ plugin_lock_request (struct connection *conn)
     debug ("acquire per-connection request lock");
     pthread_mutex_lock (connection_get_request_lock (conn));
   }
+
+  debug ("acquire unload prevention lock");
+  pthread_rwlock_rdlock (&unload_prevention_lock);
 }
 
 void
 plugin_unlock_request (struct connection *conn)
 {
-  assert (dl);
+  debug ("release unload prevention lock");
+  pthread_rwlock_unlock (&unload_prevention_lock);
 
   if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS) {
     debug ("release per-connection request lock");
