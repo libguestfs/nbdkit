@@ -240,6 +240,7 @@ This may be called once just before the plugin is unloaded from
 memory.  Note that it's not guaranteed that C<.unload> will always be
 called (eg. the server might be killed or segfault), so you should try
 to make the plugin as robust as possible by not requiring cleanup.
+See also L</SHUTDOWN> below.
 
 =head2 C<.config>
 
@@ -527,6 +528,16 @@ also need to provide mutexes for fields in your connection handle.
 If none of the above thread models are suitable, then use
 C<NBDKIT_THREAD_MODEL_PARALLEL> and implement your own locking using
 C<pthread_mutex_t> etc.
+
+=head1 SHUTDOWN
+
+When nbdkit receives certain signals it will shut down (see
+L<nbdkit(1)/SIGNALS>).  The server will wait for any currently running
+plugin callbacks to finish and also call the C<.unload> callback
+before unloading the plugin.
+
+Note that it's not guaranteed this can always happen (eg. the server
+might be killed by C<SIGKILL> or segfault).
 
 =head1 PARSING SIZE PARAMETERS
 
