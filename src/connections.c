@@ -879,6 +879,11 @@ skip_over_write_buffer (int sock, size_t count)
   char buf[BUFSIZ];
   ssize_t r;
 
+  if (count > MAX_REQUEST_SIZE * 2) {
+    nbdkit_error ("write request too large to skip");
+    return -1;
+  }
+
   while (count > 0) {
     r = read (sock, buf, count > BUFSIZ ? BUFSIZ : count);
     if (r == -1) {
