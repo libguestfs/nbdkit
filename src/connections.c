@@ -640,7 +640,7 @@ negotiate_handshake (struct connection *conn)
   return r;
 }
 
-static int
+static bool
 valid_range (struct connection *conn, uint64_t offset, uint32_t count)
 {
   uint64_t exportsize = conn->exportsize;
@@ -648,12 +648,19 @@ valid_range (struct connection *conn, uint64_t offset, uint32_t count)
   return count > 0 && offset <= exportsize && offset + count <= exportsize;
 }
 
-static int
+static bool
 validate_request (struct connection *conn,
                   uint32_t cmd, uint32_t flags, uint64_t offset, uint32_t count,
                   uint32_t *error)
 {
-  int r;
+  /* Readonly connection? */
+  if (conn->readonly &&
+      (cmd == NBD_CMD_WRITE || cmd == NBD_CMD_TRIM ||
+       cmd == NBD_CMD_WRITE_ZEROES)) {
+    nbdkit_error ("invalid request: write request on readonly connection");
+    *error = EROFS;
+    return false;
+  }
 
   /* Validate cmd, offset, count. */
   switch (cmd) {
@@ -661,14 +668,12 @@ validate_request (struct connection *conn,
   case NBD_CMD_WRITE:
   case NBD_CMD_TRIM:
   case NBD_CMD_WRITE_ZEROES:
-    r = valid_range (conn, offset, count);
-    if (r == -1)
-      return -1;
-    if (r == 0) {
+    if (!valid_range (conn, offset, count)) {
       /* XXX Allow writes to extend the disk? */
       nbdkit_error ("invalid request: offset and length are out of range");
-      *error = EIO;
-      return 0;
+      *error = (cmd == NBD_CMD_WRITE ||
+                cmd == NBD_CMD_WRITE_ZEROES) ? ENOSPC : EINVAL;
+      return false;
     }
     break;
 
@@ -676,7 +681,7 @@ validate_request (struct connection *conn,
     if (offset != 0 || count != 0) {
       nbdkit_error ("invalid flush request: expecting offset and length == 0");
       *error = EINVAL;
-      return 0;
+      return false;
     }
     break;
 
@@ -684,20 +689,20 @@ validate_request (struct connection *conn,
     nbdkit_error ("invalid request: unknown command (%" PRIu32 ") ignored",
                   cmd);
     *error = EINVAL;
-    return 0;
+    return false;
   }
 
   /* Validate flags */
   if (flags & ~(NBD_CMD_FLAG_FUA | NBD_CMD_FLAG_NO_HOLE)) {
     nbdkit_error ("invalid request: unknown flag (0x%x)", flags);
     *error = EINVAL;
-    return 0;
+    return false;
   }
   if ((flags & NBD_CMD_FLAG_NO_HOLE) &&
       cmd != NBD_CMD_WRITE_ZEROES) {
     nbdkit_error ("invalid request: NO_HOLE flag needs WRITE_ZEROES request");
     *error = EINVAL;
-    return 0;
+    return false;
   }
 
   /* Refuse over-large read and write requests. */
@@ -706,33 +711,24 @@ validate_request (struct connection *conn,
     nbdkit_error ("invalid request: data request is too large (%" PRIu32
                   " > %d)", count, MAX_REQUEST_SIZE);
     *error = ENOMEM;
-    return 0;
-  }
-
-  /* Readonly connection? */
-  if (conn->readonly &&
-      (cmd == NBD_CMD_WRITE || cmd == NBD_CMD_FLUSH ||
-       cmd == NBD_CMD_TRIM || cmd == NBD_CMD_WRITE_ZEROES)) {
-    nbdkit_error ("invalid request: write request on readonly connection");
-    *error = EROFS;
-    return 0;
+    return false;
   }
 
   /* Flush allowed? */
   if (!conn->can_flush && cmd == NBD_CMD_FLUSH) {
     nbdkit_error ("invalid request: flush operation not supported");
     *error = EINVAL;
-    return 0;
+    return false;
   }
 
   /* Trim allowed? */
   if (!conn->can_trim && cmd == NBD_CMD_TRIM) {
     nbdkit_error ("invalid request: trim operation not supported");
     *error = EINVAL;
-    return 0;
+    return false;
   }
 
-  return 1;                     /* Commands validates. */
+  return true;                     /* Command validates. */
 }
 
 /* Grab the appropriate error value.
@@ -944,10 +940,7 @@ recv_request_send_reply (struct connection *conn)
   }
 
   /* Validate the request. */
-  r = validate_request (conn, cmd, flags, offset, count, &error);
-  if (r == -1)
-    return -1;
-  if (r == 0) {                 /* request not valid */
+  if (!validate_request (conn, cmd, flags, offset, count, &error)) {
     if (cmd == NBD_CMD_WRITE &&
         skip_over_write_buffer (conn->sockin, count) < 0)
       return -1;
