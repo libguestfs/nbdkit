@@ -39,6 +39,8 @@ EXTRA_DIST = \
 	valgrind-suppressions \
 	m4/.gitignore
 
+noinst_SCRIPTS = nbdkit
+
 SUBDIRS = \
 	docs \
 	include \
