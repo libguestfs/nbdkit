@@ -873,7 +873,7 @@ handle_request (struct connection *conn,
   return r;
 }
 
-static void
+static int
 skip_over_write_buffer (int sock, size_t count)
 {
   char buf[BUFSIZ];
@@ -883,12 +883,16 @@ skip_over_write_buffer (int sock, size_t count)
     r = read (sock, buf, count > BUFSIZ ? BUFSIZ : count);
     if (r == -1) {
       nbdkit_error ("skipping write buffer: %m");
-      return;
+      return -1;
     }
-    if (r == 0)
-      return;
+    if (r == 0)  {
+      nbdkit_error ("unexpected early EOF");
+      errno = EBADMSG;
+      return -1;
+    }
     count -= r;
   }
+  return 0;
 }
 
 /* Convert a system errno to an NBD_E* error code. */
@@ -965,8 +969,9 @@ recv_request_send_reply (struct connection *conn)
   if (r == -1)
     return -1;
   if (r == 0) {                 /* request not valid */
-    if (cmd == NBD_CMD_WRITE)
-      skip_over_write_buffer (conn->sockin, count);
+    if (cmd == NBD_CMD_WRITE &&
+        skip_over_write_buffer (conn->sockin, count) < 0)
+      return -1;
     goto send_reply;
   }
 
@@ -976,8 +981,9 @@ recv_request_send_reply (struct connection *conn)
     if (buf == NULL) {
       perror ("malloc");
       error = ENOMEM;
-      if (cmd == NBD_CMD_WRITE)
-        skip_over_write_buffer (conn->sockin, count);
+      if (cmd == NBD_CMD_WRITE &&
+          skip_over_write_buffer (conn->sockin, count) < 0)
+        return -1;
       goto send_reply;
     }
   }
@@ -985,13 +991,13 @@ recv_request_send_reply (struct connection *conn)
   /* Receive the write data buffer. */
   if (cmd == NBD_CMD_WRITE) {
     r = conn->recv (conn, buf, count);
+    if (r == 0) {
+      errno = EBADMSG;
+      r = -1;
+    }
     if (r == -1) {
       nbdkit_error ("read data: %m");
       return -1;
-    }
-    if (r == 0) {
-      debug ("client closed input unexpectedly, closing connection");
-      return 0;                 /* disconnect */
     }
   }
 
