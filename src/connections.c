@@ -237,35 +237,10 @@ free_connection (struct connection *conn)
 }
 
 static int
-_negotiate_handshake_oldstyle (struct connection *conn)
+compute_eflags (struct connection *conn, uint16_t *flags)
 {
-  struct old_handshake handshake;
-  int64_t r;
-  uint64_t exportsize;
-  uint16_t gflags, eflags;
+  uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
-
-  /* In --tls=require / FORCEDTLS mode, old style handshakes are
-   * rejected because they cannot support TLS.
-   */
-  if (tls == 2) {
-    nbdkit_error ("non-TLS client tried to connect in --tls=require mode");
-    return -1;
-  }
-
-  r = plugin_get_size (conn);
-  if (r == -1)
-    return -1;
-  if (r < 0) {
-    nbdkit_error (".get_size function returned invalid value "
-                  "(%" PRIi64 ")", r);
-    return -1;
-  }
-  exportsize = (uint64_t) r;
-  conn->exportsize = exportsize;
-
-  gflags = 0;
-  eflags = NBD_FLAG_HAS_FLAGS;
 
   fl = plugin_can_write (conn);
   if (fl == -1)
@@ -277,7 +252,6 @@ _negotiate_handshake_oldstyle (struct connection *conn)
   if (!conn->readonly) {
     eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
   }
-
 
   fl = plugin_can_flush (conn);
   if (fl == -1)
@@ -302,6 +276,41 @@ _negotiate_handshake_oldstyle (struct connection *conn)
     eflags |= NBD_FLAG_SEND_TRIM;
     conn->can_trim = 1;
   }
+
+  *flags = eflags;
+  return 0;
+}
+
+static int
+_negotiate_handshake_oldstyle (struct connection *conn)
+{
+  struct old_handshake handshake;
+  int64_t r;
+  uint64_t exportsize;
+  uint16_t gflags, eflags;
+
+  /* In --tls=require / FORCEDTLS mode, old style handshakes are
+   * rejected because they cannot support TLS.
+   */
+  if (tls == 2) {
+    nbdkit_error ("non-TLS client tried to connect in --tls=require mode");
+    return -1;
+  }
+
+  r = plugin_get_size (conn);
+  if (r == -1)
+    return -1;
+  if (r < 0) {
+    nbdkit_error (".get_size function returned invalid value "
+                  "(%" PRIi64 ")", r);
+    return -1;
+  }
+  exportsize = (uint64_t) r;
+  conn->exportsize = exportsize;
+
+  gflags = 0;
+  if (compute_eflags (conn, &eflags) < 0)
+    return -1;
 
   debug ("oldstyle negotiation: flags: global 0x%x export 0x%x",
          gflags, eflags);
@@ -552,7 +561,6 @@ _negotiate_handshake_newstyle (struct connection *conn)
   int64_t r;
   uint64_t exportsize;
   uint16_t eflags;
-  int fl;
 
   gflags = NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES;
 
@@ -596,42 +604,8 @@ _negotiate_handshake_newstyle (struct connection *conn)
   exportsize = (uint64_t) r;
   conn->exportsize = exportsize;
 
-  eflags = NBD_FLAG_HAS_FLAGS;
-
-  fl = plugin_can_write (conn);
-  if (fl == -1)
+  if (compute_eflags (conn, &eflags) < 0)
     return -1;
-  if (readonly || !fl) {
-    eflags |= NBD_FLAG_READ_ONLY;
-    conn->readonly = 1;
-  }
-  if (!conn->readonly) {
-    eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
-  }
-
-  fl = plugin_can_flush (conn);
-  if (fl == -1)
-    return -1;
-  if (fl) {
-    eflags |= NBD_FLAG_SEND_FLUSH | NBD_FLAG_SEND_FUA;
-    conn->can_flush = 1;
-  }
-
-  fl = plugin_is_rotational (conn);
-  if (fl == -1)
-    return -1;
-  if (fl) {
-    eflags |= NBD_FLAG_ROTATIONAL;
-    conn->is_rotational = 1;
-  }
-
-  fl = plugin_can_trim (conn);
-  if (fl == -1)
-    return -1;
-  if (fl) {
-    eflags |= NBD_FLAG_SEND_TRIM;
-    conn->can_trim = 1;
-  }
 
   debug ("newstyle negotiation: flags: export 0x%x", eflags);
 
