@@ -937,9 +937,14 @@ recv_request_send_reply (struct connection *conn)
   }
 
   /* Perform the request.  Only this part happens inside the request lock. */
-  plugin_lock_request (conn);
-  error = handle_request (conn, cmd, flags, offset, count, buf);
-  plugin_unlock_request (conn);
+  if (quit) {
+    error = ESHUTDOWN;
+  }
+  else {
+    plugin_lock_request (conn);
+    error = handle_request (conn, cmd, flags, offset, count, buf);
+    plugin_unlock_request (conn);
+  }
 
   /* Send the reply packet. */
  send_reply:
