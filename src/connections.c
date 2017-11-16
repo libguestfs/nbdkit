@@ -749,19 +749,16 @@ get_error (struct connection *conn)
  * check them again.  'buf' is either the data to be written or the
  * data to be returned, and points to a buffer of size 'count' bytes.
  *
- * Only returns -1 if there is a fatal error and the connection cannot
- * continue.
- *
- * On read/write errors, sets *error appropriately and returns 0.
+ * In all cases, the return value is the system errno value that will
+ * later be converted to the nbd error to send back to the client (0
+ * for success).
  */
-static int
-_handle_request (struct connection *conn,
-                 uint32_t cmd, uint32_t flags, uint64_t offset, uint32_t count,
-                 void *buf,
-                 uint32_t *error)
+static uint32_t
+handle_request (struct connection *conn,
+                uint32_t cmd, uint32_t flags, uint64_t offset, uint32_t count,
+                void *buf)
 {
   bool flush_after_command;
-  int r;
 
   /* Flush after command performed? */
   flush_after_command = (flags & NBD_CMD_FLAG_FUA) != 0;
@@ -774,73 +771,39 @@ _handle_request (struct connection *conn,
 
   switch (cmd) {
   case NBD_CMD_READ:
-    r = plugin_pread (conn, buf, count, offset);
-    if (r == -1) {
-      *error = get_error (conn);
-      return 0;
-    }
+    if (plugin_pread (conn, buf, count, offset) == -1)
+      return get_error (conn);
     break;
 
   case NBD_CMD_WRITE:
-    r = plugin_pwrite (conn, buf, count, offset);
-    if (r == -1) {
-      *error = get_error (conn);
-      return 0;
-    }
+    if (plugin_pwrite (conn, buf, count, offset) == -1)
+      return get_error (conn);
     break;
 
   case NBD_CMD_FLUSH:
-    r = plugin_flush (conn);
-    if (r == -1) {
-      *error = get_error (conn);
-      return 0;
-    }
+    if (plugin_flush (conn) == -1)
+      return get_error (conn);
     break;
 
   case NBD_CMD_TRIM:
-    r = plugin_trim (conn, count, offset);
-    if (r == -1) {
-      *error = get_error (conn);
-      return 0;
-    }
+    if (plugin_trim (conn, count, offset) == -1)
+      return get_error (conn);
     break;
 
   case NBD_CMD_WRITE_ZEROES:
-    r = plugin_zero (conn, count, offset, !(flags & NBD_CMD_FLAG_NO_HOLE));
-    if (r == -1) {
-      *error = get_error (conn);
-      return 0;
-    }
+    if (plugin_zero (conn, count, offset,
+                     !(flags & NBD_CMD_FLAG_NO_HOLE)) == -1)
+      return get_error (conn);
     break;
 
   default:
     abort ();
   }
 
-  if (flush_after_command) {
-    r = plugin_flush (conn);
-    if (r == -1) {
-      *error = get_error (conn);
-      return 0;
-    }
-  }
+  if (flush_after_command && plugin_flush (conn) == -1)
+    return get_error (conn);
 
   return 0;
-}
-
-static int
-handle_request (struct connection *conn,
-                uint32_t cmd, uint32_t flags, uint64_t offset, uint32_t count,
-                void *buf,
-                uint32_t *error)
-{
-  int r;
-
-  plugin_lock_request (conn);
-  r = _handle_request (conn, cmd, flags, offset, count, buf, error);
-  plugin_unlock_request (conn);
-
-  return r;
 }
 
 static int
@@ -974,9 +937,9 @@ recv_request_send_reply (struct connection *conn)
   }
 
   /* Perform the request.  Only this part happens inside the request lock. */
-  r = handle_request (conn, cmd, flags, offset, count, buf, &error);
-  if (r == -1)
-    return -1;
+  plugin_lock_request (conn);
+  error = handle_request (conn, cmd, flags, offset, count, buf);
+  plugin_unlock_request (conn);
 
   /* Send the reply packet. */
  send_reply:
