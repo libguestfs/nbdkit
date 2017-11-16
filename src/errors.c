@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2017 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,10 +38,30 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
+#include <pthread.h>
 
 #include "nbdkit-plugin.h"
 #include "internal.h"
 
+/* Used to group piecemeal message construction into atomic output. */
+static pthread_mutex_t errors_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void
+lock (void)
+{
+  int r = pthread_mutex_lock (&errors_lock);
+  assert (!r);
+}
+
+static void
+unlock (void)
+{
+  int r = pthread_mutex_unlock (&errors_lock);
+  assert (!r);
+}
+
+/* Called with lock taken. */
 static void
 prologue (const char *type)
 {
@@ -69,11 +89,13 @@ nbdkit_vdebug (const char *fs, va_list args)
   if (!verbose)
     return;
 
+  lock ();
   prologue ("debug");
 
   vfprintf (stderr, fs, args);
 
   fprintf (stderr, "\n");
+  unlock ();
 
   errno = err;
 }
@@ -88,6 +110,7 @@ nbdkit_debug (const char *fs, ...)
   if (!verbose)
     return;
 
+  lock ();
   prologue ("debug");
 
   va_start (args, fs);
@@ -95,6 +118,7 @@ nbdkit_debug (const char *fs, ...)
   va_end (args);
 
   fprintf (stderr, "\n");
+  unlock ();
 
   errno = err;
 }
@@ -105,11 +129,13 @@ nbdkit_verror (const char *fs, va_list args)
 {
   int err = errno;
 
+  lock ();
   prologue ("error");
 
   vfprintf (stderr, fs, args);
 
   fprintf (stderr, "\n");
+  unlock ();
 
   errno = err;
 }
@@ -121,6 +147,7 @@ nbdkit_error (const char *fs, ...)
   va_list args;
   int err = errno;
 
+  lock ();
   prologue ("error");
 
   va_start (args, fs);
@@ -128,6 +155,7 @@ nbdkit_error (const char *fs, ...)
   va_end (args);
 
   fprintf (stderr, "\n");
+  unlock ();
 
   errno = err;
 }
