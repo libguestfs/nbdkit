@@ -143,6 +143,12 @@ plugin_register (const char *_filename,
       exit (EXIT_FAILURE);
     }
   }
+  /* Copy the module's name into local storage, so that plugin.name
+   * survives past unload. */
+  if (!(plugin.name = strdup (plugin.name))) {
+    perror ("strdup");
+    exit (EXIT_FAILURE);
+  }
 
   debug ("registered %s (name %s)", filename, plugin.name);
 
@@ -177,8 +183,6 @@ plugin_cleanup (void)
 const char *
 plugin_name (void)
 {
-  assert (dl);
-
   return plugin.name;
 }
 
