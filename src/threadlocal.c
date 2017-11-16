@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2017 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@
  */
 
 struct threadlocal {
-  const char *name;             /* Can be NULL. */
+  char *name;                   /* Can be NULL. */
   size_t instance_num;          /* Can be 0. */
   struct sockaddr *addr;
   socklen_t addrlen;
@@ -69,6 +69,7 @@ free_threadlocal (void *threadlocalv)
 {
   struct threadlocal *threadlocal = threadlocalv;
 
+  free (threadlocal->name);
   free (threadlocal->addr);
   free (threadlocal);
 }
@@ -104,8 +105,15 @@ threadlocal_set_name (const char *name)
 {
   struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
-  if (threadlocal)
-    threadlocal->name = name;
+  /* Copy name, as the original may be residing in a module, but we
+   * want our thread name to persist even after unload. */
+  if (threadlocal) {
+    free (threadlocal->name);
+    threadlocal->name = strdup (name);
+    /* Best effort; logging a NULL name is better than exiting. */
+    if (threadlocal->name == NULL)
+      perror ("malloc");
+  }
 }
 
 void
