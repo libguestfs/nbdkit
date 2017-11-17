@@ -261,6 +261,7 @@ start_thread (void *datav)
 
   handle_single_connection (data->sock, data->sock);
 
+  free (data);
   return NULL;
 }
 
@@ -270,18 +271,25 @@ accept_connection (int listen_sock)
   int err;
   pthread_attr_t attrs;
   pthread_t thread;
-  struct thread_data thread_data;
+  struct thread_data *thread_data;
   static size_t instance_num = 1;
 
-  thread_data.instance_num = instance_num++;
-  thread_data.addrlen = sizeof thread_data.addr;
+  thread_data = malloc (sizeof *thread_data);
+  if (!thread_data) {
+    perror ("malloc");
+    return;
+  }
+
+  thread_data->instance_num = instance_num++;
+  thread_data->addrlen = sizeof thread_data->addr;
  again:
-  thread_data.sock = accept (listen_sock,
-                             &thread_data.addr, &thread_data.addrlen);
-  if (thread_data.sock == -1) {
+  thread_data->sock = accept (listen_sock,
+                              &thread_data->addr, &thread_data->addrlen);
+  if (thread_data->sock == -1) {
     if (errno == EINTR || errno == EAGAIN)
       goto again;
     perror ("accept");
+    free (thread_data);
     return;
   }
 
@@ -291,16 +299,17 @@ accept_connection (int listen_sock)
    */
   pthread_attr_init (&attrs);
   pthread_attr_setdetachstate (&attrs, PTHREAD_CREATE_DETACHED);
-  err = pthread_create (&thread, &attrs, start_thread, &thread_data);
+  err = pthread_create (&thread, &attrs, start_thread, thread_data);
   pthread_attr_destroy (&attrs);
   if (err != 0) {
     fprintf (stderr, "%s: pthread_create: %s\n", program_name, strerror (err));
-    close (thread_data.sock);
+    close (thread_data->sock);
+    free (thread_data);
     return;
   }
 
   /* If the thread starts successfully, then it is responsible for
-   * closing the socket.
+   * closing the socket and freeing thread_data.
    */
 }
 
