@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2017 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,4 +45,10 @@ void
 cleanup_free (void *ptr)
 {
   free (* (void **) ptr);
+}
+
+void
+cleanup_unlock (pthread_mutex_t **ptr)
+{
+  pthread_mutex_unlock (*ptr);
 }
