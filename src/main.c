@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2016 Red Hat Inc.
+ * Copyright (C) 2013-2017 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,7 +92,13 @@ const char *user, *group;       /* -u & -g */
 int verbose;                    /* -v */
 unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
 
+/* Detection of request to exit via signal.  Most places in the code
+ * can just poll quit at opportune moments, while sockets.c needs a
+ * pipe-to-self through quit_fd in order to break a poll loop without
+ * a race. */
 volatile int quit;
+int quit_fd;
+static int write_quit_fd;
 
 static char *random_fifo_dir = NULL;
 static char *random_fifo = NULL;
@@ -657,13 +663,24 @@ start_serving (void)
 static void
 handle_quit (int sig)
 {
+  char c = sig;
+
   quit = 1;
+  write (write_quit_fd, &c, 1);
 }
 
 static void
 set_up_signals (void)
 {
   struct sigaction sa;
+  int fds[2];
+
+  if (pipe (fds) < 0) {
+    perror ("pipe");
+    exit (EXIT_FAILURE);
+  }
+  quit_fd = fds[0];
+  write_quit_fd = fds[1];
 
   memset (&sa, 0, sizeof sa);
   sa.sa_flags = SA_RESTART;

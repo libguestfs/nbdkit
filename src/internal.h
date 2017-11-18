@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2017 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -103,8 +103,8 @@ extern const char *tls_certificates_dir;
 extern int tls_verify_peer;
 extern char *unixsocket;
 extern int verbose;
-
 extern volatile int quit;
+extern int quit_fd;
 
 /* cleanup.c */
 extern void cleanup_free (void *ptr);

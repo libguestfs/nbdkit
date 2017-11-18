@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2017 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -316,7 +316,7 @@ accept_connection (int listen_sock)
 void
 accept_incoming_connections (int *socks, size_t nr_socks)
 {
-  struct pollfd fds[nr_socks];
+  struct pollfd fds[nr_socks + 1];
   size_t i;
   int r;
 
@@ -326,14 +326,22 @@ accept_incoming_connections (int *socks, size_t nr_socks)
       fds[i].events = POLLIN;
       fds[i].revents = 0;
     }
+    fds[i].fd = quit_fd;
+    fds[i].events = POLLIN;
+    fds[i].revents = 0;
 
-    r = poll (fds, nr_socks, -1);
+    r = poll (fds, nr_socks + 1, -1);
     if (r == -1) {
       if (errno == EINTR || errno == EAGAIN)
         continue;
       perror ("poll");
       exit (EXIT_FAILURE);
     }
+
+    /* We don't even have to read quit_fd - just knowing that it has data
+     * means the signal handler ran, so we are ready to quit the loop. */
+    if (fds[i].revents & POLLIN)
+      continue;
 
     for (i = 0; i < nr_socks; ++i) {
       if (fds[i].revents & POLLIN)
