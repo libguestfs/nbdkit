@@ -300,7 +300,7 @@ static int
 nbd_reply (struct handle *h, int cookie)
 {
   int err;
-  struct transaction trans;
+  struct transaction trans = { 0 };
 
   err = nbd_reply_raw (h, &trans);
   assert (err < 0 || cookie == trans.cookie);
