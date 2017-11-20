@@ -12,10 +12,3 @@
 * Glance and/or cinder plugins.
 
 * Performance - measure and improve it.
-
-* Implement true parallel request handling.  Currently
-  NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS and
-  NBDKIT_THREAD_MODEL_PARALLEL are the same, because we handle
-  requests within each connection synchronously one at a time.  We
-  could (and should) be able to handle them in parallel by having
-  another thread pool for requests.

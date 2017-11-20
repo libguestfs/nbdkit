@@ -9,7 +9,7 @@ nbdkit - A toolkit for creating NBD servers
  nbdkit [-e EXPORTNAME] [--exit-with-parent] [-f]
         [-g GROUP] [-i IPADDR]
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
-        [--run CMD] [-s] [--selinux-label LABEL]
+        [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]
         [--tls=off|on|require] [--tls-certificates /path/to/certificates]
         [--tls-verify-peer]
         [-U SOCKET] [-u USER] [-v] [-V]
@@ -229,6 +229,16 @@ guests which are using SELinux and sVirt confinement to access nbdkit
 Unix domain sockets:
 
  nbdkit --selinux-label system_u:object_r:svirt_t:s0 ...
+
+=item B<-t> THREADS
+
+= item B<--threads> THREADS
+
+Set the number of threads to be used per connection, which in turn
+controls the number of outstanding requests that can be processed at
+once.  Only matters for plugins with thread_model=parallel (where it
+defaults to 16).  To force serialized behavior (useful if the client
+is not prepared for out-of-order responses), set this to 1.
 
 =item B<--tls=off>
 

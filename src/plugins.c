@@ -360,6 +360,14 @@ plugin_unlock_request (struct connection *conn)
   }
 }
 
+bool
+plugin_is_parallel (void)
+{
+  assert (dl);
+
+  return plugin._thread_model >= NBDKIT_THREAD_MODEL_PARALLEL;
+}
+
 int
 plugin_errno_is_preserved (void)
 {

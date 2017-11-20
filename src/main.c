@@ -84,6 +84,7 @@ int readonly;                   /* -r */
 char *run;                      /* --run */
 int listen_stdin;               /* -s */
 const char *selinux_label;      /* --selinux-label */
+int threads;                    /* -t */
 int tls;                        /* --tls : 0=off 1=on 2=require */
 const char *tls_certificates_dir; /* --tls-certificates */
 int tls_verify_peer;            /* --tls-verify-peer */
@@ -105,7 +106,7 @@ static char *random_fifo = NULL;
 
 enum { HELP_OPTION = CHAR_MAX + 1 };
 
-static const char *short_options = "e:fg:i:nop:P:rsu:U:vV";
+static const char *short_options = "e:fg:i:nop:P:rst:u:U:vV";
 static const struct option long_options[] = {
   { "help",       0, NULL, HELP_OPTION },
   { "dump-config",0, NULL, 0 },
@@ -132,6 +133,7 @@ static const struct option long_options[] = {
   { "selinux-label", 1, NULL, 0 },
   { "single",     0, NULL, 's' },
   { "stdin",      0, NULL, 's' },
+  { "threads",    1, NULL, 't' },
   { "tls",        1, NULL, 0 },
   { "tls-certificates", 1, NULL, 0 },
   { "tls-verify-peer", 0, NULL, 0 },
@@ -149,7 +151,7 @@ usage (void)
           "       [-e EXPORTNAME] [--exit-with-parent] [-f]\n"
           "       [-g GROUP] [-i IPADDR]\n"
           "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
-          "       [--run CMD] [-s] [--selinux-label LABEL]\n"
+          "       [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]\n"
           "       [--tls=off|on|require] [--tls-certificates /path/to/certificates]\n"
           "       [--tls-verify-peer]\n"
           "       [-U SOCKET] [-u USER] [-v] [-V]\n"
@@ -336,6 +338,20 @@ main (int argc, char *argv[])
       }
       listen_stdin = 1;
       break;
+
+    case 't':
+      {
+        char *end;
+
+        errno = 0;
+        threads = strtoul (optarg, &end, 0);
+        if (errno || *end) {
+          fprintf (stderr, "%s: cannot parse '%s' into threads\n",
+                   program_name, optarg);
+          exit (EXIT_FAILURE);
+        }
+        /* XXX Worth a maximimum limit on threads? */
+      }
 
     case 'U':
       if (socket_activation) {

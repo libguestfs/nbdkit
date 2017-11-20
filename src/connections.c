@@ -59,6 +59,9 @@
 /* Maximum length of any option data (bytes). */
 #define MAX_OPTION_LENGTH 4096
 
+/* Default number of parallel requests. */
+#define DEFAULT_PARALLEL_REQUESTS 16
+
 /* Connection structure. */
 struct connection {
   pthread_mutex_t request_lock;
@@ -205,9 +208,11 @@ _handle_single_connection (int sockin, int sockout)
 {
   int r = -1;
   struct connection *conn;
-  int nworkers = 1; /* TODO default to 16 for parallel plugins, with command-line override */
+  int nworkers = threads ? threads : DEFAULT_PARALLEL_REQUESTS;
   pthread_t *workers = NULL;
 
+  if (!plugin_is_parallel() || nworkers == 1)
+    nworkers = 0;
   conn = new_connection (sockin, sockout, nworkers);
   if (!conn)
     goto done;
@@ -221,10 +226,9 @@ _handle_single_connection (int sockin, int sockout)
   if (negotiate_handshake (conn) == -1)
     goto done;
 
-  if (nworkers <= 1) {
+  if (!nworkers) {
     /* No need for a separate thread. */
     debug ("handshake complete, processing requests serially");
-    conn->nworkers = 0;
     while (!quit && get_status (conn) > 0)
       recv_request_send_reply (conn);
   }

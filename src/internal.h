@@ -103,6 +103,8 @@ extern const char *tls_certificates_dir;
 extern int tls_verify_peer;
 extern char *unixsocket;
 extern int verbose;
+extern int threads;
+
 extern volatile int quit;
 extern int quit_fd;
 
@@ -152,6 +154,7 @@ extern void plugin_lock_connection (void);
 extern void plugin_unlock_connection (void);
 extern void plugin_lock_request (struct connection *conn);
 extern void plugin_unlock_request (struct connection *conn);
+extern bool plugin_is_parallel (void);
 extern int plugin_errno_is_preserved (void);
 extern int plugin_open (struct connection *conn, int readonly);
 extern void plugin_close (struct connection *conn);
