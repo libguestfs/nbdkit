@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2016 Red Hat Inc.
+# Copyright (C) 2013-2017 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -100,7 +100,7 @@ check_PROGRAMS += \
 test_socket_activation_SOURCES = test-socket-activation.c
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 
-endif
+endif HAVE_PLUGINS
 
 if HAVE_CXX
 # This builds a plugin using the C++ compiler.  The plugin
@@ -124,7 +124,7 @@ test_cxx_plugin_la_CXXFLAGS = \
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_cxx_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared -rpath /nowhere
-endif
+endif HAVE_CXX
 
 # Exit with parent test.
 check_PROGRAMS += test-exit-with-parent
@@ -219,8 +219,8 @@ disk.gz: disk
 	rm -f $@
 	gzip -9 -c disk > $@
 
-endif
-endif
+endif HAVE_GUESTFISH
+endif HAVE_ZLIB
 
 # xz plugin test.
 if HAVE_LIBLZMA
@@ -239,8 +239,8 @@ disk.xz: disk
 	rm -f $@
 	xz --best -c disk > $@
 
-endif
-endif
+endif HAVE_GUESTFISH
+endif HAVE_LIBLZMA
 
 # perl plugin test.
 if HAVE_PERL
@@ -254,7 +254,7 @@ test_perl_CFLAGS = \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_perl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-endif
+endif HAVE_PERL
 
 # python plugin test.
 if HAVE_PYTHON
@@ -268,7 +268,7 @@ test_python_CFLAGS = \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_python_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-endif
+endif HAVE_PYTHON
 
 # OCaml plugin test.
 if HAVE_OCAML
@@ -290,7 +290,7 @@ test-ocaml-plugin.so: test_ocaml_plugin.ml ../plugins/ocaml/libnbdkitocaml.la ..
 	  NBDKit.cmx $< \
 	  -cclib -L../plugins/ocaml/.libs -cclib -lnbdkitocaml
 
-endif
+endif HAVE_OCAML
 
 # Ruby plugin test.
 if HAVE_RUBY
@@ -304,7 +304,7 @@ test_ruby_CFLAGS = \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_ruby_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-endif
+endif HAVE_RUBY
 
 # streaming plugin test.
 check_PROGRAMS += test-streaming
@@ -315,5 +315,5 @@ test_streaming_SOURCES = test-streaming.c test.h
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-endif
-endif
+endif HAVE_PLUGINS
+endif HAVE_LIBGUESTFS
