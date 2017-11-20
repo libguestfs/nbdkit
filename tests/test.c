@@ -42,70 +42,101 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "test.h"
 
 /* 'test_start_nbdkit' below makes assumptions about the format of
  * these strings.
  */
-static char tmpdir[] =            "/tmp/nbdkitXXXXXX";
-static char sockpath[] =          "/tmp/nbdkitXXXXXX/sock";
-static char unixsockpath[] = "unix:/tmp/nbdkitXXXXXX/sock";
-static char pidpath[] =           "/tmp/nbdkitXXXXXX/pid";
+#define TEST_NBDKIT_TEMPLATE "/tmp/nbdkitXXXXXX"
+struct test_nbdkit {
+  char tmpdir[          17     + 1]; /*          template,          NUL */
+  char sockpath[        17 + 5 + 1]; /*          template, "/sock", NUL */
+  char unixsockpath[5 + 17 + 5 + 1]; /* "unix:", template, "/sock", NUL */
+  char pidpath[         17 + 4 + 1]; /*          template, "/pid",  NUL */
+  pid_t pid;
+  struct test_nbdkit *next;
+};
+const struct test_nbdkit template = {
+  .tmpdir =               TEST_NBDKIT_TEMPLATE,
+  .sockpath =             TEST_NBDKIT_TEMPLATE "/sock",
+  .unixsockpath = "unix:" TEST_NBDKIT_TEMPLATE "/sock",
+  .pidpath =              TEST_NBDKIT_TEMPLATE "/pid",
+};
+
+static struct test_nbdkit *head;
 
 pid_t pid = 0;
-const char *server[2] = { unixsockpath, NULL };
+const char *sock = NULL;
+const char *server[2] = { NULL, NULL };
 
 static void
 cleanup (void)
 {
   int status;
+  struct test_nbdkit *next;
 
-  if (pid > 0) {
-    kill (pid, SIGTERM);
+  while (head) {
+    if (head->pid > 0) {
+      assert (!pid || pid == head->pid);
+      pid = 0;
+      kill (head->pid, SIGTERM);
 
-    /* Check the status of nbdkit is normal on exit. */
-    if (waitpid (pid, &status, 0) == -1) {
-      perror ("waitpid");
-      _exit (EXIT_FAILURE);
+      /* Check the status of nbdkit is normal on exit. */
+      if (waitpid (head->pid, &status, 0) == -1) {
+        perror ("waitpid");
+        _exit (EXIT_FAILURE);
+      }
+      if (WIFEXITED (status) && WEXITSTATUS (status) != 0) {
+        _exit (WEXITSTATUS (status));
+      }
+      if (WIFSIGNALED (status)) {
+        /* Note that nbdkit is supposed to catch the signal we send and
+         * exit cleanly, so the following shouldn't happen.
+         */
+        fprintf (stderr, "nbdkit terminated by signal %d\n", WTERMSIG (status));
+        _exit (EXIT_FAILURE);
+      }
+      if (WIFSTOPPED (status)) {
+        fprintf (stderr, "nbdkit stopped by signal %d\n", WSTOPSIG (status));
+        _exit (EXIT_FAILURE);
+      }
     }
-    if (WIFEXITED (status) && WEXITSTATUS (status) != 0) {
-      _exit (WEXITSTATUS (status));
-    }
-    if (WIFSIGNALED (status)) {
-      /* Note that nbdkit is supposed to catch the signal we send and
-       * exit cleanly, so the following shouldn't happen.
-       */
-      fprintf (stderr, "nbdkit terminated by signal %d\n", WTERMSIG (status));
-      _exit (EXIT_FAILURE);
-    }
-    if (WIFSTOPPED (status)) {
-      fprintf (stderr, "nbdkit stopped by signal %d\n", WSTOPSIG (status));
-      _exit (EXIT_FAILURE);
-    }
+
+    unlink (head->pidpath);
+    unlink (head->sockpath);
+    rmdir (head->tmpdir);
+
+    next = head->next;
+    free (head);
+    head = next;
   }
-
-  unlink (pidpath);
-  unlink (sockpath);
-  rmdir (tmpdir);
 }
 
 int
 test_start_nbdkit (const char *arg, ...)
 {
   size_t i, len;
+  struct test_nbdkit *kit = malloc (sizeof *kit);
 
-  if (mkdtemp (tmpdir) == NULL) {
-    perror ("mkdtemp");
+  if (!kit) {
+    perror ("malloc");
     return -1;
   }
-  len = strlen (tmpdir);
-  memcpy (sockpath, tmpdir, len);
-  memcpy (unixsockpath+5, tmpdir, len);
-  memcpy (pidpath, tmpdir, len);
+  *kit = template;
+  if (mkdtemp (kit->tmpdir) == NULL) {
+    perror ("mkdtemp");
+    free (kit);
+    return -1;
+  }
+  len = strlen (kit->tmpdir);
+  memcpy (kit->sockpath, kit->tmpdir, len);
+  memcpy (kit->unixsockpath+5, kit->tmpdir, len);
+  memcpy (kit->pidpath, kit->tmpdir, len);
 
-  pid = fork ();
-  if (pid == 0) {               /* Child (nbdkit). */
+  kit->pid = fork ();
+  if (kit->pid == 0) {               /* Child (nbdkit). */
     const char *p;
     const int MAX_ARGS = 64;
     const char *argv[MAX_ARGS+1];
@@ -113,9 +144,9 @@ test_start_nbdkit (const char *arg, ...)
 
     argv[0] = "nbdkit";
     argv[1] = "-U";
-    argv[2] = sockpath;
+    argv[2] = kit->sockpath;
     argv[3] = "-P";
-    argv[4] = pidpath;
+    argv[4] = kit->pidpath;
     argv[5] = "-f";
     argv[6] = "-v";
     argv[7] = arg;
@@ -139,7 +170,14 @@ test_start_nbdkit (const char *arg, ...)
   /* Ensure nbdkit is killed and temporary files are deleted when the
    * main program exits.
    */
-  atexit (cleanup);
+  if (head)
+    kit->next = head;
+  else
+    atexit (cleanup);
+  head = kit;
+  pid = kit->pid;
+  sock = kit->sockpath;
+  server[0] = kit->unixsockpath;
 
   /* Wait for the pidfile to turn up, which indicates that nbdkit has
    * started up successfully and is ready to serve requests.  However
@@ -162,7 +200,7 @@ test_start_nbdkit (const char *arg, ...)
       perror ("kill");
     }
 
-    if (access (pidpath, F_OK) == 0)
+    if (access (kit->pidpath, F_OK) == 0)
       break;
 
     sleep (1);

@@ -39,9 +39,11 @@
 
 #define NBDKIT_START_TIMEOUT 30 /* seconds */
 
-extern pid_t pid;               /* PID of nbdkit process. */
+extern pid_t pid;               /* PID of most recent nbdkit process */
+extern const char *sock;        /* socket of most recent nbdkit process */
 extern const char *server[2];   /* server parameter for add_drive */
 
+/* Can be called more than once (useful for nbd plugin) */
 extern int test_start_nbdkit (const char *arg, ...);
 
 /* Declare program_name. */
