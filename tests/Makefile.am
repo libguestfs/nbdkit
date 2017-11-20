@@ -47,6 +47,7 @@ EXTRA_DIST = \
 	test-ipv4.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
+	test-parallel-file.sh \
 	test.pl \
 	test.py \
 	test.rb \
@@ -138,7 +139,26 @@ check_DATA += pki/.stamp
 pki/.stamp: $(srcdir)/make-pki.sh
 	$(srcdir)/make-pki.sh
 
-# In-depth tests need libguestfs, since that is a convenient way to
+if HAVE_PLUGINS
+# Common data shared by multiple tests
+check_DATA += file-data
+MAINTAINERCLEANFILES += file-data
+file-data:
+	rm -f $@ $@-t
+	for f in `seq 1 512`; do echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'; done > $@-t
+	mv $@-t $@
+
+# While most tests need libguestfs, testing parallel I/O is easier when
+# using qemu-io to kick off asynchronous requests.
+if HAVE_QEMU_IO
+TESTS_ENVIRONMENT += QEMU_IO=$(QEMU_IO)
+TESTS += test-parallel-file.sh
+endif HAVE_QEMU_IO
+
+endif HAVE_PLUGINS
+
+
+# Most in-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.
 
 if HAVE_LIBGUESTFS
@@ -185,17 +205,10 @@ test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # file plugin test.
 check_PROGRAMS += test-file
 TESTS += test-file
-check_DATA += file-data
-MAINTAINERCLEANFILES += file-data
 
 test_file_SOURCES = test-file.c test.h
 test_file_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-file-data:
-	rm -f $@ $@-t
-	for f in `seq 1 512`; do echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'; done > $@-t
-	mv $@-t $@
 
 # gzip plugin test.
 if HAVE_ZLIB
