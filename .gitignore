@@ -49,6 +49,7 @@ Makefile.in
 /tests/test-file
 /tests/test-gzip
 /tests/test-newstyle
+/tests/test-nbd
 /tests/test-ocaml
 /tests/test-ocaml-plugin.so
 /tests/test-oldstyle

@@ -235,6 +235,14 @@ disk.gz: disk
 endif HAVE_GUESTFISH
 endif HAVE_ZLIB
 
+# nbd plugin test.
+check_PROGRAMS += test-nbd
+TESTS += test-nbd
+
+test_nbd_SOURCES = test-nbd.c test.h
+test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
 # xz plugin test.
 if HAVE_LIBLZMA
 if HAVE_GUESTFISH
