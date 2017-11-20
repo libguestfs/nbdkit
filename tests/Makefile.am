@@ -153,6 +153,7 @@ file-data:
 if HAVE_QEMU_IO
 TESTS_ENVIRONMENT += QEMU_IO=$(QEMU_IO)
 TESTS += test-parallel-file.sh
+TESTS += test-parallel-nbd.sh
 endif HAVE_QEMU_IO
 
 endif HAVE_PLUGINS
