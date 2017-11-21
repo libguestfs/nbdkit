@@ -63,14 +63,14 @@ script won't work.
 =head2 METHODS
 
 Your script has access to the following methods in the C<Nbdkit>
-package (in fact, attempting to C<use Nbdkit;> will fail, the methods
+package (in fact, attempting to C<use Nbdkit> will fail, the methods
 are already available):
 
- Nbdkit::set_error(I<$err>)
+ Nbdkit::set_error($err);
 
 Record C<$err> as the reason you are about to throw an exception. C<$err>
 should correspond to usual errno values, where it may help to
-C<use POSIX();>.
+C<use POSIX()>.
 
 =head2 EXCEPTIONS
 
