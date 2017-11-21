@@ -504,6 +504,8 @@ nbd_open (int readonly)
     nbdkit_error ("unexpected version %#" PRIx64, version);
     goto err;
   }
+  if (readonly)
+    h->flags |= NBD_FLAG_READ_ONLY;
 
   /* Spawn a dedicated reader thread */
   if ((errno = pthread_mutex_init (&h->write_lock, NULL))) {
