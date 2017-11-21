@@ -384,15 +384,16 @@ nbd_reader (void *handle)
   }
 
   /* Clean up any stranded in-flight requests */
-  done = false;
   r = ESHUTDOWN;
-  while (!done) {
+  while (1) {
     struct transaction *trans;
 
     nbd_lock (h);
     trans = h->trans;
-    h->trans = trans->next;
+    h->trans = trans ? trans->next : NULL;
     nbd_unlock (h);
+    if (!trans)
+      break;
     if (write (trans->u.fds[1], &r, sizeof r) != sizeof r) {
       nbdkit_error ("failed to write pipe: %m");
       abort ();
