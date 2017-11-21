@@ -33,6 +33,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = \
+	.dir-locals.el \
 	.gitignore \
 	LICENSE \
 	nbdkit.in \
