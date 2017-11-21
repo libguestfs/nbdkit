@@ -48,6 +48,7 @@ EXTRA_DIST = \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
 	test-parallel-file.sh \
+	test-parallel-nbd.sh \
 	test.pl \
 	test.py \
 	test.rb \
