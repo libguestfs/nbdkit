@@ -37,34 +37,34 @@ test -f file-data || { echo "Missing file-data"; exit 77; }
 : ${QEMU_IO=qemu-io}
 
 # Sanity check that qemu-io can issue parallel requests
-$QEMU_IO -f raw -c "aio_read 0 1" -c "aio_write -P 2 1 1" -c aio_flush \
+$QEMU_IO -f raw -c "aio_write -P 2 1 1" -c "aio_read -P 1 0 1" -c aio_flush \
   file-data || { echo "'$QEMU_IO' can't drive parallel requests"; exit 77; }
 
 # Set up the file plugin to delay both reads and writes (for a good chance
-# that parallel requests are in flight), and with reads longer than writes
+# that parallel requests are in flight), and with writes longer than reads
 # (to more easily detect if out-of-order completion happens).  This test
 # may have spurious failures under heavy loads on the test machine, where
 # tuning the delays may help.
 
 trap 'rm -f test-parallel-file.out' 0 1 2 3 15
 
-# With --threads=1, the read should complete first because it was issued first
-nbdkit -v -t 1 -U - file file=file-data rdelay=2 wdelay=1 --run '
-  $QEMU_IO -f raw -c "aio_read 0 1" -c "aio_write -P 2 1 1" -c aio_flush $nbd
-' | tee test-parallel-file.out
-if test "$(grep '1/1' test-parallel-file.out)" != \
-"read 1/1 bytes at offset 0
-wrote 1/1 bytes at offset 1"; then
-  exit 1
-fi
-
-# With default --threads, the faster write should complete first
-nbdkit -v -U - file file=file-data rdelay=2 wdelay=1 --run '
-  $QEMU_IO -f raw -c "aio_read 0 1" -c "aio_write -P 2 1 1" -c aio_flush $nbd
+# With --threads=1, the write should complete first because it was issued first
+nbdkit -v -t 1 -U - file file=file-data wdelay=2 rdelay=1 --run '
+  $QEMU_IO -f raw -c "aio_write -P 2 1 1" -c "aio_read -P 1 0 1" -c aio_flush $nbd
 ' | tee test-parallel-file.out
 if test "$(grep '1/1' test-parallel-file.out)" != \
 "wrote 1/1 bytes at offset 1
 read 1/1 bytes at offset 0"; then
+  exit 1
+fi
+
+# With default --threads, the faster read should complete first
+nbdkit -v -U - file file=file-data wdelay=2 rdelay=1 --run '
+  $QEMU_IO -f raw -c "aio_write -P 2 1 1" -c "aio_read -P 1 0 1" -c aio_flush $nbd
+' | tee test-parallel-file.out
+if test "$(grep '1/1' test-parallel-file.out)" != \
+"read 1/1 bytes at offset 0
+wrote 1/1 bytes at offset 1"; then
   exit 1
 fi
 
