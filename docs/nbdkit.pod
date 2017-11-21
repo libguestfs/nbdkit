@@ -324,6 +324,10 @@ To list all the options supported by a plugin, do:
 
  nbdkit --help file
 
+To dump information about a plugin, do:
+
+ nbdkit file --dump-plugin
+
 =head1 SOCKET ACTIVATION
 
 nbdkit supports socket activation (sometimes called systemd socket
