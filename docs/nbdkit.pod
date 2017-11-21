@@ -232,7 +232,7 @@ Unix domain sockets:
 
 =item B<-t> THREADS
 
-= item B<--threads> THREADS
+=item B<--threads> THREADS
 
 Set the number of threads to be used per connection, which in turn
 controls the number of outstanding requests that can be processed at
