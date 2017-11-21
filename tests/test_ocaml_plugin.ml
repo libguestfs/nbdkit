@@ -1,5 +1,5 @@
 type handle = {
-  disk : string;                        (* The disk image. *)
+  disk : bytes;                 (* The disk image. *)
 }
 
 let test_load () =
@@ -18,24 +18,24 @@ let test_config_complete () =
 
 let test_open readonly =
   let disk =
-    let s = String.create (512 * 8) in
+    let s = Bytes.create (512 * 8) in
     for i = 0 to 511 do
       for j = 0 to 7 do
-        s.[i*8+j] <- Char.chr (j+1)
+        Bytes.set s (i*8+j) (Char.chr (j+1))
       done
     done;
     s in
-  { disk = disk }
+  { disk }
 
 let test_close h =
   ()
 
 let test_get_size h =
-  Int64.of_int (String.length h.disk)
+  Int64.of_int (Bytes.length h.disk)
 
 let test_pread h buf offset =
-  let len = String.length buf in
-  String.blit h.disk (Int64.to_int offset) buf 0 len
+  let len = Bytes.length buf in
+  Bytes.blit h.disk (Int64.to_int offset) buf 0 len
 
 let test_pwrite h buf offset =
   let len = String.length buf in

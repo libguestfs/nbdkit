@@ -52,7 +52,7 @@ type 'a plugin = {
   can_flush : ('a -> bool) option;
   is_rotational : ('a -> bool) option;
   can_trim : ('a -> bool) option;
-  pread : ('a -> string -> int64 -> unit) option;
+  pread : ('a -> bytes -> int64 -> unit) option;
   pwrite : ('a -> string -> int64 -> unit) option;
   flush : ('a -> unit) option;
   trim : ('a -> int32 -> int64 -> unit) option;
@@ -109,7 +109,7 @@ external set_can_write : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_write"
 external set_can_flush : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_flush"
 external set_is_rotational : ('a -> bool) -> unit = "ocaml_nbdkit_set_is_rotational"
 external set_can_trim : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_trim"
-external set_pread : ('a -> string -> int64 -> unit) -> unit = "ocaml_nbdkit_set_pread"
+external set_pread : ('a -> bytes -> int64 -> unit) -> unit = "ocaml_nbdkit_set_pread"
 external set_pwrite : ('a -> string -> int64 -> unit) -> unit = "ocaml_nbdkit_set_pwrite"
 external set_flush : ('a -> unit) -> unit = "ocaml_nbdkit_set_flush"
 external set_trim : ('a -> int32 -> int64 -> unit) -> unit = "ocaml_nbdkit_set_trim"

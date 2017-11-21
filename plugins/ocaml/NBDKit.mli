@@ -50,7 +50,7 @@ type 'a plugin = {
   can_flush : ('a -> bool) option;
   is_rotational : ('a -> bool) option;
   can_trim : ('a -> bool) option;
-  pread : ('a -> string -> int64 -> unit) option; (* required *)
+  pread : ('a -> bytes -> int64 -> unit) option;  (* required *)
   pwrite : ('a -> string -> int64 -> unit) option;
   flush : ('a -> unit) option;
   trim : ('a -> int32 -> int64 -> unit) option;
