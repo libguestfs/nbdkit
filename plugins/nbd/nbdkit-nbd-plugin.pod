@@ -16,7 +16,7 @@ It provides an NBD server that forwards all traffic as a client to
 another existing NBD server.  A primary usage of this setup is to
 alter the set of features available to the ultimate end client,
 without having to change the original server (for example, to convert
-between oldstyle and newtyle, or to add TLS support where the original
+between oldstyle and newstyle, or to add TLS support where the original
 server lacks it).
 
 For now, this is limited to connecting to another NBD server over a
