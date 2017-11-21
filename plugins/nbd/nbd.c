@@ -136,6 +136,9 @@ struct handle {
   int64_t size;
   pthread_t reader;
 
+  /* Prevents concurrent threads from interleaving writes to server */
+  pthread_mutex_t write_lock;
+
   pthread_mutex_t trans_lock; /* Covers access to all fields below */
   /* Our choice of THREAD_MODEL means at most one outstanding transaction */
   struct transaction trans;
@@ -228,7 +231,7 @@ nbd_mark_dead (struct handle *h)
 /* Send a request, return 0 on success or -1 on write failure. */
 static int
 nbd_request_raw (struct handle *h, uint32_t type, uint64_t offset,
-                 uint32_t count, uint64_t cookie)
+                 uint32_t count, uint64_t cookie, const void *buf)
 {
   struct request req = {
     .magic = htobe32 (NBD_REQUEST_MAGIC),
@@ -238,10 +241,16 @@ nbd_request_raw (struct handle *h, uint32_t type, uint64_t offset,
     .offset = htobe64 (offset),
     .count = htobe32 (count),
   };
+  int r;
 
+  pthread_mutex_lock (&h->write_lock);
   nbdkit_debug ("sending request with type %d and cookie %#" PRIx64, type,
                 cookie);
-  return write_full (h->fd, &req, sizeof req);
+  r = write_full (h->fd, &req, sizeof req);
+  if (buf && !r)
+    r = write_full (h->fd, buf, count);
+  pthread_mutex_unlock (&h->write_lock);
+  return r;
 }
 
 /* Perform the request half of a transaction. On success, return the
@@ -267,13 +276,10 @@ nbd_request_full (struct handle *h, uint32_t type, uint64_t offset,
   }
   trans->buf = rep_buf;
   trans->count = rep_buf ? count : 0;
-  if (nbd_request_raw (h, type, offset, count, trans->u.cookie) < 0)
-    goto err;
-  if (req_buf && write_full (h->fd, req_buf, count) < 0)
-    goto err;
-  return trans->u.fds[0];
+  if (nbd_request_raw (h, type, offset, count, trans->u.cookie,
+                       req_buf) == 0)
+    return trans->u.fds[0];
 
- err:
   err = errno;
   close (trans->u.fds[0]);
   close (trans->u.fds[1]);
@@ -334,7 +340,7 @@ nbd_reply_raw (struct handle *h, int *fd)
 
        TODO: Once we allow interleaved requests, handling
        soft-disconnect properly will be trickier */
-    nbd_request_raw (h, NBD_CMD_DISC, 0, 0, 0);
+    nbd_request_raw (h, NBD_CMD_DISC, 0, 0, 0, NULL);
     errno = ESHUTDOWN;
     return nbd_mark_dead (h);
   }
@@ -476,12 +482,18 @@ nbd_open (int readonly)
   }
 
   /* Spawn a dedicated reader thread */
+  if ((errno = pthread_mutex_init (&h->write_lock, NULL))) {
+    nbdkit_error ("failed to initialize write mutex: %m");
+    goto err;
+  }
   if ((errno = pthread_mutex_init (&h->trans_lock, NULL))) {
     nbdkit_error ("failed to initialize transaction mutex: %m");
+    pthread_mutex_destroy (&h->write_lock);
     goto err;
   }
   if ((errno = pthread_create (&h->reader, NULL, nbd_reader, h))) {
     nbdkit_error ("failed to initialize reader thread: %m");
+    pthread_mutex_destroy (&h->write_lock);
     pthread_mutex_destroy (&h->trans_lock);
     goto err;
   }
@@ -500,10 +512,11 @@ nbd_close (void *handle)
   struct handle *h = handle;
 
   if (!h->dead)
-    nbd_request_raw (h, NBD_CMD_DISC, 0, 0, 0);
+    nbd_request_raw (h, NBD_CMD_DISC, 0, 0, 0, NULL);
   close (h->fd);
   if ((errno = pthread_join (h->reader, NULL)))
     nbdkit_debug ("failed to join reader thread: %m");
+  pthread_mutex_destroy (&h->write_lock);
   pthread_mutex_destroy (&h->trans_lock);
   free (h);
 }
