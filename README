@@ -11,7 +11,7 @@ The key features are:
   libraries or included in proprietary code.
 
 * Well-documented, simple plugin API with a stable ABI guarantee.
-  Let's you export "unconventional" block devices easily.
+  Lets you export "unconventional" block devices easily.
 
 * You can write plugins in C, Perl, Python, OCaml or Ruby.
 
@@ -154,3 +154,4 @@ https://www.redhat.com/mailman/listinfo/libguestfs
 
 For further information, see:
 http://libguestfs.org/
+https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md
