@@ -12,3 +12,14 @@
 * Glance and/or cinder plugins.
 
 * Performance - measure and improve it.
+
+* split files plugin
+    nbdkit split file=file1 file=file2 [...]
+  which concatenates the files to make the virtual device.
+
+* filters: It should be possible to layer filters over plugins to
+  do things like injecting errors and adding delays (see wdelay/rdelay
+  options in the file plugin).
+
+* Factor out the nbd client in the nbd plugin and make it available
+  to other consumers, so that nbdkit can be layered.
