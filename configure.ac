@@ -456,6 +456,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/guestfs/Makefile
                  plugins/gzip/Makefile
                  plugins/libvirt/Makefile
+                 plugins/memory/Makefile
                  plugins/nbd/Makefile
                  plugins/ocaml/Makefile
                  plugins/perl/Makefile

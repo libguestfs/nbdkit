@@ -237,6 +237,14 @@ disk.gz: disk
 endif HAVE_GUESTFISH
 endif HAVE_ZLIB
 
+# memory plugin test.
+check_PROGRAMS += test-memory
+TESTS += test-memory
+
+test_memory_SOURCES = test-memory.c test.h
+test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
 # nbd plugin test.
 check_PROGRAMS += test-nbd
 TESTS += test-nbd
