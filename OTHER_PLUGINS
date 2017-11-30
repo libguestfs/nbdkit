@@ -1,0 +1,13 @@
+Have you written an nbdkit plugin that you're willing to share?
+Email <libguestfs@redhat.com> to get it added to this list.
+
+* XVA (XenServer Virtual Appliance)
+
+This simple plugin written in Perl lets you read these files and
+reexport them as NBD.  It does not require that the XVA is unpacked:
+https://lists.gnu.org/archive/html/qemu-devel/2017-11/msg02971.html
+https://lists.gnu.org/archive/html/qemu-devel/2017-11/plHKJ062x5Uo.pl
+
+The whole thread is worth reading because several different approaches
+to dealing with XVA files are presented:
+https://lists.gnu.org/archive/html/qemu-devel/2017-11/threads.html#02839
