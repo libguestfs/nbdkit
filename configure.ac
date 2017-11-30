@@ -458,6 +458,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/libvirt/Makefile
                  plugins/memory/Makefile
                  plugins/nbd/Makefile
+                 plugins/null/Makefile
                  plugins/ocaml/Makefile
                  plugins/perl/Makefile
                  plugins/python/Makefile

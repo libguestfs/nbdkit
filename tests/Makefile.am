@@ -253,6 +253,14 @@ test_nbd_SOURCES = test-nbd.c test.h
 test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
+# null plugin test.
+check_PROGRAMS += test-null
+TESTS += test-null
+
+test_null_SOURCES = test-null.c test.h
+test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_null_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
 # OCaml plugin test.
 if HAVE_OCAML
 

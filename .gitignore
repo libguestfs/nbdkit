@@ -51,6 +51,7 @@ Makefile.in
 /tests/test-memory
 /tests/test-newstyle
 /tests/test-nbd
+/tests/test-null
 /tests/test-ocaml
 /tests/test-ocaml-plugin.so
 /tests/test-oldstyle
