@@ -245,25 +245,27 @@ test_nbd_SOURCES = test-nbd.c test.h
 test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-# xz plugin test.
-if HAVE_LIBLZMA
-if HAVE_GUESTFISH
+# OCaml plugin test.
+if HAVE_OCAML
 
-check_PROGRAMS += test-xz
-TESTS += test-xz
-check_DATA += disk.xz
-MAINTAINERCLEANFILES += disk.xz
+check_PROGRAMS += test-ocaml
+TESTS += test-ocaml
 
-test_xz_SOURCES = test-xz.c test.h
-test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+# This is somewhat different from the other tests because we have
+# to build an actual plugin here.
+test_ocaml_SOURCES = test-ocaml.c test.h
+test_ocaml_CFLAGS = \
+	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_ocaml_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-disk.xz: disk
-	rm -f $@
-	xz --best -c disk > $@
+check_SCRIPTS += test-ocaml-plugin.so
+test-ocaml-plugin.so: test_ocaml_plugin.ml ../plugins/ocaml/libnbdkitocaml.la ../plugins/ocaml/NBDKit.cmi ../plugins/ocaml/NBDKit.cmx
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml \
+	  -output-obj -runtime-variant _pic -o $@ \
+	  NBDKit.cmx $< \
+	  -cclib -L../plugins/ocaml/.libs -cclib -lnbdkitocaml
 
-endif HAVE_GUESTFISH
-endif HAVE_LIBLZMA
+endif HAVE_OCAML
 
 # perl plugin test.
 if HAVE_PERL
@@ -293,28 +295,6 @@ test_python_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_PYTHON
 
-# OCaml plugin test.
-if HAVE_OCAML
-
-check_PROGRAMS += test-ocaml
-TESTS += test-ocaml
-
-# This is somewhat different from the other tests because we have
-# to build an actual plugin here.
-test_ocaml_SOURCES = test-ocaml.c test.h
-test_ocaml_CFLAGS = \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_ocaml_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-check_SCRIPTS += test-ocaml-plugin.so
-test-ocaml-plugin.so: test_ocaml_plugin.ml ../plugins/ocaml/libnbdkitocaml.la ../plugins/ocaml/NBDKit.cmi ../plugins/ocaml/NBDKit.cmx
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml \
-	  -output-obj -runtime-variant _pic -o $@ \
-	  NBDKit.cmx $< \
-	  -cclib -L../plugins/ocaml/.libs -cclib -lnbdkitocaml
-
-endif HAVE_OCAML
-
 # Ruby plugin test.
 if HAVE_RUBY
 
@@ -337,6 +317,26 @@ check_PROGRAMS += test-streaming
 test_streaming_SOURCES = test-streaming.c test.h
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# xz plugin test.
+if HAVE_LIBLZMA
+if HAVE_GUESTFISH
+
+check_PROGRAMS += test-xz
+TESTS += test-xz
+check_DATA += disk.xz
+MAINTAINERCLEANFILES += disk.xz
+
+test_xz_SOURCES = test-xz.c test.h
+test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+disk.xz: disk
+	rm -f $@
+	xz --best -c disk > $@
+
+endif HAVE_GUESTFISH
+endif HAVE_LIBLZMA
 
 endif HAVE_PLUGINS
 endif HAVE_LIBGUESTFS
