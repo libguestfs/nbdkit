@@ -9,8 +9,6 @@
 
 * syslog? journal?
 
-* Glance and/or cinder plugins.
-
 * Performance - measure and improve it.
 
 * filters: It should be possible to layer filters over plugins to
@@ -19,3 +17,25 @@
 
 * Factor out the nbd client in the nbd plugin and make it available
   to other consumers, so that nbdkit can be layered.
+
+* Suggestions for plugins to be written:
+
+  - glance
+
+  - cinder
+
+  - OVA files
+
+  - XVA files
+    https://lists.gnu.org/archive/html/qemu-devel/2017-11/msg02971.html
+    is a partial solution but it needs cleaning up.
+
+  - libssh
+
+  - libnfs
+
+  - iscsi
+
+  - gluster
+
+  - ceph/rbd
