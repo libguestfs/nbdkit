@@ -311,6 +311,8 @@ nbd_reply_raw (struct handle *h, int *fd)
   struct reply rep;
   struct transaction **ptr;
   struct transaction *trans;
+  void *buf;
+  uint32_t count;
 
   *fd = -1;
   if (read_full (h->fd, &rep, sizeof rep) < 0)
@@ -334,9 +336,12 @@ nbd_reply_raw (struct handle *h, int *fd)
   }
 
   *fd = trans->u.fds[1];
+  buf = trans->buf;
+  count = trans->count;
+  free (trans);
   switch (be32toh (rep.error)) {
   case NBD_SUCCESS:
-    if (trans->buf && read_full (h->fd, trans->buf, trans->count) < 0)
+    if (buf && read_full (h->fd, buf, count) < 0)
       return nbd_mark_dead (h);
     return 0;
   case NBD_EPERM:
@@ -399,6 +404,7 @@ nbd_reader (void *handle)
       abort ();
     }
     close (trans->u.fds[1]);
+    free (trans);
   }
   return NULL;
 }
