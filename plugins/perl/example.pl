@@ -7,11 +7,11 @@ use POSIX ();
 
 # Run it from the build directory like this:
 #
-#   ./nbdkit -f -v perl script=./plugins/perl/example.pl test1=foo test2=bar
+#   ./nbdkit -f -v perl ./plugins/perl/example.pl test1=foo test2=bar
 #
 # Or run it after installing nbdkit like this:
 #
-#   nbdkit -f -v perl script=./plugins/perl/example.pl test1=foo test2=bar
+#   nbdkit -f -v perl ./plugins/perl/example.pl test1=foo test2=bar
 #
 # The -f -v arguments are optional.  They cause the server to stay in
 # the foreground and print debugging, which is useful when testing.

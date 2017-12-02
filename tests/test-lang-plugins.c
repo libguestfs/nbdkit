@@ -61,7 +61,7 @@ main (int argc, char *argv[])
     exit (77);                  /* Tells automake to skip the test. */
   }
 
-  if (test_start_nbdkit (LANG, "script=" SCRIPT, NULL) == -1)
+  if (test_start_nbdkit (LANG, SCRIPT, NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

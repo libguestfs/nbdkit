@@ -197,6 +197,8 @@ main (int argc, char *argv[])
   int option_index;
   int help = 0, version = 0, dump_plugin = 0;
   int tls_set_on_cli = 0;
+  const char *filename;
+  char *p;
 
   threadlocal_init ();
 
@@ -451,65 +453,62 @@ main (int argc, char *argv[])
   }
 #endif
 
-  /* Remaining command line arguments define the plugins and plugin
-   * configuration.  If --help or --version was specified, we still
-   * partially parse these in order that we can display the per-plugin
-   * help/version information.
+  /* The remaining command line arguments are the plugin name and
+   * parameters.  If --help, --version or --dump-plugin were specified
+   * then we open the plugin so that we can display the per-plugin
+   * help/version/plugin information.
    */
-  while (optind < argc) {
-    const char *filename = argv[optind];
-    char *p;
+  filename = argv[optind++];
 
-    open_plugin_so (filename);
+  open_plugin_so (filename);
 
-    if (help) {
-      usage ();
-      printf ("\n%s:\n\n", filename);
-      plugin_usage ();
-      exit (EXIT_SUCCESS);
-    }
+  if (help) {
+    usage ();
+    printf ("\n%s:\n\n", filename);
+    plugin_usage ();
+    exit (EXIT_SUCCESS);
+  }
 
-    if (version) {
-      const char *v;
+  if (version) {
+    const char *v;
 
-      display_version ();
-      printf ("%s", plugin_name ());
-      if ((v = plugin_version ()) != NULL)
-        printf (" %s", v);
-      printf ("\n");
-      exit (EXIT_SUCCESS);
-    }
+    display_version ();
+    printf ("%s", plugin_name ());
+    if ((v = plugin_version ()) != NULL)
+      printf (" %s", v);
+    printf ("\n");
+    exit (EXIT_SUCCESS);
+  }
 
-    if (dump_plugin) {
-      plugin_dump_fields ();
-      exit (EXIT_SUCCESS);
-    }
+  if (dump_plugin) {
+    plugin_dump_fields ();
+    exit (EXIT_SUCCESS);
+  }
 
-    /* Find key=value configuration parameters for this plugin. */
+  /* Find key=value configuration parameters for this plugin.
+   * The first one is magical in that if it doesn't contain '=' then
+   * we assume it is 'script=...'.
+   */
+  if (optind < argc && (p = strchr (argv[optind], '=')) == NULL) {
+    plugin_config ("script", argv[optind]);
     ++optind;
-    while (optind < argc && (p = strchr (argv[optind], '=')) != NULL) {
-      if (help || version)
-        continue;
+  }
 
+  while (optind < argc) {
+    if ((p = strchr (argv[optind], '=')) != NULL) {
       *p = '\0';
       plugin_config (argv[optind], p+1);
-
       ++optind;
     }
-
-    plugin_config_complete ();
-
-    /* If we supported export names, then we'd continue in the loop
-     * here, but at the moment only one plugin may be used per server
-     * so exit if there are any more.
-     */
-    ++optind;
-    if (optind < argc) {
-      fprintf (stderr, "%s: this server only supports a single plugin\n",
-               program_name);
+    else {
+      fprintf (stderr,
+               "%s: expecting key=value on the command line but got: %s\n",
+               program_name, argv[optind]);
       exit (EXIT_FAILURE);
     }
   }
+
+  plugin_config_complete ();
 
   start_serving ();
 

@@ -3,14 +3,6 @@
 * Can we run scripting language plugins using shebangs?
 * Can scripting language plugins be installed in the plugindir?
 
-  (1) Change the command line specification slightly so that:
-
-        nbdkit perl foo arg1=value arg2=value
-
-      is treated the same as:
-
-        nbdkit perl script=foo arg1=value arg2=value
-
   (2) From this, shebangs can be used trivially.  If nbdkit-foo-plugin
       is an executable script that starts with:
 

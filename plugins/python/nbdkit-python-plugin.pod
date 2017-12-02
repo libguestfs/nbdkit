@@ -6,7 +6,7 @@ nbdkit-python-plugin - nbdkit python plugin
 
 =head1 SYNOPSIS
 
- nbdkit python script=/path/to/plugin.py [arguments...]
+ nbdkit python /path/to/plugin.py [arguments...]
 
 =head1 DESCRIPTION
 
@@ -30,11 +30,10 @@ called C<python> on the current C<$PATH>.  For example:
 Assuming you have a Python script which is an nbdkit plugin, you run it
 like this:
 
- nbdkit python script=/path/to/plugin.py
+ nbdkit python /path/to/plugin.py
 
 You may have to add further C<key=value> arguments to the command
-line.  Read the Python script to see if it requires any.  C<script=...>
-I<must> come first on the command line.
+line.  Read the Python script to see if it requires any.
 
 =head1 WRITING A PYTHON NBDKIT PLUGIN
 

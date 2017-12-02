@@ -6,7 +6,7 @@ nbdkit-perl-plugin - nbdkit perl plugin
 
 =head1 SYNOPSIS
 
- nbdkit perl script=/path/to/plugin.pl [arguments...]
+ nbdkit perl /path/to/plugin.pl [arguments...]
 
 =head1 DESCRIPTION
 
@@ -21,11 +21,10 @@ read L<nbdkit-plugin(3)> first.
 Assuming you have a Perl script which is an nbdkit plugin, you run it
 like this:
 
- nbdkit perl script=/path/to/plugin.pl
+ nbdkit perl /path/to/plugin.pl
 
 You may have to add further C<key=value> arguments to the command
-line.  Read the Perl script to see if it requires any.  C<script=...>
-I<must> come first on the command line.
+line.  Read the Perl script to see if it requires any.
 
 =head1 WRITING A PERL NBDKIT PLUGIN
 

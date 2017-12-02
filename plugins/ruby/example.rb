@@ -4,11 +4,11 @@
 
 # Run it from the build directory like this:
 #
-#   ./nbdkit -f -v ruby script=./plugins/ruby/example.rb test1=foo test2=bar
+#   ./nbdkit -f -v ruby ./plugins/ruby/example.rb test1=foo test2=bar
 #
 # Or run it after installing nbdkit like this:
 #
-#   nbdkit -f -v ruby script=./plugins/ruby/example.rb test1=foo test2=bar
+#   nbdkit -f -v ruby ./plugins/ruby/example.rb test1=foo test2=bar
 #
 # The -f -v arguments are optional.  They cause the server to stay in
 # the foreground and print debugging, which is useful when testing.
