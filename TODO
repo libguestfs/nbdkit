@@ -1,19 +1,40 @@
 * Listen on specific interfaces or protocols (eg. only IPv6).
 
 * Can we run scripting language plugins using shebangs?
-  nbdkit-foo-plugin is an executable script that starts with
-    #!/usr/bin/nbdkit --script=perl
-  Running this causes this command to run:
-    /usr/bin/nbdkit --script=perl /path/to/script [other args]
-
 * Can scripting language plugins be installed in the plugindir?
-  You would enter:
-    nbdkit foo [args]
-  where nbdkit-foo-plugin would be a script.  If it
-  started with:
-    #!/usr/bin/nbdkit --script=perl
-  that would cause nbdkit to load
-    nbdkit --script=perl /path/to/nbdkit-foo-plugin [args]
+
+  (1) Change the command line specification slightly so that:
+
+        nbdkit perl foo arg1=value arg2=value
+
+      is treated the same as:
+
+        nbdkit perl script=foo arg1=value arg2=value
+
+  (2) From this, shebangs can be used trivially.  If nbdkit-foo-plugin
+      is an executable script that starts with:
+
+        #!/usr/bin/nbdkit perl
+
+      then the following command gets run:
+
+        /usr/bin/nbdkit perl /path/to/script [other args]
+
+      which is translated by (1) into:
+
+        /usr/bin/nbdkit perl script=/path/to/script [other args]
+
+  (3) If a script called nbdkit-foo-plugin is installed in the
+      scripting directory and the script starts with:
+
+        #!/usr/bin/nbdkit perl
+
+      then we could allow:
+
+        nbdkit foo [args]
+
+      to run the script from the plugin dir, resulting in the
+      script running as above.
 
 * syslog? journal?
 
