@@ -94,6 +94,8 @@ struct nbdkit_plugin {
 
   int errno_is_preserved;
 
+  void (*dump_plugin) (void);
+
   /* int (*set_exportname) (void *handle, const char *exportname); */
 };
 

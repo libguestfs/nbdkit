@@ -148,6 +148,26 @@ funcall2 (VALUE receiver, ID method_id, int argc, volatile VALUE *argv)
 static const char *script = NULL;
 static void *code = NULL;
 
+static void
+plugin_rb_unload (void)
+{
+  if (ruby_cleanup (0) != 0)
+    nbdkit_error ("ruby_cleanup failed");
+}
+
+static void
+plugin_rb_dump_plugin (void)
+{
+  if (!script) {
+    nbdkit_error ("the first parameter must be script=/path/to/ruby/script.rb");
+    return;
+  }
+
+  assert (code != NULL);
+
+  (void) funcall2 (Qnil, rb_intern ("dump_plugin"), 0, NULL);
+}
+
 static int
 plugin_rb_config (const char *key, const char *value)
 {
@@ -222,13 +242,6 @@ plugin_rb_config_complete (void)
     return -1;
 
   return 0;
-}
-
-static void
-plugin_rb_unload (void)
-{
-  if (ruby_cleanup (0) != 0)
-    nbdkit_error ("ruby_cleanup failed");
 }
 
 static void *
@@ -482,6 +495,7 @@ static struct nbdkit_plugin plugin = {
 
   .load              = plugin_rb_load,
   .unload            = plugin_rb_unload,
+  .dump_plugin       = plugin_rb_dump_plugin,
 
   .config            = plugin_rb_config,
   .config_complete   = plugin_rb_config_complete,

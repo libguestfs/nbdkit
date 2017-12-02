@@ -89,6 +89,12 @@ nbdkit-plugin(3).
 
 =over 4
 
+=item C<dump_plugin>
+
+(Optional)
+
+There are no arguments or return value.
+
 =item C<config>
 
 (Optional)

@@ -123,6 +123,21 @@ py_unload (void)
   Py_Finalize ();
 }
 
+static void
+py_dump_plugin (void)
+{
+  PyObject *fn;
+  PyObject *r;
+
+  if (callback_defined ("dump_plugin", &fn)) {
+    PyErr_Clear ();
+
+    r = PyObject_CallObject (fn, NULL);
+    Py_DECREF (fn);
+    Py_DECREF (r);
+  }
+}
+
 static int
 py_config (const char *key, const char *value)
 {
@@ -624,6 +639,7 @@ static struct nbdkit_plugin plugin = {
 
   .load              = py_load,
   .unload            = py_unload,
+  .dump_plugin       = py_dump_plugin,
 
   .config            = py_config,
   .config_complete   = py_config_complete,

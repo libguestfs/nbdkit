@@ -255,6 +255,7 @@ plugin_dump_fields (void)
   HAS (description);
   HAS (load);
   HAS (unload);
+  HAS (dump_plugin);
   HAS (config);
   HAS (config_complete);
   HAS (config_help);
@@ -271,6 +272,10 @@ plugin_dump_fields (void)
   HAS (trim);
   HAS (zero);
 #undef HAS
+
+  /* Custom fields. */
+  if (plugin.dump_plugin)
+    plugin.dump_plugin ();
 }
 
 void

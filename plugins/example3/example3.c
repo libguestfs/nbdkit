@@ -53,6 +53,16 @@
  */
 static uint64_t size = 100 * 1024 * 1024;
 
+/* If you want to display extra information about the plugin when
+ * the user does ‘nbdkit example3 --dump-plugin’ then you can print
+ * ‘key=value’ lines here.
+ */
+static void
+example3_dump_plugin (void)
+{
+  printf ("example3_extra=hello\n");
+}
+
 /* Called for each key=value passed on the command line.  This plugin
  * only accepts optional size=<SIZE> parameter.
  */
@@ -206,6 +216,7 @@ example3_flush (void *handle)
 static struct nbdkit_plugin plugin = {
   .name              = "example3",
   .version           = PACKAGE_VERSION,
+  .dump_plugin       = example3_dump_plugin,
   .config            = example3_config,
   .config_help       = example3_config_help,
   .open              = example3_open,

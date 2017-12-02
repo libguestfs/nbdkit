@@ -83,6 +83,7 @@ static struct nbdkit_plugin plugin = {
  */
 static value load_fn;
 static value unload_fn;
+static value dump_plugin_fn;
 static value config_fn;
 static value config_complete_fn;
 static value open_fn;
@@ -130,6 +131,7 @@ unload_wrapper (void)
   if (fn##_fn) caml_remove_generational_global_root (&fn##_fn)
   REMOVE (load);
   REMOVE (unload);
+  REMOVE (dump_plugin);
   REMOVE (config);
   REMOVE (config_complete);
   REMOVE (open);
@@ -144,6 +146,21 @@ unload_wrapper (void)
   REMOVE (flush);
   REMOVE (trim);
   REMOVE (zero);
+}
+
+static void
+dump_plugin_wrapper (void)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (dump_plugin_fn, Val_unit);
+  if (Is_exception_result (rv))
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+  caml_enter_blocking_section ();
+  CAMLreturn0;
 }
 
 static int
@@ -495,6 +512,7 @@ ocaml_nbdkit_set_config_help (value helpv)
 
 SET(load)
 SET(unload)
+SET(dump_plugin)
 SET(config)
 SET(config_complete)
 SET(open)

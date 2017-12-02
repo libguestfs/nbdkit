@@ -39,6 +39,7 @@ type 'a plugin = {
 
   load : (unit -> unit) option;
   unload : (unit -> unit) option;
+  dump_plugin : (unit -> unit) option;
   config : (string -> string -> unit) option;
   config_complete : (unit -> unit) option;
   config_help : string;

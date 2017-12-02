@@ -41,6 +41,7 @@ type 'a plugin = {
 
   load : (unit -> unit) option;
   unload : (unit -> unit) option;
+  dump_plugin : (unit -> unit) option;
   config : (string -> string -> unit) option;
   config_complete : (unit -> unit) option;
   config_help : string;
@@ -67,6 +68,7 @@ let default_callbacks = {
 
   load = None;
   unload = None;
+  dump_plugin = None;
   config = None;
   config_complete = None;
   config_help = "";
@@ -100,6 +102,7 @@ external set_description : string -> unit = "ocaml_nbdkit_set_description" "noal
 
 external set_load : (unit -> unit) -> unit = "ocaml_nbdkit_set_load"
 external set_unload : (unit -> unit) -> unit = "ocaml_nbdkit_set_unload"
+external set_dump_plugin : (unit -> unit) -> unit = "ocaml_nbdkit_set_dump_plugin" "noalloc"
 external set_config : (string -> string -> unit) -> unit = "ocaml_nbdkit_set_config"
 external set_config_complete : (unit -> unit) -> unit = "ocaml_nbdkit_set_config_complete"
 external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" "noalloc"
@@ -146,6 +149,7 @@ let register_plugin thread_model plugin =
 
   may set_load plugin.load;
   may set_unload plugin.unload;
+  may set_dump_plugin plugin.dump_plugin;
   may set_config plugin.config;
   may set_config_complete plugin.config_complete;
   if plugin.config_help <> "" then

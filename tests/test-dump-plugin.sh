@@ -36,7 +36,14 @@ source ./functions.sh
 
 output="$(nbdkit example1 --dump-plugin)"
 if [[ ! ( "$output" =~ name\=example1 ) ]]; then
-    echo "$0: unexpected output from nbdkit --dump-plugin"
+    echo "$0: unexpected output from nbdkit example1 --dump-plugin"
+    echo "$output"
+    exit 1
+fi
+
+output="$(nbdkit example2 --dump-plugin)"
+if [[ ! ( "$output" =~ example2_extra\=hello ) ]]; then
+    echo "$0: unexpected output from nbdkit example2 --dump-plugin"
     echo "$output"
     exit 1
 fi

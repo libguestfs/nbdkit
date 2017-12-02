@@ -60,6 +60,16 @@ example2_unload (void)
   free (filename);
 }
 
+/* If you want to display extra information about the plugin when
+ * the user does ‘nbdkit example2 --dump-plugin’ then you can print
+ * ‘key=value’ lines here.
+ */
+static void
+example2_dump_plugin (void)
+{
+  printf ("example2_extra=hello\n");
+}
+
 /* Called for each key=value passed on the command line.  This plugin
  * only accepts file=<filename>, which is required.
  */
@@ -186,6 +196,7 @@ static struct nbdkit_plugin plugin = {
   .name              = "example2",
   .version           = PACKAGE_VERSION,
   .unload            = example2_unload,
+  .dump_plugin       = example2_dump_plugin,
   .config            = example2_config,
   .config_complete   = example2_config_complete,
   .config_help       = example2_config_help,

@@ -164,6 +164,24 @@ xs_init(pTHX)
   newXS("Nbdkit::set_error", set_error, file);
 }
 
+static void
+perl_dump_plugin (void)
+{
+  dSP;
+
+  if (callback_defined ("dump_plugin")) {
+    ENTER;
+    SAVETMPS;
+    PUSHMARK (SP);
+    PUTBACK;
+    call_pv ("dump_plugin", G_EVAL|G_VOID|G_DISCARD);
+    SPAGAIN;
+    PUTBACK;
+    FREETMPS;
+    LEAVE;
+  }
+}
+
 static int
 perl_config (const char *key, const char *value)
 {
@@ -659,6 +677,7 @@ static struct nbdkit_plugin plugin = {
 
   .load              = perl_load,
   .unload            = perl_unload,
+  .dump_plugin       = perl_dump_plugin,
 
   .config            = perl_config,
   .config_complete   = perl_config_complete,
