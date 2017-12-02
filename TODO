@@ -19,6 +19,8 @@
 
 * Performance - measure and improve it.
 
+* Bash tab completion.
+
 * filters: It should be possible to layer filters over plugins to
   do things like injecting errors and adding delays (see wdelay/rdelay
   options in the file plugin).
