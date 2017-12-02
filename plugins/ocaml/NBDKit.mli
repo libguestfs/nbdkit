@@ -54,6 +54,7 @@ type 'a plugin = {
   pwrite : ('a -> string -> int64 -> unit) option;
   flush : ('a -> unit) option;
   trim : ('a -> int32 -> int64 -> unit) option;
+  zero : ('a -> int32 -> int64 -> bool -> unit) option;
 }
 
 val default_callbacks : 'a plugin

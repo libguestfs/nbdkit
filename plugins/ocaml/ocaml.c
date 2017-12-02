@@ -96,6 +96,7 @@ static value pread_fn;
 static value pwrite_fn;
 static value flush_fn;
 static value trim_fn;
+static value zero_fn;
 
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
 
@@ -157,6 +158,8 @@ unload_wrapper (void)
     caml_remove_generational_global_root (&flush_fn);
   if (trim_fn)
     caml_remove_generational_global_root (&trim_fn);
+  if (zero_fn)
+    caml_remove_generational_global_root (&zero_fn);
 }
 
 static int
@@ -421,7 +424,30 @@ trim_wrapper (void *h, uint32_t count, uint64_t offset)
   countv = caml_copy_int32 (count);
   offsetv = caml_copy_int32 (offset);
 
-  rv = caml_callback3_exn (flush_fn, *(value *) h, countv, offsetv);
+  rv = caml_callback3_exn (trim_fn, *(value *) h, countv, offsetv);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, 0);
+}
+
+static int
+zero_wrapper (void *h, uint32_t count, uint64_t offset, int may_trim)
+{
+  CAMLparam0 ();
+  CAMLlocal4 (rv, countv, offsetv, may_trimv);
+
+  caml_leave_blocking_section ();
+
+  countv = caml_copy_int32 (count);
+  offsetv = caml_copy_int32 (offset);
+  may_trimv = Val_bool (may_trim);
+
+  value args[4] = { *(value *) h, countv, offsetv, may_trimv };
+  rv = caml_callbackN_exn (zero_fn, 4, args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -498,6 +524,7 @@ SET(pread)
 SET(pwrite)
 SET(flush)
 SET(trim)
+SET(zero)
 
 /* We can't directly use NBDKIT_REGISTER_PLUGIN(). */
 struct nbdkit_plugin *

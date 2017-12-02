@@ -56,6 +56,7 @@ type 'a plugin = {
   pwrite : ('a -> string -> int64 -> unit) option;
   flush : ('a -> unit) option;
   trim : ('a -> int32 -> int64 -> unit) option;
+  zero : ('a -> int32 -> int64 -> bool -> unit) option;
 }
 
 let default_callbacks = {
@@ -81,6 +82,7 @@ let default_callbacks = {
   pwrite = None;
   flush = None;
   trim = None;
+  zero = None;
 }
 
 type thread_model =
@@ -113,6 +115,7 @@ external set_pread : ('a -> bytes -> int64 -> unit) -> unit = "ocaml_nbdkit_set_
 external set_pwrite : ('a -> string -> int64 -> unit) -> unit = "ocaml_nbdkit_set_pwrite"
 external set_flush : ('a -> unit) -> unit = "ocaml_nbdkit_set_flush"
 external set_trim : ('a -> int32 -> int64 -> unit) -> unit = "ocaml_nbdkit_set_trim"
+external set_zero : ('a -> int32 -> int64 -> bool -> unit) -> unit = "ocaml_nbdkit_set_zero"
 
 let may f = function None -> () | Some a -> f a
 
@@ -158,4 +161,5 @@ let register_plugin thread_model plugin =
   may set_pread plugin.pread;
   may set_pwrite plugin.pwrite;
   may set_flush plugin.flush;
-  may set_trim plugin.trim
+  may set_trim plugin.trim;
+  may set_zero plugin.zero
