@@ -463,6 +463,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/perl/Makefile
                  plugins/python/Makefile
                  plugins/ruby/Makefile
+                 plugins/split/Makefile
                  plugins/streaming/Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile

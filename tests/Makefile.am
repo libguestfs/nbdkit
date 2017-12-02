@@ -325,6 +325,28 @@ test_ruby_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_RUBY
 
+# split files plugin test.
+check_DATA += split1 split2 split3
+MAINTAINERCLEANFILES += split1 split2 split3
+split1: file-data
+	rm -f $@ $@-t
+	dd if=$< of=$@-t bs=1 count=100
+	mv $@-t $@
+split2: file-data
+	rm -f $@ $@-t
+	dd if=$< of=$@-t bs=1 count=100 skip=100
+	mv $@-t $@
+split3: file-data
+	rm -f $@ $@-t
+	dd if=$< of=$@-t bs=1 skip=200
+	mv $@-t $@
+check_PROGRAMS += test-split
+TESTS += test-split
+
+test_split_SOURCES = test-split.c test.h
+test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_split_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
 # streaming plugin test.
 check_PROGRAMS += test-streaming
 # Doesn't work:

@@ -44,6 +44,9 @@ Makefile.in
 /tests/disk.xz
 /tests/file-data
 /tests/pki
+/tests/split1
+/tests/split2
+/tests/split3
 /tests/test-connect
 /tests/test-exit-with-parent
 /tests/test-file
@@ -59,6 +62,7 @@ Makefile.in
 /tests/test-python
 /tests/test-ruby
 /tests/test-socket-activation
+/tests/test-split
 /tests/test-streaming
 /tests/test-xz
 /test-driver

@@ -2,19 +2,56 @@
 
 =head1 NAME
 
-nbdkit-file-plugin - nbdkit file plugin
+nbdkit-split-plugin - nbdkit plugin to concatenate split files into one disk
 
 =head1 SYNOPSIS
 
- nbdkit file file=FILENAME
+ nbdkit split file=file1 [file=file2 file=file3 ...]
 
 =head1 DESCRIPTION
 
-C<nbdkit-file-plugin> is a file serving plugin for L<nbdkit(1)>.
+C<nbdkit-split-plugin> is a file plugin for L<nbdkit(1)>.  One or more
+filenames may be given using the [file=FILENAME] parameter.  These
+files are logically concatenated into a single disk image.
 
-It serves the named C<FILENAME> over NBD.
+=head2 Differences from nbdkit-file-plugin
 
-To concatenate multiple files, use L<nbdkit-split-plugin(1)>.
+Normally to serve a single file you should use
+L<nbdkit-file-plugin(1)>.  This plugin differs from nbdkit-file-plugin
+as follows:
+
+=over 4
+
+=item *
+
+nbdkit-file-plugin is faster and more efficient.  It has a fully
+parallel implementation, and does not have to deal with the complexity
+of locating the correct file to serve or splitting requests across
+files.
+
+=item *
+
+nbdkit-file-plugin allows you to resize the underlying file
+dynamically.  The underlying files must B<not> be resized when using
+the split plugin.
+
+=item *
+
+nbdkit-file-plugin can handle block devices, but the split plugin can
+only handle plain files.
+
+=item *
+
+nbdkit-file-plugin handles writes of blocks of zeroes efficiently, but
+the split plugin cannot.
+
+=item *
+
+nbdkit-file-plugin can "punch holes" in the backing file in response
+to a trim request from the client, but the split plugin does not
+support this.
+
+=back
 
 =head1 PARAMETERS
 
@@ -22,30 +59,10 @@ To concatenate multiple files, use L<nbdkit-split-plugin(1)>.
 
 =item B<file=FILENAME>
 
-Serve the file named C<FILENAME>.  A device path can also be
-used here.
+One or more files to open.  They are logically concatenated in
+the order they appear on the command line.
 
-This parameter is required.
-
-=item B<rdelay=SECS>
-
-=item B<rdelay=E<lt>NNE<gt>ms>
-
-Delay reads for C<SECS> seconds or C<NN> milliseconds.
-This is used to simulate a slow or remote server, or to
-test certain kinds of race conditions in Linux.
-
-The default is no delay.
-
-=item B<wdelay=SECS>
-
-=item B<wdelay=E<lt>NNE<gt>ms>
-
-Delay writes for C<SECS> seconds or C<NN> milliseconds.
-This is used to simulate a slow or remote server, or to
-test certain kinds of race conditions in Linux.
-
-The default is no delay.
+This parameter must appear at least once.
 
 =back
 
@@ -53,7 +70,7 @@ The default is no delay.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
-L<nbdkit-split-plugin(1)>.
+L<nbdkit-file-plugin(1)>.
 
 =head1 AUTHORS
 
@@ -61,7 +78,7 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013 Red Hat Inc.
+Copyright (C) 2017 Red Hat Inc.
 
 =head1 LICENSE
 

@@ -13,10 +13,6 @@
 
 * Performance - measure and improve it.
 
-* split files plugin
-    nbdkit split file=file1 file=file2 [...]
-  which concatenates the files to make the virtual device.
-
 * filters: It should be possible to layer filters over plugins to
   do things like injecting errors and adding delays (see wdelay/rdelay
   options in the file plugin).
