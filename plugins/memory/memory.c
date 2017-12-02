@@ -45,6 +45,12 @@
 static size_t size = 0;
 static void *disk;
 
+static void
+memory_unload (void)
+{
+  free (disk);
+}
+
 static int
 memory_config (const char *key, const char *value)
 {
@@ -75,7 +81,7 @@ memory_config_complete (void)
     nbdkit_error ("you must specify size=<SIZE> on the command line");
     return -1;
   }
-  disk = malloc (size);
+  disk = calloc (size, 1);
   if (disk == NULL) {
     nbdkit_error ("cannot allocate disk: %m");
     return -1;
@@ -159,6 +165,7 @@ memory_can_write (void *handle)
 static struct nbdkit_plugin plugin = {
   .name              = "memory",
   .version           = PACKAGE_VERSION,
+  .unload            = memory_unload,
   .config            = memory_config,
   .config_complete   = memory_config_complete,
   .config_help       = memory_config_help,
