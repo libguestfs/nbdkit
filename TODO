@@ -1,11 +1,19 @@
 * Listen on specific interfaces or protocols (eg. only IPv6).
 
-* Can we do language bindings using #!'s?
+* Can we run scripting language plugins using shebangs?
+  nbdkit-foo-plugin is an executable script that starts with
+    #!/usr/bin/nbdkit --script=perl
+  Running this causes this command to run:
+    /usr/bin/nbdkit --script=perl /path/to/script [other args]
+
+* Can scripting language plugins be installed in the plugindir?
   You would enter:
     nbdkit foo [args]
-  where nbdkit-foo-plugin is a Perl script starting:
-    #!perl
-  which causes nbdkit to load the perl plugin wrapper.
+  where nbdkit-foo-plugin would be a script.  If it
+  started with:
+    #!/usr/bin/nbdkit --script=perl
+  that would cause nbdkit to load
+    nbdkit --script=perl /path/to/nbdkit-foo-plugin [args]
 
 * syslog? journal?
 
