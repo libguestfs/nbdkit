@@ -55,5 +55,6 @@
   nbdkit_3
   Memcheck:Leak
   fun:calloc
+  ...
   fun:_dl_allocate_tls
 }
