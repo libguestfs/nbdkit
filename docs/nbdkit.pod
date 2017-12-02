@@ -342,6 +342,18 @@ which has the same meaning as:
 
  nbdkit perl script=foo.pl [args...]
 
+=head2 Shebang scripts
+
+You can use C<#!> to run nbdkit plugins written in most scripting
+languages.  The file should be executable.  For example:
+
+ #!/usr/sbin/nbdkit perl
+ sub open {
+   # etc
+ }
+
+(see L<nbdkit-perl-plugin(3)> for a full example).
+
 =head1 SOCKET ACTIVATION
 
 nbdkit supports socket activation (sometimes called systemd socket

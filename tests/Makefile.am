@@ -37,6 +37,7 @@ EXTRA_DIST = \
 	functions.sh \
 	make-pki.sh \
 	README.tests \
+	shebang.pl \
 	test-captive.sh \
 	test-cxx.sh \
 	test-dump-config.sh \
@@ -294,6 +295,9 @@ test_perl_CFLAGS = \
 	-DLANG='"perl"' -DSCRIPT='"test.pl"' \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_perl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# Shebang test (requires Perl).
+TESTS += test-shebang.sh
 
 endif HAVE_PERL
 
