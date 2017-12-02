@@ -62,7 +62,7 @@
 #define FIRST_SOCKET_ACTIVATION_FD 3 /* defined by systemd ABI */
 
 static char *make_random_fifo (void);
-static void open_plugin_so (const char *filename);
+static void open_plugin_so (const char *filename, int is_short_name);
 static void start_serving (void);
 static void set_up_signals (void);
 static void run_command (void);
@@ -197,6 +197,7 @@ main (int argc, char *argv[])
   int option_index;
   int help = 0, version = 0, dump_plugin = 0;
   int tls_set_on_cli = 0;
+  int is_short_name;
   const char *filename;
   char *p;
 
@@ -459,8 +460,10 @@ main (int argc, char *argv[])
    * help/version/plugin information.
    */
   filename = argv[optind++];
+  is_short_name =
+    strchr (filename, '.') == NULL && strchr (filename, '/') == NULL;
 
-  open_plugin_so (filename);
+  open_plugin_so (filename, is_short_name);
 
   if (help) {
     usage ();
@@ -565,7 +568,7 @@ make_random_fifo (void)
 }
 
 static void
-open_plugin_so (const char *name)
+open_plugin_so (const char *name, int is_short_name)
 {
   char *filename = (char *) name;
   int free_filename = 0;
@@ -573,8 +576,8 @@ open_plugin_so (const char *name)
   struct nbdkit_plugin *(*plugin_init) (void);
   char *error;
 
-  if (strchr (name, '.') == NULL && strchr (name, '/') == NULL) {
-    /* Short names are rewritten relative to libdir. */
+  if (is_short_name) {
+    /* Short names are rewritten relative to the plugindir. */
     if (asprintf (&filename, "%s/nbdkit-%s-plugin.so", plugindir, name) == -1) {
       perror ("asprintf");
       exit (EXIT_FAILURE);
