@@ -124,42 +124,26 @@ unload_wrapper (void)
   free ((char *) plugin.longname);
   free ((char *) plugin.version);
   free ((char *) plugin.description);
-
-  if (load_fn)
-    caml_remove_generational_global_root (&load_fn);
-  if (unload_fn)
-    caml_remove_generational_global_root (&unload_fn);
-  if (config_fn)
-    caml_remove_generational_global_root (&config_fn);
-  if (config_complete_fn)
-    caml_remove_generational_global_root (&config_complete_fn);
-
   free ((char *) plugin.config_help);
 
-  if (open_fn)
-    caml_remove_generational_global_root (&open_fn);
-  if (close_fn)
-    caml_remove_generational_global_root (&close_fn);
-  if (get_size_fn)
-    caml_remove_generational_global_root (&get_size_fn);
-  if (can_write_fn)
-    caml_remove_generational_global_root (&can_write_fn);
-  if (can_flush_fn)
-    caml_remove_generational_global_root (&can_flush_fn);
-  if (is_rotational_fn)
-    caml_remove_generational_global_root (&is_rotational_fn);
-  if (can_trim_fn)
-    caml_remove_generational_global_root (&can_trim_fn);
-  if (pread_fn)
-    caml_remove_generational_global_root (&pread_fn);
-  if (pwrite_fn)
-    caml_remove_generational_global_root (&pwrite_fn);
-  if (flush_fn)
-    caml_remove_generational_global_root (&flush_fn);
-  if (trim_fn)
-    caml_remove_generational_global_root (&trim_fn);
-  if (zero_fn)
-    caml_remove_generational_global_root (&zero_fn);
+#define REMOVE(fn) \
+  if (fn##_fn) caml_remove_generational_global_root (&fn##_fn)
+  REMOVE (load);
+  REMOVE (unload);
+  REMOVE (config);
+  REMOVE (config_complete);
+  REMOVE (open);
+  REMOVE (close);
+  REMOVE (get_size);
+  REMOVE (can_write);
+  REMOVE (can_flush);
+  REMOVE (is_rotational);
+  REMOVE (can_trim);
+  REMOVE (pread);
+  REMOVE (pwrite);
+  REMOVE (flush);
+  REMOVE (trim);
+  REMOVE (zero);
 }
 
 static int
