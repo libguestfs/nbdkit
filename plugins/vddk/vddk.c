@@ -255,6 +255,15 @@ vddk_config_complete (void)
   "file=<FILENAME>     (required) The filename (eg. VMDK file) to serve.\n" \
   "Many optional parameters are supported, see nbdkit-vddk-plugin(3)."
 
+static void
+vddk_dump_plugin (void)
+{
+  printf ("vddk_default_libdir=%s\n", VDDK_LIBDIR);
+  /* XXX We really need to print the version of the dynamically
+   * linked library here, but VDDK does not provide it.
+   */
+}
+
 /* XXX To really do threading correctly in accordance with the VDDK
  * documentation, we must do all open/close calls from a single
  * thread.  This is a huge pain.
@@ -460,6 +469,7 @@ static struct nbdkit_plugin plugin = {
   .config            = vddk_config,
   .config_complete   = vddk_config_complete,
   .config_help       = vddk_config_help,
+  .dump_plugin       = vddk_dump_plugin,
   .open              = vddk_open,
   .close             = vddk_close,
   .get_size          = vddk_get_size,
