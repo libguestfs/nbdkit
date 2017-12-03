@@ -61,6 +61,7 @@ main (int argc, char *argv[])
   }
 
   r = guestfs_add_drive_opts (g, "",
+                              GUESTFS_ADD_DRIVE_OPTS_READONLY, 1,
                               GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
                               GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
                               GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
