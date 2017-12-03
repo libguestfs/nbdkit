@@ -677,11 +677,15 @@ L<nbdkit-ruby-plugin(3)>.
 
 =head1 AUTHORS
 
+Eric Blake
+
 Richard W.M. Jones
+
+Pino Toscano
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2016 Red Hat Inc.
+Copyright (C) 2013-2017 Red Hat Inc.
 
 =head1 LICENSE
 

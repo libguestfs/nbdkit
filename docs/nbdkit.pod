@@ -885,7 +885,11 @@ L<systemd.socket(5)>.
 
 =head1 AUTHORS
 
+Eric Blake
+
 Richard W.M. Jones
+
+Pino Toscano
 
 =head1 COPYRIGHT
 
