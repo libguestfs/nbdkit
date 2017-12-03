@@ -51,6 +51,14 @@
 
 #include <nbdkit-plugin.h>
 
+/* XXX Apparently global state is technically wrong in Python 3, see:
+ *
+ * https://www.python.org/dev/peps/pep-3121/
+ *
+ * However it probably doesn't matter for nbdkit since we don't ever
+ * have multiple Python interpreters or multiple instances of the
+ * plugin in a single process.
+ */
 static const char *script;
 static PyObject *module;
 
@@ -107,11 +115,29 @@ check_python_failure (const char *callback)
   return 0;
 }
 
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+  PyModuleDef_HEAD_INIT,
+  "nbdkit",
+  NULL,
+  0,
+  NbdkitMethods,
+  NULL,
+  NULL,
+  NULL,
+  NULL
+};
+#endif
+
 static void
 py_load (void)
 {
   Py_Initialize ();
+#if PY_MAJOR_VERSION >= 3
+  PyModule_Create (&moduledef);
+#else
   Py_InitModule("nbdkit", NbdkitMethods);
+#endif
 }
 
 static void
