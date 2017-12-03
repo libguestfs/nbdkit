@@ -649,6 +649,21 @@ L<nbdkit-perl-plugin(3)>,
 L<nbdkit-python-plugin(3)>,
 L<nbdkit-ruby-plugin(3)>.
 
+Plugins written in scripting languages may also be installed in
+C<$plugindir>.  These must be called C<nbdkit-I<name>-plugin> without
+any extension.  They must be executable, and they must use the shebang
+header (see L<nbdkit(1)/Shebang scripts>).  For example a plugin
+written in Perl called C<foo.pl> might be installed like this:
+
+ $ head -1 foo.pl
+ #!/usr/sbin/nbdkit perl
+
+ $ sudo install -m 0755 foo.pl $plugindir/nbdkit-foo-plugin
+
+and then users will be able to run it like this:
+
+ $ nbdkit foo [args ...]
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

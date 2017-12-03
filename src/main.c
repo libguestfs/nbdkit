@@ -44,6 +44,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <errno.h>
 #include <assert.h>
@@ -463,6 +464,35 @@ main (int argc, char *argv[])
   is_short_name =
     strchr (filename, '.') == NULL && strchr (filename, '/') == NULL;
 
+  /* Is there an executable script located in the plugindir?
+   * If so we simply execute it with the current command line.
+   */
+  if (is_short_name) {
+    size_t i;
+    struct stat statbuf;
+    CLEANUP_FREE char *script;
+
+    if (asprintf (&script,
+                  "%s/nbdkit-%s-plugin", plugindir, filename) == -1) {
+      perror ("asprintf");
+      exit (EXIT_FAILURE);
+    }
+
+    if (stat (script, &statbuf) == 0 &&
+        (statbuf.st_mode & S_IXUSR) != 0) {
+      /* We're going to execute the plugin directly.
+       * Replace argv[0] with argv[optind-1] and move further arguments
+       * down the list.
+       */
+      argv[0] = argv[optind-1];
+      for (i = optind; i <= argc; i++)
+        argv[i-1] = argv[i];
+      execv (script, argv);
+      perror (script);
+      exit (EXIT_FAILURE);
+    }
+  }
+
   open_plugin_so (filename, is_short_name);
 
   if (help) {
@@ -578,7 +608,8 @@ open_plugin_so (const char *name, int is_short_name)
 
   if (is_short_name) {
     /* Short names are rewritten relative to the plugindir. */
-    if (asprintf (&filename, "%s/nbdkit-%s-plugin.so", plugindir, name) == -1) {
+    if (asprintf (&filename,
+                  "%s/nbdkit-%s-plugin.so", plugindir, name) == -1) {
       perror ("asprintf");
       exit (EXIT_FAILURE);
     }

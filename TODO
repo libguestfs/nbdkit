@@ -1,19 +1,5 @@
 * Listen on specific interfaces or protocols (eg. only IPv6).
 
-* Can scripting language plugins be installed in the plugindir?
-
-  If a script called nbdkit-foo-plugin is installed in the
-  scripting directory and the script starts with:
-
-     #!/usr/bin/nbdkit perl
-
-   then we could allow:
-
-     nbdkit foo [args]
-
-    to run the script from the plugin dir, resulting in the
-    script running as above.
-
 * syslog? journal?
 
 * Performance - measure and improve it.
