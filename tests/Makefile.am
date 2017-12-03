@@ -53,6 +53,7 @@ EXTRA_DIST = \
 	test.pl \
 	test.py \
 	test.rb \
+	test-shebang.sh \
 	test-single.sh \
 	test-start.sh \
 	test-random-sock.sh \
