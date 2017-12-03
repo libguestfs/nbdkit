@@ -513,11 +513,6 @@ main (int argc, char *argv[])
     exit (EXIT_SUCCESS);
   }
 
-  if (dump_plugin) {
-    plugin_dump_fields ();
-    exit (EXIT_SUCCESS);
-  }
-
   /* Find key=value configuration parameters for this plugin.
    * The first one is magical in that if it doesn't contain '=' then
    * we assume it is 'script=...'.
@@ -525,6 +520,16 @@ main (int argc, char *argv[])
   if (optind < argc && (p = strchr (argv[optind], '=')) == NULL) {
     plugin_config ("script", argv[optind]);
     ++optind;
+  }
+
+  /* This must run after parsing the possible script parameter so that
+   * the script can be loaded for scripting languages.  Note that all
+   * scripting languages load the script as soon as they see the
+   * script=... parameter (and do not wait for config_complete).
+   */
+  if (dump_plugin) {
+    plugin_dump_fields ();
+    exit (EXIT_SUCCESS);
   }
 
   while (optind < argc) {
