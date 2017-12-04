@@ -38,6 +38,8 @@ EXTRA_DIST = \
 	make-pki.sh \
 	README.tests \
 	shebang.pl \
+	shebang.py \
+	shebang.rb \
 	test-captive.sh \
 	test-cxx.sh \
 	test-dump-config.sh \
@@ -53,7 +55,9 @@ EXTRA_DIST = \
 	test.pl \
 	test.py \
 	test.rb \
-	test-shebang.sh \
+	test-shebang-perl.sh \
+	test-shebang-python.sh \
+	test-shebang-ruby.sh \
 	test-single.sh \
 	test-start.sh \
 	test-random-sock.sh \
@@ -289,7 +293,9 @@ endif HAVE_OCAML
 if HAVE_PERL
 
 check_PROGRAMS += test-perl
-TESTS += test-perl
+TESTS += \
+	test-perl \
+	test-shebang-perl.sh
 
 test_perl_SOURCES = test-lang-plugins.c test.h
 test_perl_CFLAGS = \
@@ -297,16 +303,15 @@ test_perl_CFLAGS = \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_perl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-# Shebang test (requires Perl).
-TESTS += test-shebang.sh
-
 endif HAVE_PERL
 
 # python plugin test.
 if HAVE_PYTHON
 
 check_PROGRAMS += test-python
-TESTS += test-python
+TESTS += \
+	test-python \
+	test-shebang-python.sh
 
 test_python_SOURCES = test-lang-plugins.c test.h
 test_python_CFLAGS = \
@@ -320,7 +325,9 @@ endif HAVE_PYTHON
 if HAVE_RUBY
 
 check_PROGRAMS += test-ruby
-TESTS += test-ruby
+TESTS += \
+	test-ruby \
+	test-shebang-ruby.sh
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \

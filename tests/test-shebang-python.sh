@@ -31,27 +31,33 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-./shebang.pl -P shebang.pid -U shebang.sock -f -v &
+pidfile=shebang-python.pid
+sockfile=shebang-python.sock
+script=./shebang.py
+
+rm -f $pidfile $sockfile
+
+$script -P $pidfile -U $sockfile -f -v &
 
 # We may have to wait a short time for the pid file to appear.
 for i in `seq 1 10`; do
-    if test -f shebang.pid; then
+    if test -f $pidfile; then
         break
     fi
     sleep 1
 done
-if ! test -f shebang.pid; then
+if ! test -f $pidfile; then
     echo "$0: PID file was not created"
     exit 1
 fi
 
-pid="$(cat shebang.pid)"
+pid="$(cat $pidfile)"
 
 # Check the process exists.
 kill -s 0 $pid
 
 # Check the socket was created (and is a socket).
-test -S shebang.sock
+test -S $sockfile
 
 # Kill the process.
 kill $pid
@@ -68,4 +74,4 @@ if kill -s 0 $pid; then
     exit 1
 fi
 
-rm shebang.pid shebang.sock
+rm $pidfile $sockfile
