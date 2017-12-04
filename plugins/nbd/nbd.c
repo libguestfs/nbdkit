@@ -227,6 +227,26 @@ nbd_mark_dead (struct handle *h)
   return -1;
 }
 
+/* Find and remove the transaction corresponding to cookie from the list. */
+static struct transaction *
+find_trans_by_cookie (struct handle *h, uint64_t cookie)
+{
+  struct transaction **ptr;
+  struct transaction *trans;
+
+  nbd_lock (h);
+  ptr = &h->trans;
+  while ((trans = *ptr) != NULL) {
+    if (cookie == trans->u.cookie)
+      break;
+    ptr = &trans->next;
+  }
+  if (trans)
+    *ptr = trans->next;
+  nbd_unlock (h);
+  return trans;
+}
+
 /* Send a request, return 0 on success or -1 on write failure. */
 static int
 nbd_request_raw (struct handle *h, uint32_t type, uint64_t offset,
@@ -260,6 +280,8 @@ nbd_request_full (struct handle *h, uint32_t type, uint64_t offset,
 {
   int err;
   struct transaction *trans;
+  int fd;
+  uint64_t cookie;
 
   trans = calloc (1, sizeof *trans);
   if (!trans) {
@@ -282,15 +304,22 @@ nbd_request_full (struct handle *h, uint32_t type, uint64_t offset,
   }
   trans->next = h->trans;
   h->trans = trans;
+  fd = trans->u.fds[0];
+  cookie = trans->u.cookie;
   nbd_unlock (h);
-  if (nbd_request_raw (h, type, offset, count, trans->u.cookie, req_buf) == 0)
-    return trans->u.fds[0];
+  if (nbd_request_raw (h, type, offset, count, cookie, req_buf) == 0)
+    return fd;
+  trans = find_trans_by_cookie (h, cookie);
 
  err:
   err = errno;
-  close (trans->u.fds[0]);
-  close (trans->u.fds[1]);
-  free (trans);
+  if (trans) {
+    close (trans->u.fds[0]);
+    close (trans->u.fds[1]);
+    free (trans);
+  }
+  else
+    close (fd);
   errno = err;
   return nbd_mark_dead (h);
 }
@@ -309,7 +338,6 @@ static int
 nbd_reply_raw (struct handle *h, int *fd)
 {
   struct reply rep;
-  struct transaction **ptr;
   struct transaction *trans;
   void *buf;
   uint32_t count;
@@ -320,16 +348,7 @@ nbd_reply_raw (struct handle *h, int *fd)
   if (be32toh (rep.magic) != NBD_REPLY_MAGIC)
     return nbd_mark_dead (h);
   nbdkit_debug ("received reply for cookie %#" PRIx64, rep.handle);
-  nbd_lock (h);
-  ptr = &h->trans;
-  while ((trans = *ptr) != NULL) {
-    if (rep.handle == trans->u.cookie)
-      break;
-    ptr = &trans->next;
-  }
-  if (trans)
-    *ptr = trans->next;
-  nbd_unlock (h);
+  trans = find_trans_by_cookie (h, rep.handle);
   if (!trans) {
     nbdkit_error ("reply with unexpected cookie %#" PRIx64, rep.handle);
     return nbd_mark_dead (h);
