@@ -54,10 +54,17 @@ storing global state).  Also any top-level statements, C<BEGIN>
 statements, C<END> statements and so on are run when nbdkit starts up
 and shuts down, just like ordinary Perl.
 
-The file does I<not> need to include a C<#!> (hash-bang) at the top,
-and does I<not> need to be executable.  In fact it's a good idea
-I<not> to do that, because running the plugin directly as a Perl
-script won't work.
+=head2 EXECUTABLE SCRIPT
+
+If you want you can make the script executable and include a "shebang"
+at the top:
+
+ #!/usr/sbin/nbdkit perl
+
+See also L<nbdkit(1)/Shebang scripts>.
+
+These scripts can also be installed in the C<$plugindir>.  See
+L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
 =head2 METHODS
 

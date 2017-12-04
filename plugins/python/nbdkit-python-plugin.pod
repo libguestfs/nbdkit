@@ -57,10 +57,17 @@ may want to include documentation and globals (eg. for storing global
 state).  Any other top level statements are run when the script is
 loaded, just like ordinary Python.
 
-The file does not need to include a C<#!> (hash-bang) at the top, and
-does not need to be executable.  In fact it's a good idea not to do
-that, because running the plugin directly as a Python script won't
-work.
+=head2 EXECUTABLE SCRIPT
+
+If you want you can make the script executable and include a "shebang"
+at the top:
+
+ #!/usr/sbin/nbdkit python
+
+See also L<nbdkit(1)/Shebang scripts>.
+
+These scripts can also be installed in the C<$plugindir>.  See
+L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
 =head2 METHODS
 
