@@ -44,6 +44,7 @@ EXTRA_DIST = \
 	test-cxx.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
+	test-dump-plugin-example4.sh \
 	test-foreground.sh \
 	test-help.sh \
 	test-help-plugin.sh \
@@ -294,6 +295,7 @@ if HAVE_PERL
 
 check_PROGRAMS += test-perl
 TESTS += \
+	test-dump-plugin-example4.sh \
 	test-perl \
 	test-shebang-perl.sh
 

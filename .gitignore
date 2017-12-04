@@ -37,6 +37,7 @@ Makefile.in
 /ltmain.sh
 /missing
 /nbdkit
+/plugins/example4/nbdkit-example4-plugin
 /src/nbdkit
 /stamp-h1
 /tests/disk

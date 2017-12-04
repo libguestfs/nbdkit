@@ -452,6 +452,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/example1/Makefile
                  plugins/example2/Makefile
                  plugins/example3/Makefile
+                 plugins/example4/Makefile
                  plugins/file/Makefile
                  plugins/guestfs/Makefile
                  plugins/gzip/Makefile

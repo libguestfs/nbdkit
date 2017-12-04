@@ -1,5 +1,6 @@
+#!/bin/bash -
 # nbdkit
-# Copyright (C) 2013-2014 Red Hat Inc.
+# Copyright (C) 2017 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,24 +31,19 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = \
-	curl \
-	example1 \
-	example2 \
-	example3 \
-	example4 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	memory \
-	nbd \
-	null \
-	ocaml \
-	perl \
-	python \
-	ruby \
-	split \
-	streaming \
-	vddk \
-	xz
+set -e
+source ./functions.sh
+
+# Skip test if running under valgrind because the Perl interpreter
+# leaks like a sieve.
+if [ "$NBDKIT_VALGRIND" = "1" ]; then
+    echo "$0: skipping valgrind test"
+    exit 77
+fi
+
+output="$(nbdkit example4 --dump-plugin)"
+if [[ ! ( "$output" =~ example4_extra\=hello ) ]]; then
+    echo "$0: unexpected output from nbdkit example4 --dump-plugin"
+    echo "$output"
+    exit 1
+fi

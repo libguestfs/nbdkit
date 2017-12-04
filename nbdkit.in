@@ -83,8 +83,17 @@ while [ $# -gt 0 ]; do
         # but there is only one module name so only rewrite once.
         *)
             if [ ! $done ] && [[ "$1" =~ ^[a-zA-Z0-9]+$ ]]; then
-                args[$i]="$b/plugins/$1/.libs/nbdkit-$1-plugin.so"
-                done=1
+                if [ -x "$b/plugins/$1/.libs/nbdkit-$1-plugin.so" ]; then
+                    args[$i]="$b/plugins/$1/.libs/nbdkit-$1-plugin.so"
+                    done=1
+                elif [ "$1" = "example4" ]; then
+                    args[$i]="$b/plugins/perl/.libs/nbdkit-perl-plugin.so"
+                    ((++i))
+                    args[$i]="$b/plugins/example4/nbdkit-example4-plugin"
+                    done=1
+                else
+                    args[$i]="$1"
+                fi
             else
                 args[$i]="$1"
             fi
