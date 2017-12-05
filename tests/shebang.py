@@ -1,8 +1,5 @@
 #!../nbdkit python
 
-import nbdkit
-import errno
-
 disk = bytearray(1024 * 1024)
 
 def open(readonly):
