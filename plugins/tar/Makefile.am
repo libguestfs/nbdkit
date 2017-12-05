@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2014 Red Hat Inc.
+# Copyright (C) 2013-2017 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,25 +30,32 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = \
-	curl \
-	example1 \
-	example2 \
-	example3 \
-	example4 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	memory \
-	nbd \
-	null \
-	ocaml \
-	perl \
-	python \
-	ruby \
-	split \
-	streaming \
-	tar \
-	vddk \
-	xz
+source = tar.pl
+
+EXTRA_DIST = \
+	$(source)
+
+CLEANFILES = *~
+
+plugindir = $(libdir)/nbdkit/plugins
+
+plugin_SCRIPTS = nbdkit-tar-plugin
+
+# We have to do the rewriting here to avoid stupid exec_prefix.
+nbdkit-tar-plugin: $(source)
+	rm -f $@ $@-t
+	sed 's,\@sbindir\@,${sbindir},g' < $< > $@-t
+	mv $@-t $@
+	chmod 0555 $@
+
+if HAVE_POD2MAN
+
+man_MANS = nbdkit-tar-plugin.1
+CLEANFILES += $(man_MANS)
+
+nbdkit-tar-plugin.1: $(source)
+	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
+
+endif

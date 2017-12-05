@@ -466,6 +466,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/ruby/Makefile
                  plugins/split/Makefile
                  plugins/streaming/Makefile
+                 plugins/tar/Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile
                  src/Makefile

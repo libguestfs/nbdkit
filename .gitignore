@@ -38,6 +38,7 @@ Makefile.in
 /missing
 /nbdkit
 /plugins/example4/nbdkit-example4-plugin
+/plugins/tar/nbdkit-tar-plugin
 /src/nbdkit
 /stamp-h1
 /tests/disk

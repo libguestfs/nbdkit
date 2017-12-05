@@ -874,6 +874,7 @@ L<nbdkit-python-plugin(3)>,
 L<nbdkit-ruby-plugin(3)>,
 L<nbdkit-split-plugin(1)>.
 L<nbdkit-streaming-plugin(1)>.
+L<nbdkit-tar-plugin(1)>.
 L<nbdkit-vddk-plugin(1)>.
 L<nbdkit-xz-plugin(1)>.
 

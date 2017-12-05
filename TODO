@@ -20,8 +20,6 @@
 
   - cinder
 
-  - OVA files
-
   - XVA files
     https://lists.gnu.org/archive/html/qemu-devel/2017-11/msg02971.html
     is a partial solution but it needs cleaning up.
