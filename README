@@ -5,15 +5,17 @@ disk-like things) over a Network.
 
 The key features are:
 
-* Multithreaded NBD server written in C with good performance.
+ * Multithreaded NBD server written in C with good performance.
 
-* Liberal license (BSD) allows nbdkit to be linked to proprietary
-  libraries or included in proprietary code.
+ * Minimal dependencies for the basic server.
 
-* Well-documented, simple plugin API with a stable ABI guarantee.
-  Lets you export "unconventional" block devices easily.
+ * Liberal license (BSD) allows nbdkit to be linked to proprietary
+   libraries or included in proprietary code.
 
-* You can write plugins in C, Perl, Python, OCaml or Ruby.
+ * Well-documented, simple plugin API with a stable ABI guarantee.
+   Lets you export "unconventional" block devices easily.
+
+ * You can write plugins in C, Perl, Python, OCaml or Ruby.
 
 For documentation, see the docs/ directory.
 
@@ -67,7 +69,7 @@ For the VDDK plugin:
 
  - VDDK (see plugins/vddk/README.VDDK)
 
-For the Perl plugin:
+For the Perl, example4 and tar plugins:
 
  - perl development libraries
 
@@ -76,6 +78,7 @@ For the Perl plugin:
 For the Python plugin:
 
  - python development libraries
+   (either version 2 or 3 may be used)
 
 For the OCaml plugin:
 
@@ -107,9 +110,14 @@ After installing any dependencies:
   make check-valgrind            make check-valgrind
 
 To run nbdkit from the source directory, use the top level ./nbdkit
-script.
+script.  It will run nbdkit and plugins from the locally compiled
+directory:
 
-Optionally run this as root to install everything:
+  $ ./nbdkit example1 -f -v
+  ./src/nbdkit ./plugins/example1/.libs/nbdkit-example1-plugin.so -f -v
+  [etc]
+
+Optionally run this command as root to install everything:
 
   make install
 
@@ -118,22 +126,26 @@ Python
 
 By default nbdkit uses the Python version of the Python interpreter
 called "python" on the current $PATH.  To use another version of
-Python you may need to set the PYTHON environment variable when
-configuring.  For example:
+Python you may need to set the PYTHON variable when configuring.  For
+example:
 
- PYTHON=/usr/bin/python3 ./configure
+  ./configure PYTHON=/usr/bin/python3
 
 Tests
 -----
 
-You will need to install libguestfs to run the test suite.
+You will need to install libguestfs to run most of the test suite:
 
-The test suite ('make check') is fairly comprehensive.  It runs the
-newly built nbdkit + plugin as a captive process, and tests it using
-libguestfs.
+  make check
 
-If there is a failure, look at the corresponding tests/*.log file for
-debug information.
+The test suite is fairly comprehensive.  It runs the newly built
+nbdkit + plugins as a captive process, and tests them using
+libguestfs.  If there is a failure, look at the corresponding
+tests/*.log file for debug information.
+
+You can run the tests under valgrind, if it is available, using:
+
+  make check-valgrind
 
 Packager information
 --------------------
