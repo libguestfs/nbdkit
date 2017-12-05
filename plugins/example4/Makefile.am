@@ -30,9 +30,10 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source = example4.pl
+
 EXTRA_DIST = \
-	nbdkit-example4-plugin.in \
-	nbdkit-example4-plugin.pod
+	$(source)
 
 CLEANFILES = *~
 
@@ -41,7 +42,7 @@ plugindir = $(libdir)/nbdkit/plugins
 plugin_SCRIPTS = nbdkit-example4-plugin
 
 # We have to do the rewriting here to avoid stupid exec_prefix.
-nbdkit-example4-plugin: nbdkit-example4-plugin.in
+nbdkit-example4-plugin: $(source)
 	rm -f $@ $@-t
 	sed 's,\@sbindir\@,${sbindir},g' < $< > $@-t
 	mv $@-t $@
@@ -52,7 +53,7 @@ if HAVE_POD2MAN
 man_MANS = nbdkit-example4-plugin.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-example4-plugin.1: nbdkit-example4-plugin.pod
+nbdkit-example4-plugin.1: $(source)
 	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
 	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
 	mv $@.t $@

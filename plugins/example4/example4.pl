@@ -1,3 +1,8 @@
+#!@sbindir@/nbdkit perl
+# -*- perl -*-
+
+=pod
+
 =encoding utf8
 
 =head1 NAME
@@ -30,7 +35,7 @@ C or other scripting languages.
 
 =head1 SEE ALSO
 
-L<nbdkit-example4-plugin.in> in the nbdkit source tree,
+L<example4.pl> in the nbdkit source tree,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-perl-plugin(3)>.
@@ -82,3 +87,82 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
+
+=cut
+
+use strict;
+
+my $disk;
+my $size;
+
+# size=<N> (in bytes) is required on the command line.
+# This example could be improved by parsing strings such as "1M".
+sub config
+{
+    my $k = shift;
+    my $v = shift;
+
+    if ($k eq "size") {
+        $size = int ($v);
+    }
+    else {
+        die "unknown parameter $k";
+    }
+}
+
+# When all config parameters have been seen, allocate the disk.
+sub config_complete
+{
+    die "size was not set" unless defined $size;
+    $disk = "\0" x $size;
+}
+
+# Accept a connection from a client, create and return the handle
+# which is passed back to other calls.
+sub open
+{
+    my $readonly = shift;
+    my $h = { readonly => $readonly };
+    return $h;
+}
+
+# Close the connection.
+sub close
+{
+    my $h = shift;
+}
+
+# Return the size.
+sub get_size
+{
+    my $h = shift;
+    return length ($disk);
+}
+
+# Read.
+sub pread
+{
+    my $h = shift;
+    my $count = shift;
+    my $offset = shift;
+    return substr ($disk, $offset, $count);
+}
+
+# Write.
+sub pwrite
+{
+    my $h = shift;
+    my $buf = shift;
+    my $count = length ($buf);
+    my $offset = shift;
+    substr ($disk, $offset, $count) = $buf;
+}
+
+# If you want to display extra information about the plugin when
+# the user does ‘nbdkit example4 --dump-plugin’ then you can print
+# ‘key=value’ lines here.
+sub dump_plugin
+{
+    print "example4_extra=hello\n";
+    flush STDOUT;
+}
