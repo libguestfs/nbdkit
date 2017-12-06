@@ -231,8 +231,15 @@ vddk_config_complete (void)
    * sample program does.
    */
   is_remote =
-    server_name || username || password || cookie || thumb_print
-    || vim_api_ver || port || nfc_host_port || vmx_spec;
+    vmx_spec ||
+    server_name ||
+    username ||
+    password ||
+    cookie ||
+    thumb_print ||
+    port ||
+    nfc_host_port ||
+    vim_api_ver;
 
   if (is_remote) {
 #define missing(test, param)                                            \
@@ -307,9 +314,9 @@ vddk_open (int readonly)
       params.creds.sessionId.key = password;
     }
     params.thumbPrint = (char *) thumb_print;
-    params.vimApiVer = (char *) vim_api_ver;
     params.port = port;
     params.nfcHostPort = nfc_host_port;
+    params.vimApiVer = (char *) vim_api_ver;
   }
 
   /* XXX Some documentation suggests we should call
