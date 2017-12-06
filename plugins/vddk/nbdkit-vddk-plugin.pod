@@ -12,6 +12,7 @@ nbdkit-vddk-plugin - VMware VDDK plugin for nbdkit
              [cookie=COOKIE] [thumbprint=THUMBPRINT]
              [vimapiver=APIVER] [port=PORT] [nfchostport=PORT]
              [snapshot=MOREF] [transports=MODE:MODE:...]
+ nbdkit vddk --dump-plugin
 
 =head1 DESCRIPTION
 
@@ -76,6 +77,8 @@ compile time is used.
 
 Optional.  Port used to establish an NFC connection to ESXi.  Defaults
 to 902.
+
+(Only supported in VDDK ≥ 5.5.5 and ≥ 6.0.1)
 
 =item B<password=PASSWORD>
 
@@ -177,6 +180,8 @@ L<https://blogs.vmware.com/vsphere/2012/02/uniquely-identifying-virtual-machines
 Optional.  Specify the VIM API version.  If not given it defaults to
 the current version.
 
+(Only supported in VDDK ≥ 6.5.0)
+
 =back
 
 =head1 EXAMPLES
@@ -241,6 +246,37 @@ moref used by ESXi, and always begins with the prefix C<"vm-">.
 C<file> is the actual file you want to open, usually in the form
 C<"[datastore] vmname/vmname.vmdk">.  You can find this from the
 L<virsh(1)> as described in L</PARAMETERS> above.
+
+=head1 DUMP-PLUGIN OUTPUT
+
+To query more information about the plugin (and whether it is
+working), use:
+
+ nbdkit vddk --dump-plugin
+
+If the plugin is not present, not working or the library path is wrong
+you will get an error.
+
+If it works the output will include:
+
+=over 4
+
+=item C<vddk_default_libdir=...>
+
+The compiled-in library path.  Use C<libdir=PATHNAME> to override this
+at runtime.
+
+=item C<vddk_has_nfchostport=1>
+
+If this is printed then the C<nfchostport=PORT> parameter is supported
+by this build.
+
+=item C<vddk_has_vimapiver=1>
+
+If this is printed then the C<vimapiver=APIVER> parameter is supported
+by this build.
+
+=back
 
 =head1 DEBUGGING VDDK
 

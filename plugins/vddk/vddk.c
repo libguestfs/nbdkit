@@ -171,10 +171,15 @@ vddk_config (const char *key, const char *value)
     libdir = value;
   }
   else if (strcmp (key, "nfchostport") == 0) {
+#if HAVE_VIXDISKLIBCONNECTPARAMS_NFCHOSTPORT
     if (sscanf (value, "%d", &nfc_host_port) != 1) {
       nbdkit_error ("cannot parse nfchostport: %s", value);
       return -1;
     }
+#else
+    nbdkit_error ("this version of VDDK is too old to support nfchostpost");
+    return -1;
+#endif
   }
   else if (strcmp (key, "password") == 0) {
     free (password);
@@ -203,7 +208,12 @@ vddk_config (const char *key, const char *value)
     username = value;
   }
   else if (strcmp (key, "vimapiver") == 0) {
+#if HAVE_VIXDISKLIBCONNECTPARAMS_VIMAPIVER
     vim_api_ver = value;
+#else
+    nbdkit_error ("this version of VDDK is too old to support vimapiver");
+    return -1;
+#endif
   }
   else if (strcmp (key, "vm") == 0) {
     vmx_spec = value;
@@ -266,6 +276,15 @@ static void
 vddk_dump_plugin (void)
 {
   printf ("vddk_default_libdir=%s\n", VDDK_LIBDIR);
+
+#if HAVE_VIXDISKLIBCONNECTPARAMS_NFCHOSTPORT
+  printf ("vddk_has_nfchostport=1\n");
+#endif
+
+#if HAVE_VIXDISKLIBCONNECTPARAMS_VIMAPIVER
+  printf ("vddk_has_vimapiver=1\n");
+#endif
+
   /* XXX We really need to print the version of the dynamically
    * linked library here, but VDDK does not provide it.
    */
@@ -315,8 +334,12 @@ vddk_open (int readonly)
     }
     params.thumbPrint = (char *) thumb_print;
     params.port = port;
+#if HAVE_VIXDISKLIBCONNECTPARAMS_NFCHOSTPORT
     params.nfcHostPort = nfc_host_port;
+#endif
+#if HAVE_VIXDISKLIBCONNECTPARAMS_VIMAPIVER
     params.vimApiVer = (char *) vim_api_ver;
+#endif
   }
 
   /* XXX Some documentation suggests we should call
