@@ -60,7 +60,7 @@ Run the L<nbdkit-example3-plugin(1)> and connect to it using
 L<guestfish(1)>:
 
  nbdkit example3 size=1G
- guestfish --ro -a nbd://localhost
+ guestfish --ro --format=raw -a nbd://localhost
 
 Serve file F<disk.img> on port 10809, requiring clients to use
 encrypted (TLS) connections:

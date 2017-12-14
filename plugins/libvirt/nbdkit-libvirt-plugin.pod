@@ -11,7 +11,7 @@ nbdkit-libvirt-plugin - nbdkit libvirt plugin using virDomainBlockPeek
 =head1 EXAMPLE
 
  nbdkit libvirt domain=MyGuest disk=sda
- guestfish -a nbd://localhost
+ guestfish --ro --format=raw -a nbd://localhost
 
 =head1 DESCRIPTION
 

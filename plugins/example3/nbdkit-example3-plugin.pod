@@ -11,7 +11,7 @@ nbdkit-example3-plugin - An example nbdkit plugin
 =head1 EXAMPLE
 
  nbdkit example3 size=1G
- guestfish -a nbd://localhost
+ guestfish --ro --format=raw -a nbd://localhost
 
 =head1 DESCRIPTION
 
