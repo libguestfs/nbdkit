@@ -315,7 +315,7 @@ support this.
 
 =head1 SEE ALSO
 
-L<plugins/vddk/vddk.c> in the nbdkit source tree,
+C<plugins/vddk/vddk.c> in the nbdkit source tree,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<virsh(1)>,
