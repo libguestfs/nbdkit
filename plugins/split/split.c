@@ -124,7 +124,8 @@ split_open (int readonly)
   h->files = malloc (nr_files * sizeof (struct file));
   if (h->files == NULL) {
     nbdkit_error ("malloc: %m");
-    free (h->files);
+    free (h);
+    return NULL;
   }
   for (i = 0; i < nr_files; ++i)
     h->files[i].fd = -1;
