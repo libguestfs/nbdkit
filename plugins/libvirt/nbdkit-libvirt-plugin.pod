@@ -16,9 +16,9 @@ nbdkit-libvirt-plugin - nbdkit libvirt plugin using virDomainBlockPeek
 =head1 DESCRIPTION
 
 C<nbdkit-libvirt-plugin> is an L<nbdkit(1)> plugin that lets you
-access libvirt guest disks readonly.  It is implemented using the
-libvirt C<virDomainBlockPeek> API.  It can also be used over remote
-libvirt connections.
+access libvirt guest disks.  Only read-only access is possible.  It is
+implemented using the libvirt C<virDomainBlockPeek> API.  It can also
+be used over remote libvirt connections.
 
 =head1 PARAMETERS
 
@@ -52,7 +52,8 @@ S<C<E<lt>target dev=...E<gt>>> in the XML.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
-L<http://libvirt.org>.
+L<http://libvirt.org>,
+L<https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainBlockPeek>.
 
 =head1 AUTHORS
 
@@ -60,7 +61,7 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013 Red Hat Inc.
+Copyright (C) 2013-2017 Red Hat Inc.
 
 =head1 LICENSE
 
