@@ -513,6 +513,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile
                  src/Makefile
+                 src/nbdkit.pc
                  tests/Makefile])
 
 AC_OUTPUT

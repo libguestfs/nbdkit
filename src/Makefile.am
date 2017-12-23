@@ -68,3 +68,8 @@ nbdkit_LDFLAGS = \
 	-rdynamic
 
 CLEANFILES = *~
+
+# pkg-config / pkgconf
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = nbdkit.pc

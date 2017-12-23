@@ -638,6 +638,31 @@ compiled and can be found by doing:
 
  nbdkit --dump-config
 
+If using the pkg-config/pkgconf system then you can also find the
+plugin directory at compile time by doing:
+
+ pkgconf nbdkit --variable=plugindir
+
+=head1 PKG-CONFIG/PKGCONF
+
+nbdkit provides a pkg-config/pkgconf file called C<nbdkit.pc> which
+should be installed on the correct path when the nbdkit plugin
+development environment is installed.  You can use this in autoconf
+F<configure.ac> scripts to test for the development environment:
+
+ PKG_CHECK_MODULES([NBDKIT], [nbdkit >= 1.2.3])
+
+The above will fail unless nbdkit E<ge> 1.2.3 and the header file is
+installed, and will set C<NBDKIT_CFLAGS> and C<NBDKIT_LIBS>
+appropriately for compiling plugins.
+
+You can also run pkg-config/pkgconf directly, for example:
+
+ if ! pkgconf nbdkit --exists; then
+   echo "you must install the nbdkit plugin development environment"
+   exit 1
+ fi
+
 =head1 WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES
 
 You can also write nbdkit plugins in OCaml, Perl, Python or Ruby.

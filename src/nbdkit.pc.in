@@ -1,0 +1,15 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+plugindir=@libdir@/nbdkit/plugins
+
+Name: @PACKAGE_NAME@
+Version: @PACKAGE_VERSION@
+Description: A toolkit for creating NBD servers
+Requires:
+Cflags:
+# There is no library that NBD plugins have to be linked against.
+# All symbols like 'nbdkit_error' are provided by the main nbdkit
+# server binary when the plugin is loaded.  So this is empty.
+Libs:
