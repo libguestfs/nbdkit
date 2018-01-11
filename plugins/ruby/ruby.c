@@ -68,8 +68,10 @@ set_error (VALUE self, VALUE arg)
 static void
 plugin_rb_load (void)
 {
+  RUBY_INIT_STACK;
   ruby_init ();
-  //ruby_init_loadpath (); - needed? XXX
+  ruby_init_loadpath ();
+
   nbdkit_module = rb_define_module ("Nbdkit");
   rb_define_module_function (nbdkit_module, "set_error", set_error, 1);
 }
@@ -498,8 +500,8 @@ plugin_rb_can_trim (void *handle)
   "script=<FILENAME>     (required) The Ruby plugin to run.\n" \
   "[other arguments may be used by the plugin that you load]"
 
-/* Note use of a global variable above.  We can't change this without
- * fixing that (and lots more besides).
+/* Ruby is inherently unsafe to call in parallel from multiple
+ * threads.
  */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 

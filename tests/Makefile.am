@@ -326,10 +326,13 @@ endif HAVE_PYTHON
 # Ruby plugin test.
 if HAVE_RUBY
 
+# Ruby tests are disabled.  See "WARNING" section in
+# plugins/ruby/nbdkit-ruby-plugin.pod
+
 check_PROGRAMS += test-ruby
-TESTS += \
-	test-ruby \
-	test-shebang-ruby.sh
+#TESTS += \
+#	test-ruby \
+#	test-shebang-ruby.sh
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \

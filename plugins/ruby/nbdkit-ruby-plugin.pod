@@ -8,6 +8,16 @@ nbdkit-ruby-plugin - nbdkit ruby plugin
 
  nbdkit ruby /path/to/plugin.rb [arguments...]
 
+=head1 WARNING
+
+The Ruby language is fundamentally broken when it comes to embedding
+in a program which uses pthreads.  This means you may see random
+"stack overflows" when using this plugin on some versions of Ruby but
+not others.
+
+For the whole sorry saga, see:
+L<https://redmine.ruby-lang.org/issues/2294>
+
 =head1 DESCRIPTION
 
 C<nbdkit-ruby-plugin> is an embedded Ruby interpreter for
