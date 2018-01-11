@@ -74,85 +74,83 @@ plugin_rb_load (void)
   rb_define_module_function (nbdkit_module, "set_error", set_error, 1);
 }
 
-/* Wrapper to make fb_funcall2 (only slightly) less insane.
- * https://gist.github.com/ammar/2787174
- */
+/* https://stackoverflow.com/questions/11086549/how-to-rb-protect-everything-in-ruby */
+#define MAX_ARGS 16
+struct callback_data {
+  VALUE receiver;               /* object being called */
+  ID method_id;                 /* method on object being called */
+  int argc;                     /* number of args */
+  VALUE argv[MAX_ARGS];         /* list of args */
+};
 
 static VALUE
-funcall2_wrapper (VALUE argvv)
+callback_dispatch (VALUE datav)
 {
-  VALUE *argv = (VALUE *) argvv;
-  volatile VALUE obj, method;
-  VALUE *args;
-  int argc;
-
-  obj = argv[0];
-  method = argv[1];
-  argc = argv[2];
-  args = (VALUE *) argv[3];
-
-  return rb_funcall2 (obj, method, argc, args);
+  struct callback_data *data = (struct callback_data *) datav;
+  return rb_funcall2 (data->receiver, data->method_id, data->argc, data->argv);
 }
 
-/* This should not be a global. XXX */
-enum plugin_rb_exception {
+enum exception_class {
   NO_EXCEPTION = 0,
-  EXCEPTION_NO_METHOD_ERROR,    /* NoMethodError */
-  EXCEPTION_OTHER,              /* none of the above */
+  EXCEPTION_NO_METHOD_ERROR,
+  EXCEPTION_OTHER,
 };
-static enum plugin_rb_exception exception_happened;
 
 static VALUE
-exception_handler (VALUE argvv, VALUE exn)
+funcall2 (VALUE receiver, ID method_id, int argc, volatile VALUE *argv,
+          enum exception_class *exception_happened)
 {
-  volatile VALUE message, backtrace, b;
-  long i, len;
+  struct callback_data data;
+  size_t i, len;
+  int state = 0;
+  volatile VALUE ret, exn, message, backtrace, b;
 
-  if (rb_obj_is_kind_of (exn, rb_eNoMethodError))
-    exception_happened = EXCEPTION_NO_METHOD_ERROR;
-  else {
-    /* Some other exception, so print it. */
-    exception_happened = EXCEPTION_OTHER;
+  assert (argc <= MAX_ARGS);
 
-    message = rb_funcall (exn, rb_intern ("to_s"), 0);
-    nbdkit_error ("ruby: %s", StringValueCStr (message));
-    backtrace = rb_funcall (exn, rb_intern ("backtrace"), 0);
-    if (! NIL_P (backtrace)) {
-      /* backtrace is a list of strings */
-      len = RARRAY_LEN (backtrace);
-      for (i = 0; i < len; ++i) {
-        b = rb_ary_entry (backtrace, i);
-        nbdkit_error ("ruby: stack %ld %s", i, StringValueCStr (b));
+  data.receiver = receiver;
+  data.method_id = method_id;
+  data.argc = argc;
+  for (i = 0; i < argc; ++i)
+    data.argv[i] = argv[i];
+
+  ret = rb_protect (callback_dispatch, (VALUE) &data, &state);
+  if (state) {
+    /* An exception was thrown.  Get the per-thread exception. */
+    exn = rb_errinfo ();
+
+    /* We treat NoMethodError specially. */
+    if (rb_obj_is_kind_of (exn, rb_eNoMethodError)) {
+      if (exception_happened)
+        *exception_happened = EXCEPTION_NO_METHOD_ERROR;
+    }
+    else {
+      if (exception_happened)
+        *exception_happened = EXCEPTION_OTHER;
+
+      /* Print the exception. */
+      message = rb_funcall (exn, rb_intern ("to_s"), 0);
+      nbdkit_error ("ruby: %s", StringValueCStr (message));
+
+      /* Try to print the backtrace (a list of strings) if it exists. */
+      backtrace = rb_funcall (exn, rb_intern ("backtrace"), 0);
+      if (! NIL_P (backtrace)) {
+        len = RARRAY_LEN (backtrace);
+        for (i = 0; i < len; ++i) {
+          b = rb_ary_entry (backtrace, i);
+          nbdkit_error ("ruby: frame #%ld %s", i, StringValueCStr (b));
+        }
       }
     }
+
+    /* Reset the current thread exception. */
+    rb_set_errinfo (Qnil);
+    return Qnil;
   }
-
-  return Qnil;
-}
-
-static VALUE
-funcall2 (VALUE receiver, ID method_id, int argc, volatile VALUE *argv)
-{
-  int i;
-  VALUE args[4];
-  VALUE result;
-
-  args[0] = receiver;
-  args[1] = method_id;
-  args[2] = argc;
-  args[3] = (VALUE) argv;
-
-  for (i = 0; i <= 3; ++i)
-    rb_gc_register_address (&args[i]);
-
-  result = rb_rescue2 (RUBY_METHOD_FUNC (funcall2_wrapper), (VALUE) args,
-                       RUBY_METHOD_FUNC (exception_handler), (VALUE) args,
-                       rb_eException, (VALUE) 0);
-
-  for (i = 3; i >= 0; --i)
-    rb_gc_unregister_address (&args[i]);
-
-  return result;
+  else {
+    if (exception_happened)
+      *exception_happened = NO_EXCEPTION;
+    return ret;
+  }
 }
 
 static const char *script = NULL;
@@ -175,7 +173,7 @@ plugin_rb_dump_plugin (void)
 
   assert (code != NULL);
 
-  (void) funcall2 (Qnil, rb_intern ("dump_plugin"), 0, NULL);
+  (void) funcall2 (Qnil, rb_intern ("dump_plugin"), 0, NULL, NULL);
 }
 
 static int
@@ -217,11 +215,11 @@ plugin_rb_config (const char *key, const char *value)
   }
   else {
     volatile VALUE argv[2];
+    enum exception_class exception_happened;
 
     argv[0] = rb_str_new2 (key);
     argv[1] = rb_str_new2 (value);
-    exception_happened = 0;
-    (void) funcall2 (Qnil, rb_intern ("config"), 2, argv);
+    (void) funcall2 (Qnil, rb_intern ("config"), 2, argv, &exception_happened);
     if (exception_happened == EXCEPTION_NO_METHOD_ERROR) {
       /* No config method, emulate what core nbdkit does if the
        * config callback is NULL.
@@ -240,6 +238,8 @@ plugin_rb_config (const char *key, const char *value)
 static int
 plugin_rb_config_complete (void)
 {
+  enum exception_class exception_happened;
+
   if (!script) {
     nbdkit_error ("the first parameter must be script=/path/to/ruby/script.rb");
     return -1;
@@ -247,8 +247,8 @@ plugin_rb_config_complete (void)
 
   assert (code != NULL);
 
-  exception_happened = 0;
-  (void) funcall2 (Qnil, rb_intern ("config_complete"), 0, NULL);
+  (void) funcall2 (Qnil, rb_intern ("config_complete"), 0, NULL,
+                   &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR)
     return 0;          /* no config_complete method defined, ignore */
   else if (exception_happened == EXCEPTION_OTHER)
@@ -262,10 +262,10 @@ plugin_rb_open (int readonly)
 {
   volatile VALUE argv[1];
   volatile VALUE rv;
+  enum exception_class exception_happened;
 
   argv[0] = readonly ? Qtrue : Qfalse;
-  exception_happened = 0;
-  rv = funcall2 (Qnil, rb_intern ("open"), 1, argv);
+  rv = funcall2 (Qnil, rb_intern ("open"), 1, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR) {
     nbdkit_error ("%s: missing callback: %s", script, "open");
     return NULL;
@@ -282,7 +282,7 @@ plugin_rb_close (void *handle)
   volatile VALUE argv[1];
 
   argv[0] = (VALUE) handle;
-  (void) funcall2 (Qnil, rb_intern ("close"), 1, argv);
+  (void) funcall2 (Qnil, rb_intern ("close"), 1, argv, NULL);
   /* OK to ignore exceptions here, if they are important then an error
    * was printed already.
    */
@@ -293,10 +293,10 @@ plugin_rb_get_size (void *handle)
 {
   volatile VALUE argv[1];
   volatile VALUE rv;
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
-  exception_happened = 0;
-  rv = funcall2 (Qnil, rb_intern ("get_size"), 1, argv);
+  rv = funcall2 (Qnil, rb_intern ("get_size"), 1, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR) {
     nbdkit_error ("%s: missing callback: %s", script, "get_size");
     return -1;
@@ -313,12 +313,12 @@ plugin_rb_pread (void *handle, void *buf,
 {
   volatile VALUE argv[3];
   volatile VALUE rv;
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
   argv[1] = ULL2NUM (count);
   argv[2] = ULL2NUM (offset);
-  exception_happened = 0;
-  rv = funcall2 (Qnil, rb_intern ("pread"), 3, argv);
+  rv = funcall2 (Qnil, rb_intern ("pread"), 3, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR) {
     nbdkit_error ("%s: missing callback: %s", script, "pread");
     return -1;
@@ -341,12 +341,12 @@ plugin_rb_pwrite (void *handle, const void *buf,
                   uint32_t count, uint64_t offset)
 {
   volatile VALUE argv[3];
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
   argv[1] = rb_str_new (buf, count);
   argv[2] = ULL2NUM (offset);
-  exception_happened = 0;
-  (void) funcall2 (Qnil, rb_intern ("pwrite"), 3, argv);
+  (void) funcall2 (Qnil, rb_intern ("pwrite"), 3, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR) {
     nbdkit_error ("%s: missing callback: %s", script, "pwrite");
     return -1;
@@ -361,10 +361,10 @@ static int
 plugin_rb_flush (void *handle)
 {
   volatile VALUE argv[1];
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
-  exception_happened = 0;
-  (void) funcall2 (Qnil, rb_intern ("flush"), 1, argv);
+  (void) funcall2 (Qnil, rb_intern ("flush"), 1, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR) {
     nbdkit_error ("%s: not implemented: %s", script, "flush");
     return -1;
@@ -379,12 +379,12 @@ static int
 plugin_rb_trim (void *handle, uint32_t count, uint64_t offset)
 {
   volatile VALUE argv[3];
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
   argv[1] = ULL2NUM (count);
   argv[2] = ULL2NUM (offset);
-  exception_happened = 0;
-  (void) funcall2 (Qnil, rb_intern ("trim"), 3, argv);
+  (void) funcall2 (Qnil, rb_intern ("trim"), 3, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR) {
     nbdkit_error ("%s: not implemented: %s", script, "trim");
     return -1;
@@ -399,14 +399,14 @@ static int
 plugin_rb_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
   volatile VALUE argv[4];
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
   argv[1] = ULL2NUM (count);
   argv[2] = ULL2NUM (offset);
   argv[3] = may_trim ? Qtrue : Qfalse;
-  exception_happened = 0;
   last_error = 0;
-  (void) funcall2 (Qnil, rb_intern ("zero"), 4, argv);
+  (void) funcall2 (Qnil, rb_intern ("zero"), 4, argv, &exception_happened);
   if (last_error == EOPNOTSUPP ||
       exception_happened == EXCEPTION_NO_METHOD_ERROR) {
     nbdkit_debug ("zero falling back to pwrite");
@@ -424,10 +424,10 @@ plugin_rb_can_write (void *handle)
 {
   volatile VALUE argv[1];
   volatile VALUE rv;
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
-  exception_happened = 0;
-  rv = funcall2 (Qnil, rb_intern ("can_write"), 1, argv);
+  rv = funcall2 (Qnil, rb_intern ("can_write"), 1, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR)
     /* Fall back to checking if the pwrite method exists. */
     rv = rb_funcall (Qnil, rb_intern ("respond_to?"),
@@ -443,10 +443,10 @@ plugin_rb_can_flush (void *handle)
 {
   volatile VALUE argv[1];
   volatile VALUE rv;
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
-  exception_happened = 0;
-  rv = funcall2 (Qnil, rb_intern ("can_flush"), 1, argv);
+  rv = funcall2 (Qnil, rb_intern ("can_flush"), 1, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR)
     /* Fall back to checking if the flush method exists. */
     rv = rb_funcall (Qnil, rb_intern ("respond_to?"),
@@ -462,10 +462,11 @@ plugin_rb_is_rotational (void *handle)
 {
   volatile VALUE argv[1];
   volatile VALUE rv;
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
-  exception_happened = 0;
-  rv = funcall2 (Qnil, rb_intern ("is_rotational"), 1, argv);
+  rv = funcall2 (Qnil, rb_intern ("is_rotational"), 1, argv,
+                 &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR)
     return 0;
   else if (exception_happened == EXCEPTION_OTHER)
@@ -479,10 +480,10 @@ plugin_rb_can_trim (void *handle)
 {
   volatile VALUE argv[1];
   volatile VALUE rv;
+  enum exception_class exception_happened;
 
   argv[0] = (VALUE) handle;
-  exception_happened = 0;
-  rv = funcall2 (Qnil, rb_intern ("can_trim"), 1, argv);
+  rv = funcall2 (Qnil, rb_intern ("can_trim"), 1, argv, &exception_happened);
   if (exception_happened == EXCEPTION_NO_METHOD_ERROR)
     /* Fall back to checking if the trim method exists. */
     rv = rb_funcall (Qnil, rb_intern ("respond_to?"),
