@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2016 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,22 +46,22 @@ static VALUE nbdkit_module = Qnil;
 static int last_error;
 
 static VALUE
-set_error(VALUE self, VALUE arg)
+set_error (VALUE self, VALUE arg)
 {
   int err;
   VALUE v;
 
   if (TYPE(arg) == T_CLASS) {
-    v = rb_const_get(arg, rb_intern("Errno"));
-    err = NUM2INT(v);
-  } else if (TYPE(arg) == T_OBJECT) {
-    v = rb_funcall(arg, rb_intern("errno"), 0);
-    err = NUM2INT(v);
+    v = rb_const_get (arg, rb_intern ("Errno"));
+    err = NUM2INT (v);
+  } else if (TYPE (arg) == T_OBJECT) {
+    v = rb_funcall (arg, rb_intern ("errno"), 0);
+    err = NUM2INT (v);
   } else {
-    err = NUM2INT(arg);
+    err = NUM2INT (arg);
   }
   last_error = err;
-  nbdkit_set_error(err);
+  nbdkit_set_error (err);
   return Qnil;
 }
 
@@ -70,8 +70,8 @@ plugin_rb_load (void)
 {
   ruby_init ();
   //ruby_init_loadpath (); - needed? XXX
-  nbdkit_module = rb_define_module("Nbdkit");
-  rb_define_module_function(nbdkit_module, "set_error", set_error, 1);
+  nbdkit_module = rb_define_module ("Nbdkit");
+  rb_define_module_function (nbdkit_module, "set_error", set_error, 1);
 }
 
 /* Wrapper to make fb_funcall2 (only slightly) less insane.
@@ -180,6 +180,8 @@ plugin_rb_config (const char *key, const char *value)
       return -1;
     }
     script = value;
+
+    nbdkit_debug ("ruby: loading script %s", script);
 
     /* Load the Ruby script into the interpreter. */
     const char *options[] = { "--", script };
