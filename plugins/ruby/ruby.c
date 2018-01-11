@@ -195,7 +195,8 @@ plugin_rb_config (const char *key, const char *value)
 
     /* Load the Ruby script into the interpreter. */
     const char *options[] = { "--", script };
-    code = ruby_options (2, (char **) options);
+    code = ruby_options (sizeof options / sizeof options[0],
+                         (char **) options);
 
     /* Check if we managed to compile the Ruby script to code. */
     if (!ruby_executable_node (code, &state)) {
