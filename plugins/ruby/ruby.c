@@ -105,7 +105,8 @@ static enum plugin_rb_exception exception_happened;
 static VALUE
 exception_handler (VALUE argvv, VALUE exn)
 {
-  volatile VALUE message;
+  volatile VALUE message, backtrace, b;
+  long i, len;
 
   if (rb_obj_is_kind_of (exn, rb_eNoMethodError))
     exception_happened = EXCEPTION_NO_METHOD_ERROR;
@@ -115,6 +116,15 @@ exception_handler (VALUE argvv, VALUE exn)
 
     message = rb_funcall (exn, rb_intern ("to_s"), 0);
     nbdkit_error ("ruby: %s", StringValueCStr (message));
+    backtrace = rb_funcall (exn, rb_intern ("backtrace"), 0);
+    if (! NIL_P (backtrace)) {
+      /* backtrace is a list of strings */
+      len = RARRAY_LEN (backtrace);
+      for (i = 0; i < len; ++i) {
+        b = rb_ary_entry (backtrace, i);
+        nbdkit_error ("ruby: stack %ld %s", i, StringValueCStr (b));
+      }
+    }
   }
 
   return Qnil;
