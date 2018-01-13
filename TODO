@@ -44,8 +44,6 @@ Suggestions for filters
 
 * copy-on-write, a popular feature in other servers
 
-* export a subset using offset/size
-
 * export a single partition (like qemu-nbd -P)
 
 Composing nbdkit

@@ -513,6 +513,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile
                  filters/Makefile
+                 filters/offset/Makefile
                  src/Makefile
                  src/nbdkit.pc
                  tests/Makefile])
