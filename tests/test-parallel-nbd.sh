@@ -54,6 +54,7 @@ trap 'rm -f test-parallel-nbd.out test-parallel-nbd.sock' 0 1 2 3 15
 (
 rm -f test-parallel-nbd.sock
 nbdkit --exit-with-parent -v -U test-parallel-nbd.sock \
+  --filter delay \
   file file=file-data wdelay=2 rdelay=1 &
 
 # With --threads=1, the write should complete first because it was issued first

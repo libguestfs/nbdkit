@@ -2,50 +2,42 @@
 
 =head1 NAME
 
-nbdkit-file-plugin - nbdkit file plugin
+nbdkit-delay-filter - nbdkit delay filter
 
 =head1 SYNOPSIS
 
- nbdkit file file=FILENAME
+ nbdkit --filter=delay plugin rdelay=SECS wdelay=SECS [plugin-args...]
+
+ nbdkit --filter=delay plugin rdelay=<NN>ms wdelay=<NN>ms [plugin-args...]
 
 =head1 DESCRIPTION
 
-C<nbdkit-file-plugin> is a file serving plugin for L<nbdkit(1)>.
-
-It serves the named C<FILENAME> over NBD.
-
-To concatenate multiple files, use L<nbdkit-split-plugin(1)>.
+C<nbdkit-delay-filter> is a filter that delays read and write requests
+by some seconds or milliseconds.  This is used to simulate a slow or
+remote server, or to test certain kinds of race conditions in Linux.
 
 =head1 PARAMETERS
 
 =over 4
 
-=item B<file=FILENAME>
-
-Serve the file named C<FILENAME>.  A device path can also be
-used here.
-
-This parameter is required.
-
 =item B<rdelay=SECS>
 
 =item B<rdelay=E<lt>NNE<gt>ms>
+
+The optional read delay in seconds or milliseconds.
 
 =item B<wdelay=SECS>
 
 =item B<wdelay=E<lt>NNE<gt>ms>
 
-These plugin parameters have been moved to the
-L<nbdkit-delay-filter(1)> filter.  Modify the command line to add
-I<--filter=delay> in order to use these parameters.
+The optional write delay in seconds or milliseconds.
 
 =back
 
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
-L<nbdkit-plugin(3)>,
-L<nbdkit-split-plugin(1)>.
+L<nbdkit-filter(3)>.
 
 =head1 AUTHORS
 
@@ -53,7 +45,7 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013 Red Hat Inc.
+Copyright (C) 2018 Red Hat Inc.
 
 =head1 LICENSE
 

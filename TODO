@@ -37,9 +37,6 @@ directed to qemu-nbd for these use cases.
 Suggestions for filters
 -----------------------
 
-* adding artificial delays (see wdelay/rdelay options in the file
-  plugin)
-
 * injecting artificial errors for testing clients
 
 * copy-on-write, a popular feature in other servers
