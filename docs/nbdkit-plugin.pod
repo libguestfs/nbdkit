@@ -469,7 +469,7 @@ error message, and C<nbdkit_set_error> to record an appropriate error
 
 =head2 C<.zero>
 
- int zero (void *handle, uint32_count, uint64_t offset, int may_trim);
+ int zero (void *handle, uint32_t count, uint64_t offset, int may_trim);
 
 During the data serving phase, this callback is used to write C<count>
 bytes of zeroes at C<offset> in the backing store.  If C<may_trim> is
