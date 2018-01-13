@@ -32,4 +32,5 @@
 
 include_HEADERS = \
 	nbdkit-common.h \
-	nbdkit-plugin.h
+	nbdkit-plugin.h \
+	nbdkit-filter.h

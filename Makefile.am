@@ -49,7 +49,7 @@ SUBDIRS = \
 	src
 
 if HAVE_PLUGINS
-SUBDIRS += plugins
+SUBDIRS += plugins filters
 endif
 
 SUBDIRS += tests

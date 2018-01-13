@@ -181,7 +181,7 @@ AS_IF([test "x$POD2MAN" != "xno"],[
 AM_CONDITIONAL([HAVE_POD2MAN], [test "x$POD2MAN" != "xno"])
 
 AC_ARG_ENABLE([plugins],
-    [AS_HELP_STRING([--disable-plugins], [disable all bundled plugins])])
+    [AS_HELP_STRING([--disable-plugins], [disable all bundled plugins and filters])])
 AM_CONDITIONAL([HAVE_PLUGINS], [test "x$enable_plugins" != "xno"])
 
 dnl Check for Perl, for embedding in the perl plugin.
@@ -512,6 +512,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/tar/Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile
+                 filters/Makefile
                  src/Makefile
                  src/nbdkit.pc
                  tests/Makefile])

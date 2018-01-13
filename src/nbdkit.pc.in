@@ -3,6 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 plugindir=@libdir@/nbdkit/plugins
+filterdir=@libdir@/nbdkit/filters
 
 Name: @PACKAGE_NAME@
 Version: @PACKAGE_VERSION@

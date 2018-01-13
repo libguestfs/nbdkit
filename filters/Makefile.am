@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013 Red Hat Inc.
+# Copyright (C) 2013-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,34 +30,4 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-EXTRA_DIST = \
-	nbdkit.pod \
-	nbdkit-plugin.pod \
-	nbdkit-filter.pod
-
-CLEANFILES = *~
-
-if HAVE_POD2MAN
-
-man_MANS = \
-	nbdkit.1 \
-	nbdkit-plugin.3 \
-	nbdkit-filter.3
-CLEANFILES += $(man_MANS)
-
-nbdkit.1: nbdkit.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=nbdkit $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
-
-nbdkit-plugin.3: nbdkit-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-plugin $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
-
-nbdkit-filter.3: nbdkit-filter.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-filter $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
-
-endif
+#SUBDIRS =

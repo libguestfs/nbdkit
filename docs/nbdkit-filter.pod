@@ -1,0 +1,517 @@
+=encoding utf8
+
+=head1 NAME
+
+nbdkit-filter - How to write nbdkit filters
+
+=head1 SYNOPSIS
+
+ #include <nbdkit-filter.h>
+ 
+ #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
+ 
+ static int
+ myfilter_config (nbdkit_next_config *next, void *nxdata,
+                  const char *key, const char *value)
+ {
+   if (strcmp (key, "myparameter") == 0) {
+     // ...
+     return 0;
+   }
+   else {
+     // pass through to next filter or plugin
+     return next (nxdata, key, value);
+   }
+ }
+ 
+ static struct nbdkit_filter filter = {
+   .name              = "filter",
+   .config            = myfilter_config,
+   /* etc */
+ };
+ 
+ NBDKIT_REGISTER_FILTER(filter)
+
+When this has been compiled to a shared library, do:
+
+ nbdkit [--args ...] --filter=./myfilter.so plugin [key=value ...]
+
+When debugging, use the I<-fv> options:
+
+ nbdkit -fv --filter=./myfilter.so plugin [key=value ...]
+
+=head1 DESCRIPTION
+
+One or more nbdkit filters can be placed in front of an nbdkit plugin
+to modify the behaviour of the plugin.  This manual page describes how
+to create an nbdkit filter.
+
+Filters can be used for example to limit requests to an offset/limit,
+add copy-on-write support, or inject delays or errors (for testing).
+
+Different filters can be stacked:
+
+     NBD     ┌─────────┐    ┌─────────┐          ┌────────┐
+  client ───▶│ filter1 │───▶│ filter2 │── ─ ─ ──▶│ plugin │
+ request     └─────────┘    └─────────┘          └────────┘
+
+Each filter intercepts plugin functions (see L<nbdkit-plugin(3)>) and
+can call the next filter or plugin in the chain, modifying parameters,
+calling before the filter function, in the middle or after.  Filters
+may even short-cut the chain.  As an example, to process its own
+parameters the filter can intercept the C<.config> method:
+
+ static int
+ myfilter_config (nbdkit_next_config *next, void *nxdata,
+                  const char *key, const char *value)
+ {
+   if (strcmp (key, "myparameter") == 0) {
+     // ...
+     // here you would handle this key, value
+     // ...
+     return 0;
+   }
+   else {
+     // pass through to next filter or plugin
+     return next (nxdata, key, value);
+   }
+ }
+ 
+ static struct nbdkit_filter filter = {
+   // ...
+   .config            = myfilter_config,
+   // ...
+ };
+
+The call to C<next (nxdata, ...)> calls the C<.config> method of the
+next filter or plugin in the chain.  In the example above any
+instances of C<myparameter=...> on the command line would not be seen
+by the plugin.
+
+To see example filters, take a look at the source of nbdkit, in the
+C<filters> directory.
+
+Filters must be written in C.
+
+Unlike the plugin API where we provide a stable ABI guarantee, filters
+only have a best effort ABI.  The reason for this is because if we
+added new methods then an old filter would not see them and so they
+would be passed unmodified through the filter, and in some cases that
+leads to data corruption.  You should therefore not expect to
+distribute filters separately from nbdkit, unlike plugins.
+
+=head1 C<nbdkit-filter.h>
+
+All filters should start by including this header file:
+
+ #include <nbdkit-filter.h>
+
+=head1 C<#define THREAD_MODEL>
+
+All filters must define a thread model.  See
+L<nbdkit-plugin(3)/THREADS> for a discussion of thread models.
+
+The final thread model is the smallest (ie. most serialized) out of
+all the filters and the plugin.  Filters cannot alter the thread model
+to make it larger (more parallel).
+
+If possible filters should be be written to handle fully parallel
+requests (C<NBDKIT_THREAD_MODEL_PARALLEL>, even multiple requests
+issued in parallel on the same connection).  This ensures that they
+don't slow down other filters or plugins.
+
+=head1 C<struct nbdkit_filter>
+
+All filters must define and register one C<struct nbdkit_filter>,
+which contains the name of the filter and pointers to plugin methods
+that the filter wants to intercept.
+
+ static struct nbdkit_filter filter = {
+   .name              = "filter",
+   .longname          = "My Filter",
+   .description       = "This is my great filter for nbdkit",
+   .config            = myfilter_config,
+   /* etc */
+ };
+ 
+ NBDKIT_REGISTER_FILTER(filter)
+
+The C<.name> field is the name of the filter.  This is the only field
+which is required.
+
+=head1 NEXT PLUGIN
+
+F<nbdkit-filter.h> defines three function types
+(C<nbdkit_next_config>, C<nbdkit_next_config_complete>,
+C<nbdkit_next_open>) and a structure called C<struct nbdkit_next_ops>.
+These abstract the next plugin or filter in the chain.  There is also
+an opaque pointer C<nxdata> which must be passed along when calling
+these functions.
+
+The filter’s C<.config>, C<.config_complete> and C<.open> methods may
+only call the next C<.config>, C<.config_complete> and C<.open> method
+in the chain (optionally for C<.config>).
+
+The filter’s C<.close> method is called when an old connection closed,
+and this has no C<next> parameter because it cannot be
+short-circuited.
+
+The filter’s other methods like C<.prepare>, C<.get_size>, C<.pread>
+etc ― always called in the context of a connection ― are passed a
+pointer to C<struct nbdkit_next_ops> which contains a subset of the
+plugin methods that can be called during a connection.  It is possible
+for a filter to issue (for example) extra read calls in response to a
+single C<.pwrite> call.
+
+You can modify parameters when you call the C<next> function.  However
+be careful when modifying strings because for some methods
+(eg. C<.config>) the plugin may save the string pointer that you pass
+along.  So you may have to ensure that the string is not freed for the
+lifetime of the server.
+
+Note that if your filter registers a callback but in that callback it
+doesn't call the C<next> function then the corresponding method in the
+plugin will never be called.  In particular, your C<.open> method, if
+you have one, B<must> call the C<.next> method.
+
+=head1 CALLBACKS
+
+C<struct nbdkit_filter> has some static fields describing the filter
+and optional callback functions which can be used to intercept plugin
+methods.
+
+=head2 C<.name>
+
+ const char *name;
+
+This field (a string) is required, and B<must> contain only ASCII
+alphanumeric characters and be unique amongst all filters.
+
+=head2 C<.version>
+
+ const char *version;
+
+Filters may optionally set a version string which is displayed in help
+and debugging output.
+
+=head2 C<.longname>
+
+ const char *longname;
+
+An optional free text name of the filter.  This field is used in error
+messages.
+
+=head2 C<.description>
+
+ const char *description;
+
+An optional multi-line description of the filter.
+
+=head2 C<.load>
+
+ void load (void);
+
+This is called once just after the filter is loaded into memory.  You
+can use this to perform any global initialization needed by the
+filter.
+
+=head2 C<.unload>
+
+ void unload (void);
+
+This may be called once just before the filter is unloaded from
+memory.  Note that it's not guaranteed that C<.unload> will always be
+called (eg. the server might be killed or segfault), so you should try
+to make the filter as robust as possible by not requiring cleanup.
+See also L<nbdkit-plugin(3)/SHUTDOWN>.
+
+=head2 C<.config>
+
+ int (*config) (nbdkit_next_config *next, void *nxdata,
+                const char *key, const char *value);
+
+This intercepts the plugin C<.config> method and can be used by the
+filter to parse its own command line parameters.  You should try to
+make sure that command line parameter keys that the filter uses do not
+conflict with ones that could be used by a plugin.
+
+If there is an error, C<.config> should call C<nbdkit_error> with an
+error message and return C<-1>.
+
+=head2 C<.config_complete>
+
+ int (*config_complete) (nbdkit_next_config_complete *next, void *nxdata);
+
+This intercepts the plugin C<.config_complete> method and can be used
+to ensure that all parameters needed by the filter were supplied on
+the command line.
+
+If there is an error, C<.config_complete> should call C<nbdkit_error>
+with an error message and return C<-1>.
+
+=head2 C<.config_help>
+
+ const char *config_help;
+
+This optional multi-line help message should summarize any
+C<key=value> parameters that it takes.  It does I<not> need to repeat
+what already appears in C<.description>.
+
+If the filter doesn't take any config parameters you should probably
+omit this.
+
+=head2 C<.open>
+
+ void * (*open) (nbdkit_next_open *next, void *nxdata,
+                 int readonly);
+
+This is called when a new client connection is opened and can be used
+to allocate any per-connection data structures needed by the filter.
+The handle (which is not the same as the plugin handle) is passed back
+to other filter callbacks and could be freed in the C<.close>
+callback.
+
+Note that the handle is completely opaque to nbdkit, but it must not
+be NULL.
+
+If there is an error, C<.open> should call C<nbdkit_error> with an
+error message and return C<NULL>.
+
+=head2 C<.close>
+
+ void (*close) (void *handle);
+
+This is called when the client closes the connection.  It should clean
+up any per-connection resources used by the filter.
+
+=head2 C<.prepare>
+
+=head2 C<.finalize>
+
+  int (*prepare) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                  void *handle);
+  int (*finalize) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                   void *handle);
+
+These two methods can be used to perform any necessary operations just
+after opening the connection (C<.prepare>) or just before closing the
+connection (C<.finalize>).
+
+For example if you need to scan the underlying disk to check for a
+partition table, you could do it in your C<.prepare> method (calling
+the plugin's C<.pread> method via C<next_ops>).  Or if you need to
+cleanly update superblock data in the image on close you can do it in
+your C<.finalize> method (calling the plugin's C<.pwrite> method).
+Doing these things in the filter's C<.open> or C<.close> method is not
+possible.
+
+If there is an error, both callbacks should call C<nbdkit_error> with
+an error message and return C<-1>.
+
+=head2 C<.get_size>
+
+ int64_t (*get_size) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                      void *handle);
+
+This intercepts the plugin C<.get_size> method and can be used to read
+or modify the apparent size of the block device that the NBD client
+will see.
+
+The returned size must be E<ge> 0.  If there is an error, C<.get_size>
+should call C<nbdkit_error> with an error message and return C<-1>.
+
+=head2 C<.can_write>
+
+=head2 C<.can_flush>
+
+=head2 C<.is_rotational>
+
+=head2 C<.can_trim>
+
+ int (*can_write) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                   void *handle);
+ int (*can_flush) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                   void *handle);
+ int (*is_rotational) (struct nbdkit_next_ops *next_ops,
+                       void *nxdata,
+                       void *handle);
+ int (*can_trim) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                  void *handle);
+
+These intercept the corresponding plugin methods.
+
+If there is an error, the callback should call C<nbdkit_error> with an
+error message and return C<-1>.
+
+=head2 C<.pread>
+
+ int (*pread) (struct nbdkit_next_ops *next_ops, void *nxdata,
+               void *handle, void *buf, uint32_t count, uint64_t offset);
+
+This intercepts the plugin C<.pread> method and can be used to read or
+modify data read by the plugin.
+
+If there is an error (including a short read which couldn't be
+recovered from), C<.pread> should call C<nbdkit_error> with an error
+message B<and> set C<errno>, then return C<-1>.
+
+=head2 C<.pwrite>
+
+ int (*pwrite) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                void *handle,
+                const void *buf, uint32_t count, uint64_t offset);
+
+This intercepts the plugin C<.pwrite> method and can be used to modify
+data written by the plugin.
+
+If there is an error (including a short write which couldn't be
+recovered from), C<.pwrite> should call C<nbdkit_error> with an error
+message B<and> set C<errno>, then return C<-1>.
+
+=head2 C<.flush>
+
+ int (*flush) (struct nbdkit_next_ops *next_ops, void *nxdata,
+               void *handle);
+
+This intercepts the plugin C<.flush> method and can be used to modify
+flush requests.
+
+If there is an error, C<.flush> should call C<nbdkit_error> with an
+error message B<and> set C<errno>, then return C<-1>.
+
+=head2 C<.trim>
+
+ int (*trim) (struct nbdkit_next_ops *next_ops, void *nxdata,
+              void *handle, uint32_t count, uint64_t offset);
+
+This intercepts the plugin C<.trim> method and can be used to modify
+trim requests.
+
+If there is an error, C<.trim> should call C<nbdkit_error> with an
+error message B<and> set C<errno>, then return C<-1>.
+
+=head2 C<.zero>
+
+ int (*zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
+              void *handle, uint32_t count, uint64_t offset, int may_trim);
+
+This intercepts the plugin C<.zero> method and can be used to modify
+zero requests.
+
+If there is an error, C<.zero> should call C<nbdkit_error> with an
+error message B<and> set C<errno>, then return C<-1>.
+
+=head1 DEBUGGING
+
+Run the server with I<-f> and I<-v> options so it doesn't fork and you
+can see debugging information:
+
+ nbdkit -fv --filter=./myfilter.so plugin [key=value [key=value [...]]]
+
+To print debugging information from within the filter, call
+C<nbdkit_debug>, which has the following prototype and works like
+L<printf(3)>:
+
+ void nbdkit_debug (const char *fs, ...);
+ void nbdkit_vdebug (const char *fs, va_list args);
+
+For convenience, C<nbdkit_debug> preserves the value of C<errno>.
+Note that C<nbdkit_debug> only prints things when the server is in
+verbose mode (I<-v> option).
+
+=head1 INSTALLING THE FILTER
+
+The filter is a C<*.so> file and possibly a manual page.  You can of
+course install the filter C<*.so> file wherever you want, and users
+will be able to use it by running:
+
+ nbdkit --filter=/path/to/filter.so plugin [args]
+
+However B<if> the shared library has a name of the form
+C<nbdkit-I<name>-filter.so> B<and if> the library is installed in the
+C<$filterdir> directory, then users can be run it by only typing:
+
+ nbdkit --filter=name plugin [args]
+
+The location of the C<$filterdir> directory is set when nbdkit is
+compiled and can be found by doing:
+
+ nbdkit --dump-config
+
+If using the pkg-config/pkgconf system then you can also find the
+filter directory at compile time by doing:
+
+ pkgconf nbdkit --variable=filterdir
+
+=head1 PKG-CONFIG/PKGCONF
+
+nbdkit provides a pkg-config/pkgconf file called C<nbdkit.pc> which
+should be installed on the correct path when the nbdkit development
+environment is installed.  You can use this in autoconf
+F<configure.ac> scripts to test for the development environment:
+
+ PKG_CHECK_MODULES([NBDKIT], [nbdkit >= 1.2.3])
+
+The above will fail unless nbdkit E<ge> 1.2.3 and the header file is
+installed, and will set C<NBDKIT_CFLAGS> and C<NBDKIT_LIBS>
+appropriately for compiling filters.
+
+You can also run pkg-config/pkgconf directly, for example:
+
+ if ! pkgconf nbdkit --exists; then
+   echo "you must install the nbdkit development environment"
+   exit 1
+ fi
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2018 Red Hat Inc.
+
+=head1 LICENSE
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+=over 4
+
+=item *
+
+Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+=item *
+
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+=item *
+
+Neither the name of Red Hat nor the names of its contributors may be
+used to endorse or promote products derived from this software without
+specific prior written permission.
+
+=back
+
+THIS SOFTWARE IS PROVIDED BY RED HAT AND CONTRIBUTORS ''AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL RED HAT OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.

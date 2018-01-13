@@ -31,6 +31,7 @@
 # SUCH DAMAGE.
 
 plugindir = $(libdir)/nbdkit/plugins
+filterdir = $(libdir)/nbdkit/filters
 
 sbin_PROGRAMS = nbdkit
 
@@ -39,6 +40,7 @@ nbdkit_SOURCES = \
 	connections.c \
 	crypto.c \
 	errors.c \
+	filters.c \
 	internal.h \
 	locks.c \
 	main.c \
@@ -47,13 +49,15 @@ nbdkit_SOURCES = \
 	sockets.c \
 	threadlocal.c \
 	utils.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(top_srcdir)/include/nbdkit-filter.h
 
 nbdkit_CPPFLAGS = \
 	-Dbindir=\"$(bindir)\" \
 	-Dlibdir=\"$(libdir)\" \
 	-Dmandir=\"$(mandir)\" \
 	-Dplugindir=\"$(plugindir)\" \
+	-Dfilterdir=\"$(filterdir)\" \
 	-Dsbindir=\"$(sbindir)\" \
 	-Dsysconfdir=\"$(sysconfdir)\" \
 	-I$(top_srcdir)/include

@@ -34,10 +34,8 @@ nbdkit there is no compelling reason unless the result is better than
 qemu-nbd.  For the majority of users it would be better if they were
 directed to qemu-nbd for these use cases.
 
-Filters
--------
-
-It should be possible to layer filters over plugins to do things like:
+Suggestions for filters
+-----------------------
 
 * adding artificial delays (see wdelay/rdelay options in the file
   plugin)
@@ -49,17 +47,6 @@ It should be possible to layer filters over plugins to do things like:
 * export a subset using offset/size
 
 * export a single partition (like qemu-nbd -P)
-
-A possible syntax would be:
-
-  nbdkit --filter=delay [--filter=...] file file=foo wdelay=10
-
-The filter(s) intercept all plugin calls and can either return, return
-an error, or pass the call down to the next layer in the stack (and
-eventually to the plugin).  By intercepting the .config call the
-filter can process its own parameters from the command line (wdelay=10
-in the example above), and by intercepting the .pread, .pwrite methods
-the filter could inject the delaying behaviour.
 
 Composing nbdkit
 ----------------

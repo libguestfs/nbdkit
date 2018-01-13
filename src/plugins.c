@@ -102,10 +102,11 @@ plugin_usage (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  printf ("%s", p->plugin.name);
+  printf ("plugin: %s", p->plugin.name);
   if (p->plugin.longname)
     printf (" (%s)", p->plugin.longname);
   printf ("\n");
+  printf ("(%s)", p->filename);
   if (p->plugin.description) {
     printf ("\n");
     printf ("%s\n", p->plugin.description);
@@ -536,7 +537,7 @@ static struct backend plugin_functions = {
 
 /* Register and load a plugin. */
 struct backend *
-plugin_register (const char *filename,
+plugin_register (size_t index, const char *filename,
                  void *dl, struct nbdkit_plugin *(*plugin_init) (void))
 {
   struct backend_plugin *p;
@@ -551,11 +552,13 @@ plugin_register (const char *filename,
   }
 
   p->backend = plugin_functions;
+  p->backend.next = NULL;
+  p->backend.i = index;
   p->filename = strdup (filename);
   if (p->filename == NULL) goto out_of_memory;
   p->dl = dl;
 
-  debug ("registering %s", p->filename);
+  debug ("registering plugin %s", p->filename);
 
   /* Call the initialization function which returns the address of the
    * plugin's own 'struct nbdkit_plugin'.
@@ -631,7 +634,7 @@ plugin_register (const char *filename,
     exit (EXIT_FAILURE);
   }
 
-  debug ("registered %s (name %s)", p->filename, p->plugin.name);
+  debug ("registered plugin %s (name %s)", p->filename, p->plugin.name);
 
   /* Call the on-load callback if it exists. */
   debug ("%s: load", p->filename);

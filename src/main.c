@@ -64,7 +64,8 @@
 
 static int is_short_name (const char *);
 static char *make_random_fifo (void);
-static struct backend *open_plugin_so (const char *filename, int short_name);
+static struct backend *open_plugin_so (size_t i, const char *filename, int short_name);
+static struct backend *open_filter_so (struct backend *next, size_t i, const char *filename, int short_name);
 static void start_serving (void);
 static void set_up_signals (void);
 static void run_command (void);
@@ -120,6 +121,7 @@ static const struct option long_options[] = {
   { "export",     1, NULL, 'e' },
   { "export-name",1, NULL, 'e' },
   { "exportname", 1, NULL, 'e' },
+  { "filter",     1, NULL, 0 },
   { "foreground", 0, NULL, 'f' },
   { "no-fork",    0, NULL, 'f' },
   { "group",      1, NULL, 'g' },
@@ -154,7 +156,7 @@ usage (void)
 {
   printf ("nbdkit [--dump-config] [--dump-plugin]\n"
           "       [-e EXPORTNAME] [--exit-with-parent] [-f]\n"
-          "       [-g GROUP] [-i IPADDR]\n"
+          "       [--filter=FILTER ...] [-g GROUP] [-i IPADDR]\n"
           "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
           "       [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]\n"
           "       [--tls=off|on|require] [--tls-certificates /path/to/certificates]\n"
@@ -179,6 +181,7 @@ dump_config (void)
   printf ("%s=%s\n", "mandir", mandir);
   printf ("%s=%s\n", "name", PACKAGE_NAME);
   printf ("%s=%s\n", "plugindir", plugindir);
+  printf ("%s=%s\n", "filterdir", filterdir);
   printf ("%s=%s\n", "root_tls_certificates_dir", root_tls_certificates_dir);
   printf ("%s=%s\n", "sbindir", sbindir);
 #ifdef HAVE_LIBSELINUX
@@ -205,6 +208,11 @@ main (int argc, char *argv[])
   int short_name;
   const char *filename;
   char *p;
+  static struct filter_filename {
+    struct filter_filename *next;
+    const char *filename;
+  } *filter_filenames = NULL;
+  size_t i;
 
   threadlocal_init ();
 
@@ -243,6 +251,18 @@ main (int argc, char *argv[])
                  program_name);
         exit (EXIT_FAILURE);
 #endif
+      }
+      else if (strcmp (long_options[option_index].name, "filter") == 0) {
+        struct filter_filename *t;
+
+        t = malloc (sizeof *t);
+        if (t == NULL) {
+          perror ("malloc");
+          exit (EXIT_FAILURE);
+        }
+        t->next = filter_filenames;
+        t->filename = optarg;
+        filter_filenames = t;
       }
       else if (strcmp (long_options[option_index].name, "run") == 0) {
         if (socket_activation) {
@@ -496,24 +516,47 @@ main (int argc, char *argv[])
     }
   }
 
-  backend = open_plugin_so (filename, short_name);
+  /* Open the plugin (first) and then wrap the plugin with the
+   * filters.  The filters are wrapped in reverse order that they
+   * appear on the command line so that in the end ‘backend’ points to
+   * the first filter on the command line.
+   */
+  backend = open_plugin_so (0, filename, short_name);
+  i = 1;
+  while (filter_filenames) {
+    struct filter_filename *t = filter_filenames;
+    const char *filename = t->filename;
+    int short_name = is_short_name (filename);
+
+    backend = open_filter_so (backend, i++, filename, short_name);
+
+    filter_filenames = t->next;
+    free (t);
+  }
   lock_init_thread_model ();
 
   if (help) {
+    struct backend *b;
+
     usage ();
-    printf ("\n%s:\n\n", filename);
-    backend->usage (backend);
+    for_each_backend (b) {
+      printf ("\n");
+      b->usage (b);
+    }
     exit (EXIT_SUCCESS);
   }
 
   if (version) {
     const char *v;
+    struct backend *b;
 
     display_version ();
-    printf ("%s", backend->name (backend));
-    if ((v = backend->version (backend)) != NULL)
-      printf (" %s", v);
-    printf ("\n");
+    for_each_backend (b) {
+      printf ("%s", b->name (b));
+      if ((v = b->version (b)) != NULL)
+        printf (" %s", v);
+      printf ("\n");
+    }
     exit (EXIT_SUCCESS);
   }
 
@@ -575,7 +618,7 @@ main (int argc, char *argv[])
   exit (EXIT_SUCCESS);
 }
 
-/* Is it a name relative to the plugindir? */
+/* Is it a plugin or filter name relative to the plugindir/filterdir? */
 static int
 is_short_name (const char *filename)
 {
@@ -615,7 +658,7 @@ make_random_fifo (void)
 }
 
 static struct backend *
-open_plugin_so (const char *name, int short_name)
+open_plugin_so (size_t i, const char *name, int short_name)
 {
   struct backend *ret;
   char *filename = (char *) name;
@@ -653,7 +696,55 @@ open_plugin_so (const char *name, int short_name)
   }
 
   /* Register the plugin. */
-  ret = plugin_register (filename, dl, plugin_init);
+  ret = plugin_register (i, filename, dl, plugin_init);
+
+  if (free_filename)
+    free (filename);
+
+  return ret;
+}
+
+static struct backend *
+open_filter_so (struct backend *next, size_t i,
+                const char *name, int short_name)
+{
+  struct backend *ret;
+  char *filename = (char *) name;
+  int free_filename = 0;
+  void *dl;
+  struct nbdkit_filter *(*filter_init) (void);
+  char *error;
+
+  if (short_name) {
+    /* Short names are rewritten relative to the filterdir. */
+    if (asprintf (&filename,
+                  "%s/nbdkit-%s-filter.so", filterdir, name) == -1) {
+      perror ("asprintf");
+      exit (EXIT_FAILURE);
+    }
+    free_filename = 1;
+  }
+
+  dl = dlopen (filename, RTLD_NOW|RTLD_GLOBAL);
+  if (dl == NULL) {
+    fprintf (stderr, "%s: %s: %s\n", program_name, filename, dlerror ());
+    exit (EXIT_FAILURE);
+  }
+
+  /* Initialize the filter.  See dlopen(3) to understand C weirdness. */
+  dlerror ();
+  *(void **) (&filter_init) = dlsym (dl, "filter_init");
+  if ((error = dlerror ()) != NULL) {
+    fprintf (stderr, "%s: %s: %s\n", program_name, name, error);
+    exit (EXIT_FAILURE);
+  }
+  if (!filter_init) {
+    fprintf (stderr, "%s: %s: invalid filter_init\n", program_name, name);
+    exit (EXIT_FAILURE);
+  }
+
+  /* Register the filter. */
+  ret = filter_register (next, i, filename, dl, filter_init);
 
   if (free_filename)
     free (filename);

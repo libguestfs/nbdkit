@@ -41,6 +41,7 @@
 #include <pthread.h>
 
 #include "nbdkit-plugin.h"
+#include "nbdkit-filter.h"
 
 #ifdef __APPLE__
 #define UNIX_PATH_MAX 104
@@ -118,6 +119,7 @@ extern volatile int quit;
 extern int quit_fd;
 
 extern struct backend *backend;
+#define for_each_backend(b) for (b = backend; b != NULL; b = b->next)
 
 /* cleanup.c */
 extern void cleanup_free (void *ptr);
@@ -152,8 +154,19 @@ extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockou
 /* errors.c */
 #define debug nbdkit_debug
 
-/* plugins.c */
 struct backend {
+  /* Next filter or plugin in the chain.  This is always NULL for
+   * plugins and never NULL for filters.
+   */
+  struct backend *next;
+
+  /* A unique index used to fetch the handle from the connections
+   * object.  The plugin (last in the chain) has index 0, and the
+   * filters have index 1, 2, ... depending how "far" they are from
+   * the plugin.
+   */
+  size_t i;
+
   void (*free) (struct backend *);
   int (*thread_model) (struct backend *);
   const char *(*name) (struct backend *);
@@ -180,7 +193,11 @@ struct backend {
   int (*zero) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset, uint32_t flags);
 };
 
-extern struct backend *plugin_register (const char *_filename, void *_dl, struct nbdkit_plugin *(*plugin_init) (void));
+/* plugins.c */
+extern struct backend *plugin_register (size_t index, const char *filename, void *dl, struct nbdkit_plugin *(*plugin_init) (void));
+
+/* filters.c */
+extern struct backend *filter_register (struct backend *next, size_t index, const char *filename, void *dl, struct nbdkit_filter *(*filter_init) (void));
 
 /* locks.c */
 extern void lock_init_thread_model (void);

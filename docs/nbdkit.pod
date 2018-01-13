@@ -7,7 +7,7 @@ nbdkit - A toolkit for creating NBD servers
 =head1 SYNOPSIS
 
  nbdkit [-e EXPORTNAME] [--exit-with-parent] [-f]
-        [-g GROUP] [-i IPADDR]
+        [--filter=FILTER ...] [-g GROUP] [-i IPADDR]
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
         [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]
         [--tls=off|on|require] [--tls-certificates /path/to/certificates]
@@ -118,6 +118,13 @@ not allowed with the oldstyle protocol.
 =item B<--no-fork>
 
 I<Don't> fork into the background.
+
+=item B<--filter> FILTER
+
+Add a filter before the plugin.  This option may be given one or more
+times to stack filters in front of the plugin.  They are processed in
+the order they appear on the command line.  See L</FILTERS> and
+L<nbdkit-filter(3)>.
 
 =item B<-g> GROUP
 
@@ -353,6 +360,18 @@ languages.  The file should be executable.  For example:
  }
 
 (see L<nbdkit-perl-plugin(3)> for a full example).
+
+=head1 FILTERS
+
+One or more filters can be placed in front of an nbdkit plugin to
+modify the behaviour of the plugin, using the I<--filter> parameter.
+Filters can be used for example to limit requests to an offset/limit,
+add copy-on-write support, or inject delays or errors (for testing).
+
+Several existing filters are available in the C<$filterdir>.  Use
+C<nbdkit --dump-config> to find the directory name.
+
+How to write filters is described in L<nbdkit-filter(3)>.
 
 =head1 SOCKET ACTIVATION
 
@@ -856,6 +875,7 @@ L</SOCKET ACTIVATION>.
 Other nbdkit manual pages:
 
 L<nbdkit-plugin(3)>,
+L<nbdkit-filter(3)>,
 L<nbdkit-curl-plugin(1)>,
 L<nbdkit-example1-plugin(1)>,
 L<nbdkit-example2-plugin(1)>,
@@ -895,7 +915,7 @@ Pino Toscano
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2017 Red Hat Inc.
+Copyright (C) 2013-2018 Red Hat Inc.
 
 =head1 LICENSE
 
