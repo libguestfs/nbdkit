@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017 Red Hat Inc.
+ * Copyright (C) 2017-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
+
+#define NBDKIT_API_VERSION 2
 
 #include <nbdkit-plugin.h>
 
@@ -111,7 +113,8 @@ null_get_size (void *handle)
 
 /* Read data. */
 static int
-null_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+null_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags)
 {
   memset (buf, 0, count);
   return 0;
@@ -119,7 +122,16 @@ null_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 
 /* Write data. */
 static int
-null_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
+null_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags)
+{
+  /* nothing */
+  return 0;
+}
+
+/* Write zeros. */
+static int
+null_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* nothing */
   return 0;
@@ -133,11 +145,25 @@ null_can_write (void *handle)
   return !h->readonly;
 }
 
-/* Write zeroes - very efficient! */
+/* Flush is a no-op, so advertise native FUA support */
 static int
-null_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+null_can_fua (void *handle)
+{
+  return NBDKIT_FUA_NATIVE;
+}
+
+/* Trim. */
+static int
+null_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* nothing */
+  return 0;
+}
+
+/* Nothing is persistent, so flush is trivially supported */
+static int
+null_flush (void *handle, uint32_t flags)
+{
   return 0;
 }
 
@@ -152,7 +178,11 @@ static struct nbdkit_plugin plugin = {
   .pread             = null_pread,
   .pwrite            = null_pwrite,
   .can_write         = null_can_write,
-  .zero              = null_zero,
+  .zero              = null_trim,
+  .trim              = null_zero,
+  .can_trim          = null_can_write,
+  .can_fua           = null_can_fua,
+  .flush             = null_flush,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */
