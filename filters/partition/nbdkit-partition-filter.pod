@@ -2,68 +2,53 @@
 
 =head1 NAME
 
-nbdkit-offset-filter - nbdkit offset filter
+nbdkit-partition-filter - nbdkit partition filter
 
 =head1 SYNOPSIS
 
- nbdkit --filter=offset plugin offset=OFFSET range=LENGTH [plugin-args...]
+ nbdkit --filter=partition plugin partition=PART [plugin-args...]
 
 =head1 DESCRIPTION
 
-C<nbdkit-offset-filter> is a filter that limits requests to the byte
-range C<[offset .. offset+range-1]> within another plugin.
+C<nbdkit-partition-filter> is a filter that limits requests to a
+single partition within a disk image that is served by another plugin.
+
+Partition numbers are specified by the required C<partition>
+parameter, and count from 1.
+
+This works like the C<qemu-nbd -P> option.
+
+=head1 NOTE
+
+Only MBR primary partitions and GPT partition tables are supported.
+MBR logical partitions are B<not> supported.
 
 =head1 PARAMETERS
 
 =over 4
 
-=item B<offset=OFFSET>
+=item B<partition=PART>
 
-The start offset.  The offset must be E<ge> 0.
+The partition number to serve, counting from 1.
 
-This parameter is optional.  If not given then C<offset=0> is assumed.
-
-=item B<range=LENGTH>
-
-The length of data to serve.
-
-This parameter is optional.  If not given then the range is served
-starting from the offset through to the end of the underlying
-file/device.
+This parameter is required.
 
 =back
 
-Note it is an error if the offset and/or range specify data which lies
-beyond the end of the underlying device.
+=head1 EXAMPLE
 
-=head1 EXAMPLES
+F<disk.img> is a partitioned disk image (eg. a virtual machine disk
+image).  To serve the first partition only use:
 
-Using L<nbdkit-file-plugin(1)>, serve the file C<disk.img> starting at
-offset C<1M>.  The total length served is C<100M> (the underlying file
-must therefore be at least C<101M> in length):
-
- nbdkit --filter=offset file file=disk.img offset=1M range=100M
-
-One way to serve a single partition from a disk is to find the start
-and length of the partition, eg using:
-
- $ parted disk.img -- unit b print
- ...
- Number  Start   End         Size        Type     File system  Flags
-  1      65536B  104792575B  104727040B  primary  ext2
-
-You can then serve the partition only using:
-
- nbdkit --filter=offset file file=disk.img offset=65536 range=104727040
-
-An easier way to do this is with L<nbdkit-partition-filter(1)>.
+ nbdkit --filter=partition file file=disk.img partition=1
 
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>.
-L<nbdkit-partition-filter(1)>.
+L<nbdkit-offset-filter(1)>,
+L<parted(8)>.
 
 =head1 AUTHORS
 

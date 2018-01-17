@@ -515,6 +515,7 @@ AC_CONFIG_FILES([Makefile
                  filters/Makefile
                  filters/delay/Makefile
                  filters/offset/Makefile
+                 filters/partition/Makefile
                  src/Makefile
                  src/nbdkit.pc
                  tests/Makefile])
