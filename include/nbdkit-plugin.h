@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2017 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,17 +36,11 @@
 #ifndef NBDKIT_PLUGIN_H
 #define NBDKIT_PLUGIN_H
 
-#include <stdarg.h>
-#include <stdint.h>
+#include <nbdkit-common.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS     0
-#define NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS    1
-#define NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS        2
-#define NBDKIT_THREAD_MODEL_PARALLEL                  3
 
 #define NBDKIT_API_VERSION                            1
 
@@ -100,22 +94,6 @@ struct nbdkit_plugin {
 };
 
 extern void nbdkit_set_error (int err);
-extern void nbdkit_error (const char *msg, ...)
-  __attribute__((format (printf, 1, 2)));
-extern void nbdkit_verror (const char *msg, va_list args);
-extern void nbdkit_debug (const char *msg, ...)
-  __attribute__((format (printf, 1, 2)));
-extern void nbdkit_vdebug (const char *msg, va_list args);
-
-extern char *nbdkit_absolute_path (const char *path);
-extern int64_t nbdkit_parse_size (const char *str);
-extern int nbdkit_read_password (const char *value, char **password);
-
-#ifdef __cplusplus
-#define NBDKIT_CXX_LANG_C extern "C"
-#else
-#define NBDKIT_CXX_LANG_C /* nothing */
-#endif
 
 #define NBDKIT_REGISTER_PLUGIN(plugin)                                  \
   NBDKIT_CXX_LANG_C                                                     \
