@@ -238,7 +238,7 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   void *handle;
 
-  assert (connection_get_handle (conn) == NULL);
+  assert (connection_get_handle (conn, 0) == NULL);
   assert (p->plugin.open != NULL);
 
   debug ("%s: open readonly=%d", p->filename, readonly);
@@ -247,7 +247,7 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
   if (!handle)
     return -1;
 
-  connection_set_handle (conn, handle);
+  connection_set_handle (conn, 0, handle);
   return 0;
 }
 
@@ -256,14 +256,14 @@ plugin_close (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
 
   debug ("close");
 
   if (p->plugin.close)
-    p->plugin.close (connection_get_handle (conn));
+    p->plugin.close (connection_get_handle (conn, 0));
 
-  connection_set_handle (conn, NULL);
+  connection_set_handle (conn, 0, NULL);
 }
 
 static int64_t
@@ -271,12 +271,12 @@ plugin_get_size (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
   assert (p->plugin.get_size != NULL);
 
   debug ("get_size");
 
-  return p->plugin.get_size (connection_get_handle (conn));
+  return p->plugin.get_size (connection_get_handle (conn, 0));
 }
 
 static int
@@ -284,12 +284,12 @@ plugin_can_write (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
 
   debug ("can_write");
 
   if (p->plugin.can_write)
-    return p->plugin.can_write (connection_get_handle (conn));
+    return p->plugin.can_write (connection_get_handle (conn, 0));
   else
     return p->plugin.pwrite != NULL;
 }
@@ -299,12 +299,12 @@ plugin_can_flush (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
 
   debug ("can_flush");
 
   if (p->plugin.can_flush)
-    return p->plugin.can_flush (connection_get_handle (conn));
+    return p->plugin.can_flush (connection_get_handle (conn, 0));
   else
     return p->plugin.flush != NULL;
 }
@@ -314,12 +314,12 @@ plugin_is_rotational (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
 
   debug ("is_rotational");
 
   if (p->plugin.is_rotational)
-    return p->plugin.is_rotational (connection_get_handle (conn));
+    return p->plugin.is_rotational (connection_get_handle (conn, 0));
   else
     return 0; /* assume false */
 }
@@ -329,12 +329,12 @@ plugin_can_trim (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
 
   debug ("can_trim");
 
   if (p->plugin.can_trim)
-    return p->plugin.can_trim (connection_get_handle (conn));
+    return p->plugin.can_trim (connection_get_handle (conn, 0));
   else
     return p->plugin.trim != NULL;
 }
@@ -345,13 +345,13 @@ plugin_pread (struct backend *b, struct connection *conn,
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
   assert (p->plugin.pread != NULL);
   assert (!flags);
 
   debug ("pread count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
-  return p->plugin.pread (connection_get_handle (conn), buf, count, offset);
+  return p->plugin.pread (connection_get_handle (conn, 0), buf, count, offset);
 }
 
 static int
@@ -359,13 +359,13 @@ plugin_flush (struct backend *b, struct connection *conn, uint32_t flags)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
   assert (!flags);
 
   debug ("flush");
 
   if (p->plugin.flush != NULL)
-    return p->plugin.flush (connection_get_handle (conn));
+    return p->plugin.flush (connection_get_handle (conn, 0));
   else {
     errno = EINVAL;
     return -1;
@@ -380,14 +380,15 @@ plugin_pwrite (struct backend *b, struct connection *conn,
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   bool fua = flags & NBDKIT_FLAG_FUA;
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
 
   debug ("pwrite count=%" PRIu32 " offset=%" PRIu64 " fua=%d", count, offset,
          fua);
 
   if (p->plugin.pwrite != NULL)
-    r = p->plugin.pwrite (connection_get_handle (conn), buf, count, offset);
+    r = p->plugin.pwrite (connection_get_handle (conn, 0),
+                          buf, count, offset);
   else {
     errno = EROFS;
     return -1;
@@ -407,14 +408,14 @@ plugin_trim (struct backend *b, struct connection *conn,
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   bool fua = flags & NBDKIT_FLAG_FUA;
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
 
   debug ("trim count=%" PRIu32 " offset=%" PRIu64 " fua=%d", count, offset,
          fua);
 
   if (p->plugin.trim != NULL)
-    r = p->plugin.trim (connection_get_handle (conn), count, offset);
+    r = p->plugin.trim (connection_get_handle (conn, 0), count, offset);
   else {
     errno = EINVAL;
     return -1;
@@ -438,7 +439,7 @@ plugin_zero (struct backend *b, struct connection *conn,
   int may_trim = (flags & NBDKIT_FLAG_MAY_TRIM) != 0;
   bool fua = flags & NBDKIT_FLAG_FUA;
 
-  assert (connection_get_handle (conn));
+  assert (connection_get_handle (conn, 0));
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
 
   debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
@@ -448,7 +449,7 @@ plugin_zero (struct backend *b, struct connection *conn,
     return 0;
   if (p->plugin.zero) {
     errno = 0;
-    result = p->plugin.zero (connection_get_handle (conn),
+    result = p->plugin.zero (connection_get_handle (conn, 0),
                              count, offset, may_trim);
     if (result == -1) {
       err = threadlocal_get_error ();
@@ -469,7 +470,7 @@ plugin_zero (struct backend *b, struct connection *conn,
   }
 
   while (count) {
-    result = p->plugin.pwrite (connection_get_handle (conn),
+    result = p->plugin.pwrite (connection_get_handle (conn, 0),
                                buf, limit, offset);
     if (result < 0)
       break;

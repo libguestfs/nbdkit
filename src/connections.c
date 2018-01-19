@@ -69,9 +69,11 @@ struct connection {
   pthread_mutex_t write_lock;
   pthread_mutex_t status_lock;
   int status; /* 1 for more I/O with client, 0 for shutdown, -1 on error */
-  void *handle;
   void *crypto_session;
   int nworkers;
+
+  void **handles;
+  size_t nr_handles;
 
   uint64_t exportsize;
   int readonly;
@@ -100,16 +102,37 @@ static void raw_close (struct connection *);
 /* Accessors for public fields in the connection structure.
  * Everything else is private to this file.
  */
-void
-connection_set_handle (struct connection *conn, void *handle)
+int
+connection_set_handle (struct connection *conn, size_t i, void *handle)
 {
-  conn->handle = handle;
+  size_t j;
+
+  if (i < conn->nr_handles)
+    conn->handles[i] = handle;
+  else {
+    j = conn->nr_handles;
+    conn->nr_handles = i+1;
+    conn->handles = realloc (conn->handles,
+                             conn->nr_handles * sizeof (void *));
+    if (conn->handles == NULL) {
+      perror ("realloc");
+      conn->nr_handles = 0;
+      return -1;
+    }
+    for (; j < i; ++j)
+      conn->handles[j] = NULL;
+    conn->handles[i] = handle;
+  }
+  return 0;
 }
 
 void *
-connection_get_handle (struct connection *conn)
+connection_get_handle (struct connection *conn, size_t i)
 {
-  return conn->handle;
+  if (i < conn->nr_handles)
+    return conn->handles[i];
+  else
+    return NULL;
 }
 
 pthread_mutex_t *
@@ -341,7 +364,7 @@ free_connection (struct connection *conn)
    * callback should always be called.
    */
   if (!quit) {
-    if (conn->handle)
+    if (conn->nr_handles > 0 && conn->handles[0])
       backend->close (backend, conn);
   }
 
