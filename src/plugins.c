@@ -251,6 +251,22 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
   return 0;
 }
 
+/* We don't expose .prepare and .finalize to plugins since they aren't
+ * necessary.  Plugins can easily do the same work in .open and
+ * .close.
+ */
+static int
+plugin_prepare (struct backend *b, struct connection *conn)
+{
+  return 0;
+}
+
+static int
+plugin_finalize (struct backend *b, struct connection *conn)
+{
+  return 0;
+}
+
 static void
 plugin_close (struct backend *b, struct connection *conn)
 {
@@ -503,6 +519,8 @@ static struct backend plugin_functions = {
   .config_complete = plugin_config_complete,
   .errno_is_preserved = plugin_errno_is_preserved,
   .open = plugin_open,
+  .prepare = plugin_prepare,
+  .finalize = plugin_finalize,
   .close = plugin_close,
   .get_size = plugin_get_size,
   .can_write = plugin_can_write,

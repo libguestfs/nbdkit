@@ -165,6 +165,8 @@ struct backend {
   void (*config_complete) (struct backend *);
   int (*errno_is_preserved) (struct backend *);
   int (*open) (struct backend *, struct connection *conn, int readonly);
+  int (*prepare) (struct backend *, struct connection *conn);
+  int (*finalize) (struct backend *, struct connection *conn);
   void (*close) (struct backend *, struct connection *conn);
   int64_t (*get_size) (struct backend *, struct connection *conn);
   int (*can_write) (struct backend *, struct connection *conn);

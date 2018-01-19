@@ -93,6 +93,8 @@ static struct connection *new_connection (int sockin, int sockout,
 static void free_connection (struct connection *conn);
 static int negotiate_handshake (struct connection *conn);
 static int recv_request_send_reply (struct connection *conn);
+static int prepare (struct connection *conn);
+static int finalize (struct connection *conn);
 
 /* Don't call these raw socket functions directly.  Use conn->recv etc. */
 static int raw_recv (struct connection *, void *buf, size_t len);
@@ -246,6 +248,10 @@ _handle_single_connection (int sockin, int sockout)
 
   threadlocal_set_name (backend->plugin_name (backend));
 
+  /* Prepare (for filters), called just after open. */
+  if (prepare (conn) == -1)
+    goto done;
+
   /* Handshake. */
   if (negotiate_handshake (conn) == -1)
     goto done;
@@ -299,6 +305,10 @@ _handle_single_connection (int sockin, int sockout)
       pthread_join (workers[--nworkers], NULL);
     free (workers);
   }
+
+  /* Finalize (for filters), called just before close. */
+  if (finalize (conn) == -1)
+    goto done;
 
   r = get_status (conn);
  done:
@@ -369,6 +379,36 @@ free_connection (struct connection *conn)
   }
 
   free (conn);
+}
+
+static int
+prepare (struct connection *conn)
+{
+  int r;
+
+  lock_request (conn);
+  if (backend)
+    r = backend->prepare (backend, conn);
+  else
+    r = 0;
+  unlock_request (conn);
+
+  return r;
+}
+
+static int
+finalize (struct connection *conn)
+{
+  int r;
+
+  lock_request (conn);
+  if (backend)
+    r = backend->finalize (backend, conn);
+  else
+    r = 0;
+  unlock_request (conn);
+
+  return r;
 }
 
 static int
