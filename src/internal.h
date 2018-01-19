@@ -157,6 +157,7 @@ struct backend {
   void (*free) (struct backend *);
   int (*thread_model) (struct backend *);
   const char *(*name) (struct backend *);
+  const char *(*plugin_name) (struct backend *);
   void (*usage) (struct backend *);
   const char *(*version) (struct backend *);
   void (*dump_fields) (struct backend *);

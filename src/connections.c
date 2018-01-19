@@ -221,7 +221,7 @@ _handle_single_connection (int sockin, int sockout)
   if (backend->open (backend, conn, readonly) == -1)
     goto done;
 
-  threadlocal_set_name (backend->name (backend));
+  threadlocal_set_name (backend->plugin_name (backend));
 
   /* Handshake. */
   if (negotiate_handshake (conn) == -1)
@@ -253,7 +253,7 @@ _handle_single_connection (int sockin, int sockout)
         goto wait;
       }
       if (asprintf (&worker->name,
-                    "%s.%d", backend->name (backend), nworkers) < 0) {
+                    "%s.%d", backend->plugin_name (backend), nworkers) < 0) {
         perror ("asprintf");
         set_status (conn, -1);
         free (worker);

@@ -494,6 +494,7 @@ static struct backend plugin_functions = {
   .free = plugin_free,
   .thread_model = plugin_thread_model,
   .name = plugin_name,
+  .plugin_name = plugin_name,
   .usage = plugin_usage,
   .version = plugin_version,
   .dump_fields = plugin_dump_fields,
