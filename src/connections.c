@@ -760,7 +760,7 @@ valid_range (struct connection *conn, uint64_t offset, uint32_t count)
 
 static bool
 validate_request (struct connection *conn,
-                  uint32_t cmd, uint32_t flags, uint64_t offset, uint32_t count,
+                  uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                   uint32_t *error)
 {
   /* Readonly connection? */
@@ -865,7 +865,7 @@ get_error (struct connection *conn)
  */
 static uint32_t
 handle_request (struct connection *conn,
-                uint32_t cmd, uint32_t flags, uint64_t offset, uint32_t count,
+                uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                 void *buf)
 {
   bool flush_after_command;
@@ -979,7 +979,8 @@ recv_request_send_reply (struct connection *conn)
   int r;
   struct request request;
   struct reply reply;
-  uint32_t magic, cmd, flags, count, error = 0;
+  uint16_t cmd, flags;
+  uint32_t magic, count, error = 0;
   uint64_t offset;
   CLEANUP_FREE char *buf = NULL;
 
@@ -1005,9 +1006,8 @@ recv_request_send_reply (struct connection *conn)
       return set_status (conn, -1);
     }
 
-    cmd = be32toh (request.type);
-    flags = cmd & ~NBD_CMD_MASK_COMMAND;
-    cmd &= NBD_CMD_MASK_COMMAND;
+    flags = be16toh (request.flags);
+    cmd = be16toh (request.type);
 
     offset = be64toh (request.offset);
     count = be32toh (request.count);

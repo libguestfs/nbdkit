@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017 Red Hat Inc.
+ * Copyright (C) 2017-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -249,13 +249,14 @@ find_trans_by_cookie (struct handle *h, uint64_t cookie)
 
 /* Send a request, return 0 on success or -1 on write failure. */
 static int
-nbd_request_raw (struct handle *h, uint32_t type, uint64_t offset,
-                 uint32_t count, uint64_t cookie, const void *buf)
+nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
+                 uint64_t offset, uint32_t count, uint64_t cookie,
+                 const void *buf)
 {
   struct request req = {
     .magic = htobe32 (NBD_REQUEST_MAGIC),
-    /* TODO nbdkit should have a way to pass flags, separate from cmd type */
-    .type = htobe32 (type),
+    .flags = htobe16 (flags),
+    .type = htobe16 (type),
     .handle = cookie, /* Opaque to server, so endianness doesn't matter */
     .offset = htobe64 (offset),
     .count = htobe32 (count),
@@ -275,8 +276,9 @@ nbd_request_raw (struct handle *h, uint32_t type, uint64_t offset,
 /* Perform the request half of a transaction. On success, return the
    non-negative fd for reading the reply; on error return -1. */
 static int
-nbd_request_full (struct handle *h, uint32_t type, uint64_t offset,
-                  uint32_t count, const void *req_buf, void *rep_buf)
+nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
+                  uint64_t offset, uint32_t count, const void *req_buf,
+                  void *rep_buf)
 {
   int err;
   struct transaction *trans;
@@ -307,7 +309,7 @@ nbd_request_full (struct handle *h, uint32_t type, uint64_t offset,
   fd = trans->u.fds[0];
   cookie = trans->u.cookie;
   nbd_unlock (h);
-  if (nbd_request_raw (h, type, offset, count, cookie, req_buf) == 0)
+  if (nbd_request_raw (h, flags, type, offset, count, cookie, req_buf) == 0)
     return fd;
   trans = find_trans_by_cookie (h, cookie);
 
@@ -326,9 +328,10 @@ nbd_request_full (struct handle *h, uint32_t type, uint64_t offset,
 
 /* Shorthand for nbd_request_full when no extra buffers are involved. */
 static int
-nbd_request (struct handle *h, uint32_t type, uint64_t offset, uint32_t count)
+nbd_request (struct handle *h, uint16_t flags, uint16_t type, uint64_t offset,
+             uint32_t count)
 {
-  return nbd_request_full (h, type, offset, count, NULL, NULL);
+  return nbd_request_full (h, flags, type, offset, count, NULL, NULL);
 }
 
 /* Read a reply, and look up the fd corresponding to the transaction.
@@ -563,7 +566,7 @@ nbd_close (void *handle)
   struct handle *h = handle;
 
   if (!h->dead)
-    nbd_request_raw (h, NBD_CMD_DISC, 0, 0, 0, NULL);
+    nbd_request_raw (h, 0, NBD_CMD_DISC, 0, 0, 0, NULL);
   close (h->fd);
   if ((errno = pthread_join (h->reader, NULL)))
     nbdkit_debug ("failed to join reader thread: %m");
@@ -622,7 +625,7 @@ nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 
   /* TODO Auto-fragment this if the client has a larger max transfer
      limit than the server */
-  c = nbd_request_full (h, NBD_CMD_READ, offset, count, NULL, buf);
+  c = nbd_request_full (h, 0, NBD_CMD_READ, offset, count, NULL, buf);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
@@ -635,7 +638,7 @@ nbd_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 
   /* TODO Auto-fragment this if the client has a larger max transfer
      limit than the server */
-  c = nbd_request_full (h, NBD_CMD_WRITE, offset, count, buf, NULL);
+  c = nbd_request_full (h, 0, NBD_CMD_WRITE, offset, count, buf, NULL);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
@@ -644,7 +647,6 @@ static int
 nbd_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
   struct handle *h = handle;
-  uint32_t cmd = NBD_CMD_WRITE_ZEROES;
   int c;
 
   if (!(h->flags & NBD_FLAG_SEND_WRITE_ZEROES)) {
@@ -653,9 +655,8 @@ nbd_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     return -1;
   }
 
-  if (!may_trim)
-    cmd |= NBD_CMD_FLAG_NO_HOLE;
-  c = nbd_request (h, cmd, offset, count);
+  c = nbd_request (h, may_trim ? 0 : NBD_CMD_FLAG_NO_HOLE,
+                   NBD_CMD_WRITE_ZEROES, offset, count);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
@@ -666,7 +667,7 @@ nbd_trim (void *handle, uint32_t count, uint64_t offset)
   struct handle *h = handle;
   int c;
 
-  c = nbd_request (h, NBD_CMD_TRIM, offset, count);
+  c = nbd_request (h, 0, NBD_CMD_TRIM, offset, count);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
@@ -677,7 +678,7 @@ nbd_flush (void *handle)
   struct handle *h = handle;
   int c;
 
-  c = nbd_request (h, NBD_CMD_FLUSH, 0, 0);
+  c = nbd_request (h, 0, NBD_CMD_FLUSH, 0, 0);
   return c < 0 ? c : nbd_reply (h, c);
 }
 

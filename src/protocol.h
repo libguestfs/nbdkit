@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -112,7 +112,8 @@ struct new_handshake_finish {
 /* Request (client -> server). */
 struct request {
   uint32_t magic;               /* NBD_REQUEST_MAGIC. */
-  uint32_t type;                /* Request type. */
+  uint16_t flags;               /* Request flags. */
+  uint16_t type;                /* Request type. */
   uint64_t handle;              /* Opaque handle. */
   uint64_t offset;              /* Request offset. */
   uint32_t count;               /* Request length. */
@@ -134,9 +135,8 @@ struct reply {
 #define NBD_CMD_FLUSH             3
 #define NBD_CMD_TRIM              4
 #define NBD_CMD_WRITE_ZEROES      6
-#define NBD_CMD_MASK_COMMAND 0xffff
-#define NBD_CMD_FLAG_FUA     (1<<16)
-#define NBD_CMD_FLAG_NO_HOLE (2<<16)
+#define NBD_CMD_FLAG_FUA      (1<<0)
+#define NBD_CMD_FLAG_NO_HOLE  (1<<1)
 
 /* Error codes (previously errno).
  * See http://git.qemu.org/?p=qemu.git;a=commitdiff;h=ca4414804114fd0095b317785bc0b51862e62ebb
