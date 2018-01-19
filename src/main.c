@@ -497,6 +497,7 @@ main (int argc, char *argv[])
   }
 
   backend = open_plugin_so (filename, short_name);
+  lock_init_thread_model ();
 
   if (help) {
     usage ();

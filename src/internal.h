@@ -181,6 +181,7 @@ struct backend {
 extern struct backend *plugin_register (const char *_filename, void *_dl, struct nbdkit_plugin *(*plugin_init) (void));
 
 /* locks.c */
+extern void lock_init_thread_model (void);
 extern void lock_connection (void);
 extern void unlock_connection (void);
 extern void lock_request (struct connection *conn);

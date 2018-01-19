@@ -38,15 +38,24 @@
 
 #include "internal.h"
 
+/* Note that the plugin's thread model cannot change after being
+ * loaded, so caching it here is safe.
+ */
+static int thread_model;
+
 static pthread_mutex_t connection_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t all_requests_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_rwlock_t unload_prevention_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 void
+lock_init_thread_model (void)
+{
+  thread_model = backend->thread_model (backend);
+}
+
+void
 lock_connection (void)
 {
-  int thread_model = backend->thread_model (backend);
-
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
     debug ("acquire connection lock");
     pthread_mutex_lock (&connection_lock);
@@ -56,8 +65,6 @@ lock_connection (void)
 void
 unlock_connection (void)
 {
-  int thread_model = backend->thread_model (backend);
-
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
     debug ("release connection lock");
     pthread_mutex_unlock (&connection_lock);
@@ -67,8 +74,6 @@ unlock_connection (void)
 void
 lock_request (struct connection *conn)
 {
-  int thread_model = backend->thread_model (backend);
-
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
     debug ("acquire global request lock");
     pthread_mutex_lock (&all_requests_lock);
@@ -86,8 +91,6 @@ lock_request (struct connection *conn)
 void
 unlock_request (struct connection *conn)
 {
-  int thread_model = backend->thread_model (backend);
-
   debug ("release unload prevention lock");
   pthread_rwlock_unlock (&unload_prevention_lock);
 
