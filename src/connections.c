@@ -211,16 +211,17 @@ _handle_single_connection (int sockin, int sockout)
   int nworkers = threads ? threads : DEFAULT_PARALLEL_REQUESTS;
   pthread_t *workers = NULL;
 
-  if (plugin_thread_model () < NBDKIT_THREAD_MODEL_PARALLEL || nworkers == 1)
+  if (backend->thread_model (backend) < NBDKIT_THREAD_MODEL_PARALLEL ||
+      nworkers == 1)
     nworkers = 0;
   conn = new_connection (sockin, sockout, nworkers);
   if (!conn)
     goto done;
 
-  if (plugin_open (conn, readonly) == -1)
+  if (backend->open (backend, conn, readonly) == -1)
     goto done;
 
-  threadlocal_set_name (plugin_name ());
+  threadlocal_set_name (backend->name (backend));
 
   /* Handshake. */
   if (negotiate_handshake (conn) == -1)
@@ -251,7 +252,8 @@ _handle_single_connection (int sockin, int sockout)
         set_status (conn, -1);
         goto wait;
       }
-      if (asprintf (&worker->name, "%s.%d", plugin_name (), nworkers) < 0) {
+      if (asprintf (&worker->name,
+                    "%s.%d", backend->name (backend), nworkers) < 0) {
         perror ("asprintf");
         set_status (conn, -1);
         free (worker);
@@ -340,7 +342,7 @@ free_connection (struct connection *conn)
    */
   if (!quit) {
     if (conn->handle)
-      plugin_close (conn);
+      backend->close (backend, conn);
   }
 
   free (conn);
@@ -352,7 +354,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
 
-  fl = plugin_can_write (conn);
+  fl = backend->can_write (backend, conn);
   if (fl == -1)
     return -1;
   if (readonly || !fl) {
@@ -363,7 +365,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
     eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
   }
 
-  fl = plugin_can_flush (conn);
+  fl = backend->can_flush (backend, conn);
   if (fl == -1)
     return -1;
   if (fl) {
@@ -371,7 +373,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
     conn->can_flush = 1;
   }
 
-  fl = plugin_is_rotational (conn);
+  fl = backend->is_rotational (backend, conn);
   if (fl == -1)
     return -1;
   if (fl) {
@@ -379,7 +381,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
     conn->is_rotational = 1;
   }
 
-  fl = plugin_can_trim (conn);
+  fl = backend->can_trim (backend, conn);
   if (fl == -1)
     return -1;
   if (fl) {
@@ -407,7 +409,7 @@ _negotiate_handshake_oldstyle (struct connection *conn)
     return -1;
   }
 
-  r = plugin_get_size (conn);
+  r = backend->get_size (backend, conn);
   if (r == -1)
     return -1;
   if (r < 0) {
@@ -703,7 +705,7 @@ _negotiate_handshake_newstyle (struct connection *conn)
     return -1;
 
   /* Finish the newstyle handshake. */
-  r = plugin_get_size (conn);
+  r = backend->get_size (backend, conn);
   if (r == -1)
     return -1;
   if (r < 0) {
@@ -848,7 +850,7 @@ get_error (struct connection *conn)
 {
   int ret = threadlocal_get_error ();
 
-  if (!ret && plugin_errno_is_preserved ())
+  if (!ret && backend->errno_is_preserved (backend))
     ret = errno;
   return ret ? ret : EIO;
 }
@@ -881,28 +883,28 @@ handle_request (struct connection *conn,
 
   switch (cmd) {
   case NBD_CMD_READ:
-    if (plugin_pread (conn, buf, count, offset) == -1)
+    if (backend->pread (backend, conn, buf, count, offset) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_WRITE:
-    if (plugin_pwrite (conn, buf, count, offset) == -1)
+    if (backend->pwrite (backend, conn, buf, count, offset) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_FLUSH:
-    if (plugin_flush (conn) == -1)
+    if (backend->flush (backend, conn) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_TRIM:
-    if (plugin_trim (conn, count, offset) == -1)
+    if (backend->trim (backend, conn, count, offset) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_WRITE_ZEROES:
-    if (plugin_zero (conn, count, offset,
-                     !(flags & NBD_CMD_FLAG_NO_HOLE)) == -1)
+    if (backend->zero (backend, conn, count, offset,
+                       !(flags & NBD_CMD_FLAG_NO_HOLE)) == -1)
       return get_error (conn);
     break;
 
@@ -910,7 +912,7 @@ handle_request (struct connection *conn,
     abort ();
   }
 
-  if (flush_after_command && plugin_flush (conn) == -1)
+  if (flush_after_command && backend->flush (backend, conn) == -1)
     return get_error (conn);
 
   return 0;

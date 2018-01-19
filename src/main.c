@@ -64,7 +64,7 @@
 
 static int is_short_name (const char *);
 static char *make_random_fifo (void);
-static void open_plugin_so (const char *filename, int short_name);
+static struct backend *open_plugin_so (const char *filename, int short_name);
 static void start_serving (void);
 static void set_up_signals (void);
 static void run_command (void);
@@ -102,6 +102,9 @@ unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
 volatile int quit;
 int quit_fd;
 static int write_quit_fd;
+
+/* The currently loaded plugin. */
+struct backend *backend;
 
 static char *random_fifo_dir = NULL;
 static char *random_fifo = NULL;
@@ -493,12 +496,12 @@ main (int argc, char *argv[])
     }
   }
 
-  open_plugin_so (filename, short_name);
+  backend = open_plugin_so (filename, short_name);
 
   if (help) {
     usage ();
     printf ("\n%s:\n\n", filename);
-    plugin_usage ();
+    backend->usage (backend);
     exit (EXIT_SUCCESS);
   }
 
@@ -506,8 +509,8 @@ main (int argc, char *argv[])
     const char *v;
 
     display_version ();
-    printf ("%s", plugin_name ());
-    if ((v = plugin_version ()) != NULL)
+    printf ("%s", backend->name (backend));
+    if ((v = backend->version (backend)) != NULL)
       printf (" %s", v);
     printf ("\n");
     exit (EXIT_SUCCESS);
@@ -518,7 +521,7 @@ main (int argc, char *argv[])
    * we assume it is 'script=...'.
    */
   if (optind < argc && (p = strchr (argv[optind], '=')) == NULL) {
-    plugin_config ("script", argv[optind]);
+    backend->config (backend, "script", argv[optind]);
     ++optind;
   }
 
@@ -528,14 +531,14 @@ main (int argc, char *argv[])
    * script=... parameter (and do not wait for config_complete).
    */
   if (dump_plugin) {
-    plugin_dump_fields ();
+    backend->dump_fields (backend);
     exit (EXIT_SUCCESS);
   }
 
   while (optind < argc) {
     if ((p = strchr (argv[optind], '=')) != NULL) {
       *p = '\0';
-      plugin_config (argv[optind], p+1);
+      backend->config (backend, argv[optind], p+1);
       ++optind;
     }
     else {
@@ -546,11 +549,12 @@ main (int argc, char *argv[])
     }
   }
 
-  plugin_config_complete ();
+  backend->config_complete (backend);
 
   start_serving ();
 
-  plugin_cleanup ();
+  backend->free (backend);
+  backend = NULL;
 
   free (unixsocket);
   free (pidfile);
@@ -609,9 +613,10 @@ make_random_fifo (void)
   return unixsocket;
 }
 
-static void
+static struct backend *
 open_plugin_so (const char *name, int short_name)
 {
+  struct backend *ret;
   char *filename = (char *) name;
   int free_filename = 0;
   void *dl;
@@ -647,10 +652,12 @@ open_plugin_so (const char *name, int short_name)
   }
 
   /* Register the plugin. */
-  plugin_register (filename, dl, plugin_init);
+  ret = plugin_register (filename, dl, plugin_init);
 
   if (free_filename)
     free (filename);
+
+  return ret;
 }
 
 static void

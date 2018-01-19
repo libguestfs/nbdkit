@@ -35,6 +35,7 @@
 #define NBDKIT_INTERNAL_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdarg.h>
 #include <sys/socket.h>
 #include <pthread.h>
@@ -91,6 +92,11 @@
 # endif
 #endif
 
+#define container_of(ptr, type, member) ({                       \
+      const typeof (((type *) 0)->member) *__mptr = (ptr);       \
+      (type *) ((char *) __mptr - offsetof(type, member));       \
+    })
+
 /* main.c */
 extern const char *exportname;
 extern const char *ipaddr;
@@ -107,6 +113,8 @@ extern int threads;
 
 extern volatile int quit;
 extern int quit_fd;
+
+extern struct backend *backend;
 
 /* cleanup.c */
 extern void cleanup_free (void *ptr);
@@ -142,28 +150,31 @@ extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockou
 #define debug nbdkit_debug
 
 /* plugins.c */
-extern void plugin_register (const char *_filename, void *_dl, struct nbdkit_plugin *(*plugin_init) (void));
-extern void plugin_cleanup (void);
-extern int plugin_thread_model (void);
-extern const char *plugin_name (void);
-extern void plugin_usage (void);
-extern const char *plugin_version (void);
-extern void plugin_dump_fields (void);
-extern void plugin_config (const char *key, const char *value);
-extern void plugin_config_complete (void);
-extern int plugin_errno_is_preserved (void);
-extern int plugin_open (struct connection *conn, int readonly);
-extern void plugin_close (struct connection *conn);
-extern int64_t plugin_get_size (struct connection *conn);
-extern int plugin_can_write (struct connection *conn);
-extern int plugin_can_flush (struct connection *conn);
-extern int plugin_is_rotational (struct connection *conn);
-extern int plugin_can_trim (struct connection *conn);
-extern int plugin_pread (struct connection *conn, void *buf, uint32_t count, uint64_t offset);
-extern int plugin_pwrite (struct connection *conn, void *buf, uint32_t count, uint64_t offset);
-extern int plugin_flush (struct connection *conn);
-extern int plugin_trim (struct connection *conn, uint32_t count, uint64_t offset);
-extern int plugin_zero (struct connection *conn, uint32_t count, uint64_t offset, int may_trim);
+struct backend {
+  void (*free) (struct backend *);
+  int (*thread_model) (struct backend *);
+  const char *(*name) (struct backend *);
+  void (*usage) (struct backend *);
+  const char *(*version) (struct backend *);
+  void (*dump_fields) (struct backend *);
+  void (*config) (struct backend *, const char *key, const char *value);
+  void (*config_complete) (struct backend *);
+  int (*errno_is_preserved) (struct backend *);
+  int (*open) (struct backend *, struct connection *conn, int readonly);
+  void (*close) (struct backend *, struct connection *conn);
+  int64_t (*get_size) (struct backend *, struct connection *conn);
+  int (*can_write) (struct backend *, struct connection *conn);
+  int (*can_flush) (struct backend *, struct connection *conn);
+  int (*is_rotational) (struct backend *, struct connection *conn);
+  int (*can_trim) (struct backend *, struct connection *conn);
+  int (*pread) (struct backend *, struct connection *conn, void *buf, uint32_t count, uint64_t offset);
+  int (*pwrite) (struct backend *, struct connection *conn, void *buf, uint32_t count, uint64_t offset);
+  int (*flush) (struct backend *, struct connection *conn);
+  int (*trim) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset);
+  int (*zero) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset, int may_trim);
+};
+
+extern struct backend *plugin_register (const char *_filename, void *_dl, struct nbdkit_plugin *(*plugin_init) (void));
 
 /* locks.c */
 extern void lock_connection (void);

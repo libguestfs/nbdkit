@@ -49,192 +49,100 @@
 /* Maximum read or write request that we will handle. */
 #define MAX_REQUEST_SIZE (64 * 1024 * 1024)
 
-/* Currently the server can only load one plugin (see TODO).  Hence we
- * can just use globals to store these.
+/* We extend the generic backend struct with extra fields relating
+ * to this plugin.
  */
-static char *filename;
-static void *dl;
-static struct nbdkit_plugin plugin;
+struct backend_plugin {
+  struct backend backend;
+  char *filename;
+  void *dl;
+  struct nbdkit_plugin plugin;
+};
 
-void
-plugin_register (const char *_filename,
-                 void *_dl, struct nbdkit_plugin *(*plugin_init) (void))
+static void
+plugin_free (struct backend *b)
 {
-  const struct nbdkit_plugin *_plugin;
-  size_t i, len, size;
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  filename = strdup (_filename);
-  if (filename == NULL) {
-    perror ("strdup");
-    exit (EXIT_FAILURE);
-  }
-  dl = _dl;
-
-  debug ("registering %s", filename);
-
-  /* Call the initialization function which returns the address of the
-   * plugin's own 'struct nbdkit_plugin'.
+  /* Acquiring this lock prevents any plugin callbacks from running
+   * simultaneously.
    */
-  _plugin = plugin_init ();
-  if (!_plugin) {
-    fprintf (stderr, "%s: %s: plugin registration function failed\n",
-             program_name, filename);
-    exit (EXIT_FAILURE);
-  }
+  lock_unload ();
 
-  /* Check for incompatible future versions. */
-  if (_plugin->_api_version != 1) {
-    fprintf (stderr, "%s: %s: plugin is incompatible with this version of nbdkit (_api_version = %d)\n",
-             program_name, filename, _plugin->_api_version);
-    exit (EXIT_FAILURE);
-  }
+  debug ("%s: unload", p->filename);
+  if (p->plugin.unload)
+    p->plugin.unload ();
 
-  /* Since the plugin might be much older than the current version of
-   * nbdkit, only copy up to the self-declared _struct_size of the
-   * plugin and zero out the rest.  If the plugin is much newer then
-   * we'll only call the "old" fields.
-   */
-  size = sizeof plugin;         /* our struct */
-  memset (&plugin, 0, size);
-  if (size > _plugin->_struct_size)
-    size = _plugin->_struct_size;
-  memcpy (&plugin, _plugin, size);
+  dlclose (p->dl);
+  free (p->filename);
 
-  /* Check for the minimum fields which must exist in the
-   * plugin struct.
-   */
-  if (plugin.name == NULL) {
-    fprintf (stderr, "%s: %s: plugin must have a .name field\n",
-             program_name, filename);
-    exit (EXIT_FAILURE);
-  }
-  if (plugin.open == NULL) {
-    fprintf (stderr, "%s: %s: plugin must have a .open callback\n",
-             program_name, filename);
-    exit (EXIT_FAILURE);
-  }
-  if (plugin.get_size == NULL) {
-    fprintf (stderr, "%s: %s: plugin must have a .get_size callback\n",
-             program_name, filename);
-    exit (EXIT_FAILURE);
-  }
-  if (plugin.pread == NULL) {
-    fprintf (stderr, "%s: %s: plugin must have a .pread callback\n",
-             program_name, filename);
-    exit (EXIT_FAILURE);
-  }
+  unlock_unload ();
 
-  len = strlen (plugin.name);
-  if (len == 0) {
-    fprintf (stderr, "%s: %s: plugin.name field must not be empty\n",
-             program_name, filename);
-    exit (EXIT_FAILURE);
-  }
-  for (i = 0; i < len; ++i) {
-    if (!((plugin.name[i] >= '0' && plugin.name[i] <= '9') ||
-          (plugin.name[i] >= 'a' && plugin.name[i] <= 'z') ||
-          (plugin.name[i] >= 'A' && plugin.name[i] <= 'Z'))) {
-      fprintf (stderr, "%s: %s: plugin.name ('%s') field must contain only ASCII alphanumeric characters\n",
-               program_name, filename, plugin.name);
-      exit (EXIT_FAILURE);
-    }
-  }
-  /* Copy the module's name into local storage, so that plugin.name
-   * survives past unload. */
-  if (!(plugin.name = strdup (plugin.name))) {
-    perror ("strdup");
-    exit (EXIT_FAILURE);
-  }
-
-  debug ("registered %s (name %s)", filename, plugin.name);
-
-  /* Call the on-load callback if it exists. */
-  debug ("%s: load", filename);
-  if (plugin.load)
-    plugin.load ();
+  free (p);
 }
 
-void
-plugin_cleanup (void)
+static int
+plugin_thread_model (struct backend *b)
 {
-  if (dl) {
-    /* Acquiring this lock prevents any plugin callbacks from running
-     * simultaneously.
-     */
-    lock_unload ();
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-    debug ("%s: unload", filename);
-    if (plugin.unload)
-      plugin.unload ();
-
-    dlclose (dl);
-    dl = NULL;
-    free (filename);
-    filename = NULL;
-
-    unlock_unload ();
-  }
+  return p->plugin._thread_model;
 }
 
-int
-plugin_thread_model (void)
+static const char *
+plugin_name (struct backend *b)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  return plugin._thread_model;
+  return p->plugin.name;
 }
 
-const char *
-plugin_name (void)
+static void
+plugin_usage (struct backend *b)
 {
-  return plugin.name;
-}
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-void
-plugin_usage (void)
-{
-  assert (dl);
-
-  printf ("%s", plugin.name);
-  if (plugin.longname)
-    printf (" (%s)", plugin.longname);
+  printf ("%s", p->plugin.name);
+  if (p->plugin.longname)
+    printf (" (%s)", p->plugin.longname);
   printf ("\n");
-  if (plugin.description) {
+  if (p->plugin.description) {
     printf ("\n");
-    printf ("%s\n", plugin.description);
+    printf ("%s\n", p->plugin.description);
   }
-  if (plugin.config_help) {
+  if (p->plugin.config_help) {
     printf ("\n");
-    printf ("%s\n", plugin.config_help);
+    printf ("%s\n", p->plugin.config_help);
   }
 }
 
-const char *
-plugin_version (void)
+static const char *
+plugin_version (struct backend *b)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  return plugin.version;
+  return p->plugin.version;
 }
 
 /* This implements the --dump-plugin option. */
-void
-plugin_dump_fields (void)
+static void
+plugin_dump_fields (struct backend *b)
 {
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   char *path;
 
-  path = nbdkit_absolute_path (filename);
+  path = nbdkit_absolute_path (p->filename);
   printf ("path=%s\n", path);
   free (path);
 
-  printf ("name=%s\n", plugin.name);
-  if (plugin.version)
-    printf ("version=%s\n", plugin.version);
+  printf ("name=%s\n", p->plugin.name);
+  if (p->plugin.version)
+    printf ("version=%s\n", p->plugin.version);
 
-  printf ("api_version=%d\n", plugin._api_version);
-  printf ("struct_size=%" PRIu64 "\n", plugin._struct_size);
+  printf ("api_version=%d\n", p->plugin._api_version);
+  printf ("struct_size=%" PRIu64 "\n", p->plugin._struct_size);
   printf ("thread_model=");
-  switch (plugin._thread_model) {
+  switch (p->plugin._thread_model) {
   case NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS:
     printf ("serialize_connections");
     break;
@@ -248,13 +156,13 @@ plugin_dump_fields (void)
     printf ("parallel");
     break;
   default:
-    printf ("%d # unknown thread model!", plugin._thread_model);
+    printf ("%d # unknown thread model!", p->plugin._thread_model);
     break;
   }
   printf ("\n");
-  printf ("errno_is_preserved=%d\n", plugin.errno_is_preserved);
+  printf ("errno_is_preserved=%d\n", p->plugin.errno_is_preserved);
 
-#define HAS(field) if (plugin.field) printf ("has_%s=1\n", #field)
+#define HAS(field) if (p->plugin.field) printf ("has_%s=1\n", #field)
   HAS (longname);
   HAS (description);
   HAS (load);
@@ -278,64 +186,64 @@ plugin_dump_fields (void)
 #undef HAS
 
   /* Custom fields. */
-  if (plugin.dump_plugin)
-    plugin.dump_plugin ();
+  if (p->plugin.dump_plugin)
+    p->plugin.dump_plugin ();
 }
 
-void
-plugin_config (const char *key, const char *value)
+static void
+plugin_config (struct backend *b, const char *key, const char *value)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   debug ("%s: config key=%s, value=%s",
-         filename, key, value);
+         p->filename, key, value);
 
-  if (plugin.config == NULL) {
+  if (p->plugin.config == NULL) {
     fprintf (stderr, "%s: %s: this plugin does not need command line configuration\n"
              "Try using: %s --help %s\n",
-             program_name, filename,
-             program_name, filename);
+             program_name, p->filename,
+             program_name, p->filename);
     exit (EXIT_FAILURE);
   }
 
-  if (plugin.config (key, value) == -1)
+  if (p->plugin.config (key, value) == -1)
     exit (EXIT_FAILURE);
 }
 
-void
-plugin_config_complete (void)
+static void
+plugin_config_complete (struct backend *b)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  debug ("%s: config_complete", filename);
+  debug ("%s: config_complete", p->filename);
 
-  if (!plugin.config_complete)
+  if (!p->plugin.config_complete)
     return;
 
-  if (plugin.config_complete () == -1)
+  if (p->plugin.config_complete () == -1)
     exit (EXIT_FAILURE);
 }
 
-int
-plugin_errno_is_preserved (void)
+static int
+plugin_errno_is_preserved (struct backend *b)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  return plugin.errno_is_preserved;
+  return p->plugin.errno_is_preserved;
 }
 
-int
-plugin_open (struct connection *conn, int readonly)
+static int
+plugin_open (struct backend *b, struct connection *conn, int readonly)
 {
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   void *handle;
 
-  assert (dl);
   assert (connection_get_handle (conn) == NULL);
-  assert (plugin.open != NULL);
+  assert (p->plugin.open != NULL);
 
-  debug ("%s: open readonly=%d", filename, readonly);
+  debug ("%s: open readonly=%d", p->filename, readonly);
 
-  handle = plugin.open (readonly);
+  handle = p->plugin.open (readonly);
   if (!handle)
     return -1;
 
@@ -343,179 +251,192 @@ plugin_open (struct connection *conn, int readonly)
   return 0;
 }
 
-void
-plugin_close (struct connection *conn)
+static void
+plugin_close (struct backend *b, struct connection *conn)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
 
   debug ("close");
 
-  if (plugin.close)
-    plugin.close (connection_get_handle (conn));
+  if (p->plugin.close)
+    p->plugin.close (connection_get_handle (conn));
 
   connection_set_handle (conn, NULL);
 }
 
-int64_t
-plugin_get_size (struct connection *conn)
+static int64_t
+plugin_get_size (struct backend *b, struct connection *conn)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
-  assert (plugin.get_size != NULL);
+  assert (p->plugin.get_size != NULL);
 
   debug ("get_size");
 
-  return plugin.get_size (connection_get_handle (conn));
+  return p->plugin.get_size (connection_get_handle (conn));
 }
 
-int
-plugin_can_write (struct connection *conn)
+static int
+plugin_can_write (struct backend *b, struct connection *conn)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
 
   debug ("can_write");
 
-  if (plugin.can_write)
-    return plugin.can_write (connection_get_handle (conn));
+  if (p->plugin.can_write)
+    return p->plugin.can_write (connection_get_handle (conn));
   else
-    return plugin.pwrite != NULL;
+    return p->plugin.pwrite != NULL;
 }
 
-int
-plugin_can_flush (struct connection *conn)
+static int
+plugin_can_flush (struct backend *b, struct connection *conn)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
 
   debug ("can_flush");
 
-  if (plugin.can_flush)
-    return plugin.can_flush (connection_get_handle (conn));
+  if (p->plugin.can_flush)
+    return p->plugin.can_flush (connection_get_handle (conn));
   else
-    return plugin.flush != NULL;
+    return p->plugin.flush != NULL;
 }
 
-int
-plugin_is_rotational (struct connection *conn)
+static int
+plugin_is_rotational (struct backend *b, struct connection *conn)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
 
   debug ("is_rotational");
 
-  if (plugin.is_rotational)
-    return plugin.is_rotational (connection_get_handle (conn));
+  if (p->plugin.is_rotational)
+    return p->plugin.is_rotational (connection_get_handle (conn));
   else
     return 0; /* assume false */
 }
 
-int
-plugin_can_trim (struct connection *conn)
+static int
+plugin_can_trim (struct backend *b, struct connection *conn)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
 
   debug ("can_trim");
 
-  if (plugin.can_trim)
-    return plugin.can_trim (connection_get_handle (conn));
+  if (p->plugin.can_trim)
+    return p->plugin.can_trim (connection_get_handle (conn));
   else
-    return plugin.trim != NULL;
+    return p->plugin.trim != NULL;
 }
 
-int
-plugin_pread (struct connection *conn,
+static int
+plugin_pread (struct backend *b, struct connection *conn,
               void *buf, uint32_t count, uint64_t offset)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
-  assert (plugin.pread != NULL);
+  assert (p->plugin.pread != NULL);
 
   debug ("pread count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
-  return plugin.pread (connection_get_handle (conn), buf, count, offset);
+  return p->plugin.pread (connection_get_handle (conn), buf, count, offset);
 }
 
-int
-plugin_pwrite (struct connection *conn,
+static int
+plugin_pwrite (struct backend *b, struct connection *conn,
                void *buf, uint32_t count, uint64_t offset)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
 
   debug ("pwrite count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
-  if (plugin.pwrite != NULL)
-    return plugin.pwrite (connection_get_handle (conn), buf, count, offset);
+  if (p->plugin.pwrite != NULL)
+    return p->plugin.pwrite (connection_get_handle (conn), buf, count, offset);
   else {
     errno = EROFS;
     return -1;
   }
 }
 
-int
-plugin_flush (struct connection *conn)
+static int
+plugin_flush (struct backend *b, struct connection *conn)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
 
   debug ("flush");
 
-  if (plugin.flush != NULL)
-    return plugin.flush (connection_get_handle (conn));
+  if (p->plugin.flush != NULL)
+    return p->plugin.flush (connection_get_handle (conn));
   else {
     errno = EINVAL;
     return -1;
   }
 }
 
-int
-plugin_trim (struct connection *conn, uint32_t count, uint64_t offset)
+static int
+plugin_trim (struct backend *b, struct connection *conn,
+             uint32_t count, uint64_t offset)
 {
-  assert (dl);
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn));
 
   debug ("trim count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
-  if (plugin.trim != NULL)
-    return plugin.trim (connection_get_handle (conn), count, offset);
+  if (p->plugin.trim != NULL)
+    return p->plugin.trim (connection_get_handle (conn), count, offset);
   else {
     errno = EINVAL;
     return -1;
   }
 }
 
-int
-plugin_zero (struct connection *conn,
+static int
+plugin_zero (struct backend *b, struct connection *conn,
              uint32_t count, uint64_t offset, int may_trim)
 {
-  assert (dl);
-  assert (connection_get_handle (conn));
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   char *buf;
   uint32_t limit;
   int result;
   int err = 0;
+
+  assert (connection_get_handle (conn));
 
   debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d",
          count, offset, may_trim);
 
   if (!count)
     return 0;
-  if (plugin.zero) {
+  if (p->plugin.zero) {
     errno = 0;
-    result = plugin.zero (connection_get_handle (conn), count, offset, may_trim);
+    result = p->plugin.zero (connection_get_handle (conn),
+                             count, offset, may_trim);
     if (result == -1) {
       err = threadlocal_get_error ();
-      if (!err && plugin_errno_is_preserved ())
+      if (!err && plugin_errno_is_preserved (b))
         err = errno;
     }
     if (result == 0 || err != EOPNOTSUPP)
       return result;
   }
 
-  assert (plugin.pwrite);
+  assert (p->plugin.pwrite);
   threadlocal_set_error (0);
   limit = count < MAX_REQUEST_SIZE ? count : MAX_REQUEST_SIZE;
   buf = calloc (limit, 1);
@@ -525,7 +446,8 @@ plugin_zero (struct connection *conn,
   }
 
   while (count) {
-    result = plugin.pwrite (connection_get_handle (conn), buf, limit, offset);
+    result = p->plugin.pwrite (connection_get_handle (conn),
+                               buf, limit, offset);
     if (result < 0)
       break;
     count -= limit;
@@ -537,4 +459,135 @@ plugin_zero (struct connection *conn,
   free (buf);
   errno = err;
   return result;
+}
+
+static struct backend plugin_functions = {
+  .free = plugin_free,
+  .thread_model = plugin_thread_model,
+  .name = plugin_name,
+  .usage = plugin_usage,
+  .version = plugin_version,
+  .dump_fields = plugin_dump_fields,
+  .config = plugin_config,
+  .config_complete = plugin_config_complete,
+  .errno_is_preserved = plugin_errno_is_preserved,
+  .open = plugin_open,
+  .close = plugin_close,
+  .get_size = plugin_get_size,
+  .can_write = plugin_can_write,
+  .can_flush = plugin_can_flush,
+  .is_rotational = plugin_is_rotational,
+  .can_trim = plugin_can_trim,
+  .pread = plugin_pread,
+  .pwrite = plugin_pwrite,
+  .flush = plugin_flush,
+  .trim = plugin_trim,
+  .zero = plugin_zero,
+};
+
+/* Register and load a plugin. */
+struct backend *
+plugin_register (const char *filename,
+                 void *dl, struct nbdkit_plugin *(*plugin_init) (void))
+{
+  struct backend_plugin *p;
+  const struct nbdkit_plugin *plugin;
+  size_t i, len, size;
+
+  p = malloc (sizeof *p);
+  if (p == NULL) {
+  out_of_memory:
+    perror ("strdup");
+    exit (EXIT_FAILURE);
+  }
+
+  p->backend = plugin_functions;
+  p->filename = strdup (filename);
+  if (p->filename == NULL) goto out_of_memory;
+  p->dl = dl;
+
+  debug ("registering %s", p->filename);
+
+  /* Call the initialization function which returns the address of the
+   * plugin's own 'struct nbdkit_plugin'.
+   */
+  plugin = plugin_init ();
+  if (!plugin) {
+    fprintf (stderr, "%s: %s: plugin registration function failed\n",
+             program_name, p->filename);
+    exit (EXIT_FAILURE);
+  }
+
+  /* Check for incompatible future versions. */
+  if (plugin->_api_version != 1) {
+    fprintf (stderr, "%s: %s: plugin is incompatible with this version of nbdkit (_api_version = %d)\n",
+             program_name, p->filename, plugin->_api_version);
+    exit (EXIT_FAILURE);
+  }
+
+  /* Since the plugin might be much older than the current version of
+   * nbdkit, only copy up to the self-declared _struct_size of the
+   * plugin and zero out the rest.  If the plugin is much newer then
+   * we'll only call the "old" fields.
+   */
+  size = sizeof p->plugin;      /* our struct */
+  memset (&p->plugin, 0, size);
+  if (size > plugin->_struct_size)
+    size = plugin->_struct_size;
+  memcpy (&p->plugin, plugin, size);
+
+  /* Check for the minimum fields which must exist in the
+   * plugin struct.
+   */
+  if (p->plugin.name == NULL) {
+    fprintf (stderr, "%s: %s: plugin must have a .name field\n",
+             program_name, p->filename);
+    exit (EXIT_FAILURE);
+  }
+  if (p->plugin.open == NULL) {
+    fprintf (stderr, "%s: %s: plugin must have a .open callback\n",
+             program_name, p->filename);
+    exit (EXIT_FAILURE);
+  }
+  if (p->plugin.get_size == NULL) {
+    fprintf (stderr, "%s: %s: plugin must have a .get_size callback\n",
+             program_name, p->filename);
+    exit (EXIT_FAILURE);
+  }
+  if (p->plugin.pread == NULL) {
+    fprintf (stderr, "%s: %s: plugin must have a .pread callback\n",
+             program_name, p->filename);
+    exit (EXIT_FAILURE);
+  }
+
+  len = strlen (p->plugin.name);
+  if (len == 0) {
+    fprintf (stderr, "%s: %s: plugin.name field must not be empty\n",
+             program_name, p->filename);
+    exit (EXIT_FAILURE);
+  }
+  for (i = 0; i < len; ++i) {
+    if (!((p->plugin.name[i] >= '0' && p->plugin.name[i] <= '9') ||
+          (p->plugin.name[i] >= 'a' && p->plugin.name[i] <= 'z') ||
+          (p->plugin.name[i] >= 'A' && p->plugin.name[i] <= 'Z'))) {
+      fprintf (stderr, "%s: %s: plugin.name ('%s') field must contain only ASCII alphanumeric characters\n",
+               program_name, p->filename, p->plugin.name);
+      exit (EXIT_FAILURE);
+    }
+  }
+  /* Copy the module's name into local storage, so that plugin.name
+   * survives past unload. */
+  if (!(p->plugin.name = strdup (p->plugin.name))) {
+    perror ("strdup");
+    exit (EXIT_FAILURE);
+  }
+
+  debug ("registered %s (name %s)", p->filename, p->plugin.name);
+
+  /* Call the on-load callback if it exists. */
+  debug ("%s: load", p->filename);
+  if (p->plugin.load)
+    p->plugin.load ();
+
+  return (struct backend *) p;
 }

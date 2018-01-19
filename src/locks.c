@@ -45,7 +45,7 @@ static pthread_rwlock_t unload_prevention_lock = PTHREAD_RWLOCK_INITIALIZER;
 void
 lock_connection (void)
 {
-  int thread_model = plugin_thread_model ();
+  int thread_model = backend->thread_model (backend);
 
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
     debug ("acquire connection lock");
@@ -56,7 +56,7 @@ lock_connection (void)
 void
 unlock_connection (void)
 {
-  int thread_model = plugin_thread_model ();
+  int thread_model = backend->thread_model (backend);
 
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
     debug ("release connection lock");
@@ -67,7 +67,7 @@ unlock_connection (void)
 void
 lock_request (struct connection *conn)
 {
-  int thread_model = plugin_thread_model ();
+  int thread_model = backend->thread_model (backend);
 
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
     debug ("acquire global request lock");
@@ -86,7 +86,7 @@ lock_request (struct connection *conn)
 void
 unlock_request (struct connection *conn)
 {
-  int thread_model = plugin_thread_model ();
+  int thread_model = backend->thread_model (backend);
 
   debug ("release unload prevention lock");
   pthread_rwlock_unlock (&unload_prevention_lock);
