@@ -816,6 +816,11 @@ validate_request (struct connection *conn,
     *error = EINVAL;
     return false;
   }
+  if (!conn->can_flush && (flags & NBD_CMD_FLAG_FUA)) {
+    nbdkit_error ("invalid request: FUA flag not supported");
+    *error = EINVAL;
+    return false;
+  }
 
   /* Refuse over-large read and write requests. */
   if ((cmd == NBD_CMD_WRITE || cmd == NBD_CMD_READ) &&
@@ -870,13 +875,8 @@ handle_request (struct connection *conn,
                 uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                 void *buf)
 {
-  bool flush_after_command;
   uint32_t f = 0;
-
-  /* Flush after command performed? */
-  flush_after_command = (flags & NBD_CMD_FLAG_FUA) != 0;
-  if (!conn->can_flush || conn->readonly)
-    flush_after_command = false;
+  bool fua = conn->can_flush && (flags & NBD_CMD_FLAG_FUA);
 
   /* The plugin should call nbdkit_set_error() to request a particular
      error, otherwise we fallback to errno or EIO. */
@@ -889,7 +889,9 @@ handle_request (struct connection *conn,
     break;
 
   case NBD_CMD_WRITE:
-    if (backend->pwrite (backend, conn, buf, count, offset, 0) == -1)
+    if (fua)
+      f |= NBDKIT_FLAG_FUA;
+    if (backend->pwrite (backend, conn, buf, count, offset, f) == -1)
       return get_error (conn);
     break;
 
@@ -899,13 +901,17 @@ handle_request (struct connection *conn,
     break;
 
   case NBD_CMD_TRIM:
-    if (backend->trim (backend, conn, count, offset, 0) == -1)
+    if (fua)
+      f |= NBDKIT_FLAG_FUA;
+    if (backend->trim (backend, conn, count, offset, f) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_WRITE_ZEROES:
     if (!(flags & NBD_CMD_FLAG_NO_HOLE))
       f |= NBDKIT_FLAG_MAY_TRIM;
+    if (fua)
+      f |= NBDKIT_FLAG_FUA;
     if (backend->zero (backend, conn, count, offset, f) == -1)
       return get_error (conn);
     break;
@@ -913,9 +919,6 @@ handle_request (struct connection *conn,
   default:
     abort ();
   }
-
-  if (flush_after_command && backend->flush (backend, conn, 0) == -1)
-    return get_error (conn);
 
   return 0;
 }

@@ -355,25 +355,6 @@ plugin_pread (struct backend *b, struct connection *conn,
 }
 
 static int
-plugin_pwrite (struct backend *b, struct connection *conn,
-               const void *buf, uint32_t count, uint64_t offset, uint32_t flags)
-{
-  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-
-  assert (connection_get_handle (conn));
-  assert (!flags);
-
-  debug ("pwrite count=%" PRIu32 " offset=%" PRIu64, count, offset);
-
-  if (p->plugin.pwrite != NULL)
-    return p->plugin.pwrite (connection_get_handle (conn), buf, count, offset);
-  else {
-    errno = EROFS;
-    return -1;
-  }
-}
-
-static int
 plugin_flush (struct backend *b, struct connection *conn, uint32_t flags)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
@@ -392,22 +373,57 @@ plugin_flush (struct backend *b, struct connection *conn, uint32_t flags)
 }
 
 static int
+plugin_pwrite (struct backend *b, struct connection *conn,
+               const void *buf, uint32_t count, uint64_t offset, uint32_t flags)
+{
+  int r;
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  bool fua = flags & NBDKIT_FLAG_FUA;
+
+  assert (connection_get_handle (conn));
+  assert (!(flags & ~NBDKIT_FLAG_FUA));
+
+  debug ("pwrite count=%" PRIu32 " offset=%" PRIu64 " fua=%d", count, offset,
+         fua);
+
+  if (p->plugin.pwrite != NULL)
+    r = p->plugin.pwrite (connection_get_handle (conn), buf, count, offset);
+  else {
+    errno = EROFS;
+    return -1;
+  }
+  if (r == 0 && fua) {
+    assert (p->plugin.flush);
+    r = plugin_flush (b, conn, 0);
+  }
+  return r;
+}
+
+static int
 plugin_trim (struct backend *b, struct connection *conn,
              uint32_t count, uint64_t offset, uint32_t flags)
 {
+  int r;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  bool fua = flags & NBDKIT_FLAG_FUA;
 
   assert (connection_get_handle (conn));
-  assert (!flags);
+  assert (!(flags & ~NBDKIT_FLAG_FUA));
 
-  debug ("trim count=%" PRIu32 " offset=%" PRIu64, count, offset);
+  debug ("trim count=%" PRIu32 " offset=%" PRIu64 " fua=%d", count, offset,
+         fua);
 
   if (p->plugin.trim != NULL)
-    return p->plugin.trim (connection_get_handle (conn), count, offset);
+    r = p->plugin.trim (connection_get_handle (conn), count, offset);
   else {
     errno = EINVAL;
     return -1;
   }
+  if (r == 0 && fua) {
+    assert (p->plugin.flush);
+    r = plugin_flush (b, conn, 0);
+  }
+  return r;
 }
 
 static int
@@ -420,12 +436,13 @@ plugin_zero (struct backend *b, struct connection *conn,
   int result;
   int err = 0;
   int may_trim = (flags & NBDKIT_FLAG_MAY_TRIM) != 0;
+  bool fua = flags & NBDKIT_FLAG_FUA;
 
   assert (connection_get_handle (conn));
-  assert (!(flags & ~NBDKIT_FLAG_MAY_TRIM));
+  assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
 
-  debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d",
-         count, offset, may_trim);
+  debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
+         count, offset, may_trim, fua);
 
   if (!count)
     return 0;
@@ -439,7 +456,7 @@ plugin_zero (struct backend *b, struct connection *conn,
         err = errno;
     }
     if (result == 0 || err != EOPNOTSUPP)
-      return result;
+      goto done;
   }
 
   assert (p->plugin.pwrite);
@@ -464,6 +481,12 @@ plugin_zero (struct backend *b, struct connection *conn,
   err = errno;
   free (buf);
   errno = err;
+
+ done:
+  if (!result && fua) {
+    assert (p->plugin.flush);
+    result = plugin_flush (b, conn, 0);
+  }
   return result;
 }
 
