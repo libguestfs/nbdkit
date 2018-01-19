@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2017 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -97,6 +97,8 @@
       (type *) ((char *) __mptr - offsetof(type, member));       \
     })
 
+#define NBDKIT_FLAG_MAY_TRIM (1<<0) /* Maps to !NBD_CMD_FLAG_NO_HOLE */
+
 /* main.c */
 extern const char *exportname;
 extern const char *ipaddr;
@@ -167,11 +169,11 @@ struct backend {
   int (*can_flush) (struct backend *, struct connection *conn);
   int (*is_rotational) (struct backend *, struct connection *conn);
   int (*can_trim) (struct backend *, struct connection *conn);
-  int (*pread) (struct backend *, struct connection *conn, void *buf, uint32_t count, uint64_t offset);
-  int (*pwrite) (struct backend *, struct connection *conn, const void *buf, uint32_t count, uint64_t offset);
-  int (*flush) (struct backend *, struct connection *conn);
-  int (*trim) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset);
-  int (*zero) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset, int may_trim);
+  int (*pread) (struct backend *, struct connection *conn, void *buf, uint32_t count, uint64_t offset, uint32_t flags);
+  int (*pwrite) (struct backend *, struct connection *conn, const void *buf, uint32_t count, uint64_t offset, uint32_t flags);
+  int (*flush) (struct backend *, struct connection *conn, uint32_t flags);
+  int (*trim) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset, uint32_t flags);
+  int (*zero) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset, uint32_t flags);
 };
 
 extern struct backend *plugin_register (const char *_filename, void *_dl, struct nbdkit_plugin *(*plugin_init) (void));

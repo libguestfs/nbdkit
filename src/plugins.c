@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -341,12 +341,13 @@ plugin_can_trim (struct backend *b, struct connection *conn)
 
 static int
 plugin_pread (struct backend *b, struct connection *conn,
-              void *buf, uint32_t count, uint64_t offset)
+              void *buf, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (connection_get_handle (conn));
   assert (p->plugin.pread != NULL);
+  assert (!flags);
 
   debug ("pread count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
@@ -355,11 +356,12 @@ plugin_pread (struct backend *b, struct connection *conn,
 
 static int
 plugin_pwrite (struct backend *b, struct connection *conn,
-               const void *buf, uint32_t count, uint64_t offset)
+               const void *buf, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (connection_get_handle (conn));
+  assert (!flags);
 
   debug ("pwrite count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
@@ -372,11 +374,12 @@ plugin_pwrite (struct backend *b, struct connection *conn,
 }
 
 static int
-plugin_flush (struct backend *b, struct connection *conn)
+plugin_flush (struct backend *b, struct connection *conn, uint32_t flags)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (connection_get_handle (conn));
+  assert (!flags);
 
   debug ("flush");
 
@@ -390,11 +393,12 @@ plugin_flush (struct backend *b, struct connection *conn)
 
 static int
 plugin_trim (struct backend *b, struct connection *conn,
-             uint32_t count, uint64_t offset)
+             uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (connection_get_handle (conn));
+  assert (!flags);
 
   debug ("trim count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
@@ -408,15 +412,17 @@ plugin_trim (struct backend *b, struct connection *conn,
 
 static int
 plugin_zero (struct backend *b, struct connection *conn,
-             uint32_t count, uint64_t offset, int may_trim)
+             uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   char *buf;
   uint32_t limit;
   int result;
   int err = 0;
+  int may_trim = (flags & NBDKIT_FLAG_MAY_TRIM) != 0;
 
   assert (connection_get_handle (conn));
+  assert (!(flags & ~NBDKIT_FLAG_MAY_TRIM));
 
   debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d",
          count, offset, may_trim);

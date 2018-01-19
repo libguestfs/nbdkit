@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2017 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -871,6 +871,7 @@ handle_request (struct connection *conn,
                 void *buf)
 {
   bool flush_after_command;
+  uint32_t f = 0;
 
   /* Flush after command performed? */
   flush_after_command = (flags & NBD_CMD_FLAG_FUA) != 0;
@@ -883,28 +884,29 @@ handle_request (struct connection *conn,
 
   switch (cmd) {
   case NBD_CMD_READ:
-    if (backend->pread (backend, conn, buf, count, offset) == -1)
+    if (backend->pread (backend, conn, buf, count, offset, 0) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_WRITE:
-    if (backend->pwrite (backend, conn, buf, count, offset) == -1)
+    if (backend->pwrite (backend, conn, buf, count, offset, 0) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_FLUSH:
-    if (backend->flush (backend, conn) == -1)
+    if (backend->flush (backend, conn, 0) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_TRIM:
-    if (backend->trim (backend, conn, count, offset) == -1)
+    if (backend->trim (backend, conn, count, offset, 0) == -1)
       return get_error (conn);
     break;
 
   case NBD_CMD_WRITE_ZEROES:
-    if (backend->zero (backend, conn, count, offset,
-                       !(flags & NBD_CMD_FLAG_NO_HOLE)) == -1)
+    if (!(flags & NBD_CMD_FLAG_NO_HOLE))
+      f |= NBDKIT_FLAG_MAY_TRIM;
+    if (backend->zero (backend, conn, count, offset, f) == -1)
       return get_error (conn);
     break;
 
@@ -912,7 +914,7 @@ handle_request (struct connection *conn,
     abort ();
   }
 
-  if (flush_after_command && backend->flush (backend, conn) == -1)
+  if (flush_after_command && backend->flush (backend, conn, 0) == -1)
     return get_error (conn);
 
   return 0;
