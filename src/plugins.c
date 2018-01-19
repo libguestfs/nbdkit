@@ -46,10 +46,6 @@
 #include "nbdkit-plugin.h"
 #include "internal.h"
 
-static pthread_mutex_t connection_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t all_requests_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_rwlock_t unload_prevention_lock = PTHREAD_RWLOCK_INITIALIZER;
-
 /* Maximum read or write request that we will handle. */
 #define MAX_REQUEST_SIZE (64 * 1024 * 1024)
 
@@ -165,7 +161,7 @@ plugin_cleanup (void)
     /* Acquiring this lock prevents any plugin callbacks from running
      * simultaneously.
      */
-    pthread_rwlock_wrlock (&unload_prevention_lock);
+    lock_unload ();
 
     debug ("%s: unload", filename);
     if (plugin.unload)
@@ -176,8 +172,16 @@ plugin_cleanup (void)
     free (filename);
     filename = NULL;
 
-    pthread_rwlock_unlock (&unload_prevention_lock);
+    unlock_unload ();
   }
+}
+
+int
+plugin_thread_model (void)
+{
+  assert (dl);
+
+  return plugin._thread_model;
 }
 
 const char *
@@ -310,67 +314,6 @@ plugin_config_complete (void)
 
   if (plugin.config_complete () == -1)
     exit (EXIT_FAILURE);
-}
-
-/* Handle the thread model. */
-void
-plugin_lock_connection (void)
-{
-  if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
-    debug ("%s: acquire connection lock", filename);
-    pthread_mutex_lock (&connection_lock);
-  }
-}
-
-void
-plugin_unlock_connection (void)
-{
-  if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
-    debug ("%s: release connection lock", filename);
-    pthread_mutex_unlock (&connection_lock);
-  }
-}
-
-void
-plugin_lock_request (struct connection *conn)
-{
-  if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
-    debug ("acquire global request lock");
-    pthread_mutex_lock (&all_requests_lock);
-  }
-
-  if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS) {
-    debug ("acquire per-connection request lock");
-    pthread_mutex_lock (connection_get_request_lock (conn));
-  }
-
-  debug ("acquire unload prevention lock");
-  pthread_rwlock_rdlock (&unload_prevention_lock);
-}
-
-void
-plugin_unlock_request (struct connection *conn)
-{
-  debug ("release unload prevention lock");
-  pthread_rwlock_unlock (&unload_prevention_lock);
-
-  if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS) {
-    debug ("release per-connection request lock");
-    pthread_mutex_unlock (connection_get_request_lock (conn));
-  }
-
-  if (plugin._thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
-    debug ("release global request lock");
-    pthread_mutex_unlock (&all_requests_lock);
-  }
-}
-
-bool
-plugin_is_parallel (void)
-{
-  assert (dl);
-
-  return plugin._thread_model >= NBDKIT_THREAD_MODEL_PARALLEL;
 }
 
 int

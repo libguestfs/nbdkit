@@ -144,17 +144,13 @@ extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockou
 /* plugins.c */
 extern void plugin_register (const char *_filename, void *_dl, struct nbdkit_plugin *(*plugin_init) (void));
 extern void plugin_cleanup (void);
+extern int plugin_thread_model (void);
 extern const char *plugin_name (void);
 extern void plugin_usage (void);
 extern const char *plugin_version (void);
 extern void plugin_dump_fields (void);
 extern void plugin_config (const char *key, const char *value);
 extern void plugin_config_complete (void);
-extern void plugin_lock_connection (void);
-extern void plugin_unlock_connection (void);
-extern void plugin_lock_request (struct connection *conn);
-extern void plugin_unlock_request (struct connection *conn);
-extern bool plugin_is_parallel (void);
 extern int plugin_errno_is_preserved (void);
 extern int plugin_open (struct connection *conn, int readonly);
 extern void plugin_close (struct connection *conn);
@@ -168,6 +164,14 @@ extern int plugin_pwrite (struct connection *conn, void *buf, uint32_t count, ui
 extern int plugin_flush (struct connection *conn);
 extern int plugin_trim (struct connection *conn, uint32_t count, uint64_t offset);
 extern int plugin_zero (struct connection *conn, uint32_t count, uint64_t offset, int may_trim);
+
+/* locks.c */
+extern void lock_connection (void);
+extern void unlock_connection (void);
+extern void lock_request (struct connection *conn);
+extern void unlock_request (struct connection *conn);
+extern void lock_unload (void);
+extern void unlock_unload (void);
 
 /* sockets.c */
 extern int *bind_unix_socket (size_t *);

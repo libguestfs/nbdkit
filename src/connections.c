@@ -211,7 +211,7 @@ _handle_single_connection (int sockin, int sockout)
   int nworkers = threads ? threads : DEFAULT_PARALLEL_REQUESTS;
   pthread_t *workers = NULL;
 
-  if (!plugin_is_parallel() || nworkers == 1)
+  if (plugin_thread_model () < NBDKIT_THREAD_MODEL_PARALLEL || nworkers == 1)
     nworkers = 0;
   conn = new_connection (sockin, sockout, nworkers);
   if (!conn)
@@ -287,9 +287,9 @@ handle_single_connection (int sockin, int sockout)
 {
   int r;
 
-  plugin_lock_connection ();
+  lock_connection ();
   r = _handle_single_connection (sockin, sockout);
-  plugin_unlock_connection ();
+  unlock_connection ();
 
   return r;
 }
@@ -740,12 +740,12 @@ negotiate_handshake (struct connection *conn)
 {
   int r;
 
-  plugin_lock_request (conn);
+  lock_request (conn);
   if (!newstyle)
     r = _negotiate_handshake_oldstyle (conn);
   else
     r = _negotiate_handshake_newstyle (conn);
-  plugin_unlock_request (conn);
+  unlock_request (conn);
 
   return r;
 }
@@ -1057,9 +1057,9 @@ recv_request_send_reply (struct connection *conn)
     error = ESHUTDOWN;
   }
   else {
-    plugin_lock_request (conn);
+    lock_request (conn);
     error = handle_request (conn, cmd, flags, offset, count, buf);
-    plugin_unlock_request (conn);
+    unlock_request (conn);
   }
 
   /* Send the reply packet. */

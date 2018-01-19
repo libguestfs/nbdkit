@@ -40,6 +40,7 @@ nbdkit_SOURCES = \
 	crypto.c \
 	errors.c \
 	internal.h \
+	locks.c \
 	main.c \
 	plugins.c \
 	protocol.h \
