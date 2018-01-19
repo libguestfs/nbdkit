@@ -168,7 +168,7 @@ struct backend {
   int (*is_rotational) (struct backend *, struct connection *conn);
   int (*can_trim) (struct backend *, struct connection *conn);
   int (*pread) (struct backend *, struct connection *conn, void *buf, uint32_t count, uint64_t offset);
-  int (*pwrite) (struct backend *, struct connection *conn, void *buf, uint32_t count, uint64_t offset);
+  int (*pwrite) (struct backend *, struct connection *conn, const void *buf, uint32_t count, uint64_t offset);
   int (*flush) (struct backend *, struct connection *conn);
   int (*trim) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset);
   int (*zero) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset, int may_trim);

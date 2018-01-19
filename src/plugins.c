@@ -355,7 +355,7 @@ plugin_pread (struct backend *b, struct connection *conn,
 
 static int
 plugin_pwrite (struct backend *b, struct connection *conn,
-               void *buf, uint32_t count, uint64_t offset)
+               const void *buf, uint32_t count, uint64_t offset)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
