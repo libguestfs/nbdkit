@@ -34,6 +34,10 @@
 #ifndef NBDKIT_COMMON_H
 #define NBDKIT_COMMON_H
 
+#if !defined (NBDKIT_PLUGIN_H) && !defined (NBDKIT_FILTER_H)
+#error this header file should not be directly included
+#endif
+
 #include <stdarg.h>
 #include <stdint.h>
 
