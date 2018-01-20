@@ -46,11 +46,14 @@ Makefile.in
 /tests/disk.gz
 /tests/disk.xz
 /tests/file-data
+/tests/offset-data
+/tests/partition-disk
 /tests/pki
 /tests/split1
 /tests/split2
 /tests/split3
 /tests/test-connect
+/tests/test-delay
 /tests/test-exit-with-parent
 /tests/test-file
 /tests/test-gzip
@@ -60,7 +63,9 @@ Makefile.in
 /tests/test-null
 /tests/test-ocaml
 /tests/test-ocaml-plugin.so
+/tests/test-offset
 /tests/test-oldstyle
+/tests/test-partition
 /tests/test-perl
 /tests/test-python
 /tests/test-ruby

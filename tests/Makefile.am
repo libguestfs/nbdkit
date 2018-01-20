@@ -408,5 +408,39 @@ test_ruby_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_RUBY
 
+#----------------------------------------------------------------------
+# Tests of filters.
+
+# delay filter test.
+check_PROGRAMS += test-delay
+TESTS += test-delay
+
+test_delay_SOURCES = test-delay.c test.h
+test_delay_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_delay_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# offset filter test.
+check_DATA += offset-data
+MAINTAINERCLEANFILES += offset-data
+check_PROGRAMS += test-offset
+TESTS += test-offset
+
+offset-data:
+	rm -f $@ $@-t
+	for f in `seq 1 $$((1024*1024))`; do echo -ne '\x55\xAA\x55\xAA\x55\xAA\x55\xAA\x55\xAA' ; done > $@-t
+	mv $@-t $@
+
+test_offset_SOURCES = test-offset.c test.h
+test_offset_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_offset_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# partition filter test.
+check_PROGRAMS += test-partition
+TESTS += test-partition
+
+test_partition_SOURCES = test-partition.c test.h
+test_partition_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_partition_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
 endif HAVE_LIBGUESTFS
 endif HAVE_PLUGINS
