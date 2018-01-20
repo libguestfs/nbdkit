@@ -1,6 +1,6 @@
 #!/bin/bash -
 # nbdkit
-# Copyright (C) 2017 Red Hat Inc.
+# Copyright (C) 2017-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,4 +35,5 @@ set -e
 
 # We only really care that the plugin compiled, so we don't
 # need to run it properly.
-nbdkit ./.libs/test-cxx-plugin.so --version
+libs=./.libs
+nbdkit --filter $libs/test-cxx-filter.so $libs/test-cxx-plugin.so --version

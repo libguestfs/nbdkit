@@ -115,15 +115,14 @@ test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 endif HAVE_PLUGINS
 
 if HAVE_CXX
-# This builds a plugin using the C++ compiler.  The plugin
+# This builds a plugin and a filter using the C++ compiler.  They
 # doesn't do anything interesting when run.
 TESTS += \
 	test-cxx.sh
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
-noinst_LTLIBRARIES += \
-	test-cxx-plugin.la
-test-cxx.sh: test-cxx-plugin.la
+noinst_LTLIBRARIES += test-cxx-plugin.la test-cxx-filter.la
+test-cxx.sh: test-cxx-plugin.la test-cxx-filter.la
 
 test_cxx_plugin_la_SOURCES = \
 	test-cxx-plugin.cpp \
@@ -135,6 +134,18 @@ test_cxx_plugin_la_CXXFLAGS = \
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_cxx_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere
+
+test_cxx_filter_la_SOURCES = \
+	test-cxx-filter.cpp \
+	$(top_srcdir)/include/nbdkit-filter.h
+test_cxx_filter_la_CPPFLAGS = \
+	-I$(top_srcdir)/include
+test_cxx_filter_la_CXXFLAGS = \
+        $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_cxx_filter_la_LDFLAGS = \
 	-module -avoid-version -shared -rpath /nowhere
 endif HAVE_CXX
 
