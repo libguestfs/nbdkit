@@ -54,6 +54,7 @@
  */
 struct backend_plugin {
   struct backend backend;
+  char *name;                   /* copy of plugin.name */
   char *filename;
   void *dl;
   struct nbdkit_plugin plugin;
@@ -78,6 +79,7 @@ plugin_free (struct backend *b)
 
   unlock_unload ();
 
+  free (p->name);
   free (p);
 }
 
@@ -94,7 +96,7 @@ plugin_name (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  return p->plugin.name;
+  return p->name;
 }
 
 static void
@@ -102,7 +104,7 @@ plugin_usage (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  printf ("plugin: %s", p->plugin.name);
+  printf ("plugin: %s", p->name);
   if (p->plugin.longname)
     printf (" (%s)", p->plugin.longname);
   printf ("\n");
@@ -136,7 +138,7 @@ plugin_dump_fields (struct backend *b)
   printf ("path=%s\n", path);
   free (path);
 
-  printf ("name=%s\n", p->plugin.name);
+  printf ("name=%s\n", p->name);
   if (p->plugin.version)
     printf ("version=%s\n", p->plugin.version);
 
@@ -627,14 +629,17 @@ plugin_register (size_t index, const char *filename,
       exit (EXIT_FAILURE);
     }
   }
+
   /* Copy the module's name into local storage, so that plugin.name
-   * survives past unload. */
-  if (!(p->plugin.name = strdup (p->plugin.name))) {
+   * survives past unload.
+   */
+  p->name = strdup (p->plugin.name);
+  if (p->name == NULL) {
     perror ("strdup");
     exit (EXIT_FAILURE);
   }
 
-  debug ("registered plugin %s (name %s)", p->filename, p->plugin.name);
+  debug ("registered plugin %s (name %s)", p->filename, p->name);
 
   /* Call the on-load callback if it exists. */
   debug ("%s: load", p->filename);
