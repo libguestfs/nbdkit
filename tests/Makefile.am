@@ -64,6 +64,7 @@ EXTRA_DIST = \
 	test-random-sock.sh \
 	test-tls.sh \
 	test-version.sh \
+	test-version-filter.sh \
 	test-version-plugin.sh
 
 # Use 'make check' to run the ordinary tests.  To run all the tests
@@ -94,6 +95,7 @@ if HAVE_PLUGINS
 TESTS += \
 	test-help-plugin.sh \
 	test-version-plugin.sh \
+	test-version-filter.sh \
 	test-dump-plugin.sh \
 	test-start.sh \
 	test-single.sh \

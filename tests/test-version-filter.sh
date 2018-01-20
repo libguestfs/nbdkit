@@ -1,6 +1,6 @@
 #!/bin/bash -
 # nbdkit
-# Copyright (C) 2016 Red Hat Inc.
+# Copyright (C) 2016-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,9 +34,14 @@
 set -e
 source ./functions.sh
 
-output="$(nbdkit file --version)"
+output="$(nbdkit --filter offset file --version)"
 if [[ ! ( "$output" =~ file\ 1\. ) ]]; then
-    echo "$0: unexpected output from nbdkit file --version"
+    echo "$0: unexpected output from nbdkit --filter=offset file --version"
+    echo "$output"
+    exit 1
+fi
+if [[ ! ( "$output" =~ offset\ 1\. ) ]]; then
+    echo "$0: unexpected output from nbdkit --filter=offset file --version"
     echo "$output"
     exit 1
 fi
