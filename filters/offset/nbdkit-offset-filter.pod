@@ -62,7 +62,7 @@ An easier way to do this is with L<nbdkit-partition-filter(1)>.
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
-L<nbdkit-filter(3)>.
+L<nbdkit-filter(3)>,
 L<nbdkit-partition-filter(1)>.
 
 =head1 AUTHORS

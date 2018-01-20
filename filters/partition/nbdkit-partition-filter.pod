@@ -46,7 +46,7 @@ image).  To serve the first partition only use:
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
-L<nbdkit-filter(3)>.
+L<nbdkit-filter(3)>,
 L<nbdkit-offset-filter(1)>,
 L<parted(8)>.
 
