@@ -51,6 +51,7 @@
  */
 struct backend_filter {
   struct backend backend;
+  char *name;                   /* copy of filter.name */
   char *filename;
   void *dl;
   struct nbdkit_filter filter;
@@ -86,6 +87,7 @@ filter_free (struct backend *b)
 
   unlock_unload ();
 
+  free (f->name);
   free (f);
 }
 
@@ -126,7 +128,7 @@ filter_name (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
-  return f->filter.name;
+  return f->name;
 }
 
 static const char *
@@ -142,7 +144,7 @@ filter_usage (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
-  printf ("filter: %s", f->filter.name);
+  printf ("filter: %s", f->name);
   if (f->filter.longname)
     printf (" (%s)", f->filter.longname);
   printf ("\n");
@@ -657,14 +659,17 @@ filter_register (struct backend *next, size_t index, const char *filename,
       exit (EXIT_FAILURE);
     }
   }
+
   /* Copy the module's name into local storage, so that filter.name
-   * survives past unload. */
-  if (!(f->filter.name = strdup (f->filter.name))) {
+   * survives past unload.
+   */
+  f->name = strdup (f->filter.name);
+  if (f->name == NULL) {
     perror ("strdup");
     exit (EXIT_FAILURE);
   }
 
-  debug ("registered filter %s (name %s)", f->filename, f->filter.name);
+  debug ("registered filter %s (name %s)", f->filename, f->name);
 
   /* Call the on-load callback if it exists. */
   debug ("%s: load", f->filename);
