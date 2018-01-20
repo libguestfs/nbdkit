@@ -378,6 +378,7 @@ free_connection (struct connection *conn)
       backend->close (backend, conn);
   }
 
+  free (conn->handles);
   free (conn);
 }
 
