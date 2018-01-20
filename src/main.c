@@ -177,11 +177,11 @@ static void
 dump_config (void)
 {
   printf ("%s=%s\n", "bindir", bindir);
+  printf ("%s=%s\n", "filterdir", filterdir);
   printf ("%s=%s\n", "libdir", libdir);
   printf ("%s=%s\n", "mandir", mandir);
   printf ("%s=%s\n", "name", PACKAGE_NAME);
   printf ("%s=%s\n", "plugindir", plugindir);
-  printf ("%s=%s\n", "filterdir", filterdir);
   printf ("%s=%s\n", "root_tls_certificates_dir", root_tls_certificates_dir);
   printf ("%s=%s\n", "sbindir", sbindir);
 #ifdef HAVE_LIBSELINUX
