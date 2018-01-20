@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2017 Red Hat Inc.
+# Copyright (C) 2013-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -71,6 +71,7 @@ EXTRA_DIST = \
 check-valgrind:
 	NBDKIT_VALGRIND=1 $(MAKE) check
 
+#----------------------------------------------------------------------
 # Basic server command line and start-up tests.
 
 check_PROGRAMS =
@@ -147,7 +148,11 @@ check_DATA += pki/.stamp
 pki/.stamp: $(srcdir)/make-pki.sh
 	$(srcdir)/make-pki.sh
 
+#----------------------------------------------------------------------
+# Tests of C plugins or tests which require plugins.
+
 if HAVE_PLUGINS
+
 # Common data shared by multiple tests
 check_DATA += file-data
 MAINTAINERCLEANFILES += file-data
@@ -164,12 +169,8 @@ TESTS += test-parallel-file.sh
 TESTS += test-parallel-nbd.sh
 endif HAVE_QEMU_IO
 
-endif HAVE_PLUGINS
-
-
 # Most in-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.
-
 if HAVE_LIBGUESTFS
 
 # Use the 'direct' backend, and ensure maximum libguestfs debugging is
@@ -184,8 +185,6 @@ TESTS_ENVIRONMENT += \
 check_LTLIBRARIES += libtest.la
 libtest_la_SOURCES = test.c test.h
 libtest_la_CFLAGS = $(WARNINGS_CFLAGS)
-
-if HAVE_PLUGINS
 
 # Basic connection test.
 check_PROGRAMS += test-connect
@@ -268,6 +267,60 @@ test_null_SOURCES = test-null.c test.h
 test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_null_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
+# split files plugin test.
+check_DATA += split1 split2 split3
+MAINTAINERCLEANFILES += split1 split2 split3
+split1: file-data
+	rm -f $@ $@-t
+	dd if=$< of=$@-t bs=1 count=100
+	mv $@-t $@
+split2: file-data
+	rm -f $@ $@-t
+	dd if=$< of=$@-t bs=1 count=100 skip=100
+	mv $@-t $@
+split3: file-data
+	rm -f $@ $@-t
+	dd if=$< of=$@-t bs=1 skip=200
+	mv $@-t $@
+check_PROGRAMS += test-split
+TESTS += test-split
+
+test_split_SOURCES = test-split.c test.h
+test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_split_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# streaming plugin test.
+check_PROGRAMS += test-streaming
+# Doesn't work:
+#TESTS += test-streaming
+
+test_streaming_SOURCES = test-streaming.c test.h
+test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# xz plugin test.
+if HAVE_LIBLZMA
+if HAVE_GUESTFISH
+
+check_PROGRAMS += test-xz
+TESTS += test-xz
+check_DATA += disk.xz
+MAINTAINERCLEANFILES += disk.xz
+
+test_xz_SOURCES = test-xz.c test.h
+test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+disk.xz: disk
+	rm -f $@
+	xz --best -c disk > $@
+
+endif HAVE_GUESTFISH
+endif HAVE_LIBLZMA
+
+#----------------------------------------------------------------------
+# Tests of language plugins.
+
 # OCaml plugin test.
 if HAVE_OCAML
 
@@ -342,56 +395,5 @@ test_ruby_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_RUBY
 
-# split files plugin test.
-check_DATA += split1 split2 split3
-MAINTAINERCLEANFILES += split1 split2 split3
-split1: file-data
-	rm -f $@ $@-t
-	dd if=$< of=$@-t bs=1 count=100
-	mv $@-t $@
-split2: file-data
-	rm -f $@ $@-t
-	dd if=$< of=$@-t bs=1 count=100 skip=100
-	mv $@-t $@
-split3: file-data
-	rm -f $@ $@-t
-	dd if=$< of=$@-t bs=1 skip=200
-	mv $@-t $@
-check_PROGRAMS += test-split
-TESTS += test-split
-
-test_split_SOURCES = test-split.c test.h
-test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_split_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-# streaming plugin test.
-check_PROGRAMS += test-streaming
-# Doesn't work:
-#TESTS += test-streaming
-
-test_streaming_SOURCES = test-streaming.c test.h
-test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-# xz plugin test.
-if HAVE_LIBLZMA
-if HAVE_GUESTFISH
-
-check_PROGRAMS += test-xz
-TESTS += test-xz
-check_DATA += disk.xz
-MAINTAINERCLEANFILES += disk.xz
-
-test_xz_SOURCES = test-xz.c test.h
-test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-disk.xz: disk
-	rm -f $@
-	xz --best -c disk > $@
-
-endif HAVE_GUESTFISH
-endif HAVE_LIBLZMA
-
-endif HAVE_PLUGINS
 endif HAVE_LIBGUESTFS
+endif HAVE_PLUGINS
