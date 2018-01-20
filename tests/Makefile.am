@@ -41,6 +41,7 @@ EXTRA_DIST = \
 	shebang.py \
 	shebang.rb \
 	test-captive.sh \
+	test-cow.sh \
 	test-cxx.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
@@ -410,6 +411,9 @@ endif HAVE_RUBY
 
 #----------------------------------------------------------------------
 # Tests of filters.
+
+# cow filter test.
+TESTS += test-cow.sh
 
 # delay filter test.
 check_PROGRAMS += test-delay

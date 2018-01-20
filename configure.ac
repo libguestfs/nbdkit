@@ -513,6 +513,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile
                  filters/Makefile
+                 filters/cow/Makefile
                  filters/delay/Makefile
                  filters/offset/Makefile
                  filters/partition/Makefile

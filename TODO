@@ -39,8 +39,6 @@ Suggestions for filters
 
 * injecting artificial errors for testing clients
 
-* copy-on-write, a popular feature in other servers
-
 Composing nbdkit
 ----------------
 
