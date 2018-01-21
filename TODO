@@ -39,6 +39,9 @@ Suggestions for filters
 
 * injecting artificial errors for testing clients
 
+* nbdkit-cache-filter needs limits on the maximum size of the cache;
+  it could also do with a sensible replacement policy, etc.
+
 Composing nbdkit
 ----------------
 

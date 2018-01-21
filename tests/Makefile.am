@@ -412,6 +412,9 @@ endif HAVE_RUBY
 #----------------------------------------------------------------------
 # Tests of filters.
 
+# cache filter test.
+TESTS += test-cache.sh
+
 # cow filter test.
 TESTS += test-cow.sh
 
