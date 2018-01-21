@@ -872,10 +872,8 @@ L</SOCKET ACTIVATION>.
 
 =head1 SEE ALSO
 
-Other nbdkit manual pages:
+Plugins:
 
-L<nbdkit-plugin(3)>,
-L<nbdkit-filter(3)>,
 L<nbdkit-curl-plugin(1)>,
 L<nbdkit-example1-plugin(1)>,
 L<nbdkit-example2-plugin(1)>,
@@ -897,6 +895,17 @@ L<nbdkit-streaming-plugin(1)>.
 L<nbdkit-tar-plugin(1)>.
 L<nbdkit-vddk-plugin(1)>.
 L<nbdkit-xz-plugin(1)>.
+
+Filters:
+
+L<nbdkit-delay-filter(1)>,
+L<nbdkit-offset-filter(1)>,
+L<nbdkit-partition-filter(1)>.
+
+For developers:
+
+L<nbdkit-plugin(3)>,
+L<nbdkit-filter(3)>.
 
 Other manual pages of interest:
 
