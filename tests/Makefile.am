@@ -40,6 +40,7 @@ EXTRA_DIST = \
 	shebang.pl \
 	shebang.py \
 	shebang.rb \
+	test-cache.sh \
 	test-captive.sh \
 	test-cow.sh \
 	test-cxx.sh \
