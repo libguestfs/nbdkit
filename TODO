@@ -39,8 +39,15 @@ Suggestions for filters
 
 * injecting artificial errors for testing clients
 
-* nbdkit-cache-filter needs limits on the maximum size of the cache;
-  it could also do with a sensible replacement policy, etc.
+nbdkit-cache-filter needs considerable work:
+
+* allow the user to limit the total size of the cache
+
+* handle ENOSPC errors
+
+* implement some cache replacement policies
+
+* some sort of background task or thread to write out dirty blocks
 
 Composing nbdkit
 ----------------
