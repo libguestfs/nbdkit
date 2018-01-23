@@ -15,8 +15,12 @@ nbdkit-tar-plugin - Read and write files inside tar files without unpacking.
 
 =head1 EXAMPLE
 
+=head2 Serve a single file inside a tarball
+
  nbdkit tar tar=file.tar file=some/disk.img
  guestfish --format=raw -a nbd://localhost
+
+=head2 Opening a disk image inside an OVA file
 
 The popular "Open Virtual Appliance" (OVA) format is really an
 uncompressed tar file containing (usually) VMDK-format files, so you

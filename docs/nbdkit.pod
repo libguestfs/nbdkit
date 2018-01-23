@@ -52,7 +52,9 @@ C<$libdir> is set at compile time.  To print it out, do:
 
 =head1 EXAMPLES
 
-Serve file F<disk.img> on port 10809:
+=head2 Basic file serving
+
+Serve file F<disk.img> on port 10809 using L<nbdkit-file-plugin(1)>:
 
  nbdkit file file=disk.img
 
@@ -67,9 +69,29 @@ encrypted (TLS) connections:
 
  nbdkit --newstyle --tls=require file file=disk.img
 
-To display usage information about a specific plugin:
+=head2 Combining plugins and filters
 
- nbdkit --help example1
+Serve only the first partition from compressed disk image
+F<disk.img.xz>, combining L<nbdkit-xz-plugin(1)> and
+L<nbdkit-partition-filter(1)>:
+
+                        plugin name and parameter
+                                    │
+                           ┌────────┴────────┐
+ nbdkit --filter=partition xz file=disk.img.xz partition=1
+         └──────────────────────┬─────────────────────────┘
+                                │
+                filter name and filter parameter
+
+=head2 Display information
+
+Display information about nbdkit or a specific plugin:
+
+ nbdkit --help
+ nbdkit --version
+ nbdkit --dump-config
+ nbdkit example1 --help
+ nbdkit example1 --dump-plugin
 
 =head1 GLOBAL OPTIONS
 
