@@ -80,7 +80,7 @@ int exit_with_parent;           /* --exit-with-parent */
 const char *exportname;         /* -e */
 int foreground;                 /* -f */
 const char *ipaddr;             /* -i */
-int newstyle;                   /* -n */
+int newstyle = 1;               /* 0 = -o, 1 = -n */
 char *pidfile;                  /* -P */
 const char *port;               /* -p */
 int readonly;                   /* -r */

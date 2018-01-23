@@ -38,4 +38,4 @@ source ./functions.sh
 # Test nbdkit -s option.
 # XXX Not sure what is a really good test of this.
 
-nbdkit -s example1 </dev/null
+nbdkit -o -s example1 </dev/null

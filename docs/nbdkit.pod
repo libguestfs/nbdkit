@@ -67,7 +67,7 @@ L<guestfish(1)>:
 Serve file F<disk.img> on port 10809, requiring clients to use
 encrypted (TLS) connections:
 
- nbdkit --newstyle --tls=require file file=disk.img
+ nbdkit --tls=require file file=disk.img
 
 =head2 Combining plugins and filters
 
@@ -128,7 +128,7 @@ This option implies I<--foreground>.
 
 =item B<--exportname> EXPORTNAME
 
-Set the exportname and use the newstyle protocol (implies I<-n>).
+Set the exportname.
 
 If not set, exportname C<""> (empty string) is used.  Exportnames are
 not allowed with the oldstyle protocol.
@@ -175,8 +175,10 @@ interfaces.  See also I<-p>.
 
 =item B<--newstyle>
 
-Use the newstyle NBD protocol instead of the default (oldstyle)
-protocol.  See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
+Use the newstyle NBD protocol protocol.  This is the default in nbdkit
+E<ge> 1.1.29.  In earlier versions the default was oldstyle.
+
+See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
 
 =item B<-o>
 
@@ -184,10 +186,11 @@ protocol.  See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
 
 =item B<--oldstyle>
 
-Use the oldstyle NBD protocol.  This is currently the default (unless
-you use I<-n> or I<-e>), so this flag does nothing, but it is possible
-we might change the default protocol in future.  See L</NEW STYLE VS
-OLD STYLE PROTOCOL> below.
+Use the oldstyle NBD protocol.  This I<was> the default in nbdkit
+E<le> 1.1.28, but now the default is newstyle.  Note this is
+incompatible with newer features such as export names and TLS.
+
+See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
 
 =item B<-P> PIDFILE
 
@@ -527,12 +530,10 @@ The NBD protocol comes in two incompatible forms that we call
 use depends on the client and cannot be known in advance, nor can it
 be negotiated from the server side.
 
-nbdkit currently defaults to the oldstyle protocol for compatibility
-with qemu and libguestfs.  This is also the same behaviour as qemu-nbd
-E<le> 2.5.  Use the I<-n> or I<--newstyle> flag on the command line to
-use the newstyle protocol.  Use the I<-e> or I<--exportname> flag to
-set the exportname for the newstyle protocol.  Use the I<-o> or
-I<--oldstyle> flag to force the oldstyle protocol.
+nbdkit defaults to the newstyle protocol since nbdkit E<ge> 1.1.29.
+Use the I<-e> or I<--exportname> flag to set the optional exportname
+for the newstyle protocol.  Use the I<-o> or I<--oldstyle> flag to
+force the oldstyle protocol.
 
 Some common clients and the protocol they require:
 
