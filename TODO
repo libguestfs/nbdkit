@@ -17,6 +17,16 @@ General ideas for improvements
 
 * Limit number of incoming connections (like qemu-nbd -e).
 
+* Async callbacks.  The current parallel support requires one thread
+  per pending message; a solution with fewer threads would split
+  low-level code between request and response, where the callback has
+  to inform nbdkit when the response is ready:
+  https://www.redhat.com/archives/libguestfs/2018-January/msg00149.html
+
+* More NBD protocol features. Qemu has implemented Structured Replies,
+  which allows for more efficient serving of sparse files.  Also in
+  the upstream pipeline: proposals for block status and online resize.
+
 Suggestions for plugins
 -----------------------
 
@@ -37,7 +47,10 @@ directed to qemu-nbd for these use cases.
 Suggestions for filters
 -----------------------
 
-* injecting artificial errors for testing clients
+* injecting artificial errors or otherwise masking plugin features
+  (such as hiding zero support) for testing clients
+
+* logging all client commands
 
 nbdkit-cache-filter needs considerable work:
 
