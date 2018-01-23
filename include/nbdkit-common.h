@@ -51,10 +51,10 @@ extern "C" {
 #define NBDKIT_THREAD_MODEL_PARALLEL                  3
 
 extern void nbdkit_error (const char *msg, ...)
-  __attribute__((format (printf, 1, 2)));
+  __attribute__((__format__ (__printf__, 1, 2)));
 extern void nbdkit_verror (const char *msg, va_list args);
 extern void nbdkit_debug (const char *msg, ...)
-  __attribute__((format (printf, 1, 2)));
+  __attribute__((__format__ (__printf__, 1, 2)));
 extern void nbdkit_vdebug (const char *msg, va_list args);
 
 extern char *nbdkit_absolute_path (const char *path);
