@@ -35,7 +35,32 @@ set -e
 set -x
 source ./functions.sh
 
-# Test nbdkit -s option.
-# XXX Not sure what is a really good test of this.
+if ! socat -h; then
+    echo "$0: 'socat' command not available"
+    exit 77
+fi
 
-nbdkit -o -s example1 </dev/null
+if ! qemu-img --help >/dev/null; then
+    echo "$0: 'qemu-img' command not available"
+    exit 77
+fi
+
+files="single.sock"
+rm -f $files
+
+socat unix-listen:single.sock,reuseaddr,fork \
+    exec:'nbdkit -r -s file file=disk' &
+pid=$!
+
+cleanup ()
+{
+    status=$?
+
+    kill $pid
+    rm -f $files
+
+    exit $status
+}
+trap cleanup INT QUIT TERM EXIT ERR
+
+qemu-img info nbd:unix:single.sock

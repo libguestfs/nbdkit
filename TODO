@@ -74,9 +74,3 @@ nbdkit processes.
 The nbd plugin (plugins/nbd) already contains an NBD client, so we
 could factor this client out and make it available to other plugins to
 use.
-
-Tests
------
-
-* tests/test-single.sh: This test (of the -s option) needs
-  considerable work.
