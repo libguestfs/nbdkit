@@ -38,11 +38,17 @@ beyond the end of the underlying device.
 
 =head1 EXAMPLES
 
+=head2 Serve part of a file
+
 Using L<nbdkit-file-plugin(1)>, serve the file C<disk.img> starting at
 offset C<1M>.  The total length served is C<100M> (the underlying file
 must therefore be at least C<101M> in length):
 
  nbdkit --filter=offset file file=disk.img offset=1M range=100M
+
+=head2 Serve a single partition
+
+I<An easier way to do this is with L<nbdkit-partition-filter(1)>.>
 
 One way to serve a single partition from a disk is to find the start
 and length of the partition, eg using:
@@ -55,8 +61,6 @@ and length of the partition, eg using:
 You can then serve the partition only using:
 
  nbdkit --filter=offset file file=disk.img offset=65536 range=104727040
-
-An easier way to do this is with L<nbdkit-partition-filter(1)>.
 
 =head1 SEE ALSO
 

@@ -40,12 +40,14 @@ B<To force nbdkit to use a readonly connection, pass the I<-r> flag>.
 
 =head2 EXAMPLES
 
-Basic usage is:
+=head3 Basic usage
 
  nbdkit -r curl url=http://example.com/disk.img
 
 which serves the remote disk image as a NBD on TCP port 10809 (to
 control ports and protocols used to serve NBD see L<nbdkit(1)>).
+
+=head3 Accessing SSH servers
 
 You can also access SSH servers.  This uses the SFTP protocol which is
 built into most SSH servers:
