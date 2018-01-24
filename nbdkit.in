@@ -65,6 +65,11 @@ verbose=
 while [ $# -gt 0 ]; do
     case "$1" in
         # Flags that take an argument.  We must not rewrite the argument.
+	# But make sure globs don't mishandle longopts with =.
+	--export*=* | --pid*=*)
+	    args[$i]="$1"
+	    shift
+	    ;;
         -e | --export* | -g | --group | -i | --ip* | -P | --pid* | -p | --port | --run | --selinux-label | -t | --threads | --tls | --tls-certificates | -U | --unix | -u | --user)
             args[$i]="$1"
             ((++i))
@@ -80,6 +85,11 @@ while [ $# -gt 0 ]; do
             ;;
 
         # Filters can be rewritten if purely alphanumeric.
+	--filter=*)
+	    tmp=${1#*=}
+	    shift
+	    set - --filter "$tmp" "$@"
+	    ;& # fallthru
         --filter)
             args[$i]="--filter"
             ((++i))
