@@ -427,6 +427,14 @@ compute_eflags (struct connection *conn, uint16_t *flags)
   }
   if (!conn->readonly) {
     eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
+
+    fl = backend->can_trim (backend, conn);
+    if (fl == -1)
+      return -1;
+    if (fl) {
+      eflags |= NBD_FLAG_SEND_TRIM;
+      conn->can_trim = 1;
+    }
   }
 
   fl = backend->can_flush (backend, conn);
@@ -443,14 +451,6 @@ compute_eflags (struct connection *conn, uint16_t *flags)
   if (fl) {
     eflags |= NBD_FLAG_ROTATIONAL;
     conn->is_rotational = 1;
-  }
-
-  fl = backend->can_trim (backend, conn);
-  if (fl == -1)
-    return -1;
-  if (fl) {
-    eflags |= NBD_FLAG_SEND_TRIM;
-    conn->can_trim = 1;
   }
 
   *flags = eflags;
