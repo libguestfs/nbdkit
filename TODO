@@ -49,6 +49,18 @@ nbdkit there is no compelling reason unless the result is better than
 qemu-nbd.  For the majority of users it would be better if they were
 directed to qemu-nbd for these use cases.
 
+nbd plugin could use enhancements:
+
+* FUA passthrough, rather than extra FLUSH calls.
+
+* Enable client-side TLS (right now, the nbd plugin allows us to
+  support an encrypted client connecting to a plain server; but we
+  would need TLS to support a plain client connecting to an encrypted
+  server).
+
+* Support for connecting to a server over IP rather than just Unix
+  sockets.
+
 Suggestions for filters
 -----------------------
 
