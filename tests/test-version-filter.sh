@@ -34,14 +34,12 @@
 set -e
 source ./functions.sh
 
-output="$(nbdkit --filter offset file --version)"
-if [[ ! ( "$output" =~ file\ 1\. ) ]]; then
-    echo "$0: unexpected output from nbdkit --filter=offset file --version"
-    echo "$output"
-    exit 1
-fi
-if [[ ! ( "$output" =~ offset\ 1\. ) ]]; then
-    echo "$0: unexpected output from nbdkit --filter=offset file --version"
+cmd="nbdkit --filter offset --filter=cow file --version"
+output="$($cmd)"
+if [[ ! ( "$output" =~ file\ 1\. ) ||
+      ! ( "$output" =~ offset\ 1\. ) ||
+      ! ( "$output" =~ cow\ 1\. ) ]]; then
+    echo "$0: unexpected output from $cmd"
     echo "$output"
     exit 1
 fi

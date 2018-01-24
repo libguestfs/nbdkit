@@ -49,7 +49,7 @@ $QEMU_IO -f raw -c "aio_write -P 2 1 1" -c "aio_read -P 1 0 1" -c aio_flush \
 trap 'rm -f test-parallel-file.out' 0 1 2 3 15
 
 # With --threads=1, the write should complete first because it was issued first
-nbdkit -v -t 1 -U - --filter delay file file=file-data wdelay=2 rdelay=1 --run '
+nbdkit -v -t 1 -U - --filter=delay file file=file-data wdelay=2 rdelay=1 --run '
   $QEMU_IO -f raw -c "aio_write -P 2 1 1" -c "aio_read -P 1 0 1" -c aio_flush $nbd
 ' | tee test-parallel-file.out
 if test "$(grep '1/1' test-parallel-file.out)" != \
@@ -59,7 +59,7 @@ read 1/1 bytes at offset 0"; then
 fi
 
 # With default --threads, the faster read should complete first
-nbdkit -v -U - --filter delay file file=file-data wdelay=2 rdelay=1 --run '
+nbdkit -v -U - --filter=delay file file=file-data wdelay=2 rdelay=1 --run '
   $QEMU_IO -f raw -c "aio_write -P 2 1 1" -c "aio_read -P 1 0 1" -c aio_flush $nbd
 ' | tee test-parallel-file.out
 if test "$(grep '1/1' test-parallel-file.out)" != \
