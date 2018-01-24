@@ -447,6 +447,28 @@ filter_can_trim (struct backend *b, struct connection *conn)
 }
 
 static int
+filter_can_zero (struct backend *b, struct connection *conn)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  debug ("can_zero");
+
+  /* TODO expose this to filters */
+  return f->backend.next->can_zero (f->backend.next, conn);
+}
+
+static int
+filter_can_fua (struct backend *b, struct connection *conn)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  debug ("can_fua");
+
+  /* TODO expose this to plugins and filters */
+  return f->backend.next->can_fua (f->backend.next, conn);
+}
+
+static int
 filter_pread (struct backend *b, struct connection *conn,
               void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
@@ -570,6 +592,8 @@ static struct backend filter_functions = {
   .can_flush = filter_can_flush,
   .is_rotational = filter_is_rotational,
   .can_trim = filter_can_trim,
+  .can_zero = filter_can_zero,
+  .can_fua = filter_can_fua,
   .pread = filter_pread,
   .pwrite = filter_pwrite,
   .flush = filter_flush,

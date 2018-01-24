@@ -98,6 +98,10 @@
       (type *) ((char *) __mptr - offsetof(type, member));       \
     })
 
+#define NBDKIT_FUA_NONE       0
+#define NBDKIT_FUA_EMULATE    1
+#define NBDKIT_FUA_NATIVE     2
+
 /* main.c */
 extern const char *exportname;
 extern const char *ipaddr;
@@ -177,11 +181,15 @@ struct backend {
   int (*prepare) (struct backend *, struct connection *conn);
   int (*finalize) (struct backend *, struct connection *conn);
   void (*close) (struct backend *, struct connection *conn);
+
   int64_t (*get_size) (struct backend *, struct connection *conn);
   int (*can_write) (struct backend *, struct connection *conn);
   int (*can_flush) (struct backend *, struct connection *conn);
   int (*is_rotational) (struct backend *, struct connection *conn);
   int (*can_trim) (struct backend *, struct connection *conn);
+  int (*can_zero) (struct backend *, struct connection *conn);
+  int (*can_fua) (struct backend *, struct connection *conn);
+
   int (*pread) (struct backend *, struct connection *conn, void *buf,
                 uint32_t count, uint64_t offset, uint32_t flags, int *err);
   int (*pwrite) (struct backend *, struct connection *conn, const void *buf,

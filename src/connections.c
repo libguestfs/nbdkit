@@ -80,6 +80,8 @@ struct connection {
   int can_flush;
   int is_rotational;
   int can_trim;
+  int can_zero;
+  int can_fua;
   int using_tls;
 
   int sockin, sockout;
@@ -426,7 +428,13 @@ compute_eflags (struct connection *conn, uint16_t *flags)
     conn->readonly = 1;
   }
   if (!conn->readonly) {
-    eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
+    fl = backend->can_zero (backend, conn);
+    if (fl == -1)
+      return -1;
+    if (fl) {
+      eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
+      conn->can_zero = 1;
+    }
 
     fl = backend->can_trim (backend, conn);
     if (fl == -1)
@@ -435,13 +443,21 @@ compute_eflags (struct connection *conn, uint16_t *flags)
       eflags |= NBD_FLAG_SEND_TRIM;
       conn->can_trim = 1;
     }
+
+    fl = backend->can_fua (backend, conn);
+    if (fl == -1)
+      return -1;
+    if (fl) {
+      eflags |= NBD_FLAG_SEND_FUA;
+      conn->can_fua = 1;
+    }
   }
 
   fl = backend->can_flush (backend, conn);
   if (fl == -1)
     return -1;
   if (fl) {
-    eflags |= NBD_FLAG_SEND_FLUSH | NBD_FLAG_SEND_FUA;
+    eflags |= NBD_FLAG_SEND_FLUSH;
     conn->can_flush = 1;
   }
 
@@ -880,7 +896,7 @@ validate_request (struct connection *conn,
     *error = EINVAL;
     return false;
   }
-  if (!conn->can_flush && (flags & NBD_CMD_FLAG_FUA)) {
+  if (!conn->can_fua && (flags & NBD_CMD_FLAG_FUA)) {
     nbdkit_error ("invalid request: FUA flag not supported");
     *error = EINVAL;
     return false;
@@ -909,6 +925,13 @@ validate_request (struct connection *conn,
     return false;
   }
 
+  /* Zero allowed? */
+  if (!conn->can_zero && cmd == NBD_CMD_WRITE_ZEROES) {
+    nbdkit_error ("invalid request: write zeroes operation not supported");
+    *error = EINVAL;
+    return false;
+  }
+
   return true;                     /* Command validates. */
 }
 
@@ -928,7 +951,7 @@ handle_request (struct connection *conn,
                 void *buf)
 {
   uint32_t f = 0;
-  bool fua = conn->can_flush && (flags & NBD_CMD_FLAG_FUA);
+  bool fua = conn->can_fua && (flags & NBD_CMD_FLAG_FUA);
   int err = 0;
 
   /* Clear the error, so that we know if the plugin calls

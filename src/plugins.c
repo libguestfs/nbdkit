@@ -362,6 +362,34 @@ get_error (struct backend_plugin *p)
 }
 
 static int
+plugin_can_zero (struct backend *b, struct connection *conn)
+{
+  debug ("can_zero");
+
+  /* We always allow .zero to fall back to .write, so plugins don't
+   * need to override this. */
+  return plugin_can_write (b, conn);
+}
+
+static int
+plugin_can_fua (struct backend *b, struct connection *conn)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  int r;
+
+  debug ("can_fua");
+
+  /* TODO - wire FUA flag support into plugins. Until then, this copies
+   * can_flush, since that's how we emulate FUA. */
+  r = plugin_can_flush (b, conn);
+  if (r == -1)
+    return -1;
+  if (r == 0 || !p->plugin.flush)
+    return NBDKIT_FUA_NONE;
+  return NBDKIT_FUA_EMULATE;
+}
+
+static int
 plugin_pread (struct backend *b, struct connection *conn,
               void *buf, uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
@@ -546,6 +574,8 @@ static struct backend plugin_functions = {
   .can_flush = plugin_can_flush,
   .is_rotational = plugin_is_rotational,
   .can_trim = plugin_can_trim,
+  .can_zero = plugin_can_zero,
+  .can_fua = plugin_can_fua,
   .pread = plugin_pread,
   .pwrite = plugin_pwrite,
   .flush = plugin_flush,
