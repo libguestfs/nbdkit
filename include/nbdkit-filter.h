@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2017 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,15 +68,15 @@ struct nbdkit_next_ops {
 
 struct nbdkit_filter {
   /* Do not set these fields directly; use NBDKIT_REGISTER_FILTER.
-   * They exist so that we can support filters compiled against
+   * They exist so that we can diagnose filters compiled against
    * one version of the header with a runtime compiled against a
-   * different version with more (or fewer) fields.
+   * different version.
    */
-  uint64_t _struct_size;
   int _api_version;
   int _thread_model;
 
-  /* New fields will only be added at the end of the struct. */
+  /* Because there is no ABI guarantee, new fields may be added
+   * where logically appropriate.  */
   const char *name;
   const char *longname;
   const char *version;
@@ -130,7 +130,6 @@ struct nbdkit_filter {
   struct nbdkit_filter *                                                \
   filter_init (void)                                                    \
   {                                                                     \
-    (filter)._struct_size = sizeof (filter);                            \
     (filter)._api_version = NBDKIT_FILTER_API_VERSION;                  \
     (filter)._thread_model = THREAD_MODEL;                              \
     return &(filter);                                                   \

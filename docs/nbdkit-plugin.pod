@@ -45,6 +45,18 @@ to create an nbdkit plugin in C.
 For example plugins, take a look at the source of nbdkit, in the
 C<plugins> directory.
 
+Plugins have an ABI guarantee: a plugin compiled against an older
+version of nbdkit will still work correctly when loaded with a newer
+nbdkit.  We also try (but cannot guarantee) to support plugins
+compiled against a newer version of nbdkit when loaded with an older
+nbdkit, although the utility of such a plugin may be reduced where it
+depended on features only provided by newer nbdkit.
+
+For plugins written in C, we also provide an API guarantee: a plugin
+written against an older header will still compile unmodified with a
+newer nbdkit.  However, plugins written in other languages may have
+to adapt to changes in the API when recompiled against a newer nbdkit.
+
 To write plugins in other languages, see:
 L<nbdkit-ocaml-plugin(3)>,
 L<nbdkit-perl-plugin(3)>,

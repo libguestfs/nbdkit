@@ -93,12 +93,17 @@ C<filters> directory.
 
 Filters must be written in C.
 
-Unlike the plugin API where we provide a stable ABI guarantee, filters
-only have a best effort ABI.  The reason for this is because if we
-added new methods then an old filter would not see them and so they
-would be passed unmodified through the filter, and in some cases that
-leads to data corruption.  You should therefore not expect to
-distribute filters separately from nbdkit, unlike plugins.
+Unlike plugins, where we provide a stable ABI guarantee that permits
+operation across version differences, filters can only be run with the
+same version of nbdkit that they were compiled with.  The reason for
+this is two-fold: the filter API includes access to struct
+nbdkit_next_ops that is likely to change if new callbacks are added
+(old nbdkit cannot safely run new filters that access new methods);
+and if we added new methods then an old filter would not see them and
+so they would be passed unmodified through the filter, and in some
+cases that leads to data corruption (new nbdkit cannot safely run old
+filters unaware of new methods).  Therefore, unlike plugins, you
+should not expect to distribute filters separately from nbdkit.
 
 =head1 C<nbdkit-filter.h>
 

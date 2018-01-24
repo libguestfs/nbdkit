@@ -591,7 +591,7 @@ filter_register (struct backend *next, size_t index, const char *filename,
 {
   struct backend_filter *f;
   const struct nbdkit_filter *filter;
-  size_t i, len, size;
+  size_t i, len;
 
   f = calloc (1, sizeof *f);
   if (f == NULL) {
@@ -619,23 +619,17 @@ filter_register (struct backend *next, size_t index, const char *filename,
     exit (EXIT_FAILURE);
   }
 
-  /* Check for incompatible future versions. */
-  if (filter->_api_version != 1) {
+  /* We do not provide API or ABI guarantees for filters, other than
+   * the ABI position of _api_version that will let us diagnose
+   * mismatch when the API changes.
+   */
+  if (filter->_api_version != NBDKIT_FILTER_API_VERSION) {
     fprintf (stderr, "%s: %s: filter is incompatible with this version of nbdkit (_api_version = %d)\n",
              program_name, f->filename, filter->_api_version);
     exit (EXIT_FAILURE);
   }
 
-  /* Since the filter might be much older than the current version of
-   * nbdkit, only copy up to the self-declared _struct_size of the
-   * filter and zero out the rest.  If the filter is much newer then
-   * we'll only call the "old" fields.
-   */
-  size = sizeof f->filter;      /* our struct */
-  memset (&f->filter, 0, size);
-  if (size > filter->_struct_size)
-    size = filter->_struct_size;
-  memcpy (&f->filter, filter, size);
+  f->filter = *filter;
 
   /* Only filter.name is required. */
   if (f->filter.name == NULL) {
