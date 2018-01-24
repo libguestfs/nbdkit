@@ -17,6 +17,11 @@ General ideas for improvements
 
 * Limit number of incoming connections (like qemu-nbd -e).
 
+* For parallel plugins, only create threads on demand from parallel
+  client requests, rather than pre-creating all threads at connection
+  time, up to the thread pool size limit.  Of course, once created, a
+  thread is reused as possible until the connection closes.
+
 * Async callbacks.  The current parallel support requires one thread
   per pending message; a solution with fewer threads would split
   low-level code between request and response, where the callback has
