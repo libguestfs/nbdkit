@@ -353,13 +353,31 @@ calls.
  int (*can_trim) (struct nbdkit_next_ops *next_ops, void *nxdata,
                   void *handle);
 
-These intercept the corresponding plugin methods.
+These intercept the corresponding plugin methods, and control feature
+bits advertised to the client.
 
 If there is an error, the callback should call C<nbdkit_error> with an
 error message and return C<-1>.  If these functions are called more
 than once for the same connection, they should return the same value;
 similarly, the filter may cache the results of each counterpart in
 C<next_ops> for a given connection rather than repeating calls.
+
+=head2 C<.can_zero>
+
+ int (*can_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                  void *handle);
+
+This controls whether write zero support will be advertised to the
+client.  This function has no counterpart in plugins, because nbdkit
+can always emulate zero by using pwrite; but a filter may want to
+force different handling than the nbdkit implementation.  If this
+callback is omitted, the default returned for the plugin layer is
+true.
+
+If there is an error, the callback should call C<nbdkit_error> with an
+error message and return C<-1>.  Like the other initial queries
+documented above, per-connection caching the of return value of this
+function is allowed.
 
 =head2 C<.pread>
 
@@ -456,7 +474,7 @@ zero requests.
 
 This function will not be called if C<.can_write> returned false; in
 turn, the filter should not call C<next_ops-E<gt>zero> if
-C<next_ops-E<gt>can_write> did not return true.
+C<next_ops-E<gt>can_zero> did not return true.
 
 On input, the parameter C<flags> may include C<NBDKIT_FLAG_MAY_TRIM>
 unconditionally, and C<NBDKIT_FLAG_FUA> based on the result of
