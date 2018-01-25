@@ -53,6 +53,10 @@ extern "C" {
 #define NBDKIT_FLAG_MAY_TRIM (1<<0) /* Maps to !NBD_CMD_FLAG_NO_HOLE */
 #define NBDKIT_FLAG_FUA      (1<<1) /* Maps to NBD_CMD_FLAG_FUA */
 
+#define NBDKIT_FUA_NONE       0
+#define NBDKIT_FUA_EMULATE    1
+#define NBDKIT_FUA_NATIVE     2
+
 extern void nbdkit_error (const char *msg, ...)
   __attribute__((__format__ (__printf__, 1, 2)));
 extern void nbdkit_verror (const char *msg, va_list args);

@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <errno.h>
@@ -149,6 +150,7 @@ blocksize_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
     nbdkit_error ("disk is too small for minblock size %u", minblock);
     return -1;
   }
+  /* TODO: cache per-connection FUA mode? */
   return 0;
 }
 
@@ -214,9 +216,13 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   const char *buf = b;
   uint32_t keep;
   uint32_t drop;
+  bool need_flush = false;
 
-  /* FIXME: Smarter handling of FUA - pass it through if the next layer
-   * can handle it natively, but just once at end if next layer emulates. */
+  if ((flags & NBDKIT_FLAG_FUA) &&
+      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+    flags &= ~NBDKIT_FLAG_FUA;
+    need_flush = true;
+  }
 
   /* Unaligned head */
   if (offs & (minblock - 1)) {
@@ -255,6 +261,8 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     count -= keep;
   }
 
+  if (need_flush)
+    return next_ops->flush (nxdata, 0, err);
   return 0;
 }
 
@@ -264,9 +272,13 @@ blocksize_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
                 int *err)
 {
   uint32_t keep;
+  bool need_flush = false;
 
-  /* FIXME: Smarter handling of FUA - pass it through if the next layer
-   * can handle it natively, but just once at end if next layer emulates. */
+  if ((flags & NBDKIT_FLAG_FUA) &&
+      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+    flags &= ~NBDKIT_FLAG_FUA;
+    need_flush = true;
+  }
 
   /* Unaligned head */
   if (offs & (minblock - 1)) {
@@ -288,6 +300,8 @@ blocksize_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
     count -= keep;
   }
 
+  if (need_flush)
+    return next_ops->flush (nxdata, 0, err);
   return 0;
 }
 
@@ -298,9 +312,13 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   uint32_t keep;
   uint32_t drop;
+  bool need_flush = false;
 
-  /* FIXME: Smarter handling of FUA - pass it through if the next layer
-   * can handle it natively, but just once at end if next layer emulates. */
+  if ((flags & NBDKIT_FLAG_FUA) &&
+      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+    flags &= ~NBDKIT_FLAG_FUA;
+    need_flush = true;
+  }
 
   /* Unaligned head */
   if (offs & (minblock - 1)) {
@@ -337,6 +355,8 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     count -= keep;
   }
 
+  if (need_flush)
+    return next_ops->flush (nxdata, 0, err);
   return 0;
 }
 

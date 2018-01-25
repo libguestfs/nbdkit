@@ -90,6 +90,10 @@ static enum cache_mode {
   CACHE_MODE_UNSAFE,
 } cache_mode = CACHE_MODE_WRITEBACK;
 
+static int
+cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+             uint32_t flags, int *err);
+
 static void
 cache_load (void)
 {
@@ -228,7 +232,10 @@ cache_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   int64_t r;
 
   r = cache_get_size (next_ops, nxdata, handle);
-  return r >= 0 ? 0 : -1;
+  if (r < 0)
+    return -1;
+  /* TODO: cache per-connection FUA mode? */
+  return 0;
 }
 
 /* Return true if the block is allocated.  Consults the bitmap. */
@@ -392,6 +399,7 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
               uint32_t flags, int *err)
 {
   uint8_t *block;
+  bool need_flush = false;
 
   block = malloc (BLKSIZE);
   if (block == NULL) {
@@ -400,6 +408,11 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
   }
 
+  if ((flags & NBDKIT_FLAG_FUA) &&
+      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+    flags &= ~NBDKIT_FLAG_FUA;
+    need_flush = true;
+  }
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
 
@@ -426,6 +439,8 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
 
   free (block);
+  if (need_flush)
+    return cache_flush (next_ops, nxdata, handle, 0, err);
   return 0;
 }
 
@@ -436,6 +451,7 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
             int *err)
 {
   uint8_t *block;
+  bool need_flush = false;
 
   block = malloc (BLKSIZE);
   if (block == NULL) {
@@ -445,6 +461,11 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
 
   flags &= ~NBDKIT_FLAG_MAY_TRIM; /* See BLKSIZE comment above. */
+  if ((flags & NBDKIT_FLAG_FUA) &&
+      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+    flags &= ~NBDKIT_FLAG_FUA;
+    need_flush = true;
+  }
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
 
@@ -469,6 +490,8 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
 
   free (block);
+  if (need_flush)
+    return cache_flush (next_ops, nxdata, handle, 0, err);
   return 0;
 }
 

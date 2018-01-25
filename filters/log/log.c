@@ -236,13 +236,13 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   int r = next_ops->is_rotational (nxdata);
   int t = next_ops->can_trim (nxdata);
   int z = next_ops->can_zero (nxdata);
+  int F = next_ops->can_fua (nxdata);
 
-  if (size < 0 || w < 0 || f < 0 || r < 0 || t < 0 || z < 0)
+  if (size < 0 || w < 0 || f < 0 || r < 0 || t < 0 || z < 0 || F < 0)
     return -1;
 
-  /* TODO expose can_fua to filters */
   output (h, "Connect", 0, "size=0x%" PRIx64 " write=%d flush=%d "
-          "rotational=%d trim=%d zero=%d" /* fua=? */, size, w, f, r, t, z);
+          "rotational=%d trim=%d zero=%d fua=%d", size, w, f, r, t, z, F);
   return 0;
 }
 

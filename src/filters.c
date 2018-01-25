@@ -295,6 +295,13 @@ next_can_zero (void *nxdata)
 }
 
 static int
+next_can_fua (void *nxdata)
+{
+  struct b_conn *b_conn = nxdata;
+  return b_conn->b->can_fua (b_conn->b, b_conn->conn);
+}
+
+static int
 next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
@@ -342,6 +349,7 @@ static struct nbdkit_next_ops next_ops = {
   .is_rotational = next_is_rotational,
   .can_trim = next_can_trim,
   .can_zero = next_can_zero,
+  .can_fua = next_can_fua,
   .pread = next_pread,
   .pwrite = next_pwrite,
   .flush = next_flush,
@@ -473,11 +481,15 @@ static int
 filter_can_fua (struct backend *b, struct connection *conn)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  void *handle = connection_get_handle (conn, f->backend.i);
+  struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
 
   debug ("can_fua");
 
-  /* TODO expose this to plugins and filters */
-  return f->backend.next->can_fua (f->backend.next, conn);
+  if (f->filter.can_fua)
+    return f->filter.can_fua (&next_ops, &nxdata, handle);
+  else
+    return f->backend.next->can_fua (f->backend.next, conn);
 }
 
 static int

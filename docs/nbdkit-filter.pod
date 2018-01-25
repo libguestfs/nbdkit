@@ -379,6 +379,39 @@ error message and return C<-1>.  Like the other initial queries
 documented above, per-connection caching the of return value of this
 function is allowed.
 
+=head2 C<.can_fua>
+
+ int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                 void *handle);
+
+This controls how the Forced Unit Access flag will be handled; it is
+only relevant for connections that are not read-only.  For now, this
+function has no counterpart in plugins, although it will be added.
+Unlike other feature functions with just two success states, this one
+returns three success values: C<NBDKIT_FUA_NONE> to avoid advertising
+FUA support to the client, C<NBDKIT_FUA_EMULATE> if FUA is emulated by
+nbdkit calling flush after a write transaction, and
+C<NBDKIT_FUA_NATIVE> if FUA semantics are handled by the plugin
+without the overhead of an extra flush from nbdkit.
+
+The difference between the two non-zero values may affect choices made
+in the filter: when splitting a write request that requested FUA from
+the client, native support should pass the FUA flag on to each
+sub-request; while if it is known that FUA is emulated by a flush, it
+is more efficient to only flush once after all sub-requests have
+completed (often by passing C<NBDKIT_FLAG_FUA> on to only the final
+sub-request, or by dropping the flag and ending with a direct call to
+C<next_ops-E<gt>flush>).
+
+If this callback is omitted, the default returned for the plugin layer
+is C<NBDKIT_FUA_EMULATE> if C<can_flush> returned true, otherwise it
+is C<NBDKIT_FUA_NONE>.
+
+If there is an error, the callback should call C<nbdkit_error> with an
+error message and return C<-1>.  Like the other initial queries
+documented above, per-connection caching of the return value of this
+function is allowed.
+
 =head2 C<.pread>
 
  int (*pread) (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -412,9 +445,9 @@ turn, the filter should not call C<next_ops-E<gt>pwrite> if
 C<next_ops-E<gt>can_write> did not return true.
 
 The parameter C<flags> may include C<NBDKIT_FLAG_FUA> on input based
-on the result of C<.can_flush>.  In turn, the filter should only pass
+on the result of C<.can_fua>.  In turn, the filter should only pass
 C<NBDKIT_FLAG_FUA> on to C<next_ops-E<gt>pwrite> if
-C<next_ops-E<gt>can_flush> returned true.
+C<next_ops-E<gt>can_fua> returned a positive value.
 
 If there is an error (including a short write which couldn't be
 recovered from), C<.pwrite> should call C<nbdkit_error> with an error
@@ -455,9 +488,9 @@ turn, the filter should not call C<next_ops-E<gt>trim> if
 C<next_ops-E<gt>can_trim> did not return true.
 
 The parameter C<flags> may include C<NBDKIT_FLAG_FUA> on input based
-on the result of C<.can_flush>.  In turn, the filter should only pass
+on the result of C<.can_fua>.  In turn, the filter should only pass
 C<NBDKIT_FLAG_FUA> on to C<next_ops-E<gt>trim> if
-C<next_ops-E<gt>can_flush> returned true.
+C<next_ops-E<gt>can_fua> returned a positive value.
 
 If there is an error, C<.trim> should call C<nbdkit_error> with an
 error message B<and> return -1 with C<err> set to the positive errno
@@ -478,9 +511,10 @@ C<next_ops-E<gt>can_zero> did not return true.
 
 On input, the parameter C<flags> may include C<NBDKIT_FLAG_MAY_TRIM>
 unconditionally, and C<NBDKIT_FLAG_FUA> based on the result of
-C<.can_flush>.  In turn, the filter may pass C<NBDKIT_FLAG_MAY_TRIM>
+C<.can_fua>.  In turn, the filter may pass C<NBDKIT_FLAG_MAY_TRIM>
 unconditionally, but should only pass C<NBDKIT_FLAG_FUA> on to
-C<next_ops-E<gt>zero> if C<next_ops-E<gt>can_flush> returned true.
+C<next_ops-E<gt>zero> if C<next_ops-E<gt>can_fua> returned a positive
+value.
 
 Note that unlike the plugin C<.zero> which is permitted to fail with
 C<EOPNOTSUPP> to force a fallback to C<.pwrite>, the function

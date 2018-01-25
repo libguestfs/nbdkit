@@ -98,10 +98,6 @@
       (type *) ((char *) __mptr - offsetof(type, member));       \
     })
 
-#define NBDKIT_FUA_NONE       0
-#define NBDKIT_FUA_EMULATE    1
-#define NBDKIT_FUA_NATIVE     2
-
 /* main.c */
 extern const char *exportname;
 extern const char *ipaddr;

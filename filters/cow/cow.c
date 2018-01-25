@@ -61,6 +61,12 @@
  * this we limit the thread model to SERIALIZE_ALL_REQUESTS so that
  * there cannot be concurrent pwrite requests.  We could relax this
  * restriction with a bit of work.
+ *
+ * We allow the client to request FUA, and emulate it with a flush
+ * (arguably, since the write overlay is temporary, and since we
+ * serialize all requests, we could ignore FUA altogether, but
+ * flushing will be more correct if we improve the thread model to be
+ * more parallel).
  */
 
 #include <config.h>
@@ -235,6 +241,12 @@ cow_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   return 1;
 }
 
+static int
+cow_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+{
+  return NBDKIT_FUA_EMULATE;
+}
+
 /* Return true if the block is allocated.  Consults the bitmap. */
 static bool
 blk_is_allocated (uint64_t blknum)
@@ -308,6 +320,10 @@ blk_write (uint64_t blknum, const uint8_t *block, int *err)
 
   return 0;
 }
+
+static int
+cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+           uint32_t flags, int *err);
 
 /* Read data. */
 static int
@@ -390,6 +406,8 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
 
   free (block);
+  if (flags & NBDKIT_FLAG_FUA)
+    return cow_flush (next_ops, nxdata, handle, 0, err);
   return 0;
 }
 
@@ -435,6 +453,8 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
 
   free (block);
+  if (flags & NBDKIT_FLAG_FUA)
+    return cow_flush (next_ops, nxdata, handle, 0, err);
   return 0;
 }
 
@@ -466,6 +486,7 @@ static struct nbdkit_filter filter = {
   .can_write         = cow_can_write,
   .can_flush         = cow_can_flush,
   .can_trim          = cow_can_trim,
+  .can_fua           = cow_can_fua,
   .pread             = cow_pread,
   .pwrite            = cow_pwrite,
   .zero              = cow_zero,
