@@ -51,7 +51,9 @@ directed to qemu-nbd for these use cases.
 
 nbd plugin could use enhancements:
 
-* FUA passthrough, rather than extra FLUSH calls.
+* FUA passthrough, rather than extra FLUSH calls.  For this, .can_fua
+  must be exposed to plugins (not just filters), and needs to be
+  tri-state rather than just bool.
 
 * Enable client-side TLS (right now, the nbd plugin allows us to
   support an encrypted client connecting to a plain server; but we
@@ -68,6 +70,20 @@ Suggestions for filters
   (such as hiding zero support) for testing clients
 
 * logging all client commands
+
+* fua filter: setting mode=none stops advertisement, mode=emulate uses
+  flush emulation (or fails if !can_flush), mode=native passes on
+  through (or fails if can_fua does not report native support).  When
+  breaking up a large request into smaller pieces, then native support
+  requires passing fua through to all sub-requests; but emulation by
+  flushing only needs one flush after the last sub-request, to avoid
+  unneeded intermediate flushing; hence, where this filter is placed
+  in the stack may have a performance impact.
+
+* blocksize filter: setting minblock performs read-modify-write of
+  requests that are too small or unaligned for the plugin; setting
+  maxdata breaks up too-large read/write; setting maxlen breaks up
+  too-large trim/zero
 
 nbdkit-cache-filter needs considerable work:
 
