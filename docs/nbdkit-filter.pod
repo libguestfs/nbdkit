@@ -473,6 +473,14 @@ You can also run pkg-config/pkgconf directly, for example:
 L<nbdkit(1)>,
 L<nbdkit-plugin(1)>.
 
+Filters:
+
+L<nbdkit-cache-filter(1)>,
+L<nbdkit-cow-filter(1)>,
+L<nbdkit-delay-filter(1)>,
+L<nbdkit-offset-filter(1)>,
+L<nbdkit-partition-filter(1)>.
+
 =head1 AUTHORS
 
 Richard W.M. Jones
