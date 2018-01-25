@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2017 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,27 +38,20 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
-#include <assert.h>
-#include <pthread.h>
 
 #include "nbdkit-plugin.h"
 #include "internal.h"
 
-/* Used to group piecemeal message construction into atomic output. */
-static pthread_mutex_t errors_lock = PTHREAD_MUTEX_INITIALIZER;
-
 static void
 lock (void)
 {
-  int r = pthread_mutex_lock (&errors_lock);
-  assert (!r);
+  flockfile (stderr);
 }
 
 static void
 unlock (void)
 {
-  int r = pthread_mutex_unlock (&errors_lock);
-  assert (!r);
+  funlockfile (stderr);
 }
 
 /* Called with lock taken. */
