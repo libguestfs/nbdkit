@@ -72,7 +72,7 @@ static int fd = -1;
 static uint8_t *bitmap;
 
 /* Size of the bitmap in bytes. */
-static uint64_t bm_size;
+static size_t bm_size;
 
 enum bm_entry {
   BLOCK_NOT_CACHED = 0,
@@ -167,7 +167,14 @@ blk_set_size (uint64_t new_size)
 {
   uint8_t *new_bm;
   const size_t old_bm_size = bm_size;
-  size_t new_bm_size = DIV_ROUND_UP (new_size, BLKSIZE*8/2);
+  uint64_t new_bm_size_u64 = DIV_ROUND_UP (new_size, BLKSIZE*8/2);
+  size_t new_bm_size;
+
+  if (new_bm_size_u64 > SIZE_MAX) {
+    nbdkit_error ("bitmap too large for this architecture");
+    return -1;
+  }
+  new_bm_size = (size_t) new_bm_size_u64;
 
   new_bm = realloc (bitmap, new_bm_size);
   if (new_bm == NULL) {
@@ -179,7 +186,7 @@ blk_set_size (uint64_t new_size)
   if (old_bm_size < new_bm_size)
     memset (&bitmap[old_bm_size], 0, new_bm_size-old_bm_size);
 
-  nbdkit_debug ("cache: bitmap resized to %" PRIu64 " bytes", new_bm_size);
+  nbdkit_debug ("cache: bitmap resized to %zu bytes", new_bm_size);
 
   if (ftruncate (fd, new_size) == -1) {
     nbdkit_error ("ftruncate: %m");
