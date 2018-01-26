@@ -42,19 +42,7 @@
 #include "nbdkit-plugin.h"
 #include "internal.h"
 
-static void
-lock (void)
-{
-  flockfile (stderr);
-}
-
-static void
-unlock (void)
-{
-  funlockfile (stderr);
-}
-
-/* Called with lock taken. */
+/* Called with flockfile (stderr) taken. */
 static void
 prologue (const char *type)
 {
@@ -81,14 +69,13 @@ nbdkit_vdebug (const char *fs, va_list args)
 
   if (!verbose)
     return;
-
-  lock ();
+  flockfile (stderr);
   prologue ("debug");
 
   vfprintf (stderr, fs, args);
 
   fprintf (stderr, "\n");
-  unlock ();
+  funlockfile (stderr);
 
   errno = err;
 }
@@ -103,7 +90,7 @@ nbdkit_debug (const char *fs, ...)
   if (!verbose)
     return;
 
-  lock ();
+  flockfile (stderr);
   prologue ("debug");
 
   va_start (args, fs);
@@ -111,7 +98,7 @@ nbdkit_debug (const char *fs, ...)
   va_end (args);
 
   fprintf (stderr, "\n");
-  unlock ();
+  funlockfile (stderr);
 
   errno = err;
 }
@@ -122,13 +109,13 @@ nbdkit_verror (const char *fs, va_list args)
 {
   int err = errno;
 
-  lock ();
+  flockfile (stderr);
   prologue ("error");
 
   vfprintf (stderr, fs, args);
 
   fprintf (stderr, "\n");
-  unlock ();
+  funlockfile (stderr);
 
   errno = err;
 }
@@ -140,7 +127,7 @@ nbdkit_error (const char *fs, ...)
   va_list args;
   int err = errno;
 
-  lock ();
+  flockfile (stderr);
   prologue ("error");
 
   va_start (args, fs);
@@ -148,7 +135,7 @@ nbdkit_error (const char *fs, ...)
   va_end (args);
 
   fprintf (stderr, "\n");
-  unlock ();
+  funlockfile (stderr);
 
   errno = err;
 }
