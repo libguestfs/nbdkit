@@ -39,7 +39,7 @@
  * from the test framework.
  *
  * It's *almost* possible to test this from a shell script
- * (cf. test-ipv4.sh) but as far as I can tell setting LISTEN_PID
+ * (cf. test-ip.sh) but as far as I can tell setting LISTEN_PID
  * correctly is impossible from shell.
  */
 

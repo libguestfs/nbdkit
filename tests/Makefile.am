@@ -50,7 +50,7 @@ EXTRA_DIST = \
 	test-foreground.sh \
 	test-help.sh \
 	test-help-plugin.sh \
-	test-ipv4.sh \
+	test-ip.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
 	test-parallel-file.sh \
@@ -104,7 +104,7 @@ TESTS += \
 	test-captive.sh \
 	test-random-sock.sh \
 	test-tls.sh \
-	test-ipv4.sh \
+	test-ip.sh \
 	test-socket-activation \
 	test-foreground.sh
 

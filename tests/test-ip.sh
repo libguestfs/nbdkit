@@ -1,6 +1,6 @@
 #!/bin/bash -
 # nbdkit
-# Copyright (C) 2016 Red Hat Inc.
+# Copyright (C) 2016-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,21 +32,28 @@
 # SUCH DAMAGE.
 
 # Every other test uses a Unix domain socket.  This tests nbdkit over
-# IPv4 localhost connections.
-#
-# XXX We should be able to test "just IPv6".  However there is
-# currently no option to listen only on particular interfaces.
+# IPv4 and IPv6 localhost connections.
 
 set -e
 source ./functions.sh
+
+rm -f ip.pid ipv4.out ipv6.out
 
 # Don't fail if certain commands aren't available.
 if ! ss --version; then
     echo "$0: 'ss' command not available"
     exit 77
 fi
-if ! socat -h; then
-    echo "$0: 'socat' command not available"
+if ! command -v qemu-img; then
+    echo "$0: 'qemu-img' command not available"
+    exit 77
+fi
+if ! qemu-img --help | grep -- --image-opts; then
+    echo "$0: 'qemu-img' command does not have the --image-opts option"
+    exit 77
+fi
+if ! ip -V; then
+    echo "$0: 'ip' command not available"
     exit 77
 fi
 
@@ -56,28 +63,44 @@ for port in `seq 49152 65535`; do
 done
 echo picked unused port $port
 
-nbdkit -P ipv4.pid -p $port example1
+# By default nbdkit will listen on all available interfaces, ie.
+# IPv4 and IPv6.
+nbdkit -P ip.pid -p $port example1
 
 # We may have to wait a short time for the pid file to appear.
 for i in `seq 1 10`; do
-    if test -f ipv4.pid; then
+    if test -f ip.pid; then
         break
     fi
     sleep 1
 done
-if ! test -f ipv4.pid; then
+if ! test -f ip.pid; then
     echo "$0: PID file was not created"
     exit 1
 fi
 
-pid="$(cat ipv4.pid)"
+pid="$(cat ip.pid)"
 
 # Check the process exists.
 kill -s 0 $pid
 
-# Check we can connect to the socket.
-socat TCP:localhost:$port STDIO </dev/null
+# Check we can connect over the IPv4 loopback interface.
+ipv4_lo="$(ip -o -4 addr show scope host)"
+if test -n "$ipv4_lo"; then
+    qemu-img info --image-opts "file.driver=nbd,file.host=127.0.0.1,file.port=$port" > ipv4.out
+    cat ipv4.out
+    grep -sq "^virtual size: 100M" ipv4.out
+fi
+
+# Check we can connect over the IPv6 loopback interface.
+ipv6_lo="$(ip -o -6 addr show scope host)"
+if test -n "$ipv6_lo"; then
+    qemu-img info --image-opts "file.driver=nbd,file.host=::1,file.port=$port" > ipv6.out
+    cat ipv6.out
+    grep -sq "^virtual size: 100M" ipv6.out
+fi
 
 # Kill the process.
 kill $pid
-rm ipv4.pid
+rm ip.pid
+rm -f ipv4.out ipv6.out
