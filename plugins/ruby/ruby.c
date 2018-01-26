@@ -139,7 +139,7 @@ funcall2 (VALUE receiver, ID method_id, int argc, volatile VALUE *argv,
         len = RARRAY_LEN (backtrace);
         for (i = 0; i < len; ++i) {
           b = rb_ary_entry (backtrace, i);
-          nbdkit_error ("ruby: frame #%ld %s", i, StringValueCStr (b));
+          nbdkit_error ("ruby: frame #%zu %s", i, StringValueCStr (b));
         }
       }
     }
