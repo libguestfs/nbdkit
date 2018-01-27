@@ -178,11 +178,9 @@ file-data:
 
 # While most tests need libguestfs, testing parallel I/O is easier when
 # using qemu-io to kick off asynchronous requests.
-if HAVE_QEMU_IO
-TESTS_ENVIRONMENT += QEMU_IO=$(QEMU_IO)
-TESTS += test-parallel-file.sh
-TESTS += test-parallel-nbd.sh
-endif HAVE_QEMU_IO
+TESTS += \
+	test-parallel-file.sh \
+	test-parallel-nbd.sh
 
 # Most in-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.

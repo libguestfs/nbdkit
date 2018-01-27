@@ -407,10 +407,6 @@ dnl Check for guestfish (only needed for some of the tests).
 AC_CHECK_PROG([GUESTFISH], [guestfish], [guestfish], [no])
 AM_CONDITIONAL([HAVE_GUESTFISH], [test "x$GUESTFISH" != "xno"])
 
-dnl Check for qemu-io (only needed for some of the tests).
-AC_CHECK_PROG([QEMU_IO], [qemu-io], [qemu-io], [no])
-AM_CONDITIONAL([HAVE_QEMU_IO], [test "x$QEMU_IO" != "xno"])
-
 dnl See plugins/vddk/README.VDDK.
 AC_CHECK_SIZEOF([size_t])
 AS_IF([test "x$ac_cv_sizeof_size_t" = "x4"],[bits=32],[bits=64])
