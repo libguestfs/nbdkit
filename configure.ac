@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2017 Red Hat Inc.
+# Copyright (C) 2013-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -509,6 +509,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile
                  filters/Makefile
+                 filters/blocksize/Makefile
                  filters/cache/Makefile
                  filters/cow/Makefile
                  filters/delay/Makefile

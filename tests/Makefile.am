@@ -40,6 +40,7 @@ EXTRA_DIST = \
 	shebang.pl \
 	shebang.py \
 	shebang.rb \
+	test-blocksize.sh \
 	test-cache.sh \
 	test-captive.sh \
 	test-cow.sh \
@@ -411,6 +412,9 @@ endif HAVE_RUBY
 
 #----------------------------------------------------------------------
 # Tests of filters.
+
+# blocksize filter test.
+TESTS += test-blocksize.sh
 
 # cache filter test.
 TESTS += test-cache.sh

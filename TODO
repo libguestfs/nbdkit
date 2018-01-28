@@ -86,11 +86,6 @@ Suggestions for filters
   unneeded intermediate flushing; hence, where this filter is placed
   in the stack may have a performance impact.
 
-* blocksize filter: setting minblock performs read-modify-write of
-  requests that are too small or unaligned for the plugin; setting
-  maxdata breaks up too-large read/write; setting maxlen breaks up
-  too-large trim/zero
-
 nbdkit-cache-filter needs considerable work:
 
 * allow the user to limit the total size of the cache

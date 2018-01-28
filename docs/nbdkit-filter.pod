@@ -560,6 +560,7 @@ L<nbdkit-plugin(1)>.
 
 Filters:
 
+L<nbdkit-blocksize-filter(1)>,
 L<nbdkit-cache-filter(1)>,
 L<nbdkit-cow-filter(1)>,
 L<nbdkit-delay-filter(1)>,

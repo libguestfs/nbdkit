@@ -623,8 +623,6 @@ nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   struct handle *h = handle;
   int c;
 
-  /* TODO Auto-fragment this if the client has a larger max transfer
-     limit than the server */
   c = nbd_request_full (h, 0, NBD_CMD_READ, offset, count, NULL, buf);
   return c < 0 ? c : nbd_reply (h, c);
 }
@@ -636,8 +634,6 @@ nbd_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   struct handle *h = handle;
   int c;
 
-  /* TODO Auto-fragment this if the client has a larger max transfer
-     limit than the server */
   c = nbd_request_full (h, 0, NBD_CMD_WRITE, offset, count, buf, NULL);
   return c < 0 ? c : nbd_reply (h, c);
 }
