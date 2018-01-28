@@ -106,14 +106,6 @@ filter_thread_model (struct backend *b)
 /* These are actually passing through to the final plugin, hence
  * the function names.
  */
-static int
-plugin_errno_is_preserved (struct backend *b)
-{
-  struct backend_filter *f = container_of (b, struct backend_filter, backend);
-
-  return f->backend.next->errno_is_preserved (f->backend.next);
-}
-
 static const char *
 plugin_name (struct backend *b)
 {
@@ -300,28 +292,46 @@ static int
 next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->pread (b_conn->b, b_conn->conn, buf, count, offset, 0);
+  int err = 0;
+  int r = b_conn->b->pread (b_conn->b, b_conn->conn, buf, count, offset, 0,
+                            &err);
+  if (r == -1)
+    errno = err;
+  return r;
 }
 
 static int
 next_pwrite (void *nxdata, const void *buf, uint32_t count, uint64_t offset)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->pwrite (b_conn->b, b_conn->conn, buf, count, offset, 0);
+  int err = 0;
+  int r = b_conn->b->pwrite (b_conn->b, b_conn->conn, buf, count, offset, 0,
+                             &err);
+  if (r == -1)
+    errno = err;
+  return r;
 }
 
 static int
 next_flush (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->flush (b_conn->b, b_conn->conn, 0);
+  int err = 0;
+  int r = b_conn->b->flush (b_conn->b, b_conn->conn, 0, &err);
+  if (r == -1)
+    errno = err;
+  return r;
 }
 
 static int
 next_trim (void *nxdata, uint32_t count, uint64_t offset)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->trim (b_conn->b, b_conn->conn, count, offset, 0);
+  int err = 0;
+  int r = b_conn->b->trim (b_conn->b, b_conn->conn, count, offset, 0, &err);
+  if (r == -1)
+    errno = err;
+  return r;
 }
 
 static int
@@ -329,11 +339,16 @@ next_zero (void *nxdata, uint32_t count, uint64_t offset, int may_trim)
 {
   struct b_conn *b_conn = nxdata;
   uint32_t f = 0;
+  int err = 0;
+  int r;
 
   if (may_trim)
     f |= NBDKIT_FLAG_MAY_TRIM;
 
-  return b_conn->b->zero (b_conn->b, b_conn->conn, count, offset, f);
+  r = b_conn->b->zero (b_conn->b, b_conn->conn, count, offset, f, &err);
+  if (r == -1)
+    errno = err;
+  return r;
 }
 
 static struct nbdkit_next_ops next_ops = {
@@ -457,7 +472,7 @@ filter_can_trim (struct backend *b, struct connection *conn)
 static int
 filter_pread (struct backend *b, struct connection *conn,
               void *buf, uint32_t count, uint64_t offset,
-              uint32_t flags)
+              uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle = connection_get_handle (conn, f->backend.i);
@@ -465,41 +480,50 @@ filter_pread (struct backend *b, struct connection *conn,
 
   assert (flags == 0);
 
-  debug ("pread count=%" PRIu32 " offset=%" PRIu64, count, offset);
+  debug ("pread count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
+         count, offset, flags);
 
-  if (f->filter.pread)
-    return f->filter.pread (&next_ops, &nxdata, handle,
-                            buf, count, offset);
+  if (f->filter.pread) {
+    int r = f->filter.pread (&next_ops, &nxdata, handle,
+                             buf, count, offset);
+    if (r == -1)
+      *err = errno;
+    return r;
+  }
   else
     return f->backend.next->pread (f->backend.next, conn,
-                                   buf, count, offset, flags);
+                                   buf, count, offset, flags, err);
 }
 
 static int
 filter_pwrite (struct backend *b, struct connection *conn,
                const void *buf, uint32_t count, uint64_t offset,
-               uint32_t flags)
+               uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle = connection_get_handle (conn, f->backend.i);
   struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
-  bool fua = flags & NBDKIT_FLAG_FUA;
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
 
-  debug ("pwrite count=%" PRIu32 " offset=%" PRIu64 " fua=%d",
-         count, offset, fua);
+  debug ("pwrite count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
+         count, offset, flags);
 
-  if (f->filter.pwrite)
-    return f->filter.pwrite (&next_ops, &nxdata, handle,
-                             buf, count, offset);
+  if (f->filter.pwrite) {
+    int r = f->filter.pwrite (&next_ops, &nxdata, handle,
+                              buf, count, offset);
+    if (r == -1)
+      *err = errno;
+    return r;
+  }
   else
     return f->backend.next->pwrite (f->backend.next, conn,
-                                    buf, count, offset, flags);
+                                    buf, count, offset, flags, err);
 }
 
 static int
-filter_flush (struct backend *b, struct connection *conn, uint32_t flags)
+filter_flush (struct backend *b, struct connection *conn, uint32_t flags,
+              int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle = connection_get_handle (conn, f->backend.i);
@@ -507,18 +531,22 @@ filter_flush (struct backend *b, struct connection *conn, uint32_t flags)
 
   assert (flags == 0);
 
-  debug ("flush");
+  debug ("flush flags=0x%" PRIx32, flags);
 
-  if (f->filter.flush)
-    return f->filter.flush (&next_ops, &nxdata, handle);
+  if (f->filter.flush) {
+    int r = f->filter.flush (&next_ops, &nxdata, handle);
+    if (r == -1)
+      *err = errno;
+    return r;
+  }
   else
-    return f->backend.next->flush (f->backend.next, conn, flags);
+    return f->backend.next->flush (f->backend.next, conn, flags, err);
 }
 
 static int
 filter_trim (struct backend *b, struct connection *conn,
              uint32_t count, uint64_t offset,
-             uint32_t flags)
+             uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle = connection_get_handle (conn, f->backend.i);
@@ -526,34 +554,43 @@ filter_trim (struct backend *b, struct connection *conn,
 
   assert (flags == 0);
 
-  debug ("trim count=%" PRIu32 " offset=%" PRIu64, count, offset);
+  debug ("trim count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
+         count, offset, flags);
 
-  if (f->filter.trim)
-    return f->filter.trim (&next_ops, &nxdata, handle, count, offset);
+  if (f->filter.trim) {
+    int r = f->filter.trim (&next_ops, &nxdata, handle, count, offset);
+    if (r == -1)
+      *err = errno;
+    return r;
+  }
   else
-    return f->backend.next->trim (f->backend.next, conn, count, offset, flags);
+    return f->backend.next->trim (f->backend.next, conn, count, offset, flags,
+                                  err);
 }
 
 static int
 filter_zero (struct backend *b, struct connection *conn,
-             uint32_t count, uint64_t offset, uint32_t flags)
+             uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle = connection_get_handle (conn, f->backend.i);
   struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
-  int may_trim = (flags & NBDKIT_FLAG_MAY_TRIM) != 0;
 
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
 
-  debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d",
-         count, offset, may_trim);
+  debug ("zero count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
+         count, offset, flags);
 
-  if (f->filter.zero)
-    return f->filter.zero (&next_ops, &nxdata, handle,
-                           count, offset, may_trim);
+  if (f->filter.zero) {
+    int r = f->filter.zero (&next_ops, &nxdata, handle,
+                            count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM));
+    if (r == -1)
+      *err = errno;
+    return r;
+  }
   else
     return f->backend.next->zero (f->backend.next, conn,
-                                  count, offset, flags);
+                                  count, offset, flags, err);
 }
 
 static struct backend filter_functions = {
@@ -566,7 +603,6 @@ static struct backend filter_functions = {
   .dump_fields = filter_dump_fields,
   .config = filter_config,
   .config_complete = filter_config_complete,
-  .errno_is_preserved = plugin_errno_is_preserved,
   .open = filter_open,
   .prepare = filter_prepare,
   .finalize = filter_finalize,

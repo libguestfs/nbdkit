@@ -43,6 +43,7 @@
 #include <endian.h>
 #include <sys/types.h>
 #include <stddef.h>
+#include <assert.h>
 
 #include <pthread.h>
 
@@ -911,18 +912,6 @@ validate_request (struct connection *conn,
   return true;                     /* Command validates. */
 }
 
-/* Grab the appropriate error value.
- */
-static int
-get_error (struct connection *conn)
-{
-  int ret = threadlocal_get_error ();
-
-  if (!ret && backend->errno_is_preserved (backend))
-    ret = errno;
-  return ret ? ret : EIO;
-}
-
 /* This is called with the request lock held to actually execute the
  * request (by calling the plugin).  Note that the request fields have
  * been validated already in 'validate_request' so we don't have to
@@ -940,34 +929,35 @@ handle_request (struct connection *conn,
 {
   uint32_t f = 0;
   bool fua = conn->can_flush && (flags & NBD_CMD_FLAG_FUA);
+  int err = 0;
 
-  /* The plugin should call nbdkit_set_error() to request a particular
-     error, otherwise we fallback to errno or EIO. */
+  /* Clear the error, so that we know if the plugin calls
+   * nbdkit_set_error() or relied on errno.  */
   threadlocal_set_error (0);
 
   switch (cmd) {
   case NBD_CMD_READ:
-    if (backend->pread (backend, conn, buf, count, offset, 0) == -1)
-      return get_error (conn);
+    if (backend->pread (backend, conn, buf, count, offset, 0, &err) == -1)
+      return err;
     break;
 
   case NBD_CMD_WRITE:
     if (fua)
       f |= NBDKIT_FLAG_FUA;
-    if (backend->pwrite (backend, conn, buf, count, offset, f) == -1)
-      return get_error (conn);
+    if (backend->pwrite (backend, conn, buf, count, offset, f, &err) == -1)
+      return err;
     break;
 
   case NBD_CMD_FLUSH:
-    if (backend->flush (backend, conn, 0) == -1)
-      return get_error (conn);
+    if (backend->flush (backend, conn, 0, &err) == -1)
+      return err;
     break;
 
   case NBD_CMD_TRIM:
     if (fua)
       f |= NBDKIT_FLAG_FUA;
-    if (backend->trim (backend, conn, count, offset, f) == -1)
-      return get_error (conn);
+    if (backend->trim (backend, conn, count, offset, f, &err) == -1)
+      return err;
     break;
 
   case NBD_CMD_WRITE_ZEROES:
@@ -975,8 +965,8 @@ handle_request (struct connection *conn,
       f |= NBDKIT_FLAG_MAY_TRIM;
     if (fua)
       f |= NBDKIT_FLAG_FUA;
-    if (backend->zero (backend, conn, count, offset, f) == -1)
-      return get_error (conn);
+    if (backend->zero (backend, conn, count, offset, f, &err) == -1)
+      return err;
     break;
 
   default:
@@ -1129,6 +1119,7 @@ recv_request_send_reply (struct connection *conn)
   else {
     lock_request (conn);
     error = handle_request (conn, cmd, flags, offset, count, buf);
+    assert ((int) error >= 0);
     unlock_request (conn);
   }
 

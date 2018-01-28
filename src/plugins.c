@@ -227,14 +227,6 @@ plugin_config_complete (struct backend *b)
 }
 
 static int
-plugin_errno_is_preserved (struct backend *b)
-{
-  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-
-  return p->plugin.errno_is_preserved;
-}
-
-static int
 plugin_open (struct backend *b, struct connection *conn, int readonly)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
@@ -357,11 +349,25 @@ plugin_can_trim (struct backend *b, struct connection *conn)
     return p->plugin.trim != NULL;
 }
 
+/* Grab the appropriate error value.
+ */
+static int
+get_error (struct backend_plugin *p)
+{
+  int ret = threadlocal_get_error ();
+
+  if (!ret && p->plugin.errno_is_preserved)
+    ret = errno;
+  return ret ? ret : EIO;
+}
+
 static int
 plugin_pread (struct backend *b, struct connection *conn,
-              void *buf, uint32_t count, uint64_t offset, uint32_t flags)
+              void *buf, uint32_t count, uint64_t offset, uint32_t flags,
+              int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  int r;
 
   assert (connection_get_handle (conn, 0));
   assert (p->plugin.pread != NULL);
@@ -369,30 +375,40 @@ plugin_pread (struct backend *b, struct connection *conn,
 
   debug ("pread count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
-  return p->plugin.pread (connection_get_handle (conn, 0), buf, count, offset);
+  r = p->plugin.pread (connection_get_handle (conn, 0), buf, count, offset);
+  if (r == -1)
+    *err = get_error (p);
+  return r;
 }
 
 static int
-plugin_flush (struct backend *b, struct connection *conn, uint32_t flags)
+plugin_flush (struct backend *b, struct connection *conn, uint32_t flags,
+              int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  int r;
 
   assert (connection_get_handle (conn, 0));
   assert (!flags);
 
   debug ("flush");
 
-  if (p->plugin.flush != NULL)
-    return p->plugin.flush (connection_get_handle (conn, 0));
+  if (p->plugin.flush != NULL) {
+    r = p->plugin.flush (connection_get_handle (conn, 0));
+    if (r == -1)
+      *err = get_error (p);
+    return r;
+  }
   else {
-    errno = EINVAL;
+    *err = EINVAL;
     return -1;
   }
 }
 
 static int
 plugin_pwrite (struct backend *b, struct connection *conn,
-               const void *buf, uint32_t count, uint64_t offset, uint32_t flags)
+               const void *buf, uint32_t count, uint64_t offset, uint32_t flags,
+               int *err)
 {
   int r;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
@@ -408,19 +424,21 @@ plugin_pwrite (struct backend *b, struct connection *conn,
     r = p->plugin.pwrite (connection_get_handle (conn, 0),
                           buf, count, offset);
   else {
-    errno = EROFS;
+    *err = EROFS;
     return -1;
   }
   if (r != -1 && fua) {
     assert (p->plugin.flush);
-    r = plugin_flush (b, conn, 0);
+    r = p->plugin.flush (connection_get_handle (conn, 0));
   }
+  if (r == -1)
+    *err = get_error (p);
   return r;
 }
 
 static int
 plugin_trim (struct backend *b, struct connection *conn,
-             uint32_t count, uint64_t offset, uint32_t flags)
+             uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
   int r;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
@@ -435,25 +453,26 @@ plugin_trim (struct backend *b, struct connection *conn,
   if (p->plugin.trim != NULL)
     r = p->plugin.trim (connection_get_handle (conn, 0), count, offset);
   else {
-    errno = EINVAL;
+    *err = EINVAL;
     return -1;
   }
   if (r != -1 && fua) {
     assert (p->plugin.flush);
-    r = plugin_flush (b, conn, 0);
+    r = p->plugin.flush (connection_get_handle (conn, 0));
   }
+  if (r == -1)
+    *err = get_error (p);
   return r;
 }
 
 static int
 plugin_zero (struct backend *b, struct connection *conn,
-             uint32_t count, uint64_t offset, uint32_t flags)
+             uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   char *buf;
   uint32_t limit;
   int result;
-  int err = 0;
   int may_trim = (flags & NBDKIT_FLAG_MAY_TRIM) != 0;
   bool fua = flags & NBDKIT_FLAG_FUA;
 
@@ -469,12 +488,9 @@ plugin_zero (struct backend *b, struct connection *conn,
     errno = 0;
     result = p->plugin.zero (connection_get_handle (conn, 0),
                              count, offset, may_trim);
-    if (result == -1) {
-      err = threadlocal_get_error ();
-      if (!err && plugin_errno_is_preserved (b))
-        err = errno;
-    }
-    if (result == 0 || err != EOPNOTSUPP)
+    if (result == -1)
+      *err = get_error (p);
+    if (result == 0 || *err != EOPNOTSUPP)
       goto done;
   }
 
@@ -483,7 +499,7 @@ plugin_zero (struct backend *b, struct connection *conn,
   limit = count < MAX_REQUEST_SIZE ? count : MAX_REQUEST_SIZE;
   buf = calloc (limit, 1);
   if (!buf) {
-    errno = ENOMEM;
+    *err = ENOMEM;
     return -1;
   }
 
@@ -497,15 +513,17 @@ plugin_zero (struct backend *b, struct connection *conn,
       limit = count;
   }
 
-  err = errno;
+  *err = errno;
   free (buf);
-  errno = err;
+  errno = *err;
 
  done:
   if (result != -1 && fua) {
     assert (p->plugin.flush);
-    result = plugin_flush (b, conn, 0);
+    result = p->plugin.flush (connection_get_handle (conn, 0));
   }
+  if (result == -1)
+    *err = get_error (p);
   return result;
 }
 
@@ -519,7 +537,6 @@ static struct backend plugin_functions = {
   .dump_fields = plugin_dump_fields,
   .config = plugin_config,
   .config_complete = plugin_config_complete,
-  .errno_is_preserved = plugin_errno_is_preserved,
   .open = plugin_open,
   .prepare = plugin_prepare,
   .finalize = plugin_finalize,

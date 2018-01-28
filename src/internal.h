@@ -176,7 +176,6 @@ struct backend {
   void (*dump_fields) (struct backend *);
   void (*config) (struct backend *, const char *key, const char *value);
   void (*config_complete) (struct backend *);
-  int (*errno_is_preserved) (struct backend *);
   int (*open) (struct backend *, struct connection *conn, int readonly);
   int (*prepare) (struct backend *, struct connection *conn);
   int (*finalize) (struct backend *, struct connection *conn);
@@ -186,11 +185,16 @@ struct backend {
   int (*can_flush) (struct backend *, struct connection *conn);
   int (*is_rotational) (struct backend *, struct connection *conn);
   int (*can_trim) (struct backend *, struct connection *conn);
-  int (*pread) (struct backend *, struct connection *conn, void *buf, uint32_t count, uint64_t offset, uint32_t flags);
-  int (*pwrite) (struct backend *, struct connection *conn, const void *buf, uint32_t count, uint64_t offset, uint32_t flags);
-  int (*flush) (struct backend *, struct connection *conn, uint32_t flags);
-  int (*trim) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset, uint32_t flags);
-  int (*zero) (struct backend *, struct connection *conn, uint32_t count, uint64_t offset, uint32_t flags);
+  int (*pread) (struct backend *, struct connection *conn, void *buf,
+                uint32_t count, uint64_t offset, uint32_t flags, int *err);
+  int (*pwrite) (struct backend *, struct connection *conn, const void *buf,
+                 uint32_t count, uint64_t offset, uint32_t flags, int *err);
+  int (*flush) (struct backend *, struct connection *conn, uint32_t flags,
+                int *err);
+  int (*trim) (struct backend *, struct connection *conn, uint32_t count,
+               uint64_t offset, uint32_t flags, int *err);
+  int (*zero) (struct backend *, struct connection *conn, uint32_t count,
+               uint64_t offset, uint32_t flags, int *err);
 };
 
 /* plugins.c */
