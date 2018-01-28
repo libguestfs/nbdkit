@@ -1,5 +1,6 @@
+#!/bin/bash -
 # nbdkit
-# Copyright (C) 2013-2018 Red Hat Inc.
+# Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,10 +31,56 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = \
-	cache \
-	cow \
-	delay \
-	log \
-	offset \
-	partition
+set -e
+
+files="log.img log.log log.sock log.pid"
+rm -f $files
+
+# Test that qemu-io works
+truncate --size 10M log.img
+if ! qemu-io -f raw -c 'w 1M 2M' log.img; then
+    echo "$0: missing or broken qemu-io"
+    exit 77
+fi
+
+# Run nbdkit with logging enabled to file.
+nbdkit -P log.pid -U log.sock --filter=log file file=log.img logfile=log.log
+
+# We may have to wait a short time for the pid file to appear.
+for i in `seq 1 10`; do
+    if test -f log.pid; then
+        break
+    fi
+    sleep 1
+done
+if ! test -f log.pid; then
+    echo "$0: PID file was not created"
+    exit 1
+fi
+
+pid="$(cat log.pid)"
+
+# Kill the nbdkit process on exit.
+cleanup ()
+{
+    status=$?
+
+    kill $pid
+    # For easier debugging, dump the final log file before removing it.
+    echo "Log file contents:"
+    cat log.log
+    rm -f $files
+
+    exit $status
+}
+trap cleanup INT QUIT TERM EXIT ERR
+
+# Write, then read some data in the file.
+qemu-io -f raw -c 'w -P 11 1M 2M' 'nbd+unix://?socket=log.sock'
+qemu-io -r -f raw -c 'r -P 11 2M 1M' 'nbd+unix://?socket=log.sock'
+
+# The log should show a write on connection 1, and read on connection 2.
+grep 'connection=1 Write id=1 offset=0x100000 count=0x200000 ' log.log
+grep 'connection=2 Read id=1 offset=0x200000 count=0x100000 ' log.log
+
+# The cleanup() function is called implicitly on exit.

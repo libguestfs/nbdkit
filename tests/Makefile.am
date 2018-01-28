@@ -51,6 +51,7 @@ EXTRA_DIST = \
 	test-help.sh \
 	test-help-plugin.sh \
 	test-ip.sh \
+	test-log.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
 	test-parallel-file.sh \
@@ -424,6 +425,9 @@ TESTS += test-delay
 test_delay_SOURCES = test-delay.c test.h
 test_delay_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_delay_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# log filter test.
+TESTS += test-log.sh
 
 # offset filter test.
 check_DATA += offset-data

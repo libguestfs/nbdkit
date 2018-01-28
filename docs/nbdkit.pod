@@ -920,6 +920,7 @@ Filters:
 L<nbdkit-cache-filter(1)>,
 L<nbdkit-cow-filter(1)>,
 L<nbdkit-delay-filter(1)>,
+L<nbdkit-log-filter(1)>,
 L<nbdkit-offset-filter(1)>,
 L<nbdkit-partition-filter(1)>.
 
