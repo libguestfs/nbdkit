@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -175,6 +175,21 @@ file_get_size (void *handle)
   return statbuf.st_size;
 }
 
+static int
+file_can_trim (void *handle)
+{
+  /* Trim is advisory, but we prefer to advertise it only when we can
+   * actually (attempt to) punch holes.  Since not all filesystems
+   * support all fallocate modes, it would be nice if we had a way
+   * from fpathconf() to definitively learn what will work on a given
+   * fd for a more precise answer; oh well.  */
+#ifdef FALLOC_FL_PUNCH_HOLE
+  return 1;
+#else
+  return 0;
+#endif
+}
+
 /* Read data from the file. */
 static int
 file_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
@@ -219,7 +234,7 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   return 0;
 }
 
-/* Write data to the file. */
+/* Write zeroes to the file. */
 static int
 file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
@@ -268,6 +283,33 @@ file_flush (void *handle)
   return 0;
 }
 
+/* Punch a hole in the file. */
+static int
+file_trim (void *handle, uint32_t count, uint64_t offset)
+{
+  int r = -1;
+#ifdef FALLOC_FL_PUNCH_HOLE
+  struct handle *h = handle;
+
+  /* Trim is advisory; we don't care if it fails for anything other
+   * than EIO or EPERM. */
+  r = fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+                 offset, count);
+  if (r < 0) {
+    if (errno != EPERM && errno != EIO) {
+      nbdkit_debug ("ignoring failed fallocate during trim: %m");
+      r = 0;
+    }
+    else
+      nbdkit_error ("fallocate: %m");
+  }
+#else
+  /* Based on .can_trim, this should not be reached. */
+  errno = EOPNOTSUPP;
+#endif
+  return r;
+}
+
 static struct nbdkit_plugin plugin = {
   .name              = "file",
   .longname          = "nbdkit file plugin",
@@ -279,10 +321,12 @@ static struct nbdkit_plugin plugin = {
   .open              = file_open,
   .close             = file_close,
   .get_size          = file_get_size,
+  .can_trim          = file_can_trim,
   .pread             = file_pread,
   .pwrite            = file_pwrite,
-  .zero              = file_zero,
   .flush             = file_flush,
+  .trim              = file_trim,
+  .zero              = file_zero,
   .errno_is_preserved = 1,
 };
 
