@@ -45,11 +45,13 @@ if ! qemu-img --help >/dev/null; then
     exit 77
 fi
 
-files="single.sock"
+files="single.sock single.disk"
 rm -f $files
 
+truncate -s 1G single.disk
+
 socat unix-listen:single.sock,reuseaddr,fork \
-    exec:'nbdkit -r -s file file=disk' &
+    exec:'nbdkit -r -s file file=single.disk' &
 pid=$!
 
 cleanup ()
