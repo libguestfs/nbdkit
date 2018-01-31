@@ -32,6 +32,14 @@ General ideas for improvements
   which allows for more efficient serving of sparse files.  Also in
   the upstream pipeline: proposals for block status and online resize.
 
+* Add a callback to let plugins request minimum alignment for the
+  buffer to pread/pwrite; useful for a plugin utilizing O_DIRECT or
+  other situation where pre-aligned buffers are more efficient.
+  Ideally, a blocksize filter would honor strict alignment below and
+  advertise loose alignment above; all other filters (particularly
+  ones like offset) can fail to initialize if they can't guarantee
+  strict alignment and don't want to deal with bounce buffers.
+
 Suggestions for plugins
 -----------------------
 
