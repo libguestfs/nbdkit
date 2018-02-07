@@ -42,6 +42,7 @@ Makefile.in
 /plugins/tar/nbdkit-tar-plugin
 /src/nbdkit
 /src/nbdkit.pc
+/src/test-utils
 /stamp-h1
 /tests/disk
 /tests/disk.gz

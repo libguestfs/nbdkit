@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013 Red Hat Inc.
+# Copyright (C) 2013-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -78,3 +78,16 @@ CLEANFILES = *~
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = nbdkit.pc
+
+# Unit testing
+
+TESTS = test-utils
+
+check_PROGRAMS = test-utils
+
+test_utils_SOURCES = \
+	test-utils.c \
+	utils.c \
+	cleanup.c
+test_utils_CPPFLAGS = -I$(top_srcdir)/include
+test_utils_CFLAGS = $(WARNINGS_CFLAGS)
