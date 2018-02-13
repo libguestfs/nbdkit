@@ -412,7 +412,7 @@ plugin_pwrite (struct backend *b, struct connection *conn,
     errno = EROFS;
     return -1;
   }
-  if (r == 0 && fua) {
+  if (r != -1 && fua) {
     assert (p->plugin.flush);
     r = plugin_flush (b, conn, 0);
   }
@@ -439,7 +439,7 @@ plugin_trim (struct backend *b, struct connection *conn,
     errno = EINVAL;
     return -1;
   }
-  if (r == 0 && fua) {
+  if (r != -1 && fua) {
     assert (p->plugin.flush);
     r = plugin_flush (b, conn, 0);
   }
@@ -503,7 +503,7 @@ plugin_zero (struct backend *b, struct connection *conn,
   errno = err;
 
  done:
-  if (!result && fua) {
+  if (result != -1 && fua) {
     assert (p->plugin.flush);
     result = plugin_flush (b, conn, 0);
   }
