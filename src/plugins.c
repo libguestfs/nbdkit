@@ -491,7 +491,7 @@ plugin_zero (struct backend *b, struct connection *conn,
   while (count) {
     result = p->plugin.pwrite (connection_get_handle (conn, 0),
                                buf, limit, offset);
-    if (result < 0)
+    if (result == -1)
       break;
     count -= limit;
     if (count < limit)
