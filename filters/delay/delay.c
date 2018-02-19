@@ -124,29 +124,32 @@ delay_config (nbdkit_next_config *next, void *nxdata,
 /* Read data. */
 static int
 delay_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
-             void *handle, void *buf, uint32_t count, uint64_t offset)
+             void *handle, void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags, int *err)
 {
   read_delay ();
-  return next_ops->pread (nxdata, buf, count, offset);
+  return next_ops->pread (nxdata, buf, count, offset, flags, err);
 }
 
 /* Write data. */
 static int
 delay_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
               void *handle,
-              const void *buf, uint32_t count, uint64_t offset)
+              const void *buf, uint32_t count, uint64_t offset, uint32_t flags,
+              int *err)
 {
   write_delay ();
-  return next_ops->pwrite (nxdata, buf, count, offset);
+  return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
 }
 
 /* Zero data. */
 static int
 delay_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
-            void *handle, uint32_t count, uint64_t offset, int may_trim)
+            void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+            int *err)
 {
   write_delay ();
-  return next_ops->zero (nxdata, count, offset, may_trim);
+  return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

@@ -39,7 +39,6 @@
 #include <string.h>
 #include <inttypes.h>
 #include <assert.h>
-#include <errno.h>
 
 #include <dlfcn.h>
 
@@ -289,66 +288,44 @@ next_can_trim (void *nxdata)
 }
 
 static int
-next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset)
+next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int err = 0;
-  int r = b_conn->b->pread (b_conn->b, b_conn->conn, buf, count, offset, 0,
-                            &err);
-  if (r == -1)
-    errno = err;
-  return r;
+  return b_conn->b->pread (b_conn->b, b_conn->conn, buf, count, offset, flags,
+                           err);
 }
 
 static int
-next_pwrite (void *nxdata, const void *buf, uint32_t count, uint64_t offset)
+next_pwrite (void *nxdata, const void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int err = 0;
-  int r = b_conn->b->pwrite (b_conn->b, b_conn->conn, buf, count, offset, 0,
-                             &err);
-  if (r == -1)
-    errno = err;
-  return r;
+  return b_conn->b->pwrite (b_conn->b, b_conn->conn, buf, count, offset, flags,
+                            err);
 }
 
 static int
-next_flush (void *nxdata)
+next_flush (void *nxdata, uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int err = 0;
-  int r = b_conn->b->flush (b_conn->b, b_conn->conn, 0, &err);
-  if (r == -1)
-    errno = err;
-  return r;
+  return b_conn->b->flush (b_conn->b, b_conn->conn, flags, err);
 }
 
 static int
-next_trim (void *nxdata, uint32_t count, uint64_t offset)
+next_trim (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
+           int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int err = 0;
-  int r = b_conn->b->trim (b_conn->b, b_conn->conn, count, offset, 0, &err);
-  if (r == -1)
-    errno = err;
-  return r;
+  return b_conn->b->trim (b_conn->b, b_conn->conn, count, offset, flags, err);
 }
 
 static int
-next_zero (void *nxdata, uint32_t count, uint64_t offset, int may_trim)
+next_zero (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
+           int *err)
 {
   struct b_conn *b_conn = nxdata;
-  uint32_t f = 0;
-  int err = 0;
-  int r;
-
-  if (may_trim)
-    f |= NBDKIT_FLAG_MAY_TRIM;
-
-  r = b_conn->b->zero (b_conn->b, b_conn->conn, count, offset, f, &err);
-  if (r == -1)
-    errno = err;
-  return r;
+  return b_conn->b->zero (b_conn->b, b_conn->conn, count, offset, flags, err);
 }
 
 static struct nbdkit_next_ops next_ops = {
@@ -483,13 +460,9 @@ filter_pread (struct backend *b, struct connection *conn,
   debug ("pread count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
          count, offset, flags);
 
-  if (f->filter.pread) {
-    int r = f->filter.pread (&next_ops, &nxdata, handle,
-                             buf, count, offset);
-    if (r == -1)
-      *err = errno;
-    return r;
-  }
+  if (f->filter.pread)
+    return f->filter.pread (&next_ops, &nxdata, handle,
+                            buf, count, offset, flags, err);
   else
     return f->backend.next->pread (f->backend.next, conn,
                                    buf, count, offset, flags, err);
@@ -509,13 +482,9 @@ filter_pwrite (struct backend *b, struct connection *conn,
   debug ("pwrite count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
          count, offset, flags);
 
-  if (f->filter.pwrite) {
-    int r = f->filter.pwrite (&next_ops, &nxdata, handle,
-                              buf, count, offset);
-    if (r == -1)
-      *err = errno;
-    return r;
-  }
+  if (f->filter.pwrite)
+    return f->filter.pwrite (&next_ops, &nxdata, handle,
+                             buf, count, offset, flags, err);
   else
     return f->backend.next->pwrite (f->backend.next, conn,
                                     buf, count, offset, flags, err);
@@ -533,12 +502,8 @@ filter_flush (struct backend *b, struct connection *conn, uint32_t flags,
 
   debug ("flush flags=0x%" PRIx32, flags);
 
-  if (f->filter.flush) {
-    int r = f->filter.flush (&next_ops, &nxdata, handle);
-    if (r == -1)
-      *err = errno;
-    return r;
-  }
+  if (f->filter.flush)
+    return f->filter.flush (&next_ops, &nxdata, handle, flags, err);
   else
     return f->backend.next->flush (f->backend.next, conn, flags, err);
 }
@@ -557,12 +522,9 @@ filter_trim (struct backend *b, struct connection *conn,
   debug ("trim count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
          count, offset, flags);
 
-  if (f->filter.trim) {
-    int r = f->filter.trim (&next_ops, &nxdata, handle, count, offset);
-    if (r == -1)
-      *err = errno;
-    return r;
-  }
+  if (f->filter.trim)
+    return f->filter.trim (&next_ops, &nxdata, handle, count, offset, flags,
+                           err);
   else
     return f->backend.next->trim (f->backend.next, conn, count, offset, flags,
                                   err);
@@ -581,13 +543,9 @@ filter_zero (struct backend *b, struct connection *conn,
   debug ("zero count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
          count, offset, flags);
 
-  if (f->filter.zero) {
-    int r = f->filter.zero (&next_ops, &nxdata, handle,
-                            count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM));
-    if (r == -1)
-      *err = errno;
-    return r;
-  }
+  if (f->filter.zero)
+    return f->filter.zero (&next_ops, &nxdata, handle,
+                           count, offset, flags, err);
   else
     return f->backend.next->zero (f->backend.next, conn,
                                   count, offset, flags, err);

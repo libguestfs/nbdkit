@@ -98,9 +98,6 @@
       (type *) ((char *) __mptr - offsetof(type, member));       \
     })
 
-#define NBDKIT_FLAG_MAY_TRIM (1<<0) /* Maps to !NBD_CMD_FLAG_NO_HOLE */
-#define NBDKIT_FLAG_FUA      (1<<1) /* Maps to NBD_CMD_FLAG_FUA */
-
 /* main.c */
 extern const char *exportname;
 extern const char *ipaddr;

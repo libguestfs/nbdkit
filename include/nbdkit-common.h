@@ -50,6 +50,9 @@ extern "C" {
 #define NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS        2
 #define NBDKIT_THREAD_MODEL_PARALLEL                  3
 
+#define NBDKIT_FLAG_MAY_TRIM (1<<0) /* Maps to !NBD_CMD_FLAG_NO_HOLE */
+#define NBDKIT_FLAG_FUA      (1<<1) /* Maps to NBD_CMD_FLAG_FUA */
+
 extern void nbdkit_error (const char *msg, ...)
   __attribute__((__format__ (__printf__, 1, 2)));
 extern void nbdkit_verror (const char *msg, va_list args);

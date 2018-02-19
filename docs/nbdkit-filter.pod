@@ -163,10 +163,16 @@ short-circuited.
 
 The filter’s other methods like C<.prepare>, C<.get_size>, C<.pread>
 etc ― always called in the context of a connection ― are passed a
-pointer to C<struct nbdkit_next_ops> which contains a subset of the
-plugin methods that can be called during a connection.  It is possible
-for a filter to issue (for example) extra read calls in response to a
-single C<.pwrite> call.
+pointer to C<struct nbdkit_next_ops> which contains a comparable set
+of accessors to plugin methods that can be called during a connection.
+It is possible for a filter to issue (for example) extra read calls in
+response to a single C<.pwrite> call.  Note that the semantics of the
+functions in C<struct nbdkit_next_ops> are slightly different from
+what a plugin implements: for example, when a plugin's C<.pread>
+returns -1 on error, the error value to advertise to the client is
+implicit (via the plugin calling C<nbdkit_set_error> or setting
+C<errno>), whereas C<next_ops-E<gt>pread> exposes this via an explicit
+parameter, allowing a filter to learn or modify this error if desired.
 
 You can modify parameters when you call the C<next> function.  However
 be careful when modifying strings because for some methods
@@ -324,6 +330,10 @@ will see.
 
 The returned size must be E<ge> 0.  If there is an error, C<.get_size>
 should call C<nbdkit_error> with an error message and return C<-1>.
+If this function is called more than once for the same connection, it
+should return the same value; similarly, the filter may cache
+C<next_ops-E<gt>get_size> for a given connection rather than repeating
+calls.
 
 =head2 C<.can_write>
 
@@ -346,65 +356,140 @@ should call C<nbdkit_error> with an error message and return C<-1>.
 These intercept the corresponding plugin methods.
 
 If there is an error, the callback should call C<nbdkit_error> with an
-error message and return C<-1>.
+error message and return C<-1>.  If these functions are called more
+than once for the same connection, they should return the same value;
+similarly, the filter may cache the results of each counterpart in
+C<next_ops> for a given connection rather than repeating calls.
 
 =head2 C<.pread>
 
  int (*pread) (struct nbdkit_next_ops *next_ops, void *nxdata,
-               void *handle, void *buf, uint32_t count, uint64_t offset);
+               void *handle, void *buf, uint32_t count, uint64_t offset,
+               uint32_t flags, int *err);
 
 This intercepts the plugin C<.pread> method and can be used to read or
 modify data read by the plugin.
 
+The parameter C<flags> exists in case of future NBD protocol
+extensions; at this time, it will be 0 on input, and the filter should
+not pass any flags to C<next_ops-E<gt>pread>.
+
 If there is an error (including a short read which couldn't be
 recovered from), C<.pread> should call C<nbdkit_error> with an error
-message B<and> set C<errno>, then return C<-1>.
+message B<and> return -1 with C<err> set to the positive errno value
+to return to the client.
 
 =head2 C<.pwrite>
 
  int (*pwrite) (struct nbdkit_next_ops *next_ops, void *nxdata,
                 void *handle,
-                const void *buf, uint32_t count, uint64_t offset);
+                const void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags, int *err);
 
 This intercepts the plugin C<.pwrite> method and can be used to modify
 data written by the plugin.
 
+This function will not be called if C<.can_write> returned false; in
+turn, the filter should not call C<next_ops-E<gt>pwrite> if
+C<next_ops-E<gt>can_write> did not return true.
+
+The parameter C<flags> may include C<NBDKIT_FLAG_FUA> on input based
+on the result of C<.can_flush>.  In turn, the filter should only pass
+C<NBDKIT_FLAG_FUA> on to C<next_ops-E<gt>pwrite> if
+C<next_ops-E<gt>can_flush> returned true.
+
 If there is an error (including a short write which couldn't be
 recovered from), C<.pwrite> should call C<nbdkit_error> with an error
-message B<and> set C<errno>, then return C<-1>.
+message B<and> return -1 with C<err> set to the positive errno value
+to return to the client.
 
 =head2 C<.flush>
 
  int (*flush) (struct nbdkit_next_ops *next_ops, void *nxdata,
-               void *handle);
+               void *handle, uint32_t flags, int *err);
 
 This intercepts the plugin C<.flush> method and can be used to modify
 flush requests.
 
+This function will not be called if C<.can_flush> returned false; in
+turn, the filter should not call C<next_ops-E<gt>flush> if
+C<next_ops-E<gt>can_flush> did not return true.
+
+The parameter C<flags> exists in case of future NBD protocol
+extensions; at this time, it will be 0 on input, and the filter should
+not pass any flags to C<next_ops-E<gt>flush>.
+
 If there is an error, C<.flush> should call C<nbdkit_error> with an
-error message B<and> set C<errno>, then return C<-1>.
+error message B<and> return -1 with C<err> set to the positive errno
+value to return to the client.
 
 =head2 C<.trim>
 
  int (*trim) (struct nbdkit_next_ops *next_ops, void *nxdata,
-              void *handle, uint32_t count, uint64_t offset);
+              void *handle, uint32_t count, uint64_t offset,
+              uint32_t flags, int *err);
 
 This intercepts the plugin C<.trim> method and can be used to modify
 trim requests.
 
+This function will not be called if C<.can_trim> returned false; in
+turn, the filter should not call C<next_ops-E<gt>trim> if
+C<next_ops-E<gt>can_trim> did not return true.
+
+The parameter C<flags> may include C<NBDKIT_FLAG_FUA> on input based
+on the result of C<.can_flush>.  In turn, the filter should only pass
+C<NBDKIT_FLAG_FUA> on to C<next_ops-E<gt>trim> if
+C<next_ops-E<gt>can_flush> returned true.
+
 If there is an error, C<.trim> should call C<nbdkit_error> with an
-error message B<and> set C<errno>, then return C<-1>.
+error message B<and> return -1 with C<err> set to the positive errno
+value to return to the client.
 
 =head2 C<.zero>
 
  int (*zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
-              void *handle, uint32_t count, uint64_t offset, int may_trim);
+              void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+              int *err);
 
 This intercepts the plugin C<.zero> method and can be used to modify
 zero requests.
 
+This function will not be called if C<.can_write> returned false; in
+turn, the filter should not call C<next_ops-E<gt>zero> if
+C<next_ops-E<gt>can_write> did not return true.
+
+On input, the parameter C<flags> may include C<NBDKIT_FLAG_MAY_TRIM>
+unconditionally, and C<NBDKIT_FLAG_FUA> based on the result of
+C<.can_flush>.  In turn, the filter may pass C<NBDKIT_FLAG_MAY_TRIM>
+unconditionally, but should only pass C<NBDKIT_FLAG_FUA> on to
+C<next_ops-E<gt>zero> if C<next_ops-E<gt>can_flush> returned true.
+
+Note that unlike the plugin C<.zero> which is permitted to fail with
+C<EOPNOTSUPP> to force a fallback to C<.pwrite>, the function
+C<next_ops-E<gt>zero> will never fail with C<err> set to C<EOPNOTSUPP>
+because the fallback has already taken place.
+
 If there is an error, C<.zero> should call C<nbdkit_error> with an
-error message B<and> set C<errno>, then return C<-1>.
+error message B<and> return -1 with C<err> set to the positive errno
+value to return to the client.  The filter should never fail with
+C<EOPNOTSUPP> (while plugins have automatic fallback to C<.pwrite>,
+filters do not).
+
+=head1 ERROR HANDLING
+
+If there is an error in the filter itself, the filter should call
+C<nbdkit_error> to report an error message.  If the callback is
+involved in serving data, the explicit C<err> parameter determines the
+error code that will be sent to the client; other callbacks should
+return the appropriate error indication, eg. C<NULL> or C<-1>.
+
+C<nbdkit_error> has the following prototype and works like
+L<printf(3)>:
+
+ void nbdkit_error (const char *fs, ...);
+ void nbdkit_verror (const char *fs, va_list args);
+
+For convenience, C<nbdkit_error> preserves the value of C<errno>.
 
 =head1 DEBUGGING
 

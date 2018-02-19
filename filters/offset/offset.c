@@ -97,34 +97,38 @@ offset_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 /* Read data. */
 static int
 offset_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
-              void *handle, void *buf, uint32_t count, uint64_t offs)
+              void *handle, void *buf, uint32_t count, uint64_t offs,
+              uint32_t flags, int *err)
 {
-  return next_ops->pread (nxdata, buf, count, offs + offset);
+  return next_ops->pread (nxdata, buf, count, offs + offset, flags, err);
 }
 
 /* Write data. */
 static int
 offset_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
                void *handle,
-               const void *buf, uint32_t count, uint64_t offs)
+               const void *buf, uint32_t count, uint64_t offs, uint32_t flags,
+               int *err)
 {
-  return next_ops->pwrite (nxdata, buf, count, offs + offset);
+  return next_ops->pwrite (nxdata, buf, count, offs + offset, flags, err);
 }
 
 /* Trim data. */
 static int
 offset_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
-             void *handle, uint32_t count, uint64_t offs)
+             void *handle, uint32_t count, uint64_t offs, uint32_t flags,
+             int *err)
 {
-  return next_ops->trim (nxdata, count, offs + offset);
+  return next_ops->trim (nxdata, count, offs + offset, flags, err);
 }
 
 /* Zero data. */
 static int
 offset_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
-             void *handle, uint32_t count, uint64_t offs, int may_trim)
+             void *handle, uint32_t count, uint64_t offs, uint32_t flags,
+             int *err)
 {
-  return next_ops->zero (nxdata, count, offs + offset, may_trim);
+  return next_ops->zero (nxdata, count, offs + offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <assert.h>
 
 #include <nbdkit-filter.h>
 
@@ -55,6 +56,8 @@
 
 /* Size of a block in the cache.  A 4K block size means that we need
  * 64 MB of memory to store the bitmaps for a 1 TB underlying image.
+ * It is also smaller than the usual hole size for sparse files, which
+ * means we have no reason to call next_ops->zero.
  */
 #define BLKSIZE 4096
 
@@ -263,7 +266,7 @@ blk_set_bitmap_entry (uint64_t blknum, enum bm_entry state)
  */
 static int
 blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
-          uint64_t blknum, uint8_t *block)
+          uint64_t blknum, uint8_t *block, int *err)
 {
   off_t offset = blknum * BLKSIZE;
   enum bm_entry state = blk_get_bitmap_entry (blknum);
@@ -276,9 +279,10 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
                 "unknown");
 
   if (state == BLOCK_NOT_CACHED) /* Read underlying plugin. */
-    return next_ops->pread (nxdata, block, BLKSIZE, offset);
+    return next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err);
   else {                         /* Read cache. */
     if (pread (fd, block, BLKSIZE, offset) == -1) {
+      *err = errno;
       nbdkit_error ("pread: %m");
       return -1;
     }
@@ -289,7 +293,8 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
 /* Write to the cache and the plugin. */
 static int
 blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
-                  uint64_t blknum, const uint8_t *block)
+                  uint64_t blknum, const uint8_t *block, uint32_t flags,
+                  int *err)
 {
   off_t offset = blknum * BLKSIZE;
 
@@ -298,11 +303,12 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
                 blknum, (uint64_t) offset);
 
   if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+    *err = errno;
     nbdkit_error ("pwrite: %m");
     return -1;
   }
 
-  if (next_ops->pwrite (nxdata, block, BLKSIZE, offset) == -1)
+  if (next_ops->pwrite (nxdata, block, BLKSIZE, offset, flags, err) == -1)
     return -1;
 
   blk_set_bitmap_entry (blknum, BLOCK_CLEAN);
@@ -313,12 +319,14 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
 /* Write to the cache only. */
 static int
 blk_writeback (struct nbdkit_next_ops *next_ops, void *nxdata,
-               uint64_t blknum, const uint8_t *block)
+               uint64_t blknum, const uint8_t *block, uint32_t flags,
+               int *err)
 {
   off_t offset;
 
-  if (cache_mode == CACHE_MODE_WRITETHROUGH)
-    return blk_writethrough (next_ops, nxdata, blknum, block);
+  if (cache_mode == CACHE_MODE_WRITETHROUGH ||
+      (cache_mode == CACHE_MODE_WRITEBACK && (flags & NBDKIT_FLAG_FUA)))
+    return blk_writethrough (next_ops, nxdata, blknum, block, flags, err);
 
   offset = blknum * BLKSIZE;
 
@@ -327,6 +335,7 @@ blk_writeback (struct nbdkit_next_ops *next_ops, void *nxdata,
                 blknum, (uint64_t) offset);
 
   if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+    *err = errno;
     nbdkit_error ("pwrite: %m");
     return -1;
   }
@@ -338,12 +347,15 @@ blk_writeback (struct nbdkit_next_ops *next_ops, void *nxdata,
 /* Read data. */
 static int
 cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
-             void *handle, void *buf, uint32_t count, uint64_t offset)
+             void *handle, void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags, int *err)
 {
   uint8_t *block;
 
+  assert (!flags);
   block = malloc (BLKSIZE);
   if (block == NULL) {
+    *err = errno;
     nbdkit_error ("malloc: %m");
     return -1;
   }
@@ -357,7 +369,7 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    if (blk_read (next_ops, nxdata, blknum, block) == -1) {
+    if (blk_read (next_ops, nxdata, blknum, block, err) == -1) {
       free (block);
       return -1;
     }
@@ -376,12 +388,14 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 /* Write data. */
 static int
 cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
-              void *handle, const void *buf, uint32_t count, uint64_t offset)
+              void *handle, const void *buf, uint32_t count, uint64_t offset,
+              uint32_t flags, int *err)
 {
   uint8_t *block;
 
   block = malloc (BLKSIZE);
   if (block == NULL) {
+    *err = errno;
     nbdkit_error ("malloc: %m");
     return -1;
   }
@@ -396,12 +410,12 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
       n = count;
 
     /* Do a read-modify-write operation on the current block. */
-    if (blk_read (next_ops, nxdata, blknum, block) == -1) {
+    if (blk_read (next_ops, nxdata, blknum, block, err) == -1){
       free (block);
       return -1;
     }
     memcpy (&block[blkoffs], buf, n);
-    if (blk_writeback (next_ops, nxdata, blknum, block) == -1) {
+    if (blk_writeback (next_ops, nxdata, blknum, block, flags, err) == -1) {
       free (block);
       return -1;
     }
@@ -418,16 +432,19 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 /* Zero data. */
 static int
 cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
-            void *handle, uint32_t count, uint64_t offset, int may_trim)
+            void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+            int *err)
 {
   uint8_t *block;
 
   block = malloc (BLKSIZE);
   if (block == NULL) {
+    *err = errno;
     nbdkit_error ("malloc: %m");
     return -1;
   }
 
+  flags &= ~NBDKIT_FLAG_MAY_TRIM; /* See BLKSIZE comment above. */
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
 
@@ -437,12 +454,12 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    if (blk_read (next_ops, nxdata, blknum, block) == -1) {
+    if (blk_read (next_ops, nxdata, blknum, block, err) == -1) {
       free (block);
       return -1;
     }
     memset (&block[blkoffs], 0, n);
-    if (blk_writeback (next_ops, nxdata, blknum, block) == -1) {
+    if (blk_writeback (next_ops, nxdata, blknum, block, flags, err) == -1) {
       free (block);
       return -1;
     }
@@ -457,13 +474,15 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Flush: Go through all the dirty blocks, flushing them to disk. */
 static int
-cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+             uint32_t flags, int *err)
 {
   uint8_t *block = NULL;
   uint64_t i, j;
   uint64_t blknum;
   enum bm_entry state;
   unsigned errors = 0;
+  int tmp;
 
   if (cache_mode == CACHE_MODE_UNSAFE)
     return 0;
@@ -473,7 +492,7 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
    * to be sure.  Also we still need to issue the flush to the
    * underlying storage.
    */
-
+  assert (!flags);
   for (i = 0; i < bm_size; ++i) {
     if (bitmap[i] != 0) {
       /* The bitmap stores information about 4 blocks per byte,
@@ -487,6 +506,7 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
           if (!block) {
             block = malloc (BLKSIZE);
             if (block == NULL) {
+              *err = errno;
               nbdkit_error ("malloc: %m");
               return -1;
             }
@@ -494,8 +514,10 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
           /* Perform a read + writethrough which will read from the
            * cache and write it through to the underlying storage.
            */
-          if (blk_read (next_ops, nxdata, blknum, block) == -1 ||
-              blk_writethrough (next_ops, nxdata, blknum, block)) {
+          if (blk_read (next_ops, nxdata, blknum, block,
+                        errors ? &tmp : err) == -1 ||
+              blk_writethrough (next_ops, nxdata, blknum, block, 0,
+                                errors ? &tmp : err) == -1) {
             nbdkit_error ("cache: flush of block %" PRIu64 " failed", blknum);
             errors++;
           }
@@ -507,7 +529,7 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   free (block);
 
   /* Now issue a flush request to the underlying storage. */
-  if (next_ops->flush (nxdata) == -1)
+  if (next_ops->flush (nxdata, 0, errors ? &tmp : err) == -1)
     errors++;
 
   return errors == 0 ? 0 : -1;
