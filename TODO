@@ -40,6 +40,11 @@ General ideas for improvements
   ones like offset) can fail to initialize if they can't guarantee
   strict alignment and don't want to deal with bounce buffers.
 
+* Tests written that use qemu-io need to be audited: qemu-io 2.11
+  would send 1-byte requests to any server, but 2.12 will tighten it
+  to do read-modify-write to 512 bytes unless the server supports
+  NBD_OPT_GO.
+
 Suggestions for plugins
 -----------------------
 
