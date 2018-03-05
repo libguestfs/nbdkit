@@ -46,7 +46,6 @@
 
 #include <pthread.h>
 
-#include "nbdkit-plugin.h"
 #include "internal.h"
 #include "protocol.h"
 

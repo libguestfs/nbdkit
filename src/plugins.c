@@ -43,7 +43,6 @@
 
 #include <dlfcn.h>
 
-#include "nbdkit-plugin.h"
 #include "internal.h"
 
 /* Maximum read or write request that we will handle. */

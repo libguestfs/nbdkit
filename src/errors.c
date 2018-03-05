@@ -39,7 +39,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include "nbdkit-plugin.h"
 #include "internal.h"
 
 /* Called with flockfile (stderr) taken. */

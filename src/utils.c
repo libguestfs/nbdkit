@@ -43,7 +43,6 @@
 #include <termios.h>
 #include <errno.h>
 
-#include "nbdkit-plugin.h"
 #include "internal.h"
 
 char *

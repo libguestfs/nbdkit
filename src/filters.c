@@ -43,7 +43,6 @@
 
 #include <dlfcn.h>
 
-#include "nbdkit-filter.h"
 #include "internal.h"
 
 /* We extend the generic backend struct with extra fields relating

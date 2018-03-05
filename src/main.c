@@ -57,7 +57,6 @@
 
 #include <dlfcn.h>
 
-#include "nbdkit-plugin.h"
 #include "internal.h"
 
 #define FIRST_SOCKET_ACTIVATION_FD 3 /* defined by systemd ABI */

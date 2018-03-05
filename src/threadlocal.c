@@ -42,7 +42,6 @@
 
 #include <pthread.h>
 
-#include "nbdkit-plugin.h"
 #include "internal.h"
 
 /* Note that most thread-local storage data is informational, used for

@@ -38,7 +38,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "nbdkit-plugin.h"
 #include "internal.h"
 
 void
