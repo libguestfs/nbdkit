@@ -155,7 +155,7 @@ py_dump_plugin (void)
   PyObject *fn;
   PyObject *r;
 
-  if (callback_defined ("dump_plugin", &fn)) {
+  if (script && callback_defined ("dump_plugin", &fn)) {
     PyErr_Clear ();
 
     r = PyObject_CallObject (fn, NULL);

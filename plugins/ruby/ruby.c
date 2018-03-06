@@ -168,10 +168,8 @@ plugin_rb_unload (void)
 static void
 plugin_rb_dump_plugin (void)
 {
-  if (!script) {
-    nbdkit_error ("the first parameter must be script=/path/to/ruby/script.rb");
+  if (!script)
     return;
-  }
 
   assert (code != NULL);
 
