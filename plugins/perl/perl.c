@@ -169,7 +169,7 @@ perl_dump_plugin (void)
 {
   dSP;
 
-  if (callback_defined ("dump_plugin")) {
+  if (script && callback_defined ("dump_plugin")) {
     ENTER;
     SAVETMPS;
     PUSHMARK (SP);
