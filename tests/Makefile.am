@@ -49,6 +49,7 @@ EXTRA_DIST = \
 	test-dump-plugin.sh \
 	test-dump-plugin-example4.sh \
 	test-foreground.sh \
+	test-fua.sh \
 	test-help.sh \
 	test-help-plugin.sh \
 	test-ip.sh \
@@ -430,6 +431,9 @@ TESTS += test-delay
 test_delay_SOURCES = test-delay.c test.h
 test_delay_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_delay_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# fua filter test.
+TESTS += test-fua.sh
 
 # log filter test.
 TESTS += test-log.sh

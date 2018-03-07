@@ -513,6 +513,7 @@ AC_CONFIG_FILES([Makefile
                  filters/cache/Makefile
                  filters/cow/Makefile
                  filters/delay/Makefile
+                 filters/fua/Makefile
                  filters/log/Makefile
                  filters/nozero/Makefile
                  filters/offset/Makefile
