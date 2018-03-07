@@ -514,6 +514,7 @@ AC_CONFIG_FILES([Makefile
                  filters/cow/Makefile
                  filters/delay/Makefile
                  filters/log/Makefile
+                 filters/nozero/Makefile
                  filters/offset/Makefile
                  filters/partition/Makefile
                  src/Makefile

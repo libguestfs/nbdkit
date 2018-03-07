@@ -53,6 +53,7 @@ EXTRA_DIST = \
 	test-help-plugin.sh \
 	test-ip.sh \
 	test-log.sh \
+	test-nozero.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
 	test-parallel-file.sh \
@@ -432,6 +433,9 @@ test_delay_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # log filter test.
 TESTS += test-log.sh
+
+# nozero filter test.
+TESTS += test-nozero.sh
 
 # offset filter test.
 check_DATA += offset-data

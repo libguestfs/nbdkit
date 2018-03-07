@@ -75,7 +75,7 @@ Suggestions for filters
 -----------------------
 
 * injecting artificial errors or otherwise masking plugin features
-  (such as hiding zero support) for testing clients
+  for testing clients (see 'nozero' filter for example)
 
 * fua filter: setting mode=none stops advertisement, mode=emulate uses
   flush emulation (or fails if !can_flush), mode=native passes on

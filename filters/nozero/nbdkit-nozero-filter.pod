@@ -1,0 +1,99 @@
+=encoding utf8
+
+=head1 NAME
+
+nbdkit-nozero-filter - nbdkit nozero filter
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=nozero plugin [zeromode=MODE] [plugin-args...]
+
+=head1 DESCRIPTION
+
+C<nbdkit-nozero-filter> is a filter that intentionally disables
+efficient handling of sparse file holes (ranges of all-zero bytes)
+across the NBD protocol.  It is mainly useful for evaluating timing
+differences between naive vs. sparse-aware connections, and for
+testing client or server fallbacks.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<zeromode=MODE>
+
+Optional, controls which mode the filter will use.  Mode B<none>
+(default) means that zero support is not advertised to the client;
+mode B<emulate> means that zero support is emulated by the filter
+using the plugin's C<pwrite> callback, regardless of whether the
+plugin itself implemented the C<zero> callback with a more efficient
+way to write zeros.
+
+=back
+
+=head1 EXAMPLES
+
+Serve the file F<disk.img>, but force the client to write zeroes
+explicitly rather than with C<NBD_CMD_WRITE_ZEROES>:
+
+ nbdkit --filter=nozero file file=disk.img
+
+Serve the file F<disk.img>, allowing the client to take advantage of
+less network traffic via C<NBD_CMD_WRITE_ZEROES>, but still forcing
+the data to be written explicitly rather than punching any holes:
+
+ nbdkit --filter=nozero file zeromode=emulate file=disk.img
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-filter(3)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.
+
+=head1 LICENSE
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+=over 4
+
+=item *
+
+Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+=item *
+
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+=item *
+
+Neither the name of Red Hat nor the names of its contributors may be
+used to endorse or promote products derived from this software without
+specific prior written permission.
+
+=back
+
+THIS SOFTWARE IS PROVIDED BY RED HAT AND CONTRIBUTORS ''AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL RED HAT OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.

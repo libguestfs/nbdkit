@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2018 Red Hat Inc.
+# Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,12 +30,33 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = \
-	blocksize \
-	cache \
-	cow \
-	delay \
-	log \
-	nozero \
-	offset \
-	partition
+EXTRA_DIST = nbdkit-nozero-filter.pod
+
+CLEANFILES = *~
+
+filterdir = $(libdir)/nbdkit/filters
+
+filter_LTLIBRARIES = nbdkit-nozero-filter.la
+
+nbdkit_nozero_filter_la_SOURCES = \
+	nozero.c \
+	$(top_srcdir)/include/nbdkit-filter.h
+
+nbdkit_nozero_filter_la_CPPFLAGS = \
+	-I$(top_srcdir)/include
+nbdkit_nozero_filter_la_CFLAGS = \
+	$(WARNINGS_CFLAGS)
+nbdkit_nozero_filter_la_LDFLAGS = \
+	-module -avoid-version -shared
+
+if HAVE_POD2MAN
+
+man_MANS = nbdkit-nozero-filter.1
+CLEANFILES += $(man_MANS)
+
+nbdkit-nozero-filter.1: nbdkit-nozero-filter.pod
+	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
+
+endif
