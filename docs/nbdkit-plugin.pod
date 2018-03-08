@@ -6,6 +6,8 @@ nbdkit-plugin - How to write nbdkit plugins
 
 =head1 SYNOPSIS
 
+ #define NBDKIT_API_VERSION 2
+ 
  #include <nbdkit-plugin.h>
  
  #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
@@ -63,9 +65,22 @@ L<nbdkit-perl-plugin(3)>,
 L<nbdkit-python-plugin(3)>,
 L<nbdkit-ruby-plugin(3)>.
 
+=head1 C<#define NBDKIT_API_VERSION 2>
+
+Plugins must choose which API version they want to use, by defining
+NBDKIT_API_VERSION to a positive integer prior to including
+C<nbdkit-plugin.h> (or any other nbdkit header).  The default version
+is 1 for backwards-compatibility with nbdkit v1.1.26 and earlier;
+however, it is recommended that new plugins be written to the maximum
+version (currently 2) as it enables more features and better
+interaction with nbdkit filters.  Therefore, the rest of this document
+only covers the version 2 interface.  A newer nbdkit will always
+support plugins compiled against any prior API version.
+
 =head1 C<nbdkit-plugin.h>
 
-All plugins should start by including this header file:
+All plugins should start by including this header file, after
+optionally choosing an API version:
 
  #include <nbdkit-plugin.h>
 
@@ -127,14 +142,20 @@ A new client has connected.
 
 =item C<.can_write>, C<.get_size> and other option negotiation callbacks
 
-These are called during option negotiation with the client, but
-before any data is served.
+These are called during option negotiation with the client, but before
+any data is served.  These callbacks may return different values
+across different C<.open> calls, but within a single connection, must
+always return the same value; other code in nbdkit may cache the
+per-connection value returned rather than using the callback a second
+time.
 
 =item C<.pread>, C<.pwrite> and other data serving callbacks
 
 After option negotiation has finished, these may be called to serve
 data.  Depending on the thread model chosen, they might be called in
-parallel from multiple threads.
+parallel from multiple threads.  The data serving callbacks include a
+flags argument; the results of the negotiation callbacks influence
+whether particular flags will ever be passed to a data callback.
 
 =item C<.close>
 
@@ -149,6 +170,58 @@ the thread model).
 =item C<.unload>
 
 is called once just before the plugin is unloaded from memory.
+
+=back
+
+=head1 Flags
+
+The following flags are defined by nbdkit, and used in various data
+serving callbacks as follows:
+
+=over 4
+
+=item C<NBDKIT_FLAG_MAY_TRIM>
+
+This flag is used by the C<.zero> callback; there is no way to disable
+this flag, although a plugin that does not support trims as a way to
+write zeroes may ignore the flag without violating expected semantics.
+
+=item C<NBDKIT_FLAG_FUA>
+
+This flag represents Forced Unit Access semantics.  It is used by the
+C<.pwrite>, C<.zero>, and C<.trim> callbacks to indicate that the
+plugin must not return a result until the action has landed in
+persistent storage.  This flag will not be sent to the plugin unless
+C<.can_fua> is provided and returns C<NBDKIT_FUA_NATIVE>.
+
+=back
+
+The following defines are valid as successful return values for
+C<.can_fua>:
+
+=over 4
+
+=item C<NBDKIT_FUA_NONE>
+
+Forced Unit Access is not supported; the client must manually request
+a flush after writes have completed.  The C<NBDKIT_FLAG_FUA> flag will
+not be passed to the plugin's write callbacks.
+
+=item C<NBDKIT_FUA_EMULATE>
+
+The client may request Forced Unit Access, but it is implemented by
+emulation, where nbdkit calls C<.flush> after a write operation; this
+is semantically correct, but may hurt performance as it tends to flush
+more data than just what the client requested.  The C<NBDKIT_FLAG_FUA>
+flag will not be passed to the plugin's write callbacks.
+
+=item C<NBDKIT_FUA_NATIVE>
+
+The client may request Forced Unit Access, which results in the
+C<NBDKIT_FLAG_FUA> flag being passed to the plugin's write callbacks
+(C<.pwrite>, C<.trim>, and C<.zero>).  When the flag is set, these
+callbacks must not return success until the client's request has
+landed in persistent storage.
 
 =back
 
@@ -414,15 +487,42 @@ error message and return C<-1>.
 This callback is not required.  If omitted, then we return true iff a
 C<.trim> callback has been defined.
 
+=head2 C<.can_fua>
+
+ int can_fua (void *handle);
+
+This is called during the option negotiation phase to find out if the
+plugin supports the Forced Unit Access (FUA) flag on write, zero, and
+trim requests.  If this returns C<NBDKIT_FUA_NONE>, FUA support is not
+advertised to the guest; if this returns C<NBDKIT_FUA_EMULATE>, the
+C<.flush> callback must work (even if C<.can_flush> returns false),
+and FUA support is emulated by calling C<.flush> after any write
+operation; if this returns C<NBDKIT_FUA_NATIVE>, then the C<.pwrite>,
+C<.zero>, and C<.trim> callbacks (if implemented) must handle the flag
+C<NBDKIT_FLAG_FUA>, by not returning until that action has landed in
+persistent storage.
+
+If there is an error, C<.can_fua> should call C<nbdkit_error> with an
+error message and return C<-1>.
+
+This callback is not required unless a plugin wants to specifically
+handle FUA requests.  If omitted, nbdkit checks C<.can_flush>, and
+behaves as if this function returns C<NBDKIT_FUA_NONE> or
+C<NBDKIT_FUA_EMULATE> as appropriate.
+
 =head2 C<.pread>
 
- int pread (void *handle, void *buf, uint32_t count, uint64_t offset);
+ int pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags);
 
 During the data serving phase, nbdkit calls this callback to read data
 from the backing store.  C<count> bytes starting at C<offset> in the
 backing store should be read and copied into C<buf>.  nbdkit takes
 care of all bounds- and sanity-checking, so the plugin does not need
 to worry about that.
+
+The parameter C<flags> exists in case of future NBD protocol
+extensions; at this time, it will be 0 on input.
 
 The callback must read the whole C<count> bytes if it can.  The NBD
 protocol doesn't allow partial reads (instead, these would be errors).
@@ -436,13 +536,18 @@ message, and C<nbdkit_set_error> to record an appropriate error
 
 =head2 C<.pwrite>
 
- int pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset);
+ int pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags);
 
 During the data serving phase, nbdkit calls this callback to write
 data to the backing store.  C<count> bytes starting at C<offset> in
 the backing store should be written using the data in C<buf>.  nbdkit
 takes care of all bounds- and sanity-checking, so the plugin does not
 need to worry about that.
+
+This function will not be called if C<.can_write> returned false.  The
+parameter C<flags> may include C<NBDKIT_FLAG_FUA> on input based on
+the result of C<.can_fua>.
 
 The callback must write the whole C<count> bytes if it can.  The NBD
 protocol doesn't allow partial writes (instead, these would be
@@ -456,12 +561,18 @@ message, and C<nbdkit_set_error> to record an appropriate error
 
 =head2 C<.flush>
 
- int flush (void *handle);
+ int flush (void *handle, uint32_t flags);
 
 During the data serving phase, this callback is used to
 L<fdatasync(2)> the backing store, ie. to ensure it has been
 completely written to a permanent medium.  If that is not possible
 then you can omit this callback.
+
+This function will not be called directly by the client if
+C<.can_flush> returned false; however, it may still be called by
+nbdkit if C<.can_fua> returned C<NBDKIT_FUA_EMULATE>.  The parameter
+C<flags> exists in case of future NBD protocol extensions; at this
+time, it will be 0 on input.
 
 If there is an error, C<.flush> should call C<nbdkit_error> with an
 error message, and C<nbdkit_set_error> to record an appropriate error
@@ -469,11 +580,15 @@ error message, and C<nbdkit_set_error> to record an appropriate error
 
 =head2 C<.trim>
 
- int trim (void *handle, uint32_t count, uint64_t offset);
+ int trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags);
 
 During the data serving phase, this callback is used to "punch holes"
 in the backing store.  If that is not possible then you can omit this
 callback.
+
+This function will not be called if C<.can_trim> returned false.  The
+parameter C<flags> may include C<NBDKIT_FLAG_FUA> on input based on
+the result of C<.can_fua>.
 
 If there is an error, C<.trim> should call C<nbdkit_error> with an
 error message, and C<nbdkit_set_error> to record an appropriate error
@@ -481,15 +596,21 @@ error message, and C<nbdkit_set_error> to record an appropriate error
 
 =head2 C<.zero>
 
- int zero (void *handle, uint32_t count, uint64_t offset, int may_trim);
+ int zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags);
 
 During the data serving phase, this callback is used to write C<count>
-bytes of zeroes at C<offset> in the backing store.  If C<may_trim> is
-non-zero, the operation can punch a hole instead of writing actual
-zero bytes, but only if subsequent reads from the hole read as zeroes.
-If this callback is omitted, or if it fails with C<EOPNOTSUPP>
-(whether by C<nbdkit_set_error> or C<errno>), then C<.pwrite> will be
-used instead.
+bytes of zeroes at C<offset> in the backing store.
+
+This function will not be called if C<.can_write> returned false.  On
+input, the parameter C<flags> may include C<NBDKIT_FLAG_MAY_TRIM>
+unconditionally, and C<NBDKIT_FLAG_FUA> based on the result of
+C<.can_fua>.
+
+If C<NBDKIT_FLAG_MAY_TRIM> is requested, the operation can punch a
+hole instead of writing actual zero bytes, but only if subsequent
+reads from the hole read as zeroes.  If this callback is omitted, or
+if it fails with C<EOPNOTSUPP> (whether by C<nbdkit_set_error> or
+C<errno>), then C<.pwrite> will be used instead.
 
 The callback must write the whole C<count> bytes if it can.  The NBD
 protocol doesn't allow partial writes (instead, these would be

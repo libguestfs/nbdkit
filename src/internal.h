@@ -40,6 +40,7 @@
 #include <sys/socket.h>
 #include <pthread.h>
 
+#define NBDKIT_API_VERSION 2
 #include "nbdkit-plugin.h"
 #include "nbdkit-filter.h"
 

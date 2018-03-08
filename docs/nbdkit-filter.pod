@@ -385,12 +385,12 @@ function is allowed.
                  void *handle);
 
 This controls how the Forced Unit Access flag will be handled; it is
-only relevant for connections that are not read-only.  For now, this
-function has no counterpart in plugins, although it will be added.
-Unlike other feature functions with just two success states, this one
-returns three success values: C<NBDKIT_FUA_NONE> to avoid advertising
-FUA support to the client, C<NBDKIT_FUA_EMULATE> if FUA is emulated by
-nbdkit calling flush after a write transaction, and
+only relevant for connections that are not read-only.  This intercepts
+the corresponding plugin method, to control feature bits advertised to
+the client.  Unlike other feature functions with just two success
+states, this one returns three success values: C<NBDKIT_FUA_NONE> to
+avoid advertising FUA support to the client, C<NBDKIT_FUA_EMULATE> if
+FUA is emulated by nbdkit calling flush after a write transaction, and
 C<NBDKIT_FUA_NATIVE> if FUA semantics are handled by the plugin
 without the overhead of an extra flush from nbdkit.
 

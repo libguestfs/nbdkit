@@ -42,7 +42,13 @@
 extern "C" {
 #endif
 
+/* By default, a plugin gets API version 1; but you may request
+ * version 2 prior to including this header */
+#ifndef NBDKIT_API_VERSION
 #define NBDKIT_API_VERSION                            1
+#elif (NBDKIT_API_VERSION - 0) < 1 || NBDKIT_API_VERSION > 2
+#error Unsupported API version
+#endif
 
 struct nbdkit_plugin {
   /* Do not set these fields directly; use NBDKIT_REGISTER_PLUGIN.
@@ -80,16 +86,40 @@ struct nbdkit_plugin {
   int (*is_rotational) (void *handle);
   int (*can_trim) (void *handle);
 
+#if NBDKIT_API_VERSION == 1
   int (*pread) (void *handle, void *buf, uint32_t count, uint64_t offset);
   int (*pwrite) (void *handle, const void *buf, uint32_t count, uint64_t offset);
   int (*flush) (void *handle);
   int (*trim) (void *handle, uint32_t count, uint64_t offset);
   int (*zero) (void *handle, uint32_t count, uint64_t offset, int may_trim);
+#else
+  int (*_pread_old) (void *, void *, uint32_t, uint64_t);
+  int (*_pwrite_old) (void *, const void *, uint32_t, uint64_t);
+  int (*_flush_old) (void *);
+  int (*_trim_old) (void *, uint32_t, uint64_t);
+  int (*_zero_old) (void *, uint32_t, uint64_t, int);
+#endif
 
   int errno_is_preserved;
 
   void (*dump_plugin) (void);
 
+  int (*can_fua) (void *handle);
+#if NBDKIT_API_VERSION == 1
+  int (*_unused1) (void *, void *, uint32_t, uint64_t);
+  int (*_unused2) (void *, const void *, uint32_t, uint64_t, uint32_t);
+  int (*_unused3) (void *, uint32_t);
+  int (*_unused4) (void *, uint32_t, uint64_t, uint32_t);
+  int (*_unused5) (void *, uint32_t, uint64_t, uint32_t);
+#else
+  int (*pread) (void *handle, void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags);
+  int (*pwrite) (void *handle, const void *buf, uint32_t count,
+                 uint64_t offset, uint32_t flags);
+  int (*flush) (void *handle, uint32_t flags);
+  int (*trim) (void *handle, uint32_t count, uint64_t offset, uint32_t flags);
+  int (*zero) (void *handle, uint32_t count, uint64_t offset, uint32_t flags);
+#endif
   /* int (*set_exportname) (void *handle, const char *exportname); */
 };
 

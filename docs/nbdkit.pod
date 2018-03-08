@@ -827,7 +827,12 @@ information about that plugin, eg:
  [etc]
 
 Plugins which ship with nbdkit usually have the same version as the
-corresponding nbdkit binary.
+corresponding nbdkit binary.  The nbdkit binary will always be able to
+utilize plugins compiled against an older version of the header;
+however, newer plugins may not be fully supported by an older nbdkit
+binary (for example, a plugin compiled with C<NBDKIT_API_VERSION> of 2
+fails to load with an older nbdkit that only knows
+C<NBDKIT_API_VERSION> 1).
 
 =head2 Detect if a plugin is installed
 

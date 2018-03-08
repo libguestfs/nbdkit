@@ -180,6 +180,12 @@ plugin_dump_fields (struct backend *b)
   HAS (can_flush);
   HAS (is_rotational);
   HAS (can_trim);
+  HAS (_pread_old);
+  HAS (_pwrite_old);
+  HAS (_flush_old);
+  HAS (_trim_old);
+  HAS (_zero_old);
+  HAS (can_fua);
   HAS (pread);
   HAS (pwrite);
   HAS (flush);
@@ -301,7 +307,7 @@ plugin_can_write (struct backend *b, struct connection *conn)
   if (p->plugin.can_write)
     return p->plugin.can_write (connection_get_handle (conn, 0));
   else
-    return p->plugin.pwrite != NULL;
+    return p->plugin.pwrite || p->plugin._pwrite_old;
 }
 
 static int
@@ -316,7 +322,7 @@ plugin_can_flush (struct backend *b, struct connection *conn)
   if (p->plugin.can_flush)
     return p->plugin.can_flush (connection_get_handle (conn, 0));
   else
-    return p->plugin.flush != NULL;
+    return p->plugin.flush || p->plugin._flush_old;
 }
 
 static int
@@ -346,7 +352,7 @@ plugin_can_trim (struct backend *b, struct connection *conn)
   if (p->plugin.can_trim)
     return p->plugin.can_trim (connection_get_handle (conn, 0));
   else
-    return p->plugin.trim != NULL;
+    return p->plugin.trim || p->plugin._trim_old;
 }
 
 /* Grab the appropriate error value.
@@ -377,14 +383,20 @@ plugin_can_fua (struct backend *b, struct connection *conn)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
+  assert (connection_get_handle (conn, 0));
+
   debug ("can_fua");
 
-  /* TODO - wire FUA flag support into plugins. Until then, this copies
-   * can_flush, since that's how we emulate FUA. */
+  if (p->plugin.can_fua) {
+    r = p->plugin.can_fua (connection_get_handle (conn, 0));
+    if (r > NBDKIT_FUA_EMULATE && p->plugin._api_version == 1)
+      r = NBDKIT_FUA_EMULATE;
+    return r;
+  }
   r = plugin_can_flush (b, conn);
   if (r == -1)
     return -1;
-  if (r == 0 || !p->plugin.flush)
+  if (r == 0 || !(p->plugin.flush || p->plugin._flush_old))
     return NBDKIT_FUA_NONE;
   return NBDKIT_FUA_EMULATE;
 }
@@ -398,12 +410,17 @@ plugin_pread (struct backend *b, struct connection *conn,
   int r;
 
   assert (connection_get_handle (conn, 0));
-  assert (p->plugin.pread != NULL);
+  assert (p->plugin.pread || p->plugin._pread_old);
   assert (!flags);
 
   debug ("pread count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
-  r = p->plugin.pread (connection_get_handle (conn, 0), buf, count, offset);
+  if (p->plugin.pread)
+    r = p->plugin.pread (connection_get_handle (conn, 0), buf, count, offset,
+                         0);
+  else
+    r = p->plugin._pread_old (connection_get_handle (conn, 0), buf, count,
+                              offset);
   if (r == -1)
     *err = get_error (p);
   return r;
@@ -421,16 +438,17 @@ plugin_flush (struct backend *b, struct connection *conn, uint32_t flags,
 
   debug ("flush");
 
-  if (p->plugin.flush != NULL) {
-    r = p->plugin.flush (connection_get_handle (conn, 0));
-    if (r == -1)
-      *err = get_error (p);
-    return r;
-  }
+  if (p->plugin.flush)
+    r = p->plugin.flush (connection_get_handle (conn, 0), 0);
+  else if (p->plugin._flush_old)
+    r = p->plugin._flush_old (connection_get_handle (conn, 0));
   else {
     *err = EINVAL;
     return -1;
   }
+  if (r == -1)
+    *err = get_error (p);
+  return r;
 }
 
 static int
@@ -441,6 +459,7 @@ plugin_pwrite (struct backend *b, struct connection *conn,
   int r;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   bool fua = flags & NBDKIT_FLAG_FUA;
+  bool need_flush = false;
 
   assert (connection_get_handle (conn, 0));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
@@ -448,17 +467,22 @@ plugin_pwrite (struct backend *b, struct connection *conn,
   debug ("pwrite count=%" PRIu32 " offset=%" PRIu64 " fua=%d", count, offset,
          fua);
 
-  if (p->plugin.pwrite != NULL)
-    r = p->plugin.pwrite (connection_get_handle (conn, 0),
-                          buf, count, offset);
+  if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
+    flags &= ~NBDKIT_FLAG_FUA;
+    need_flush = true;
+  }
+  if (p->plugin.pwrite)
+    r = p->plugin.pwrite (connection_get_handle (conn, 0), buf, count, offset,
+                          flags);
+  else if (p->plugin._pwrite_old)
+    r = p->plugin._pwrite_old (connection_get_handle (conn, 0),
+                               buf, count, offset);
   else {
     *err = EROFS;
     return -1;
   }
-  if (r != -1 && fua) {
-    assert (p->plugin.flush);
-    r = p->plugin.flush (connection_get_handle (conn, 0));
-  }
+  if (r != -1 && need_flush)
+    r = plugin_flush (b, conn, 0, err);
   if (r == -1)
     *err = get_error (p);
   return r;
@@ -471,6 +495,7 @@ plugin_trim (struct backend *b, struct connection *conn,
   int r;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   bool fua = flags & NBDKIT_FLAG_FUA;
+  bool need_flush = false;
 
   assert (connection_get_handle (conn, 0));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
@@ -478,16 +503,20 @@ plugin_trim (struct backend *b, struct connection *conn,
   debug ("trim count=%" PRIu32 " offset=%" PRIu64 " fua=%d", count, offset,
          fua);
 
-  if (p->plugin.trim != NULL)
-    r = p->plugin.trim (connection_get_handle (conn, 0), count, offset);
+  if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
+    flags &= ~NBDKIT_FLAG_FUA;
+    need_flush = true;
+  }
+  if (p->plugin.trim)
+    r = p->plugin.trim (connection_get_handle (conn, 0), count, offset, flags);
+  else if (p->plugin._trim_old)
+    r = p->plugin._trim_old (connection_get_handle (conn, 0), count, offset);
   else {
     *err = EINVAL;
     return -1;
   }
-  if (r != -1 && fua) {
-    assert (p->plugin.flush);
-    r = p->plugin.flush (connection_get_handle (conn, 0));
-  }
+  if (r != -1 && need_flush)
+    r = plugin_flush (b, conn, 0, err);
   if (r == -1)
     *err = get_error (p);
   return r;
@@ -500,9 +529,11 @@ plugin_zero (struct backend *b, struct connection *conn,
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   char *buf;
   uint32_t limit;
-  int result;
-  int may_trim = (flags & NBDKIT_FLAG_MAY_TRIM) != 0;
+  int r = -1;
+  bool may_trim = flags & NBDKIT_FLAG_MAY_TRIM;
   bool fua = flags & NBDKIT_FLAG_FUA;
+  bool emulate = false;
+  bool need_flush = false;
 
   assert (connection_get_handle (conn, 0));
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
@@ -510,19 +541,27 @@ plugin_zero (struct backend *b, struct connection *conn,
   debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
          count, offset, may_trim, fua);
 
+  if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
+    flags &= ~NBDKIT_FLAG_FUA;
+    need_flush = true;
+  }
   if (!count)
     return 0;
-  if (p->plugin.zero) {
-    errno = 0;
-    result = p->plugin.zero (connection_get_handle (conn, 0),
-                             count, offset, may_trim);
-    if (result == -1)
-      *err = get_error (p);
-    if (result == 0 || *err != EOPNOTSUPP)
-      goto done;
-  }
+  errno = 0;
+  if (p->plugin.zero)
+    r = p->plugin.zero (connection_get_handle (conn, 0), count, offset, flags);
+  else if (p->plugin._zero_old)
+    r = p->plugin._zero_old (connection_get_handle (conn, 0), count, offset,
+                             may_trim);
+  else
+    emulate = true;
+  if (r == -1)
+    *err = emulate ? EOPNOTSUPP : get_error (p);
+  if (r == 0 || *err != EOPNOTSUPP)
+    goto done;
 
-  assert (p->plugin.pwrite);
+  assert (p->plugin.pwrite || p->plugin._pwrite_old);
+  flags &= ~NBDKIT_FLAG_MAY_TRIM;
   threadlocal_set_error (0);
   limit = count < MAX_REQUEST_SIZE ? count : MAX_REQUEST_SIZE;
   buf = calloc (limit, 1);
@@ -532,9 +571,8 @@ plugin_zero (struct backend *b, struct connection *conn,
   }
 
   while (count) {
-    result = p->plugin.pwrite (connection_get_handle (conn, 0),
-                               buf, limit, offset);
-    if (result == -1)
+    r = plugin_pwrite (b, conn, buf, limit, offset, flags, err);
+    if (r == -1)
       break;
     count -= limit;
     if (count < limit)
@@ -546,13 +584,11 @@ plugin_zero (struct backend *b, struct connection *conn,
   errno = *err;
 
  done:
-  if (result != -1 && fua) {
-    assert (p->plugin.flush);
-    result = p->plugin.flush (connection_get_handle (conn, 0));
-  }
-  if (result == -1)
+  if (r != -1 && need_flush)
+    r = plugin_flush (b, conn, 0, err);
+  if (r == -1)
     *err = get_error (p);
-  return result;
+  return r;
 }
 
 static struct backend plugin_functions = {
@@ -619,7 +655,7 @@ plugin_register (size_t index, const char *filename,
   }
 
   /* Check for incompatible future versions. */
-  if (plugin->_api_version != 1) {
+  if (plugin->_api_version < 0 || plugin->_api_version > 2) {
     fprintf (stderr, "%s: %s: plugin is incompatible with this version of nbdkit (_api_version = %d)\n",
              program_name, p->filename, plugin->_api_version);
     exit (EXIT_FAILURE);
@@ -654,7 +690,7 @@ plugin_register (size_t index, const char *filename,
              program_name, p->filename);
     exit (EXIT_FAILURE);
   }
-  if (p->plugin.pread == NULL) {
+  if (p->plugin.pread == NULL && p->plugin._pread_old == NULL) {
     fprintf (stderr, "%s: %s: plugin must have a .pread callback\n",
              program_name, p->filename);
     exit (EXIT_FAILURE);
