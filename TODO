@@ -40,6 +40,10 @@ General ideas for improvements
   ones like offset) can fail to initialize if they can't guarantee
   strict alignment and don't want to deal with bounce buffers.
 
+* Add per-connection caching of .can_FOO callbacks (we already have
+  some: .can_write is only called once, but .can_fua is called on
+  every request with the FUA flag set).
+
 Suggestions for plugins
 -----------------------
 
