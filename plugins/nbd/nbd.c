@@ -46,6 +46,8 @@
 #include <assert.h>
 #include <pthread.h>
 
+#define NBDKIT_API_VERSION 2
+
 #include <nbdkit-plugin.h>
 #include "protocol.h"
 
@@ -616,64 +618,85 @@ nbd_can_trim (void *handle)
   return h->flags & NBD_FLAG_SEND_TRIM;
 }
 
+static int
+nbd_can_fua (void *handle)
+{
+  struct handle *h = handle;
+
+  return h->flags & NBD_FLAG_SEND_FUA ? NBDKIT_FUA_NATIVE : NBDKIT_FUA_NONE;
+}
+
 /* Read data from the file. */
 static int
-nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+           uint32_t flags)
 {
   struct handle *h = handle;
   int c;
 
+  assert (!flags);
   c = nbd_request_full (h, 0, NBD_CMD_READ, offset, count, NULL, buf);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
 /* Write data to the file. */
 static int
-nbd_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
+nbd_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags)
 {
   struct handle *h = handle;
   int c;
 
-  c = nbd_request_full (h, 0, NBD_CMD_WRITE, offset, count, buf, NULL);
+  assert (!(flags & ~NBDKIT_FLAG_FUA));
+  c = nbd_request_full (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
+                        NBD_CMD_WRITE, offset, count, buf, NULL);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
 /* Write zeroes to the file. */
 static int
-nbd_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+nbd_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
   int c;
+  int f = 0;
 
+  assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)));
   if (!(h->flags & NBD_FLAG_SEND_WRITE_ZEROES)) {
     /* Trigger a fall back to regular writing */
     errno = EOPNOTSUPP;
     return -1;
   }
 
-  c = nbd_request (h, may_trim ? 0 : NBD_CMD_FLAG_NO_HOLE,
-                   NBD_CMD_WRITE_ZEROES, offset, count);
+  if (!(flags & NBDKIT_FLAG_MAY_TRIM))
+    f |= NBD_CMD_FLAG_NO_HOLE;
+  if (flags & NBDKIT_FLAG_FUA)
+    f |= NBD_CMD_FLAG_FUA;
+  c = nbd_request (h, f, NBD_CMD_WRITE_ZEROES, offset, count);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
 /* Trim a portion of the file. */
 static int
-nbd_trim (void *handle, uint32_t count, uint64_t offset)
+nbd_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
   int c;
 
-  c = nbd_request (h, 0, NBD_CMD_TRIM, offset, count);
+  assert (!(flags & ~NBDKIT_FLAG_FUA));
+  c = nbd_request (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
+                   NBD_CMD_TRIM, offset, count);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
 /* Flush the file to disk. */
 static int
-nbd_flush (void *handle)
+nbd_flush (void *handle, uint32_t flags)
 {
   struct handle *h = handle;
   int c;
 
+  assert (!flags);
   c = nbd_request (h, 0, NBD_CMD_FLUSH, 0, 0);
   return c < 0 ? c : nbd_reply (h, c);
 }
@@ -693,6 +716,7 @@ static struct nbdkit_plugin plugin = {
   .can_flush          = nbd_can_flush,
   .is_rotational      = nbd_is_rotational,
   .can_trim           = nbd_can_trim,
+  .can_fua            = nbd_can_fua,
   .pread              = nbd_pread,
   .pwrite             = nbd_pwrite,
   .zero               = nbd_zero,
