@@ -619,6 +619,14 @@ nbd_can_trim (void *handle)
 }
 
 static int
+nbd_can_zero (void *handle)
+{
+  struct handle *h = handle;
+
+  return h->flags & NBD_FLAG_SEND_WRITE_ZEROES;
+}
+
+static int
 nbd_can_fua (void *handle)
 {
   struct handle *h = handle;
@@ -662,11 +670,7 @@ nbd_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   int f = 0;
 
   assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)));
-  if (!(h->flags & NBD_FLAG_SEND_WRITE_ZEROES)) {
-    /* Trigger a fall back to regular writing */
-    errno = EOPNOTSUPP;
-    return -1;
-  }
+  assert (h->flags & NBD_FLAG_SEND_WRITE_ZEROES);
 
   if (!(flags & NBDKIT_FLAG_MAY_TRIM))
     f |= NBD_CMD_FLAG_NO_HOLE;
@@ -716,6 +720,7 @@ static struct nbdkit_plugin plugin = {
   .can_flush          = nbd_can_flush,
   .is_rotational      = nbd_is_rotational,
   .can_trim           = nbd_can_trim,
+  .can_zero           = nbd_can_zero,
   .can_fua            = nbd_can_fua,
   .pread              = nbd_pread,
   .pwrite             = nbd_pwrite,

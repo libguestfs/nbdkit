@@ -36,7 +36,9 @@ set -e
 files="nozero1.img nozero1.log nozero1.sock nozero1.pid
        nozero2.img nozero2.log nozero2.sock nozero2.pid
        nozero3.img nozero3.log nozero3.sock nozero3.pid
-       nozero4.img nozero4.log nozero4.sock nozero4.pid"
+       nozero4.img nozero4.log nozero4.sock nozero4.pid
+       nozero5.img nozero5a.log nozero5b.log nozero5a.sock nozero5b.sock
+       nozero5a.pid nozero5b.pid"
 rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on
@@ -45,6 +47,7 @@ for f in {0..1023}; do printf '%1024s' . >> nozero1.img; done
 cp nozero1.img nozero2.img
 cp nozero1.img nozero3.img
 cp nozero1.img nozero4.img
+cp nozero1.img nozero5.img
 if ! qemu-io -f raw -d unmap -c 'w -z -u 0 1M' nozero1.img; then
     echo "$0: missing or broken qemu-io"
     rm nozero?.img
@@ -57,7 +60,7 @@ if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
 fi
 cp nozero2.img nozero1.img
 
-pid1= pid2= pid3= pid4=
+pid1= pid2= pid3= pid4= pid5a= pid5b=
 
 # Kill any nbdkit processes on exit.
 cleanup ()
@@ -68,6 +71,8 @@ cleanup ()
     test "$pid2" && kill $pid2
     test "$pid3" && kill $pid3
     test "$pid4" && kill $pid4
+    test "$pid5a" && kill $pid5a
+    test "$pid5b" && kill $pid5b
     # For easier debugging, dump the final log files before removing them.
     echo "Log 1 file contents:"
     cat nozero1.log || :
@@ -77,6 +82,10 @@ cleanup ()
     cat nozero3.log || :
     echo "Log 4 file contents:"
     cat nozero4.log || :
+    echo "Log 5a file contents:"
+    cat nozero5a.log || :
+    echo "Log 5b file contents:"
+    cat nozero5b.log || :
     rm -f $files
 
     exit $status
@@ -88,6 +97,8 @@ trap cleanup INT QUIT TERM EXIT ERR
 # 2: log before filter with zeromode=none (default), to ensure no ZERO request
 # 3: log before filter with zeromode=emulate, to ensure ZERO from client
 # 4: log after filter with zeromode=emulate, to ensure no ZERO to plugin
+# 5a/b: both sides of nbd plugin: even though server side does not advertise
+# ZERO, the client side still exposes it, and just skips calling nbd's .zero
 nbdkit -P nozero1.pid -U nozero1.sock --filter=log \
        file logfile=nozero1.log file=nozero1.img
 nbdkit -P nozero2.pid -U nozero2.sock --filter=log --filter=nozero \
@@ -96,11 +107,15 @@ nbdkit -P nozero3.pid -U nozero3.sock --filter=log --filter=nozero \
        file logfile=nozero3.log file=nozero3.img zeromode=emulate
 nbdkit -P nozero4.pid -U nozero4.sock --filter=nozero --filter=log \
        file logfile=nozero4.log file=nozero4.img zeromode=emulate
+nbdkit -P nozero5a.pid -U nozero5a.sock --filter=log --filter=nozero \
+       file logfile=nozero5a.log file=nozero5.img
+nbdkit -P nozero5b.pid -U nozero5b.sock --filter=log \
+       nbd logfile=nozero5b.log socket=nozero5a.sock
 
 # We may have to wait a short time for the pid files to appear.
 for i in `seq 1 10`; do
     if test -f nozero1.pid && test -f nozero2.pid && test -f nozero3.pid &&
-       test -f nozero4.pid; then
+       test -f nozero4.pid && test -f nozero5a.pid && test -f nozero5b.pid; then
         break
     fi
     sleep 1
@@ -110,9 +125,11 @@ pid1="$(cat nozero1.pid)" || :
 pid2="$(cat nozero2.pid)" || :
 pid3="$(cat nozero3.pid)" || :
 pid4="$(cat nozero4.pid)" || :
+pid5a="$(cat nozero5a.pid)" || :
+pid5b="$(cat nozero5b.pid)" || :
 
 if ! test -f nozero1.pid || ! test -f nozero2.pid || ! test -f nozero3.pid ||
-   ! test -f nozero4.pid; then
+   ! test -f nozero4.pid || ! test -f nozero5a.pid || ! test -f nozero5b.pid; then
     echo "$0: PID files were not created"
     exit 1
 fi
@@ -122,6 +139,7 @@ qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero1.sock'
 qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero2.sock'
 qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero3.sock'
 qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero4.sock'
+qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero5b.sock'
 
 # Check for expected ZERO vs. WRITE results
 grep 'connection=1 Zero' nozero1.log
@@ -134,10 +152,16 @@ if grep 'connection=1 Zero' nozero4.log; then
     echo "filter should have converted zero into write"
     exit 1
 fi
+grep 'connection=1 Zero' nozero5b.log
+if grep 'connection=1 Zero' nozero5a.log; then
+    echo "nbdkit should have converted zero into write before nbd plugin"
+    exit 1
+fi
 
-# Sanity check on contents - all 4 files should read identically
+# Sanity check on contents - all 5 files should read identically
 cmp nozero1.img nozero2.img
 cmp nozero2.img nozero3.img
 cmp nozero3.img nozero4.img
+cmp nozero4.img nozero5.img
 
 # The cleanup() function is called implicitly on exit.

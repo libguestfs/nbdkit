@@ -104,6 +104,7 @@ struct nbdkit_plugin {
 
   void (*dump_plugin) (void);
 
+  int (*can_zero) (void *handle);
   int (*can_fua) (void *handle);
 #if NBDKIT_API_VERSION == 1
   int (*_unused1) (void *, void *, uint32_t, uint64_t);

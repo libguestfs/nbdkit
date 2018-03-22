@@ -343,6 +343,10 @@ calls.
 
 =head2 C<.can_trim>
 
+=head2 C<.can_zero>
+
+=head2 C<.can_fua>
+
  int (*can_write) (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle);
  int (*can_flush) (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -352,65 +356,38 @@ calls.
                        void *handle);
  int (*can_trim) (struct nbdkit_next_ops *next_ops, void *nxdata,
                   void *handle);
+ int (*can_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                  void *handle);
+ int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                 void *handle);
 
 These intercept the corresponding plugin methods, and control feature
 bits advertised to the client.
+
+Of note, the C<.can_zero> callback in the filter controls whether the
+server advertises zero support to the client, which is slightly
+different semantics than the plugin; that is,
+C<next_ops-E<gt>can_zero> always returns true for a plugin, even when
+the plugin's own C<.can_zero> callback returned false, because nbdkit
+implements a fallback to C<.pwrite> at the plugin layer.
+
+Remember that most of the feature check functions return merely a
+boolean success value, while C<.can_fua> has three success values.
+The difference between values may affect choices made in the filter:
+when splitting a write request that requested FUA from the client, if
+C<next_ops-E<gt>can_fua> returns C<NBDKIT_FUA_NATIVE>, then the filter
+should pass the FUA flag on to each sub-request; while if it is known
+that FUA is emulated by a flush because of a return of
+C<NBDKIT_FUA_EMULATE>, it is more efficient to only flush once after
+all sub-requests have completed (often by passing C<NBDKIT_FLAG_FUA>
+on to only the final sub-request, or by dropping the flag and ending
+with a direct call to C<next_ops-E<gt>flush>).
 
 If there is an error, the callback should call C<nbdkit_error> with an
 error message and return C<-1>.  If these functions are called more
 than once for the same connection, they should return the same value;
 similarly, the filter may cache the results of each counterpart in
 C<next_ops> for a given connection rather than repeating calls.
-
-=head2 C<.can_zero>
-
- int (*can_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                  void *handle);
-
-This controls whether write zero support will be advertised to the
-client.  This function has no counterpart in plugins, because nbdkit
-can always emulate zero by using pwrite; but a filter may want to
-force different handling than the nbdkit implementation.  If this
-callback is omitted, the default returned for the plugin layer is
-true.
-
-If there is an error, the callback should call C<nbdkit_error> with an
-error message and return C<-1>.  Like the other initial queries
-documented above, per-connection caching the of return value of this
-function is allowed.
-
-=head2 C<.can_fua>
-
- int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                 void *handle);
-
-This controls how the Forced Unit Access flag will be handled; it is
-only relevant for connections that are not read-only.  This intercepts
-the corresponding plugin method, to control feature bits advertised to
-the client.  Unlike other feature functions with just two success
-states, this one returns three success values: C<NBDKIT_FUA_NONE> to
-avoid advertising FUA support to the client, C<NBDKIT_FUA_EMULATE> if
-FUA is emulated by nbdkit calling flush after a write transaction, and
-C<NBDKIT_FUA_NATIVE> if FUA semantics are handled by the plugin
-without the overhead of an extra flush from nbdkit.
-
-The difference between the two non-zero values may affect choices made
-in the filter: when splitting a write request that requested FUA from
-the client, native support should pass the FUA flag on to each
-sub-request; while if it is known that FUA is emulated by a flush, it
-is more efficient to only flush once after all sub-requests have
-completed (often by passing C<NBDKIT_FLAG_FUA> on to only the final
-sub-request, or by dropping the flag and ending with a direct call to
-C<next_ops-E<gt>flush>).
-
-If this callback is omitted, the default returned for the plugin layer
-is C<NBDKIT_FUA_EMULATE> if C<can_flush> returned true, otherwise it
-is C<NBDKIT_FUA_NONE>.
-
-If there is an error, the callback should call C<nbdkit_error> with an
-error message and return C<-1>.  Like the other initial queries
-documented above, per-connection caching of the return value of this
-function is allowed.
 
 =head2 C<.pread>
 
@@ -505,7 +482,7 @@ value to return to the client.
 This intercepts the plugin C<.zero> method and can be used to modify
 zero requests.
 
-This function will not be called if C<.can_write> returned false; in
+This function will not be called if C<.can_zero> returned false; in
 turn, the filter should not call C<next_ops-E<gt>zero> if
 C<next_ops-E<gt>can_zero> did not return true.
 

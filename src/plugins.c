@@ -358,10 +358,21 @@ plugin_can_trim (struct backend *b, struct connection *conn)
 static int
 plugin_can_zero (struct backend *b, struct connection *conn)
 {
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
+  assert (connection_get_handle (conn, 0));
+
   debug ("can_zero");
 
-  /* We always allow .zero to fall back to .write, so plugins don't
-   * need to override this. */
+  /* Note the special case here: the plugin's .can_zero controls only
+   * whether we call .zero; while the backend expects .can_zero to
+   * return whether to advertise zero support.  Since we ALWAYS know
+   * how to fall back to .pwrite in plugin_zero(), we ignore the
+   * difference between the plugin's true or false return, and only
+   * call it to catch a -1 failure during negotiation.  */
+  if (p->plugin.can_zero &&
+      p->plugin.can_zero (connection_get_handle (conn, 0)) == -1)
+    return -1;
   return plugin_can_write (b, conn);
 }
 
@@ -534,6 +545,7 @@ plugin_zero (struct backend *b, struct connection *conn,
   bool fua = flags & NBDKIT_FLAG_FUA;
   bool emulate = false;
   bool need_flush = false;
+  int can_zero = 1; /* TODO cache this per-connection? */
 
   assert (connection_get_handle (conn, 0));
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
@@ -547,18 +559,26 @@ plugin_zero (struct backend *b, struct connection *conn,
   }
   if (!count)
     return 0;
-  errno = 0;
-  if (p->plugin.zero)
-    r = p->plugin.zero (connection_get_handle (conn, 0), count, offset, flags);
-  else if (p->plugin._zero_old)
-    r = p->plugin._zero_old (connection_get_handle (conn, 0), count, offset,
-                             may_trim);
-  else
-    emulate = true;
-  if (r == -1)
-    *err = emulate ? EOPNOTSUPP : get_error (p);
-  if (r == 0 || *err != EOPNOTSUPP)
-    goto done;
+  if (p->plugin.can_zero) {
+    can_zero = p->plugin.can_zero (connection_get_handle (conn, 0));
+    assert (can_zero != -1);
+  }
+
+  if (can_zero) {
+    errno = 0;
+    if (p->plugin.zero)
+      r = p->plugin.zero (connection_get_handle (conn, 0), count, offset,
+                          flags);
+    else if (p->plugin._zero_old)
+      r = p->plugin._zero_old (connection_get_handle (conn, 0), count, offset,
+                               may_trim);
+    else
+      emulate = true;
+    if (r == -1)
+      *err = emulate ? EOPNOTSUPP : get_error (p);
+    if (r == 0 || *err != EOPNOTSUPP)
+      goto done;
+  }
 
   assert (p->plugin.pwrite || p->plugin._pwrite_old);
   flags &= ~NBDKIT_FLAG_MAY_TRIM;
