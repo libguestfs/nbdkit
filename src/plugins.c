@@ -355,18 +355,6 @@ plugin_can_trim (struct backend *b, struct connection *conn)
     return p->plugin.trim || p->plugin._trim_old;
 }
 
-/* Grab the appropriate error value.
- */
-static int
-get_error (struct backend_plugin *p)
-{
-  int ret = threadlocal_get_error ();
-
-  if (!ret && p->plugin.errno_is_preserved)
-    ret = errno;
-  return ret ? ret : EIO;
-}
-
 static int
 plugin_can_zero (struct backend *b, struct connection *conn)
 {
@@ -399,6 +387,18 @@ plugin_can_fua (struct backend *b, struct connection *conn)
   if (r == 0 || !(p->plugin.flush || p->plugin._flush_old))
     return NBDKIT_FUA_NONE;
   return NBDKIT_FUA_EMULATE;
+}
+
+/* Grab the appropriate error value.
+ */
+static int
+get_error (struct backend_plugin *p)
+{
+  int ret = threadlocal_get_error ();
+
+  if (!ret && p->plugin.errno_is_preserved)
+    ret = errno;
+  return ret ? ret : EIO;
 }
 
 static int
