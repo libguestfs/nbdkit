@@ -41,6 +41,11 @@ def pwrite(h, buf, offset):
     disk[offset:end] = buf
 
 
+def zero(h, count, offset, may_trim=False):
+    global disk
+    disk[offset:offset+count] = bytearray(count)
+
+
 def flush(h):
     pass
 
