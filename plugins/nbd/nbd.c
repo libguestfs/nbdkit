@@ -98,7 +98,7 @@ nbd_config_complete (void)
     nbdkit_error ("you must supply the socket=<SOCKNAME> parameter after the plugin name on the command line");
     return -1;
   }
-  if (strlen (sockname) >= sizeof sock.sun_path) {
+  if (strlen (sockname) > sizeof sock.sun_path) {
     nbdkit_error ("socket file name too large");
     return -1;
   }
@@ -465,7 +465,8 @@ nbd_open (int readonly)
     nbdkit_error ("socket: %m");
     return NULL;
   }
-  strncpy (sock.sun_path, sockname, sizeof (sock.sun_path));
+  /* We already validated length during nbd_config_complete */
+  memcpy (sock.sun_path, sockname, strlen (sockname));
   if (connect (h->fd, (const struct sockaddr *) &sock, sizeof sock) < 0) {
     nbdkit_error ("connect: %m");
     goto err;
