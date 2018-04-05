@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2014 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -121,6 +121,13 @@ main (int argc, char *argv[])
   if (guestfs_fstrim (g, "/", -1) == -1)
     exit (EXIT_FAILURE);
 #endif
+
+  /* Run fallocate(1) on the device to test zero path. */
+  if (guestfs_umount (g, "/") == -1)
+    exit (EXIT_FAILURE);
+  const char *cmd[] = { "fallocate", "-nzl", "64k", "/dev/sda", NULL };
+  char *s = guestfs_debug (g, "sh", (char **) cmd);
+  free (s);
 
   if (guestfs_shutdown (g) == -1)
     exit (EXIT_FAILURE);
