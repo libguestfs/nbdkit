@@ -403,9 +403,20 @@ AC_ARG_WITH([libguestfs],[
     [with_libguestfs=check])
 AS_IF([test "$with_libguestfs" != "no"],[
     PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs],[
+        # Although the library was found, we want to make sure it supports nbd
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <guestfs.h>
+        ]], [[
+#ifndef GUESTFS_ADD_DRIVE_OPTS_PROTOCOL
+#error unsupported
+#endif
+        ]])], [
         AC_SUBST([LIBGUESTFS_CFLAGS])
         AC_SUBST([LIBGUESTFS_LIBS])
         AC_DEFINE([HAVE_LIBGUESTFS],[1],[libguestfs found at compile time.])
+        ],[
+        LIBGUESTFS_LIBS=
+        AC_MSG_WARN([libguestfs too old, guestfs plugin and tests will be disabled])])
     ],
     [AC_MSG_WARN([libguestfs not found, guestfs plugin and tests will be disabled])])
 ])
