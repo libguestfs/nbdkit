@@ -94,6 +94,11 @@ callback_defined (const char *name, PyObject **obj_rtn)
   obj = PyObject_GetAttrString (module, name);
   if (!obj)
     return 0;
+  if (!PyCallable_Check (obj)) {
+    nbdkit_debug ("object %s isn't callable", name);
+    Py_DECREF (obj);
+    return 0;
+  }
 
   if (obj_rtn != NULL)
     *obj_rtn = obj;
