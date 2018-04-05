@@ -36,6 +36,7 @@ MAINTAINERCLEANFILES =
 EXTRA_DIST = \
 	functions.sh \
 	make-pki.sh \
+	python-exception.py \
 	README.tests \
 	shebang.pl \
 	shebang.py \
@@ -59,6 +60,7 @@ EXTRA_DIST = \
 	test-ocaml.c \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
+	test-python-exception.sh \
 	test.pl \
 	test.py \
 	test.rb \
@@ -383,6 +385,7 @@ if HAVE_PYTHON
 check_PROGRAMS += test-python
 TESTS += \
 	test-python \
+	test-python-exception.sh \
 	test-shebang-python.sh
 
 test_python_SOURCES = test-lang-plugins.c test.h

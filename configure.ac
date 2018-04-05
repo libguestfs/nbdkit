@@ -270,6 +270,14 @@ AS_IF([test "x$PYTHON" != "xno" && test "x$enable_python" != "xno"],[
                  [AC_DEFINE([HAVE_PYSTRING_FROMSTRING],1,
                             [Found PyString_FromString in libpython.])],
                  [],[$PYTHON_BLDLIBRARY])
+    AC_CHECK_LIB([c],[PyString_AsString],
+                 [AC_DEFINE([HAVE_PYSTRING_ASSTRING],1,
+                            [Found PyString_AsString in libpython.])],
+                 [],[$PYTHON_BLDLIBRARY])
+    AC_CHECK_LIB([c],[PyUnicode_AsUTF8],
+                 [AC_DEFINE([HAVE_PYUNICODE_ASUTF8],1,
+                            [Found PyUnicode_AsUTF8 in libpython.])],
+                 [],[$PYTHON_BLDLIBRARY])
 
     LIBS="$old_LIBS"
 
