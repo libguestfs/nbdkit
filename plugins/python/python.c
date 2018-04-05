@@ -103,13 +103,48 @@ callback_defined (const char *name, PyObject **obj_rtn)
   return 1;
 }
 
+/* Convert bytes/str/unicode into a string.  Caller must free. */
+static char *
+python_to_string (PyObject *str)
+{
+  if (str) {
+#ifdef HAVE_PYUNICODE_ASUTF8
+    if (PyUnicode_Check (str))
+      return strdup (PyUnicode_AsUTF8 (str));
+    else
+#endif
+#ifdef HAVE_PYSTRING_ASSTRING
+    if (PyString_Check (str))
+      return strdup (PyString_AsString (str));
+    else
+#endif
+    if (PyBytes_Check (str))
+      return strdup (PyBytes_AS_STRING (str));
+  }
+  return NULL;
+}
+
 static int
 check_python_failure (const char *callback)
 {
   if (PyErr_Occurred ()) {
-    nbdkit_error ("%s: callback failed: %s", script, callback);
-    /* How to turn this into a string? XXX */
-    PyErr_Print ();
+    PyObject *type, *error, *traceback, *error_str;
+    char *error_cstr;
+
+    /* Convert the Python exception to a string.
+     * https://stackoverflow.com/a/1418703
+     * But forget about the traceback, it's very hard to print.
+     * https://stackoverflow.com/q/1796510
+     */
+    PyErr_Fetch (&type, &error, &traceback);
+    PyErr_NormalizeException (&type, &error, &traceback);
+    error_str = PyObject_Str (error);
+    error_cstr = python_to_string (error_str);
+    nbdkit_error ("%s: %s: error: %s",
+                  script, callback,
+                  error_cstr ? error_cstr : "<unknown>");
+    Py_DECREF (error_str);
+    free (error_cstr);
     return -1;
   }
   return 0;
