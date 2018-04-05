@@ -33,31 +33,37 @@ import errno
 # per handle.
 disk = bytearray(1024 * 1024)
 
+
 # This just prints the extra command line parameters, but real plugins
 # should parse them and reject any unknown parameters.
 def config(key, value):
-    print ("ignored parameter %s=%s" % (key, value))
+    print("ignored parameter %s=%s" % (key, value))
+
 
 def open(readonly):
-    print ("open: readonly=%d" % readonly)
+    print("open: readonly=%d" % readonly)
 
     # You can return any non-NULL Python object from open, and the
     # same object will be passed as the first arg to the other
     # callbacks [in the client connected phase].
     return 1
 
+
 def get_size(h):
     global disk
-    return len (disk)
+    return len(disk)
+
 
 def pread(h, count, offset):
     global disk
     return disk[offset:offset+count]
 
+
 def pwrite(h, buf, offset):
     global disk
-    end = offset + len (buf)
+    end = offset + len(buf)
     disk[offset:end] = buf
+
 
 def zero(h, count, offset, may_trim):
     global disk
