@@ -32,14 +32,18 @@
 
 # A dummy python plugin which just raises an exception in config_complete.
 
+
 def config_complete():
     raise RuntimeError("this is the test string")
+
 
 def open(readonly):
     return 1
 
+
 def get_size(h):
     return 0
+
 
 def pread(h, count, offset):
     return ""
