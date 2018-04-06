@@ -183,8 +183,7 @@ py_load (void)
 static void
 py_unload (void)
 {
-  if (module)
-    Py_DECREF (module);
+  Py_XDECREF (module);
 
   Py_Finalize ();
 }
@@ -346,8 +345,7 @@ py_close (void *handle)
     Py_DECREF (fn);
     Py_DECREF (args);
     check_python_failure ("close");
-    if (r)
-      Py_DECREF (r);
+    Py_XDECREF (r);
   }
 
   Py_DECREF (obj);
@@ -550,8 +548,7 @@ py_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
          gracefully fall back, and to accomodate both a normal return
          and an exception. */
       nbdkit_debug ("zero requested falling back to pwrite");
-      if (r)
-        Py_DECREF (r);
+      Py_XDECREF (r);
       PyErr_Clear ();
       return -1;
     }
