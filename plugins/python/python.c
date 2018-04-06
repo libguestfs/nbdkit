@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2014 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -209,7 +209,6 @@ py_config (const char *key, const char *value)
   FILE *fp;
   PyObject *modname;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
 
   if (!script) {
@@ -258,17 +257,8 @@ py_config (const char *key, const char *value)
     /* Other parameters are passed to the Python .config callback. */
     PyErr_Clear ();
 
-    args = PyTuple_New (2);
-#ifdef HAVE_PYSTRING_FROMSTRING
-    PyTuple_SetItem (args, 0, PyString_FromString (key));
-    PyTuple_SetItem (args, 1, PyString_FromString (value));
-#else
-    PyTuple_SetItem (args, 0, PyUnicode_FromString (key));
-    PyTuple_SetItem (args, 1, PyUnicode_FromString (value));
-#endif
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunction (fn, "ss", key, value);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (check_python_failure ("config") == -1)
       return -1;
     Py_DECREF (r);
@@ -306,7 +296,6 @@ static void *
 py_open (int readonly)
 {
   PyObject *fn;
-  PyObject *args;
   PyObject *handle;
 
   if (!callback_defined ("open", &fn)) {
@@ -316,11 +305,9 @@ py_open (int readonly)
 
   PyErr_Clear ();
 
-  args = PyTuple_New (1);
-  PyTuple_SetItem (args, 0, PyBool_FromLong (readonly));
-  handle = PyObject_CallObject (fn, args);
+  handle = PyObject_CallFunctionObjArgs (fn, readonly ? Py_True : Py_False,
+                                         NULL);
   Py_DECREF (fn);
-  Py_DECREF (args);
   if (check_python_failure ("open") == -1)
     return NULL;
 
@@ -332,18 +319,13 @@ py_close (void *handle)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
 
   if (callback_defined ("close", &fn)) {
     PyErr_Clear ();
 
-    args = PyTuple_New (1);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     check_python_failure ("close");
     Py_XDECREF (r);
   }
@@ -356,7 +338,6 @@ py_get_size (void *handle)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
   int64_t ret;
 
@@ -367,12 +348,8 @@ py_get_size (void *handle)
 
   PyErr_Clear ();
 
-  args = PyTuple_New (1);
-  Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-  PyTuple_SetItem (args, 0, obj);
-  r = PyObject_CallObject (fn, args);
+  r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
   Py_DECREF (fn);
-  Py_DECREF (args);
   if (check_python_failure ("get_size") == -1)
     return -1;
 
@@ -390,7 +367,6 @@ py_pread (void *handle, void *buf,
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
 
   if (!callback_defined ("pread", &fn)) {
@@ -400,14 +376,8 @@ py_pread (void *handle, void *buf,
 
   PyErr_Clear ();
 
-  args = PyTuple_New (3);
-  Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-  PyTuple_SetItem (args, 0, obj);
-  PyTuple_SetItem (args, 1, PyLong_FromLong (count));
-  PyTuple_SetItem (args, 2, PyLong_FromUnsignedLongLong (offset));
-  r = PyObject_CallObject (fn, args);
+  r = PyObject_CallFunction (fn, "OiL", obj, count, offset, NULL);
   Py_DECREF (fn);
-  Py_DECREF (args);
   if (check_python_failure ("pread") == -1)
     return -1;
 
@@ -436,20 +406,15 @@ py_pwrite (void *handle, const void *buf,
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
 
   if (callback_defined ("pwrite", &fn)) {
     PyErr_Clear ();
 
-    args = PyTuple_New (3);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    PyTuple_SetItem (args, 1, PyByteArray_FromStringAndSize (buf, count));
-    PyTuple_SetItem (args, 2, PyLong_FromUnsignedLongLong (offset));
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunction (fn, "ONL", obj,
+                               PyByteArray_FromStringAndSize (buf, count),
+                               offset, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (check_python_failure ("pwrite") == -1)
       return -1;
     Py_DECREF (r);
@@ -467,18 +432,13 @@ py_flush (void *handle)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
 
   if (callback_defined ("flush", &fn)) {
     PyErr_Clear ();
 
-    args = PyTuple_New (1);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (check_python_failure ("flush") == -1)
       return -1;
     Py_DECREF (r);
@@ -496,20 +456,13 @@ py_trim (void *handle, uint32_t count, uint64_t offset)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
 
   if (callback_defined ("trim", &fn)) {
     PyErr_Clear ();
 
-    args = PyTuple_New (3);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    PyTuple_SetItem (args, 1, PyLong_FromLong (count));
-    PyTuple_SetItem (args, 2, PyLong_FromUnsignedLongLong (offset));
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunction (fn, "OiL", obj, count, offset, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (check_python_failure ("trim") == -1)
       return -1;
     Py_DECREF (r);
@@ -568,19 +521,14 @@ py_can_write (void *handle)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
   int ret;
 
   if (callback_defined ("can_write", &fn)) {
     PyErr_Clear ();
 
-    args = PyTuple_New (1);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (check_python_failure ("can_write") == -1)
       return -1;
     ret = r == Py_True;
@@ -601,19 +549,14 @@ py_can_flush (void *handle)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
   int ret;
 
   if (callback_defined ("can_flush", &fn)) {
     PyErr_Clear ();
 
-    args = PyTuple_New (1);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (check_python_failure ("can_flush") == -1)
       return -1;
     ret = r == Py_True;
@@ -634,19 +577,14 @@ py_is_rotational (void *handle)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
   int ret;
 
   if (callback_defined ("is_rotational", &fn)) {
     PyErr_Clear ();
 
-    args = PyTuple_New (1);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (check_python_failure ("is_rotational") == -1)
       return -1;
     ret = r == Py_True;
@@ -662,19 +600,14 @@ py_can_trim (void *handle)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
   int ret;
 
   if (callback_defined ("can_trim", &fn)) {
     PyErr_Clear ();
 
-    args = PyTuple_New (1);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (check_python_failure ("can_trim") == -1)
       return -1;
     ret = r == Py_True;
