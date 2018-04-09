@@ -188,7 +188,11 @@ endif HAVE_QEMU_IO
 
 # Most in-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.
+LIBGUESTFS_TESTS =
+EXTRA_PROGRAMS =
 if HAVE_LIBGUESTFS
+check_PROGRAMS += $(LIBGUESTFS_TESTS)
+TESTS += $(LIBGUESTFS_TESTS)
 
 # Use the 'direct' backend, and ensure maximum libguestfs debugging is
 # written to the *.log files in case there is a problem.
@@ -204,32 +208,30 @@ libtest_la_SOURCES = test.c test.h
 libtest_la_CFLAGS = $(WARNINGS_CFLAGS)
 
 # Basic connection test.
-check_PROGRAMS += test-connect
-TESTS += test-connect
+LIBGUESTFS_TESTS += test-connect
 
 test_connect_SOURCES = test-connect.c test.h
 test_connect_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_connect_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # newstyle protocol test.
-check_PROGRAMS += test-newstyle
-TESTS += test-newstyle
+LIBGUESTFS_TESTS += test-newstyle
 
 test_newstyle_SOURCES = test-newstyle.c test.h
 test_newstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_newstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # oldstyle protocol test.
-check_PROGRAMS += test-oldstyle
-TESTS += test-oldstyle
+LIBGUESTFS_TESTS += test-oldstyle
 
 test_oldstyle_SOURCES = test-oldstyle.c test.h
 test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
+endif HAVE_LIBGUESTFS
+
 # file plugin test.
-check_PROGRAMS += test-file
-TESTS += test-file
+LIBGUESTFS_TESTS += test-file
 
 test_file_SOURCES = test-file.c test.h
 test_file_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -239,8 +241,7 @@ test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 if HAVE_ZLIB
 if HAVE_GUESTFISH
 
-check_PROGRAMS += test-gzip
-TESTS += test-gzip
+LIBGUESTFS_TESTS += test-gzip
 check_DATA += disk disk.gz
 MAINTAINERCLEANFILES += disk disk.gz
 
@@ -261,24 +262,21 @@ endif HAVE_GUESTFISH
 endif HAVE_ZLIB
 
 # memory plugin test.
-check_PROGRAMS += test-memory
-TESTS += test-memory
+LIBGUESTFS_TESTS += test-memory
 
 test_memory_SOURCES = test-memory.c test.h
 test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # nbd plugin test.
-check_PROGRAMS += test-nbd
-TESTS += test-nbd
+LIBGUESTFS_TESTS += test-nbd
 
 test_nbd_SOURCES = test-nbd.c test.h
 test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # null plugin test.
-check_PROGRAMS += test-null
-TESTS += test-null
+LIBGUESTFS_TESTS += test-null
 
 test_null_SOURCES = test-null.c test.h
 test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -299,17 +297,16 @@ split3: file-data
 	rm -f $@ $@-t
 	dd if=$< of=$@-t bs=1 skip=200
 	mv $@-t $@
-check_PROGRAMS += test-split
-TESTS += test-split
+LIBGUESTFS_TESTS += test-split
 
 test_split_SOURCES = test-split.c test.h
 test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_split_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # streaming plugin test.
-check_PROGRAMS += test-streaming
 # Doesn't work:
-#TESTS += test-streaming
+#LIBGUESTFS_TESTS += test-streaming
+EXTRA_PROGRAMS += test-streaming
 
 test_streaming_SOURCES = test-streaming.c test.h
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -319,8 +316,7 @@ test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 if HAVE_LIBLZMA
 if HAVE_GUESTFISH
 
-check_PROGRAMS += test-xz
-TESTS += test-xz
+LIBGUESTFS_TESTS += test-xz
 check_DATA += disk.xz
 MAINTAINERCLEANFILES += disk.xz
 
@@ -341,8 +337,7 @@ endif HAVE_LIBLZMA
 # OCaml plugin test.
 if HAVE_OCAML
 
-check_PROGRAMS += test-ocaml
-TESTS += test-ocaml
+LIBGUESTFS_TESTS += test-ocaml
 
 # This is somewhat different from the other tests because we have
 # to build an actual plugin here.
@@ -363,11 +358,10 @@ endif HAVE_OCAML
 # perl plugin test.
 if HAVE_PERL
 
-check_PROGRAMS += test-perl
 TESTS += \
 	test-dump-plugin-example4.sh \
-	test-perl \
 	test-shebang-perl.sh
+LIBGUESTFS_TESTS += test-perl
 
 test_perl_SOURCES = test-lang-plugins.c test.h
 test_perl_CFLAGS = \
@@ -380,11 +374,10 @@ endif HAVE_PERL
 # python plugin test.
 if HAVE_PYTHON
 
-check_PROGRAMS += test-python
 TESTS += \
-	test-python \
 	test-python-exception.sh \
 	test-shebang-python.sh
+LIBGUESTFS_TESTS += test-python
 
 test_python_SOURCES = test-lang-plugins.c test.h
 test_python_CFLAGS = \
@@ -400,10 +393,10 @@ if HAVE_RUBY
 # Ruby tests are disabled.  See "WARNING" section in
 # plugins/ruby/nbdkit-ruby-plugin.pod
 
-check_PROGRAMS += test-ruby
-#TESTS += \
-#	test-ruby \
-#	test-shebang-ruby.sh
+#LIBGUESTFS_TESTS += \
+#	test-ruby
+#TESTS += test-shebang-ruby.sh
+EXTRA_PROGRAMS += test-ruby
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \
@@ -417,14 +410,17 @@ endif HAVE_RUBY
 # Tests of filters.
 
 # cache filter test.
+if HAVE_GUESTFISH
 TESTS += test-cache.sh
+endif HAVE_GUESTFISH
 
 # cow filter test.
+if HAVE_GUESTFISH
 TESTS += test-cow.sh
+endif HAVE_GUESTFISH
 
 # delay filter test.
-check_PROGRAMS += test-delay
-TESTS += test-delay
+LIBGUESTFS_TESTS += test-delay
 
 test_delay_SOURCES = test-delay.c test.h
 test_delay_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -433,8 +429,7 @@ test_delay_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # offset filter test.
 check_DATA += offset-data
 MAINTAINERCLEANFILES += offset-data
-check_PROGRAMS += test-offset
-TESTS += test-offset
+LIBGUESTFS_TESTS += test-offset
 
 offset-data:
 	rm -f $@ $@-t
@@ -446,12 +441,10 @@ test_offset_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_offset_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # partition filter test.
-check_PROGRAMS += test-partition
-TESTS += test-partition
+LIBGUESTFS_TESTS += test-partition
 
 test_partition_SOURCES = test-partition.c test.h
 test_partition_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_partition_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-endif HAVE_LIBGUESTFS
 endif HAVE_PLUGINS
