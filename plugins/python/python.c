@@ -69,7 +69,7 @@ set_error (PyObject *self, PyObject *args)
 {
   int err;
 
-  if (!PyArg_ParseTuple(args, "i", &err))
+  if (!PyArg_ParseTuple (args, "i", &err))
     return NULL;
   nbdkit_set_error (err);
   last_error = err;
@@ -176,7 +176,7 @@ py_load (void)
 #if PY_MAJOR_VERSION >= 3
   PyModule_Create (&moduledef);
 #else
-  Py_InitModule("nbdkit", NbdkitMethods);
+  Py_InitModule ("nbdkit", NbdkitMethods);
 #endif
 }
 
@@ -724,4 +724,4 @@ static struct nbdkit_plugin plugin = {
   .zero              = py_zero,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)
