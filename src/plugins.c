@@ -386,18 +386,18 @@ plugin_can_fua (struct backend *b, struct connection *conn)
 
   debug ("can_fua");
 
+  /* The plugin must use API version 2 and have .can_fua return
+     NBDKIT_FUA_NATIVE before we will pass the FUA flag on. */
   if (p->plugin.can_fua) {
     r = p->plugin.can_fua (connection_get_handle (conn, 0));
     if (r > NBDKIT_FUA_EMULATE && p->plugin._api_version == 1)
       r = NBDKIT_FUA_EMULATE;
     return r;
   }
-  r = plugin_can_flush (b, conn);
-  if (r == -1)
-    return -1;
-  if (r == 0 || !(p->plugin.flush || p->plugin._flush_old))
-    return NBDKIT_FUA_NONE;
-  return NBDKIT_FUA_EMULATE;
+  /* We intend to call .flush even if .can_flush returns false. */
+  if (p->plugin.flush || p->plugin._flush_old)
+    return NBDKIT_FUA_EMULATE;
+  return NBDKIT_FUA_NONE;
 }
 
 /* Grab the appropriate error value.

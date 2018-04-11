@@ -525,8 +525,8 @@ If there is an error, C<.can_fua> should call C<nbdkit_error> with an
 error message and return C<-1>.
 
 This callback is not required unless a plugin wants to specifically
-handle FUA requests.  If omitted, nbdkit checks C<.can_flush>, and
-behaves as if this function returns C<NBDKIT_FUA_NONE> or
+handle FUA requests.  If omitted, nbdkit checks whether C<.flush>
+exists, and behaves as if this function returns C<NBDKIT_FUA_NONE> or
 C<NBDKIT_FUA_EMULATE> as appropriate.
 
 =head2 C<.pread>
