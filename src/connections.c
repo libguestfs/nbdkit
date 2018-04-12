@@ -95,8 +95,6 @@ static struct connection *new_connection (int sockin, int sockout,
 static void free_connection (struct connection *conn);
 static int negotiate_handshake (struct connection *conn);
 static int recv_request_send_reply (struct connection *conn);
-static int prepare (struct connection *conn);
-static int finalize (struct connection *conn);
 
 /* Don't call these raw socket functions directly.  Use conn->recv etc. */
 static int raw_recv (struct connection *, void *buf, size_t len);
@@ -233,7 +231,7 @@ connection_worker (void *data)
 static int
 _handle_single_connection (int sockin, int sockout)
 {
-  int r = -1;
+  int ret = -1, r;
   struct connection *conn;
   int nworkers = threads ? threads : DEFAULT_PARALLEL_REQUESTS;
   pthread_t *workers = NULL;
@@ -251,7 +249,13 @@ _handle_single_connection (int sockin, int sockout)
   threadlocal_set_name (backend->plugin_name (backend));
 
   /* Prepare (for filters), called just after open. */
-  if (prepare (conn) == -1)
+  lock_request (conn);
+  if (backend)
+    r = backend->prepare (backend, conn);
+  else
+    r = 0;
+  unlock_request (conn);
+  if (r == -1)
     goto done;
 
   /* Handshake. */
@@ -309,14 +313,20 @@ _handle_single_connection (int sockin, int sockout)
   }
 
   /* Finalize (for filters), called just before close. */
-  if (finalize (conn) == -1)
+  lock_request (conn);
+  if (backend)
+    r = backend->finalize (backend, conn);
+  else
+    r = 0;
+  unlock_request (conn);
+  if (r == -1)
     goto done;
 
-  r = get_status (conn);
+  ret = get_status (conn);
  done:
-  debug ("connection cleanup with final status %d", r);
+  debug ("connection cleanup with final status %d", ret);
   free_connection (conn);
-  return r;
+  return ret;
 }
 
 int
@@ -382,36 +392,6 @@ free_connection (struct connection *conn)
 
   free (conn->handles);
   free (conn);
-}
-
-static int
-prepare (struct connection *conn)
-{
-  int r;
-
-  lock_request (conn);
-  if (backend)
-    r = backend->prepare (backend, conn);
-  else
-    r = 0;
-  unlock_request (conn);
-
-  return r;
-}
-
-static int
-finalize (struct connection *conn)
-{
-  int r;
-
-  lock_request (conn);
-  if (backend)
-    r = backend->finalize (backend, conn);
-  else
-    r = 0;
-  unlock_request (conn);
-
-  return r;
 }
 
 static int
