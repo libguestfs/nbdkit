@@ -227,3 +227,22 @@ nbdkit_read_password (const char *value, char **password)
 
   return 0;
 }
+
+char *
+nbdkit_realpath (const char *path)
+{
+  char *ret;
+
+  if (path == NULL || *path == '\0') {
+    nbdkit_error ("cannot resolve a null or empty path");
+    return NULL;
+  }
+
+  ret = realpath (path, NULL);
+  if (ret == NULL) {
+    nbdkit_error ("realpath(%s): %m", path);
+    return NULL;
+  }
+
+  return ret;
+}

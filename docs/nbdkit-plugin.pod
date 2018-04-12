@@ -285,6 +285,23 @@ C<NULL>.  Note that this function does not check that the file exists.
 
 The returned string must be freed by the caller.
 
+=head2 C<nbdkit_realpath>
+
+ char *nbdkit_realpath (const char *filename);
+
+The utility function C<nbdkit_realpath> converts any path to an
+absolute path, resolving symlinks.  Under the hood it uses the
+C<realpath> function, and thus it fails if the path does not exist,
+or it is not possible to access to any of the components of the path.
+
+Note that this function works I<only> when used in the C<.config>, and
+C<.config_complete> callbacks.
+
+If the path resolution was not possible, this calls C<nbdkit_error>
+and returns C<NULL>.
+
+The returned string must be freed by the caller.
+
 =head1 CALLBACKS
 
 =head2 C<.name>

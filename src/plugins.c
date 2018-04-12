@@ -133,7 +133,7 @@ plugin_dump_fields (struct backend *b)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   char *path;
 
-  path = nbdkit_absolute_path (p->filename);
+  path = nbdkit_realpath (p->filename);
   printf ("path=%s\n", path);
   free (path);
 

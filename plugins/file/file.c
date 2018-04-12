@@ -65,7 +65,7 @@ file_config (const char *key, const char *value)
   if (strcmp (key, "file") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
     free (filename);
-    filename = nbdkit_absolute_path (value);
+    filename = nbdkit_realpath (value);
     if (!filename)
       return -1;
   }
@@ -88,10 +88,6 @@ file_config_complete (void)
 {
   if (filename == NULL) {
     nbdkit_error ("you must supply the file=<FILENAME> parameter after the plugin name on the command line");
-    return -1;
-  }
-  if (access (filename, F_OK) < 0) {
-    nbdkit_error ("access '%s': %m", filename);
     return -1;
   }
 

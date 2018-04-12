@@ -153,7 +153,7 @@ vddk_config (const char *key, const char *value)
   if (strcmp (key, "config") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
     free (config);
-    config = nbdkit_absolute_path (value);
+    config = nbdkit_realpath (value);
     if (!config)
       return -1;
   }

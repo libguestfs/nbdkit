@@ -76,7 +76,7 @@ split_config (const char *key, const char *value)
       return -1;
     }
     filenames = new_filenames;
-    filenames[nr_files] = nbdkit_absolute_path (value);
+    filenames[nr_files] = nbdkit_realpath (value);
     if (filenames[nr_files] == NULL)
       return -1;
     nr_files++;

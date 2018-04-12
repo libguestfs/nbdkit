@@ -62,7 +62,7 @@ gzip_config (const char *key, const char *value)
 {
   if (strcmp (key, "file") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
-    filename = nbdkit_absolute_path (value);
+    filename = nbdkit_realpath (value);
     if (!filename)
       return -1;
   }
