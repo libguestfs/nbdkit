@@ -188,7 +188,12 @@ descriptor.
  char *nbdkit_absolute_path (const char *filename);
 
 The utility function C<nbdkit_absolute_path> converts any path to an
-absolute path.
+absolute path: if it is relative, then all this function does is
+prepend the current working directory to the path, with no extra
+checks.
+
+Note that this function works I<only> when used in the C<.config>, and
+C<.config_complete> callbacks.
 
 If conversion was not possible, this calls C<nbdkit_error> and returns
 C<NULL>.  Note that this function does not check that the file exists.
