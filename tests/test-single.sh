@@ -65,4 +65,16 @@ cleanup ()
 }
 trap cleanup INT QUIT TERM EXIT ERR
 
+# Wait for socat to start up and create the socket.
+for i in `seq 1 10`; do
+    if test -S single.sock; then
+        break
+    fi
+    sleep 1
+done
+if ! test -S single.sock; then
+    echo "$0: socket was not created"
+    exit 1
+fi
+
 qemu-img info nbd:unix:single.sock
