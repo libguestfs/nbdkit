@@ -243,7 +243,10 @@ _handle_single_connection (int sockin, int sockout)
   if (!conn)
     goto done;
 
-  if (backend->open (backend, conn, readonly) == -1)
+  lock_request (conn);
+  r = backend->open (backend, conn, readonly);
+  unlock_request (conn);
+  if (r == -1)
     goto done;
 
   threadlocal_set_name (backend->plugin_name (backend));
@@ -376,19 +379,22 @@ free_connection (struct connection *conn)
 
   conn->close (conn);
 
-  pthread_mutex_destroy (&conn->request_lock);
-  pthread_mutex_destroy (&conn->read_lock);
-  pthread_mutex_destroy (&conn->write_lock);
-  pthread_mutex_destroy (&conn->status_lock);
-
   /* Don't call the plugin again if quit has been set because the main
    * thread will be in the process of unloading it.  The plugin.unload
    * callback should always be called.
    */
   if (!quit) {
-    if (conn->nr_handles > 0 && conn->handles[0])
+    if (conn->nr_handles > 0 && conn->handles[0]) {
+      lock_request (conn);
       backend->close (backend, conn);
+      unlock_request (conn);
+    }
   }
+
+  pthread_mutex_destroy (&conn->request_lock);
+  pthread_mutex_destroy (&conn->read_lock);
+  pthread_mutex_destroy (&conn->write_lock);
+  pthread_mutex_destroy (&conn->status_lock);
 
   free (conn->handles);
   free (conn);

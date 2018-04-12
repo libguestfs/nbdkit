@@ -685,9 +685,9 @@ first client to close the connection.
 
 I<This is a safe default for most plugins>.
 
-Multiple handles can be open at the same time, but data requests are
-serialized so that for the plugin as a whole only one read/write/etc
-request will be in progress at any time.
+Multiple handles can be open at the same time, but requests are
+serialized so that for the plugin as a whole only one
+open/read/write/close (etc) request will be in progress at any time.
 
 This is a useful setting if the library you are using is not
 thread-safe.  However performance may not be good.
