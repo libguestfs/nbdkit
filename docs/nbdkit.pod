@@ -75,11 +75,13 @@ Serve only the first partition from compressed disk image
 F<disk.img.xz>, combining L<nbdkit-xz-plugin(1)> and
 L<nbdkit-partition-filter(1)>:
 
-                        plugin name and parameter
-                                    │
-                           ┌────────┴────────┐
- nbdkit --filter=partition xz file=disk.img.xz partition=1
-         └──────────────────────┬─────────────────────────┘
+                     plugin name and plugin parameter
+                                  │
+                            ┌─────┴────┐
+                            │          │
+ nbdkit --filter=partition  xz file=disk.img.xz  partition=1
+                │                                   │
+                └───────────────┬───────────────────┘
                                 │
                 filter name and filter parameter
 
