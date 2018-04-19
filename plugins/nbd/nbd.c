@@ -568,8 +568,10 @@ nbd_close (void *handle)
 {
   struct handle *h = handle;
 
-  if (!h->dead)
+  if (!h->dead) {
     nbd_request_raw (h, 0, NBD_CMD_DISC, 0, 0, 0, NULL);
+    shutdown (h->fd, SHUT_WR);
+  }
   close (h->fd);
   if ((errno = pthread_join (h->reader, NULL)))
     nbdkit_debug ("failed to join reader thread: %m");
