@@ -1044,8 +1044,9 @@ recv_request_send_reply (struct connection *conn)
   /* Read the request packet. */
   {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->read_lock);
-    if (get_status (conn) < 0)
-      return -1;
+    r = get_status (conn);
+    if (r <= 0)
+      return r;
     r = conn->recv (conn, &request, sizeof request);
     if (r == -1) {
       nbdkit_error ("read request: %m");
