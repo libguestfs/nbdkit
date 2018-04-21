@@ -178,7 +178,7 @@ interfaces.  See also I<-p>.
 =item B<--newstyle>
 
 Use the newstyle NBD protocol protocol.  This is the default in nbdkit
-E<ge> 1.1.29.  In earlier versions the default was oldstyle.
+E<ge> 1.3.  In earlier versions the default was oldstyle.
 
 See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
 
@@ -189,8 +189,8 @@ See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
 =item B<--oldstyle>
 
 Use the oldstyle NBD protocol.  This I<was> the default in nbdkit
-E<le> 1.1.28, but now the default is newstyle.  Note this is
-incompatible with newer features such as export names and TLS.
+E<le> 1.2, but now the default is newstyle.  Note this is incompatible
+with newer features such as export names and TLS.
 
 See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
 
@@ -532,7 +532,7 @@ The NBD protocol comes in two incompatible forms that we call
 use depends on the client and cannot be known in advance, nor can it
 be negotiated from the server side.
 
-nbdkit defaults to the newstyle protocol since nbdkit E<ge> 1.1.29.
+nbdkit defaults to the newstyle protocol since nbdkit E<ge> 1.3.
 Use the I<-e> or I<--exportname> flag to set the optional exportname
 for the newstyle protocol.  Use the I<-o> or I<--oldstyle> flag to
 force the oldstyle protocol.
