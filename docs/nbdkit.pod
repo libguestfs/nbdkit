@@ -222,9 +222,9 @@ error.
 Note that some plugins inherently don't support writes.  With those
 plugins the I<-r> option is added implicitly.
 
-Copy-on-write (or "snapshot") functionality is not supported by this
-server.  However if you are using qemu as a client (or indirectly via
-libguestfs) then it supports snapshots.
+L<nbdkit-cow-filter(1)> can be placed over read-only plugins to
+provide copy-on-write (or "snapshot") functionality.  If you are using
+qemu as a client then it also supports snapshots.
 
 =item B<--run> CMD
 
