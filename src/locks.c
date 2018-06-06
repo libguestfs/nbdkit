@@ -56,53 +56,39 @@ lock_init_thread_model (void)
 void
 lock_connection (void)
 {
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
-    debug ("acquire connection lock");
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS)
     pthread_mutex_lock (&connection_lock);
-  }
 }
 
 void
 unlock_connection (void)
 {
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
-    debug ("release connection lock");
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS)
     pthread_mutex_unlock (&connection_lock);
-  }
 }
 
 void
 lock_request (struct connection *conn)
 {
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
-    debug ("acquire global request lock");
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS)
     pthread_mutex_lock (&all_requests_lock);
-  }
 
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS) {
-    debug ("acquire per-connection request lock");
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS)
     pthread_mutex_lock (connection_get_request_lock (conn));
-  }
 
-  debug ("acquire unload prevention lock");
   pthread_rwlock_rdlock (&unload_prevention_lock);
 }
 
 void
 unlock_request (struct connection *conn)
 {
-  debug ("release unload prevention lock");
   pthread_rwlock_unlock (&unload_prevention_lock);
 
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS) {
-    debug ("release per-connection request lock");
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS)
     pthread_mutex_unlock (connection_get_request_lock (conn));
-  }
 
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
-    debug ("release global request lock");
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS)
     pthread_mutex_unlock (&all_requests_lock);
-  }
 }
 
 void
