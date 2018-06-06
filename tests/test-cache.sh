@@ -32,6 +32,7 @@
 # SUCH DAMAGE.
 
 set -e
+set -x
 
 files="cache.img cache.sock cache.pid"
 rm -f $files
@@ -69,7 +70,7 @@ cleanup ()
 trap cleanup INT QUIT TERM EXIT ERR
 
 # Open the overlay and perform some operations.
-guestfish --format=raw -a 'nbd://?socket=cache.sock' <<'EOF'
+guestfish --format=raw -a "nbd://?socket=$PWD/cache.sock" <<'EOF'
   run
   part-disk /dev/sda gpt
   mkfs ext4 /dev/sda1
