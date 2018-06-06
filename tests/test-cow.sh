@@ -32,6 +32,7 @@
 # SUCH DAMAGE.
 
 set -e
+set -x
 
 files="cow-base.img cow-diff.qcow2 cow.sock cow.pid"
 rm -f $files
@@ -70,7 +71,7 @@ cleanup ()
 trap cleanup INT QUIT TERM EXIT ERR
 
 # Write some data into the overlay.
-guestfish --format=raw -a 'nbd://?socket=cow.sock' -m /dev/sda1 <<EOF
+guestfish --format=raw -a "nbd://?socket=$PWD/cow.sock" -m /dev/sda1 <<EOF
   fill-dir / 10000
   fill-pattern "abcde" 5M /large
   write /hello "hello, world"
