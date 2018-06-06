@@ -326,7 +326,7 @@ test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 disk.xz: disk
 	rm -f $@
-	xz --best -c disk > $@
+	xz --best --block-size=16777216 -c disk > $@
 
 endif HAVE_GUESTFISH
 endif HAVE_LIBLZMA
