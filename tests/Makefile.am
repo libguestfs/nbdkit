@@ -230,6 +230,18 @@ test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_LIBGUESTFS
 
+# common disk image shared with several tests
+if HAVE_GUESTFISH
+check_DATA += disk
+MAINTAINERCLEANFILES += disk
+
+disk:
+	rm -f $@ test1.img
+	guestfish -N fs -m /dev/sda1 write /hello.txt "hello,world"
+	mv test1.img disk
+
+endif HAVE_GUESTFISH
+
 # file plugin test.
 LIBGUESTFS_TESTS += test-file
 
@@ -239,26 +251,19 @@ test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # gzip plugin test.
 if HAVE_ZLIB
-if HAVE_GUESTFISH
 
 LIBGUESTFS_TESTS += test-gzip
-check_DATA += disk disk.gz
-MAINTAINERCLEANFILES += disk disk.gz
+check_DATA += disk.gz
+MAINTAINERCLEANFILES += disk.gz
 
 test_gzip_SOURCES = test-gzip.c test.h
 test_gzip_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_gzip_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-disk:
-	rm -f $@ test1.img
-	guestfish -N fs -m /dev/sda1 write /hello.txt "hello,world"
-	mv test1.img disk
-
 disk.gz: disk
 	rm -f $@
 	gzip -9 -c disk > $@
 
-endif HAVE_GUESTFISH
 endif HAVE_ZLIB
 
 # memory plugin test.
@@ -314,7 +319,6 @@ test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # xz plugin test.
 if HAVE_LIBLZMA
-if HAVE_GUESTFISH
 
 LIBGUESTFS_TESTS += test-xz
 check_DATA += disk.xz
@@ -328,7 +332,6 @@ disk.xz: disk
 	rm -f $@
 	xz --best --block-size=16777216 -c disk > $@
 
-endif HAVE_GUESTFISH
 endif HAVE_LIBLZMA
 
 #----------------------------------------------------------------------
