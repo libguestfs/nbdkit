@@ -492,7 +492,7 @@ plugin_guestfs_close (void *handle)
   free (h);
 }
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS
 
 /* Get the file size. */
 static int64_t
