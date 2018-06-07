@@ -47,6 +47,7 @@ Makefile.in
 /tests/disk
 /tests/disk.gz
 /tests/disk.xz
+/tests/ext2.img
 /tests/file-data
 /tests/offset-data
 /tests/partition-disk
@@ -57,6 +58,7 @@ Makefile.in
 /tests/test-connect
 /tests/test-delay
 /tests/test-exit-with-parent
+/tests/test-ext2
 /tests/test-file
 /tests/test-gzip
 /tests/test-memory
