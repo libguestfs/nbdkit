@@ -426,6 +426,29 @@ dnl Check for guestfish (only needed for some of the tests).
 AC_CHECK_PROG([GUESTFISH], [guestfish], [guestfish], [no])
 AM_CONDITIONAL([HAVE_GUESTFISH], [test "x$GUESTFISH" != "xno"])
 
+dnl Check for ext2fs and com_err, for the ext2 plugin.
+AC_ARG_WITH([ext2],[
+    AS_HELP_STRING([--without-ext2],
+                   [disable ext2 plugin @<:@default=check@:>@])],
+    [],
+    [with_ext2=check])
+AS_IF([test "$with_ext2" != "no"], [
+    PKG_CHECK_MODULES([EXT2FS], [ext2fs], [
+        AC_SUBST([EXT2FS_CFLAGS])
+        AC_SUBST([EXT2FS_LIBS])
+        AC_DEFINE([HAVE_EXT2FS],[1],[ext2fs found at compile time.])
+    ],
+    [AC_MSG_WARN([ext2fs not found, ext2 plugin will be disabled])])
+    PKG_CHECK_MODULES([COM_ERR], [com_err], [
+        AC_SUBST([COM_ERR_CFLAGS])
+        AC_SUBST([COM_ERR_LIBS])
+        AC_DEFINE([HAVE_COM_ERR],[1],[com_err found at compile time.])
+    ],
+    [AC_MSG_WARN([com_err not found, ext2 plugin will be disabled])])
+])
+AM_CONDITIONAL([HAVE_EXT2],
+               [test "x$EXT2FS_LIBS" != "x" && test "x$COM_ERR_LIBS" != "x"])
+
 dnl See plugins/vddk/README.VDDK.
 AC_CHECK_SIZEOF([size_t])
 AS_IF([test "x$ac_cv_sizeof_size_t" = "x4"],[bits=32],[bits=64])
@@ -511,6 +534,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/example2/Makefile
                  plugins/example3/Makefile
                  plugins/example4/Makefile
+                 plugins/ext2/Makefile
                  plugins/file/Makefile
                  plugins/guestfs/Makefile
                  plugins/gzip/Makefile

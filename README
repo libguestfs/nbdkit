@@ -65,6 +65,12 @@ For the libguestfs plugin, and to run the test suite:
 
  - guestfish (from libguestfs)
 
+For the ext2 plugin:
+
+ - ext2fs
+
+ - com_err
+
 For the VDDK plugin:
 
  - VDDK (see plugins/vddk/README.VDDK)
