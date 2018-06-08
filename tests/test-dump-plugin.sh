@@ -34,6 +34,7 @@
 set -e
 source ./functions.sh
 
+# Basic check that the name field is present.
 output="$(nbdkit example1 --dump-plugin)"
 if [[ ! ( "$output" =~ name\=example1 ) ]]; then
     echo "$0: unexpected output from nbdkit example1 --dump-plugin"
@@ -41,9 +42,25 @@ if [[ ! ( "$output" =~ name\=example1 ) ]]; then
     exit 1
 fi
 
+# example2 overrides the --dump-plugin with extra data.
 output="$(nbdkit example2 --dump-plugin)"
 if [[ ! ( "$output" =~ example2_extra\=hello ) ]]; then
     echo "$0: unexpected output from nbdkit example2 --dump-plugin"
     echo "$output"
     exit 1
 fi
+
+# Get a list of all plugins and run --dump-plugin on all of them.
+# However don't do that on the VDDK plugin because we know that
+# will fail.
+plugins="$(ls -1 ../plugins/*/.libs/nbdkit-*-plugin.so | grep -v /vddk/)"
+for p in $plugins; do
+    nbdkit $p --dump-plugin
+done
+
+# These plugins are written in Perl.  The --dump-plugin output from
+# these is not very useful, but at least it shouldn't crash.
+plugins="$(ls -1 ../plugins/*/nbdkit-*-plugin)"
+for p in $plugins; do
+    nbdkit perl $p --dump-plugin
+done
