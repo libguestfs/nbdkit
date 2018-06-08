@@ -206,9 +206,10 @@ sub pread
 sub pwrite
 {
     my $h = shift;
+    my $fh = $h->{fh};
     my $buf = shift;
     my $count = length ($buf);
     my $offs = shift;
-    seek ($h->{fh}, $offset + $offs, 0) or die "seek: $!";
-    print $h->{fh} ($buf);
+    seek ($fh, $offset + $offs, 0) or die "seek: $!";
+    print $fh ($buf);
 }
