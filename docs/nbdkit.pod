@@ -494,6 +494,21 @@ Unix socket, like this:
 
  nbdkit -U - plugin [args] --run '...'
 
+=head2 Copying data in and out of plugins with captive nbdkit
+
+Captive nbdkit + L<qemu-img(1)> can be used to copy data into and out
+of nbdkit plugins.  For example L<nbdkit-example1-plugin(1)> contains
+an embedded disk image.  To copy it out:
+
+ nbdkit -U - example1 --run 'qemu-img convert $nbd disk.img'
+
+To overwrite a file inside an uncompressed tar file (the file being
+overwritten must be the same size), use L<nbdkit-tar-plugin(1)> like
+this:
+
+ nbdkit -U - tar tar=data.tar file=disk.img \
+   --run 'qemu-img convert -n disk.img $nbd'
+
 =head1 EXIT WITH PARENT
 
 The I<--exit-with-parent> option is almost the opposite of
@@ -941,6 +956,7 @@ Other manual pages of interest:
 L<gnutls_priority_init(3)>,
 L<guestfish(1)>,
 L<qemu(1)>,
+L<qemu-img(1)>,
 L<systemd.socket(5)>.
 
 =head1 AUTHORS
