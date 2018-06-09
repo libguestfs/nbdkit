@@ -10,8 +10,6 @@ General ideas for improvements
 
 * Performance - measure and improve it.
 
-* Bash tab completion.
-
 * Exit on last connection (the default behaviour of qemu-nbd unless
   you use -t).
 

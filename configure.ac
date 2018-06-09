@@ -164,6 +164,20 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
 dnl Check for valgrind.
 AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
 
+dnl Bash completion.
+PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0], [
+    bash_completion=yes
+    AC_MSG_CHECKING([for bash-completions directory])
+    PKG_CHECK_VAR(bashcompdir, [bash-completion], [completionsdir], ,
+        bashcompdir="${sysconfdir}/bash_completion.d")
+    AC_MSG_RESULT([$bashcompdir])
+    AC_SUBST([bashcompdir])
+],[
+    bash_completion=no
+    AC_MSG_WARN([bash-completion not installed])
+])
+AM_CONDITIONAL([HAVE_BASH_COMPLETION],[test "x$bash_completion" = "xyes"])
+
 dnl Check for Perl POD.
 AC_CHECK_PROG([POD2MAN], [pod2man], [pod2man], [no])
 AS_IF([test "x$POD2MAN" != "xno"],[
@@ -526,6 +540,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([nbdkit],
                 [chmod +x,-w nbdkit])
 AC_CONFIG_FILES([Makefile
+                 bash/Makefile
                  docs/Makefile
                  include/Makefile
                  plugins/Makefile

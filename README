@@ -91,6 +91,10 @@ For the OCaml plugin:
  - OCaml >= 4.02.2 which has support for shared libraries, see:
    http://caml.inria.fr/mantis/view.php?id=6693
 
+For bash tab completion:
+
+ - bash-completion >= 1.99
+
 To run the test suite:
 
  - bash

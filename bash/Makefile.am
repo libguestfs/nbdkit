@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2017 Red Hat Inc.
+# Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,48 +30,11 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-ACLOCAL_AMFLAGS = -I m4
+EXTRA_DIST = README
 
-EXTRA_DIST = \
-	.dir-locals.el \
-	.gitignore \
-	LICENSE \
-	nbdkit.in \
-	OTHER_PLUGINS \
-	valgrind-suppressions \
-	m4/.gitignore
+if HAVE_BASH_COMPLETION
 
-noinst_SCRIPTS = nbdkit
+bashcompdir = @bashcompdir@
+dist_bashcomp_DATA = nbdkit
 
-SUBDIRS = \
-	bash \
-	docs \
-	include \
-	src
-
-if HAVE_PLUGINS
-SUBDIRS += plugins filters
 endif
-
-SUBDIRS += tests
-
-CLEANFILES = *~
-
-check-valgrind:
-	$(MAKE) -C tests check-valgrind
-
-# Maintainer only: check no files are missing from EXTRA_DIST rules,
-# and that all generated files have been included in the tarball.
-# (Note you must have done 'make dist')
-
-maintainer-check-extra-dist:
-	@zcat $(PACKAGE_NAME)-$(VERSION).tar.gz | tar tf - | sort | \
-	  sed 's,^$(PACKAGE_NAME)-$(VERSION)/,,' > tarfiles
-	@git ls-files | \
-	  sort > gitfiles
-	@comm -13 tarfiles gitfiles > comm-out
-	@echo Checking for differences between EXTRA_DIST and git ...
-	@cat comm-out
-	@[ ! -s comm-out ]
-	@rm tarfiles gitfiles comm-out
-	@echo PASS: EXTRA_DIST tests

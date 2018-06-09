@@ -1,0 +1,113 @@
+# nbdkit bash completion script -*- shell-script -*-
+# Copyright (C) 2010-2018 Red Hat Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# * Neither the name of Red Hat nor the names of its contributors may be
+# used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY RED HAT AND CONTRIBUTORS ''AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL RED HAT OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+_nbdkit_list_plugins ()
+{
+    local plugindir
+    plugindir="$(
+        nbdkit --dump-config | grep ^plugindir= | sed 's/^plugindir=//'
+    )"
+    ls -1 "$plugindir" | sed 's/^nbdkit-//' | sed 's/-plugin.*//'
+}
+
+_nbdkit_list_filters ()
+{
+    local filterdir
+    filterdir="$(
+        nbdkit --dump-config | grep ^filterdir= | sed 's/^filterdir=//'
+    )"
+    ls -1 "$filterdir" | sed 's/^nbdkit-//' | sed 's/-filter.*//'
+}
+
+# This handler function is called when the user presses tab.
+_nbdkit ()
+{
+    local cur prev words cword split
+    local shortopts longopts plugin plugins filters args i
+
+    _init_completion -s || return
+
+    # Did we get the plugin name yet?
+    # This is only a heuristic because it can be confused by
+    # long opt parameters with an arguments.  XXX
+    plugin=
+    for (( i=1; i < ${#words[@]}; ++i)) ; do
+        if [[ "${words[i]}" =~ ^[a-zA-Z0-9]+$ ]]; then
+            plugin="${words[i]}"
+            break
+        fi
+    done
+
+    # Previous item on the current line is a completable flag or plugin name?
+    case "$prev" in
+        --filter)
+            filters="$(_nbdkit_list_filters)"
+            COMPREPLY=( $(compgen -W "$filters" "$cur") )
+            return ;;
+        --tls)
+            COMPREPLY=( $(compgen -W "off on require" "$cur") )
+            return ;;
+        # Could complete -u and -g options too.  XXX
+    esac
+
+    # Current item is an option we can expand?
+    case "$cur" in
+        --*)
+            longopts="$(nbdkit --long-options)"
+            COMPREPLY=( $(compgen -W "$longopts" -- "$cur") )
+            return ;;
+        -*)
+            shortopts="$(nbdkit --short-options)"
+            longopts="$(nbdkit --long-options)"
+            COMPREPLY=( $(compgen -W "$shortopts $longopts" -- "$cur") )
+            return ;;
+        *)
+            if [ "$plugin" = "" ]; then
+                # Complete plugin name.
+                plugins="$(_nbdkit_list_plugins)"
+                COMPREPLY=( $(compgen -W "$plugins" "$cur") )
+                return
+            else
+                # Complete plugin args.
+                args="$(
+                    nbdkit $plugin --help 2>/dev/null |
+                        grep -E '^[a-z0-9]+=' | sed 's/=.*/=/'
+                )"
+                COMPREPLY=( $(compgen -W "$args" "$cur") )
+                return
+            fi
+            ;;
+    esac
+}
+
+# Install the handler function.
+complete -o default -F _nbdkit nbdkit

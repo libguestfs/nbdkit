@@ -126,6 +126,7 @@ static const struct option long_options[] = {
   { "group",      1, NULL, 'g' },
   { "ip-addr",    1, NULL, 'i' },
   { "ipaddr",     1, NULL, 'i' },
+  { "long-options", 0, NULL, 0 },
   { "new-style",  0, NULL, 'n' },
   { "newstyle",   0, NULL, 'n' },
   { "old-style",  0, NULL, 'o' },
@@ -137,6 +138,7 @@ static const struct option long_options[] = {
   { "readonly",   0, NULL, 'r' },
   { "run",        1, NULL, 0 },
   { "selinux-label", 1, NULL, 0 },
+  { "short-options", 0, NULL, 0 },
   { "single",     0, NULL, 's' },
   { "stdin",      0, NULL, 's' },
   { "threads",    1, NULL, 't' },
@@ -263,6 +265,14 @@ main (int argc, char *argv[])
         t->filename = optarg;
         filter_filenames = t;
       }
+      else if (strcmp (long_options[option_index].name, "long-options") == 0) {
+        for (i = 0; long_options[i].name != NULL; ++i) {
+          if (strcmp (long_options[i].name, "long-options") != 0 &&
+              strcmp (long_options[i].name, "short-options") != 0)
+            printf ("--%s\n", long_options[i].name);
+        }
+        exit (EXIT_SUCCESS);
+      }
       else if (strcmp (long_options[option_index].name, "run") == 0) {
         if (socket_activation) {
           fprintf (stderr, "%s: cannot use socket activation with --run flag\n",
@@ -275,6 +285,13 @@ main (int argc, char *argv[])
       else if (strcmp (long_options[option_index].name, "selinux-label") == 0) {
         selinux_label = optarg;
         break;
+      }
+      else if (strcmp (long_options[option_index].name, "short-options") == 0) {
+        for (i = 0; short_options[i]; ++i) {
+          if (short_options[i] != ':')
+            printf ("-%c\n", short_options[i]);
+        }
+        exit (EXIT_SUCCESS);
       }
       else if (strcmp (long_options[option_index].name, "tls") == 0) {
         tls_set_on_cli = 1;
