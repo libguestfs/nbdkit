@@ -279,6 +279,7 @@ test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # gzip plugin test.
 if HAVE_ZLIB
+if HAVE_GUESTFISH
 
 LIBGUESTFS_TESTS += test-gzip
 check_DATA += disk.gz
@@ -292,6 +293,7 @@ disk.gz: disk
 	rm -f $@
 	gzip -9 -c disk > $@
 
+endif HAVE_GUESTFISH
 endif HAVE_ZLIB
 
 # memory plugin test.
@@ -347,6 +349,7 @@ test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # xz plugin test.
 if HAVE_LIBLZMA
+if HAVE_GUESTFISH
 
 LIBGUESTFS_TESTS += test-xz
 check_DATA += disk.xz
@@ -360,6 +363,7 @@ disk.xz: disk
 	rm -f $@
 	xz --best --block-size=16777216 -c disk > $@
 
+endif HAVE_GUESTFISH
 endif HAVE_LIBLZMA
 
 #----------------------------------------------------------------------
