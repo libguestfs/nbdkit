@@ -932,10 +932,10 @@ L<nbdkit-libvirt-plugin(1)>,
 L<nbdkit-memory-plugin(1)>,
 L<nbdkit-nbd-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
-L<nbdkit-split-plugin(1)>.
-L<nbdkit-streaming-plugin(1)>.
-L<nbdkit-tar-plugin(1)>.
-L<nbdkit-vddk-plugin(1)>.
+L<nbdkit-split-plugin(1)>,
+L<nbdkit-streaming-plugin(1)>,
+L<nbdkit-tar-plugin(1)>,
+L<nbdkit-vddk-plugin(1)>,
 L<nbdkit-xz-plugin(1)>.
 
 Filters:
