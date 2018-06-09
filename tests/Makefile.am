@@ -73,7 +73,8 @@ EXTRA_DIST = \
 	test-tls.sh \
 	test-version.sh \
 	test-version-filter.sh \
-	test-version-plugin.sh
+	test-version-plugin.sh \
+	test-zero.sh
 
 # Use 'make check' to run the ordinary tests.  To run all the tests
 # under valgrind, use the following rule:
@@ -365,6 +366,9 @@ disk.xz: disk
 
 endif HAVE_GUESTFISH
 endif HAVE_LIBLZMA
+
+# zero plugin test.
+TESTS += test-zero.sh
 
 #----------------------------------------------------------------------
 # Tests of language plugins.

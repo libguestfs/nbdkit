@@ -566,6 +566,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/tar/Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile
+                 plugins/zero/Makefile
                  filters/Makefile
                  filters/blocksize/Makefile
                  filters/cache/Makefile

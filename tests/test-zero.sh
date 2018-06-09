@@ -1,5 +1,6 @@
+#!/bin/bash -
 # nbdkit
-# Copyright (C) 2013-2014 Red Hat Inc.
+# Copyright (C) 2017-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,27 +31,24 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = \
-	curl \
-	example1 \
-	example2 \
-	example3 \
-	example4 \
-	ext2 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	memory \
-	nbd \
-	null \
-	ocaml \
-	perl \
-	python \
-	ruby \
-	split \
-	streaming \
-	tar \
-	vddk \
-	xz \
-	zero
+set -x
+set -e
+
+# Check qemu-img exists.
+if ! qemu-img --version; then
+    echo "$0: missing qemu-img"
+    exit 77
+fi
+
+files="test-zero.out"
+rm -f $files
+trap "rm $files" INT QUIT TERM EXIT ERR
+
+nbdkit -U - zero --run 'qemu-img convert $nbd test-zero.out'
+
+# Resulting file should be zero-sized.
+test -f test-zero.out
+! test -s test-zero.out
+
+# Existing implicitly calls the trap function above to clean up.
+exit 0

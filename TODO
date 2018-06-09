@@ -42,13 +42,8 @@ General ideas for improvements
   some: .can_write is only called once, but .can_fua is called on
   every request with the FUA flag set).
 
-* The documentation claims that .get_size() must return non-zero,
-  but NBD permits a zero-length file (you can't do anything useful
-  on it except for NBD_CMD_FLUSH, at least until the NBD resize
-  extension is finalized), and at least the file and nbd plugin
-  don't choke on it.  Do a full audit and add a test that permits
-  0-length files everywhere, as well as sane handling of 0-length
-  read/write requests (which NBD says are unspecified).
+* Test that zero-length read/write requests behave correctly
+  (NBD protocol says they are unspecified).
 
 Suggestions for plugins
 -----------------------
