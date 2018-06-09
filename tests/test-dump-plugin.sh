@@ -32,6 +32,7 @@
 # SUCH DAMAGE.
 
 set -e
+set -x
 source ./functions.sh
 
 # Basic check that the name field is present.
@@ -51,16 +52,24 @@ if [[ ! ( "$output" =~ example2_extra\=hello ) ]]; then
 fi
 
 # Get a list of all plugins and run --dump-plugin on all of them.
-# However don't do that on the VDDK plugin because we know that
-# will fail.
-plugins="$(ls -1 ../plugins/*/.libs/nbdkit-*-plugin.so | grep -v /vddk/)"
+# However some of these tests are expected to fail.
+plugins="$(
+    cd ..;
+    ls -1 plugins/*/.libs/nbdkit-*-plugin.so plugins/*/nbdkit-*-plugin |
+        sed 's,^plugins/\([^/]*\)/.*,\1,'
+)"
 for p in $plugins; do
-    nbdkit $p --dump-plugin
-done
-
-# These plugins are written in Perl.  The --dump-plugin output from
-# these is not very useful, but at least it shouldn't crash.
-plugins="$(ls -1 ../plugins/*/nbdkit-*-plugin)"
-for p in $plugins; do
-    nbdkit perl $p --dump-plugin
+    case "$p${NBDKIT_VALGRIND:+-valgrind}" in
+        vddk | vddk-valgrind)
+            # VDDK won't run without special environment variables
+            # being set, so ignore it.
+            ;;
+        perl-valgrind | python-valgrind | ruby-valgrind | \
+        example4-valgrind | tar-valgrind)
+            # Plugins written in scripting languages can't run under valgrind.
+            ;;
+        *)
+            nbdkit $p --dump-plugin
+            ;;
+    esac
 done
