@@ -72,6 +72,7 @@ Makefile.in
 /tests/test-partition
 /tests/test-perl
 /tests/test-python
+/tests/test-random
 /tests/test-ruby
 /tests/test-socket-activation
 /tests/test-split

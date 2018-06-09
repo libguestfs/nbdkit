@@ -318,6 +318,13 @@ test_null_SOURCES = test-null.c test.h
 test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_null_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
+# random plugin test.
+LIBGUESTFS_TESTS += test-random
+
+test_random_SOURCES = test-random.c test.h
+test_random_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_random_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
 # split files plugin test.
 check_DATA += split1 split2 split3
 MAINTAINERCLEANFILES += split1 split2 split3
