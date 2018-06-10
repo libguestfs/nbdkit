@@ -30,14 +30,12 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+include $(top_srcdir)/common-rules.mk
+
 source = example4.pl
 
 EXTRA_DIST = \
 	$(source)
-
-CLEANFILES = *~
-
-plugindir = $(libdir)/nbdkit/plugins
 
 plugin_SCRIPTS = nbdkit-example4-plugin
 

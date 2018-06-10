@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2016 Red Hat Inc.
+# Copyright (C) 2013-2017 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,41 +30,44 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+plugins = \
+	curl \
+	example1 \
+	example2 \
+	example3 \
+	example4 \
+	ext2 \
+	file \
+	guestfs \
+	gzip \
+	libvirt \
+	memory \
+	nbd \
+	null \
+	ocaml \
+	perl \
+	python \
+	random \
+	ruby \
+	split \
+	streaming \
+	tar \
+	vddk \
+	xz \
+	zero
 
-EXTRA_DIST = \
-	nbdkit-ruby-plugin.pod \
-	example.rb
+filters = \
+	blocksize \
+	cache \
+	cow \
+	delay \
+	fua \
+	log \
+	nozero \
+	offset \
+	partition
 
-if HAVE_RUBY
+plugindir = $(libdir)/nbdkit/plugins
+filterdir = $(libdir)/nbdkit/filters
 
-plugin_LTLIBRARIES = nbdkit-ruby-plugin.la
-
-nbdkit_ruby_plugin_la_SOURCES = \
-	ruby.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
-
-nbdkit_ruby_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
-nbdkit_ruby_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS) \
-	$(RUBY_CFLAGS)
-nbdkit_ruby_plugin_la_LIBADD = \
-	$(RUBY_LIBS)
-nbdkit_ruby_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
-	$(RUBY_LDFLAGS)
-
-if HAVE_POD2MAN
-
-man_MANS = nbdkit-ruby-plugin.3
-CLEANFILES += $(man_MANS)
-
-nbdkit-ruby-plugin.3: nbdkit-ruby-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
-
-endif
-
-endif
+CLEANFILES = *~ *.cmi *.cmx *.cmxa *.so

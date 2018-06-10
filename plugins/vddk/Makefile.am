@@ -30,13 +30,11 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+include $(top_srcdir)/common-rules.mk
+
 EXTRA_DIST = \
 	nbdkit-vddk-plugin.pod \
 	README.VDDK
-
-CLEANFILES = *~
-
-plugindir = $(libdir)/nbdkit/plugins
 
 if HAVE_VDDK
 

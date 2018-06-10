@@ -30,6 +30,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+include $(top_srcdir)/common-rules.mk
+
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = \
@@ -54,8 +56,6 @@ SUBDIRS += plugins filters
 endif
 
 SUBDIRS += tests
-
-CLEANFILES = *~
 
 check-valgrind:
 	$(MAKE) -C tests check-valgrind

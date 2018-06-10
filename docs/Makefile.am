@@ -30,12 +30,12 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+include $(top_srcdir)/common-rules.mk
+
 EXTRA_DIST = \
 	nbdkit.pod \
 	nbdkit-plugin.pod \
 	nbdkit-filter.pod
-
-CLEANFILES = *~
 
 if HAVE_POD2MAN
 

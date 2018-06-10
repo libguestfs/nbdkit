@@ -30,8 +30,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-plugindir = $(libdir)/nbdkit/plugins
-filterdir = $(libdir)/nbdkit/filters
+include $(top_srcdir)/common-rules.mk
 
 sbin_PROGRAMS = nbdkit
 
@@ -71,8 +70,6 @@ nbdkit_LDADD = \
 nbdkit_LDFLAGS = \
 	-pthread \
 	-rdynamic
-
-CLEANFILES = *~
 
 # pkg-config / pkgconf
 

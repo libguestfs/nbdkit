@@ -30,11 +30,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+include $(top_srcdir)/common-rules.mk
+
 EXTRA_DIST = nbdkit-blocksize-filter.pod
-
-CLEANFILES = *~
-
-filterdir = $(libdir)/nbdkit/filters
 
 filter_LTLIBRARIES = nbdkit-blocksize-filter.la
 

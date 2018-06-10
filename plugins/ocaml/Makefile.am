@@ -30,12 +30,12 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+include $(top_srcdir)/common-rules.mk
+
 EXTRA_DIST = \
 	NBDKit.mli \
 	NBDKit.ml \
 	nbdkit-ocaml-plugin.pod
-
-CLEANFILES = *~ *.cmi *.cmx
 
 if HAVE_OCAML
 

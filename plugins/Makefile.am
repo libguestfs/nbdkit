@@ -30,28 +30,6 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = \
-	curl \
-	example1 \
-	example2 \
-	example3 \
-	example4 \
-	ext2 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	memory \
-	nbd \
-	null \
-	ocaml \
-	perl \
-	python \
-	random \
-	ruby \
-	split \
-	streaming \
-	tar \
-	vddk \
-	xz \
-	zero
+include $(top_srcdir)/common-rules.mk
+
+SUBDIRS = $(plugins)

@@ -30,11 +30,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+include $(top_srcdir)/common-rules.mk
+
 EXTRA_DIST = nbdkit-random-plugin.pod
-
-CLEANFILES = *~
-
-plugindir = $(libdir)/nbdkit/plugins
 
 plugin_LTLIBRARIES = nbdkit-random-plugin.la
 

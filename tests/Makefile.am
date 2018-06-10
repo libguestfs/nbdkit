@@ -30,7 +30,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-CLEANFILES = *~ *.cmi *.cmx *.cmxa *.so
+include $(top_srcdir)/common-rules.mk
+
 MAINTAINERCLEANFILES =
 
 EXTRA_DIST = \
