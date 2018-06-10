@@ -463,6 +463,12 @@ You can also run pkg-config/pkgconf directly, for example:
    exit 1
  fi
 
+You can also substitute the filterdir variable by doing:
+
+ PKG_CHECK_VAR([NBDKIT_FILTERDIR], [nbdkit], [filterdir])
+
+which defines C<$(NBDKIT_FILTERDIR)> in automake-generated Makefiles.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
