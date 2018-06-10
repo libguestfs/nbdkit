@@ -837,6 +837,12 @@ You can also run pkg-config/pkgconf directly, for example:
    exit 1
  fi
 
+You can also substitute the plugindir variable by doing:
+
+ PKG_CHECK_VAR([NBDKIT_PLUGINDIR], [nbdkit], [plugindir])
+
+which defines C<$(NBDKIT_PLUGINDIR)> in automake-generated Makefiles.
+
 =head1 WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES
 
 You can also write nbdkit plugins in OCaml, Perl, Python or Ruby.
