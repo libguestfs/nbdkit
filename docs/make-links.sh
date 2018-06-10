@@ -1,5 +1,6 @@
+#!/bin/bash -
 # nbdkit
-# Copyright (C) 2013-2018 Red Hat Inc.
+# Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,43 +31,17 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Turn a list of plugins or filters into a comma-separated
+# list of POD links.
+# eg:
+# ./make-links.sh plugin 1 foo bar
+# --> L<nbdkit-foo-plugin(1)>, L<nbdkit-bar-plugin(1)>
 
-EXTRA_DIST = \
-	nbdkit.pod.in \
-	nbdkit-plugin.pod.in \
-	nbdkit-filter.pod.in
-
-if HAVE_POD2MAN
-
-man_MANS = \
-	nbdkit.1 \
-	nbdkit-plugin.3 \
-	nbdkit-filter.3
-CLEANFILES += $(man_MANS)
-
-nbdkit.1: nbdkit.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=nbdkit $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
-
-nbdkit-plugin.3: nbdkit-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-plugin $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
-
-nbdkit-filter.3: nbdkit-filter.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-filter $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
-
-%.pod: %.pod.in
-	rm -f $@ $@-t
-	$(SED) \
-	    -e 's/__PLUGIN_LINKS__/$(shell $(srcdir)/make-links.sh plugin 1 $(plugins))/' \
-	    -e 's/__FILTER_LINKS__/$(shell $(srcdir)/make-links.sh filter 1 $(filters))/' \
-	    $< > $@-t
-	chmod -w $@-t
-	mv $@-t $@
-
-endif
+type="$1"
+section="$2"
+shift 2
+for (( i = 1; i <= $#; ++i )); do
+    echo -n "L<nbdkit-${!i}-$type($section)>"
+    if [ "$i" -lt "$#" ]; then echo -n , ; fi
+    echo
+done

@@ -32,6 +32,9 @@ Makefile.in
 /config.sub
 /configure
 /depcomp
+/docs/nbdkit-filter.pod
+/docs/nbdkit-plugin.pod
+/docs/nbdkit.pod
 /INSTALL
 /install-sh
 /libtool

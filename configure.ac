@@ -42,6 +42,8 @@ AM_INIT_AUTOMAKE(foreign)
 AC_PROG_LIBTOOL
 LT_INIT
 
+AC_PROG_SED
+
 dnl Check for basic C environment.
 AC_PROG_CC_STDC
 AC_PROG_INSTALL
