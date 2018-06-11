@@ -33,6 +33,7 @@
 include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
+	make-links.sh \
 	nbdkit.pod.in \
 	nbdkit-plugin.pod.in \
 	nbdkit-filter.pod.in
