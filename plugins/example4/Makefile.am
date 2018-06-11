@@ -39,6 +39,8 @@ CLEANFILES = *~
 
 plugindir = $(libdir)/nbdkit/plugins
 
+if HAVE_PERL
+
 plugin_SCRIPTS = nbdkit-example4-plugin
 
 # We have to do the rewriting here to avoid stupid exec_prefix.
@@ -57,5 +59,7 @@ nbdkit-example4-plugin.1: $(source)
 	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
 	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
 	mv $@.t $@
+
+endif
 
 endif
