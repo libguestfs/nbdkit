@@ -463,6 +463,7 @@ nbd_open (int readonly)
   h->fd = socket (AF_UNIX, SOCK_STREAM, 0);
   if (h->fd < 0) {
     nbdkit_error ("socket: %m");
+    free (h);
     return NULL;
   }
   /* We already validated length during nbd_config_complete */
@@ -557,6 +558,7 @@ nbd_open (int readonly)
 
  err:
   close (h->fd);
+  free (h);
   return NULL;
 }
 
