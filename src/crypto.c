@@ -294,7 +294,7 @@ crypto_send (struct connection *conn, const void *vbuf, size_t len)
 
   while (len > 0) {
     r = gnutls_record_send (*session, buf, len);
-    if (r == -1) {
+    if (r < 0) {
       if (r == GNUTLS_E_INTERRUPTED || r == GNUTLS_E_AGAIN)
         continue;
       return -1;
