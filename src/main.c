@@ -479,6 +479,12 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
+  /* Set the umask to a known value.  This makes the behaviour of
+   * plugins when creating files more predictable, and also removes an
+   * implicit dependency on umask when calling mkstemp(3).
+   */
+  umask (0022);
+
   /* Initialize TLS. */
   crypto_init (tls_set_on_cli);
   assert (tls != -1);

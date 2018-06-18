@@ -302,6 +302,10 @@ and returns C<NULL>.
 
 The returned string must be freed by the caller.
 
+=head2 umask
+
+All plugins will see a L<umask(2)> of C<0022>.
+
 =head1 CALLBACKS
 
 =head2 C<.name>
