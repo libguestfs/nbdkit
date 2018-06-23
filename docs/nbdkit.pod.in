@@ -395,6 +395,10 @@ modify the behaviour of the plugin, using the I<--filter> parameter.
 Filters can be used for example to limit requests to an offset/limit,
 add copy-on-write support, or inject delays or errors (for testing).
 
+     NBD     ┌─────────┐    ┌─────────┐          ┌────────┐
+  client ───▶│ filter1 │───▶│ filter2 │── ─ ─ ──▶│ plugin │
+ request     └─────────┘    └─────────┘          └────────┘
+
 Several existing filters are available in the C<$filterdir>.  Use
 C<nbdkit --dump-config> to find the directory name.
 
