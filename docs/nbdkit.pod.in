@@ -937,11 +937,32 @@ L<nbdkit-perl-plugin(3)>,
 L<nbdkit-python-plugin(3)>,
 L<nbdkit-ruby-plugin(3)>.
 
+NBD clients:
+
+L<qemu(1)>,
+L<nbd-client(1)>,
+L<guestfish(1)>.
+
+Other NBD servers:
+
+L<qemu-nbd(1)>,
+L<nbd-server(1)>,
+L<https://bitbucket.org/hirofuchi/xnbd>.
+
+Documentation for the NBD protocol:
+
+L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md>,
+L<https://nbd.sourceforge.io/>.
+
+Similar protocols:
+
+L<https://en.wikipedia.org/wiki/iSCSI>,
+L<https://en.wikipedia.org/wiki/ATA_over_Ethernet>,
+L<https://en.wikipedia.org/wiki/Fibre_Channel_over_Ethernet>.
+
 Other manual pages of interest:
 
 L<gnutls_priority_init(3)>,
-L<guestfish(1)>,
-L<qemu(1)>,
 L<qemu-img(1)>,
 L<systemd.socket(5)>.
 
