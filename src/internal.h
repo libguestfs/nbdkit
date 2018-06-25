@@ -108,6 +108,7 @@ extern int readonly;
 extern const char *selinux_label;
 extern int tls;
 extern const char *tls_certificates_dir;
+extern const char *tls_psk;
 extern int tls_verify_peer;
 extern char *unixsocket;
 extern int verbose;

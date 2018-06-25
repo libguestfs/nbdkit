@@ -37,10 +37,12 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <assert.h>
@@ -51,7 +53,12 @@
 
 #include <gnutls/gnutls.h>
 
+static int crypto_auth;
+#define CRYPTO_AUTH_CERTIFICATES 1
+#define CRYPTO_AUTH_PSK 2
+
 static gnutls_certificate_credentials_t x509_creds;
+static gnutls_psk_server_credentials_t psk_creds;
 
 static void print_gnutls_error (int err, const char *fs, ...)
   __attribute__((format (printf, 2, 3)));
@@ -147,23 +154,9 @@ load_certificates (const char *path)
   return 1;
 }
 
-/* Initialize crypto.  This also handles the command line parameters
- * and loading the server certificate.
- */
-void
-crypto_init (int tls_set_on_cli)
+static int
+start_certificates (void)
 {
-  int err;
-
-  err = gnutls_global_init ();
-  if (err < 0) {
-    print_gnutls_error (err, "initializing GnuTLS");
-    exit (EXIT_FAILURE);
-  }
-
-  if (tls == 0)                 /* --tls=off */
-    return;
-
   /* Try to locate the certificates directory and load them. */
   if (tls_certificates_dir == NULL) {
     const char *home;
@@ -196,10 +189,83 @@ crypto_init (int tls_set_on_cli)
     if (load_certificates (tls_certificates_dir))
       goto found_certificates;
   }
+  return -1;
 
-  /* If we get here, we didn't manage to load the certificates.  If
-   * --tls=require was given on the command line then that's a
-   * problem.
+ found_certificates:
+#ifdef HAVE_GNUTLS_CERTIFICATE_SET_KNOWN_DH_PARAMS
+  gnutls_certificate_set_known_dh_params (x509_creds, GNUTLS_SEC_PARAM_MEDIUM);
+#endif
+  return 0;
+}
+
+static int
+start_psk (void)
+{
+  int err;
+  CLEANUP_FREE char *abs_psk_file = NULL;
+
+  /* Make sure the path to the PSK file is absolute. */
+  abs_psk_file = realpath (tls_psk, NULL);
+  if (abs_psk_file == NULL) {
+    perror (tls_psk);
+    exit (EXIT_FAILURE);
+  }
+
+  err = gnutls_psk_allocate_server_credentials (&psk_creds);
+  if (err < 0) {
+    print_gnutls_error (err, "allocating PSK credentials");
+    exit (EXIT_FAILURE);
+  }
+
+  /* Note that this function makes a copy of the string.
+   * CLEANUP_FREE macro above will free abs_psk_file when
+   * we return, but this is safe.
+   */
+  gnutls_psk_set_server_credentials_file (psk_creds, abs_psk_file);
+
+  return 0;
+}
+
+/* Initialize crypto.  This also handles the command line parameters
+ * and loading the server certificate.
+ */
+void
+crypto_init (int tls_set_on_cli)
+{
+  int err, r;
+  const char *what;
+
+  err = gnutls_global_init ();
+  if (err < 0) {
+    print_gnutls_error (err, "initializing GnuTLS");
+    exit (EXIT_FAILURE);
+  }
+
+  if (tls == 0)                 /* --tls=off */
+    return;
+
+  /* --tls-psk overrides certificates. */
+  if (tls_psk != NULL) {
+    what = "Pre-Shared Keys (PSK)";
+    r = start_psk ();
+    if (r == 0)
+      crypto_auth = CRYPTO_AUTH_PSK;
+  }
+  else {
+    what = "X.509 certificates";
+    r = start_certificates ();
+    if (r == 0)
+      crypto_auth = CRYPTO_AUTH_CERTIFICATES;
+  }
+
+  if (r == 0) {
+    debug ("TLS enabled using: %s", what);
+    return;
+  }
+
+  /* If we get here, we didn't manage to load the PSK file /
+   * certificates.  If --tls=require was given on the command line
+   * then that's a problem.
    */
   if (tls == 2) {               /* --tls=require */
     fprintf (stderr,
@@ -224,21 +290,21 @@ crypto_init (int tls_set_on_cli)
 
   tls = 0;
   debug ("TLS disabled: could not load TLS certificates");
-  return;
-
- found_certificates:
-#ifdef HAVE_GNUTLS_CERTIFICATE_SET_KNOWN_DH_PARAMS
-  gnutls_certificate_set_known_dh_params (x509_creds, GNUTLS_SEC_PARAM_MEDIUM);
-#endif
-
-  debug ("TLS enabled");
 }
 
 void
 crypto_free (void)
 {
-  if (tls > 0)
-    gnutls_certificate_free_credentials (x509_creds);
+  if (tls > 0) {
+    switch (crypto_auth) {
+    case CRYPTO_AUTH_CERTIFICATES:
+      gnutls_certificate_free_credentials (x509_creds);
+      break;
+    case CRYPTO_AUTH_PSK:
+      gnutls_psk_free_server_credentials (psk_creds);
+      break;
+    }
+  }
 
   gnutls_global_deinit ();
 }
@@ -335,6 +401,7 @@ int
 crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
 {
   gnutls_session_t *session;
+  CLEANUP_FREE char *priority = NULL;
   int err;
 
   /* Create the GnuTLS session. */
@@ -351,33 +418,62 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
     return -1;
   }
 
-  err = gnutls_priority_set_direct (*session, TLS_PRIORITY, NULL);
+  switch (crypto_auth) {
+  case CRYPTO_AUTH_CERTIFICATES:
+    /* Associate the session with the server credentials (key, cert). */
+    err = gnutls_credentials_set (*session, GNUTLS_CRD_CERTIFICATE,
+                                  x509_creds);
+    if (err < 0) {
+      nbdkit_error ("gnutls_credentials_set: %s", gnutls_strerror (err));
+      goto error;
+    }
+
+    /* If verify peer is enabled, tell GnuTLS to request the client
+     * certificates.  (Note the default is to not request or verify
+     * certificates).
+     */
+    if (tls_verify_peer) {
+#ifdef HAVE_GNUTLS_SESSION_SET_VERIFY_CERT
+      gnutls_certificate_server_set_request (*session, GNUTLS_CERT_REQUEST);
+      gnutls_session_set_verify_cert (*session, NULL, 0);
+#else
+      nbdkit_error ("--tls-verify-peer: GnuTLS >= 3.4.6 is required for this feature");
+      goto error;
+#endif
+    }
+
+    priority = strdup (TLS_PRIORITY);
+    if (priority == NULL) {
+      nbdkit_error ("strdup: %m");
+      goto error;
+    }
+    break;
+
+  case CRYPTO_AUTH_PSK:
+    /* Associate the session with the server PSK credentials. */
+    err = gnutls_credentials_set (*session, GNUTLS_CRD_PSK, psk_creds);
+    if (err < 0) {
+      nbdkit_error ("gnutls_credentials_set: %s", gnutls_strerror (err));
+      goto error;
+    }
+
+    if (asprintf (&priority,
+                  "%s:+ECDHE-PSK:+DHE-PSK:+PSK", TLS_PRIORITY) == -1) {
+      nbdkit_error ("asprintf: %m");
+      goto error;
+    }
+    break;
+
+  default:
+    abort ();
+  }
+
+  assert (priority != NULL);
+  err = gnutls_priority_set_direct (*session, priority, NULL);
   if (err < 0) {
     nbdkit_error ("failed to set TLS session priority to %s: %s",
-                  TLS_PRIORITY, gnutls_strerror (err));
+                  priority, gnutls_strerror (err));
     goto error;
-  }
-
-  /* Associate the session with the server credentials (key, cert). */
-  err = gnutls_credentials_set (*session, GNUTLS_CRD_CERTIFICATE,
-                                x509_creds);
-  if (err < 0) {
-    nbdkit_error ("gnutls_credentials_set: %s", gnutls_strerror (err));
-    goto error;
-  }
-
-  /* If verify peer is enabled, tell GnuTLS to request the client
-   * certificates.  (Note the default is to not request or verify
-   * certificates).
-   */
-  if (tls_verify_peer) {
-#ifdef HAVE_GNUTLS_SESSION_SET_VERIFY_CERT
-    gnutls_certificate_server_set_request (*session, GNUTLS_CERT_REQUEST);
-    gnutls_session_set_verify_cert (*session, NULL, 0);
-#else
-    nbdkit_error ("--tls-verify-peer: GnuTLS >= 3.4.6 is required for this feature");
-    goto error;
-#endif
   }
 
   /* Set up GnuTLS so it reads and writes on the raw sockets, and set

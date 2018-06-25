@@ -37,6 +37,7 @@ MAINTAINERCLEANFILES =
 EXTRA_DIST = \
 	functions.sh \
 	make-pki.sh \
+	make-psk.sh \
 	python-exception.py \
 	README.tests \
 	shebang.pl \
@@ -72,6 +73,7 @@ EXTRA_DIST = \
 	test-start.sh \
 	test-random-sock.sh \
 	test-tls.sh \
+	test-tls-psk.sh \
 	test-version.sh \
 	test-version-filter.sh \
 	test-version-plugin.sh \
@@ -112,6 +114,7 @@ TESTS += \
 	test-captive.sh \
 	test-random-sock.sh \
 	test-tls.sh \
+	test-tls-psk.sh \
 	test-ip.sh \
 	test-socket-activation \
 	test-foreground.sh
@@ -170,6 +173,11 @@ test_exit_with_parent_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 check_DATA += pki/.stamp
 pki/.stamp: $(srcdir)/make-pki.sh
 	$(srcdir)/make-pki.sh
+
+# PSK keys for the TLS-PSK tests.
+check_DATA += keys.psk
+keys.psk: $(srcdir)/make-psk.sh
+	$(srcdir)/make-psk.sh
 
 #----------------------------------------------------------------------
 # Tests of C plugins or tests which require plugins.

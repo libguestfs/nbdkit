@@ -11,7 +11,7 @@ nbdkit - A toolkit for creating NBD servers
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
         [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]
         [--tls=off|on|require] [--tls-certificates /path/to/certificates]
-        [--tls-verify-peer]
+        [--tls-psk /path/to/pskfile] [--tls-verify-peer]
         [-U SOCKET] [-u USER] [-v] [-V]
         PLUGIN [key=value [key=value [...]]]
 
@@ -287,6 +287,12 @@ support).  See L</TLS> below.
 
 Set the path to the TLS certificates directory.  If not specified,
 some built-in paths are checked.  See L</TLS> below for more details.
+
+=item B<--tls-psk> /path/to/pskfile
+
+Set the path to the pre-shared keys (PSK) file.  If used, this
+overrides certificate authentication.  There is no built-in path.  See
+L</TLS> below for more details.
 
 =item B<--tls-verify-peer>
 
@@ -757,6 +763,35 @@ denied.  Also denied are clients which present a valid certificate
 signed by another CA.  Also denied are clients with certificates added
 to the certificate revocation list (F<ca-crl.pem>).
 
+=head2 TLS with Pre-Shared Keys (PSK)
+
+As a simpler alternative to TLS certificates, you may used pre-shared
+keys to authenticate clients.
+
+Create a PSK file containing one or more C<username:key> pairs.  It is
+easiest to use L<psktool(1)> for this:
+
+ mkdir -m 0700 /tmp/keys
+ psktool -u rich -p /tmp/keys/keys.psk
+
+The PSK file contains the hex-encoded random keys in plaintext.  Any
+client which can read this file will be able to connect to the server.
+
+Use the nbdkit I<--tls-psk> option to start the server:
+
+ nbdkit --tls=require --tls-psk=/tmp/keys/keys.psk -e / file file=disk.img
+
+This option overrides X.509 certificate authentication.
+
+Clients must supply one of the usernames in the PSK file and the
+corresponding key in order to connect.  An example of connecting using
+L<qemu-img(1)> is:
+
+ qemu-img info \
+   --object tls-creds-psk,id=tls0,dir=/tmp/keys,username=rich,endpoint=client \
+   --image-opts \
+   file.driver=nbd,file.host=localhost,file.port=10809,file.tls-creds=tls0,file.export=/
+
 =head2 Default TLS behaviour
 
 If nbdkit was compiled without GnuTLS support, then TLS is disabled
@@ -778,6 +813,10 @@ whether or not to use TLS and whether or not to present certificates.
 
 TLS client certificates are I<not> checked by default unless you
 specify I<--tls-verify-peer>.
+
+If the I<--tls-psk> option is used then TLS is enabled (but I<not>
+required).  To ensure that all clients are authorized you must use
+I<--tls=require>.
 
 Each of these defaults is insecure to some extent (including
 I<--tls=on> which could be subject to a downgrade attack), so if you
@@ -968,6 +1007,7 @@ L<https://en.wikipedia.org/wiki/Fibre_Channel_over_Ethernet>.
 
 L<gnutls_priority_init(3)>,
 L<qemu-img(1)>,
+L<psktool(1)>,
 L<systemd.socket(5)>.
 
 =head1 AUTHORS

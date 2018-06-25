@@ -89,6 +89,7 @@ const char *selinux_label;      /* --selinux-label */
 int threads;                    /* -t */
 int tls;                        /* --tls : 0=off 1=on 2=require */
 const char *tls_certificates_dir; /* --tls-certificates */
+const char *tls_psk;            /* --tls-psk */
 int tls_verify_peer;            /* --tls-verify-peer */
 char *unixsocket;               /* -U */
 const char *user, *group;       /* -u & -g */
@@ -121,6 +122,7 @@ enum {
   SHORT_OPTIONS_OPTION,
   TLS_OPTION,
   TLS_CERTIFICATES_OPTION,
+  TLS_PSK_OPTION,
   TLS_VERIFY_PEER_OPTION,
 };
 
@@ -157,6 +159,7 @@ static const struct option long_options[] = {
   { "threads",          required_argument, NULL, 't' },
   { "tls",              required_argument, NULL, TLS_OPTION },
   { "tls-certificates", required_argument, NULL, TLS_CERTIFICATES_OPTION },
+  { "tls-psk",          required_argument, NULL, TLS_PSK_OPTION },
   { "tls-verify-peer",  no_argument,       NULL, TLS_VERIFY_PEER_OPTION },
   { "unix",             required_argument, NULL, 'U' },
   { "user",             required_argument, NULL, 'u' },
@@ -175,7 +178,7 @@ usage (void)
           "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
           "       [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]\n"
           "       [--tls=off|on|require] [--tls-certificates /path/to/certificates]\n"
-          "       [--tls-verify-peer]\n"
+          "       [--tls-psk /path/to/pskfile] [--tls-verify-peer]\n"
           "       [-U SOCKET] [-u USER] [-v] [-V]\n"
           "       PLUGIN [key=value [key=value [...]]]\n"
           "\n"
@@ -331,6 +334,10 @@ main (int argc, char *argv[])
 
     case TLS_CERTIFICATES_OPTION:
       tls_certificates_dir = optarg;
+      break;
+
+    case TLS_PSK_OPTION:
+      tls_psk = optarg;
       break;
 
     case TLS_VERIFY_PEER_OPTION:

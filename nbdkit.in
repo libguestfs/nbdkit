@@ -70,7 +70,7 @@ while [ $# -gt 0 ]; do
             args[$i]="$1"
             shift
             ;;
-        -e | --export* | -g | --group | -i | --ip* | -P | --pid* | -p | --port | --run | --selinux-label | -t | --threads | --tls | --tls-certificates | -U | --unix | -u | --user)
+        -e | --export* | -g | --group | -i | --ip* | -P | --pid* | -p | --port | --run | --selinux-label | -t | --threads | --tls | --tls-certificates | --tls-psk | -U | --unix | -u | --user)
             args[$i]="$1"
             ((++i))
             args[$i]="$2"
