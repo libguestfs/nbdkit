@@ -66,6 +66,7 @@ EXTRA_DIST = \
 	test.pl \
 	test.py \
 	test.rb \
+	test.tcl \
 	test-shebang-perl.sh \
 	test-shebang-python.sh \
 	test-shebang-ruby.sh \
@@ -460,6 +461,19 @@ test_ruby_CFLAGS = \
 test_ruby_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_RUBY
+
+# Tcl plugin test.
+if HAVE_TCL
+
+LIBGUESTFS_TESTS += test-tcl
+
+test_tcl_SOURCES = test-lang-plugins.c test.h
+test_tcl_CFLAGS = \
+	-DLANG='"tcl"' -DSCRIPT='"test.tcl"' \
+	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_tcl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+endif HAVE_TCL
 
 #----------------------------------------------------------------------
 # Tests of filters.

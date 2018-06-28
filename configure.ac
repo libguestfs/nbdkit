@@ -364,6 +364,22 @@ AS_IF([test "x$RUBY" != "xno" && test "x$enable_ruby" != "xno"],[
 AM_CONDITIONAL([HAVE_RUBY],[test "x$RUBY" != "xno" &&
                             test "x$enable_ruby" = "xyes"])
 
+dnl Check for Tcl, for embedding in the Tcl plugin.
+AC_ARG_ENABLE([tcl],
+    AS_HELP_STRING([--disable-tcl], [disable Tcl plugin]),
+    [],
+    [enable_tcl=yes])
+AS_IF([test "x$enable_tcl" != "xno"],[
+    PKG_CHECK_MODULES([TCL], [tcl], [
+        AC_SUBST([TCL_CFLAGS])
+        AC_SUBST([TCL_LIBS])
+    ],[
+        AC_MSG_WARN([Tcl not found])
+        enable_tcl=no
+    ])
+])
+AM_CONDITIONAL([HAVE_TCL],[test "x$enable_tcl" = "xyes"])
+
 dnl Check for curl (only if you want to compile the curl plugin).
 AC_ARG_WITH([curl],[
     AS_HELP_STRING([--without-curl],
@@ -584,6 +600,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/split/Makefile
                  plugins/streaming/Makefile
                  plugins/tar/Makefile
+                 plugins/tcl/Makefile
                  plugins/vddk/Makefile
                  plugins/xz/Makefile
                  plugins/zero/Makefile

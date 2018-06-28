@@ -64,7 +64,7 @@ for p in $plugins; do
             # VDDK won't run without special environment variables
             # being set, so ignore it.
             ;;
-        perl-valgrind | python-valgrind | ruby-valgrind | \
+        perl-valgrind | python-valgrind | ruby-valgrind | tcl-valgrind | \
         example4-valgrind | tar-valgrind)
             # Plugins written in scripting languages can't run under valgrind.
             ;;

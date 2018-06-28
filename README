@@ -15,7 +15,7 @@ The key features are:
  * Well-documented, simple plugin API with a stable ABI guarantee.
    Lets you export "unconventional" block devices easily.
 
- * You can write plugins in C, Perl, Python, OCaml or Ruby.
+ * You can write plugins in C, Perl, Python, OCaml, Ruby or Tcl.
 
 For documentation, see the docs/ directory.
 
@@ -90,6 +90,10 @@ For the OCaml plugin:
 
  - OCaml >= 4.02.2 which has support for shared libraries, see:
    http://caml.inria.fr/mantis/view.php?id=6693
+
+For the Tcl plugin:
+
+ - Tcl development library and headers
 
 For bash tab completion:
 
