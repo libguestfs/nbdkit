@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2017 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -109,52 +109,66 @@ struct backend *backend;
 static char *random_fifo_dir = NULL;
 static char *random_fifo = NULL;
 
-enum { HELP_OPTION = CHAR_MAX + 1 };
+enum {
+  HELP_OPTION = CHAR_MAX + 1,
+  DUMP_CONFIG_OPTION,
+  DUMP_PLUGIN_OPTION,
+  EXIT_WITH_PARENT_OPTION,
+  FILTER_OPTION,
+  LONG_OPTIONS_OPTION,
+  RUN_OPTION,
+  SELINUX_LABEL_OPTION,
+  SHORT_OPTIONS_OPTION,
+  TLS_OPTION,
+  TLS_CERTIFICATES_OPTION,
+  TLS_VERIFY_PEER_OPTION,
+};
 
 static const char *short_options = "e:fg:i:nop:P:rst:u:U:vV";
 static const struct option long_options[] = {
-  { "help",       0, NULL, HELP_OPTION },
-  { "dump-config",0, NULL, 0 },
-  { "dump-plugin",0, NULL, 0 },
-  { "exit-with-parent", 0, NULL, 0 },
-  { "export",     1, NULL, 'e' },
-  { "export-name",1, NULL, 'e' },
-  { "exportname", 1, NULL, 'e' },
-  { "filter",     1, NULL, 0 },
-  { "foreground", 0, NULL, 'f' },
-  { "no-fork",    0, NULL, 'f' },
-  { "group",      1, NULL, 'g' },
-  { "ip-addr",    1, NULL, 'i' },
-  { "ipaddr",     1, NULL, 'i' },
-  { "long-options", 0, NULL, 0 },
-  { "new-style",  0, NULL, 'n' },
-  { "newstyle",   0, NULL, 'n' },
-  { "old-style",  0, NULL, 'o' },
-  { "oldstyle",   0, NULL, 'o' },
-  { "pid-file",   1, NULL, 'P' },
-  { "pidfile",    1, NULL, 'P' },
-  { "port",       1, NULL, 'p' },
-  { "read-only",  0, NULL, 'r' },
-  { "readonly",   0, NULL, 'r' },
-  { "run",        1, NULL, 0 },
-  { "selinux-label", 1, NULL, 0 },
-  { "short-options", 0, NULL, 0 },
-  { "single",     0, NULL, 's' },
-  { "stdin",      0, NULL, 's' },
-  { "threads",    1, NULL, 't' },
-  { "tls",        1, NULL, 0 },
-  { "tls-certificates", 1, NULL, 0 },
-  { "tls-verify-peer", 0, NULL, 0 },
-  { "unix",       1, NULL, 'U' },
-  { "user",       1, NULL, 'u' },
-  { "verbose",    0, NULL, 'v' },
-  { "version",    0, NULL, 'V' },
+  { "dump-config",      no_argument,       NULL, DUMP_CONFIG_OPTION },
+  { "dump-plugin",      no_argument,       NULL, DUMP_PLUGIN_OPTION },
+  { "exit-with-parent", no_argument,       NULL, EXIT_WITH_PARENT_OPTION },
+  { "export",           required_argument, NULL, 'e' },
+  { "export-name",      required_argument, NULL, 'e' },
+  { "exportname",       required_argument, NULL, 'e' },
+  { "filter",           required_argument, NULL, FILTER_OPTION },
+  { "foreground",       no_argument,       NULL, 'f' },
+  { "no-fork",          no_argument,       NULL, 'f' },
+  { "group",            required_argument, NULL, 'g' },
+  { "help",             no_argument,       NULL, HELP_OPTION },
+  { "ip-addr",          required_argument, NULL, 'i' },
+  { "ipaddr",           required_argument, NULL, 'i' },
+  { "long-options",     no_argument,       NULL, LONG_OPTIONS_OPTION },
+  { "new-style",        no_argument,       NULL, 'n' },
+  { "newstyle",         no_argument,       NULL, 'n' },
+  { "old-style",        no_argument,       NULL, 'o' },
+  { "oldstyle",         no_argument,       NULL, 'o' },
+  { "pid-file",         required_argument, NULL, 'P' },
+  { "pidfile",          required_argument, NULL, 'P' },
+  { "port",             required_argument, NULL, 'p' },
+  { "read-only",        no_argument,       NULL, 'r' },
+  { "readonly",         no_argument,       NULL, 'r' },
+  { "run",              required_argument, NULL, RUN_OPTION },
+  { "selinux-label",    required_argument, NULL, SELINUX_LABEL_OPTION },
+  { "short-options",    no_argument,       NULL, SHORT_OPTIONS_OPTION },
+  { "single",           no_argument,       NULL, 's' },
+  { "stdin",            no_argument,       NULL, 's' },
+  { "threads",          required_argument, NULL, 't' },
+  { "tls",              required_argument, NULL, TLS_OPTION },
+  { "tls-certificates", required_argument, NULL, TLS_CERTIFICATES_OPTION },
+  { "tls-verify-peer",  no_argument,       NULL, TLS_VERIFY_PEER_OPTION },
+  { "unix",             required_argument, NULL, 'U' },
+  { "user",             required_argument, NULL, 'u' },
+  { "verbose",          no_argument,       NULL, 'v' },
+  { "version",          no_argument,       NULL, 'V' },
   { NULL },
 };
 
 static void
 usage (void)
 {
+  /* --{short,long}-options remain undocumented */
   printf ("nbdkit [--dump-config] [--dump-plugin]\n"
           "       [-e EXPORTNAME] [--exit-with-parent] [-f]\n"
           "       [--filter=FILTER ...] [-g GROUP] [-i IPADDR]\n"
@@ -235,25 +249,27 @@ main (int argc, char *argv[])
       break;
 
     switch (c) {
-    case 0:                     /* options which are long only */
-      if (strcmp (long_options[option_index].name, "dump-config") == 0) {
-        dump_config ();
-        exit (EXIT_SUCCESS);
-      }
-      else if (strcmp (long_options[option_index].name, "dump-plugin") == 0) {
-        dump_plugin = 1;
-      }
-      else if (strcmp (long_options[option_index].name, "exit-with-parent") == 0) {
+    case DUMP_CONFIG_OPTION:
+      dump_config ();
+      exit (EXIT_SUCCESS);
+
+    case DUMP_PLUGIN_OPTION:
+      dump_plugin = 1;
+      break;
+
+    case EXIT_WITH_PARENT_OPTION:
 #ifdef PR_SET_PDEATHSIG
-        exit_with_parent = 1;
-        foreground = 1;
+      exit_with_parent = 1;
+      foreground = 1;
+      break;
 #else
-        fprintf (stderr, "%s: --exit-with-parent is not implemented for this operating system\n",
-                 program_name);
-        exit (EXIT_FAILURE);
+      fprintf (stderr, "%s: --exit-with-parent is not implemented for this operating system\n",
+               program_name);
+      exit (EXIT_FAILURE);
 #endif
-      }
-      else if (strcmp (long_options[option_index].name, "filter") == 0) {
+
+    case FILTER_OPTION:
+      {
         struct filter_filename *t;
 
         t = malloc (sizeof *t);
@@ -265,64 +281,60 @@ main (int argc, char *argv[])
         t->filename = optarg;
         filter_filenames = t;
       }
-      else if (strcmp (long_options[option_index].name, "long-options") == 0) {
-        for (i = 0; long_options[i].name != NULL; ++i) {
-          if (strcmp (long_options[i].name, "long-options") != 0 &&
-              strcmp (long_options[i].name, "short-options") != 0)
-            printf ("--%s\n", long_options[i].name);
-        }
-        exit (EXIT_SUCCESS);
+      break;
+
+    case LONG_OPTIONS_OPTION:
+      for (i = 0; long_options[i].name != NULL; ++i) {
+        if (strcmp (long_options[i].name, "long-options") != 0 &&
+            strcmp (long_options[i].name, "short-options") != 0)
+          printf ("--%s\n", long_options[i].name);
       }
-      else if (strcmp (long_options[option_index].name, "run") == 0) {
-        if (socket_activation) {
-          fprintf (stderr, "%s: cannot use socket activation with --run flag\n",
-                   program_name);
-          exit (EXIT_FAILURE);
-        }
-        run = optarg;
-        foreground = 1;
-      }
-      else if (strcmp (long_options[option_index].name, "selinux-label") == 0) {
-        selinux_label = optarg;
-        break;
-      }
-      else if (strcmp (long_options[option_index].name, "short-options") == 0) {
-        for (i = 0; short_options[i]; ++i) {
-          if (short_options[i] != ':')
-            printf ("-%c\n", short_options[i]);
-        }
-        exit (EXIT_SUCCESS);
-      }
-      else if (strcmp (long_options[option_index].name, "tls") == 0) {
-        tls_set_on_cli = 1;
-        if (strcmp (optarg, "off") == 0 || strcmp (optarg, "0") == 0)
-          tls = 0;
-        else if (strcmp (optarg, "on") == 0 || strcmp (optarg, "1") == 0)
-          tls = 1;
-        else if (strcmp (optarg, "require") == 0 ||
-                 strcmp (optarg, "required") == 0 ||
-                 strcmp (optarg, "force") == 0)
-          tls = 2;
-        else {
-          fprintf (stderr, "%s: --tls flag must be off|on|require\n",
-                   program_name);
-          exit (EXIT_FAILURE);
-        }
-        break;
-      }
-      else if (strcmp (long_options[option_index].name, "tls-certificates") == 0) {
-        tls_certificates_dir = optarg;
-        break;
-      }
-      else if (strcmp (long_options[option_index].name, "tls-verify-peer") == 0) {
-        tls_verify_peer = 1;
-        break;
-      }
-      else {
-        fprintf (stderr, "%s: unknown long option: %s (%d)\n",
-                 program_name, long_options[option_index].name, option_index);
+      exit (EXIT_SUCCESS);
+
+    case RUN_OPTION:
+      if (socket_activation) {
+        fprintf (stderr, "%s: cannot use socket activation with --run flag\n",
+                 program_name);
         exit (EXIT_FAILURE);
       }
+      run = optarg;
+      foreground = 1;
+      break;
+
+    case SELINUX_LABEL_OPTION:
+      selinux_label = optarg;
+      break;
+
+    case SHORT_OPTIONS_OPTION:
+      for (i = 0; short_options[i]; ++i) {
+        if (short_options[i] != ':')
+          printf ("-%c\n", short_options[i]);
+      }
+      exit (EXIT_SUCCESS);
+
+    case TLS_OPTION:
+      tls_set_on_cli = 1;
+      if (strcmp (optarg, "off") == 0 || strcmp (optarg, "0") == 0)
+        tls = 0;
+      else if (strcmp (optarg, "on") == 0 || strcmp (optarg, "1") == 0)
+        tls = 1;
+      else if (strcmp (optarg, "require") == 0 ||
+               strcmp (optarg, "required") == 0 ||
+               strcmp (optarg, "force") == 0)
+        tls = 2;
+      else {
+        fprintf (stderr, "%s: --tls flag must be off|on|require\n",
+                 program_name);
+        exit (EXIT_FAILURE);
+      }
+      break;
+
+    case TLS_CERTIFICATES_OPTION:
+      tls_certificates_dir = optarg;
+      break;
+
+    case TLS_VERIFY_PEER_OPTION:
+      tls_verify_peer = 1;
       break;
 
     case 'e':
