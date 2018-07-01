@@ -143,7 +143,7 @@ prefix=
 # Similarly, if NBDKIT_GDB=1 is set in the environment, we run
 # the program under gdb, useful during development.
 if [ "$NBDKIT_VALGRIND" ]; then
-    prefix="@VALGRIND@ --vgdb=no --leak-check=full --error-exitcode=119 --suppressions=$s/valgrind-suppressions --trace-children=no --child-silent-after-fork=yes --run-libc-freeres=no"
+    prefix="@VALGRIND@ --vgdb=no --leak-check=full --error-exitcode=119 --suppressions=$s/valgrind-suppressions --trace-children=no --child-silent-after-fork=yes --run-libc-freeres=no --num-callers=20"
 elif [ "$NBDKIT_GDB" ]; then
     prefix="gdb --args"
 fi
