@@ -415,6 +415,7 @@ main (int argc, char *argv[])
         }
         /* XXX Worth a maximimum limit on threads? */
       }
+      break;
 
     case 'U':
       if (socket_activation) {
