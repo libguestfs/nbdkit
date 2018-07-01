@@ -101,7 +101,7 @@ To run the test suite:
 
 To test for memory leaks ('make check-valgrind'):
 
- - valgrind
+ - valgrind program and development headers
 
 For non-essential enhancements to the test suite:
 
@@ -117,7 +117,6 @@ After installing any dependencies:
   ./configure                    ./configure
   make                           make
   make check                     make check
-  make check-valgrind            make check-valgrind
 
 To run nbdkit from the source directory, use the top level ./nbdkit
 script.  It will run nbdkit and plugins from the locally compiled
@@ -153,8 +152,18 @@ nbdkit + plugins as a captive process, and tests them using
 libguestfs.  If there is a failure, look at the corresponding
 tests/*.log file for debug information.
 
-You can run the tests under valgrind, if it is available, using:
+Developers
+----------
 
+Install the valgrind program and development headers.
+
+Use:
+
+  ./configure --enable-gcc-warnings --enable-valgrind
+
+When testing use:
+
+  make check
   make check-valgrind
 
 Packager information

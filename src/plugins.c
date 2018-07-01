@@ -73,7 +73,8 @@ plugin_free (struct backend *b)
   if (p->plugin.unload)
     p->plugin.unload ();
 
-  dlclose (p->dl);
+  if (DO_DLCLOSE)
+    dlclose (p->dl);
   free (p->filename);
 
   unlock_unload ();

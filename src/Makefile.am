@@ -63,7 +63,8 @@ nbdkit_CPPFLAGS = \
 nbdkit_CFLAGS = \
 	-pthread \
 	$(WARNINGS_CFLAGS) \
-	$(GNUTLS_CFLAGS)
+	$(GNUTLS_CFLAGS) \
+	$(VALGRIND_CFLAGS)
 nbdkit_LDADD = \
 	$(GNUTLS_LIBS) \
 	-ldl
@@ -87,4 +88,4 @@ test_utils_SOURCES = \
 	utils.c \
 	cleanup.c
 test_utils_CPPFLAGS = -I$(top_srcdir)/include
-test_utils_CFLAGS = $(WARNINGS_CFLAGS)
+test_utils_CFLAGS = $(WARNINGS_CFLAGS) $(VALGRIND_CFLAGS)

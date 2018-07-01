@@ -80,7 +80,8 @@ filter_free (struct backend *b)
   if (f->filter.unload)
     f->filter.unload ();
 
-  dlclose (f->dl);
+  if (DO_DLCLOSE)
+    dlclose (f->dl);
   free (f->filename);
 
   unlock_unload ();

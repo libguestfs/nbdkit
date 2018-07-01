@@ -94,6 +94,14 @@
 # endif
 #endif
 
+#if HAVE_VALGRIND
+# include <valgrind.h>
+/* http://valgrind.org/docs/manual/faq.html#faq.unhelpful */
+# define DO_DLCLOSE !RUNNING_ON_VALGRIND
+#else
+# define DO_DLCLOSE 1
+#endif
+
 #define container_of(ptr, type, member) ({                       \
       const typeof (((type *) 0)->member) *__mptr = (ptr);       \
       (type *) ((char *) __mptr - offsetof(type, member));       \

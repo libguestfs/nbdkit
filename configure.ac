@@ -166,6 +166,23 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
 dnl Check for valgrind.
 AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
 
+dnl If valgrind headers are available (optional).
+dnl Since this is only useful for developers, you have to enable
+dnl it explicitly using --enable-valgrind.
+AC_ARG_ENABLE([valgrind],
+    AS_HELP_STRING([--enable-valgrind], [enable Valgrind extensions, for developers]),
+    [enable_valgrind=yes],
+    [enable_valgrind=no])
+AS_IF([test "x$enable_valgrind" = "xyes"],[
+    PKG_CHECK_MODULES([VALGRIND], [valgrind], [
+        AC_SUBST([VALGRIND_CFLAGS])
+        AC_SUBST([VALGRIND_LIBS])
+        AC_DEFINE([HAVE_VALGRIND],[1],[Valgrind headers found at compile time])
+    ],[
+        AC_MSG_ERROR([--enable-valgrind given, but Valgrind headers are not available])
+    ])
+])
+
 dnl Bash completion.
 PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0], [
     bash_completion=yes
