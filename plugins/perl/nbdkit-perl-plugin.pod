@@ -28,8 +28,8 @@ line.  Read the Perl script to see if it requires any.
 
 =head1 WRITING A PERL NBDKIT PLUGIN
 
-There is an example Perl nbdkit plugin called C<example.pl> which
-ships with the nbdkit source.
+For an example plugin written in Perl, see:
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/perl/example.pl>
 
 To write a Perl nbdkit plugin, you create a Perl file which contains
 at least the following required subroutines:

@@ -38,8 +38,8 @@ line.  Read the Ruby script to see if it requires any.
 
 =head1 WRITING A RUBY NBDKIT PLUGIN
 
-There is an example Ruby nbdkit plugin called C<example.rb> which
-ships with the nbdkit source.
+For an example plugin written in Ruby, see:
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/ruby/example.rb>
 
 To write a Ruby nbdkit plugin, you create a Ruby file which
 contains at least the following required functions:
