@@ -58,6 +58,7 @@ EXTRA_DIST = \
 	test-ip.sh \
 	test-log.sh \
 	test-nozero.sh \
+	test.lua \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
 	test-parallel-file.sh \
@@ -474,6 +475,19 @@ test_tcl_CFLAGS = \
 test_tcl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_TCL
+
+# Lua plugin test.
+if HAVE_LUA
+
+LIBGUESTFS_TESTS += test-lua
+
+test_lua_SOURCES = test-lang-plugins.c test.h
+test_lua_CFLAGS = \
+	-DLANG='"lua"' -DSCRIPT='"test.lua"' \
+	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_lua_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+endif HAVE_LUA
 
 #----------------------------------------------------------------------
 # Tests of filters.

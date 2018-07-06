@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2017 Red Hat Inc.
+# Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,46 +30,39 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-plugins = \
-	curl \
-	example1 \
-	example2 \
-	example3 \
-	example4 \
-	ext2 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	lua \
-	memory \
-	nbd \
-	null \
-	ocaml \
-	perl \
-	python \
-	random \
-	ruby \
-	split \
-	streaming \
-	tar \
-	tcl \
-	vddk \
-	xz \
-	zero
+include $(top_srcdir)/common-rules.mk
 
-filters = \
-	blocksize \
-	cache \
-	cow \
-	delay \
-	fua \
-	log \
-	nozero \
-	offset \
-	partition
+EXTRA_DIST = \
+	nbdkit-lua-plugin.pod \
+	example.lua
 
-plugindir = $(libdir)/nbdkit/plugins
-filterdir = $(libdir)/nbdkit/filters
+if HAVE_LUA
 
-CLEANFILES = *~ *.cmi *.cmx *.cmxa *.so
+plugin_LTLIBRARIES = nbdkit-lua-plugin.la
+
+nbdkit_lua_plugin_la_SOURCES = \
+	lua.c \
+	$(top_srcdir)/include/nbdkit-plugin.h
+
+nbdkit_lua_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include
+nbdkit_lua_plugin_la_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LUA_CFLAGS)
+nbdkit_lua_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared \
+	$(LUA_LIBS)
+
+if HAVE_POD2MAN
+
+man_MANS = nbdkit-lua-plugin.3
+CLEANFILES += $(man_MANS)
+
+nbdkit-lua-plugin.3: nbdkit-lua-plugin.pod
+	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
+
+endif
+
+endif

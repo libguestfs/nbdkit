@@ -380,6 +380,22 @@ AS_IF([test "x$enable_tcl" != "xno"],[
 ])
 AM_CONDITIONAL([HAVE_TCL],[test "x$enable_tcl" = "xyes"])
 
+dnl Check for Lua, for embedding in the Lua plugin.
+AC_ARG_ENABLE([lua],
+    AS_HELP_STRING([--disable-lua], [disable Lua plugin]),
+    [],
+    [enable_lua=yes])
+AS_IF([test "x$enable_lua" != "xno"],[
+    PKG_CHECK_MODULES([LUA], [lua], [
+        AC_SUBST([LUA_CFLAGS])
+        AC_SUBST([LUA_LIBS])
+    ],[
+        AC_MSG_WARN([Lua not found])
+        enable_lua=no
+    ])
+])
+AM_CONDITIONAL([HAVE_LUA],[test "x$enable_lua" = "xyes"])
+
 dnl Check for curl (only if you want to compile the curl plugin).
 AC_ARG_WITH([curl],[
     AS_HELP_STRING([--without-curl],
@@ -589,6 +605,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/guestfs/Makefile
                  plugins/gzip/Makefile
                  plugins/libvirt/Makefile
+                 plugins/lua/Makefile
                  plugins/memory/Makefile
                  plugins/nbd/Makefile
                  plugins/null/Makefile

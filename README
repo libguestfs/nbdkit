@@ -15,7 +15,7 @@ The key features are:
  * Well-documented, simple plugin API with a stable ABI guarantee.
    Lets you export "unconventional" block devices easily.
 
- * You can write plugins in C, Perl, Python, OCaml, Ruby or Tcl.
+ * You can write plugins in C, Lua, Perl, Python, OCaml, Ruby or Tcl.
 
 For documentation, see the docs/ directory.
 
@@ -94,6 +94,10 @@ For the OCaml plugin:
 For the Tcl plugin:
 
  - Tcl development library and headers
+
+For the Lua plugin:
+
+ - Lua development library and headers
 
 For bash tab completion:
 
