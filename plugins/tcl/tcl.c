@@ -415,21 +415,22 @@ tcl_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
   if (proc_defined ("zero")) {
     int r;
-    Tcl_Obj *h = handle, *cmd, *res;
+    Tcl_Obj *h = handle, *cmd;
 
     cmd = Tcl_NewObj ();
     Tcl_IncrRefCount (cmd);
-    Tcl_ListObjAppendElement (0, cmd, Tcl_NewStringObj ("can_zero", -1));
+    Tcl_ListObjAppendElement (0, cmd, Tcl_NewStringObj ("zero", -1));
     Tcl_ListObjAppendElement (0, cmd, h);
+    Tcl_ListObjAppendElement (0, cmd, Tcl_NewIntObj (count));
+    Tcl_ListObjAppendElement (0, cmd, Tcl_NewWideIntObj (offset));
+    Tcl_ListObjAppendElement (0, cmd, Tcl_NewBooleanObj (may_trim));
     r = Tcl_EvalObjEx (interp, cmd, TCL_EVAL_DIRECT);
     Tcl_DecrRefCount (cmd);
     if (r != TCL_OK) {
-      nbdkit_error ("can_zero: %s", Tcl_GetStringResult (interp));
+      nbdkit_error ("zero: %s", Tcl_GetStringResult (interp));
       return -1;
     }
-    res = Tcl_GetObjResult (interp);
-    Tcl_GetBooleanFromObj (interp, res, &r);
-    return r;
+    return 0;
   }
 
   nbdkit_debug ("zero falling back to pwrite");
