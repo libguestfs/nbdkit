@@ -61,6 +61,7 @@ EXTRA_DIST = \
 	test-nozero.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
+	test-offset2.sh \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
 	test-pattern.sh \
@@ -538,6 +539,8 @@ offset-data:
 test_offset_SOURCES = test-offset.c test.h
 test_offset_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_offset_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+TESTS += test-offset2.sh
 
 # partition filter test.
 LIBGUESTFS_TESTS += test-partition
