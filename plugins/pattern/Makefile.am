@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2017 Red Hat Inc.
+# Copyright (C) 2017-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,47 +30,31 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-plugins = \
-	curl \
-	example1 \
-	example2 \
-	example3 \
-	example4 \
-	ext2 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	lua \
-	memory \
-	nbd \
-	null \
-	ocaml \
-	pattern \
-	perl \
-	python \
-	random \
-	ruby \
-	split \
-	streaming \
-	tar \
-	tcl \
-	vddk \
-	xz \
-	zero
+include $(top_srcdir)/common-rules.mk
 
-filters = \
-	blocksize \
-	cache \
-	cow \
-	delay \
-	fua \
-	log \
-	nozero \
-	offset \
-	partition
+EXTRA_DIST = nbdkit-pattern-plugin.pod
 
-plugindir = $(libdir)/nbdkit/plugins
-filterdir = $(libdir)/nbdkit/filters
+plugin_LTLIBRARIES = nbdkit-pattern-plugin.la
 
-CLEANFILES = *~ *.cmi *.cmx *.cmxa *.so
+nbdkit_pattern_plugin_la_SOURCES = \
+	pattern.c \
+	$(top_srcdir)/include/nbdkit-plugin.h
+
+nbdkit_pattern_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include
+nbdkit_pattern_plugin_la_CFLAGS = \
+	$(WARNINGS_CFLAGS)
+nbdkit_pattern_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared
+
+if HAVE_POD2MAN
+
+man_MANS = nbdkit-pattern-plugin.1
+CLEANFILES += $(man_MANS)
+
+nbdkit-pattern-plugin.1: nbdkit-pattern-plugin.pod
+	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
+	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
+	mv $@.t $@
+
+endif

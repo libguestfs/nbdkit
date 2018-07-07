@@ -33,6 +33,7 @@ This parameter is required.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
+L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-random-plugin(1)>.
 L<nbdkit-zero-plugin(1)>.
 

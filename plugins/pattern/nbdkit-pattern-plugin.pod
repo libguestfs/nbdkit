@@ -2,27 +2,53 @@
 
 =head1 NAME
 
-nbdkit-zero-plugin - nbdkit zero length plugin
+nbdkit-pattern-plugin - plugin to serve a fixed pattern of data for testing
 
 =head1 SYNOPSIS
 
- nbdkit zero
+ nbdkit pattern size=SIZE
 
 =head1 DESCRIPTION
 
-C<nbdkit-zero-plugin> is a zero length plugin for L<nbdkit(1)>.  It
-presents a virtual device of length zero bytes.
+C<nbdkit-pattern-plugin> is a plugin for L<nbdkit(1)> which serves a
+fixed pattern of data, read only.  This is used for testing nbdkit
+filters and NBD clients.
 
-This plugin is mainly good for testing corner cases in nbdkit, the NBD
-protocol and NBD clients.
+The fixed pattern is the offset, as a 64 bit big endian integer, every
+8 bytes.  In hexadecimal this looks like:
+
+ offset                         data
+  0000:   00 00 00 00 00 00 00 00   00 00 00 00 00 00 00 08
+  0010:   00 00 00 00 00 00 00 10   00 00 00 00 00 00 00 18
+  0020:   00 00 00 00 00 00 00 20   00 00 00 00 00 00 00 28
+                                    └──────────┬──────────┘
+             64 bit big endian int which encodes the offset of
+             the first byte of this int in the file
+
+The size of the virtual disk must be specified using the C<size>
+parameter.  If the size is not a multiple of 8 then the last 8 byte
+offset in the pattern is truncated.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<size=SIZE>
+
+Specify the virtual size of the disk image.
+
+This parameter is required.
+
+=back
 
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-null-plugin(1)>,
-L<nbdkit-pattern-plugin(1)>,
-L<nbdkit-random-plugin(1)>.
+L<nbdkit-offset-filter(1)>,
+L<nbdkit-random-plugin(1)>,
+L<nbdkit-zero-plugin(1)>.
 
 =head1 AUTHORS
 

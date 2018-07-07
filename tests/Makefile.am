@@ -63,6 +63,7 @@ EXTRA_DIST = \
 	test-ocaml.c \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
+	test-pattern.sh \
 	test-python-exception.sh \
 	test.pl \
 	test.py \
@@ -314,6 +315,9 @@ LIBGUESTFS_TESTS += test-memory
 test_memory_SOURCES = test-memory.c test.h
 test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# pattern plugin test.
+TESTS += test-pattern.sh
 
 # nbd plugin test.
 LIBGUESTFS_TESTS += test-nbd
