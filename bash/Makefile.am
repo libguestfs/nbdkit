@@ -36,7 +36,6 @@ EXTRA_DIST = README
 
 if HAVE_BASH_COMPLETION
 
-bashcompdir = @bashcompdir@
 dist_bashcomp_DATA = nbdkit
 
 endif
