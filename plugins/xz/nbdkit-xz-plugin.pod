@@ -24,29 +24,31 @@ find out how many streams and blocks are in an xz file by doing:
  $ xz --list winxp.img.xz
  Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename
      1       1  2,100.0 MiB  6,144.0 MiB  0.342  CRC64   winxp.img.xz
- =============
+    ↑↑↑     ↑↑↑
+  streams  blocks
 
 xz files are seekable on block boundaries only.  Seeking is done by
-seeking directly to the lower block boundary, then (slowly)
-uncompressing data until the precise byte is reached.
-
-B<To get best random access performance, you must prepare your xz
+seeking directly to the lower block boundary, then uncompressing data
+until the precise byte is reached.  As uncompressing xz data is slow,
+B<to get best random access performance, you must prepare your xz
 files with many small blocks.>
 
-To do this, use the I<--block-size> option with a small-ish block
-size.  For example the same image as above compressed with a 16 MB
-block size:
+Use the I<--block-size> option with a small-ish block size.  For
+example this is the same image compressed with a 16 MB block size:
 
  $ xz --best --block-size=16777216 winxp.img
+             ─────────────────────
  $ xz --list winxp.img.xz
  Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename
      1     384  2,120.1 MiB  6,144.0 MiB  0.345  CRC64   winxp.img.xz
+           ↑↑↑
+          blocks
 
-This file can be accessed randomly, and at most 16 MB of compressed
-data will have to be uncompressed to seek to any byte.
+This file can be accessed randomly.  At most 16 MB will have to be
+uncompressed to seek to any byte.
 
-Note as you would expect, xz cannot compress quite as efficiently when
-using a small block size.  The space penalty in the above example is
+As you would expect, xz cannot compress as efficiently when using a
+smaller block size.  The space penalty in the above example is
 S<E<lt> 1%> of the compressed file size.
 
 =head1 PARAMETERS
