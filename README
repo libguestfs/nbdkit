@@ -37,7 +37,7 @@ Requirements
 ------------
 
 To build the basic server and some plugins nbdkit needs nothing except
-Linux and reasonably recent gcc.
+Linux and reasonably recent gcc or clang.
 
 Although it is possible to build without it, it’s recommended to
 enable TLS support for which you will need:
