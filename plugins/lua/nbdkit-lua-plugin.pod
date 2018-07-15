@@ -260,7 +260,8 @@ partial, your function should call C<error>.
 
 =over 4
 
-=item Missing: C<load>, C<unload>, C<name>, C<version>, C<longname>, C<description>, C<config_help>, C<can_zero>, C<can_fua>
+=item Missing: C<load>, C<unload>, C<name>, C<version>, C<longname>,
+C<description>, C<config_help>, C<can_zero>, C<can_fua>
 
 These are not yet supported.
 
