@@ -45,7 +45,7 @@
 #include <nbdkit-plugin.h>
 
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
-static size_t size = 0;
+static int64_t size = 0;
 
 static int
 pattern_config (const char *key, const char *value)
@@ -56,11 +56,7 @@ pattern_config (const char *key, const char *value)
     r = nbdkit_parse_size (value);
     if (r == -1)
       return -1;
-    if (r > SIZE_MAX) {
-      nbdkit_error ("size > SIZE_MAX");
-      return -1;
-    }
-    size = (ssize_t) r;
+    size = r;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -89,7 +85,7 @@ pattern_open (int readonly)
 static int64_t
 pattern_get_size (void *handle)
 {
-  return (int64_t) size;
+  return size;
 }
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -102,7 +98,7 @@ pattern_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
   char *b = buf;
   uint64_t d;
   uint64_t o;
-  size_t n;
+  uint32_t n;
 
   while (count > 0) {
     d = htobe64 (offset & ~7);

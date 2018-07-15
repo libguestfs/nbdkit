@@ -44,7 +44,7 @@
 #include <nbdkit-plugin.h>
 
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
-static size_t size = 0;
+static int64_t size = 0;
 
 static int
 null_config (const char *key, const char *value)
@@ -55,11 +55,7 @@ null_config (const char *key, const char *value)
     r = nbdkit_parse_size (value);
     if (r == -1)
       return -1;
-    if (r > SIZE_MAX) {
-      nbdkit_error ("size > SIZE_MAX");
-      return -1;
-    }
-    size = (ssize_t) r;
+    size = r;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -108,7 +104,7 @@ null_close (void *handle)
 static int64_t
 null_get_size (void *handle)
 {
-  return (int64_t) size;
+  return size;
 }
 
 /* Read data. */
