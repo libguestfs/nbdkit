@@ -197,28 +197,31 @@ PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0], [
 ])
 AM_CONDITIONAL([HAVE_BASH_COMPLETION],[test "x$bash_completion" = "xyes"])
 
-dnl Check for Perl POD.
-AC_CHECK_PROG([POD2MAN], [pod2man], [pod2man], [no])
-AS_IF([test "x$POD2MAN" != "xno"],[
-    POD2MAN_ARGS="--center=nbdkit --release=nbdkit"
-    # Check whether pod2man supports --utf8, and if so add it to $POD2MAN_ARGS.
-    AC_MSG_CHECKING([if $POD2MAN supports --utf8])
-    AS_IF([$POD2MAN --help 2>&1 | grep -s -q -- --utf8],[
-        AC_MSG_RESULT([yes])
-	POD2MAN_ARGS="$POD2MAN_ARGS --utf8"
+dnl Check we have enough to run podwrapper.
+AC_CHECK_PROG([PERL],[perl],[perl],[no])
+AS_IF([test "x$PERL" != "xno"],[
+    AC_MSG_CHECKING([if we have perl Pod::Man and Pod::Simple])
+    AS_IF([$PERL -MPod::Man -MPod::Simple -e 1 >&AS_MESSAGE_LOG_FD 2>&1],[
+        enable_pod=yes
     ],[
-        AC_MSG_RESULT([no])
+        enable_pod=no
     ])
-    AC_SUBST([POD2MAN_ARGS])
+    AC_MSG_RESULT([$enable_pod])
 ])
-AM_CONDITIONAL([HAVE_POD2MAN], [test "x$POD2MAN" != "xno"])
+AM_CONDITIONAL([HAVE_POD],
+               [test "x$PERL" != "xno" && test "x$enable_pod" = "xyes"])
 
+dnl Define the path to the podwrapper program.
+PODWRAPPER="$PERL $(pwd)/podwrapper.pl"
+AC_SUBST([PODWRAPPER])
+
+dnl Allow all plugins and filters to be disabled.
 AC_ARG_ENABLE([plugins],
     [AS_HELP_STRING([--disable-plugins], [disable all bundled plugins and filters])])
 AM_CONDITIONAL([HAVE_PLUGINS], [test "x$enable_plugins" != "xno"])
 
 dnl Check for Perl, for embedding in the perl plugin.
-AC_CHECK_PROG([PERL],[perl],[perl],[no])
+dnl Note that the perl binary is checked above.
 AC_ARG_ENABLE([perl],
     AS_HELP_STRING([--disable-perl], [disable Perl embed plugin]),
     [],
@@ -590,6 +593,8 @@ dnl Produce output files.
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([nbdkit],
                 [chmod +x,-w nbdkit])
+AC_CONFIG_FILES([podwrapper.pl],
+                [chmod +x,-w podwrapper.pl])
 AC_CONFIG_FILES([Makefile
                  bash/Makefile
                  docs/Makefile

@@ -34,11 +34,11 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	make-links.sh \
-	nbdkit.pod.in \
-	nbdkit-plugin.pod.in \
-	nbdkit-filter.pod.in
+	nbdkit.pod \
+	nbdkit-plugin.pod \
+	nbdkit-filter.pod
 
-if HAVE_POD2MAN
+if HAVE_POD
 
 man_MANS = \
 	nbdkit.1 \
@@ -46,28 +46,36 @@ man_MANS = \
 	nbdkit-filter.3
 CLEANFILES += $(man_MANS)
 
-nbdkit.1: nbdkit.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=nbdkit $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
+nbdkit.1: nbdkit.pod plugin-links.pod filter-links.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
+	    --insert filter-links.pod:__FILTER_LINKS__ \
+	    $<
 
-nbdkit-plugin.3: nbdkit-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-plugin $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
+nbdkit-plugin.3: nbdkit-plugin.pod plugin-links.pod
+	$(PODWRAPPER) --section=3 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
+	    $<
 
-nbdkit-filter.3: nbdkit-filter.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=nbdkit-filter $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
+nbdkit-filter.3: nbdkit-filter.pod filter-links.pod
+	$(PODWRAPPER) --section=3 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    --insert filter-links.pod:__FILTER_LINKS__ \
+	    $<
 
-%.pod: %.pod.in
+endif HAVE_POD
+
+# XXX Language links are broken - they link to section 1 instead of section 3.
+plugin-links.pod: $(top_srcdir)/common-rules.mk
 	rm -f $@ $@-t
-	$(SED) \
-	    -e 's/__PLUGIN_LINKS__/$(shell $(srcdir)/make-links.sh plugin 1 $(plugins))/' \
-	    -e 's/__FILTER_LINKS__/$(shell $(srcdir)/make-links.sh filter 1 $(filters))/' \
-	    $< > $@-t
-	chmod -w $@-t
+	$(srcdir)/make-links.sh plugin 1 $(plugins) > $@-t
 	mv $@-t $@
 
-endif
+filter-links.pod: $(top_srcdir)/common-rules.mk
+	rm -f $@ $@-t
+	$(srcdir)/make-links.sh filter 1 $(filters) > $@-t
+	mv $@-t $@
+
+MAINTAINERCLEANFILES = plugin-links.pod filter-links.pod

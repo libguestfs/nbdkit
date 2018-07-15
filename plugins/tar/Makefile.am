@@ -48,16 +48,16 @@ nbdkit-tar-plugin: $(source)
 	mv $@-t $@
 	chmod 0555 $@
 
-if HAVE_POD2MAN
+if HAVE_POD
 
 man_MANS = nbdkit-tar-plugin.1
 CLEANFILES += $(man_MANS)
 
 nbdkit-tar-plugin.1: $(source)
-	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
+	$(PODWRAPPER) --section=1 --name nbdkit-tar-plugin --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
 
-endif
+endif HAVE_POD
 
 endif

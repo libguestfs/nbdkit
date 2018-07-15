@@ -37,6 +37,7 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = \
 	.dir-locals.el \
 	.gitignore \
+	html/pod.css \
 	LICENSE \
 	nbdkit.in \
 	OTHER_PLUGINS \

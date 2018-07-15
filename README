@@ -32,9 +32,11 @@ Building from source
 
 By default nbdkit needs nothing except Linux and reasonably recent gcc.
 
-To build the man pages, you will need to install:
+To build the man pages, you will optionally need to install:
 
- - pod2man (included with perl)
+ - perl
+
+ - Pod::Man and Pod::Simple (perl library)
 
 There are some *optional* libraries you may want to install for
 plugins or extra features.

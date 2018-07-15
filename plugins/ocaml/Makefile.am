@@ -67,16 +67,16 @@ libnbdkitocaml_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	-fPIC
 
-if HAVE_POD2MAN
+if HAVE_POD
 
 man_MANS = nbdkit-ocaml-plugin.3
 CLEANFILES += $(man_MANS)
 
 nbdkit-ocaml-plugin.3: nbdkit-ocaml-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=3 --name=`basename $@ .3` $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
+	$(PODWRAPPER) --section=3 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
 
-endif
+endif HAVE_POD
 
 endif

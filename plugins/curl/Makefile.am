@@ -52,16 +52,16 @@ nbdkit_curl_plugin_la_LIBADD = \
 nbdkit_curl_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared
 
-if HAVE_POD2MAN
+if HAVE_POD
 
 man_MANS = nbdkit-curl-plugin.1
 CLEANFILES += $(man_MANS)
 
 nbdkit-curl-plugin.1: nbdkit-curl-plugin.pod
-	$(POD2MAN) $(POD2MAN_ARGS) --section=1 --name=`basename $@ .1` $< $@.t && \
-	if grep 'POD ERROR' $@.t; then rm $@.t; exit 1; fi && \
-	mv $@.t $@
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
 
-endif
+endif HAVE_POD
 
 endif
