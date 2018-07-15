@@ -57,7 +57,7 @@ The disk image cannot be resized.
 
 =head1 SEE ALSO
 
-L<tar.pl> in the nbdkit source tree,
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/tar/tar.pl>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-perl-plugin(3)>.

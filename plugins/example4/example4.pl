@@ -35,7 +35,7 @@ C or other scripting languages.
 
 =head1 SEE ALSO
 
-L<example4.pl> in the nbdkit source tree,
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example4/example4.pl>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-perl-plugin(3)>.
