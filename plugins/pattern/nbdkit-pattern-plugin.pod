@@ -19,9 +19,11 @@ The fixed pattern is the offset, as a 64 bit big endian integer, every
   0000:   00 00 00 00 00 00 00 00   00 00 00 00 00 00 00 08
   0010:   00 00 00 00 00 00 00 10   00 00 00 00 00 00 00 18
   0020:   00 00 00 00 00 00 00 20   00 00 00 00 00 00 00 28
-                                    └──────────┬──────────┘
-             64 bit big endian int which encodes the offset of
-             the first byte of this int in the file
+                                  ↗ └──────────┬──────────┘
+              byte at offset 0x28              │
+                                               │
+                                     64-bit big-endian int
+                                     encoding offset 0x28
 
 The size of the virtual disk must be specified using the C<size>
 parameter.  If the size is not a multiple of 8 then the last 8 byte
