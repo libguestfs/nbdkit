@@ -313,7 +313,7 @@ support this.
 
 =head1 SEE ALSO
 
-C<plugins/vddk/vddk.c> in the nbdkit source tree,
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/vddk/vddk.c>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<virsh(1)>,

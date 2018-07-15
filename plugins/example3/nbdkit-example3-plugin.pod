@@ -27,7 +27,7 @@ nbdkit plugins (L<nbdkit-plugin(3)>).
 
 =head1 SEE ALSO
 
-L<example3.c> in the nbdkit source tree,
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example3/example3.c>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>
 
