@@ -29,6 +29,19 @@ The size of the virtual disk must be specified using the C<size>
 parameter.  If the size is not a multiple of 8 then the last 8 byte
 offset in the pattern is truncated.
 
+=head2 Largest possible size
+
+nbdkit itself limits plugins to S<2⁶³-1> bytes
+(S<decimal: 9223372036854775807>,
+S<hexadecimal: 0x7fff_ffff_ffff_ffff>).
+
+To test if NBD clients are free of bugs (not to mention nbdkit itself)
+you can use:
+
+ nbdkit pattern size=9223372036854775807
+
+Note this is too large for qemu to open.
+
 =head1 PARAMETERS
 
 =over 4
