@@ -258,7 +258,8 @@ use C<nbdkit.set_error(errno.EOPNOTSUPP)>.
 These are not needed because you can just use ordinary Python
 constructs.
 
-=item Missing: C<name>, C<version>, C<longname>, C<description>, C<config_help>
+=item Missing: C<name>, C<version>, C<longname>, C<description>,
+C<config_help>
 
 These are not yet supported.
 
