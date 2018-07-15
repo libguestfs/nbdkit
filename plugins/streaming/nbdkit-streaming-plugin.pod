@@ -18,15 +18,32 @@ end of the disk without seeking backwards, then this plugin will turn
 the resulting disk image into a stream of data which is written to the
 named C<pipe> parameter.
 
-Typical usage is with qemu tools.  For example:
+               ┌───────────┐
+ client        │ nbdkit    │        plugin streams
+ writes ──────▶│ streaming │──────▶ data to pipe
+               │ plugin    │
+               └───────────┘
 
- qemu-img convert input -O raw output
+Typical usage is with qemu tools.  The following command will I<not>
+work because the output is a pipe or socket:
 
-does I<not> work if C<output> is a pipe.  However this does:
+ qemu-img convert input -O raw pipe
 
- nbdkit -U /tmp/nbd.sock streaming pipe=output --run '
+However this will work:
+
+ nbdkit -U - streaming pipe=pipe --run '
    qemu-img convert -n input -O raw $nbd
  '
+
+              ┌───────────┐       ┌───────────┐
+ reads        │ qemu-img  │       │ nbdkit    │        plugin streams
+ input ──────▶│ convert   │──────▶│ streaming │──────▶ data to pipe
+ file         │ command   │       │ plugin    │
+              └───────────┘      ↑└───────────┘
+                              Unix domain socket (-U -)
+
+For use of the I<--run> and I<-U -> options, see
+L<nbdkit(1)/CAPTIVE NBDKIT>.
 
 =head1 PARAMETERS
 
