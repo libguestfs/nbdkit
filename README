@@ -1,7 +1,7 @@
-NBD is a protocol for accessing Block Devices (hard disks and
-disk-like things) over a Network.
+NBD — Network Block Device — is a protocol for accessing Block Devices
+(hard disks and disk-like things) over a Network.
 
-'nbdkit' is a toolkit for creating NBD servers.
+nbdkit is a toolkit for creating NBD servers.
 
 The key features are:
 
@@ -13,35 +13,43 @@ The key features are:
    libraries or included in proprietary code.
 
  * Well-documented, simple plugin API with a stable ABI guarantee.
-   Lets you export "unconventional" block devices easily.
+   Lets you export “unconventional” block devices easily.
 
  * You can write plugins in C, Perl, Python, OCaml, Ruby or Tcl.
 
-For documentation, see the docs/ directory.
+ * Filters can be stacked in front of plugins to transform the output.
 
-For plugins and examples, see the plugins/ directory.
+For documentation, see the ‘docs/’ directory.
 
-License
--------
+For plugins, examples and filters, see the ‘plugins/’ and ‘filters/’
+directories.
+
+LICENSE
+=======
 
 This software is copyright (C) Red Hat Inc. and licensed under a BSD
-license.  See LICENSE for details.
+license.  See ‘LICENSE’ for details.
 
-Building from source
---------------------
+BUILDING FROM SOURCE
+====================
 
-By default nbdkit needs nothing except Linux and reasonably recent gcc.
+Requirements
+------------
+
+To build the basic server and some plugins nbdkit needs nothing except
+Linux and reasonably recent gcc.
+
+Although it is possible to build without it, it’s recommended to
+enable TLS support for which you will need:
+
+ - gnutls >= 3.3.0
+
+Optional dependencies
+---------------------
 
 To build the man pages, you will need to install:
 
  - pod2man (included with perl)
-
-There are some *optional* libraries you may want to install for
-plugins or extra features.
-
-For TLS support:
-
- - gnutls >= 3.3.0
 
 For the gzip plugin:
 
@@ -77,19 +85,22 @@ For the VDDK plugin:
 
 For the Perl, example4 and tar plugins:
 
+ - perl interpreter
+
  - perl development libraries
 
  - perl module ExtUtils::Embed
 
 For the Python plugin:
 
- - python development libraries
+ - python interpreter
    (either version 2 or 3 may be used)
+
+ - python development libraries
 
 For the OCaml plugin:
 
- - OCaml >= 4.02.2 which has support for shared libraries, see:
-   http://caml.inria.fr/mantis/view.php?id=6693
+ - OCaml >= 4.02.2
 
 For the Tcl plugin:
 
@@ -103,81 +114,81 @@ To run the test suite:
 
  - bash
 
-To test for memory leaks ('make check-valgrind'):
+To test for memory leaks (‘make check-valgrind’):
 
  - valgrind program and development headers
 
 For non-essential enhancements to the test suite:
 
+ - qemu-io (usually shipped with qemu)
+
  - socat
 
  - ss (from iproute package)
 
-After installing any dependencies:
+Building
+--------
 
-  To build from tarball:         To build from git:
-  ----------------------         ------------------
-                                 autoreconf -i
-  ./configure                    ./configure
-  make                           make
-  make check                     make check
+    To build from tarball:         To build from git:
+    ----------------------         ------------------
+                                   autoreconf -i
+    ./configure                    ./configure
+    make                           make
+    make check                     make check
 
 To run nbdkit from the source directory, use the top level ./nbdkit
 script.  It will run nbdkit and plugins from the locally compiled
 directory:
 
-  $ ./nbdkit example1 -f -v
-  ./src/nbdkit ./plugins/example1/.libs/nbdkit-example1-plugin.so -f -v
-  [etc]
+    $ ./nbdkit example1 -f -v
+    ./src/nbdkit ./plugins/example1/.libs/nbdkit-example1-plugin.so -f -v
+    [etc]
 
 Optionally run this command as root to install everything:
 
-  make install
+    make install
 
 Python
 ------
 
 By default nbdkit uses the Python version of the Python interpreter
-called "python" on the current $PATH.  To use another version of
+called “python” on the current $PATH.  To use another version of
 Python you may need to set the PYTHON variable when configuring.  For
 example:
 
-  ./configure PYTHON=/usr/bin/python3
+    ./configure PYTHON=/usr/bin/python3
 
-Tests
------
+Running the tests
+-----------------
 
 You will need to install libguestfs to run most of the test suite:
 
-  make check
+    make check
 
 The test suite is fairly comprehensive.  It runs the newly built
 nbdkit + plugins as a captive process, and tests them using
 libguestfs.  If there is a failure, look at the corresponding
-tests/*.log file for debug information.
+‘tests/*.log’ file for debug information.
 
-Developers
-----------
+DOWNLOAD TARBALLS
+=================
+
+Tarballs are available from:
+http://libguestfs.org/download/nbdkit
+
+DEVELOPERS
+==========
 
 Install the valgrind program and development headers.
 
 Use:
 
-  ./configure --enable-gcc-warnings --enable-valgrind
+    ./configure --enable-gcc-warnings --enable-valgrind
 
 When testing use:
 
-  make check
-  make check-valgrind
-
-Packager information
---------------------
-
-Tarballs are available from:
-http://libguestfs.org/download/nbdkit
-
-Developer information
----------------------
+    make check
+    make check-valgrind
 
 For development ideas, see the TODO file.
 
