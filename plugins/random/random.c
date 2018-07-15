@@ -45,7 +45,7 @@
 #include <nbdkit-plugin.h>
 
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
-static size_t size = 0;
+static int64_t size = 0;
 
 /* Seed. */
 static uint32_t seed;
@@ -95,11 +95,7 @@ random_config (const char *key, const char *value)
     r = nbdkit_parse_size (value);
     if (r == -1)
       return -1;
-    if (r > SIZE_MAX) {
-      nbdkit_error ("size > SIZE_MAX");
-      return -1;
-    }
-    size = (ssize_t) r;
+    size = r;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -129,7 +125,7 @@ random_open (int readonly)
 static int64_t
 random_get_size (void *handle)
 {
-  return (int64_t) size;
+  return size;
 }
 
 /* Read data. */
@@ -137,7 +133,7 @@ static int
 random_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
               uint32_t flags)
 {
-  size_t i;
+  uint32_t i;
   unsigned char *b = buf;
   uint32_t s;
 
