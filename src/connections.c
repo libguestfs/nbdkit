@@ -832,7 +832,9 @@ validate_request (struct connection *conn,
   case NBD_CMD_WRITE_ZEROES:
     if (!valid_range (conn, offset, count)) {
       /* XXX Allow writes to extend the disk? */
-      nbdkit_error ("invalid request: offset and length are out of range");
+      nbdkit_error ("invalid request: offset and count are out of range: "
+                    "offset=%" PRIu64 " count=%" PRIu32,
+                    offset, count);
       *error = (cmd == NBD_CMD_WRITE ||
                 cmd == NBD_CMD_WRITE_ZEROES) ? ENOSPC : EINVAL;
       return false;
@@ -841,7 +843,7 @@ validate_request (struct connection *conn,
 
   case NBD_CMD_FLUSH:
     if (offset != 0 || count != 0) {
-      nbdkit_error ("invalid flush request: expecting offset and length == 0");
+      nbdkit_error ("invalid flush request: expecting offset and count = 0");
       *error = EINVAL;
       return false;
     }
