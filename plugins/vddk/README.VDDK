@@ -11,27 +11,14 @@ account and download it from:
 This directory contains an nbdkit plugin which uses this library to
 export VMDK files and VMware disks over NBD.
 
-VDDK >= 6.5 is required.
-
-Note: VDDK can do NBD on its own, so nbdkit might not be needed unless
-you want the extra features and flexibility of nbdkit.
-
-It is never compiled by default.  To enable it you have to do:
-
-  ./configure --with-vddk
-
-If the VDDK library is located in a non-standard location, use this
-instead:
-
-  ./configure --with-vddk=/path/to/vmware-vix-disklib-distrib
-
-(This looks for include/ and lib{32,64}/ subdirectories of the given
-path for header files and libraries respectively.)
+You do NOT require VDDK to compile the plugin, and the plugin does not
+contain any VMware code.  You only need VDDK at runtime.  The plugin
+uses dlopen to load the library from LD_LIBRARY_PATH (or else the
+standard shared library paths).
 
 After building nbdkit-vddk-plugin.so, read the man page to find out
-how to use it (nbdkit-vddk-plugin(1)).
-
-You'll probably also want to read the VDDK developer documentation.
+how to use it (nbdkit-vddk-plugin(1)).  You'll probably also want to
+read the VDDK developer documentation.
 
 Bugs
 ----

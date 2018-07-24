@@ -81,10 +81,6 @@ For the ext2 plugin:
 
  - com_err
 
-For the VDDK plugin:
-
- - VDDK (see plugins/vddk/README.VDDK)
-
 For the Perl, example4 and tar plugins:
 
  - perl interpreter
