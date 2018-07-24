@@ -65,10 +65,6 @@ For the libguestfs plugin, and to run the test suite:
 
  - guestfish (from libguestfs)
 
-For the VDDK plugin:
-
- - VDDK (see plugins/vddk/README.VDDK)
-
 For the Perl, example4 and tar plugins:
 
  - perl development libraries

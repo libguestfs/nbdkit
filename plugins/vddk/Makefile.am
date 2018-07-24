@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013 Red Hat Inc.
+# Copyright (C) 2013-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,15 +44,16 @@ plugin_LTLIBRARIES = nbdkit-vddk-plugin.la
 
 nbdkit_vddk_plugin_la_SOURCES = \
 	vddk.c \
+	vddk-structs.h \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
 nbdkit_vddk_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-DVDDK_LIBDIR=\"$(libdir)/vmware-vix-disklib\"
 nbdkit_vddk_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS) \
-	$(VDDK_CFLAGS)
+	$(WARNINGS_CFLAGS)
 nbdkit_vddk_plugin_la_LIBADD = \
-	$(VDDK_LIBS)
+	-ldl
 nbdkit_vddk_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared
 
@@ -68,4 +69,4 @@ nbdkit-vddk-plugin.1: nbdkit-vddk-plugin.pod
 
 endif
 
-endif
+endif HAVE_VDDK
