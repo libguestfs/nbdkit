@@ -370,8 +370,9 @@ vddk_open (int readonly)
   }
 
   /* XXX Some documentation suggests we should call
-   * VixDiskLib_PrepareForAccess here.  However we need the true VM
-   * name to do that.
+   * VixDiskLib_PrepareForAccess here.  It may be required for
+   * Advanced Transport modes, but I could not make it work with
+   * either ESXi or vCenter servers.
    */
 
   DEBUG_CALL ("VixDiskLib_ConnectEx",
