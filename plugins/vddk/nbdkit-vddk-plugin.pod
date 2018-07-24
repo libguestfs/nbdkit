@@ -8,7 +8,7 @@ nbdkit-vddk-plugin - VMware VDDK plugin for nbdkit
              [vm=moref=ID] [server=HOSTNAME] [user=USERNAME]
              [password=PASSWORD | password=- | password=+FILENAME]
              [cookie=COOKIE] [thumbprint=THUMBPRINT]
-             [vimapiver=APIVER] [port=PORT] [nfchostport=PORT]
+             [port=PORT] [nfchostport=PORT]
              [snapshot=MOREF] [transports=MODE:MODE:...]
  nbdkit vddk --dump-plugin
 
@@ -175,10 +175,7 @@ L<https://blogs.vmware.com/vsphere/2012/02/uniquely-identifying-virtual-machines
 
 =item B<vimapiver=APIVER>
 
-Optional.  Specify the VIM API version.  If not given it defaults to
-the current version.
-
-(Only supported in VDDK ≥ 6.5.0)
+This parameter is ignored for backwards compatibility.
 
 =back
 
@@ -267,11 +264,6 @@ at runtime.
 =item C<vddk_has_nfchostport=1>
 
 If this is printed then the C<nfchostport=PORT> parameter is supported
-by this build.
-
-=item C<vddk_has_vimapiver=1>
-
-If this is printed then the C<vimapiver=APIVER> parameter is supported
 by this build.
 
 =back
