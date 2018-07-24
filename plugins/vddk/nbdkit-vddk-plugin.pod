@@ -16,21 +16,41 @@ nbdkit-vddk-plugin - VMware VDDK plugin for nbdkit
 
 =head1 DESCRIPTION
 
-C<nbdkit-vddk-plugin> is a L<nbdkit(1)> plugin that serves files from
+C<nbdkit-vddk-plugin> is an L<nbdkit(1)> plugin that serves files from
 local VMware VMDK files, VMware ESXi servers, VMware VCenter servers,
-and other sources by using VMware's proprietary VDDK library.
+and other sources.  It requires VMware's proprietary VDDK library that
+you must download yourself separately.
 
 The plugin can serve read-only (if the I<-r> option is used) or
 read/write.
 
-=head1 LIBRARY LOCATION
+=head1 LIBRARY AND CONFIG FILE LOCATIONS
 
-If the VDDK library (C<libvixDiskLib.so>) is located on a non-standard
-path, you may need to set C<LD_LIBRARY_PATH> or modify
-C</etc/ld.so.conf> before this plugin will work.
+If the VDDK library (F<libvixDiskLib.so.6>) is located on a
+non-standard path, you may need to set C<LD_LIBRARY_PATH> or modify
+F</etc/ld.so.conf> before this plugin will work.  In addition you may
+want to set the C<libdir> parameter so that the VDDK library can load
+plugins like Advanced Transport.
 
-The VDDK library may depend on C<libexpat.so.0> or other libraries
-which you may have to install yourself.
+For 64 bit platforms pass the F<lib64> subdirectory:
+
+ export LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib64
+
+For 32 bit platforms pass the F<lib32> subdirectory:
+
+ export LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib32
+
+Then pass the VDDK distribution directory as C<libdir> along with
+other parameters as required:
+
+ nbdkit vddk \
+     libdir=/path/to/vmware-vix-disklib-distrib \
+     file=file.vmdk
+
+VDDK itself looks in a few default locations for the optional
+configuration file, usually including F</etc/vmware/config> and
+F<$HOME/.vmware/config>, but you can override this using the C<config>
+parameter.
 
 =head1 PARAMETERS
 
@@ -67,11 +87,14 @@ L</NOTES> below).
 
 =item B<libdir=PATHNAME>
 
-Optional.  This sets the path of the VMware VDDK library.  It must be
-an absolute path.
+Optional.  This sets the path of the VMware VDDK distribution.  It
+must be an absolute path.
+
+VDDK uses this to load its own plugins, if this path is unspecified or
+wrong then VDDK will work with reduced functionality.
 
 If the parameter is not given, then a hard-coded path determined at
-compile time is used.
+compile time is used, see L</DUMP-PLUGIN OUTPUT> below.
 
 =item B<nfchostport=PORT>
 
@@ -307,7 +330,6 @@ support this.
 
 =head1 SEE ALSO
 
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/vddk/vddk.c>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<virsh(1)>,
@@ -319,7 +341,7 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2017 Red Hat Inc.
+Copyright (C) 2013-2018 Red Hat Inc.
 
 =head1 LICENSE
 

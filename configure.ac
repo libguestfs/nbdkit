@@ -502,77 +502,14 @@ AS_IF([test "$with_ext2" != "no"], [
 AM_CONDITIONAL([HAVE_EXT2],
                [test "x$EXT2FS_LIBS" != "x" && test "x$COM_ERR_LIBS" != "x"])
 
+dnl Check if the user wants to disable VDDK support.
 dnl See plugins/vddk/README.VDDK.
-AC_CHECK_SIZEOF([size_t])
-AS_IF([test "x$ac_cv_sizeof_size_t" = "x4"],[bits=32],[bits=64])
-AC_ARG_WITH([vddk],[
-    AS_HELP_STRING([--with-vddk],
-                   [enable VMware VDDK plugin @<:@default=no@:>@])],
+AC_ARG_ENABLE([vddk],[
+    AS_HELP_STRING([--disable-vddk],
+                   [disable VMware VDDK plugin])],
     [],
-    [with_vddk=no])
-AS_IF([test "$with_vddk" = "yes"],[
-    VDDK_CFLAGS=
-    VDDK_LIBS="-lvixDiskLib"
-    # XXX Warning: stupid VMware API.
-    VDDK_LIBDIR="$libdir/vmware-vix-disklib"
-    AC_MSG_NOTICE([VDDK plugin enabled from $VDDK_LIBDIR])
-    ],[
-    AS_IF([test "$with_vddk" != "no"], [
-        VDDK_CFLAGS="-I$with_vddk/include"
-        VDDK_LIBS="-L$with_vddk/lib$bits -lvixDiskLib"
-        VDDK_LIBDIR="$with_vddk"
-        AC_MSG_NOTICE([VDDK plugin enabled from $with_vddk])
-        ],
-        [AC_MSG_NOTICE([VDDK plugin disabled])
-    ])
-])
-
-dnl If the VDDK plugin was enabled, compile and link a test program to make
-dnl sure the library really works.
-AS_IF([test "x$VDDK_LIBS" != "x"],[
-    # Save CFLAGS etc while we do this test.
-    acx_nbdkit_save_CFLAGS="${CFLAGS}"
-    acx_nbdkit_save_LIBS="${LIBS}"
-    CFLAGS="$CFLAGS $VDDK_CFLAGS"
-    LIBS="$VDDK_LIBS $LIBS"
-
-    AC_MSG_CHECKING([if we can link to VDDK])
-    AC_LINK_IFELSE([
-        AC_LANG_SOURCE([[
-#include <stdio.h>
-#include <stdint.h>
-#include <vixDiskLib.h>
-
-int
-main ()
-{
-    VixDiskLib_Exit ();
-}
-]])
-    ],[
-        AC_MSG_RESULT([yes])
-    ],[
-        AC_MSG_RESULT([no])
-        AC_MSG_ERROR([could not link to VDDK, see ‘config.log’ for more information])
-    ])
-
-    dnl Check for optional fields in VixDiskLibConnectParams struct.
-    AC_CHECK_MEMBERS([VixDiskLibConnectParams.nfcHostPort, VixDiskLibConnectParams.vimApiVer],
-                    [], [], [[
-#include <stdio.h>
-#include <stdint.h>
-#include <vixDiskLib.h>
-]])
-
-    dnl Restore CFLAGS, etc.
-    CFLAGS="${acx_nbdkit_save_CFLAGS}"
-    LIBS="${acx_nbdkit_save_LIBS}"
-])
-
-AC_SUBST([VDDK_CFLAGS])
-AC_SUBST([VDDK_LIBS])
-AC_DEFINE_UNQUOTED([VDDK_LIBDIR],["$VDDK_LIBDIR"],[VDDK 'libDir'.])
-AM_CONDITIONAL([HAVE_VDDK],[test "x$VDDK_LIBS" != "x"])
+    [enable_vddk=yes])
+AM_CONDITIONAL([HAVE_VDDK], [test "x$enable_vddk" = "xyes"])
 
 dnl Produce output files.
 AC_CONFIG_HEADERS([config.h])
