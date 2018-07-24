@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2017 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,7 +59,6 @@ static const char *snapshot_moref = NULL;  /* snapshot */
 static const char *thumb_print = NULL;     /* thumbprint */
 static const char *transport_modes = NULL; /* transports */
 static const char *username = NULL;        /* user */
-static const char *vim_api_ver = NULL;     /* vimapiver */
 static const char *vmx_spec = NULL;        /* vm */
 static int is_remote = 0;
 
@@ -208,12 +207,7 @@ vddk_config (const char *key, const char *value)
     username = value;
   }
   else if (strcmp (key, "vimapiver") == 0) {
-#if HAVE_VIXDISKLIBCONNECTPARAMS_VIMAPIVER
-    vim_api_ver = value;
-#else
-    nbdkit_error ("this version of VDDK is too old to support vimapiver");
-    return -1;
-#endif
+    /* Ignored for backwards compatibility. */
   }
   else if (strcmp (key, "vm") == 0) {
     vmx_spec = value;
@@ -248,8 +242,7 @@ vddk_config_complete (void)
     cookie ||
     thumb_print ||
     port ||
-    nfc_host_port ||
-    vim_api_ver;
+    nfc_host_port;
 
   if (is_remote) {
 #define missing(test, param)                                            \
@@ -279,10 +272,6 @@ vddk_dump_plugin (void)
 
 #if HAVE_VIXDISKLIBCONNECTPARAMS_NFCHOSTPORT
   printf ("vddk_has_nfchostport=1\n");
-#endif
-
-#if HAVE_VIXDISKLIBCONNECTPARAMS_VIMAPIVER
-  printf ("vddk_has_vimapiver=1\n");
 #endif
 
   /* XXX We really need to print the version of the dynamically
@@ -336,9 +325,6 @@ vddk_open (int readonly)
     params.port = port;
 #if HAVE_VIXDISKLIBCONNECTPARAMS_NFCHOSTPORT
     params.nfcHostPort = nfc_host_port;
-#endif
-#if HAVE_VIXDISKLIBCONNECTPARAMS_VIMAPIVER
-    params.vimApiVer = (char *) vim_api_ver;
 #endif
   }
 
