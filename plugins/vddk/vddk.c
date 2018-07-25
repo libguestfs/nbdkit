@@ -142,12 +142,16 @@ error_function (const char *fs, va_list args)
 static void
 vddk_load (void)
 {
-  const char *soname = "libvixDiskLib.so.6";
+  static const char soname[] = "libvixDiskLib.so.6";
 
   /* Load the plugin and set the entry points. */
   dl = dlopen (soname, RTLD_NOW);
   if (dl == NULL) {
-    nbdkit_error ("%s: %s", soname, dlerror ());
+    nbdkit_error ("%s\n\n"
+                  "If '%s' is located on a non-standard path you may need to\n"
+                  "set $LD_LIBRARY_PATH or edit /etc/ld.so.conf.\n\n"
+                  "See the nbdkit-vddk-plugin(1) man page for details.",
+                  dlerror (), soname);
     exit (EXIT_FAILURE);
   }
 
