@@ -51,10 +51,10 @@
 static char *(*VixDiskLib_GetErrorText) (VixError err, const char *unused);
 static void (*VixDiskLib_FreeErrorText) (char *text);
 static VixError (*VixDiskLib_InitEx) (uint32_t major, uint32_t minor, VixDiskLibGenericLogFunc *log_function, VixDiskLibGenericLogFunc *warn_function, VixDiskLibGenericLogFunc *panic_function, const char *lib_dir, const char *config_file);
-void (*VixDiskLib_Exit) (void);
+static void (*VixDiskLib_Exit) (void);
 static VixError (*VixDiskLib_ConnectEx) (const VixDiskLibConnectParams *params, char read_only, const char *snapshot_ref, const char *transport_modes, VixDiskLibConnection *connection);
 static VixError (*VixDiskLib_Open) (const VixDiskLibConnection connection, const char *path, uint32_t flags, VixDiskLibHandle *handle);
-const char *(*VixDiskLib_GetTransportMode) (VixDiskLibHandle handle);
+static const char *(*VixDiskLib_GetTransportMode) (VixDiskLibHandle handle);
 static VixError (*VixDiskLib_Close) (VixDiskLibHandle handle);
 static VixError (*VixDiskLib_Disconnect) (VixDiskLibConnection connection);
 static VixError (*VixDiskLib_GetInfo) (VixDiskLibHandle handle, VixDiskLibInfo **info);
