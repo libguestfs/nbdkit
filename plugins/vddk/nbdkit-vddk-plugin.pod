@@ -85,8 +85,7 @@ L</NOTES> below).
 
 =item B<libdir=PATHNAME>
 
-Optional.  This sets the path of the VMware VDDK distribution.  It
-must be an absolute path.
+Optional.  This sets the path of the VMware VDDK distribution.
 
 VDDK uses this to load its own plugins, if this path is unspecified or
 wrong then VDDK will work with reduced functionality.
