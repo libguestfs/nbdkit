@@ -72,7 +72,7 @@ static int init_called = 0;                /* was InitEx called */
 static char *config = NULL;                /* config */
 static const char *cookie = NULL;          /* cookie */
 static const char *filename = NULL;        /* file */
-static const char *libdir = VDDK_LIBDIR;   /* libdir */
+static char *libdir = NULL;                /* libdir */
 static int nfc_host_port = 0;              /* nfchostport */
 static char *password = NULL;              /* password */
 static int port = 0;                       /* port */
@@ -180,6 +180,7 @@ vddk_unload (void)
   if (dl)
     dlclose (dl);
   free (config);
+  free (libdir);
   free (password);
 }
 
@@ -205,7 +206,11 @@ vddk_config (const char *key, const char *value)
     filename = value;
   }
   else if (strcmp (key, "libdir") == 0) {
-    libdir = value;
+    /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
+    free (libdir);
+    libdir = nbdkit_realpath (value);
+    if (!libdir)
+      return -1;
   }
   else if (strcmp (key, "nfchostport") == 0) {
     if (sscanf (value, "%d", &nfc_host_port) != 1) {
@@ -296,12 +301,13 @@ vddk_config_complete (void)
   /* Initialize VDDK library. */
   DEBUG_CALL ("VixDiskLib_InitEx",
               "%d, %d, &debug_fn, &error_fn, &error_fn, %s, %s",
-              VDDK_MAJOR, VDDK_MINOR, libdir, config ? : "NULL");
+              VDDK_MAJOR, VDDK_MINOR,
+              libdir ? : VDDK_LIBDIR, config ? : "NULL");
   err = VixDiskLib_InitEx (VDDK_MAJOR, VDDK_MINOR,
                            &debug_function, /* log function */
                            &error_function, /* warn function */
                            &error_function, /* panic function */
-                           libdir, config);
+                           libdir ? : VDDK_LIBDIR, config);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_InitEx");
     exit (EXIT_FAILURE);
