@@ -75,6 +75,7 @@ EXTRA_DIST = \
 	test-random-sock.sh \
 	test-tls.sh \
 	test-tls-psk.sh \
+	test-vddk.sh \
 	test-version.sh \
 	test-version-filter.sh \
 	test-version-plugin.sh \
@@ -364,6 +365,26 @@ EXTRA_PROGRAMS += test-streaming
 test_streaming_SOURCES = test-streaming.c test.h
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# VDDK plugin test.
+# This only tests that the plugin can be loaded against a
+# dummy VDDK library, it is not a detailed test.
+
+# check_LTLIBRARIES won't build a shared library (see automake manual).
+# So we have to do this and add a dependency.
+noinst_LTLIBRARIES += libvixDiskLib.la
+TESTS += test-vddk.sh
+
+libvixDiskLib_la_SOURCES = \
+	dummy-vddk.c
+libvixDiskLib_la_CPPFLAGS = \
+	-I$(top_srcdir)/plugins/vddk
+libvixDiskLib_la_CXXFLAGS = \
+        $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+libvixDiskLib_la_LDFLAGS = \
+	-shared -version-number 6:0:0 -rpath /nowhere
 
 # xz plugin test.
 if HAVE_LIBLZMA
