@@ -48,19 +48,19 @@
 /* The VDDK APIs that we call.  These globals are initialized when the
  * plugin is loaded (by vddk_load).
  */
-char *(*VixDiskLib_GetErrorText) (VixError err, const char *unused);
-void (*VixDiskLib_FreeErrorText) (char *text);
-VixError (*VixDiskLib_InitEx) (uint32_t major, uint32_t minor, VixDiskLibGenericLogFunc *log_function, VixDiskLibGenericLogFunc *warn_function, VixDiskLibGenericLogFunc *panic_function, const char *lib_dir, const char *config_file);
+static char *(*VixDiskLib_GetErrorText) (VixError err, const char *unused);
+static void (*VixDiskLib_FreeErrorText) (char *text);
+static VixError (*VixDiskLib_InitEx) (uint32_t major, uint32_t minor, VixDiskLibGenericLogFunc *log_function, VixDiskLibGenericLogFunc *warn_function, VixDiskLibGenericLogFunc *panic_function, const char *lib_dir, const char *config_file);
 void (*VixDiskLib_Exit) (void);
-VixError (*VixDiskLib_ConnectEx) (const VixDiskLibConnectParams *params, char read_only, const char *snapshot_ref, const char *transport_modes, VixDiskLibConnection *connection);
-VixError (*VixDiskLib_Open) (const VixDiskLibConnection connection, const char *path, uint32_t flags, VixDiskLibHandle *handle);
+static VixError (*VixDiskLib_ConnectEx) (const VixDiskLibConnectParams *params, char read_only, const char *snapshot_ref, const char *transport_modes, VixDiskLibConnection *connection);
+static VixError (*VixDiskLib_Open) (const VixDiskLibConnection connection, const char *path, uint32_t flags, VixDiskLibHandle *handle);
 const char *(*VixDiskLib_GetTransportMode) (VixDiskLibHandle handle);
-VixError (*VixDiskLib_Close) (VixDiskLibHandle handle);
-VixError (*VixDiskLib_Disconnect) (VixDiskLibConnection connection);
-VixError (*VixDiskLib_GetInfo) (VixDiskLibHandle handle, VixDiskLibInfo **info);
-void (*VixDiskLib_FreeInfo) (VixDiskLibInfo *info);
-VixError (*VixDiskLib_Read) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, unsigned char *buf);
-VixError (*VixDiskLib_Write) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, const unsigned char *buf);
+static VixError (*VixDiskLib_Close) (VixDiskLibHandle handle);
+static VixError (*VixDiskLib_Disconnect) (VixDiskLibConnection connection);
+static VixError (*VixDiskLib_GetInfo) (VixDiskLibHandle handle, VixDiskLibInfo **info);
+static void (*VixDiskLib_FreeInfo) (VixDiskLibInfo *info);
+static VixError (*VixDiskLib_Read) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, unsigned char *buf);
+static VixError (*VixDiskLib_Write) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, const unsigned char *buf);
 
 /* Parameters passed to InitEx. */
 #define VDDK_MAJOR 5
