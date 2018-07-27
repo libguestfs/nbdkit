@@ -243,7 +243,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
   if (may_trim) {
     r = fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
 		   offset, count);
-    if (r == -1 && errno != EOPNOTSUPP) {
+    if (r == -1 && errno != EOPNOTSUPP && errno != ENODEV) {
       nbdkit_error ("zero: %m");
     }
     /* PUNCH_HOLE is older; if it is not supported, it is likely that
@@ -254,7 +254,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
 #ifdef FALLOC_FL_ZERO_RANGE
   r = fallocate (h->fd, FALLOC_FL_ZERO_RANGE, offset, count);
-  if (r == -1 && errno != EOPNOTSUPP) {
+  if (r == -1 && errno != EOPNOTSUPP && errno != ENODEV) {
     nbdkit_error ("zero: %m");
   }
 #else
@@ -288,11 +288,11 @@ file_trim (void *handle, uint32_t count, uint64_t offset)
   struct handle *h = handle;
 
   /* Trim is advisory; we don't care if it fails for anything other
-   * than EIO or EPERM. */
+   * than EIO, EPERM, or ENODEV (kernel 3.10) */
   r = fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
                  offset, count);
   if (r < 0) {
-    if (errno != EPERM && errno != EIO) {
+    if (errno != EPERM && errno != EIO && errno != ENODEV) {
       nbdkit_debug ("ignoring failed fallocate during trim: %m");
       r = 0;
     }
