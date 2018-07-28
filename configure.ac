@@ -579,6 +579,7 @@ AC_CONFIG_FILES([Makefile
                  filters/nozero/Makefile
                  filters/offset/Makefile
                  filters/partition/Makefile
+                 filters/truncate/Makefile
                  src/Makefile
                  src/nbdkit.pc
                  tests/Makefile])

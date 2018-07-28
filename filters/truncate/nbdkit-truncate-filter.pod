@@ -1,0 +1,88 @@
+=head1 NAME
+
+nbdkit-truncate-filter - change the size of plugins
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=truncate plugin [truncate=SIZE]
+                                 [round-up=N] [round-down=N]
+
+=head1 DESCRIPTION
+
+C<nbdkit-truncate-filter> is a filter that changes the size of
+the underlying plugin.  It can:
+
+=over 4
+
+=item *
+
+Make the plugin smaller (truncate it).  Use the C<truncate=SIZE>
+parameter to set the smaller size.
+
+=item *
+
+Make the plugin larger (the additional bytes read back as zeroes).
+Use C<truncate=SIZE> to set the larger size.
+
+=item *
+
+Round the size of the plugin up or down to the next multiple of C<N>.
+Use either C<round-up=N> or C<round-down=N>.
+
+=back
+
+A common use for this filter is to handle NBD clients which have a
+problem dealing with device sizes which are not a multiple of 512
+bytes.  Use C<round-up=512> to round the size up to the next multiple
+of 512 bytes.  If the size is already a multiple of 512 bytes then
+this has no effect.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<truncate=SIZE>
+
+Set the absolute size in bytes of the apparent device.  This may be
+smaller or larger or the same as the underlying plugin.
+
+If the size is larger than the underlying plugin, reading the extra
+space returns zeroes.  Writes are also permitted to the extra space,
+but you must only write zeroes (any attempts to write non-zero bytes
+will return an error back to the client).
+
+This parameter is optional.
+
+=item B<round-up=N>
+
+Round the size up to the next multiple of C<N> bytes.  If the size of
+the underlying plugin is already a multiple of C<N> bytes, this has no
+effect.
+
+This parameter is optional.
+
+=item B<round-down=N>
+
+Round the size down to a multiple of C<N> bytes.  If the size of the
+underlying plugin is already a multiple of C<N> bytes, this has no
+effect.
+
+This parameter is optional.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-offset-filter(1)>,
+L<nbdkit-partition-filter(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

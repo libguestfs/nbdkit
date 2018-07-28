@@ -32,7 +32,9 @@ file/device.
 =back
 
 Note it is an error if the offset and/or range specify data which lies
-beyond the end of the underlying device.
+beyond the end of the underlying device.  Use
+L<nbdkit-truncate-filter(1)> to truncate or extend the size of
+plugins.
 
 =head1 EXAMPLES
 
@@ -65,7 +67,8 @@ You can then serve the partition only using:
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
-L<nbdkit-partition-filter(1)>.
+L<nbdkit-partition-filter(1)>,
+L<nbdkit-truncate-filter(1)>.
 
 =head1 AUTHORS
 
