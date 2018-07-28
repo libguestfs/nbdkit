@@ -187,8 +187,12 @@ dnl Bash completion.
 PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0], [
     bash_completion=yes
     AC_MSG_CHECKING([for bash-completions directory])
-    PKG_CHECK_VAR(bashcompdir, [bash-completion], [completionsdir], ,
-        bashcompdir="${sysconfdir}/bash_completion.d")
+    m4_ifdef([PKG_CHECK_VAR],[
+        PKG_CHECK_VAR(bashcompdir, [bash-completion], [completionsdir])
+    ])
+    AS_IF([test -z "$bashcompdir"], [
+        bashcompdir="${sysconfdir}/bash_completion.d"
+    ])
     AC_MSG_RESULT([$bashcompdir])
     AC_SUBST([bashcompdir])
 ],[
