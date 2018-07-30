@@ -54,6 +54,20 @@
 
 static char *filename = NULL;
 
+#if defined(FALLOC_FL_PUNCH_HOLE) || defined(FALLOC_FL_ZERO_RANGE)
+static int
+do_fallocate(int fd, int mode, off_t offset, off_t len)
+{
+  int r = fallocate (fd, mode, offset, len);
+  if (r == -1 && errno == ENODEV) {
+    /* kernel 3.10 fails with ENODEV for block device. Kernel >= 4.9 fails
+       with EOPNOTSUPP in this case. Normalize errno to simplify callers. */
+    errno = EOPNOTSUPP;
+  }
+  return r;
+}
+#endif
+
 static void
 file_unload (void)
 {
@@ -234,9 +248,9 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
 #ifdef FALLOC_FL_PUNCH_HOLE
   if (may_trim) {
-    r = fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
-		   offset, count);
-    if (r == -1 && errno != EOPNOTSUPP && errno != ENODEV) {
+    r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+                      offset, count);
+    if (r == -1 && errno != EOPNOTSUPP) {
       nbdkit_error ("zero: %m");
     }
     /* PUNCH_HOLE is older; if it is not supported, it is likely that
@@ -246,8 +260,8 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 #endif
 
 #ifdef FALLOC_FL_ZERO_RANGE
-  r = fallocate (h->fd, FALLOC_FL_ZERO_RANGE, offset, count);
-  if (r == -1 && errno != EOPNOTSUPP && errno != ENODEV) {
+  r = do_fallocate (h->fd, FALLOC_FL_ZERO_RANGE, offset, count);
+  if (r == -1 && errno != EOPNOTSUPP) {
     nbdkit_error ("zero: %m");
   }
 #else
