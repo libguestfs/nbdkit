@@ -79,6 +79,8 @@ EXTRA_DIST = \
 	test-random-sock.sh \
 	test-tls.sh \
 	test-tls-psk.sh \
+	test-truncate1.sh \
+	test-truncate2.sh \
 	test-vddk.sh \
 	test-version.sh \
 	test-version-filter.sh \
@@ -570,5 +572,10 @@ LIBGUESTFS_TESTS += test-partition
 test_partition_SOURCES = test-partition.c test.h
 test_partition_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_partition_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# truncate filter tests.
+TESTS += \
+	test-truncate1.sh \
+	test-truncate2.sh
 
 endif HAVE_PLUGINS
