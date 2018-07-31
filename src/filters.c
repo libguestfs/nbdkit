@@ -367,10 +367,17 @@ filter_prepare (struct backend *b, struct connection *conn)
 
   debug ("prepare");
 
-  if (f->filter.prepare)
-    return f->filter.prepare (&next_ops, &nxdata, handle);
-  else
-    return f->backend.next->prepare (f->backend.next, conn);
+  /* Call these in order starting from the filter closest to the
+   * plugin.
+   */
+  if (f->backend.next->prepare (f->backend.next, conn) == -1)
+    return -1;
+
+  if (f->filter.prepare &&
+      f->filter.prepare (&next_ops, &nxdata, handle) == -1)
+    return -1;
+
+  return 0;
 }
 
 static int
@@ -382,10 +389,14 @@ filter_finalize (struct backend *b, struct connection *conn)
 
   debug ("finalize");
 
-  if (f->filter.finalize)
-    return f->filter.finalize (&next_ops, &nxdata, handle);
-  else
-    return f->backend.next->finalize (f->backend.next, conn);
+  /* Call these in reverse order to .prepare above, starting from the
+   * filter furthest away from the plugin.
+   */
+  if (f->filter.finalize &&
+      f->filter.finalize (&next_ops, &nxdata, handle) == -1)
+    return -1;
+
+  return f->backend.next->finalize (f->backend.next, conn);
 }
 
 static int64_t
