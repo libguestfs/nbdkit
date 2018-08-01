@@ -66,6 +66,8 @@ pid1= pid2= pid3= pid4= pid5a= pid5b=
 cleanup ()
 {
     status=$?
+    trap '' INT QUIT TERM EXIT ERR
+    echo $0: cleanup: exit code $status
 
     test "$pid1" && kill $pid1
     test "$pid2" && kill $pid2
