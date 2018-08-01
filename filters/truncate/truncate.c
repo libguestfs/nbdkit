@@ -230,7 +230,7 @@ truncate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     /* The caller must be writing zeroes, else it's an error. */
     if (!is_zero (buf, count)) {
       nbdkit_error ("truncate: write beyond end of underlying device");
-      *err = EIO;
+      *err = ENOSPC;
       return -1;
     }
   }
