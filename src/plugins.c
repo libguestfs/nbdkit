@@ -69,7 +69,7 @@ plugin_free (struct backend *b)
    */
   lock_unload ();
 
-  debug ("%s: unload", p->filename);
+  debug ("%s: unload", p->name);
   if (p->plugin.unload)
     p->plugin.unload ();
 
@@ -204,8 +204,7 @@ plugin_config (struct backend *b, const char *key, const char *value)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  debug ("%s: config key=%s, value=%s",
-         p->filename, key, value);
+  debug ("%s: config key=%s, value=%s", p->name, key, value);
 
   if (p->plugin.config == NULL) {
     fprintf (stderr, "%s: %s: this plugin does not need command line configuration\n"
@@ -224,7 +223,7 @@ plugin_config_complete (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  debug ("%s: config_complete", p->filename);
+  debug ("%s: config_complete", p->name);
 
   if (!p->plugin.config_complete)
     return;
@@ -242,7 +241,7 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
   assert (connection_get_handle (conn, 0) == NULL);
   assert (p->plugin.open != NULL);
 
-  debug ("%s: open readonly=%d", p->filename, readonly);
+  debug ("%s: open readonly=%d", p->name, readonly);
 
   handle = p->plugin.open (readonly);
   if (!handle)
@@ -745,7 +744,7 @@ plugin_register (size_t index, const char *filename,
   debug ("registered plugin %s (name %s)", p->filename, p->name);
 
   /* Call the on-load callback if it exists. */
-  debug ("%s: load", p->filename);
+  debug ("%s: load", p->name);
   if (p->plugin.load)
     p->plugin.load ();
 
