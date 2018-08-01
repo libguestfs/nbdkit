@@ -444,6 +444,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([nbdkit],
                 [chmod +x,-w nbdkit])
 AC_CONFIG_FILES([Makefile
+                 common/include/Makefile
                  docs/Makefile
                  include/Makefile
                  plugins/Makefile
