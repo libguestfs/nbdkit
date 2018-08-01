@@ -61,6 +61,8 @@ pid="$(cat cache.pid)"
 cleanup ()
 {
     status=$?
+    trap '' INT QUIT TERM EXIT ERR
+    echo $0: cleanup: exit code $status
 
     kill $pid
     rm -f $files
