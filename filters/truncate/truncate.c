@@ -157,9 +157,9 @@ truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (truncate >= 0)
     size = truncate;
   if (round_up > 0)
-    size = (size + round_up - 1) & ~(round_up-1);
+    size = (size + round_up - 1) & ~(round_up - 1);
   if (round_down > 0)
-    size &= ~(round_down-1);
+    size &= ~(round_down - 1);
   ret = size;
 
   pthread_mutex_unlock (&lock);
