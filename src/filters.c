@@ -104,8 +104,8 @@ filter_thread_model (struct backend *b)
   return thread_model;
 }
 
-/* These are actually passing through to the final plugin, hence
- * the function names.
+/* This is actually passing the request through to the final plugin,
+ * hence the function name.
  */
 static int
 plugin_errno_is_preserved (struct backend *b)
@@ -120,7 +120,7 @@ plugin_name (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
-  return f->backend.next->name (f->backend.next);
+  return f->backend.next->plugin_name (f->backend.next);
 }
 
 static const char *
