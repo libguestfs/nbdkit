@@ -229,6 +229,7 @@ connection_worker (void *data)
 static int
 _handle_single_connection (int sockin, int sockout)
 {
+  const char *plugin_name;
   int ret = -1, r;
   struct connection *conn;
   int nworkers = threads ? threads : DEFAULT_PARALLEL_REQUESTS;
@@ -247,7 +248,14 @@ _handle_single_connection (int sockin, int sockout)
   if (r == -1)
     goto done;
 
-  threadlocal_set_name (backend->plugin_name (backend));
+  /* NB: because of an asynchronous exit backend can be set to NULL at
+   * just about any time.
+   */
+  if (backend)
+    plugin_name = backend->plugin_name (backend);
+  else
+    plugin_name = "(unknown)";
+  threadlocal_set_name (plugin_name);
 
   /* Prepare (for filters), called just after open. */
   lock_request (conn);
@@ -288,8 +296,7 @@ _handle_single_connection (int sockin, int sockout)
         set_status (conn, -1);
         goto wait;
       }
-      if (asprintf (&worker->name,
-                    "%s.%d", backend->plugin_name (backend), nworkers) < 0) {
+      if (asprintf (&worker->name, "%s.%d", plugin_name, nworkers) < 0) {
         perror ("asprintf");
         set_status (conn, -1);
         free (worker);
