@@ -32,6 +32,7 @@
 # SUCH DAMAGE.
 
 set -e
+set -x
 
 files="fua.img
        fua1.log fua1.sock fua1.pid
