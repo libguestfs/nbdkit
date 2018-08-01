@@ -64,6 +64,8 @@ pid="$(cat log.pid)"
 cleanup ()
 {
     status=$?
+    trap '' INT QUIT TERM EXIT ERR
+    echo $0: cleanup: exit code $status
 
     kill $pid
     # For easier debugging, dump the final log file before removing it.

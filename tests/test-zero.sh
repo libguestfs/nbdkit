@@ -42,7 +42,18 @@ fi
 
 files="test-zero.out"
 rm -f $files
-trap "rm $files" INT QUIT TERM EXIT ERR
+
+cleanup ()
+{
+    status=$?
+    trap '' INT QUIT TERM EXIT ERR
+    echo $0: cleanup: exit code $status
+
+    rm $files
+
+    exit $status
+}
+trap cleanup INT QUIT TERM EXIT ERR
 
 nbdkit -U - zero --run 'qemu-img convert $nbd test-zero.out'
 
