@@ -80,13 +80,6 @@ struct fixed_new_option_reply {
 
 #define NBD_REP_MAGIC UINT64_C(0x3e889045565a9)
 
-/* New-style handshake server reply. */
-struct new_handshake_finish {
-  uint64_t exportsize;
-  uint16_t eflags;            /* per-export flags */
-  char zeroes[124];           /* must be sent as zero bytes */
-} __attribute__((packed));
-
 /* Global flags. */
 #define NBD_FLAG_FIXED_NEWSTYLE 1
 #define NBD_FLAG_NO_ZEROES      2
@@ -105,14 +98,34 @@ struct new_handshake_finish {
 #define NBD_OPT_ABORT        2
 #define NBD_OPT_LIST         3
 #define NBD_OPT_STARTTLS     5
+#define NBD_OPT_GO           7
 
 #define NBD_REP_ACK          1
 #define NBD_REP_SERVER       2
+#define NBD_REP_INFO         3
 #define NBD_REP_ERR_UNSUP    0x80000001
 #define NBD_REP_ERR_POLICY   0x80000002
 #define NBD_REP_ERR_INVALID  0x80000003
 #define NBD_REP_ERR_PLATFORM 0x80000004
 #define NBD_REP_ERR_TLS_REQD 0x80000005
+
+#define NBD_INFO_EXPORT      0
+
+/* NBD_INFO_EXPORT reply (follows fixed_new_option_reply). */
+struct fixed_new_option_reply_info_export {
+  uint16_t info;                /* NBD_INFO_EXPORT */
+  uint64_t exportsize;          /* size of export */
+  uint16_t eflags;              /* per-export flags */
+} __attribute__((packed));
+
+/* New-style handshake server reply when using NBD_OPT_EXPORT_NAME.
+ * Modern clients use NBD_OPT_GO instead of this.
+ */
+struct new_handshake_finish {
+  uint64_t exportsize;
+  uint16_t eflags;            /* per-export flags */
+  char zeroes[124];           /* must be sent as zero bytes */
+} __attribute__((packed));
 
 /* Request (client -> server). */
 struct request {

@@ -75,7 +75,9 @@ struct connection {
   void **handles;
   size_t nr_handles;
 
+  uint32_t cflags;
   uint64_t exportsize;
+  uint16_t eflags;
   int readonly;
   int can_flush;
   int is_rotational;
@@ -573,6 +575,59 @@ send_newstyle_option_reply_exportname (struct connection *conn,
 }
 
 static int
+send_newstyle_option_reply_info_export (struct connection *conn,
+                                        uint32_t option, uint32_t reply,
+                                        uint16_t info)
+{
+  struct fixed_new_option_reply fixed_new_option_reply;
+  struct fixed_new_option_reply_info_export export;
+
+  fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
+  fixed_new_option_reply.option = htobe32 (option);
+  fixed_new_option_reply.reply = htobe32 (reply);
+  fixed_new_option_reply.replylen = htobe32 (sizeof export);
+  export.info = htobe16 (info);
+  export.exportsize = htobe64 (conn->exportsize);
+  export.eflags = htobe16 (conn->eflags);
+
+  if (conn->send (conn,
+                  &fixed_new_option_reply,
+                  sizeof fixed_new_option_reply) == -1 ||
+      conn->send (conn, &export, sizeof export) == -1) {
+    nbdkit_error ("write: %m");
+    return -1;
+  }
+
+  return 0;
+}
+
+/* Sub-function of _negotiate_handshake_newstyle_options below.  It
+ * must be called on all non-error paths out of the options for-loop
+ * in that function.
+ */
+static int
+finish_newstyle_options (struct connection *conn)
+{
+  int64_t r;
+
+  r = backend->get_size (backend, conn);
+  if (r == -1)
+    return -1;
+  if (r < 0) {
+    nbdkit_error (".get_size function returned invalid value "
+                  "(%" PRIi64 ")", r);
+    return -1;
+  }
+  conn->exportsize = (uint64_t) r;
+
+  if (compute_eflags (conn, &conn->eflags) < 0)
+    return -1;
+
+  debug ("newstyle negotiation: flags: export 0x%x", conn->eflags);
+  return 0;
+}
+
+static int
 _negotiate_handshake_newstyle_options (struct connection *conn)
 {
   struct new_option new_option;
@@ -581,6 +636,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
   uint32_t option;
   uint32_t optlen;
   char data[MAX_OPTION_LENGTH+1];
+  struct new_handshake_finish handshake_finish;
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
     if (conn->recv (conn, &new_option, sizeof new_option) == -1) {
@@ -625,8 +681,26 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       }
       /* Apart from printing it, ignore the export name. */
       data[optlen] = '\0';
-      debug ("newstyle negotiation: client requested export '%s' (ignored)",
+      debug ("newstyle negotiation: NBD_OPT_EXPORT_NAME: "
+             "client requested export '%s' (ignored)",
              data);
+
+      /* We have to finish the handshake by sending handshake_finish. */
+      if (finish_newstyle_options (conn) == -1)
+        return -1;
+
+      memset (&handshake_finish, 0, sizeof handshake_finish);
+      handshake_finish.exportsize = htobe64 (conn->exportsize);
+      handshake_finish.eflags = htobe16 (conn->eflags);
+
+      if (conn->send (conn,
+                      &handshake_finish,
+                      (conn->cflags & NBD_FLAG_NO_ZEROES)
+                      ? offsetof (struct new_handshake_finish, zeroes)
+                      : sizeof handshake_finish) == -1) {
+        nbdkit_error ("write: %m");
+        return -1;
+      }
       break;
 
     case NBD_OPT_ABORT:
@@ -701,6 +775,102 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       }
       break;
 
+    case NBD_OPT_GO:
+      if (conn->recv (conn, data, optlen) == -1) {
+        nbdkit_error ("read: %m");
+        return -1;
+      }
+
+      if (optlen < 6) { /* 32 bit export length + 16 bit nr info */
+        debug ("newstyle negotiation: NBD_OPT_GO option length < 6");
+
+        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+            == -1)
+          return -1;
+        continue;
+      }
+
+      {
+        uint32_t exportnamelen;
+        uint16_t nrinfos;
+        uint16_t info;
+        size_t i;
+        CLEANUP_FREE char *requested_exportname = NULL;
+
+        /* Validate the name length and number of INFO requests. */
+        memcpy (&exportnamelen, &data[0], 4);
+        exportnamelen = be32toh (exportnamelen);
+        if (exportnamelen > optlen-6 /* NB optlen >= 6, see above */) {
+          debug ("newstyle negotiation: NBD_OPT_GO: export name too long");
+          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+              == -1)
+            return -1;
+          continue;
+        }
+        memcpy (&nrinfos, &data[exportnamelen+4], 2);
+        nrinfos = be16toh (nrinfos);
+        if (optlen != 4 + exportnamelen + 2 + 2*nrinfos) {
+          debug ("newstyle negotiation: NBD_OPT_GO: "
+                 "number of information requests incorrect");
+          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+              == -1)
+            return -1;
+          continue;
+        }
+
+        /* As with NBD_OPT_EXPORT_NAME we print the export name and then
+         * ignore it.
+         */
+        requested_exportname = malloc (exportnamelen+1);
+        if (requested_exportname == NULL) {
+          nbdkit_error ("malloc: %m");
+          return -1;
+        }
+        memcpy (requested_exportname, &data[4], exportnamelen);
+        requested_exportname[exportnamelen] = '\0';
+        debug ("newstyle negotiation: NBD_OPT_GO: "
+               "client requested export '%s' (ignored)",
+               requested_exportname);
+
+        /* The spec is confusing, but it is required that we send back
+         * NBD_INFO_EXPORT, even if the client did not request it!
+         * qemu client in particular does not request this, but will
+         * fail if we don't send it.
+         */
+        if (finish_newstyle_options (conn) == -1)
+          return -1;
+
+        if (send_newstyle_option_reply_info_export (conn, option,
+                                                    NBD_REP_INFO,
+                                                    NBD_INFO_EXPORT) == -1)
+          return -1;
+
+        /* For now we ignore all other info requests (but we must
+         * ignore NBD_INFO_EXPORT if it was requested, because we
+         * replied already above).  Therefore this loop doesn't do
+         * much at the moment.
+         */
+        for (i = 0; i < nrinfos; ++i) {
+          memcpy (&info, &data[4 + exportnamelen + 2 + i*2], 2);
+          info = be16toh (info);
+          switch (info) {
+          case NBD_INFO_EXPORT: /* ignore - reply sent above */ break;
+          default:
+            debug ("newstyle negotiation: NBD_OPT_GO: "
+                   "ignoring NBD_INFO_* request %u", (unsigned) info);
+            break;
+          }
+        }
+      }
+
+      /* Unlike NBD_OPT_EXPORT_NAME, NBD_OPT_GO sends back an ACK
+       * or ERROR packet.
+       */
+      if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+        return -1;
+
+      break;
+
     default:
       /* Unknown option. */
       if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
@@ -712,10 +882,10 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
     }
 
     /* Note, since it's not very clear from the protocol doc, that the
-     * client must send NBD_OPT_EXPORT_NAME last, and that ends option
-     * negotiation.
+     * client must send NBD_OPT_EXPORT_NAME or NBD_OPT_GO last, and
+     * that ends option negotiation.
      */
-    if (option == NBD_OPT_EXPORT_NAME)
+    if (option == NBD_OPT_EXPORT_NAME || option == NBD_OPT_GO)
       break;
   }
 
@@ -741,11 +911,6 @@ _negotiate_handshake_newstyle (struct connection *conn)
 {
   struct new_handshake handshake;
   uint16_t gflags;
-  uint32_t cflags;
-  struct new_handshake_finish handshake_finish;
-  int64_t r;
-  uint64_t exportsize;
-  uint16_t eflags;
 
   gflags = NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES;
 
@@ -761,51 +926,21 @@ _negotiate_handshake_newstyle (struct connection *conn)
   }
 
   /* Client now sends us its 32 bit flags word ... */
-  if (conn->recv (conn, &cflags, sizeof cflags) == -1) {
+  if (conn->recv (conn, &conn->cflags, sizeof conn->cflags) == -1) {
     nbdkit_error ("read: %m");
     return -1;
   }
-  cflags = be32toh (cflags);
+  conn->cflags = be32toh (conn->cflags);
   /* ... which we check for accuracy. */
-  debug ("newstyle negotiation: client flags: 0x%x", cflags);
-  if (cflags & ~gflags) {
-    nbdkit_error ("client requested unknown flags 0x%x", cflags);
+  debug ("newstyle negotiation: client flags: 0x%x", conn->cflags);
+  if (conn->cflags & ~gflags) {
+    nbdkit_error ("client requested unknown flags 0x%x", conn->cflags);
     return -1;
   }
 
   /* Receive newstyle options. */
   if (_negotiate_handshake_newstyle_options (conn) == -1)
     return -1;
-
-  /* Finish the newstyle handshake. */
-  r = backend->get_size (backend, conn);
-  if (r == -1)
-    return -1;
-  if (r < 0) {
-    nbdkit_error (".get_size function returned invalid value "
-                  "(%" PRIi64 ")", r);
-    return -1;
-  }
-  exportsize = (uint64_t) r;
-  conn->exportsize = exportsize;
-
-  if (compute_eflags (conn, &eflags) < 0)
-    return -1;
-
-  debug ("newstyle negotiation: flags: export 0x%x", eflags);
-
-  memset (&handshake_finish, 0, sizeof handshake_finish);
-  handshake_finish.exportsize = htobe64 (exportsize);
-  handshake_finish.eflags = htobe16 (eflags);
-
-  if (conn->send (conn,
-                  &handshake_finish,
-                  (cflags & NBD_FLAG_NO_ZEROES)
-                  ? offsetof (struct new_handshake_finish, zeroes)
-                  : sizeof handshake_finish) == -1) {
-    nbdkit_error ("write: %m");
-    return -1;
-  }
 
   return 0;
 }
