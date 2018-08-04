@@ -36,13 +36,18 @@
 
 #include <stdint.h>
 
+/* Note that all NBD fields are sent on the wire in network byte
+ * order, so we must use beXXtoh or htobeXX when reading or writing
+ * these structures.
+ */
+
 /* Old-style handshake. */
 struct old_handshake {
   char nbdmagic[8];           /* "NBDMAGIC" */
-  uint64_t version;           /* OLD_VERSION, in network byte order */
-  uint64_t exportsize;        /* in network byte order */
-  uint16_t gflags;            /* global flags, in network byte order */
-  uint16_t eflags;            /* per-export flags, in network byte order */
+  uint64_t version;           /* OLD_VERSION */
+  uint64_t exportsize;
+  uint16_t gflags;            /* global flags */
+  uint16_t eflags;            /* per-export flags */
   char zeroes[124];           /* must be sent as zero bytes */
 } __attribute__((packed));
 
@@ -51,15 +56,15 @@ struct old_handshake {
 /* New-style handshake. */
 struct new_handshake {
   char nbdmagic[8];           /* "NBDMAGIC" */
-  uint64_t version;           /* NEW_VERSION, in network byte order */
-  uint16_t gflags;            /* global flags, in network byte order */
+  uint64_t version;           /* NEW_VERSION */
+  uint16_t gflags;            /* global flags */
 } __attribute__((packed));
 
 #define NEW_VERSION UINT64_C(0x49484156454F5054)
 
 /* New-style handshake option (sent by the client to us). */
 struct new_option {
-  uint64_t version;           /* NEW_VERSION, in network byte order */
+  uint64_t version;           /* NEW_VERSION */
   uint32_t option;            /* NBD_OPT_* */
   uint32_t optlen;            /* option data length */
   /* option data follows */
@@ -67,7 +72,7 @@ struct new_option {
 
 /* Fixed newstyle handshake reply message. */
 struct fixed_new_option_reply {
-  uint64_t magic;             /* NBD_REP_MAGIC, network byte order */
+  uint64_t magic;             /* NBD_REP_MAGIC */
   uint32_t option;            /* option we are replying to */
   uint32_t reply;             /* NBD_REP_* */
   uint32_t replylen;
@@ -77,8 +82,8 @@ struct fixed_new_option_reply {
 
 /* New-style handshake server reply. */
 struct new_handshake_finish {
-  uint64_t exportsize;        /* in network byte order */
-  uint16_t eflags;            /* per-export flags, in network byte order */
+  uint64_t exportsize;
+  uint16_t eflags;            /* per-export flags */
   char zeroes[124];           /* must be sent as zero bytes */
 } __attribute__((packed));
 
