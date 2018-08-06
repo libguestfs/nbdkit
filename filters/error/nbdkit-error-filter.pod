@@ -1,0 +1,136 @@
+=head1 NAME
+
+nbdkit-error-filter - inject errors for testing clients
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=error PLUGIN
+     [error=EPERM|EIO|ENOMEM|EINVAL|ENOSPC|ESHUTDOWN]
+     [error-rate=10%|0.1]
+     [error-file=/tmp/inject]
+     [error-pread=...] [error-pread-rate=...] [error-pread-file=...]
+     [error-pwrite=...] [error-pwrite-rate=...] [error-pwrite-file=...]
+     [error-trim=...] [error-trim-rate=...] [error-trim-file=...]
+     [error-zero=...] [error-zero-rate=...] [error-zero-file=...]
+
+=head1 DESCRIPTION
+
+C<nbdkit-error-filter> is an nbdkit filter that injects random errors
+into replies from the server.  This is used for testing that NBD
+clients can handle errors.
+
+All parameters are optional, but you should usually specify one of the
+C<error-rate> or C<error-*-rate> parameters,
+B<otherwise this filter will do nothing>.
+
+=head1 EXAMPLES
+
+Inject a low rate of errors randomly into the connection:
+
+ nbdkit --filter=error file file=disk.img error-rate=1%
+
+Reading and trimming requests will be successful, but all
+writes and zeroing will return "No space left on device":
+
+ nbdkit --filter=error file file=disk.img \
+                            error=ENOSPC \
+                            error-pwrite-rate=100% \
+                            error-zero-rate=100%
+
+To make all connections fail hard 60 seconds after the server is
+started, use:
+
+ rm -f /tmp/inject
+ nbdkit --filter=error file file=disk.img \
+                            error-rate=100% \
+                            error-file=/tmp/inject
+ sleep 60; touch /tmp/inject
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<error=EPERM|EIO|ENOMEM|EINVAL|ENOSPC|ESHUTDOWN>
+
+When a random error is injected, you can select which one from the
+range of possible NBD errors (the NBD protocol only supports a limited
+range of error codes).
+
+This parameter is optional and the default is C<EIO>
+("Input/output error").
+
+=item B<error-rate=N%|0..1>
+
+The rate of injected errors per NBD request.  This can be expressed as
+either a percentage between C<0%> and C<100%> or as a probability
+between C<0> and C<1>.  If C<0%> or C<0> is used then no errors are
+ever injected, and if C<100%> or C<1> is used then all requests return
+errors.
+
+This parameter is optional and the default is C<0%>.
+B<Unless you set this, the filter will do nothing.>
+
+=item B<error-file=FILENAME>
+
+Errors will only be injected when F<FILENAME> exists.  (Note you must
+also specify the C<error-rate>).
+
+You can use this for fine-grained control over when to inject errors,
+for example if you want to trigger an error at an exact moment during
+a test, arrange for this file to be created at the appropriate time.
+Or conversely to test error recovery in a client, create the file
+initially, and then delete it to check the client can recover.
+
+This parameter is optional.
+
+=item B<error-pread>, B<error-pread-rate>, B<error-pread-file>.
+
+Same as C<error>, C<error-rate> and C<error-file> but only apply the
+settings to NBD pread requests.
+
+=item B<error-pwrite>, B<error-pwrite-rate>, B<error-pwrite-file>.
+
+Same as C<error>, C<error-rate> and C<error-file> but only apply the
+settings to NBD pwrite requests.
+
+=item B<error-trim>, B<error-trim-rate>, B<error-trim-file>.
+
+Same as C<error>, C<error-rate> and C<error-file> but only apply the
+settings to NBD trim requests.
+
+=item B<error-zero>, B<error-zero-rate>, B<error-zero-file>.
+
+Same as C<error>, C<error-rate> and C<error-file> but only apply the
+settings to NBD zero requests.
+
+=back
+
+=head1 NOTES
+
+=head2 Peculiar debug output
+
+If you are looking at the debugging output (using C<nbdkit -f -v>)
+then you may see peculiar "errors" appearing when using this filter,
+for example:
+
+ nbdkit: file.9: debug: error: pread count=1024 offset=0 flags=0x0
+
+In fact these are not errors, nbdkit core is simply printing the name
+of the filter which happens to be C<"error">.  When this filter
+injects an error you will see something like:
+
+ nbdkit: file.4: error: injecting ENOSPC error into pwrite
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-filter(3)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

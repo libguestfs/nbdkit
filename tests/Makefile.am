@@ -541,6 +541,13 @@ test_delay_SOURCES = test-delay.c test.h
 test_delay_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_delay_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
+# error filter test.
+LIBGUESTFS_TESTS += test-error
+
+test_error_SOURCES = test-error.c test.h
+test_error_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_error_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
 # fua filter test.
 TESTS += test-fua.sh
 
