@@ -67,6 +67,7 @@ Makefile.in
 /tests/test-ext2
 /tests/test-file
 /tests/test-gzip
+/tests/test-layers
 /tests/test-lua
 /tests/test-memory
 /tests/test-newstyle

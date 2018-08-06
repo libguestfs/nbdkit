@@ -56,6 +56,7 @@ EXTRA_DIST = \
 	test-help.sh \
 	test-help-plugin.sh \
 	test-ip.sh \
+	test-layers.sh \
 	test-log.sh \
 	test.lua \
 	test-nozero.sh \
@@ -520,6 +521,70 @@ endif HAVE_LUA
 
 #----------------------------------------------------------------------
 # Tests of filters.
+
+# Generic test of filter layers.
+check_PROGRAMS += test-layers
+TESTS += test-layers.sh test-layers
+
+test_layers_SOURCES = \
+	test-layers.c \
+	$(top_srcdir)/src/protocol.h
+test_layers_CPPFLAGS = \
+	-I$(top_srcdir)/src
+test_layers_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	-pthread
+test_layers_LDFLAGS = \
+	-pthread
+test_layers_DEPENDENCIES = \
+	test-layers-plugin.la \
+	test-layers-filter1.la \
+	test-layers-filter2.la \
+	test-layers-filter3.la
+
+# check_LTLIBRARIES won't build a shared library (see automake manual).
+# So we have to do this and add a dependency.
+noinst_LTLIBRARIES += \
+	test-layers-plugin.la \
+	test-layers-filter1.la \
+	test-layers-filter2.la \
+	test-layers-filter3.la
+
+test_layers_plugin_la_SOURCES = \
+	test-layers-plugin.c \
+	$(top_srcdir)/include/nbdkit-plugin.h
+test_layers_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_layers_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere
+
+test_layers_filter1_la_SOURCES = \
+	test-layers-filter.c \
+	$(top_srcdir)/include/nbdkit-filter.h
+test_layers_filter1_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter1"'
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_layers_filter1_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere
+
+test_layers_filter2_la_SOURCES = \
+	test-layers-filter.c \
+	$(top_srcdir)/include/nbdkit-filter.h
+test_layers_filter2_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter2"'
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_layers_filter2_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere
+
+test_layers_filter3_la_SOURCES = \
+	test-layers-filter.c \
+	$(top_srcdir)/include/nbdkit-filter.h
+test_layers_filter3_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter3"'
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_layers_filter3_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere
 
 # blocksize filter test.
 TESTS += test-blocksize.sh
