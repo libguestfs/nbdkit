@@ -31,12 +31,30 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+set -e
+set -x
+
+# Python language leaks like a sieve as well as a lot of worrying
+# "Conditional jump or move depends on uninitialised value(s)".
+if test -n "$NBDKIT_VALGRIND"; then
+    echo "$0: skipping Python test under valgrind."
+    exit 77
+fi
+
 output=test-python-exception.out
 
 rm -f $output
 
-nbdkit -f -v python ./python-exception.py > $output 2>&1 ||:
+nbdkit -f -v python ./python-exception.py test=simple > $output 2>&1 ||:
+cat $output
 
+grep 'this is the test string' $output
+
+nbdkit -f -v python ./python-exception.py test=traceback > $output 2>&1 ||:
+cat $output
+
+grep 'raise_error1' $output
+grep 'raise_error2' $output
 grep 'this is the test string' $output
 
 rm $output
