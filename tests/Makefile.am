@@ -553,6 +553,7 @@ noinst_LTLIBRARIES += \
 test_layers_plugin_la_SOURCES = \
 	test-layers-plugin.c \
 	$(top_srcdir)/include/nbdkit-plugin.h
+test_layers_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
 test_layers_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -562,6 +563,7 @@ test_layers_plugin_la_LDFLAGS = \
 test_layers_filter1_la_SOURCES = \
 	test-layers-filter.c \
 	$(top_srcdir)/include/nbdkit-filter.h
+test_layers_filter1_la_CPPFLAGS = -I$(top_srcdir)/include
 test_layers_filter1_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter1"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -571,6 +573,7 @@ test_layers_filter1_la_LDFLAGS = \
 test_layers_filter2_la_SOURCES = \
 	test-layers-filter.c \
 	$(top_srcdir)/include/nbdkit-filter.h
+test_layers_filter2_la_CPPFLAGS = -I$(top_srcdir)/include
 test_layers_filter2_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter2"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -580,6 +583,7 @@ test_layers_filter2_la_LDFLAGS = \
 test_layers_filter3_la_SOURCES = \
 	test-layers-filter.c \
 	$(top_srcdir)/include/nbdkit-filter.h
+test_layers_filter3_la_CPPFLAGS = -I$(top_srcdir)/include
 test_layers_filter3_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter3"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
