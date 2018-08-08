@@ -32,10 +32,28 @@
 
 # A dummy python plugin which just raises an exception in config_complete.
 
+test = "simple"
 
-def config_complete():
+def config(k, v):
+    global test
+    if k == "test":
+        test = v
+    else:
+        raise RuntimeError("unknown config parameter")
+
+def raise_error2():
     raise RuntimeError("this is the test string")
 
+def raise_error1():
+    raise_error2()
+
+def config_complete():
+    if test == "simple":
+        raise RuntimeError("this is the test string")
+    elif test == "traceback":
+        raise_error1()
+    else:
+        raise RuntimeError("unknown test")
 
 def open(readonly):
     return 1
