@@ -1,0 +1,96 @@
+=head1 NAME
+
+nbdkit-probing - How to probe for nbdkit configuration and plugins.
+
+=head1 SYNOPSIS
+
+ nbdkit --dump-config
+
+ nbdkit PLUGIN --dump-plugin
+
+=head1 DESCRIPTION
+
+You can query information about nbdkit and available plugins from the
+nbdkit binary.
+
+=head2 Query basic configuration
+
+ nbdkit --dump-config
+
+lists information about how nbdkit was configured.  The most important
+fields in the output are the name of the directory where nbdkit looks
+for plugins and the version of nbdkit, eg:
+
+ plugindir=/usr/lib64/nbdkit/plugins
+ version=1.2.3
+
+=head2 Query information about a particular plugin
+
+ nbdkit pluginname --dump-plugin
+
+(where I<pluginname> is the name or full path of a plugin) will dump
+information about that plugin, eg:
+
+ $ nbdkit file --dump-plugin
+ path=/usr/lib64/nbdkit/plugins/nbdkit-file-plugin.so
+ name=file
+ version=1.2.3
+ api_version=1
+ struct_size=176
+ thread_model=serialize_requests
+ [etc]
+
+Plugins which ship with nbdkit usually have the same version as the
+corresponding nbdkit binary.  The nbdkit binary will always be able to
+utilize plugins compiled against an older version of the header;
+however, newer plugins may not be fully supported by an older nbdkit
+binary (for example, a plugin compiled with C<NBDKIT_API_VERSION> of 2
+fails to load with an older nbdkit that only knows
+C<NBDKIT_API_VERSION> 1).
+
+=head2 Detect if a plugin is installed
+
+To find out if a plugin is installed (and working) in the plugin
+directory, use I<--dump-plugin> as above:
+
+ $ nbdkit foo --dump-plugin
+ nbdkit: /usr/lib64/nbdkit/plugins/nbdkit-foo-plugin.so: /usr/lib64/nbdkit/plugins/nbdkit-foo-plugin.so: cannot open shared object file: No such file or directory
+
+Note it is better to test for the existence of plugins this way rather
+than just seeing if the F<.so> file exists, because nbdkit will load
+the plugin and check that all its dependencies can be satisfied, and
+also that plugin registration works.
+
+=head2 List all plugins in the plugin directory
+
+You could simply get the plugin directory (from I<--dump-config>) and
+list all files in this directory called F<nbdkit-*-plugin.so>.
+
+However a better test is to run I<--dump-plugin> (see above) on each
+one to check that it is working and all of its dependencies are
+installed.  A complete shell script which does this is:
+
+ #!/bin/sh -
+ plugindir=`nbdkit --dump-config | grep ^plugindir= | sed 's/[^=]*=//'`
+ for f in $plugindir/nbdkit-*-plugin.so; do
+     if nbdkit "$f" --dump-plugin >/dev/null 2>&1; then
+         b=`echo "$f" | sed 's,.*/nbdkit-\(.*\)-plugin.so$,\1,'`
+         echo "$b ($f)"
+     fi
+ done
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+Pino Toscano
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2018 Red Hat Inc.

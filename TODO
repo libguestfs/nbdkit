@@ -45,6 +45,9 @@ General ideas for improvements
 * Test that zero-length read/write requests behave correctly
   (NBD protocol says they are unspecified).
 
+* Test and document how to run nbdkit from inetd and xinetd in
+  nbdkit-service(1).
+
 Suggestions for plugins
 -----------------------
 

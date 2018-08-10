@@ -1,0 +1,83 @@
+=head1 NAME
+
+nbdkit-service - Run nbdkit as a service, systemd socket
+activation.
+
+=head1 DESCRIPTION
+
+Most people start nbdkit from the command line or run it from another
+program (see L<nbdkit-captive(1)>.  It is also possible to run nbdkit
+as a standalone service, which is what this page describes.
+
+=head1 SOCKET ACTIVATION
+
+nbdkit supports socket activation (sometimes called systemd socket
+activation).  This is a simple protocol where instead of nbdkit itself
+opening the listening socket(s), the parent process (typically
+systemd) passes in pre-opened file descriptors.  Socket activation
+lets you serve infrequent NBD requests using a superserver without
+needing nbdkit to be running the whole time.
+
+Socket activation is triggered when both the C<LISTEN_FDS> and
+C<LISTEN_PID> environment variables are set.  In this mode using
+I<-i>, I<-p>, I<--run>, I<-s> or I<-U> flags on the command line is
+illegal and will cause an error.  Also in this mode nbdkit does not
+fork into the background (ie. I<-f> is implied).
+
+=head2 Using socket activation with systemd
+
+To use nbdkit with socket activation from systemd, create a unit file
+ending in C<.socket> (eg. C</etc/systemd/system/nbdkit.socket>)
+containing:
+
+ [Unit]
+ Description=NBDKit Network Block Device server
+ 
+ [Socket]
+ ListenStream=10809
+ 
+ [Install]
+ WantedBy=sockets.target
+
+There are various formats for the C<ListenStream> key.  See
+L<systemd.socket(5)> for more information.
+
+Also create a service unit (eg. C</etc/systemd/system/nbdkit.service>)
+containing:
+
+ [Service]
+ ExecStart=/usr/sbin/nbdkit file file=/path/to/serve
+
+For more information on systemd and socket activation, see
+L<http://0pointer.de/blog/projects/socket-activation.html>
+
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item C<LISTEN_FDS>
+
+=item C<LISTEN_PID>
+
+If present in the environment when nbdkit starts up, these trigger
+L</SOCKET ACTIVATION>.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<systemd(1)>,
+L<systemd.socket(5)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+Pino Toscano
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2018 Red Hat Inc.

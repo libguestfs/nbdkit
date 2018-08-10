@@ -35,6 +35,10 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = \
 	make-links.sh \
 	nbdkit.pod \
+	nbdkit-captive.pod \
+	nbdkit-probing.pod \
+	nbdkit-service.pod \
+	nbdkit-tls.pod \
 	nbdkit-plugin.pod \
 	nbdkit-filter.pod
 
@@ -42,6 +46,10 @@ if HAVE_POD
 
 man_MANS = \
 	nbdkit.1 \
+	nbdkit-captive.1 \
+	nbdkit-probing.1 \
+	nbdkit-service.1 \
+	nbdkit-tls.1 \
 	nbdkit-plugin.3 \
 	nbdkit-filter.3
 CLEANFILES += $(man_MANS)
@@ -51,6 +59,26 @@ nbdkit.1: nbdkit.pod plugin-links.pod filter-links.pod
 	    --html $(top_builddir)/html/$@.html \
 	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
 	    --insert filter-links.pod:__FILTER_LINKS__ \
+	    $<
+
+nbdkit-captive.1: nbdkit-captive.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-probing.1: nbdkit-probing.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-service.1: nbdkit-service.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-tls.1: nbdkit-tls.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
 	    $<
 
 nbdkit-plugin.3: nbdkit-plugin.pod plugin-links.pod

@@ -41,7 +41,7 @@ However this will work:
                               Unix domain socket (-U -)
 
 For use of the I<--run> and I<-U -> options, see
-L<nbdkit(1)/CAPTIVE NBDKIT>.
+L<nbdkit-captive(1)>.
 
 =head1 PARAMETERS
 

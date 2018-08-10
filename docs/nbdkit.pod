@@ -104,19 +104,20 @@ Display brief command line usage information and exit.
 =item B<--dump-config>
 
 Dump out the compile-time configuration values and exit.
-See L</PROBING CONFIGURATION AND PLUGINS> below.
+See L<nbdkit-probing(1)>.
 
 =item B<--dump-plugin>
 
 Dump out information about the plugin and exit.
-See L</PROBING CONFIGURATION AND PLUGINS> below.
+See L<nbdkit-probing(1)>.
 
 =item B<--exit-with-parent>
 
 If the parent process exits, we exit.  This can be used to avoid
 complicated cleanup or orphaned nbdkit processes.  There are some
-important caveats with this, see L</EXIT WITH PARENT> below.  An
-alternative to this is L</CAPTIVE NBDKIT> described below.
+important caveats with this, see L<nbdkit-captive(1)/EXIT WITH PARENT>.
+
+An alternative to this is L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
 
 This option implies I<--foreground>.
 
@@ -230,7 +231,7 @@ qemu as a client then it also supports snapshots.
 =item B<--run> CMD
 
 Run nbdkit as a captive subprocess of C<CMD>.  When C<CMD> exits,
-nbdkit is killed.  See L</CAPTIVE NBDKIT> below.
+nbdkit is killed.  See L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
 
 This option implies I<--foreground>.
 
@@ -246,8 +247,8 @@ stdin closes, the server exits.
 You can use this option to run nbdkit from inetd or similar
 superservers; or just for testing; or if you want to run nbdkit in a
 non-conventional way.  Note that if you want to run nbdkit from
-systemd, then it may be better to use L</SOCKET ACTIVATION> instead of
-this option.
+systemd, then it may be better to use
+L<nbdkit-service(1)/SOCKET ACTIVATION> instead of this option.
 
 This option implies I<--foreground>.
 
@@ -279,18 +280,19 @@ is not prepared for out-of-order responses), set this to 1.
 =item B<--tls=require>
 
 Disable, enable or require TLS (authentication and encryption
-support).  See L</TLS> below.
+support).  See L<nbdkit-tls(1)>.
 
 =item B<--tls-certificates> /path/to/certificates
 
 Set the path to the TLS certificates directory.  If not specified,
-some built-in paths are checked.  See L</TLS> below for more details.
+some built-in paths are checked.  See L<nbdkit-tls(1)> for more
+details.
 
 =item B<--tls-psk> /path/to/pskfile
 
 Set the path to the pre-shared keys (PSK) file.  If used, this
 overrides certificate authentication.  There is no built-in path.  See
-L</TLS> below for more details.
+L<nbdkit-tls(1)> for more details.
 
 =item B<--tls-verify-peer>
 
@@ -319,7 +321,7 @@ should delete the socket file after use (else if you try to start
 nbdkit up again you will get an C<Address already in use> error).
 
 If the socket name is I<-> then nbdkit generates a randomly named
-private socket.  This is useful with L</CAPTIVE NBDKIT>.
+private socket.  This is useful with L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
 
 =item B<-u> USER
 
@@ -408,146 +410,6 @@ C<nbdkit --dump-config> to find the directory name.
 
 How to write filters is described in L<nbdkit-filter(3)>.
 
-=head1 SOCKET ACTIVATION
-
-nbdkit supports socket activation (sometimes called systemd socket
-activation).  This is a simple protocol where instead of nbdkit itself
-opening the listening socket(s), the parent process (typically
-systemd) passes in pre-opened file descriptors.  Socket activation
-lets you serve infrequent NBD requests using a superserver without
-needing nbdkit to be running the whole time.
-
-Socket activation is triggered when both the C<LISTEN_FDS> and
-C<LISTEN_PID> environment variables are set.  In this mode using
-I<-i>, I<-p>, I<--run>, I<-s> or I<-U> flags on the command line is
-illegal and will cause an error.  Also in this mode nbdkit does not
-fork into the background (ie. I<-f> is implied).
-
-=head2 Using socket activation with systemd
-
-To use nbdkit with socket activation from systemd, create a unit file
-ending in C<.socket> (eg. C</etc/systemd/system/nbdkit.socket>)
-containing:
-
- [Unit]
- Description=NBDKit Network Block Device server
- 
- [Socket]
- ListenStream=10809
- 
- [Install]
- WantedBy=sockets.target
-
-There are various formats for the C<ListenStream> key.  See
-L<systemd.socket(5)> for more information.
-
-Also create a service unit (eg. C</etc/systemd/system/nbdkit.service>)
-containing:
-
- [Service]
- ExecStart=/usr/sbin/nbdkit file file=/path/to/serve
-
-For more information on systemd and socket activation, see
-L<http://0pointer.de/blog/projects/socket-activation.html>
-
-=head1 CAPTIVE NBDKIT
-
-You can run nbdkit as a "captive process", using the I<--run> option.
-This means that nbdkit runs as long as (for example) L<qemu(1)> or
-L<guestfish(1)> is running.  When those exit, nbdkit is killed.
-
-Some examples should make this clear.
-
-To run nbdkit captive under qemu:
-
- nbdkit file file=disk.img --run 'qemu -drive file=$nbd,if=virtio'
-
-On the qemu command line, C<$nbd> is substituted automatically with
-the right NBD path so it can connect to nbdkit.  When qemu exits,
-nbdkit is killed and cleaned up automatically.
-
-Running nbdkit captive under guestfish:
-
- nbdkit file file=disk.img --run 'guestfish --format=raw -a $nbd -i'
-
-When guestfish exits, nbdkit is killed.
-
-The following shell variables are available in the I<--run> argument:
-
-=over 4
-
-=item C<$nbd>
-
-A URL that refers to the nbdkit port or socket.
-
-Note there is some magic here, since qemu and guestfish URLs have a
-different format, so nbdkit tries to guess which you are running.  If
-the magic doesn't work, try using the variables below instead.
-
-=item C<$port>
-
-If E<ne> "", the port number that nbdkit is listening on.
-
-=item C<$unixsocket>
-
-If E<ne> "", the Unix domain socket that nbdkit is listening on.
-
-=back
-
-I<--run> implies I<--foreground>.  It is not possible, and probably
-not desirable, to have nbdkit fork into the background when using
-I<--run>.
-
-Even when running captive, nbdkit still listens on the regular TCP/IP
-port, unless you specify the I<-p>/I<-U> options.  If you want a truly
-private captive nbdkit, then you should create a private random
-Unix socket, like this:
-
- nbdkit -U - plugin [args] --run '...'
-
-=head2 Copying data in and out of plugins with captive nbdkit
-
-Captive nbdkit + L<qemu-img(1)> can be used to copy data into and out
-of nbdkit plugins.  For example L<nbdkit-example1-plugin(1)> contains
-an embedded disk image.  To copy it out:
-
- nbdkit -U - example1 --run 'qemu-img convert $nbd disk.img'
-
-To overwrite a file inside an uncompressed tar file (the file being
-overwritten must be the same size), use L<nbdkit-tar-plugin(1)> like
-this:
-
- nbdkit -U - tar tar=data.tar file=disk.img \
-   --run 'qemu-img convert -n disk.img $nbd'
-
-=head1 EXIT WITH PARENT
-
-The I<--exit-with-parent> option is almost the opposite of
-L</CAPTIVE NBDKIT> described in the previous section.
-
-Running nbdkit with this option, for example from a script:
-
- nbdkit --exit-with-parent plugin ... &
-
-means that nbdkit will exit automatically if the parent program exits
-for any reason.  This can be used to avoid complicated cleanups or
-orphaned nbdkit processes.
-
-I<--exit-with-parent> is incompatible with forking into the background
-(because when we fork into the background we lose track of the parent
-process).  Therefore I<-f> / I<--foreground> is implied.
-
-This is currently implemented using a feature of the Linux kernel, so
-it requires a Linux build of nbdkit and won't work on other operating
-systems (patches welcome to make it work).
-
-If the parent application is multithreaded, then (in the Linux
-implementation) if the parent I<thread> exits, that will cause nbdkit
-to exit.  Thus in multithreaded applications you usually want to run
-C<nbdkit --exit-with-parent> only from the main thread (unless you
-actually want nbdkit to exit with the thread, but that may not work
-reliably if we extend the implementation to other operating systems).
-
 =head1 NEW STYLE VS OLD STYLE PROTOCOL
 
 The NBD protocol comes in two incompatible forms that we call
@@ -592,337 +454,6 @@ document says should be the case (which isn't based in reality), then
 you should always use newstyle when using port 10809, and use oldstyle
 on all other ports.
 
-=head1 TLS
-
-TLS (authentication and encryption, sometimes incorrectly called
-"SSL") is supported if nbdkit was compiled with GnuTLS.  This allows
-the server to verify that the client is allowed access, and to encrypt
-the contents of the protocol in transit over the network.
-
-TLS can be disabled or enabled by specifying either I<--tls=off> or
-I<--tls=on>.  With I<--tls=off>, if a client tries to use TLS to
-connect, it will be rejected by the server (in other words, as if the
-server doesn't support TLS).
-
-I<--tls=on> means that the client may choose to connect either with or
-without TLS.
-
-Because I<--tls=on> is subject to downgrade attacks where a malicious
-proxy pretends not to support TLS in order to force either the client
-or server to communicate in plaintext, you can also specify
-I<--tls=require>, where the server enables TLS B<and> rejects all
-non-TLS connection attempts.
-
-=head2 TLS with X.509 certificates
-
-When nbdkit starts up, it loads TLS certificates from some built-in
-paths, or from the directory specified by the I<--tls-certificates>
-option.
-
-Without I<--tls-certificates>, if nbdkit is started as a non-root user
-(note this does not include use of the I<-u> or I<-g> options), nbdkit
-looks in each of these paths in turn:
-
- $HOME/.pki/nbdkit/
- $HOME/.config/pki/nbdkit/
-
-Without I<--tls-certificates>, if nbdkit is started as root, nbkit
-looks in:
-
- $sysconfdir/pki/nbdkit/
-
-(Use C<nbdkit --dump-config> and look at the
-C<root_tls_certificates_dir> setting to get the actual directory built
-into the binary.)
-
-You can override both directories above by using
-I<--tls-certificates /path/to/certificates>.
-
-In this directory, nbdkit expects to find several files:
-
-=over 4
-
-=item F<ca-cert.pem>
-
-The Certificate Authority certificate.
-
-=item F<server-cert.pem>
-
-The server certificate.
-
-=item F<server-key.pem>
-
-The server private key.
-
-=item F<ca-crl.pem>
-
-(Optional) The certificate revocation list.
-
-=back
-
-=head3 Setting up the Certificate Authority
-
-This step only needs to be done once per organization.  It may be that
-your organization already has a CA.
-
- $ certtool --generate-privkey > ca-key.pem
- $ chmod 0600 ca-key.pem
-
-The F<ca-key.pem> file is the CA private key and is I<extremely>
-sensitive data.  With possession of this key, anyone can create
-certificates pretending to be your organization!
-
-To create the CA certificate file:
-
- $ cat > ca.info <<EOF
- cn = Name of your organization
- ca
- cert_signing_key
- EOF
- $ certtool --generate-self-signed \
-            --load-privkey ca-key.pem \
-            --template ca.info \
-            --outfile ca-cert.pem
-
-=head3 Issuing a server certificate for the nbdkit server
-
-Each nbdkit server (or host) needs a secret key and certificate.
-
- $ certtool --generate-privkey > server-key.pem
- $ chmod 0600 server-key.pem
-
-The server key file is sensitive.  Setting the mode to C<0600> helps
-to prevent other users on the same machine from reading it.
-
-The server DNS name (C<cn> below) must be the fully qualified hostname
-— and the only hostname — that the client connects to.
-
- $ cat > server.info <<EOF
- organization = Name of your organization
- cn = nbd-server.example.com
- tls_www_server
- encryption_key
- signing_key
- EOF
- $ certtool --generate-certificate \
-            --load-ca-certificate ca-cert.pem \
-            --load-ca-privkey ca-key.pem \
-            --load-privkey server-key.pem \
-            --template server.info \
-            --outfile server-cert.pem
-
-=head3 Issuing and checking client certificates
-
-B<Note:>
-You don't need to create client certificates unless you want to check
-and limit which clients can connect to nbdkit.  nbdkit B<does not>
-check client certificates unless you specify the I<--tls-verify-peer>
-option on the command line.
-
-For each client you should generate a private key and a client
-certificate:
-
- $ certtool --generate-privkey > client-key.pem
- $ chmod 0600 client-key.pem
-
-The client key file is sensitive.
-
-The client DNS name (C<cn> below) is the client's name that nbdkit
-sees and checks.
-
- $ cat > client.info <<EOF
- country = US
- state = New York
- locality = New York
- organization = Name of your organization
- cn = client.example.com
- tls_www_client
- encryption_key
- signing_key
- EOF
- $ certtool --generate-certificate \
-            --load-ca-certificate ca-cert.pem \
-            --load-ca-privkey ca-key.pem \
-            --load-privkey client-key.pem \
-            --template client.info \
-            --outfile client-cert.pem
-
-Client certificates do I<not> need to be present anywhere on the
-nbdkit host.  You don't need to copy them into nbdkit's TLS
-certificates directory.  The security comes from the fact that the
-client must present a client certificate signed by the Certificate
-Authority, and nbdkit can check this because it has the F<ca-cert.pem>
-file.
-
-To enable checking of client certificates, specify the
-I<--tls-verify-peer> option on the command line.  Clients which don't
-present a valid certificate (eg. not signed, incorrect signature) are
-denied.  Also denied are clients which present a valid certificate
-signed by another CA.  Also denied are clients with certificates added
-to the certificate revocation list (F<ca-crl.pem>).
-
-=head2 TLS with Pre-Shared Keys (PSK)
-
-As a simpler alternative to TLS certificates, you may used pre-shared
-keys to authenticate clients.
-
-Create a PSK file containing one or more C<username:key> pairs.  It is
-easiest to use L<psktool(1)> for this:
-
- mkdir -m 0700 /tmp/keys
- psktool -u rich -p /tmp/keys/keys.psk
-
-The PSK file contains the hex-encoded random keys in plaintext.  Any
-client which can read this file will be able to connect to the server.
-
-Use the nbdkit I<--tls-psk> option to start the server:
-
- nbdkit --tls=require --tls-psk=/tmp/keys/keys.psk -e / file file=disk.img
-
-This option overrides X.509 certificate authentication.
-
-Clients must supply one of the usernames in the PSK file and the
-corresponding key in order to connect.  An example of connecting using
-L<qemu-img(1)> is:
-
- qemu-img info \
-   --object tls-creds-psk,id=tls0,dir=/tmp/keys,username=rich,endpoint=client \
-   --image-opts \
-   file.driver=nbd,file.host=localhost,file.port=10809,file.tls-creds=tls0,file.export=/
-
-=head2 Default TLS behaviour
-
-If nbdkit was compiled without GnuTLS support, then TLS is disabled
-and TLS connections will be rejected (as if I<--tls=off> was specified
-on the command line).  Also it is impossible to turn on TLS in this
-scenario.  You can tell if nbdkit was compiled without GnuTLS support
-because C<nbdkit --dump-config> will contain C<tls=no>.
-
-If TLS certificates cannot be loaded either from the built-in path or
-from the directory specified by I<--tls-certificates>, then TLS
-defaults to disabled.  Turning TLS on will give a warning
-(I<--tls=on>) or error (I<--tls=require>) about the missing
-certificates.
-
-If TLS certificates can be loaded from the built-in path or from the
-I<--tls-certificates> directory, then TLS will by default be enabled
-(like I<--tls=on>), but it is not required.  Clients can choose
-whether or not to use TLS and whether or not to present certificates.
-
-TLS client certificates are I<not> checked by default unless you
-specify I<--tls-verify-peer>.
-
-If the I<--tls-psk> option is used then TLS is enabled (but I<not>
-required).  To ensure that all clients are authorized you must use
-I<--tls=require>.
-
-Each of these defaults is insecure to some extent (including
-I<--tls=on> which could be subject to a downgrade attack), so if you
-expect TLS then it is best to specify the I<--tls> option that you
-require, and if you want to check client certificates, specify the
-I<--tls-verify-peer> option.
-
-=head2 Choice of TLS algorithms
-
-TLS has a bewildering choice of algorithms that can be used.  To
-enable you to choose a default set of algorithms, there is a configure
-setting C<--with-tls-priority>.  This defaults to C<NORMAL> which, to
-quote the GnuTLS documentation:
-
-=over 4
-
-"C<NORMAL> means all C<secure> ciphersuites.  The 256-bit ciphers are
-included as a fallback only.  The ciphers are sorted by security
-margin."
-
-=back
-
-You could also set the TLS priority so that it can be configured from
-a file at runtime:
-
- ./configure --with-tls-priority=@SYSTEM
-
-means use the policy from F</etc/crypto-policies/config>.
-
- ./configure --with-tls-priority=@NBDKIT,SYSTEM
-
-means use the policy from
-F</etc/crypto-policies/local.d/nbdkit.config> and fall back to
-F</etc/crypto-policies/config> if the first file does not exist.
-
-More information can be found in L<gnutls_priority_init(3)>.
-
-=head1 PROBING CONFIGURATION AND PLUGINS
-
-You can query information about nbdkit and available plugins from the
-nbdkit binary.
-
-=head2 Query basic configuration
-
- nbdkit --dump-config
-
-lists information about how nbdkit was configured.  The most important
-fields in the output are the name of the directory where nbdkit looks
-for plugins and the version of nbdkit, eg:
-
- plugindir=/usr/lib64/nbdkit/plugins
- version=1.2.3
-
-=head2 Query information about a particular plugin
-
- nbdkit pluginname --dump-plugin
-
-(where I<pluginname> is the name or full path of a plugin) will dump
-information about that plugin, eg:
-
- $ nbdkit file --dump-plugin
- path=/usr/lib64/nbdkit/plugins/nbdkit-file-plugin.so
- name=file
- version=1.2.3
- api_version=1
- struct_size=176
- thread_model=serialize_requests
- [etc]
-
-Plugins which ship with nbdkit usually have the same version as the
-corresponding nbdkit binary.  The nbdkit binary will always be able to
-utilize plugins compiled against an older version of the header;
-however, newer plugins may not be fully supported by an older nbdkit
-binary (for example, a plugin compiled with C<NBDKIT_API_VERSION> of 2
-fails to load with an older nbdkit that only knows
-C<NBDKIT_API_VERSION> 1).
-
-=head2 Detect if a plugin is installed
-
-To find out if a plugin is installed (and working) in the plugin
-directory, use I<--dump-plugin> as above:
-
- $ nbdkit foo --dump-plugin
- nbdkit: /usr/lib64/nbdkit/plugins/nbdkit-foo-plugin.so: /usr/lib64/nbdkit/plugins/nbdkit-foo-plugin.so: cannot open shared object file: No such file or directory
-
-Note it is better to test for the existence of plugins this way rather
-than just seeing if the F<.so> file exists, because nbdkit will load
-the plugin and check that all its dependencies can be satisfied, and
-also that plugin registration works.
-
-=head2 List all plugins in the plugin directory
-
-You could simply get the plugin directory (from I<--dump-config>) and
-list all files in this directory called F<nbdkit-*-plugin.so>.
-
-However a better test is to run I<--dump-plugin> (see above) on each
-one to check that it is working and all of its dependencies are
-installed.  A complete shell script which does this is:
-
- #!/bin/sh -
- plugindir=`nbdkit --dump-config | grep ^plugindir= | sed 's/[^=]*=//'`
- for f in $plugindir/nbdkit-*-plugin.so; do
-     if nbdkit "$f" --dump-plugin >/dev/null 2>&1; then
-         b=`echo "$f" | sed 's,.*/nbdkit-\(.*\)-plugin.so$,\1,'`
-         echo "$b ($f)"
-     fi
- done
-
 =head1 SIGNALS
 
 C<nbdkit> responds to the following signals:
@@ -952,11 +483,24 @@ This signal is ignored.
 =item C<LISTEN_PID>
 
 If present in the environment when nbdkit starts up, these trigger
-L</SOCKET ACTIVATION>.
+L<nbdkit-service(1)/SOCKET ACTIVATION>.
 
 =back
 
 =head1 SEE ALSO
+
+=head2 Other topics
+
+L<nbdkit-captive(1)> — Run nbdkit under another process and have it
+reliably cleaned up.
+
+L<nbdkit-probing(1)> — How to probe for nbdkit configuration and plugins.
+
+L<nbdkit-service(1)> — Run nbdkit as a service, systemd socket
+activation.
+
+L<nbdkit-tls(1)> — Authentication and encryption of NBD connections
+(sometimes incorrectly called "SSL").
 
 =head2 Plugins
 
