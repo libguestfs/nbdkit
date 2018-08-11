@@ -216,8 +216,10 @@ error_config (nbdkit_next_config *next, void *nxdata,
   "                               Apply settings only to read/write/trim/zero"
 
 struct handle {
+#ifdef __GNU_LIBRARY__
   struct random_data rd;
   char rd_state[32];
+#endif
 };
 
 static void *
@@ -234,9 +236,11 @@ error_open (nbdkit_next_open *next, void *nxdata, int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
+#ifdef __GNU_LIBRARY__
   memset (&h->rd, 0, sizeof h->rd);
   time (&t);
   initstate_r (t, (char *) &h->rd_state, sizeof h->rd_state, &h->rd);
+#endif
   return h;
 }
 
@@ -268,7 +272,11 @@ random_error (struct handle *h,
   if (error_settings->rate >= 1)       /* 100% = always inject */
     goto inject;
 
+#ifdef __GNU_LIBRARY__
   random_r (&h->rd, &rand);
+#else
+  rand = random ();
+#endif
   if (rand >= error_settings->rate * RAND_MAX)
     return false;
 
