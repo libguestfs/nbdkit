@@ -858,7 +858,6 @@ start_serving (void)
   fork_into_background ();
   write_pidfile ();
   accept_incoming_connections (socks, nr_socks);
-
   free_listening_sockets (socks, nr_socks);
 }
 
