@@ -240,7 +240,7 @@ nbdkit_realpath (const char *path)
 
   ret = realpath (path, NULL);
   if (ret == NULL) {
-    nbdkit_error ("realpath(%s): %m", path);
+    nbdkit_error ("realpath: %s: %m", path);
     return NULL;
   }
 
