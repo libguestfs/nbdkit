@@ -50,7 +50,7 @@
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 /* These are the parameters. */
-static int64_t truncate = -1;
+static int64_t truncate_size = -1;
 static unsigned round_up = 0, round_down = 0;
 
 /* The real size of the underlying plugin. */
@@ -100,8 +100,8 @@ truncate_config (nbdkit_next_config *next, void *nxdata,
                  const char *key, const char *value)
 {
   if (strcmp (key, "truncate") == 0) {
-    truncate = nbdkit_parse_size (value);
-    if (truncate == -1)
+    truncate_size = nbdkit_parse_size (value);
+    if (truncate_size == -1)
       return -1;
     return 0;
   }
@@ -154,8 +154,8 @@ truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
    * separate operations.  It's possible to specify more than one,
    * although perhaps not very useful.
    */
-  if (truncate >= 0)
-    size = truncate;
+  if (truncate_size >= 0)
+    size = truncate_size;
   if (round_up > 0)
     size = (size + round_up - 1) & ~(round_up - 1);
   if (round_down > 0)
