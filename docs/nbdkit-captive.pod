@@ -103,20 +103,22 @@ I<--exit-with-parent> is incompatible with forking into the background
 (because when we fork into the background we lose track of the parent
 process).  Therefore I<-f> / I<--foreground> is implied.
 
-This is currently implemented using a feature of the Linux kernel, so
-it requires a Linux build of nbdkit and won't work on other operating
-systems (patches welcome to make it work).
+This is currently implemented using a non-POSIX feature available in
+S<Linux ≥ 2.1.57> and S<FreeBSD ≥ 11.2>, so it won't work on other
+operating systems (patches welcome to make it work).
 
 If the parent application is multithreaded, then (in the Linux
 implementation) if the parent I<thread> exits, that will cause nbdkit
 to exit.  Thus in multithreaded applications you usually want to run
 C<nbdkit --exit-with-parent> only from the main thread (unless you
 actually want nbdkit to exit with the thread, but that may not work
-reliably if we extend the implementation to other operating systems).
+reliably on all operating systems).
 
 =head1 SEE ALSO
 
-L<nbdkit(1)>.
+L<nbdkit(1)>,
+L<prctl(2)> (on Linux),
+L<procctl(2)> (on FreeBSD).
 
 =head1 AUTHORS
 

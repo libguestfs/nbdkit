@@ -62,7 +62,8 @@ nbdkit_CPPFLAGS = \
 	-Dfilterdir=\"$(filterdir)\" \
 	-Dsbindir=\"$(sbindir)\" \
 	-Dsysconfdir=\"$(sysconfdir)\" \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include
 nbdkit_CFLAGS = \
 	-pthread \
 	$(WARNINGS_CFLAGS) \

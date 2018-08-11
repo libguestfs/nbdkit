@@ -32,8 +32,9 @@
 
 include $(top_srcdir)/common-rules.mk
 
-# These headers contain only common code shared by plugins and
-# filters.  They are not installed.
+# These headers contain only common code shared by the core server,
+# plugins and/or filters.  They are not installed.
 EXTRA_DIST = \
+	exit-with-parent.h \
 	ispowerof2.h \
 	iszero.h

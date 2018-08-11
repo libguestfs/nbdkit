@@ -57,12 +57,9 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 
-#ifdef HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
 #include <pthread.h>
 
+#include "exit-with-parent.h"
 #include "protocol.h"           /* From nbdkit core. */
 
 /* Declare program_name. */
@@ -97,7 +94,7 @@ main (int argc, char *argv[])
   struct reply reply;
   char data[512];
 
-#ifndef PR_SET_PDEATHSIG
+#ifndef HAVE_EXIT_WITH_PARENT
   printf ("%s: this test requires --exit-with-parent functionality\n",
           program_name);
   exit (77);

@@ -175,8 +175,12 @@ endif HAVE_CXX
 check_PROGRAMS += test-exit-with-parent
 TESTS += test-exit-with-parent
 
-test_exit_with_parent_SOURCES = test-exit-with-parent.c test.h
-test_exit_with_parent_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_exit_with_parent_SOURCES = \
+	test-exit-with-parent.c test.h
+test_exit_with_parent_CPPFLAGS = \
+	-I$(top_srcdir)/common/include
+test_exit_with_parent_CFLAGS = \
+	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 
 # PKI files for the TLS tests.
 check_DATA += pki/.stamp
@@ -530,6 +534,7 @@ test_layers_SOURCES = \
 	test-layers.c \
 	$(top_srcdir)/src/protocol.h
 test_layers_CPPFLAGS = \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/src
 test_layers_CFLAGS = \
 	$(WARNINGS_CFLAGS) \

@@ -43,10 +43,7 @@
 #include <sys/wait.h>
 #include <errno.h>
 
-#ifdef HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
+#include "exit-with-parent.h"
 #include "test.h"
 
 static char pidpath[] = "/tmp/nbdkitpidXXXXXX";
@@ -56,7 +53,7 @@ static void run_test (void);
 int
 main (int argc, char *argv[])
 {
-#ifndef PR_SET_PDEATHSIG
+#ifndef HAVE_EXIT_WITH_PARENT
   printf ("--exit-with-parent is not implemented on this platform, skipping\n");
   exit (77);
 #else

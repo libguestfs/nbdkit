@@ -50,15 +50,12 @@
 #include <assert.h>
 #include <syslog.h>
 
-#ifdef HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
 #include <pthread.h>
 
 #include <dlfcn.h>
 
 #include "internal.h"
+#include "exit-with-parent.h"
 
 #define FIRST_SOCKET_ACTIVATION_FD 3 /* defined by systemd ABI */
 
@@ -266,7 +263,7 @@ main (int argc, char *argv[])
       break;
 
     case EXIT_WITH_PARENT_OPTION:
-#ifdef PR_SET_PDEATHSIG
+#ifdef HAVE_EXIT_WITH_PARENT
       exit_with_parent = 1;
       foreground = 1;
       break;
@@ -539,10 +536,10 @@ main (int argc, char *argv[])
   /* Implement --exit-with-parent early in case plugin initialization
    * takes a long time and the parent exits during that time.
    */
-#ifdef PR_SET_PDEATHSIG
+#ifdef HAVE_EXIT_WITH_PARENT
   if (exit_with_parent) {
-    if (prctl (PR_SET_PDEATHSIG, SIGTERM) == -1) {
-      perror ("prctl: PR_SET_PDEATHSIG");
+    if (set_exit_with_parent () == -1) {
+      perror ("nbdkit: --exit-with-parent");
       exit (EXIT_FAILURE);
     }
   }
