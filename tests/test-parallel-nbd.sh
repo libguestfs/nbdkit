@@ -45,8 +45,9 @@ fi
 ( nbdkit --exit-with-parent --help ) >/dev/null 2>&1 ||
   { echo "Missing --exit-with-parent support"; exit 77; }
 
-files='test-parallel-nbd.out test-parallel-nbd.sock test-parallel-nbd.data'
-trap 'rm -f $files' 0 1 2 3 15
+files="test-parallel-nbd.out test-parallel-nbd.sock test-parallel-nbd.data test-parallel-nbd.pid"
+rm -f $files
+trap "rm -f $files" INT QUIT TERM EXIT ERR
 
 # Populate file, and sanity check that qemu-io can issue parallel requests
 printf '%1024s' . > test-parallel-nbd.data
@@ -60,11 +61,21 @@ qemu-io -f raw -c "aio_write -P 1 0 512" -c "aio_write -P 2 512 512" \
 # may have spurious failures under heavy loads on the test machine, where
 # tuning the delays may help.
 
-(
-rm -f test-parallel-nbd.sock
-nbdkit --exit-with-parent -v -U test-parallel-nbd.sock \
-  --filter=delay \
-  file file=test-parallel-nbd.data wdelay=2 rdelay=1 &
+nbdkit --exit-with-parent -v \
+    -U test-parallel-nbd.sock -P test-parallel-nbd.pid \
+    --filter=delay \
+    file file=test-parallel-nbd.data wdelay=2 rdelay=1 &
+# We may have to wait a short time for the pid file to appear.
+for i in `seq 1 10`; do
+    if test -f test-parallel-nbd.pid; then
+        break
+    fi
+    sleep 1
+done
+if ! test -f test-parallel-nbd.pid; then
+    echo "$0: PID file was not created"
+    exit 1
+fi
 
 # With --threads=1, the write should complete first because it was issued first
 nbdkit -v -t 1 -U - nbd socket=test-parallel-nbd.sock --run '
@@ -85,7 +96,3 @@ if test "$(grep '512/512' test-parallel-nbd.out)" != \
 wrote 512/512 bytes at offset 512"; then
   exit 1
 fi
-
-) || exit $?
-
-exit 0
