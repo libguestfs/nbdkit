@@ -38,33 +38,45 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+#include <syslog.h>
 
 #include "internal.h"
 
+/* Tempted to use LOG_FTP instead of LOG_DAEMON! */
+static const int PRIORITY = LOG_DAEMON|LOG_ERR;
+
 /* Note: preserves the previous value of errno. */
 void
-log_stderr_verror (const char *fs, va_list args)
+log_syslog_verror (const char *fs, va_list args)
 {
   int err;
   const char *name = threadlocal_get_name ();
   size_t instance_num = threadlocal_get_instance_num ();
+  CLEANUP_FREE char *msg = NULL;
+  size_t len = 0;
+  FILE *fp = NULL;
 
   err = errno;
-  flockfile (stderr);
 
-  fprintf (stderr, "%s: ", program_name);
-
-  if (name) {
-    fprintf (stderr, "%s", name);
-    if (instance_num > 0)
-      fprintf (stderr, "[%zu]", instance_num);
-    fprintf (stderr, ": ");
+  fp = open_memstream (&msg, &len);
+  if (fp == NULL) {
+    /* Fallback to logging using fs, args directly. */
+    vsyslog (PRIORITY, fs, args);
+    goto out;
   }
 
-  fprintf (stderr, "error: ");
-  vfprintf (stderr, fs, args);
-  fprintf (stderr, "\n");
+  if (name) {
+    fprintf (fp, "%s", name);
+    if (instance_num > 0)
+      fprintf (fp, "[%zu]", instance_num);
+    fprintf (fp, ": ");
+  }
 
-  funlockfile (stderr);
+  vfprintf (fp, fs, args);
+  fclose (fp);
+
+  syslog (PRIORITY, "%s", msg);
+
+ out:
   errno = err;
 }

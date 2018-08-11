@@ -72,8 +72,17 @@
     })
 
 /* main.c */
+enum log_to {
+  LOG_TO_DEFAULT,        /* --log not specified: log to stderr, unless
+                            we forked into the background in which
+                            case log to syslog */
+  LOG_TO_STDERR,         /* --log=stderr forced on the command line */
+  LOG_TO_SYSLOG,         /* --log=syslog forced on the command line */
+};
+
 extern const char *exportname;
 extern const char *ipaddr;
+extern enum log_to log_to;
 extern int newstyle;
 extern const char *port;
 extern int readonly;
@@ -88,6 +97,8 @@ extern int threads;
 
 extern volatile int quit;
 extern int quit_fd;
+
+extern int forked_into_background;
 
 extern struct backend *backend;
 #define for_each_backend(b) for (b = backend; b != NULL; b = b->next)
@@ -124,6 +135,10 @@ extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockou
 
 /* debug.c */
 #define debug nbdkit_debug
+
+/* log-*.c */
+void log_stderr_verror (const char *fs, va_list args);
+void log_syslog_verror (const char *fs, va_list args);
 
 struct backend {
   /* Next filter or plugin in the chain.  This is always NULL for

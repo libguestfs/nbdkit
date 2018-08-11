@@ -6,6 +6,7 @@ nbdkit - toolkit for creating NBD servers
 
  nbdkit [-e EXPORTNAME] [--exit-with-parent] [-f]
         [--filter=FILTER ...] [-g GROUP] [-i IPADDR]
+        [--log=stderr|syslog]
         [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
         [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]
         [--tls=off|on|require] [--tls-certificates /path/to/certificates]
@@ -169,6 +170,14 @@ See also I<-u>.
 
 Listen on the specified interface.  The default is to listen on all
 interfaces.  See also I<-p>.
+
+=item B<--log=stderr>
+
+=item B<--log=syslog>
+
+Send error messages to either standard error (I<--log=stderr>) or to
+the system log (I<--log=syslog>).  For an explanation of what this
+does and how the default works, see L<nbdkit-service(1)/LOGGING>.
 
 =item B<-n>
 

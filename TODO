@@ -6,8 +6,6 @@ General ideas for improvements
 
 * Listen on specific interfaces or protocols (eg. only IPv6).
 
-* syslog? journal?
-
 * Performance - measure and improve it.
 
 * Exit on last connection (the default behaviour of qemu-nbd unless

@@ -50,6 +50,32 @@ containing:
 For more information on systemd and socket activation, see
 L<http://0pointer.de/blog/projects/socket-activation.html>
 
+=head1 LOGGING
+
+Error messages from nbdkit can be sent to either standard error
+(I<--log=stderr>) or to the system log (I<--log=syslog>):
+
+=over 4
+
+=item Messages go to standard error (stderr):
+
+When running from the command line in the foreground.
+
+When using systemd socket activation.
+
+Using I<--log=stderr> forces messages to go to standard error.
+
+=item Messages go to the system log (syslog):
+
+When running from the command line, forked into the background.
+
+Using I<--log=syslog> forces messages to go to the system log.
+
+=back
+
+Debug messages (I<-v>/I<--verbose>) always go to standard error and
+are never sent to the system log.
+
 =head1 ENVIRONMENT VARIABLES
 
 =over 4
@@ -67,7 +93,10 @@ L</SOCKET ACTIVATION>.
 
 L<nbdkit(1)>,
 L<systemd(1)>,
-L<systemd.socket(5)>.
+L<systemd.socket(5)>,
+L<syslog(3)>,
+L<rsyslogd(8)>,
+L<journalctl(1)>.
 
 =head1 AUTHORS
 
