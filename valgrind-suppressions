@@ -58,3 +58,32 @@
   ...
   fun:_dl_allocate_tls
 }
+
+# close methods are not guaranteed to be called if a connection is in
+# progress when the server is being shut down, so leaks in various
+# *_open functions are fairly inevitable.  We simply have to check by
+# hand that the following leaks are not possible under normal
+# circumstances, and then add them to this list.
+{
+  nbdkit_4
+  Memcheck:Leak
+  fun:malloc
+  fun:file_open
+  fun:plugin_open
+}
+
+{
+  nbdkit_5
+  Memcheck:Leak
+  fun:malloc
+  fun:memory_open
+  fun:plugin_open
+}
+
+{
+  nbdkit_6
+  Memcheck:Leak
+  fun:malloc
+  fun:null_open
+  fun:plugin_open
+}
