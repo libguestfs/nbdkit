@@ -138,6 +138,10 @@ AC_CHECK_HEADERS([\
 	sys/prctl.h \
 	sys/procctl.h])
 
+dnl Check for functions in libc, all optional.
+AC_CHECK_FUNCS([\
+	get_current_dir_name])
+
 dnl Check support for setsockcreatecon_raw (part of SELinux).
 AC_CHECK_LIB([selinux], [setsockcreatecon_raw], [], [:])
 

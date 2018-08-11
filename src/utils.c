@@ -40,10 +40,23 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 #include <termios.h>
 #include <errno.h>
 
 #include "internal.h"
+
+#ifndef HAVE_GET_CURRENT_DIR_NAME
+static char *
+get_current_dir_name (void)
+{
+  char *ret = malloc (PATH_MAX);
+
+  ret = getcwd (ret, PATH_MAX);
+  ret = realloc (ret, strlen (ret) + 1);
+  return ret;
+}
+#endif
 
 char *
 nbdkit_absolute_path (const char *path)
