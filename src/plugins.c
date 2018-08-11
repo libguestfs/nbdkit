@@ -400,6 +400,15 @@ plugin_can_fua (struct backend *b, struct connection *conn)
   return NBDKIT_FUA_NONE;
 }
 
+/* Plugins and filters can call this to set the true errno, in cases
+ * where !errno_is_preserved.
+ */
+void
+nbdkit_set_error (int err)
+{
+  threadlocal_set_error (err);
+}
+
 /* Grab the appropriate error value.
  */
 static int

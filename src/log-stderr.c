@@ -62,48 +62,6 @@ prologue (const char *type)
 
 /* Note: preserves the previous value of errno. */
 void
-nbdkit_vdebug (const char *fs, va_list args)
-{
-  int err = errno;
-
-  if (!verbose)
-    return;
-  flockfile (stderr);
-  prologue ("debug");
-
-  vfprintf (stderr, fs, args);
-
-  fprintf (stderr, "\n");
-  funlockfile (stderr);
-
-  errno = err;
-}
-
-/* Note: preserves the previous value of errno. */
-void
-nbdkit_debug (const char *fs, ...)
-{
-  va_list args;
-  int err = errno;
-
-  if (!verbose)
-    return;
-
-  flockfile (stderr);
-  prologue ("debug");
-
-  va_start (args, fs);
-  vfprintf (stderr, fs, args);
-  va_end (args);
-
-  fprintf (stderr, "\n");
-  funlockfile (stderr);
-
-  errno = err;
-}
-
-/* Note: preserves the previous value of errno. */
-void
 nbdkit_verror (const char *fs, va_list args)
 {
   int err = errno;
@@ -137,10 +95,4 @@ nbdkit_error (const char *fs, ...)
   funlockfile (stderr);
 
   errno = err;
-}
-
-void
-nbdkit_set_error (int err)
-{
-  threadlocal_set_error (err);
 }

@@ -158,7 +158,7 @@ extern void crypto_init (int tls_set_on_cli);
 extern void crypto_free (void);
 extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockout);
 
-/* errors.c */
+/* debug.c */
 #define debug nbdkit_debug
 
 struct backend {

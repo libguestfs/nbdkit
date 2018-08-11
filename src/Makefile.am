@@ -38,10 +38,11 @@ nbdkit_SOURCES = \
 	cleanup.c \
 	connections.c \
 	crypto.c \
-	errors.c \
+	debug.c \
 	filters.c \
 	internal.h \
 	locks.c \
+	log-stderr.c \
 	main.c \
 	plugins.c \
 	protocol.h \
