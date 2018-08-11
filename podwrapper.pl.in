@@ -265,6 +265,8 @@ die "$progname: $input: =encoding must not be present in input\n"
 $content =~ s/^=(.*)/\n=encoding utf8\n\n=$1/m;
 
 # Verify sections present / not present.
+die "$progname: $input: missing NAME section\n"
+    if $content !~ /^=head1 NAME/m;
 die "$progname: $input: missing DESCRIPTION section\n"
     if $content !~ /^=head1 DESCRIPTION/m;
 die "$progname: $input: missing AUTHOR or AUTHORS section\n"
