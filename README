@@ -37,7 +37,13 @@ Requirements
 ------------
 
 To build the basic server and some plugins nbdkit needs nothing except
-Linux and reasonably recent gcc or clang.
+Linux or FreeBSD, and:
+
+ - GCC or Clang
+
+ - bash
+
+ - GNU make
 
 Although it is possible to build without it, it’s recommended to
 enable TLS support for which you will need:
@@ -111,10 +117,6 @@ For the Lua plugin:
 For bash tab completion:
 
  - bash-completion >= 1.99
-
-To run the test suite:
-
- - bash
 
 To test for memory leaks (‘make check-valgrind’):
 
