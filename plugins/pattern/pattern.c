@@ -44,6 +44,8 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
+#include "byte-swapping.h"
+
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
 static int64_t size = 0;
 

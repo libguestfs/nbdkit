@@ -50,6 +50,7 @@
 
 #include <nbdkit-plugin.h>
 #include "protocol.h"
+#include "byte-swapping.h"
 
 static char *sockname = NULL;
 static char *export = NULL;

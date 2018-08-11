@@ -42,6 +42,7 @@ nbdkit_nbd_plugin_la_SOURCES = \
 
 nbdkit_nbd_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/src
 nbdkit_nbd_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)

@@ -38,9 +38,10 @@
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
-#include <endian.h>
 
 #include <nbdkit-filter.h>
+
+#include "byte-swapping.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 

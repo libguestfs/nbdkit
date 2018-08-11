@@ -59,6 +59,7 @@
 
 #include <pthread.h>
 
+#include "byte-swapping.h"
 #include "exit-with-parent.h"
 #include "protocol.h"           /* From nbdkit core. */
 

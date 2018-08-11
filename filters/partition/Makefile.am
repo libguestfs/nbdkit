@@ -41,7 +41,8 @@ nbdkit_partition_filter_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-filter.h
 
 nbdkit_partition_filter_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include
 nbdkit_partition_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_partition_filter_la_LDFLAGS = \

@@ -40,7 +40,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <endian.h>
 #include <sys/types.h>
 #include <stddef.h>
 #include <assert.h>
@@ -48,6 +47,7 @@
 #include <pthread.h>
 
 #include "internal.h"
+#include "byte-swapping.h"
 #include "protocol.h"
 
 /* Maximum read or write request that we will handle. */

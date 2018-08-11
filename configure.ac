@@ -129,7 +129,13 @@ dnl restore CFLAGS
 CFLAGS="${acx_nbdkit_save_CFLAGS}"
 
 dnl Check for other headers, all optional.
-AC_CHECK_HEADERS([selinux/selinux.h sys/prctl.h sys/procctl.h])
+AC_CHECK_HEADERS([\
+	byteswap.h \
+	endian.h \
+	selinux/selinux.h \
+	sys/endian.h \
+	sys/prctl.h \
+	sys/procctl.h])
 
 dnl Check support for setsockcreatecon_raw (part of SELinux).
 AC_CHECK_LIB([selinux], [setsockcreatecon_raw], [], [:])
