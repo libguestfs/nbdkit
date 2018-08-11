@@ -5,7 +5,7 @@
 
 =head1 NAME
 
-nbdkit-tar-plugin - Read and write files inside tar files without unpacking.
+nbdkit-tar-plugin - read and write files inside tar files without unpacking
 
 =head1 SYNOPSIS
 

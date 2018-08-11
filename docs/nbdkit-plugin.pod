@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit-plugin - How to write nbdkit plugins
+nbdkit-plugin - how to write nbdkit plugins
 
 =head1 SYNOPSIS
 

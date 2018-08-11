@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit - A toolkit for creating NBD servers
+nbdkit - toolkit for creating NBD servers
 
 =head1 SYNOPSIS
 

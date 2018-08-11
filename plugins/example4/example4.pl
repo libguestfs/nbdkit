@@ -5,7 +5,7 @@
 
 =head1 NAME
 
-nbdkit-example4-plugin - An example nbdkit plugin written in Perl
+nbdkit-example4-plugin - example nbdkit plugin written in Perl
 
 =head1 SYNOPSIS
 

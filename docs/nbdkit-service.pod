@@ -1,7 +1,6 @@
 =head1 NAME
 
-nbdkit-service - Run nbdkit as a service, systemd socket
-activation.
+nbdkit-service - run nbdkit as a service, systemd socket activation
 
 =head1 DESCRIPTION
 

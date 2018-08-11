@@ -48,7 +48,7 @@ eval { $Text::Wrap::huge = "overflow" };
 
 =head1 NAME
 
-podwrapper.pl - Generate documentation from POD input files
+podwrapper.pl - generate documentation from POD input files
 
 =head1 SYNOPSIS
 

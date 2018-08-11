@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit-example1-plugin - A minimal nbdkit plugin
+nbdkit-example1-plugin - minimal nbdkit plugin
 
 =head1 SYNOPSIS
 

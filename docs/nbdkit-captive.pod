@@ -1,7 +1,7 @@
 =head1 NAME
 
-nbdkit-captive - Run nbdkit under another process and have it
-reliably cleaned up.
+nbdkit-captive - run nbdkit under another process and have it
+reliably cleaned up
 
 =head1 SYNOPSIS
 
