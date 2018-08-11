@@ -130,6 +130,7 @@ CFLAGS="${acx_nbdkit_save_CFLAGS}"
 
 dnl Check for other headers, all optional.
 AC_CHECK_HEADERS([\
+	alloca.h \
 	byteswap.h \
 	endian.h \
 	selinux/selinux.h \

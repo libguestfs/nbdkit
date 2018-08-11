@@ -39,13 +39,16 @@
 #include <stdbool.h>
 #include <string.h>
 #include <inttypes.h>
-#include <alloca.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <assert.h>
+
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 
 #include <nbdkit-filter.h>
 
