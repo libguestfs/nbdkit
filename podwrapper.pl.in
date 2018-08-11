@@ -280,6 +280,23 @@ die "$progname: $input: BUGS is now added automatically, do not add it to the PO
 die "$progname: $input: LICENSE is now added automatically, do not add it to the POD file\n"
     if $content =~ /^=head1 LICENSE/m;
 
+# Check NAME section conformity.
+my @lines = split /\n/, $content;
+my @name;
+foreach (@lines) {
+    push @name, $_ if /^=head1 NAME/../^=head1 (?!NAME)/
+}
+shift @name;                    # remove =head1 and empty line
+shift @name;                    # from beginning and end
+pop @name;
+pop @name;
+die "$progname: $input: empty NAME section\n"
+    unless @name >= 1;
+die "$progname: $input: NAME doesn't start with nbdkit\n"
+    unless $name[0] =~ m/^nbdkit/;
+die "$progname: $input: NAME does not conform with Linux man pages standard\n"
+    if $name[0] !~ m/- [a-z]/ || $name[@name-1] =~ m/\.$/;
+
 # Add standard LICENSE section at the end.
 $content .=
 "
@@ -327,7 +344,7 @@ SUCH DAMAGE.
 
 # Check no over-long lines in the input.  (As a special exception this
 # is permitted in verbatim sections or if the line contains a URL).
-my @lines = split /\n/, $content;
+@lines = split /\n/, $content;
 foreach (@lines) {
     die "$progname: $input: line too long:\n$_\n"
         if length $_ > 76 &&
