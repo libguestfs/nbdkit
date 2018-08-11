@@ -41,30 +41,27 @@
 
 #include "internal.h"
 
-/* Note: preserves the previous value of errno. */
+/* Call the right nbdkit_verror function depending on log_sink.
+ * Note: preserves the previous value of errno.
+ */
 void
-log_stderr_verror (const char *fs, va_list args)
+nbdkit_verror (const char *fs, va_list args)
 {
-  int err;
-  const char *name = threadlocal_get_name ();
-  size_t instance_num = threadlocal_get_instance_num ();
+  if (log_to == LOG_TO_SYSLOG)
+    log_syslog_verror (fs, args);
+  else
+    log_stderr_verror (fs, args);
+}
 
-  err = errno;
-  flockfile (stderr);
+/* Wrapper around nbdkit_verror.
+ * Note: preserves the previous value of errno.
+ */
+void
+nbdkit_error (const char *fs, ...)
+{
+  va_list args;
 
-  fprintf (stderr, "%s: ", program_name);
-
-  if (name) {
-    fprintf (stderr, "%s", name);
-    if (instance_num > 0)
-      fprintf (stderr, "[%zu]", instance_num);
-    fprintf (stderr, ": ");
-  }
-
-  fprintf (stderr, "error: ");
-  vfprintf (stderr, fs, args);
-  fprintf (stderr, "\n");
-
-  funlockfile (stderr);
-  errno = err;
+  va_start (args, fs);
+  nbdkit_verror (fs, args);
+  va_end (args);
 }

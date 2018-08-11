@@ -42,7 +42,9 @@ nbdkit_SOURCES = \
 	filters.c \
 	internal.h \
 	locks.c \
+	log.c \
 	log-stderr.c \
+	log-syslog.c \
 	main.c \
 	plugins.c \
 	protocol.h \
