@@ -40,14 +40,14 @@ rm -f $files
 # Prep images, and check that qemu-io understands the actions we plan on doing.
 # TODO: Until we implement NBD_OPT_GO, qemu-io does its own read-modify-write
 # at 512-byte alignment, while we'd like to ultimately test 1-byte accesses
-truncate --size 10M blocksize1.img
+truncate -s 10M blocksize1.img
 if ! qemu-io -f raw -c 'r 0 1' -c 'w -z 1000 2000' \
      -c 'w -P 0 1M 2M' -c 'discard 3M 4M' blocksize1.img; then
     echo "$0: missing or broken qemu-io"
     rm blocksize1.img
     exit 77
 fi
-truncate --size 10M blocksize2.img
+truncate -s 10M blocksize2.img
 
 pid1= pid2=
 

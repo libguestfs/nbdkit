@@ -37,7 +37,7 @@ files="log.img log.log log.sock log.pid"
 rm -f $files
 
 # Test that qemu-io works
-truncate --size 10M log.img
+truncate -s 10M log.img
 if ! qemu-io -f raw -c 'w 1M 2M' log.img; then
     echo "$0: missing or broken qemu-io"
     exit 77
