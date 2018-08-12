@@ -316,6 +316,14 @@ your C<.finalize> method (calling the plugin's C<.pwrite> method).
 Doing these things in the filter's C<.open> or C<.close> method is not
 possible.
 
+There is no C<next_ops-E<gt>prepare> or C<next_ops-E<gt>finalize>.
+Unlike other filter methods, prepare and finalize are not chained
+through the C<next_ops> structure.  Instead the core nbdkit server
+calls the prepare and finalize methods of all filters.  Prepare
+methods are called starting with the filter closest to the plugin and
+proceeding outwards.  Finalize methods are called in the reverse order
+of prepare methods.
+
 If there is an error, both callbacks should call C<nbdkit_error> with
 an error message and return C<-1>.
 
