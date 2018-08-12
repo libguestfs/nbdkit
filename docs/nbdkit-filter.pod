@@ -86,8 +86,8 @@ next filter or plugin in the chain.  In the example above any
 instances of C<myparameter=...> on the command line would not be seen
 by the plugin.
 
-To see example filters, take a look at the source of nbdkit, in the
-C<filters> directory.
+To see example filters:
+L<https://github.com/libguestfs/nbdkit/tree/master/filters>
 
 Filters must be written in C.
 

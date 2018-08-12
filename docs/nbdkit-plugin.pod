@@ -42,8 +42,8 @@ An nbdkit plugin is a new source device which can be served using the
 Network Block Device (NBD) protocol.  This manual page describes how
 to create an nbdkit plugin in C.
 
-For example plugins, take a look at the source of nbdkit, in the
-C<plugins> directory.
+To see example plugins:
+L<https://github.com/libguestfs/nbdkit/tree/master/plugins>
 
 Plugins have an ABI guarantee: a plugin compiled against an older
 version of nbdkit will still work correctly when loaded with a newer
