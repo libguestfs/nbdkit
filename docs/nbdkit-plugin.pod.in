@@ -47,17 +47,20 @@ to create an nbdkit plugin in C.
 To see example plugins:
 L<https://github.com/libguestfs/nbdkit/tree/master/plugins>
 
-Plugins have an ABI guarantee: a plugin compiled against an older
-version of nbdkit will still work correctly when loaded with a newer
-nbdkit.  We also try (but cannot guarantee) to support plugins
+Plugins written in C have an ABI guarantee: a plugin compiled against
+an older version of nbdkit will still work correctly when loaded with
+a newer nbdkit.  We also try (but cannot guarantee) to support plugins
 compiled against a newer version of nbdkit when loaded with an older
-nbdkit, although the utility of such a plugin may be reduced where it
-depended on features only provided by newer nbdkit.
+nbdkit, although the plugin may have reduced functionality if it
+depends on features only provided by newer nbdkit.
 
 For plugins written in C, we also provide an API guarantee: a plugin
 written against an older header will still compile unmodified with a
-newer nbdkit.  However, plugins written in other languages may have
-to adapt to changes in the API when recompiled against a newer nbdkit.
+newer nbdkit.
+
+The API guarantee does not always apply to plugins written in other
+(non-C) languages which may have to adapt to changes when recompiled
+against a newer nbdkit.
 
 To write plugins in other languages, see:
 L<nbdkit-ocaml-plugin(3)>,
@@ -76,7 +79,8 @@ however, it is recommended that new plugins be written to the maximum
 version (currently 2) as it enables more features and better
 interaction with nbdkit filters.  Therefore, the rest of this document
 only covers the version 2 interface.  A newer nbdkit will always
-support plugins compiled against any prior API version.
+support plugins written in C which were compiled against any prior API
+version.
 
 =head1 C<nbdkit-plugin.h>
 
