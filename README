@@ -46,7 +46,8 @@ Linux or FreeBSD, and:
  - GNU make
 
 Although it is possible to build without it, it’s recommended to
-enable TLS support for which you will need:
+enable TLS (authentication and encryption) support for which you will
+need:
 
  - gnutls >= 3.3.0
 
@@ -55,9 +56,9 @@ Optional dependencies
 
 To build the man pages, you will optionally need to install:
 
- - perl
+ - Perl
 
- - Pod::Man and Pod::Simple (perl library)
+ - Pod::Man and Pod::Simple (Perl library)
 
 For the gzip plugin:
 
@@ -75,7 +76,7 @@ For the libvirt plugin:
 
  - libvirt
 
-For the libguestfs plugin, and to run the test suite:
+For the libguestfs plugin, and to run parts of the test suite:
 
  - libguestfs
 
