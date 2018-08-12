@@ -48,6 +48,8 @@ EXTRA_DIST = \
 	test-captive.sh \
 	test-cow.sh \
 	test-cxx.sh \
+	test-data-base64.sh \
+	test-data-raw.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
 	test-dump-plugin-example4.sh \
@@ -266,6 +268,17 @@ disk:
 	mv test1.img disk
 
 endif HAVE_GUESTFISH
+
+# data plugin test.
+LIBGUESTFS_TESTS += test-data
+TESTS += \
+	test-data-base64.sh \
+	test-data-raw.sh
+
+test_data_SOURCES = test-data.c test.h
+test_data_CPPFLAGS = -I$(top_srcdir)/common/include
+test_data_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_data_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # ext2 plugin test.
 if HAVE_EXT2

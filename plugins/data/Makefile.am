@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2017 Red Hat Inc.
+# Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,50 +30,32 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-plugins = \
-	curl \
-	data \
-	example1 \
-	example2 \
-	example3 \
-	example4 \
-	ext2 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	lua \
-	memory \
-	nbd \
-	null \
-	ocaml \
-	pattern \
-	perl \
-	python \
-	random \
-	ruby \
-	split \
-	streaming \
-	tar \
-	tcl \
-	vddk \
-	xz \
-	zero
+include $(top_srcdir)/common-rules.mk
 
-filters = \
-	blocksize \
-	cache \
-	cow \
-	delay \
-	error \
-	fua \
-	log \
-	nozero \
-	offset \
-	partition \
-	truncate
+EXTRA_DIST = nbdkit-data-plugin.pod
 
-plugindir = $(libdir)/nbdkit/plugins
-filterdir = $(libdir)/nbdkit/filters
+plugin_LTLIBRARIES = nbdkit-data-plugin.la
 
-CLEANFILES = *~ *.cmi *.cmx *.cmxa *.so
+nbdkit_data_plugin_la_SOURCES = \
+	data.c \
+	$(top_srcdir)/include/nbdkit-plugin.h
+
+nbdkit_data_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include
+nbdkit_data_plugin_la_CFLAGS = \
+	$(WARNINGS_CFLAGS)
+nbdkit_data_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared
+
+if HAVE_POD
+
+man_MANS = nbdkit-data-plugin.1
+CLEANFILES += $(man_MANS)
+
+nbdkit-data-plugin.1: nbdkit-data-plugin.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+endif HAVE_POD

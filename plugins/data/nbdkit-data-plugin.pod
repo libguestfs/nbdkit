@@ -1,0 +1,182 @@
+=head1 NAME
+
+nbdkit-data-plugin - nbdkit plugin for serving data from the command line
+
+=head1 SYNOPSIS
+
+ nbdkit data data="0 1 2 3 @0x1fe 0x55 0xaa" [size=size]
+
+ nbdkit data base64="aGVsbG8gbmJka2l0IHVzZXI=" [size=size]
+
+ nbdkit data raw="binary_data" [size=size]
+
+=head1 DESCRIPTION
+
+C<nbdkit-data-plugin> is a plugin for L<nbdkit(1)> which serves a
+small amount of data specified directly on the command line.  The
+plugin gets its name from the C<data:> URI scheme used by web
+browsers.  This is mainly useful for testing NBD clients.
+
+You can serve data read-only using the I<-r> flag, or read-write.  Any
+writes are thrown away when nbdkit exits.
+
+Most operating systems have command line size limits which are quite a
+lot smaller than any desirable disk image, so specifying a large,
+fully populated disk image on the command line would not be possible.
+However you can specify a small amount of data at the beginning of the
+image, possibly followed by zeroes (using the C<size> parameter to pad
+the image to the full size), or use the C<data> parameter creatively
+to make mostly sparse disk images.
+
+=head1 EXAMPLES
+
+=over 4
+
+=item Create a 1 MB empty disk:
+
+ nbdkit data raw= size=1M
+
+(This is a contrived example, it is better to use
+L<nbdkit-memory-plugin(1)> for real applications.)
+
+=item Create a 1 MB disk with some nonsense data at the beginning:
+
+ nbdkit data base64=MTIz size=1M
+
+The above command serves the bytes C<0x31 0x32 0x33> (which is the
+base64 decoding of C<MTIz>), followed by S<1M - 3 bytes> of zeroes.
+
+=item Create a 1 MB disk with one empty MBR-formatted partition:
+
+ nbdkit data data="@0x1b8 0xf8 0x21 0xdc 0xeb 0 0 0 0
+                   2 0 0x83 0x20 0x20 0 1 0  0 0 0xff 0x7
+                   @0x1fe 0x55 0xaa" \
+             size=1M
+
+The last example was created by running:
+
+ $ rm -f disk
+ $ truncate -s 1M disk
+ $ echo start=1 | sfdisk disk
+ Device Boot Start   End Sectors    Size Id Type
+ disk1           1  2047    2047 1023.5K 83 Linux
+ $ hexdump -C disk
+ 00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+ *
+ 000001b0  00 00 00 00 00 00 00 00  f8 21 dc eb 00 00 00 00
+ 000001c0  02 00 83 20 20 00 01 00  00 00 ff 07 00 00 00 00
+ 000001d0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+ *
+ 000001f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 55 aa
+
+and then translating the disk data and offsets into the C<data>
+string (see L</DATA FORMAT>).
+
+=back
+
+=head1 PARAMETERS
+
+Exactly one of the C<data>, C<base64> or C<raw> parameters must be
+supplied.
+
+=over 4
+
+=item B<data=DATA>
+
+Specify the disk data using a simple compact format.  See
+L</DATA FORMAT> below.
+
+=item B<base64=base64_data>
+
+The C<base64> parameter can be used to supply binary data encoded in
+base64 on the command line.
+
+This is only supported if nbdkit was compiled with GnuTLS E<ge> 3.6.0.
+You can find out by checking if:
+
+ $ nbdkit data --dump-plugin
+
+contains:
+
+ base64=yes
+
+=item B<raw=binary_data>
+
+The C<raw> parameter can be used to supply raw binary data directly on
+the command line.
+
+It is usually quite difficult to do this unless you are running nbdkit
+from another program (see L<nbdkit-captive(1)>).  One particular
+problem is that the data must not contain zero bytes (ie. C<\0>) since
+those will be processed in C to mean the end of the string.  In almost
+all cases it is better to use base64 encoding or the custom C<data>
+format.
+
+=item B<size=SIZE>
+
+The data is truncated or extended to the size specified.
+
+This parameter is optional: If omitted the size is defined by the size
+of the C<data>, C<raw> or C<base64> parameter.
+
+=back
+
+=head1 DATA FORMAT
+
+The C<data> parameter lets you specify small disk images in a simple,
+compact format.  It is a string containing a list of bytes which are
+written into the disk image sequentially.  You can move the virtual
+offset where bytes are written using C<@offset>.
+
+For example:
+
+ nbdkit data data="0 1 2 3 @0x1fe 0x55 0xaa"
+
+creates a 0x200 = 512 byte (1 sector) image containing the four bytes
+C<0 1 2 3> at the start, and the two bytes C<0x55 0xaa> at the end of
+the sector, with the remaining 506 bytes in the middle being all
+zeroes.
+
+Fields in the string can be:
+
+=over 4
+
+=item B<@>OFFSET
+
+Moves the current offset to C<OFFSET>.  The offset may be specified as
+either decimal, octal (prefixed by C<0>) or hexadecimal (prefixed by
+C<0x>).
+
+=item BYTE
+
+Write C<BYTE> at the current offset and advance the offset by 1 byte.
+The byte may be specified as either decimal, octal (prefixed by C<0>)
+or hexadecimal (prefixed by C<0x>).
+
+=back
+
+Whitespace between fields in the string is ignored.
+
+In the example above the size (512 bytes) is implied by the data.  But
+you could additionally use the C<size> parameter to either truncate or
+extend (with zeroes) the disk image.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-captive(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-memory-plugin(1)>,
+L<nbdkit-null-plugin(1)>,
+L<nbdkit-pattern-plugin(1)>,
+L<nbdkit-random-plugin(1)>,
+L<nbdkit-zero-plugin(1)>,
+L<https://en.wikipedia.org/wiki/Base64>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

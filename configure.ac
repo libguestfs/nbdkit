@@ -169,6 +169,7 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
     old_LIBS="$LIBS"
     LIBS="$GNUTLS_LIBS $LIBS"
     AC_CHECK_FUNCS([\
+	gnutls_base64_decode2 \
 	gnutls_certificate_set_known_dh_params \
 	gnutls_session_set_verify_cert])
     LIBS="$old_LIBS"
@@ -554,6 +555,7 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  plugins/Makefile
                  plugins/curl/Makefile
+                 plugins/data/Makefile
                  plugins/example1/Makefile
                  plugins/example2/Makefile
                  plugins/example3/Makefile

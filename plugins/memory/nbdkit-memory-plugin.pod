@@ -39,7 +39,8 @@ This parameter is required.
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
-L<nbdkit-plugin(3)>.
+L<nbdkit-plugin(3)>,
+L<nbdkit-data-plugin(1)>.
 
 =head1 AUTHORS
 

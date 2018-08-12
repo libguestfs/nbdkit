@@ -18,6 +18,7 @@ protocol and NBD clients.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
+L<nbdkit-data-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-random-plugin(1)>.

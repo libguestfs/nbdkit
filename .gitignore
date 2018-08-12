@@ -61,6 +61,7 @@ Makefile.in
 /tests/split2
 /tests/split3
 /tests/test-connect
+/tests/test-data
 /tests/test-delay
 /tests/test-error
 /tests/test-exit-with-parent
