@@ -50,11 +50,11 @@ SUBDIRS = \
 	bash \
 	docs \
 	include \
+	common/include \
 	src
 
 if HAVE_PLUGINS
 SUBDIRS += \
-	common/include \
 	plugins \
 	filters
 endif
