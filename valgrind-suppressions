@@ -68,15 +68,15 @@
   nbdkit_4
   Memcheck:Leak
   fun:malloc
-  fun:file_open
-  fun:plugin_open
+  fun:error_open
+  fun:filter_open
 }
 
 {
   nbdkit_5
   Memcheck:Leak
   fun:malloc
-  fun:memory_open
+  fun:file_open
   fun:plugin_open
 }
 
@@ -84,6 +84,22 @@
   nbdkit_6
   Memcheck:Leak
   fun:malloc
+  fun:memory_open
+  fun:plugin_open
+}
+
+{
+  nbdkit_7
+  Memcheck:Leak
+  fun:malloc
   fun:null_open
   fun:plugin_open
+}
+
+{
+  nbdkit_8
+  Memcheck:Leak
+  fun:malloc
+  fun:partition_open
+  fun:filter_open
 }
