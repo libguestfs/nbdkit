@@ -72,15 +72,8 @@
     })
 
 /* main.c */
-enum log_to {
-  LOG_TO_UNKNOWN,               /* not specified */
-  LOG_TO_STDERR,                /* --log=stderr */
-  LOG_TO_SYSLOG,                /* --log=syslog */
-};
-
 extern const char *exportname;
 extern const char *ipaddr;
-extern enum log_to log_to;
 extern int newstyle;
 extern const char *port;
 extern int readonly;
@@ -131,10 +124,6 @@ extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockou
 
 /* debug.c */
 #define debug nbdkit_debug
-
-/* log-*.c */
-void log_stderr_verror (const char *fs, va_list args);
-void log_syslog_verror (const char *fs, va_list args);
 
 struct backend {
   /* Next filter or plugin in the chain.  This is always NULL for

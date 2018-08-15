@@ -41,16 +41,12 @@
 
 #include "internal.h"
 
-/* Note: preserves the previous value of errno. */
-void
-log_stderr_verror (const char *fs, va_list args)
+/* Called with flockfile (stderr) taken. */
+static void
+prologue (const char *type)
 {
-  int err;
   const char *name = threadlocal_get_name ();
   size_t instance_num = threadlocal_get_instance_num ();
-
-  err = errno;
-  flockfile (stderr);
 
   fprintf (stderr, "%s: ", program_name);
 
@@ -61,10 +57,42 @@ log_stderr_verror (const char *fs, va_list args)
     fprintf (stderr, ": ");
   }
 
-  fprintf (stderr, "error: ");
-  vfprintf (stderr, fs, args);
-  fprintf (stderr, "\n");
+  fprintf (stderr, "%s: ", type);
+}
 
+/* Note: preserves the previous value of errno. */
+void
+nbdkit_verror (const char *fs, va_list args)
+{
+  int err = errno;
+
+  flockfile (stderr);
+  prologue ("error");
+
+  vfprintf (stderr, fs, args);
+
+  fprintf (stderr, "\n");
   funlockfile (stderr);
+
+  errno = err;
+}
+
+/* Note: preserves the previous value of errno. */
+void
+nbdkit_error (const char *fs, ...)
+{
+  va_list args;
+  int err = errno;
+
+  flockfile (stderr);
+  prologue ("error");
+
+  va_start (args, fs);
+  vfprintf (stderr, fs, args);
+  va_end (args);
+
+  fprintf (stderr, "\n");
+  funlockfile (stderr);
+
   errno = err;
 }

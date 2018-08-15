@@ -48,7 +48,6 @@
 #include <sys/wait.h>
 #include <errno.h>
 #include <assert.h>
-#include <syslog.h>
 
 #include <pthread.h>
 
@@ -77,7 +76,6 @@ int exit_with_parent;           /* --exit-with-parent */
 const char *exportname;         /* -e */
 int foreground;                 /* -f */
 const char *ipaddr;             /* -i */
-enum log_to log_to = LOG_TO_UNKNOWN; /* --log */
 int newstyle = 1;               /* 0 = -o, 1 = -n */
 char *pidfile;                  /* -P */
 const char *port;               /* -p */
@@ -115,7 +113,6 @@ enum {
   DUMP_PLUGIN_OPTION,
   EXIT_WITH_PARENT_OPTION,
   FILTER_OPTION,
-  LOG_OPTION,
   LONG_OPTIONS_OPTION,
   RUN_OPTION,
   SELINUX_LABEL_OPTION,
@@ -141,7 +138,6 @@ static const struct option long_options[] = {
   { "help",             no_argument,       NULL, HELP_OPTION },
   { "ip-addr",          required_argument, NULL, 'i' },
   { "ipaddr",           required_argument, NULL, 'i' },
-  { "log",              required_argument, NULL, LOG_OPTION },
   { "long-options",     no_argument,       NULL, LONG_OPTIONS_OPTION },
   { "new-style",        no_argument,       NULL, 'n' },
   { "newstyle",         no_argument,       NULL, 'n' },
@@ -176,7 +172,6 @@ usage (void)
   printf ("nbdkit [--dump-config] [--dump-plugin]\n"
           "       [-e EXPORTNAME] [--exit-with-parent] [-f]\n"
           "       [--filter=FILTER ...] [-g GROUP] [-i IPADDR]\n"
-          "       [--log=stderr|syslog]\n"
           "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
           "       [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]\n"
           "       [--tls=off|on|require] [--tls-certificates /path/to/certificates]\n"
@@ -285,18 +280,6 @@ main (int argc, char *argv[])
         t->next = filter_filenames;
         t->filename = optarg;
         filter_filenames = t;
-      }
-      break;
-
-    case LOG_OPTION:
-      if (strcmp (optarg, "stderr") == 0)
-        log_to = LOG_TO_STDERR;
-      else if (strcmp (optarg, "syslog") == 0)
-        log_to = LOG_TO_SYSLOG;
-      else {
-        fprintf (stderr, "%s: --log must be \"stderr\" or \"syslog\"\n",
-                 program_name);
-        exit (EXIT_FAILURE);
       }
       break;
 
@@ -518,16 +501,6 @@ main (int argc, char *argv[])
    * implicit dependency on umask when calling mkstemp(3).
    */
   umask (0022);
-
-  /* Choose where to log error messages, if not set using --log. */
-  if (log_to == LOG_TO_UNKNOWN) {
-    log_to = LOG_TO_STDERR;
-    /* The next line tests if we will fork into the background. */
-    if (!socket_activation && !listen_stdin && !foreground)
-      log_to = LOG_TO_SYSLOG;
-  }
-  if (log_to == LOG_TO_SYSLOG)
-    openlog (program_name, LOG_PID, 0);
 
   /* Initialize TLS. */
   crypto_init (tls_set_on_cli);
