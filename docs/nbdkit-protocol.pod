@@ -1,0 +1,142 @@
+=head1 NAME
+
+nbdkit - which parts of the NBD protocol nbdkit supports
+
+=head1 SYNOPSIS
+
+ nbdkit [-n|--newstyle] [-o|--oldstyle] [-e|--exportname EXPORTNAME]
+        [...]
+
+=head1 DESCRIPTION
+
+This page documents the level of support in nbdkit for various parts
+of the NBD protocol.
+
+=head1 NEW STYLE VS OLD STYLE PROTOCOL
+
+The NBD protocol comes in two incompatible forms that we call
+"oldstyle" and "newstyle".  Unfortunately which protocol you should
+use depends on the client and cannot be known in advance, nor can it
+be negotiated from the server side.
+
+nbdkit defaults to the newstyle protocol since nbdkit E<ge> 1.3.  The
+newstyle protocol is better in every respect than the oldstyle
+protocol and you should prefer it if possible.
+
+Use the I<-e> or I<--exportname> flag to set the optional exportname
+for the newstyle protocol.
+
+Use the I<-o> or I<--oldstyle> flag to force the oldstyle protocol.
+
+=head2 Common clients and the protocol they require
+
+ Client                          Protocol
+ ------------------------------------------------------------
+ qemu <= 2.5 without exportname  oldstyle
+ qemu <= 2.5 with exportname     newstyle
+ qemu >= 2.6                     client can talk either protocol
+ nbd-client < 3.10               client can talk either protocol
+ nbd-client >= 3.10              newstyle
+ any TLS (encrypted) client      newstyle
+ nbdkit nbd plugin               client can talk either protocol
+
+=head2 Errors seen if using the wrong protocol
+
+If you use qemu E<le> 2.5 without the exportname field against a
+newstyle server, it will give the error:
+
+ Server requires an export name
+
+If you use qemu E<le> 2.5 with the exportname field against an
+oldstyle server, it will give the error:
+
+ Server does not support export names
+
+If you use the oldstyle protocol with nbd-client E<ge> 3.10, it will
+give the error:
+
+ Error: It looks like you're trying to connect to an oldstyle server.
+
+=head2 NBD protocol and port number
+
+Port 10809/tcp is reserved by IANA for the NBD protocol, but you can
+use nbdkit on any port or on Unix domain sockets.
+
+The NBD protocol specification claims that you should always use
+newstyle when using port 10809, and use oldstyle on all other ports,
+but this claim is not based on the reality of what NBD servers do, and
+nbdkit does not require or encourage this.
+
+=head1 NBD PROTOCOL FEATURES SUPPORTED BY NBDKIT
+
+=over 4
+
+=item newstyle protocol
+
+Supported in nbdkit E<ge> 1.1.12, and the default in nbdkit E<ge> 1.3.
+
+=item export names
+
+Supported in nbdkit E<ge> 1.1.12.
+
+nbdkit can advertise an export name, but ignores any export name sent
+by the client.  nbdkit does I<not> support serving different data on
+different export names.
+
+=item C<NBD_FLAG_NO_ZEROES>
+
+Supported in nbdkit E<ge> 1.1.13.
+
+This protocol optimization avoids sending a useless block of zero
+bytes during protocol negotiation.
+
+=item C<NBD_CMD_WRITE_ZEROES>
+
+Supported in nbdkit E<ge> 1.1.13.
+
+=item TLS
+
+Supported in nbdkit E<ge> 1.1.15.
+
+=item TLS-PSK
+
+Supported in nbdkit E<ge> 1.4.0.
+
+=item C<NBD_OPT_GO>
+
+Supported in nbdkit E<ge> 1.5.3.
+
+This protocol enhancement allows the server to return errors when
+negotiating the export name.
+
+=item Structured Replies
+
+I<Not supported>.
+
+=item Block Status
+
+I<Not supported>.
+
+=item Resize Extension
+
+I<Not supported>.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md>,
+L<https://nbd.sourceforge.io/>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+Pino Toscano
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2018 Red Hat Inc.

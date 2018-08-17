@@ -187,8 +187,7 @@ does and how the default works, see L<nbdkit-service(1)/LOGGING>.
 
 Use the newstyle NBD protocol protocol.  This is the default in nbdkit
 E<ge> 1.3.  In earlier versions the default was oldstyle.
-
-See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
+See L<nbdkit-protocol(1)>.
 
 =item B<-o>
 
@@ -199,8 +198,7 @@ See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
 Use the oldstyle NBD protocol.  This I<was> the default in nbdkit
 E<le> 1.2, but now the default is newstyle.  Note this is incompatible
 with newer features such as export names and TLS.
-
-See L</NEW STYLE VS OLD STYLE PROTOCOL> below.
+See L<nbdkit-protocol(1)>.
 
 =item B<-P> PIDFILE
 
@@ -419,50 +417,6 @@ C<nbdkit --dump-config> to find the directory name.
 
 How to write filters is described in L<nbdkit-filter(3)>.
 
-=head1 NEW STYLE VS OLD STYLE PROTOCOL
-
-The NBD protocol comes in two incompatible forms that we call
-"oldstyle" and "newstyle".  Unfortunately which protocol you should
-use depends on the client and cannot be known in advance, nor can it
-be negotiated from the server side.
-
-nbdkit defaults to the newstyle protocol since nbdkit E<ge> 1.3.
-Use the I<-e> or I<--exportname> flag to set the optional exportname
-for the newstyle protocol.  Use the I<-o> or I<--oldstyle> flag to
-force the oldstyle protocol.
-
-Some common clients and the protocol they require:
-
- Client                          Protocol
- ------------------------------------------------------------
- qemu <= 2.5 without exportname  oldstyle
- qemu <= 2.5 with exportname     newstyle
- qemu >= 2.6                     client can talk either protocol
- nbd-client < 3.10               client can talk either protocol
- nbd-client >= 3.10              newstyle
- any TLS (encrypted) client      newstyle
- nbdkit nbd plugin               client can talk either protocol
-
-If you use qemu E<le> 2.5 without the exportname field against a
-newstyle server, it will give the error:
-
- Server requires an export name
-
-If you use qemu E<le> 2.5 with the exportname field against an
-oldstyle server, it will give the error:
-
- Server does not support export names
-
-If you use the oldstyle protocol with nbd-client E<ge> 3.10, it will
-give the error:
-
- Error: It looks like you're trying to connect to an oldstyle server.
-
-If you want to claim compatibility with what the NBD proto.txt
-document says should be the case (which isn't based in reality), then
-you should always use newstyle when using port 10809, and use oldstyle
-on all other ports.
-
 =head1 SIGNALS
 
 C<nbdkit> responds to the following signals:
@@ -504,6 +458,8 @@ L<nbdkit-captive(1)> — Run nbdkit under another process and have it
 reliably cleaned up.
 
 L<nbdkit-probing(1)> — How to probe for nbdkit configuration and plugins.
+
+L<nbdkit-protocol(1)> — Which parts of the NBD protocol nbdkit supports.
 
 L<nbdkit-service(1)> — Run nbdkit as a service, systemd socket
 activation.
