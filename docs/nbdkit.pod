@@ -539,6 +539,10 @@ L<qemu(1)>,
 L<nbd-client(1)>,
 L<guestfish(1)>.
 
+=head2 nbdkit links
+
+L<http://github.com/libguestfs/nbdkit> — Source code.
+
 =head2 Other NBD servers
 
 L<qemu-nbd(1)>,
