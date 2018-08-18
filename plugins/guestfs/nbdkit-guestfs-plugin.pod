@@ -68,7 +68,7 @@ Use the I<-r> option to export read-only.  The default is read-write.
 
 =over 4
 
-=item B<connect=URI>
+=item B<connect=>URI
 
 This optional parameter specifies the libvirt connection URI.  This is
 only used with the C<domain> parameter.
@@ -78,15 +78,15 @@ only used with the C<domain> parameter.
 Enable full debugging of libguestfs.  Note you'll probably also have
 to use the L<nbdkit(1)> option I<-v> in order to see the messages.
 
-=item B<disk=DISK>
+=item B<disk=>DISK
 
 Add the named disk image.  You may specify this option multiple times.
 
-=item B<domain=DOMAIN>
+=item B<domain=>DOMAIN
 
 Add the disk(s) from the libvirt guest called C<DOMAIN>.
 
-=item B<export=DEVICE|FILE>
+=item B<export=>DEVICE|FILE
 
 Export C<DEVICE> or C<FILE> (from inside the disk image or guest) over
 NBD.
@@ -103,7 +103,7 @@ B<Exports are writable by default>.  Use the I<-r> option to make them
 read-only.  B<Exporting read-write a live disk image or virtual
 machine will probably cause disk corruption>.
 
-=item B<format=FORMAT>
+=item B<format=>FORMAT
 
 This can be used to specify the format of the disk.  Use it B<before>
 the C<disk=DISK> argument.  It works like the I<--format> option of
@@ -113,11 +113,11 @@ L<guestfish(1)>.
 
 Use guest inspection to mount disks.  This is like C<guestfish -i>.
 
-=item B<mount=dev>
+=item B<mount=>DEV
 
-=item B<mount=dev:mountpoint>
+=item B<mount=>DEVB<:>MOUNTPOINT
 
-Mount C<dev> from inside the guest on C<mountpoint> (defaults to
+Mount C<DEV> from inside the guest on C<MOUNTPOINT> (defaults to
 C</>).  This is like C<guestfish -m>.
 
 =item B<trace=1>

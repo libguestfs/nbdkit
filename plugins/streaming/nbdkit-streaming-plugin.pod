@@ -32,7 +32,7 @@ does I<not> work if C<output> is a pipe.  However this does:
 
 =over 4
 
-=item B<pipe=FILENAME>
+=item B<pipe=>FILENAME
 
 Write to the named pipe or socket.  If the pipe or socket does not
 exist, then it is created (as a named FIFO), otherwise the existing
@@ -40,7 +40,7 @@ pipe or socket is opened and used.
 
 This parameter is required.
 
-=item B<size=SIZE>
+=item B<size=>SIZE
 
 Specify the virtual size of the stream.
 

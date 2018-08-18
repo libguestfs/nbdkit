@@ -17,13 +17,13 @@ range C<[offset .. offset+range-1]> within another plugin.
 
 =over 4
 
-=item B<offset=OFFSET>
+=item B<offset=>OFFSET
 
 The start offset.  The offset must be E<ge> 0.
 
 This parameter is optional.  If not given then C<offset=0> is assumed.
 
-=item B<range=LENGTH>
+=item B<range=>LENGTH
 
 The length of data to serve.
 
