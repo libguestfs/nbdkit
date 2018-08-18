@@ -98,7 +98,7 @@ You can find out by checking if:
 
 contains:
 
- base64=yes
+ data_base64=yes
 
 =item B<raw=binary_data>
 

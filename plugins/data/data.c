@@ -225,7 +225,7 @@ static void
 data_dump_plugin (void)
 {
 #if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
-  printf ("base64=yes\n");
+  printf ("data_base64=yes\n");
 #endif
 }
 

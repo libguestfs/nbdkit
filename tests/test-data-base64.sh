@@ -40,7 +40,7 @@ files="data-base64.out data-base64.pid data-base64.sock"
 rm -f $files
 
 # Test if the base64 parameter is supported in this build.
-if ! nbdkit data --dump-plugin | grep -sq "base64=yes"; then
+if ! nbdkit data --dump-plugin | grep -sq "data_base64=yes"; then
     echo "$0: base64 parameter is not supported in this build"
     exit 77
 fi
