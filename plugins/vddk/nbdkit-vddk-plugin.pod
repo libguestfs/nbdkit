@@ -219,7 +219,7 @@ script, see L</PARAMETERS> above.  Note that it is different from the
 moref used by vCenter, and is just a single number.
 
 C<file> is the actual file you want to open, usually in the form
-C<"[datastore] vmname/vmname.vmdk">.  You can find this from the
+C<"[datastore] vmname/vmname.vmdk">.  You can find this from
 L<virsh(1)> as described in L</PARAMETERS> above.
 
 =head2 Open a file on a remote VMware vCenter server
@@ -244,7 +244,7 @@ script, see L</PARAMETERS> above.  Note that it is different from the
 moref used by ESXi, and always begins with the prefix C<"vm-">.
 
 C<file> is the actual file you want to open, usually in the form
-C<"[datastore] vmname/vmname.vmdk">.  You can find this from the
+C<"[datastore] vmname/vmname.vmdk">.  You can find this from
 L<virsh(1)> as described in L</PARAMETERS> above.
 
 =head1 DUMP-PLUGIN OUTPUT
