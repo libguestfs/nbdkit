@@ -76,6 +76,16 @@ nbdkit_LDFLAGS = \
 	-pthread \
 	-rdynamic
 
+# synopsis.c is generated from docs/synopsis.txt where it is also
+# used to generate the man page.
+
+EXTRA_DIST = synopsis.c
+nbdkit_DEPENDENCIES = synopsis.c
+synopsis.c: $(top_srcdir)/docs/synopsis.txt
+	rm -f $@ $@-t
+	$(SED) -e 's/\(.*\)/"\1\\n"/g' $< > $@-t
+	mv $@-t $@
+
 # pkg-config / pkgconf
 
 pkgconfigdir = $(libdir)/pkgconfig

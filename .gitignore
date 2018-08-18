@@ -46,6 +46,7 @@ Makefile.in
 /podwrapper.pl
 /src/nbdkit
 /src/nbdkit.pc
+/src/synopsis.c
 /src/test-utils
 /stamp-h1
 /tests/disk

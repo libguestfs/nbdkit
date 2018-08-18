@@ -41,7 +41,8 @@ EXTRA_DIST = \
 	nbdkit-service.pod \
 	nbdkit-tls.pod \
 	nbdkit-plugin.pod \
-	nbdkit-filter.pod
+	nbdkit-filter.pod \
+	synopsis.txt
 
 if HAVE_POD
 
@@ -56,11 +57,12 @@ man_MANS = \
 	nbdkit-filter.3
 CLEANFILES += $(man_MANS)
 
-nbdkit.1: nbdkit.pod plugin-links.pod filter-links.pod
+nbdkit.1: nbdkit.pod plugin-links.pod filter-links.pod synopsis.txt
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
 	    --insert filter-links.pod:__FILTER_LINKS__ \
+	    --verbatim synopsis.txt:__SYNOPSIS__ \
 	    $<
 
 nbdkit-captive.1: nbdkit-captive.pod

@@ -4,19 +4,7 @@ nbdkit - toolkit for creating NBD servers
 
 =head1 SYNOPSIS
 
- nbdkit [-e EXPORTNAME] [--exit-with-parent] [-f]
-        [--filter=FILTER ...] [-g GROUP] [-i IPADDR]
-        [--log=stderr|syslog]
-        [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
-        [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]
-        [--tls=off|on|require] [--tls-certificates /path/to/certificates]
-        [--tls-psk /path/to/pskfile] [--tls-verify-peer]
-        [-U SOCKET] [-u USER] [-v] [-V]
-        PLUGIN [key=value [key=value [...]]]
-
- nbdkit --dump-config
-
- nbdkit PLUGIN --dump-plugin
+__SYNOPSIS__
 
 =head1 DESCRIPTION
 

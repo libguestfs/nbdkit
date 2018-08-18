@@ -176,17 +176,10 @@ static void
 usage (void)
 {
   /* --{short,long}-options remain undocumented */
-  printf ("nbdkit [--dump-config] [--dump-plugin]\n"
-          "       [-e EXPORTNAME] [--exit-with-parent] [-f]\n"
-          "       [--filter=FILTER ...] [-g GROUP] [-i IPADDR]\n"
-          "       [--log=stderr|syslog]\n"
-          "       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]\n"
-          "       [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]\n"
-          "       [--tls=off|on|require] [--tls-certificates /path/to/certificates]\n"
-          "       [--tls-psk /path/to/pskfile] [--tls-verify-peer]\n"
-          "       [-U SOCKET] [-u USER] [-v] [-V]\n"
-          "       PLUGIN [key=value [key=value [...]]]\n"
-          "\n"
+  printf (
+#include "synopsis.c"
+  );
+  printf ("\n"
           "Please read the nbdkit(1) manual page for full usage.\n");
 }
 
