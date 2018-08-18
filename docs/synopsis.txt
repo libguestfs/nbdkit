@@ -1,13 +1,21 @@
-nbdkit [-e EXPORTNAME] [--exit-with-parent] [-f]
-       [--filter=FILTER ...] [-g GROUP] [-i IPADDR]
-       [--log=stderr|syslog]
-       [--newstyle] [--oldstyle] [-P PIDFILE] [-p PORT] [-r]
-       [--run CMD] [-s] [--selinux-label LABEL] [-t THREADS]
-       [--tls=off|on|require] [--tls-certificates /path/to/certificates]
+nbdkit [-e|--exportname EXPORTNAME] [--exit-with-parent]
+       [--filter FILTER ...] [-f|--foreground]
+       [-g|--group GROUP] [-i|--ipaddr IPADDR]
+       [--log stderr|syslog]
+       [-n|--newstyle] [-o|--oldstyle]
+       [-P|--pidfile PIDFILE]
+       [-p|--port PORT] [-r|--readonly]
+       [--run CMD] [-s|--single] [--selinux-label LABEL]
+       [-t|--threads THREADS]
+       [--tls off|on|require]
+       [--tls-certificates /path/to/certificates]
        [--tls-psk /path/to/pskfile] [--tls-verify-peer]
-       [-U SOCKET] [-u USER] [-v] [-V]
-       PLUGIN [key=value [key=value [...]]]
+       [-U|--unix SOCKET] [-u|--user USER]
+       [-v|--verbose] [-V|--version]
+       PLUGIN [KEY=VALUE [KEY=VALUE [...]]]
 
 nbdkit --dump-config
 
 nbdkit PLUGIN --dump-plugin
+
+nbdkit --help
