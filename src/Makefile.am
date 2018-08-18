@@ -77,10 +77,11 @@ nbdkit_LDFLAGS = \
 	-rdynamic
 
 # synopsis.c is generated from docs/synopsis.txt where it is also
-# used to generate the man page.
+# used to generate the man page.  It is included in main.c.
 
 EXTRA_DIST = synopsis.c
 nbdkit_DEPENDENCIES = synopsis.c
+main.c: synopsis.c
 synopsis.c: $(top_srcdir)/docs/synopsis.txt
 	rm -f $@ $@-t
 	$(SED) -e 's/\(.*\)/"\1\\n"/g' $< > $@-t
