@@ -12,8 +12,12 @@ Network Block Device (NBD) is a network protocol for accessing block
 devices over the network.  Block devices are hard disks and things
 that behave like hard disks such as disk images and virtual machines.
 
-C<nbdkit> is both a toolkit for creating NBD servers from
+nbdkit is both a toolkit for creating NBD servers from
 "unconventional" sources and the name of an NBD server.
+
+nbdkit ships with many plugins and filters for performing common tasks
+like serving files.  See the L</EXAMPLES> and L</SEE ALSO> sections
+below, and look in the directory C<$libdir/nbdkit>.
 
 To create a new Network Block Device source, all you need to do is
 write a few glue functions, possibly in C, or perhaps in a high level
@@ -24,8 +28,7 @@ include nbdkit in proprietary code.
 If you want to write an nbdkit plugin, you should read
 L<nbdkit-plugin(3)>.
 
-Several plugins may be found in C<$libdir/nbdkit/plugins>.  You can
-give the full path to the plugin, like this:
+You can give the full path to the plugin, like this:
 
  nbdkit $libdir/nbdkit/plugins/nbdkit-file-plugin.so [...]
 
@@ -41,26 +44,40 @@ C<$libdir> is set at compile time.  To print it out, do:
 
 =head2 Basic file serving
 
-Serve file F<disk.img> on port 10809 using L<nbdkit-file-plugin(1)>:
+Serve file F<disk.img> on port 10809 using L<nbdkit-file-plugin(1)>,
+and connect to it using L<guestfish(1)>:
 
  nbdkit file file=disk.img
-
-Run the L<nbdkit-example3-plugin(1)> and connect to it using
-L<guestfish(1)>:
-
- nbdkit example3 size=1G
- guestfish --ro --format=raw -a nbd://localhost
+ guestfish --rw --format=raw -a nbd://localhost
 
 Serve file F<disk.img> on port 10809, requiring clients to use
 encrypted (TLS) connections:
 
  nbdkit --tls=require file file=disk.img
 
+=head2 Other nbdkit plugins
+
+Create a 1MB disk with one empty partition entirely on the command
+line using L<nbdkit-data-plugin(1)>:
+
+ nbdkit data data="@0x1b8 0xf8 0x21 0xdc 0xeb 0 0 0 0
+                   2 0 0x83 0x20 0x20 0 1 0  0 0 0xff 0x7
+                   @0x1fe 0x55 0xaa" \
+                   size=1M
+
+Forward an NBD connection over HTTP using L<nbdkit-curl-plugin(1)>:
+
+ nbdkit -r curl url=http://example.com/disk.img
+
 =head2 Combining plugins and filters
 
 Serve only the first partition from compressed disk image
 F<disk.img.xz>, combining L<nbdkit-xz-plugin(1)> and
 L<nbdkit-partition-filter(1)>:
+
+ nbdkit --filter=partition  xz file=disk.img.xz  partition=1
+
+To understand this command line:
 
                      plugin name and plugin parameter
                                   │
@@ -71,6 +88,13 @@ L<nbdkit-partition-filter(1)>:
                 └───────────────┬───────────────────┘
                                 │
                 filter name and filter parameter
+
+Create a scratch, empty nbdkit device and inject errors and delays,
+for testing clients, using L<nbdkit-memory-plugin(1)>,
+L<nbdkit-error-filter(1)> and L<nbdkit-delay-filter(1)>:
+
+ nbdkit --filter=error --filter=delay memory size=100M \
+        error-rate=10% rdelay=1 wdelay=1
 
 =head2 Display information
 
@@ -164,8 +188,12 @@ interfaces.  See also I<-p>.
 =item B<--log=syslog>
 
 Send error messages to either standard error (I<--log=stderr>) or to
-the system log (I<--log=syslog>).  For an explanation of what this
-does and how the default works, see L<nbdkit-service(1)/LOGGING>.
+the system log (I<--log=syslog>).
+
+The default is to send error messages to stderr, unless nbdkit
+forks into the background in which case they are sent to syslog.
+
+For more details see L<nbdkit-service(1)/LOGGING>.
 
 =item B<-n>
 
@@ -407,7 +435,7 @@ How to write filters is described in L<nbdkit-filter(3)>.
 
 =head1 SIGNALS
 
-C<nbdkit> responds to the following signals:
+nbdkit responds to the following signals:
 
 =over 4
 
@@ -449,7 +477,7 @@ L<nbdkit-probing(1)> — How to probe for nbdkit configuration and plugins.
 
 L<nbdkit-protocol(1)> — Which parts of the NBD protocol nbdkit supports.
 
-L<nbdkit-service(1)> — Run nbdkit as a service, systemd socket
+L<nbdkit-service(1)> — Running nbdkit as a service, and systemd socket
 activation.
 
 L<nbdkit-tls(1)> — Authentication and encryption of NBD connections

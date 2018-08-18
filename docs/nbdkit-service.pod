@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit-service - run nbdkit as a service, systemd socket activation
+nbdkit-service - running nbdkit as a service, and systemd socket activation
 
 =head1 DESCRIPTION
 
@@ -53,7 +53,13 @@ L<http://0pointer.de/blog/projects/socket-activation.html>
 =head1 LOGGING
 
 Error messages from nbdkit can be sent to either standard error
-(I<--log=stderr>) or to the system log (I<--log=syslog>):
+(I<--log=stderr>) or to the system log (I<--log=syslog>).
+
+The default, if I<--log> is not specified on the command line, is to
+send error messages to stderr, unless nbdkit forks into the background
+in which case they are sent to syslog.
+
+In detail:
 
 =over 4
 
@@ -63,13 +69,13 @@ When running from the command line in the foreground.
 
 When using systemd socket activation.
 
-Using I<--log=stderr> forces messages to go to standard error.
+Using I<--log=stderr> forces all messages to go to standard error.
 
 =item Messages go to the system log (syslog):
 
 When running from the command line, forked into the background.
 
-Using I<--log=syslog> forces messages to go to the system log.
+Using I<--log=syslog> forces all messages to go to the system log.
 
 =back
 
