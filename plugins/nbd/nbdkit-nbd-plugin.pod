@@ -25,14 +25,14 @@ additions will support network sockets and encryption.
 
 =over 4
 
-=item B<socket=SOCKNAME>
+=item B<socket=>SOCKNAME
 
 Connect to the NBD server located at the Unix socket C<SOCKNAME>.  The
 server can speak either new or old style protocol.
 
 This parameter is required.
 
-=item B<export=NAME>
+=item B<export=>NAME
 
 If this parameter is given, and the server speaks new style protocol,
 then connect to the named export instead of the default export (the

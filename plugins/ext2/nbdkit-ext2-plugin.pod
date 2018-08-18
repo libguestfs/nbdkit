@@ -52,7 +52,7 @@ e2fsprogs.
 
 =over 4
 
-=item B<disk=FILENAME>
+=item B<disk=>FILENAME
 
 The ext2, ext3 or ext4 filesystem, a file on the host.
 
@@ -64,7 +64,7 @@ certainly result in disk corruption in the filesystem.
 The plugin expects a raw filesystem.  If the file/device is
 partitioned, use L<nbdkit-partition-filter(1)>.
 
-=item B<file=PATH>
+=item B<file=>PATH
 
 The full path of the file within the filesystem that will be exposed
 over NBD.  The path must be absolute (starts with C</>).

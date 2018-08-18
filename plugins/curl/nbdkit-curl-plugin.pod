@@ -61,7 +61,7 @@ the password is read from stdin:
 
 =over 4
 
-=item B<password=PASSWORD>
+=item B<password=>PASSWORD
 
 Set the password to use when connecting to the remote server.
 
@@ -72,7 +72,7 @@ machines.
 
 Ask for the password (interactively) when nbdkit starts up.
 
-=item B<password=+FILENAME>
+=item B<password=+>FILENAME
 
 Read the password from the named file.  This is the most secure method
 to supply a password, as long as you set the permissions on the file
@@ -82,7 +82,7 @@ appropriately.
 
 Don't verify the SSL certificate of the remote host.
 
-=item B<timeout=SECS>
+=item B<timeout=>SECS
 
 Set the timeout for requests.
 
@@ -90,14 +90,14 @@ Set the timeout for requests.
 
 Use the default libcurl timeout for requests.
 
-=item B<url=URL>
+=item B<url=>URL
 
 The URL of the remote disk image.  This is passed to libcurl directly
 via L<curl_easy_setopt(3)/CURLOPT_URL>.
 
 This parameter is required.
 
-=item B<user=USERNAME>
+=item B<user=>USERNAME
 
 Set the username to use when connecting to the remote server.  This
 may also be set in the URL (eg. C<http://foo@example.com/disk.img>)

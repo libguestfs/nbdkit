@@ -59,7 +59,9 @@ range of error codes).
 This parameter is optional and the default is C<EIO>
 ("Input/output error").
 
-=item B<error-rate=N%|0..1>
+=item B<error-rate=>NB<%>
+
+=item B<error-rate=>0..1
 
 The rate of injected errors per NBD request.  This can be expressed as
 either a percentage between C<0%> and C<100%> or as a probability
@@ -70,7 +72,7 @@ errors.
 This parameter is optional and the default is C<0%>.
 B<Unless you set this, the filter will do nothing.>
 
-=item B<error-file=FILENAME>
+=item B<error-file=>FILENAME
 
 Errors will only be injected when F<FILENAME> exists.  (Note you must
 also specify the C<error-rate>).

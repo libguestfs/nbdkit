@@ -28,7 +28,7 @@ content of the disk image.
 
 =over 4
 
-=item B<size=SIZE>
+=item B<size=>SIZE
 
 Specify the virtual size of the disk image.
 

@@ -81,12 +81,12 @@ supplied.
 
 =over 4
 
-=item B<data=DATA>
+=item B<data=>DATA
 
 Specify the disk data using a simple compact format.  See
 L</DATA FORMAT> below.
 
-=item B<base64=base64_data>
+=item B<base64=>BASE64
 
 The C<base64> parameter can be used to supply binary data encoded in
 base64 on the command line.
@@ -100,7 +100,7 @@ contains:
 
  data_base64=yes
 
-=item B<raw=binary_data>
+=item B<raw=>BINARY
 
 The C<raw> parameter can be used to supply raw binary data directly on
 the command line.
@@ -112,7 +112,7 @@ those will be processed in C to mean the end of the string.  In almost
 all cases it is better to use base64 encoding or the custom C<data>
 format.
 
-=item B<size=SIZE>
+=item B<size=>SIZE
 
 The data is truncated or extended to the size specified.
 

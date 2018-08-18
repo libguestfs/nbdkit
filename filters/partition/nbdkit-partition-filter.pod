@@ -25,7 +25,7 @@ MBR logical partitions are B<not> supported.
 
 =over 4
 
-=item B<partition=PART>
+=item B<partition=>PART
 
 The partition number to serve, counting from 1.
 

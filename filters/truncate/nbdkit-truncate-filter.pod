@@ -41,7 +41,7 @@ this has no effect.
 
 =over 4
 
-=item B<truncate=SIZE>
+=item B<truncate=>SIZE
 
 Set the absolute size in bytes of the apparent device.  This may be
 smaller or larger or the same as the underlying plugin.
@@ -53,7 +53,7 @@ will return an error back to the client).
 
 This parameter is optional.
 
-=item B<round-up=N>
+=item B<round-up=>N
 
 Round the size up to the next multiple of C<N> bytes.  If the size of
 the underlying plugin is already a multiple of C<N> bytes, this has no
@@ -61,7 +61,7 @@ effect.
 
 This parameter is optional.
 
-=item B<round-down=N>
+=item B<round-down=>N
 
 Round the size down to a multiple of C<N> bytes.  If the size of the
 underlying plugin is already a multiple of C<N> bytes, this has no

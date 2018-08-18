@@ -54,15 +54,15 @@ parameter.
 
 =over 4
 
-=item B<config=FILENAME>
+=item B<config=>FILENAME
 
 Optional.  The name of the VDDK configuration file.
 
-=item B<cookie=COOKIE>
+=item B<cookie=>COOKIE
 
 Optional.  Cookie from existing authenticated session on the host.
 
-=item B<file=FILENAME>
+=item B<file=>FILENAME
 
 Required.  Set the name of the VMDK file to serve.
 
@@ -83,7 +83,7 @@ If a VM has multiple disks, nbdkit can only serve one at a time.  To
 serve more than one you must run multiple copies of nbdkit.  (See
 L</NOTES> below).
 
-=item B<libdir=PATHNAME>
+=item B<libdir=>PATHNAME
 
 Optional.  This sets the path of the VMware VDDK distribution.
 
@@ -93,14 +93,14 @@ wrong then VDDK will work with reduced functionality.
 If the parameter is not given, then a hard-coded path determined at
 compile time is used, see L</DUMP-PLUGIN OUTPUT> below.
 
-=item B<nfchostport=PORT>
+=item B<nfchostport=>PORT
 
 Optional.  Port used to establish an NFC connection to ESXi.  Defaults
 to 902.
 
 (Only supported in VDDK ≥ 5.5.5 and ≥ 6.0.1)
 
-=item B<password=PASSWORD>
+=item B<password=>PASSWORD
 
 Optional (required for remote connections).  Set the password to use
 when connecting to the remote server.
@@ -113,26 +113,26 @@ machines.
 Optional (required for remote connections).  Ask for the password
 (interactively) when nbdkit starts up.
 
-=item B<password=+FILENAME>
+=item B<password=+>FILENAME
 
 Optional (required for remote connections).  Read the password from
 the named file.  This is the most secure method to supply a password,
 as long as you set the permissions on the file appropriately.
 
-=item B<port=PORT>
+=item B<port=>PORT
 
 Optional.  The port on the VCenter/ESXi host.  Defaults to 443.
 
-=item B<server=HOSTNAME>
+=item B<server=>HOSTNAME
 
 Optional (required for remote connections).  The hostname or IP
 address of VCenter or ESXi host.
 
-=item B<snapshot=MOREF>
+=item B<snapshot=>MOREF
 
 Optional.  The Managed Object Reference of the snapshot.
 
-=item B<thumbprint=THUMBPRINT>
+=item B<thumbprint=>THUMBPRINT
 
 Optional.  The SSL (SHA1) thumbprint for validating the SSL
 certificate.
@@ -152,19 +152,19 @@ using this command:
 
  # openssl x509 -in /etc/vmware-vpx/ssl/rui.crt -fingerprint -sha1 -noout
 
-=item B<transports=MODE:MODE:...>
+=item B<transports=>MODEB<:>MODEB<:>...
 
 Optional.  List of one or more transport modes to use.  Possible
 values include ‘nbd’, ‘nbdssl’, ‘san’, ‘hotadd’, ‘file’ (there may be
 others).  If not given, VDDK will try to choose the best transport
 mode.
 
-=item B<user=USERNAME>
+=item B<user=>USERNAME
 
 Optional (required for remote connections).  The username to connect
 to the remote server as.
 
-=item B<vm=moref=ID>
+=item B<vm=moref=>ID
 
 Optional (required for remote connections).  The Managed Object
 Reference ("moref") of the virtual machine.
@@ -195,7 +195,7 @@ C<moRefFinder.pl> script written by William Lam
 (L<http://www.virtuallyghetto.com/2011/11/vsphere-moref-managed-object-reference.html>
 L<https://blogs.vmware.com/vsphere/2012/02/uniquely-identifying-virtual-machines-in-vsphere-and-vcloud-part-2-technical.html>).
 
-=item B<vimapiver=APIVER>
+=item B<vimapiver=>APIVER
 
 This parameter is ignored for backwards compatibility.
 

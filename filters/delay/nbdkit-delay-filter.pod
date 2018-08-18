@@ -6,7 +6,7 @@ nbdkit-delay-filter - nbdkit delay filter
 
  nbdkit --filter=delay plugin rdelay=SECS wdelay=SECS [plugin-args...]
 
- nbdkit --filter=delay plugin rdelay=<NN>ms wdelay=<NN>ms [plugin-args...]
+ nbdkit --filter=delay plugin rdelay=NNms wdelay=NNms [plugin-args...]
 
 =head1 DESCRIPTION
 
@@ -14,19 +14,23 @@ C<nbdkit-delay-filter> is a filter that delays read and write requests
 by some seconds or milliseconds.  This is used to simulate a slow or
 remote server, or to test certain kinds of race conditions in Linux.
 
+=head1 EXAMPLE
+
+ nbdkit --filter=delay file file=disk.img rdelay=100ms wdelay=100ms
+
 =head1 PARAMETERS
 
 =over 4
 
-=item B<rdelay=SECS>
+=item B<rdelay=>SECS
 
-=item B<rdelay=E<lt>NNE<gt>ms>
+=item B<rdelay=>NNB<ms>
 
 The optional read delay in seconds or milliseconds.
 
-=item B<wdelay=SECS>
+=item B<wdelay=>SECS
 
-=item B<wdelay=E<lt>NNE<gt>ms>
+=item B<wdelay=>NNB<ms>
 
 The optional write delay in seconds or milliseconds.
 

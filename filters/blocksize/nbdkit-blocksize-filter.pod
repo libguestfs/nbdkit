@@ -29,7 +29,7 @@ The nbdkit-blocksize-filter accepts the following parameters.
 
 =over 4
 
-=item B<minblock=SIZE>
+=item B<minblock=>SIZE
 
 The minimum block size and alignment to pass to the plugin.  This must
 be a power of two, and no larger than 64k.  If omitted, this defaults
@@ -43,7 +43,7 @@ would result in a size of 0.
 
 This parameter understands the suffix 'k' for 1024.
 
-=item B<maxdata=SIZE>
+=item B<maxdata=>SIZE
 
 The maximum block size for any single transaction with data (read and
 write).  If omitted, this defaults to 64 megabytes (that is, the
@@ -54,7 +54,7 @@ client request into multiple plugin requests.
 This parameter understands the suffixes 'k', 'M', and 'G' for powers
 of 1024.
 
-=item B<maxlen=SIZE>
+=item B<maxlen=>SIZE
 
 The maximum length for any single transaction without data (trim and
 zero).  If omitted, this defaults to 0xffffffff rounded down to

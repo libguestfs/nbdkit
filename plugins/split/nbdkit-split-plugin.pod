@@ -55,7 +55,7 @@ support this.
 
 =over 4
 
-=item B<file=FILENAME>
+=item B<file=>FILENAME
 
 One or more files to open.  They are logically concatenated in
 the order they appear on the command line.

@@ -22,16 +22,16 @@ be used over remote libvirt connections.
 
 =over 4
 
-=item B<connect=URI>
+=item B<connect=>URI
 
 This optional parameter specifies the libvirt connection URI.
 
-=item B<domain=DOMAIN>
+=item B<domain=>DOMAIN
 
 This required parameter specifies the libvirt domain name
 (guest name).
 
-=item B<disk=DISK>
+=item B<disk=>DISK
 
 This required parameter specifies the guest's disk that we want to
 read.
