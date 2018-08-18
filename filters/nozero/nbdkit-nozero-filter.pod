@@ -20,7 +20,7 @@ testing client or server fallbacks.
 
 =over 4
 
-=item B<zeromode=MODE>
+=item B<zeromode=none|emulate>
 
 Optional, controls which mode the filter will use.  Mode B<none>
 (default) means that zero support is not advertised to the client;

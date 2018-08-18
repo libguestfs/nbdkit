@@ -55,13 +55,13 @@ S<E<lt> 1%> of the compressed file size.
 
 =over 4
 
-=item B<file=FILENAME.xz>
+=item B<file=>FILENAME.xz
 
 Serve the file named C<FILENAME.xz>.
 
 This parameter is required.
 
-=item B<maxblock=SIZE>
+=item B<maxblock=>SIZE
 
 The maximum block size that the plugin will read.  The plugin will
 refuse to read xz files that contain any block larger than this size.
@@ -71,7 +71,7 @@ sizes in order to reduce memory usage and increase performance.
 
 This parameter is optional.  If not specified it defaults to 512M.
 
-=item B<maxdepth=N>
+=item B<maxdepth=>N
 
 Maximum number of blocks stored in the LRU block cache.
 

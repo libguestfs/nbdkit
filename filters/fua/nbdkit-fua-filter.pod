@@ -20,7 +20,7 @@ full flush.
 
 =over 4
 
-=item B<fuamode=MODE>
+=item B<fuamode=none|emulate|native|force>
 
 Optional, controls which mode the filter will use.  Mode B<none>
 (default) means that FUA support is not advertised to the client.

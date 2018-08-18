@@ -20,20 +20,16 @@ To concatenate multiple files, use L<nbdkit-split-plugin(1)>.
 
 =over 4
 
-=item B<file=FILENAME>
+=item B<file=>FILENAME
 
 Serve the file named C<FILENAME>.  A device path can also be
 used here.
 
 This parameter is required.
 
-=item B<rdelay=SECS>
+=item B<rdelay>
 
-=item B<rdelay=E<lt>NNE<gt>ms>
-
-=item B<wdelay=SECS>
-
-=item B<wdelay=E<lt>NNE<gt>ms>
+=item B<wdelay>
 
 These plugin parameters have been moved to the
 L<nbdkit-delay-filter(1)> filter.  Modify the command line to add

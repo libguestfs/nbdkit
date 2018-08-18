@@ -25,13 +25,13 @@ clients.
 
 =over 4
 
-=item B<size=SIZE>
+=item B<size=>SIZE
 
 Specify the virtual size of the disk image.
 
 This parameter is required.
 
-=item B<seed=SEED>
+=item B<seed=>SEED
 
 Specify the random seed to get repeatable data over multiple runs.
 
