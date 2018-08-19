@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -118,6 +119,8 @@ file_config_complete (void)
 /* The per-connection handle. */
 struct handle {
   int fd;
+  bool can_punch_hole;
+  bool can_zero_range;
 };
 
 /* Create the per-connection handle. */
@@ -145,6 +148,18 @@ file_open (int readonly)
     free (h);
     return NULL;
   }
+
+#ifdef FALLOC_FL_PUNCH_HOLE
+  h->can_punch_hole = true;
+#else
+  h->can_punch_hole = false;
+#endif
+
+#ifdef FALLOC_FL_ZERO_RANGE
+  h->can_zero_range = true;
+#else
+  h->can_zero_range = false;
+#endif
 
   return h;
 }
@@ -252,35 +267,43 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 static int
 file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
-#if defined(FALLOC_FL_PUNCH_HOLE) || defined(FALLOC_FL_ZERO_RANGE)
   struct handle *h = handle;
-#endif
-  int r = -1;
+  int r;
 
 #ifdef FALLOC_FL_PUNCH_HOLE
-  if (may_trim) {
+  if (h->can_punch_hole && may_trim) {
     r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
                       offset, count);
-    if (r == -1 && errno != EOPNOTSUPP) {
+    if (r == 0)
+      return 0;
+
+    if (errno != EOPNOTSUPP) {
       nbdkit_error ("zero: %m");
+      return -1;
     }
-    /* PUNCH_HOLE is older; if it is not supported, it is likely that
-       ZERO_RANGE will not work either, so fall back to write. */
-    return r;
+
+    h->can_punch_hole = false;
   }
 #endif
 
 #ifdef FALLOC_FL_ZERO_RANGE
-  r = do_fallocate (h->fd, FALLOC_FL_ZERO_RANGE, offset, count);
-  if (r == -1 && errno != EOPNOTSUPP) {
-    nbdkit_error ("zero: %m");
+  if (h->can_zero_range) {
+    r = do_fallocate (h->fd, FALLOC_FL_ZERO_RANGE, offset, count);
+    if (r == 0)
+      return 0;
+
+    if (errno != EOPNOTSUPP) {
+      nbdkit_error ("zero: %m");
+      return -1;
+    }
+
+    h->can_zero_range = false;
   }
-#else
-  /* Trigger a fall back to writing */
-  errno = EOPNOTSUPP;
 #endif
 
-  return r;
+  /* Trigger a fall back to writing */
+  errno = EOPNOTSUPP;
+  return -1;
 }
 
 /* Flush the file to disk. */
@@ -301,27 +324,30 @@ file_flush (void *handle)
 static int
 file_trim (void *handle, uint32_t count, uint64_t offset)
 {
-  int r = -1;
 #ifdef FALLOC_FL_PUNCH_HOLE
   struct handle *h = handle;
+  int r;
 
-  /* Trim is advisory; we don't care if it fails for anything other
-   * than EIO or EPERM. */
-  r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
-                    offset, count);
-  if (r < 0) {
-    if (errno != EPERM && errno != EIO) {
+  if (h->can_punch_hole) {
+    r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+                      offset, count);
+    if (r == -1) {
+      /* Trim is advisory; we don't care if it fails for anything other
+       * than EIO or EPERM. */
+      if (errno == EPERM || errno == EIO) {
+        nbdkit_error ("fallocate: %m");
+        return -1;
+      }
+
+      if (errno == EOPNOTSUPP)
+        h->can_punch_hole = false;
+
       nbdkit_debug ("ignoring failed fallocate during trim: %m");
-      r = 0;
     }
-    else
-      nbdkit_error ("fallocate: %m");
   }
-#else
-  /* Based on .can_trim, this should not be reached. */
-  errno = EOPNOTSUPP;
 #endif
-  return r;
+
+  return 0;
 }
 
 static struct nbdkit_plugin plugin = {
