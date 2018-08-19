@@ -33,5 +33,6 @@
 # These headers contain only common code shared by plugins and
 # filters.  They are not installed.
 EXTRA_DIST = \
+	isaligned.h \
 	ispowerof2.h \
 	iszero.h
