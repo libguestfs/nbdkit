@@ -43,7 +43,8 @@ nbdkit_file_plugin_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
 nbdkit_file_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include
 nbdkit_file_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_file_plugin_la_LDFLAGS = \

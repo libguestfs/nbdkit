@@ -41,13 +41,20 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <errno.h>
 
 #if defined(__linux__) && !defined(FALLOC_FL_PUNCH_HOLE)
 #include <linux/falloc.h>   /* For FALLOC_FL_*, glibc < 2.18 */
 #endif
 
+#if defined(__linux__)
+#include <linux/fs.h>       /* For BLKZEROOUT */
+#endif
+
 #include <nbdkit-plugin.h>
+
+#include "isaligned.h"
 
 #ifndef O_CLOEXEC
 #define O_CLOEXEC 0
@@ -123,9 +130,12 @@ file_config_complete (void)
 /* The per-connection handle. */
 struct handle {
   int fd;
+  bool is_block_device;
+  int sector_size;
   bool can_punch_hole;
   bool can_zero_range;
   bool can_fallocate;
+  bool can_zeroout;
 };
 
 /* Create the per-connection handle. */
@@ -133,6 +143,7 @@ static void *
 file_open (int readonly)
 {
   struct handle *h;
+  struct stat statbuf;
   int flags;
 
   h = malloc (sizeof *h);
@@ -154,6 +165,22 @@ file_open (int readonly)
     return NULL;
   }
 
+  if (fstat (h->fd, &statbuf) == -1) {
+    nbdkit_error ("fstat: %s: %m", filename);
+    free (h);
+    return NULL;
+  }
+
+  h->is_block_device = S_ISBLK(statbuf.st_mode);
+  h->sector_size = 4096;  /* Start with safe guess */
+
+#ifdef BLKSSZGET
+  if (h->is_block_device) {
+    if (ioctl (h->fd, BLKSSZGET, &h->sector_size))
+      nbdkit_debug ("cannot get sector size: %s: %m", filename);
+  }
+#endif
+
 #ifdef FALLOC_FL_PUNCH_HOLE
   h->can_punch_hole = true;
 #else
@@ -167,6 +194,7 @@ file_open (int readonly)
 #endif
 
   h->can_fallocate = true;
+  h->can_zeroout = h->is_block_device;
 
   return h;
 }
@@ -188,27 +216,29 @@ static int64_t
 file_get_size (void *handle)
 {
   struct handle *h = handle;
-  struct stat statbuf;
 
-  if (fstat (h->fd, &statbuf) == -1) {
-    nbdkit_error ("stat: %m");
-    return -1;
-  }
-
-  if (S_ISBLK (statbuf.st_mode)) {
+  if (h->is_block_device) {
+    /* Block device, so st_size will not be the true size. */
     off_t size;
 
-    /* Block device, so st_size will not be the true size. */
     size = lseek (h->fd, 0, SEEK_END);
     if (size == -1) {
       nbdkit_error ("lseek (to find device size): %m");
       return -1;
     }
-    return size;
-  }
 
-  /* Else regular file. */
-  return statbuf.st_size;
+    return size;
+  } else {
+    /* Regular file. */
+    struct stat statbuf;
+
+    if (fstat (h->fd, &statbuf) == -1) {
+      nbdkit_error ("fstat: %m");
+      return -1;
+    }
+
+    return statbuf.st_size;
+  }
 }
 
 /* Read data from the file. */
@@ -319,6 +349,24 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
       h->can_punch_hole = false;
     }
+  }
+#endif
+
+#ifdef BLKZEROOUT
+  /* For aligned range and block device, we can use BLKZEROOUT. */
+  if (h->can_zeroout && is_aligned (offset | count, h->sector_size)) {
+    uint64_t range[2] = {offset, count};
+
+    r = ioctl (h->fd, BLKZEROOUT, &range);
+    if (r == 0)
+      return 0;
+
+    if (errno != ENOTTY) {
+      nbdkit_error ("zero: %m");
+      return -1;
+    }
+
+    h->can_zeroout = false;
   }
 #endif
 
