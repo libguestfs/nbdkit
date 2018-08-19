@@ -121,6 +121,7 @@ struct handle {
   int fd;
   bool can_punch_hole;
   bool can_zero_range;
+  bool can_fallocate;
 };
 
 /* Create the per-connection handle. */
@@ -160,6 +161,8 @@ file_open (int readonly)
 #else
   h->can_zero_range = false;
 #endif
+
+  h->can_fallocate = true;
 
   return h;
 }
@@ -298,6 +301,35 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     }
 
     h->can_zero_range = false;
+  }
+#endif
+
+#ifdef FALLOC_FL_PUNCH_HOLE
+  /* If we can punch hole but may not trim, we can combine punching hole and
+   * fallocate to zero a range. This is expected to be more efficient than
+   * writing zeros manually. */
+  if (h->can_punch_hole && h->can_fallocate) {
+    r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+                      offset, count);
+    if (r == 0) {
+      r = do_fallocate (h->fd, 0, offset, count);
+      if (r == 0)
+        return 0;
+
+      if (errno != EOPNOTSUPP) {
+        nbdkit_error ("zero: %m");
+        return -1;
+      }
+
+      h->can_fallocate = false;
+    } else {
+      if (errno != EOPNOTSUPP) {
+        nbdkit_error ("zero: %m");
+        return -1;
+      }
+
+      h->can_punch_hole = false;
+    }
   }
 #endif
 
