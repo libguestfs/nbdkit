@@ -64,6 +64,9 @@ SUBDIRS += tests
 check-valgrind:
 	$(MAKE) -C tests check-valgrind
 
+check-root:
+	$(MAKE) -C tests check-root
+
 # Maintainer only: check no files are missing from EXTRA_DIST rules,
 # and that all generated files have been included in the tarball.
 # (Note you must have done 'make dist')

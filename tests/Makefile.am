@@ -96,6 +96,10 @@ EXTRA_DIST = \
 check-valgrind:
 	NBDKIT_VALGRIND=1 $(MAKE) check
 
+# To run only tests which require root, use:
+check-root:
+	$(MAKE) check TESTS="test-file-block"
+
 #----------------------------------------------------------------------
 # Basic server command line and start-up tests.
 
@@ -309,11 +313,15 @@ endif HAVE_GUESTFISH
 endif HAVE_EXT2
 
 # file plugin test.
-LIBGUESTFS_TESTS += test-file
+LIBGUESTFS_TESTS += test-file test-file-block
 
 test_file_SOURCES = test-file.c test.h
 test_file_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+test_file_block_SOURCES = test-file-block.c test.h
+test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_file_block_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # gzip plugin test.
 if HAVE_ZLIB
