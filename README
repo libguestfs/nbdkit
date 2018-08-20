@@ -91,6 +91,8 @@ To test for memory leaks ('make check-valgrind'):
 
 For non-essential enhancements to the test suite:
 
+ - losetup (from util-linux package)
+
  - socat
 
  - ss (from iproute package)
@@ -138,6 +140,11 @@ The test suite is fairly comprehensive.  It runs the newly built
 nbdkit + plugins as a captive process, and tests them using
 libguestfs.  If there is a failure, look at the corresponding
 tests/*.log file for debug information.
+
+A few tests require root privileges, and are skipped by default.  To
+run them you must do:
+
+    sudo make check-root
 
 You can run the tests under valgrind, if it is available, using:
 

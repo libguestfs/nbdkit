@@ -57,6 +57,7 @@ Makefile.in
 /tests/test-delay
 /tests/test-exit-with-parent
 /tests/test-file
+/tests/test-file-block
 /tests/test-gzip
 /tests/test-memory
 /tests/test-newstyle
