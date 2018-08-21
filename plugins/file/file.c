@@ -62,6 +62,8 @@
 
 static char *filename = NULL;
 
+int file_debug_zero;            /* to enable: -D file.zero=1 */
+
 static void
 file_unload (void)
 {
@@ -325,8 +327,12 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
   if (h->can_punch_hole && may_trim) {
     r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
                       offset, count);
-    if (r == 0)
+    if (r == 0) {
+      if (file_debug_zero)
+        nbdkit_debug ("h->can_punch_hole && may_trim: "
+                      "zero succeeded using fallocate");
       return 0;
+    }
 
     if (errno != EOPNOTSUPP) {
       nbdkit_error ("zero: %m");
@@ -340,8 +346,12 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 #ifdef FALLOC_FL_ZERO_RANGE
   if (h->can_zero_range) {
     r = do_fallocate (h->fd, FALLOC_FL_ZERO_RANGE, offset, count);
-    if (r == 0)
+    if (r == 0) {
+      if (file_debug_zero)
+        nbdkit_debug ("h->can_zero-range: "
+                      "zero succeeded using fallocate");
       return 0;
+    }
 
     if (errno != EOPNOTSUPP) {
       nbdkit_error ("zero: %m");
@@ -361,8 +371,12 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
                       offset, count);
     if (r == 0) {
       r = do_fallocate (h->fd, 0, offset, count);
-      if (r == 0)
+      if (r == 0) {
+        if (file_debug_zero)
+          nbdkit_debug ("h->can_punch_hole && h->can_fallocate: "
+                        "zero succeeded using fallocate");
         return 0;
+      }
 
       if (errno != EOPNOTSUPP) {
         nbdkit_error ("zero: %m");
@@ -387,8 +401,12 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     uint64_t range[2] = {offset, count};
 
     r = ioctl (h->fd, BLKZEROOUT, &range);
-    if (r == 0)
+    if (r == 0) {
+      if (file_debug_zero)
+        nbdkit_debug ("h->can_zeroout && is_aligned: "
+                      "zero succeeded using BLKZEROOUT");
       return 0;
+    }
 
     if (errno != ENOTTY) {
       nbdkit_error ("zero: %m");
@@ -400,6 +418,8 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 #endif
 
   /* Trigger a fall back to writing */
+  if (file_debug_zero)
+    nbdkit_debug ("zero falling back to writing");
   errno = EOPNOTSUPP;
   return -1;
 }

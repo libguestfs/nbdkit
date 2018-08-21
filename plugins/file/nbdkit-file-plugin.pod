@@ -68,6 +68,18 @@ block devices.
 
 =back
 
+=head1 DEBUG FLAG
+
+=over 4
+
+=item B<-D file.zero=1>
+
+This enables very verbose debugging of the NBD zero request.  This can
+be used to tell if the file plugin is able to zero ranges in the file
+or block device efficiently or not.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
