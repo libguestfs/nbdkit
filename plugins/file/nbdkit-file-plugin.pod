@@ -38,6 +38,38 @@ I<--filter=delay> in order to use these parameters.
 
 =back
 
+=head1 DUMP-PLUGIN OUTPUT
+
+You can obtain extra information about how the file plugin was
+compiled by doing:
+
+ nbdkit file --dump-plugin
+
+Some of the fields which may appear are listed below.  Note these are
+for information only and may be changed or removed at any time in the
+future.
+
+=over 4
+
+=item C<file_blksszget=yes>
+
+=item C<file_blkzeroout=yes>
+
+If both set, the plugin may be able to efficiently zero ranges of
+block devices, where the driver and block device itself supports this.
+
+=item C<file_falloc_fl_punch_hole=yes>
+
+If set, the plugin may be able to punch holes (make sparse) files and
+block devices.
+
+=item C<file_falloc_fl_zero_range=yes>
+
+If set, the plugin may be able to efficiently zero ranges of files and
+block devices.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

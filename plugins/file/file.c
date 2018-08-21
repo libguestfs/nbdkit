@@ -62,20 +62,6 @@
 
 static char *filename = NULL;
 
-#if defined(FALLOC_FL_PUNCH_HOLE) || defined(FALLOC_FL_ZERO_RANGE)
-static int
-do_fallocate(int fd, int mode, off_t offset, off_t len)
-{
-  int r = fallocate (fd, mode, offset, len);
-  if (r == -1 && errno == ENODEV) {
-    /* kernel 3.10 fails with ENODEV for block device. Kernel >= 4.9 fails
-       with EOPNOTSUPP in this case. Normalize errno to simplify callers. */
-    errno = EOPNOTSUPP;
-  }
-  return r;
-}
-#endif
-
 static void
 file_unload (void)
 {
@@ -126,6 +112,24 @@ file_config_complete (void)
 
 #define file_config_help \
   "file=<FILENAME>     (required) The filename to serve." \
+
+/* Print some extra information about how the plugin was compiled. */
+static void
+file_dump_plugin (void)
+{
+#ifdef BLKSSZGET
+  printf ("file_blksszget=yes\n");
+#endif
+#ifdef BLKZEROOUT
+  printf ("file_blkzeroout=yes\n");
+#endif
+#ifdef FALLOC_FL_PUNCH_HOLE
+  printf ("file_falloc_fl_punch_hole=yes\n");
+#endif
+#ifdef FALLOC_FL_ZERO_RANGE
+  printf ("file_falloc_fl_zero_range=yes\n");
+#endif
+}
 
 /* The per-connection handle. */
 struct handle {
@@ -285,7 +289,21 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   return 0;
 }
 
-/* Write data to the file. */
+#if defined(FALLOC_FL_PUNCH_HOLE) || defined(FALLOC_FL_ZERO_RANGE)
+static int
+do_fallocate(int fd, int mode, off_t offset, off_t len)
+{
+  int r = fallocate (fd, mode, offset, len);
+  if (r == -1 && errno == ENODEV) {
+    /* kernel 3.10 fails with ENODEV for block device. Kernel >= 4.9 fails
+       with EOPNOTSUPP in this case. Normalize errno to simplify callers. */
+    errno = EOPNOTSUPP;
+  }
+  return r;
+}
+#endif
+
+/* Write zeroes to the file. */
 static int
 file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
@@ -397,6 +415,7 @@ static struct nbdkit_plugin plugin = {
   .config            = file_config,
   .config_complete   = file_config_complete,
   .config_help       = file_config_help,
+  .dump_plugin       = file_dump_plugin,
   .open              = file_open,
   .close             = file_close,
   .get_size          = file_get_size,
