@@ -73,6 +73,7 @@ static uid_t parseuser (const char *);
 static gid_t parsegroup (const char *);
 static unsigned int get_socket_activation (void);
 
+struct debug_flag *debug_flags; /* -D */
 int exit_with_parent;           /* --exit-with-parent */
 const char *exportname;         /* -e */
 int foreground;                 /* -f */
@@ -129,8 +130,9 @@ enum {
   TLS_VERIFY_PEER_OPTION,
 };
 
-static const char *short_options = "e:fg:i:nop:P:rst:u:U:vV";
+static const char *short_options = "D:e:fg:i:nop:P:rst:u:U:vV";
 static const struct option long_options[] = {
+  { "debug",            required_argument, NULL, 'D' },
   { "dump-config",      no_argument,       NULL, DUMP_CONFIG_OPTION },
   { "dump-plugin",      no_argument,       NULL, DUMP_PLUGIN_OPTION },
   { "exit-with-parent", no_argument,       NULL, EXIT_WITH_PARENT_OPTION },
@@ -250,6 +252,51 @@ main (int argc, char *argv[])
       break;
 
     switch (c) {
+    case 'D':
+      {
+        const char *p, *q;
+        struct debug_flag *flag;
+
+        /* Debug Flag must be "NAME.FLAG=N".
+         *                     ^    ^    ^
+         *                optarg    p    q  (after +1 adjustment below)
+         */
+        p = strchr (optarg, '.');
+        q = strchr (optarg, '=');
+        if (p == NULL || q == NULL) {
+        bad_debug_flag:
+          fprintf (stderr,
+                   "%s: -D (Debug Flag) must have the format NAME.FLAG=N\n",
+                   program_name);
+          exit (EXIT_FAILURE);
+        }
+        p++;                    /* +1 adjustment */
+        q++;
+
+        if (p - optarg <= 1) goto bad_debug_flag; /* NAME too short */
+        if (p > q) goto bad_debug_flag;
+        if (q - p <= 1) goto bad_debug_flag; /* FLAG too short */
+        if (*q == '\0') goto bad_debug_flag; /* N too short */
+
+        flag = malloc (sizeof *flag);
+        if (flag == NULL) {
+        debug_flag_perror:
+          perror ("malloc");
+          exit (EXIT_FAILURE);
+        }
+        flag->name = strndup (optarg, p-optarg-1);
+        if (!flag->name) goto debug_flag_perror;
+        flag->flag = strndup (p, q-p-1);
+        if (!flag->flag) goto debug_flag_perror;
+        if (sscanf (q, "%d", &flag->value) != 1) goto bad_debug_flag;
+        flag->used = 0;
+
+        /* Add flag to the linked list. */
+        flag->next = debug_flags;
+        debug_flags = flag;
+      }
+      break;
+
     case DUMP_CONFIG_OPTION:
       dump_config ();
       exit (EXIT_SUCCESS);
@@ -589,6 +636,23 @@ main (int argc, char *argv[])
     filter_filenames = t->next;
     free (t);
   }
+
+  /* Check all debug flags were used, and free them. */
+  while (debug_flags != NULL) {
+    struct debug_flag *next = debug_flags->next;
+
+    if (!debug_flags->used) {
+      fprintf (stderr, "%s: debug flag -D %s.%s was not used\n",
+               program_name, debug_flags->name, debug_flags->flag);
+      exit (EXIT_FAILURE);
+    }
+    free (debug_flags->name);
+    free (debug_flags->flag);
+    free (debug_flags);
+    debug_flags = next;
+  }
+
+  /* Select a thread model. */
   lock_init_thread_model ();
 
   if (help) {

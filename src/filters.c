@@ -718,6 +718,9 @@ filter_register (struct backend *next, size_t index, const char *filename,
 
   debug ("registered filter %s (name %s)", f->filename, f->name);
 
+  /* Set debug flags before calling load. */
+  set_debug_flags (dl, f->name);
+
   /* Call the on-load callback if it exists. */
   debug ("%s: load", f->name);
   if (f->filter.load)

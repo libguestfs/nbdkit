@@ -72,6 +72,14 @@
     })
 
 /* main.c */
+struct debug_flag {
+  struct debug_flag *next;
+  char *name;                   /* plugin or filter name */
+  char *flag;                   /* flag name */
+  int value;                    /* value of flag */
+  int used;                     /* if flag was successfully set */
+};
+
 enum log_to {
   LOG_TO_DEFAULT,        /* --log not specified: log to stderr, unless
                             we forked into the background in which
@@ -80,6 +88,7 @@ enum log_to {
   LOG_TO_SYSLOG,         /* --log=syslog forced on the command line */
 };
 
+extern struct debug_flag *debug_flags;
 extern const char *exportname;
 extern const char *ipaddr;
 extern enum log_to log_to;
@@ -189,6 +198,7 @@ struct backend {
 
 /* plugins.c */
 extern struct backend *plugin_register (size_t index, const char *filename, void *dl, struct nbdkit_plugin *(*plugin_init) (void));
+extern void set_debug_flags (void *dl, const char *name);
 
 /* filters.c */
 extern struct backend *filter_register (struct backend *next, size_t index, const char *filename, void *dl, struct nbdkit_filter *(*filter_init) (void));

@@ -544,6 +544,11 @@ For convenience, C<nbdkit_debug> preserves the value of C<errno>.
 Note that C<nbdkit_debug> only prints things when the server is in
 verbose mode (I<-v> option).
 
+=head2 Debug Flags
+
+Debug Flags in filters work exactly the same way as plugins.  See
+L<nbdkit-plugin(3)/Debug Flags>.
+
 =head1 INSTALLING THE FILTER
 
 The filter is a C<*.so> file and possibly a manual page.  You can of

@@ -1,4 +1,5 @@
-nbdkit [-e|--exportname EXPORTNAME] [--exit-with-parent]
+nbdkit [-D|--debug PLUGIN|FILTER.FLAG=N]
+       [-e|--exportname EXPORTNAME] [--exit-with-parent]
        [--filter FILTER ...] [-f|--foreground]
        [-g|--group GROUP] [-i|--ipaddr IPADDR]
        [--log stderr|syslog]

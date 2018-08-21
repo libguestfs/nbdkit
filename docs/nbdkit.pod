@@ -114,6 +114,17 @@ Display information about nbdkit or a specific plugin:
 
 Display brief command line usage information and exit.
 
+=item B<-D> PLUGIN.FLAG=N
+
+=item B<-D> FILTER.FLAG=N
+
+=item B<--debug> PLUGIN.FLAG=N
+
+=item B<--debug> FILTER.FLAG=N
+
+Set the plugin or filter Debug Flag called C<FLAG> to the integer
+value C<N>.  See L<nbdkit-plugin(3)/Debug Flags>.
+
 =item B<--dump-config>
 
 Dump out the compile-time configuration values and exit.

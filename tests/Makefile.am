@@ -50,6 +50,7 @@ EXTRA_DIST = \
 	test-cxx.sh \
 	test-data-base64.sh \
 	test-data-raw.sh \
+	test-debug-flags.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
 	test-dump-plugin-example4.sh \
@@ -128,7 +129,8 @@ TESTS += \
 	test-tls-psk.sh \
 	test-ip.sh \
 	test-socket-activation \
-	test-foreground.sh
+	test-foreground.sh \
+	test-debug-flags.sh
 
 check_PROGRAMS += \
 	test-socket-activation

@@ -801,6 +801,36 @@ For convenience, C<nbdkit_debug> preserves the value of C<errno>.
 Note that C<nbdkit_debug> only prints things when the server is in
 verbose mode (I<-v> option).
 
+=head2 Debug Flags
+
+The I<-v> option switches general debugging on or off, and this
+debugging should be used for messages which are useful for all users
+of your plugin.
+
+In cases where you want to enable specific extra debugging to track
+down bugs in plugins or filters — mainly for use by the plugin/filter
+developers themselves — you can define Debug Flags.  These are global
+ints called C<myplugin_debug_*>:
+
+ int myplugin_debug_foo;
+ int myplugin_debug_bar;
+ ...
+ if (myplugin_debug_foo) {
+   nbdkit_debug ("lots of extra debugging about foo: ...");
+ }
+
+Debug Flags can be controlled on the command line using the I<-D> (or
+I<--debug>) option:
+
+ nbdkit -f -v -D myplugin.foo=1 -D myplugin.bar=2 myplugin [...]
+
+Note C<myplugin> is the name passed to C<.name> in the C<struct
+nbdkit_plugin>.
+
+You should only use this feature for debug settings.  For general
+settings use ordinary plugin parameters.  Debug Flags can only be C
+ints.  They are not supported by non-C language plugins.
+
 =head1 INSTALLING THE PLUGIN
 
 The plugin is a C<*.so> file and possibly a manual page.  You can of

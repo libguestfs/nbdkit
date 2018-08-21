@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -53,6 +54,15 @@
 #endif
 
 static char *filename = NULL;
+
+/* A debug flag which can be set on the command line using
+ * '-D example2.extra=1' to enable very verbose debugging to help
+ * developers.  Use the debug flags for extra debugging which would
+ * only be useful for the original developers of the plugin.  For
+ * ordinary debugging, just use nbdkit_debug and enable messages with
+ * the -v flag on the command line.
+ */
+int example2_debug_extra = 0;
 
 static void
 example2_unload (void)
@@ -164,6 +174,16 @@ example2_get_size (void *handle)
     nbdkit_error ("stat: %m");
     return -1;
   }
+
+  /* Use the debug flags for extra debugging which would only be
+   * useful for the original developers of the plugin.  For ordinary
+   * debugging, just use nbdkit_debug and enable messages with the -v
+   * flag on the command line.  This is a contrived example of how to
+   * use debug flags.
+   */
+  if (example2_debug_extra)
+    nbdkit_debug ("extra debugging: statbuf.st_size = %jd\n",
+                  (intmax_t)statbuf.st_size);
 
   return statbuf.st_size;
 }

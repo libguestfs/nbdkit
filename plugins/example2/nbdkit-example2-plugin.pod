@@ -15,6 +15,11 @@ It serves the named C<FILENAME> over NBD, readonly.
 Mainly this is useful for testing nbdkit and as an example for writing
 nbdkit plugins (L<nbdkit-plugin(3)>).
 
+=head1 DEBUG FLAGS
+
+For extra debugging (only useful for developers) use
+I<-D example2.extra=1>
+
 =head1 SEE ALSO
 
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example2/example2.c>,
