@@ -43,6 +43,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "isaligned.h"
+
 #include "vddk-structs.h"
 
 /* The VDDK APIs that we call.  These globals are initialized when the
@@ -473,11 +475,11 @@ vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   VixError err;
 
   /* Align to sectors. */
-  if ((offset & (VIXDISKLIB_SECTOR_SIZE-1)) != 0) {
+  if (!is_aligned (offset, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("read is not aligned to sectors");
     return -1;
   }
-  if ((count & (VIXDISKLIB_SECTOR_SIZE-1)) != 0) {
+  if (!is_aligned (count, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("read is not aligned to sectors");
     return -1;
   }
@@ -506,11 +508,11 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   VixError err;
 
   /* Align to sectors. */
-  if ((offset & (VIXDISKLIB_SECTOR_SIZE-1)) != 0) {
+  if (!is_aligned (offset, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("read is not aligned to sectors");
     return -1;
   }
-  if ((count & (VIXDISKLIB_SECTOR_SIZE-1)) != 0) {
+  if (!is_aligned (count, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("read is not aligned to sectors");
     return -1;
   }

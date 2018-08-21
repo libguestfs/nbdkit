@@ -47,6 +47,7 @@ nbdkit_vddk_plugin_la_SOURCES = \
 
 nbdkit_vddk_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	-DVDDK_LIBDIR=\"$(libdir)/vmware-vix-disklib\"
 nbdkit_vddk_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
