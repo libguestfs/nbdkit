@@ -61,6 +61,9 @@ static char *password = NULL;
 static int sslverify = 1;
 static int timeout = 0;
 
+/* Use '-D curl.verbose=1' to set. */
+int curl_debug_verbose = 0;
+
 static void
 curl_load (void)
 {
@@ -175,6 +178,12 @@ curl_open (int readonly)
   }
 
   nbdkit_debug ("opened libcurl easy handle");
+
+  /* Note this writes the output to stderr directly.  We should
+   * consider using CURLOPT_DEBUGFUNCTION so we can handle it with
+   * nbdkit_debug.
+   */
+  curl_easy_setopt (h->c, CURLOPT_VERBOSE, curl_debug_verbose);
 
   curl_easy_setopt (h->c, CURLOPT_ERRORBUFFER, h->errbuf);
 

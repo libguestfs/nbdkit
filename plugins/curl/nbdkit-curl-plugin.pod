@@ -104,10 +104,23 @@ may also be set in the URL (eg. C<http://foo@example.com/disk.img>)
 
 =back
 
+=head1 DEBUG FLAG
+
+=over 4
+
+=item B<-D curl.verbose=1>
+
+This enables very verbose curl debugging.  See L<CURLOPT_VERBOSE(3)>.
+This is mainly useful if you suspect there is a bug inside libcurl
+itself.
+
+=back
+
 =head1 SEE ALSO
 
 L<curl(1)>,
 L<libcurl(3)>,
+L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>.
 
