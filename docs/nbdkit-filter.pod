@@ -610,6 +610,8 @@ __FILTER_LINKS__.
 
 =head1 AUTHORS
 
+Eric Blake
+
 Richard W.M. Jones
 
 =head1 COPYRIGHT

@@ -88,6 +88,10 @@ L<nbdkit-split-plugin(1)>.
 
 =head1 AUTHORS
 
+Eric Blake
+
+Nir Soffer
+
 Richard W.M. Jones
 
 =head1 COPYRIGHT

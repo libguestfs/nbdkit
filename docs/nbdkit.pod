@@ -556,6 +556,10 @@ Eric Blake
 
 Richard W.M. Jones
 
+Yann E. MORIN
+
+Nir Soffer
+
 Pino Toscano
 
 =head1 COPYRIGHT

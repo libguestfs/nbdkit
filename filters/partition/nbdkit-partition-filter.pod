@@ -51,6 +51,8 @@ L<parted(8)>.
 
 =head1 AUTHORS
 
+Eric Blake
+
 Richard W.M. Jones
 
 =head1 COPYRIGHT
