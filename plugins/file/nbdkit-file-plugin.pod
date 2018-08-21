@@ -12,7 +12,8 @@ nbdkit-file-plugin - nbdkit file plugin
 
 C<nbdkit-file-plugin> is a file serving plugin for L<nbdkit(1)>.
 
-It serves the named C<FILENAME> over NBD.
+It serves the named C<FILENAME> over NBD.  Local block devices
+(eg. F</dev/sda>) may also be served.
 
 To concatenate multiple files, use L<nbdkit-split-plugin(1)>.
 
@@ -22,8 +23,8 @@ To concatenate multiple files, use L<nbdkit-split-plugin(1)>.
 
 =item B<file=>FILENAME
 
-Serve the file named C<FILENAME>.  A device path can also be
-used here.
+Serve the file named C<FILENAME>.  A local block device name can also
+be used here.
 
 This parameter is required.
 
