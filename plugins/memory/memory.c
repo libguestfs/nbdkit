@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017 Red Hat Inc.
+ * Copyright (C) 2017-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,34 +92,14 @@ memory_config_complete (void)
 #define memory_config_help \
   "size=<SIZE>  (required) Size of the backing disk"
 
-/* The per-connection handle. */
-struct memory_handle {
-  int readonly;
-};
-
 /* Create the per-connection handle. */
 static void *
 memory_open (int readonly)
 {
-  struct memory_handle *h;
+  /* Used only as a handle pointer. */
+  static int mh;
 
-  h = malloc (sizeof *h);
-  if (h == NULL) {
-    nbdkit_error ("malloc: %m");
-    return NULL;
-  }
-
-  h->readonly = readonly;
-  return h;
-}
-
-/* Free up the per-connection handle. */
-static void
-memory_close (void *handle)
-{
-  struct memory_handle *h = handle;
-
-  free (h);
+  return &mh;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
@@ -143,23 +123,8 @@ memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 static int
 memory_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 {
-  struct memory_handle *h = handle;
-
-  if (h->readonly) {
-    errno = EROFS;
-    return -1;
-  }
-
   memcpy (disk+offset, buf, count);
   return 0;
-}
-
-static int
-memory_can_write (void *handle)
-{
-  struct memory_handle *h = handle;
-
-  return !h->readonly;
 }
 
 static struct nbdkit_plugin plugin = {
@@ -170,11 +135,9 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = memory_config_complete,
   .config_help       = memory_config_help,
   .open              = memory_open,
-  .close             = memory_close,
   .get_size          = memory_get_size,
   .pread             = memory_pread,
   .pwrite            = memory_pwrite,
-  .can_write         = memory_can_write,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */
