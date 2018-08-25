@@ -22,7 +22,7 @@ The fixed pattern is the offset, as a 64 bit big endian integer, every
                                   ↗ └──────────┬──────────┘
               byte at offset 0x28              │
                                                │
-                                     64-bit big-endian int
+                                     64 bit big endian int
                                      encoding offset 0x28
 
 The size of the virtual disk must be specified using the C<size>
