@@ -272,17 +272,10 @@ memory_unload (void)
 static int
 memory_config (const char *key, const char *value)
 {
-  int64_t r;
-
   if (strcmp (key, "size") == 0) {
-    r = nbdkit_parse_size (value);
-    if (r == -1)
+    size = nbdkit_parse_size (value);
+    if (size == -1)
       return -1;
-    if (r > SIZE_MAX) {
-      nbdkit_error ("size > SIZE_MAX");
-      return -1;
-    }
-    size = (ssize_t) r;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
