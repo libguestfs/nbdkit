@@ -15,11 +15,16 @@ exits.
 All nbdkit clients will see the same disk content, initially all
 zeroes.
 
-The disk image is stored in memory so it cannot be larger than
-physical RAM plus swap, less whatever is being used by the rest of the
-system.  Very large disk image sizes will usually not work with this
-plugin (use L<nbdkit-file-plugin(1)> backed by a temporary file for
-that).
+The disk image is stored in memory using a sparse array.  The
+allocated parts of the disk image cannot be larger than physical RAM
+plus swap, less whatever is being used by the rest of the system.  If
+you want to allocate more space than this use L<nbdkit-file-plugin(1)>
+backed by a temporary file instead.
+
+However the virtual size can be as large as you like, up to the
+maximum supported by nbdkit (C<2⁶³-1> bytes).  This limit is tested
+when nbdkit is compiled, and it should work on all platforms and
+architectures supported by nbdkit.
 
 This can be used for testing where you don't care about the final
 content of the disk image.
@@ -40,7 +45,8 @@ This parameter is required.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
-L<nbdkit-data-plugin(1)>.
+L<nbdkit-data-plugin(1)>,
+L<nbdkit-file-plugin(1)>.
 
 =head1 AUTHORS
 
@@ -48,4 +54,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2017 Red Hat Inc.
+Copyright (C) 2017-2018 Red Hat Inc.
