@@ -70,6 +70,7 @@ EXTRA_DIST = \
 	test-parallel-nbd.sh \
 	test-pattern.sh \
 	test-pattern-largest.sh \
+	test-pattern-largest-for-qemu.sh \
 	test-python-exception.sh \
 	test.pl \
 	test.py \
@@ -350,7 +351,10 @@ test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # pattern plugin test.
-TESTS += test-pattern.sh test-pattern-largest.sh
+TESTS += \
+	test-pattern.sh \
+	test-pattern-largest.sh \
+	test-pattern-largest-for-qemu.sh
 
 # nbd plugin test.
 LIBGUESTFS_TESTS += test-nbd
