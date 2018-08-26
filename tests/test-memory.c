@@ -51,7 +51,8 @@ main (int argc, char *argv[])
   int r;
   char *data;
 
-  if (test_start_nbdkit ("memory", "size=100M", NULL) == -1)
+  if (test_start_nbdkit ("-D", "memory.dir=1",
+                         "memory", "size=100M", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();
@@ -83,6 +84,10 @@ main (int argc, char *argv[])
 #define content "hello, people of the world"
 
   if (guestfs_write (g, filename, content, strlen (content)) == -1)
+    exit (EXIT_FAILURE);
+
+  /* Force write through to and read back from disk. */
+  if (guestfs_sync (g) == -1 || guestfs_drop_caches (g, 3) == -1)
     exit (EXIT_FAILURE);
 
   data = guestfs_cat (g, filename);

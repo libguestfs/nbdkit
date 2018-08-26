@@ -62,6 +62,8 @@ EXTRA_DIST = \
 	test-layers.sh \
 	test-log.sh \
 	test.lua \
+	test-memory-largest.sh \
+	test-memory-largest-for-qemu.sh \
 	test-nozero.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
@@ -345,6 +347,7 @@ endif HAVE_ZLIB
 
 # memory plugin test.
 LIBGUESTFS_TESTS += test-memory
+TESTS += test-memory-largest.sh test-memory-largest-for-qemu.sh
 
 test_memory_SOURCES = test-memory.c test.h
 test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
