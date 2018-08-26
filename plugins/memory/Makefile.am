@@ -41,11 +41,14 @@ nbdkit_memory_plugin_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
 nbdkit_memory_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/sparse
 nbdkit_memory_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_memory_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared
+nbdkit_memory_plugin_la_LIBADD = \
+	$(top_builddir)/common/sparse/libsparse.la
 
 if HAVE_POD
 

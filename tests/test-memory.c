@@ -77,7 +77,7 @@ main (int argc, char *argv[])
   if (guestfs_mkfs (g, "ext4", "/dev/sda1") == -1)
     exit (EXIT_FAILURE);
 
-  if (guestfs_mount (g, "/dev/sda1", "/") == -1)
+  if (guestfs_mount_options (g, "discard", "/dev/sda1", "/") == -1)
     exit (EXIT_FAILURE);
 
 #define filename "/hello.txt"
@@ -99,6 +99,15 @@ main (int argc, char *argv[])
              program_name, filename, data, content);
     exit (EXIT_FAILURE);
   }
+
+#ifdef GUESTFS_HAVE_FSTRIM
+  /* Delete the file and fstrim to test zeroing/trimming. */
+  if (guestfs_rm (g, filename) == -1)
+    exit (EXIT_FAILURE);
+
+  if (guestfs_fstrim (g, "/", -1) == -1)
+    exit (EXIT_FAILURE);
+#endif
 
   if (guestfs_shutdown (g) == -1)
     exit (EXIT_FAILURE);
