@@ -46,7 +46,7 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit with memory plugin.
-# size = (2^63-1) & 511 which is the largest supported by qemu.
+# size = (2^63-1) & ~511 which is the largest supported by qemu.
 nbdkit -f -v -D memory.dir=1 \
        -P memory-largest-for-qemu.pid -U memory-largest-for-qemu.sock \
        memory size=9223372036854775296 &

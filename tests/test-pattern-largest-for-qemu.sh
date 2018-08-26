@@ -46,7 +46,7 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit with pattern plugin.
-# size = (2^63-1) & 511 which is the largest supported by qemu.
+# size = (2^63-1) & ~511 which is the largest supported by qemu.
 nbdkit -P pattern-largest-for-qemu.pid -U pattern-largest-for-qemu.sock \
        pattern size=9223372036854775296
 
