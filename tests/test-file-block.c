@@ -152,7 +152,7 @@ main (int argc, char *argv[])
   if (guestfs_mkfs (g, "ext4", "/dev/sda1") == -1)
     exit (EXIT_FAILURE);
 
-  if (guestfs_mount (g, "/dev/sda1", "/") == -1)
+  if (guestfs_mount_options (g, "discard", "/dev/sda1", "/") == -1)
     exit (EXIT_FAILURE);
 
 #define filename "/hello.txt"
