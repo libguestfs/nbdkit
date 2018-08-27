@@ -35,6 +35,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 
 #if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
@@ -107,25 +109,23 @@ read_base64 (const char *value)
 static int
 read_data (const char *value)
 {
-  size_t offset = 0;
+  int64_t offset = 0;
   size_t i, len = strlen (value);
 
   for (i = 0; i < len; ++i) {
-    int j, n;
+    int64_t j;
+    int n;
     char c;
 
-    /* XXX Using the %i type specifier limits this plugin to creating
-     * 32 bit data (even on 64 bit platforms).
-     */
-    if (sscanf (&value[i], " @%i%n", &j, &n) == 1) {
-      if (j == -1) {
+    if (sscanf (&value[i], " @%" SCNi64 "%n", &j, &n) == 1) {
+      if (j < 0) {
         nbdkit_error ("data parameter @OFFSET must not be negative");
         return -1;
       }
       i += n;
       offset = j;
     }
-    else if (sscanf (&value[i], " %i%n", &j, &n) == 1) {
+    else if (sscanf (&value[i], " %" SCNi64 "%n", &j, &n) == 1) {
       if (j < 0 || j > 255) {
         nbdkit_error ("data parameter BYTE must be in the range 0..255");
         return -1;
