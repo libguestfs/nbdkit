@@ -27,8 +27,24 @@ maximum supported by nbdkit (C<2⁶³-1> bytes).  This limit is tested
 when nbdkit is compiled, and it should work on all platforms and
 architectures supported by nbdkit.
 
-If you want an in-memory disk image preinitialized with some data,
-look at L<nbdkit-data-plugin(1)> instead.
+=head2 Preloading data
+
+If you want an in-memory disk image preinitialized with a small amount
+of data specified on the command line, look at
+L<nbdkit-data-plugin(1)> instead.
+
+If you want to preload a large amount of data (eg. a disk image) into
+the memory plugin, use L<qemu-img(1)>:
+
+ $ rm -f pid
+ $ nbdkit -P pid memory size=10G
+ 
+ # wait for nbdkit to become ready to accept connections:
+ $ while [ ! -f pid ]; do sleep 1; done
+ 
+ # preload Fedora disk image:
+ $ virt-builder fedora-28 --size=10G
+ $ qemu-img convert -p -n fedora-28.img nbd:localhost:10809
 
 =head1 PARAMETERS
 
