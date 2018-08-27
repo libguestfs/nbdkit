@@ -13,7 +13,8 @@ single disk image in virtual memory, and discards it when nbdkit
 exits.
 
 All nbdkit clients will see the same disk content, initially all
-zeroes.
+zeroes.  This plugin can be used for testing or where you don't care
+about the final content of the disk image.
 
 The disk image is stored in memory using a sparse array.  The
 allocated parts of the disk image cannot be larger than physical RAM
@@ -26,8 +27,8 @@ maximum supported by nbdkit (C<2⁶³-1> bytes).  This limit is tested
 when nbdkit is compiled, and it should work on all platforms and
 architectures supported by nbdkit.
 
-This can be used for testing where you don't care about the final
-content of the disk image.
+If you want an in-memory disk image preinitialized with some data,
+look at L<nbdkit-data-plugin(1)> instead.
 
 =head1 PARAMETERS
 

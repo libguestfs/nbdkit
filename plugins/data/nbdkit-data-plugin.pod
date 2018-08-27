@@ -28,6 +28,9 @@ image, possibly followed by zeroes (using the C<size> parameter to pad
 the image to the full size), or use the C<data> parameter creatively
 to make mostly sparse disk images.
 
+The C<size> parameter can specify any virtual size up to the maximum
+supported by nbdkit (C<2⁶³-1> bytes).
+
 =head1 EXAMPLES
 
 =over 4
