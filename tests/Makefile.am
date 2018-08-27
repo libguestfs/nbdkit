@@ -48,6 +48,7 @@ EXTRA_DIST = \
 	test-captive.sh \
 	test-cow.sh \
 	test-cxx.sh \
+	test-data-7E.sh \
 	test-data-base64.sh \
 	test-data-raw.sh \
 	test-debug-flags.sh \
@@ -281,6 +282,7 @@ endif HAVE_GUESTFISH
 # data plugin test.
 LIBGUESTFS_TESTS += test-data
 TESTS += \
+	test-data-7E.sh \
 	test-data-base64.sh \
 	test-data-raw.sh
 
