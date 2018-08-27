@@ -42,7 +42,8 @@ nbdkit_data_plugin_la_SOURCES = \
 
 nbdkit_data_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
+	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/sparse
 nbdkit_data_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(GNUTLS_CFLAGS)
@@ -50,6 +51,8 @@ nbdkit_data_plugin_la_LIBADD = \
 	$(GNUTLS_LIBS)
 nbdkit_data_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared
+nbdkit_data_plugin_la_LIBADD = \
+	$(top_builddir)/common/sparse/libsparse.la
 
 if HAVE_POD
 

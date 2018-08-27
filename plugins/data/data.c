@@ -43,18 +43,38 @@
 
 #include <nbdkit-plugin.h>
 
-/* Size specified on the command line. */
+#include "sparse.h"
+
+/* If raw|base64|data parameter seen. */
+static int data_seen = 0;
+
+/* size= parameter on the command line, -1 if not set. */
 static int64_t size = -1;
 
-/* Data specified on the command line. */
-static char *data = NULL;
-static size_t data_size = 0;
+/* Size of data specified on the command line. */
+static int64_t data_size = -1;
 
-/* On unload, free the global. */
+/* Sparse array. */
+static struct sparse_array *sa;
+
+/* Debug directory operations (-D data.dir=1). */
+int data_debug_dir;
+
+static void
+data_load (void)
+{
+  sa = alloc_sparse_array (data_debug_dir);
+  if (sa == NULL) {
+    perror ("malloc");
+    exit (EXIT_FAILURE);
+  }
+}
+
+/* On unload, free the sparse array. */
 static void
 data_unload (void)
 {
-  free (data);
+  free_sparse_array (sa);
 }
 
 /* Parse the base64 parameter. */
@@ -72,8 +92,10 @@ read_base64 (const char *value)
     nbdkit_error ("base64: %s", gnutls_strerror (err));
     return -1;
   }
-  data = (char *) out.data;
-  data_size = out.size;
+
+  if (sparse_array_write (sa, out.data, out.size, 0) == -1)
+    return -1;
+  free (out.data);
   return 0;
 #else
   nbdkit_error ("base64 is not supported in this build of the plugin");
@@ -90,6 +112,7 @@ read_data (const char *value)
 
   for (i = 0; i < len; ++i) {
     int j, n;
+    char c;
 
     /* XXX Using the %i type specifier limits this plugin to creating
      * 32 bit data (even on 64 bit platforms).
@@ -109,21 +132,14 @@ read_data (const char *value)
       }
       i += n;
 
-      /* Extend the data array if necessary to store the next byte. */
-      if (data_size < offset+1) {
-        size_t old_size = data_size;
-
+      if (data_size < offset+1)
         data_size = offset+1;
-        data = realloc (data, data_size);
-        if (data == NULL) {
-          nbdkit_error ("realloc: %m");
-          return -1;
-        }
-        memset (&data[old_size], 0, data_size-old_size);
-      }
 
       /* Store the byte. */
-      data[offset++] = j;
+      c = j;
+      if (sparse_array_write (sa, &c, 1, offset) == -1)
+        return -1;
+      offset++;
     }
     else {
       nbdkit_error ("data parameter: parsing error at offset %zu", i);
@@ -148,19 +164,16 @@ data_config (const char *key, const char *value)
   else if (strcmp (key, "raw") == 0 ||
            strcmp (key, "base64") == 0 ||
            strcmp (key, "data") == 0) {
-    if (data != NULL) {
+    if (data_seen) {
       nbdkit_error ("raw|base64|data parameter must be specified exactly once");
       return -1;
     }
+    data_seen = 1;
 
     if (strcmp (key, "raw") == 0) {
       data_size = strlen (value);
-      data = malloc (data_size);
-      if (data == NULL) {
-        perror ("malloc");
+      if (sparse_array_write (sa, value, data_size, 0) == -1)
         return -1;
-      }
-      memcpy (data, value, data_size);
     }
     else if (strcmp (key, "base64") == 0) {
       if (read_base64 (value) == -1)
@@ -185,7 +198,7 @@ data_config (const char *key, const char *value)
 static int
 data_config_complete (void)
 {
-  if (data == NULL) {
+  if (!data_seen) {
     nbdkit_error ("raw|base64|data parameter was not specified");
     return -1;
   }
@@ -193,24 +206,10 @@ data_config_complete (void)
   nbdkit_debug ("implicit data size: %zu", data_size);
 
   /* If size == -1 it means the size= parameter was not given so we
-   * must use the data size.  Otherwise we will truncate or extend the
-   * data in memory.
+   * must use the data size.
    */
-  if (size == -1) {
+  if (size == -1)
     size = data_size;
-  }
-  else {
-    data = realloc (data, size);
-    if (data == NULL) {
-      nbdkit_error ("realloc: %m");
-      return -1;
-    }
-    /* If extending, scrub the extra data to zero. */
-    if (size > data_size)
-      memset (&data[data_size], 0, size-data_size);
-    data_size = size;
-  }
-
   nbdkit_debug ("final size: %zu", data_size);
 
   return 0;
@@ -229,7 +228,7 @@ data_dump_plugin (void)
 #endif
 }
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
 /* No meaning, just used as the address for the handle. */
 static int dh;
@@ -252,7 +251,7 @@ data_get_size (void *handle)
 static int
 data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
-  memcpy (buf, data+offset, count);
+  sparse_array_read (sa, buf, count, offset);
   return 0;
 }
 
@@ -260,13 +259,29 @@ data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 static int
 data_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 {
-  memcpy (data+offset, buf, count);
+  return sparse_array_write (sa, buf, count, offset);
+}
+
+/* Zero. */
+static int
+data_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+{
+  sparse_array_zero (sa, count, offset);
+  return 0;
+}
+
+/* Trim (same as zero). */
+static int
+data_trim (void *handle, uint32_t count, uint64_t offset)
+{
+  sparse_array_zero (sa, count, offset);
   return 0;
 }
 
 static struct nbdkit_plugin plugin = {
   .name              = "data",
   .version           = PACKAGE_VERSION,
+  .load              = data_load,
   .unload            = data_unload,
   .config            = data_config,
   .config_complete   = data_config_complete,
@@ -276,6 +291,8 @@ static struct nbdkit_plugin plugin = {
   .get_size          = data_get_size,
   .pread             = data_pread,
   .pwrite            = data_pwrite,
+  .zero              = data_zero,
+  .trim              = data_trim,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */
