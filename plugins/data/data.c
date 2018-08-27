@@ -141,6 +141,12 @@ read_data (const char *value)
         return -1;
       offset++;
     }
+    /* We have to have a rule to skip just whitespace so that
+     * whitespace is permitted at the end of the string.
+     */
+    else if (sscanf (&value[i], " %n", &n) == 0) {
+      i += n;
+    }
     else {
       nbdkit_error ("data parameter: parsing error at offset %zu", i);
       return -1;
