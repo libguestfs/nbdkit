@@ -945,7 +945,10 @@ handle_quit (int sig)
   char c = sig;
 
   quit = 1;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
   write (write_quit_fd, &c, 1);
+#pragma GCC diagnostic pop
 }
 
 static void
@@ -1054,7 +1057,10 @@ fork_into_background (void)
   if (pid > 0)                  /* Parent process exits. */
     exit (EXIT_SUCCESS);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
   chdir ("/");
+#pragma GCC diagnostic pop
 
   /* Close stdin/stdout and redirect to /dev/null. */
   close (0);
