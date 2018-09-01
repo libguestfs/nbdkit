@@ -52,10 +52,6 @@ Suggestions for plugins
   https://lists.gnu.org/archive/html/qemu-devel/2017-11/msg02971.html
   is a partial solution but it needs cleaning up.
 
-* glance
-
-* cinder
-
 Note: qemu supports other formats such as libssh, libnfs, iscsi,
 gluster and ceph/rbd, and while similar plugins could be written for
 nbdkit there is no compelling reason unless the result is better than
