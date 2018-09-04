@@ -51,10 +51,10 @@ base64 decoding of C<MTIz>), followed by S<1M - 3 bytes> of zeroes.
 
 =item Create a 1 MB disk with one empty MBR-formatted partition:
 
- nbdkit data data="@0x1b8 0xf8 0x21 0xdc 0xeb 0 0 0 0
-                   2 0 0x83 0x20 0x20 0 1 0  0 0 0xff 0x7
-                   @0x1fe 0x55 0xaa" \
-             size=1M
+ nbdkit data data="
+   @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
+   @0x1fe 85 170
+   " size=1048576
 
 This example was created by running:
 
@@ -63,17 +63,10 @@ This example was created by running:
  $ echo start=1 | sfdisk disk
  Device Boot Start   End Sectors    Size Id Type
  disk1           1  2047    2047 1023.5K 83 Linux
- $ hexdump -C disk
- 00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
- *
- 000001b0  00 00 00 00 00 00 00 00  f8 21 dc eb 00 00 00 00
- 000001c0  02 00 83 20 20 00 01 00  00 00 ff 07 00 00 00 00
- 000001d0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
- *
- 000001f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 55 aa
+ $ ./disk2data.pl disk
 
-and then translating the disk data and offsets into the C<data>
-string (see L</DATA FORMAT>).
+The C<disk2data.pl> script is provided in the nbdkit sources
+(L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>).
 
 =item Create a 7 EB (exabyte) disk with one empty GPT-formatted partition:
 
@@ -210,6 +203,14 @@ In the example above the size (512 bytes) is implied by the data.  But
 you could additionally use the C<size> parameter to either truncate or
 extend (with zeroes) the disk image.
 
+=head2 disk2data.pl script
+
+This script can convert from small disk images into the data format
+described above.
+
+It is provided in the nbdkit sources.  See
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
@@ -220,6 +221,7 @@ L<nbdkit-null-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-random-plugin(1)>,
 L<nbdkit-zero-plugin(1)>,
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>,
 L<https://en.wikipedia.org/wiki/Base64>.
 
 =head1 AUTHORS

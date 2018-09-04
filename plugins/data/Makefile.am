@@ -32,7 +32,9 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = nbdkit-data-plugin.pod
+EXTRA_DIST = \
+	disk2data.pl \
+	nbdkit-data-plugin.pod
 
 plugin_LTLIBRARIES = nbdkit-data-plugin.la
 
