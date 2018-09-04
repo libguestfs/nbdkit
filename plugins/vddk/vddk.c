@@ -47,6 +47,9 @@
 
 #include "vddk-structs.h"
 
+/* Enable extra disk info debugging with: -D vddk.diskinfo=1 */
+int vddk_debug_diskinfo;
+
 /* The VDDK APIs that we call.  These globals are initialized when the
  * plugin is loaded (by vddk_load).
  */
@@ -457,6 +460,26 @@ vddk_get_size (void *handle)
   }
 
   size = info->capacity * (uint64_t)VIXDISKLIB_SECTOR_SIZE;
+
+  if (vddk_debug_diskinfo) {
+    nbdkit_debug ("disk info: capacity: %" PRIu64 " (size: %" PRIi64 ")",
+                  info->capacity, size);
+    nbdkit_debug ("disk info: biosGeo: C:%" PRIu32 " H:%" PRIu32 " S:%" PRIu32,
+                  info->biosGeo.cylinders,
+                  info->biosGeo.heads,
+                  info->biosGeo.sectors);
+    nbdkit_debug ("disk info: physGeo: C:%" PRIu32 " H:%" PRIu32 " S:%" PRIu32,
+                  info->physGeo.cylinders,
+                  info->physGeo.heads,
+                  info->physGeo.sectors);
+    nbdkit_debug ("disk info: adapter type: %d",
+                  (int) info->adapterType);
+    nbdkit_debug ("disk info: num links: %d", info->numLinks);
+    nbdkit_debug ("disk info: parent filename hint: %s",
+                  info->parentFileNameHint ? : "NULL");
+    nbdkit_debug ("disk info: uuid: %s",
+                  info->uuid ? : "NULL");
+  }
 
   DEBUG_CALL ("VixDiskLib_FreeInfo", "info");
   VixDiskLib_FreeInfo (info);
