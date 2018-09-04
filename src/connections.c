@@ -332,7 +332,6 @@ _handle_single_connection (int sockin, int sockout)
 
   ret = get_status (conn);
  done:
-  debug ("connection cleanup with final status %d", ret);
   free_connection (conn);
   return ret;
 }
