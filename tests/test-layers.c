@@ -584,7 +584,8 @@ start_log_capture (void *arg)
       break;
 
     /* Dump the log as we receive it to stderr, for debugging. */
-    write (2, &log[log_len], r);
+    if (write (2, &log[log_len], r) == -1)
+      perror ("log: write");
 
     pthread_mutex_lock (&log_lock);
     log_len += r;

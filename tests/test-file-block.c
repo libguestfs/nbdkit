@@ -212,7 +212,10 @@ detach_loopdev (void)
     return;
 
   snprintf (cmd, sizeof cmd, "losetup -d %s", loopdev);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
   system (cmd);
+#pragma GCC diagnostic pop
   free (loopdev);
   loopdev = NULL;
 }
