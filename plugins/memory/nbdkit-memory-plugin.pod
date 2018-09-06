@@ -23,7 +23,7 @@ you want to allocate more space than this use L<nbdkit-file-plugin(1)>
 backed by a temporary file instead.
 
 However the virtual size can be as large as you like, up to the
-maximum supported by nbdkit (C<2⁶³-1> bytes).  This limit is tested
+maximum supported by nbdkit (S<2⁶³-1 bytes>).  This limit is tested
 when nbdkit is compiled, and it should work on all platforms and
 architectures supported by nbdkit.
 
