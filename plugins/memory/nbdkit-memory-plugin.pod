@@ -27,11 +27,16 @@ maximum supported by nbdkit (S<2⁶³-1 bytes>).  This limit is tested
 when nbdkit is compiled, and it should work on all platforms and
 architectures supported by nbdkit.
 
-=head2 Preloading data
+=head2 Preloading small amounts of data
 
 If you want an in-memory disk image preinitialized with a small amount
 of data specified on the command line, look at
-L<nbdkit-data-plugin(1)> instead.
+L<nbdkit-data-plugin(1)> instead.  Note by "small" this does not mean
+that the virtual disk image must be small, but that the amount of data
+initially stored sparsely is small enough to specify on the command
+line.
+
+=head2 Preloading large amounts of data
 
 If you want to preload a large amount of data (eg. a disk image) into
 the memory plugin, use L<qemu-img(1)>:
