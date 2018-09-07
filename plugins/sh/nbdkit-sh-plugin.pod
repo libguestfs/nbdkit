@@ -1,0 +1,229 @@
+=head1 NAME
+
+nbdkit-sh-plugin - nbdkit shell, script or executable plugin
+
+=head1 SYNOPSIS
+
+ nbdkit sh /path/to/script [arguments...]
+
+=head1 DESCRIPTION
+
+C<nbdkit-sh-plugin> allows you to write plugins for L<nbdkit(1)> using
+arbitrary scripting languages, including shells like L<bash(1)>,
+L<dash(1)>, L<csh(1)>, L<zsh(1)> etc., other scripting environments,
+or any executable.  Note if you want to use an established scripting
+language like Perl or Python, then nbdkit has specific plugins to
+handle those languages and those will be more efficient (see
+L<nbdkit(1)> for a complete list).
+
+Broadly speaking, nbdkit shell plugins work like C ones, so you should
+read L<nbdkit-plugin(3)> first.
+
+=head2 USING AN NBDKIT SH PLUGIN
+
+Assuming you have a shell script which is an nbdkit plugin, you run it
+like this:
+
+ nbdkit sh /path/to/script
+
+You may have to add further C<key=value> arguments to the command
+line.
+
+=head1 WRITING AN NBDKIT SH PLUGIN
+
+For an example plugin written in Bash, see:
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/sh/example.sh>
+
+=head2 PROGRAMMING MODEL
+
+This plugin has a simple programming model: For every plugin method
+that needs to be called, the external script is invoked with
+parameters describing the method and its arguments.  The first
+parameter is always the method name.  For example:
+
+ /path/to/script config <key> <value>
+ /path/to/script pread <handle> <count> <offset>
+
+A fresh script is invoked for each method call (ie. scripts are
+stateless), so if the script needs to store state it has to store it
+somewhere in the filesystem in a format and location which is left up
+to the author of the script.
+
+=head2 EXIT CODES
+
+The script should exit with specific exit codes:
+
+=over 4
+
+=item S<0>
+
+The method was executed successfully.
+
+=item 1 and 8-127
+
+There was an error.  The script may print on stderr an errno and a
+message, for example:
+
+ ENOSPC Out of space
+
+If the script doesn't print anything or the output cannot be parsed
+then nbdkit assumes error C<EIO>.
+
+=item S<2>
+
+The requested method is not supported by the script.
+
+=item S<3>
+
+For methods which return booleans, this code indicates false.
+
+=item 4, 5, 6, 7
+
+These exit codes are reserved for future use.
+
+=back
+
+=head2 HANDLES
+
+Handles are arbitrary strings, but it is best to limit them to short
+alphanumeric strings.
+
+=head2 METHODS
+
+This just documents the arguments to the script corresponding to each
+plugin method, and any way that they differ from the C callbacks.  In
+all other respects they work the same way as the C callbacks, so you
+should go and read L<nbdkit-plugin(3)>.
+
+=over 4
+
+=item C<dump_plugin>
+
+ /path/to/script dump_plugin
+
+=item C<config>
+
+ /path/to/script config <key> <value>
+
+=item C<config_complete>
+
+ /path/to/script config_complete
+
+=item C<open>
+
+ /path/to/script open <readonly>
+
+The C<readonly> parameter will be C<true> or C<false>.
+
+On success this should print the handle (any string) on stdout and
+exit with code C<0>.
+
+=item C<close>
+
+ /path/to/script close <handle>
+
+=item C<get_size>
+
+ /path/to/script get_size <handle>
+
+The script should print the size of the disk image on stdout.  You can
+print the size in bytes, or use any format understood by
+C<nbdkit_parse_size> such as C<1M> (see
+L<nbdkit-plugin(3)/PARSING SIZE PARAMETERS>).
+
+=item C<can_write>
+
+=item C<can_flush>
+
+=item C<can_trim>
+
+Unlike in other languages, you B<must> provide the C<can_*> methods
+otherwise they are assumed to all return false and your C<pwrite>,
+C<flush> and C<trim> methods will never be called.  The reason for
+this is obscure: In other languages we can detect if (eg) a C<pwrite>
+method is defined and synthesize an appropriate response if no actual
+C<can_write> method is defined.  However detecting if methods are
+present without running them is not possible with this plugin.
+
+ /path/to/script can_write <handle>
+ /path/to/script can_flush <handle>
+ /path/to/script can_trim <handle>
+
+The script should exit with code C<0> for true or code C<3> for false.
+
+=item C<is_rotational>
+
+ /path/to/script is_rotational <handle>
+
+The script should exit with code C<0> for true or code C<3> for false.
+
+=item C<pread>
+
+ /path/to/script pread <handle> <count> <offset>
+
+The script should print the requested binary data on stdout.  Exactly
+C<count> bytes must be printed.
+
+=item C<pwrite>
+
+ /path/to/script pwrite <handle> <count> <offset>
+
+The script should read the binary data to be written from stdin.
+
+Unlike in other languages, if you provide a C<pwrite> method you
+B<must> also provide a C<can_pwrite> method which exits with code C<0>
+(true).
+
+=item C<flush>
+
+ /path/to/script flush <handle>
+
+Unlike in other languages, if you provide a C<flush> method you
+B<must> also provide a C<can_flush> method which exits with code C<0>
+(true).
+
+=item C<trim>
+
+ /path/to/script trim <handle> <count> <offset>
+
+Unlike in other languages, if you provide a C<trim> method you B<must>
+also provide a C<can_trim> method which exits with code C<0> (true).
+
+=item C<zero>
+
+ /path/to/script zero <handle> <count> <offset> <may_trim>
+
+C<may_trim> will be either C<true> or C<false>.
+
+=back
+
+=head2 MISSING CALLBACKS
+
+=over 4
+
+=item Missing: C<load>, C<unload>, C<name>, C<version>, C<longname>,
+C<description>, C<config_help>, C<can_zero>, C<can_fua>
+
+These are not yet supported.
+
+=back
+
+=head2 THREADS
+
+The thread model for scripts currently cannot be set from this plugin.
+It is hard-coded in the C part to
+C<NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS>.  This may change or be
+settable in future.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

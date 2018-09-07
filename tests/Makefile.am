@@ -529,6 +529,20 @@ test_ruby_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_RUBY
 
+# Shell (sh) plugin test.
+LIBGUESTFS_TESTS += test-shell
+check_DATA += test-shell.img
+MAINTAINERCLEANFILES += test-shell.img
+
+test_shell_SOURCES = test-lang-plugins.c test.h
+test_shell_CFLAGS = \
+	-DLANG='"sh"' -DSCRIPT='"./test-shell.sh"' \
+	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_shell_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+test-shell.img:
+	truncate -s 1048576 $@
+
 # Tcl plugin test.
 if HAVE_TCL
 

@@ -86,6 +86,8 @@ Makefile.in
 /tests/test-python
 /tests/test-random
 /tests/test-ruby
+/tests/test-shell
+/tests/test-shell.img
 /tests/test-socket-activation
 /tests/test-split
 /tests/test-streaming

@@ -576,6 +576,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/python/Makefile
                  plugins/random/Makefile
                  plugins/ruby/Makefile
+                 plugins/sh/Makefile
                  plugins/split/Makefile
                  plugins/streaming/Makefile
                  plugins/tar/Makefile
