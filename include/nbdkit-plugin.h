@@ -121,7 +121,6 @@ struct nbdkit_plugin {
   int (*trim) (void *handle, uint32_t count, uint64_t offset, uint32_t flags);
   int (*zero) (void *handle, uint32_t count, uint64_t offset, uint32_t flags);
 #endif
-  /* int (*set_exportname) (void *handle, const char *exportname); */
 };
 
 extern void nbdkit_set_error (int err);
