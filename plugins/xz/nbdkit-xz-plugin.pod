@@ -4,7 +4,7 @@ nbdkit-xz-plugin - nbdkit xz plugin
 
 =head1 SYNOPSIS
 
- nbdkit xz file=FILENAME.xz
+ nbdkit xz [file=]FILENAME.xz
 
 =head1 DESCRIPTION
 
@@ -58,6 +58,11 @@ S<E<lt> 1%> of the compressed file size.
 Serve the file named C<FILENAME.xz>.
 
 This parameter is required.
+
+In nbdkit E<ge> 1.8, C<file=> may be omitted.  To ensure that the
+filename does not end up being parsed accidentally as C<key=value>,
+prefix relative paths with C<./> (absolute paths do not need
+modification).
 
 =item B<maxblock=>SIZE
 

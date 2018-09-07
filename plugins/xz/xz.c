@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2018 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -250,6 +250,7 @@ static struct nbdkit_plugin plugin = {
   .config            = xz_config,
   .config_complete   = xz_config_complete,
   .config_help       = xz_config_help,
+  .magic_config_key  = "file",
   .open              = xz_open,
   .close             = xz_close,
   .get_size          = xz_get_size,
