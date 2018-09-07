@@ -404,11 +404,11 @@ To dump information about a plugin, do:
 
 =head2 Magic script parameter
 
-As a special case, if the first plugin argument does not contain an
-C<'='> character then it is assumed to be C<script=value>.
+For some plugins, especially those supporting scripting languages like
+Perl, if the first plugin argument does not contain an C<'='>
+character then it is assumed to be C<script=value>.
 
-That allows scripting language plugins like L<nbdkit-perl-plugin(1)>
-to do:
+That allows scripting language plugins to do:
 
  nbdkit perl foo.pl [args...]
 

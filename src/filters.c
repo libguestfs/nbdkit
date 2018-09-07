@@ -205,6 +205,17 @@ filter_config_complete (struct backend *b)
     f->backend.next->config_complete (f->backend.next);
 }
 
+/* magic_config_key only applies to plugins, so this passes the
+ * request through to the plugin (hence the name).
+ */
+static const char *
+plugin_magic_config_key (struct backend *b)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  return f->backend.next->magic_config_key (f->backend.next);
+}
+
 static int
 next_open (void *nxdata, int readonly)
 {
@@ -619,6 +630,7 @@ static struct backend filter_functions = {
   .dump_fields = filter_dump_fields,
   .config = filter_config,
   .config_complete = filter_config_complete,
+  .magic_config_key = plugin_magic_config_key,
   .open = filter_open,
   .prepare = filter_prepare,
   .finalize = filter_finalize,

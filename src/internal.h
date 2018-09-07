@@ -171,6 +171,7 @@ struct backend {
   void (*dump_fields) (struct backend *);
   void (*config) (struct backend *, const char *key, const char *value);
   void (*config_complete) (struct backend *);
+  const char *(*magic_config_key) (struct backend *);
   int (*open) (struct backend *, struct connection *conn, int readonly);
   int (*prepare) (struct backend *, struct connection *conn);
   int (*finalize) (struct backend *, struct connection *conn);

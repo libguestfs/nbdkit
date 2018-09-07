@@ -232,6 +232,14 @@ plugin_config_complete (struct backend *b)
     exit (EXIT_FAILURE);
 }
 
+static const char *
+plugin_magic_config_key (struct backend *b)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
+  return p->plugin.magic_config_key;
+}
+
 static int
 plugin_open (struct backend *b, struct connection *conn, int readonly)
 {
@@ -630,6 +638,7 @@ static struct backend plugin_functions = {
   .dump_fields = plugin_dump_fields,
   .config = plugin_config,
   .config_complete = plugin_config_complete,
+  .magic_config_key = plugin_magic_config_key,
   .open = plugin_open,
   .prepare = plugin_prepare,
   .finalize = plugin_finalize,

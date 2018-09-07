@@ -396,6 +396,23 @@ with an error.
 If there is an error, C<.config> should call C<nbdkit_error> with an
 error message and return C<-1>.
 
+=head2 C<.magic_config_key>
+
+ const char *magic_config_key;
+
+This optional string can be used to set a "magic" key used when
+parsing plugin parameters.  It affects how "bare parameters" (those
+which do not contain an C<=> character) are parsed on the command
+line.
+
+If C<magic_config_key != NULL> then any bare parameters are passed to
+the C<.config> method as: S<C<config (magic_config_key, argv[i]);>>.
+
+If C<magic_config_key> is not set then we behave as in nbdkit E<lt>
+1.7: If the first parameter on the command line is bare then it is
+passed to the C<.config> method as: S<C<config ("script", value);>>.
+Any other bare parameters give errors.
+
 =head2 C<.config_complete>
 
  int config_complete (void);

@@ -231,6 +231,7 @@ main (int argc, char *argv[])
     const char *filename;
   } *filter_filenames = NULL;
   size_t i;
+  const char *magic_config_key;
 
   threadlocal_init ();
 
@@ -680,37 +681,46 @@ main (int argc, char *argv[])
     exit (EXIT_SUCCESS);
   }
 
-  /* Find key=value configuration parameters for this plugin.
-   * The first one is magical in that if it doesn't contain '=' then
-   * we assume it is 'script=...'.
+  /* Call config and config_complete to parse the parameters.
+   *
+   * If the plugin provides magic_config_key then any "bare" values
+   * (ones not containing "=") are prefixed with this key.
+   *
+   * For backwards compatibility with old plugins, and to support
+   * scripting languages, if magic_config_key == NULL then if the
+   * first parameter is bare it is prefixed with the key "script", and
+   * any other bare parameters are errors.
    */
-  if (optind < argc && (p = strchr (argv[optind], '=')) == NULL) {
-    backend->config (backend, "script", argv[optind]);
-    ++optind;
+  magic_config_key = backend->magic_config_key (backend);
+  for (i = 0; optind < argc; ++i, ++optind) {
+    p = strchr (argv[optind], '=');
+    if (p) {                    /* key=value */
+      *p = '\0';
+      backend->config (backend, argv[optind], p+1);
+    }
+    else if (magic_config_key == NULL) {
+      if (i == 0)               /* magic script parameter */
+        backend->config (backend, "script", argv[optind]);
+      else {
+        fprintf (stderr,
+                 "%s: expecting key=value on the command line but got: %s\n",
+                 program_name, argv[optind]);
+        exit (EXIT_FAILURE);
+      }
+    }
+    else {                      /* magic config key */
+      backend->config (backend, magic_config_key, argv[optind]);
+    }
   }
 
-  /* This must run after parsing the possible script parameter so that
-   * the script can be loaded for scripting languages.  Note that all
-   * scripting languages load the script as soon as they see the
-   * script=... parameter (and do not wait for config_complete).
+  /* This must run after parsing the parameters so that the script can
+   * be loaded for scripting languages.  But it must be called before
+   * config_complete so that the plugin doesn't check for missing
+   * parameters.
    */
   if (dump_plugin) {
     backend->dump_fields (backend);
     exit (EXIT_SUCCESS);
-  }
-
-  while (optind < argc) {
-    if ((p = strchr (argv[optind], '=')) != NULL) {
-      *p = '\0';
-      backend->config (backend, argv[optind], p+1);
-      ++optind;
-    }
-    else {
-      fprintf (stderr,
-               "%s: expecting key=value on the command line but got: %s\n",
-               program_name, argv[optind]);
-      exit (EXIT_FAILURE);
-    }
   }
 
   backend->config_complete (backend);
