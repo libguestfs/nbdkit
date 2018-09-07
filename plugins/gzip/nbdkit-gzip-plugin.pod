@@ -4,7 +4,7 @@ nbdkit-gzip-plugin - nbdkit gzip plugin
 
 =head1 SYNOPSIS
 
- nbdkit gzip file=FILENAME.gz
+ nbdkit gzip [file=]FILENAME.gz
 
 =head1 DESCRIPTION
 
@@ -17,6 +17,23 @@ B<Note> that gzip files are not very good for random access in large
 files because seeking to a position in the gzip file involves
 uncompressing lots of data.  A more practical method to compress large
 disk images is to use the L<xz(1)> format and L<nbdkit-xz-plugin(1)>.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<file=>FILENAME.gz
+
+Serve the compressed file named C<FILENAME.gz>.
+
+This parameter is required.
+
+In nbdkit E<ge> 1.8, C<file=> may be omitted.  To ensure that the
+filename does not end up being parsed accidentally as C<key=value>,
+prefix relative paths with C<./> (absolute paths do not need
+modification).
+
+=back
 
 =head1 SEE ALSO
 
