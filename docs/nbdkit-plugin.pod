@@ -376,15 +376,20 @@ optional list of C<key=value> arguments.  These are passed to the
 plugin through this callback when the plugin is first loaded and
 before any connections are accepted.
 
-This callback may be called zero or more times.  Both C<key> and
-C<value> parameters will be non-NULL, but it is possible for either to
-be empty strings.  The strings are owned by nbdkit but will remain
-valid for the lifetime of the plugin, so the plugin does not need to
-copy them.
+This callback may be called zero or more times.
 
-The format of the C<key> accepted by plugins is up to the plugin, but
-you should probably look at other plugins and follow the same
-conventions.
+Both C<key> and C<value> parameters will be non-NULL.  The strings are
+owned by nbdkit but will remain valid for the lifetime of the plugin,
+so the plugin does not need to copy them.
+
+The key will be a non-empty string beginning with an ASCII alphabetic
+character (C<A-Z> C<a-z>).  The rest of the key must contain only
+ASCII alphanumeric plus period, underscore or dash characters (C<A-Z>
+C<a-z> C<0-9> C<.> C<_> C<->).  The value may be an arbitrary string,
+including an empty string.
+
+The names of C<key>s accepted by plugins is up to the plugin, but you
+should probably look at other plugins and follow the same conventions.
 
 If the value is a relative path, then note that the server changes
 directory when it starts up.  See L</FILENAMES AND PATHS> above.

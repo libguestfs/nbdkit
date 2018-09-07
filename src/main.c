@@ -72,6 +72,7 @@ static void fork_into_background (void);
 static uid_t parseuser (const char *);
 static gid_t parsegroup (const char *);
 static unsigned int get_socket_activation (void);
+static int is_config_key (const char *key, size_t len);
 
 struct debug_flag *debug_flags; /* -D */
 int exit_with_parent;           /* --exit-with-parent */
@@ -694,7 +695,7 @@ main (int argc, char *argv[])
   magic_config_key = backend->magic_config_key (backend);
   for (i = 0; optind < argc; ++i, ++optind) {
     p = strchr (argv[optind], '=');
-    if (p) {                    /* key=value */
+    if (p && is_config_key (argv[optind], p - argv[optind])) { /* key=value */
       *p = '\0';
       backend->config (backend, argv[optind], p+1);
     }
@@ -1280,4 +1281,37 @@ get_socket_activation (void)
   }
 
   return nr_fds;
+}
+
+/* When parsing plugin and filter config key=value from the command
+ * line, check that the key is a simple alphanumeric with period,
+ * underscore or dash.
+ *
+ * Note this doesn't return an error.  If the key is not valid then we
+ * return false and the parsing code will assume that this is a bare
+ * value instead.
+ */
+static int
+is_config_key (const char *key, size_t len)
+{
+  static const char allowed_first[] =
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  static const char allowed[] =
+    "._-"
+    "0123456789"
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  if (len == 0)
+    return 0;
+
+  if (strchr (allowed_first, key[0]) == NULL)
+    return 0;
+
+  /* This works in context of the caller since key[len] == '='. */
+  if (strspn (key, allowed) != len)
+    return 0;
+
+  return 1;
 }
