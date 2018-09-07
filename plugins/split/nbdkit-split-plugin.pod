@@ -4,12 +4,12 @@ nbdkit-split-plugin - nbdkit plugin to concatenate split files into one disk
 
 =head1 SYNOPSIS
 
- nbdkit split file=file1 [file=file2 file=file3 ...]
+ nbdkit split [file=]file1 [[file=]file2 [file=]file3 ...]
 
 =head1 DESCRIPTION
 
 C<nbdkit-split-plugin> is a file plugin for L<nbdkit(1)>.  One or more
-filenames may be given using the C<file=FILENAME> parameter.  These
+filenames may be given using the C<FILENAME> parameter.  These
 files are logically concatenated into a single disk image.
 
 =head2 Differences from nbdkit-file-plugin
@@ -61,6 +61,11 @@ One or more files to open.  They are logically concatenated in
 the order they appear on the command line.
 
 This parameter must appear at least once.
+
+In nbdkit E<ge> 1.8, C<file=> may be omitted.  To ensure that the
+filename does not end up being parsed accidentally as C<key=value>,
+prefix relative paths with C<./> (absolute paths do not need
+modification).
 
 =back
 

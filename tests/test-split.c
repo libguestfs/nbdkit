@@ -53,7 +53,8 @@ main (int argc, char *argv[])
   size_t i, size;
 
   if (test_start_nbdkit ("split",
-                         "file=split1", "file=split2", "file=split3",
+                         "split1", "split2",
+                         "file=split3" /* leave file= to test */,
                          NULL) == -1)
     exit (EXIT_FAILURE);
 
