@@ -16,7 +16,7 @@ remote server, or to test certain kinds of race conditions in Linux.
 
 =head1 EXAMPLE
 
- nbdkit --filter=delay file file=disk.img rdelay=100ms wdelay=100ms
+ nbdkit --filter=delay file disk.img rdelay=100ms wdelay=100ms
 
 =head1 PARAMETERS
 

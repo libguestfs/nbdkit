@@ -59,7 +59,7 @@ normal way.
 Serve the file F<disk.img>, allowing writes, but do not save any
 changes into the file:
 
- nbdkit --filter=cow file file=disk.img
+ nbdkit --filter=cow file disk.img
 
 L<nbdkit-xz-plugin(1)> only supports read access, but you can provide
 temporary write access by doing (although this does B<not> save
@@ -76,7 +76,7 @@ otherwise all changes will be lost>.
 
 Run nbdkit:
 
- nbdkit --filter=cow file file=disk.img
+ nbdkit --filter=cow file disk.img
 
 and then connect with a client and make whatever changes you need.
 At the end, disconnect the client.

@@ -42,23 +42,23 @@ C<NBDKIT_FUA_NONE>).
 Serve the file F<disk.img>, but force the client to submit explicit
 flush requests instead of using C<NBD_CMD_FLAG_FUA>:
 
- nbdkit --filter=fua file file=disk.img
+ nbdkit --filter=fua file disk.img
 
 Observe that the blocksize filter optimizes its handling of the FUA
 flag based on whether it knows nbdkit will be emulating FUA with a
 flush, by comparing the log filter output on top of different fua
 filter modes:
 
- nbdkit --filter=blocksize --filter=log --filter=fua file file=disk.img \
+ nbdkit --filter=blocksize --filter=log --filter=fua file disk.img \
    maxlen=4k logfile=fua_emulated fuamode=emulate
- nbdkit --filter=blocksize --filter=log --filter=fua file file=disk.img \
+ nbdkit --filter=blocksize --filter=log --filter=fua file disk.img \
    maxlen=4k logfile=fua_native fuamode=native
 
 Serve the file F<disk.img> in write-through mode, where all writes
 from the client are immediately flushed to disk as if the client had
 always requested FUA:
 
- nbdkit --filter=fua file fuamode=force file=disk.img
+ nbdkit --filter=fua file fuamode=force disk.img
 
 =head1 SEE ALSO
 

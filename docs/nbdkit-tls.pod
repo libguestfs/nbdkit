@@ -194,7 +194,7 @@ client which can read this file will be able to connect to the server.
 
 Use the nbdkit I<--tls-psk> option to start the server:
 
- nbdkit --tls=require --tls-psk=/tmp/keys/keys.psk -e / file file=disk.img
+ nbdkit --tls=require --tls-psk=/tmp/keys/keys.psk -e / file disk.img
 
 This option overrides X.509 certificate authentication.
 

@@ -27,12 +27,12 @@ B<otherwise this filter will do nothing>.
 
 Inject a low rate of errors randomly into the connection:
 
- nbdkit --filter=error file file=disk.img error-rate=1%
+ nbdkit --filter=error file disk.img error-rate=1%
 
 Reading and trimming requests will be successful, but all
 writes and zeroing will return "No space left on device":
 
- nbdkit --filter=error file file=disk.img \
+ nbdkit --filter=error file disk.img \
                             error=ENOSPC \
                             error-pwrite-rate=100% \
                             error-zero-rate=100%
@@ -41,7 +41,7 @@ To make all connections fail hard 60 seconds after the server is
 started, use:
 
  rm -f /tmp/inject
- nbdkit --filter=error file file=disk.img \
+ nbdkit --filter=error file disk.img \
                             error-rate=100% \
                             error-file=/tmp/inject
  sleep 60; touch /tmp/inject

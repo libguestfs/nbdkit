@@ -78,7 +78,7 @@ main (int argc, char *argv[])
    * has not been overwritten.
    */
   if (test_start_nbdkit ("--filter", "offset",
-                         "file", "file=offset-data",
+                         "file", "offset-data",
                          "offset=1M", "range=8M",
                          NULL) == -1)
     exit (EXIT_FAILURE);

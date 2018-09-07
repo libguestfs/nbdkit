@@ -102,15 +102,15 @@ trap cleanup INT QUIT TERM EXIT ERR
 # 5a/b: both sides of nbd plugin: even though server side does not advertise
 # ZERO, the client side still exposes it, and just skips calling nbd's .zero
 nbdkit -P nozero1.pid -U nozero1.sock --filter=log \
-       file logfile=nozero1.log file=nozero1.img
+       file logfile=nozero1.log nozero1.img
 nbdkit -P nozero2.pid -U nozero2.sock --filter=log --filter=nozero \
-       file logfile=nozero2.log file=nozero2.img
+       file logfile=nozero2.log nozero2.img
 nbdkit -P nozero3.pid -U nozero3.sock --filter=log --filter=nozero \
-       file logfile=nozero3.log file=nozero3.img zeromode=emulate
+       file logfile=nozero3.log nozero3.img zeromode=emulate
 nbdkit -P nozero4.pid -U nozero4.sock --filter=nozero --filter=log \
-       file logfile=nozero4.log file=nozero4.img zeromode=emulate
+       file logfile=nozero4.log nozero4.img zeromode=emulate
 nbdkit -P nozero5a.pid -U nozero5a.sock --filter=log --filter=nozero \
-       file logfile=nozero5a.log file=nozero5.img
+       file logfile=nozero5a.log nozero5.img
 nbdkit -P nozero5b.pid -U nozero5b.sock --filter=log \
        nbd logfile=nozero5b.log socket=nozero5a.sock
 

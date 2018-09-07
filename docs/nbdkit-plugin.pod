@@ -267,7 +267,7 @@ an indication of failure.  It has the following prototype:
 The server usually (not always) changes directory to C</> before it
 starts serving connections.  This means that any relative paths passed
 during configuration will not work when the server is running
-(example: S<C<nbdkit plugin.so file=disk.img>>).
+(example: S<C<nbdkit plugin.so disk.img>>).
 
 To avoid problems, prepend relative paths with the current directory
 before storing them in the handle.  Or open files and store the file

@@ -44,7 +44,7 @@ if ! qemu-io -f raw -c 'w 1M 2M' log.img; then
 fi
 
 # Run nbdkit with logging enabled to file.
-nbdkit -P log.pid -U log.sock --filter=log file file=log.img logfile=log.log
+nbdkit -P log.pid -U log.sock --filter=log file log.img logfile=log.log
 
 # We may have to wait a short time for the pid file to appear.
 for i in `seq 1 10`; do

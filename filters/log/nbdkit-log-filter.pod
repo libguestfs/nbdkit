@@ -29,12 +29,12 @@ already exists, it will be truncated.
 Serve the file F<disk.img>, and log each client transaction in the
 file F<disk.log>:
 
- nbdkit --filter=log file file=disk.img logfile=disk.log
+ nbdkit --filter=log file disk.img logfile=disk.log
 
 Repeat the task, but with the cow (copy-on-write) filter to perform
 local caching of data served from the original plugin:
 
- nbdkit --filter=cow --filter=log file file=disk.img logfile=disk.log2
+ nbdkit --filter=cow --filter=log file disk.img logfile=disk.log2
 
 After running a client that performs the same operations under each of
 the two servers, you can compare F<disk.log> and F<disk.log2> to see

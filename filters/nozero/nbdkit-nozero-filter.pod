@@ -34,13 +34,13 @@ way to write zeros.
 Serve the file F<disk.img>, but force the client to write zeroes
 explicitly rather than with C<NBD_CMD_WRITE_ZEROES>:
 
- nbdkit --filter=nozero file file=disk.img
+ nbdkit --filter=nozero file disk.img
 
 Serve the file F<disk.img>, allowing the client to take advantage of
 less network traffic via C<NBD_CMD_WRITE_ZEROES>, but still forcing
 the data to be written explicitly rather than punching any holes:
 
- nbdkit --filter=nozero file zeromode=emulate file=disk.img
+ nbdkit --filter=nozero file zeromode=emulate disk.img
 
 =head1 SEE ALSO
 

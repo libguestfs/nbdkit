@@ -53,7 +53,7 @@ main (int argc, char *argv[])
 
   if (test_start_nbdkit ("-r",
                          "--filter", "partition",
-                         "file", "file=disk",
+                         "file", "disk",
                          "partition=1",
                          NULL) == -1)
     exit (EXIT_FAILURE);

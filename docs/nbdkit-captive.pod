@@ -26,7 +26,7 @@ Some examples should make this clear.
 
 To run nbdkit captive under qemu:
 
- nbdkit file file=disk.img --run 'qemu -drive file=$nbd,if=virtio'
+ nbdkit file disk.img --run 'qemu -drive file=$nbd,if=virtio'
 
 On the qemu command line, C<$nbd> is substituted automatically with
 the right NBD path so it can connect to nbdkit.  When qemu exits,
@@ -34,7 +34,7 @@ nbdkit is killed and cleaned up automatically.
 
 Running nbdkit captive under guestfish:
 
- nbdkit file file=disk.img --run 'guestfish --format=raw -a $nbd -i'
+ nbdkit file disk.img --run 'guestfish --format=raw -a $nbd -i'
 
 When guestfish exits, nbdkit is killed.
 

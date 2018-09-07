@@ -124,9 +124,8 @@ main (int argc, char *argv[])
   atexit (detach_loopdev);
 
   /* Start nbdkit. */
-  snprintf (buf, sizeof buf, "file=%s", loopdev);
   if (test_start_nbdkit ("-D", "file.zero=1",
-                         "file", buf, NULL) == -1)
+                         "file", loopdev, NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

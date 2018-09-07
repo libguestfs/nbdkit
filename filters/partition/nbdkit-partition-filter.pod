@@ -38,7 +38,7 @@ This parameter is required.
 F<disk.img> is a partitioned disk image (eg. a virtual machine disk
 image).  To serve the first partition only use:
 
- nbdkit --filter=partition file file=disk.img partition=1
+ nbdkit --filter=partition file disk.img partition=1
 
 =head1 SEE ALSO
 

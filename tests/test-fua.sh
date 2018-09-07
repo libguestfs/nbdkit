@@ -84,13 +84,13 @@ trap cleanup INT QUIT TERM EXIT ERR
 # 3: fuamode=native: log shows that blocksize preserves fua
 # 4: fuamode=force: log shows that fua is always enabled
 nbdkit -P fua1.pid -U fua1.sock --filter=log --filter=fua \
-       file logfile=fua1.log file=fua.img
+       file logfile=fua1.log fua.img
 nbdkit -P fua2.pid -U fua2.sock --filter=blocksize --filter=log --filter=fua \
-       file logfile=fua2.log file=fua.img fuamode=emulate maxdata=4k maxlen=4k
+       file logfile=fua2.log fua.img fuamode=emulate maxdata=4k maxlen=4k
 nbdkit -P fua3.pid -U fua3.sock --filter=blocksize --filter=log --filter=fua \
-       file logfile=fua3.log file=fua.img fuamode=native maxdata=4k maxlen=4k
+       file logfile=fua3.log fua.img fuamode=native maxdata=4k maxlen=4k
 nbdkit -P fua4.pid -U fua4.sock --filter=fua --filter=log \
-       file logfile=fua4.log file=fua.img fuamode=force
+       file logfile=fua4.log fua.img fuamode=force
 
 # We may have to wait a short time for the pid files to appear.
 for i in `seq 1 10`; do

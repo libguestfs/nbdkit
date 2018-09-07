@@ -55,7 +55,7 @@ main (int argc, char *argv[])
 
   /* If wrapping once is good, why not do it twice!  Shows that we can
    * convert between either style of server options. */
-  if (test_start_nbdkit ("-o", "file", "file=file-data", NULL) == -1)
+  if (test_start_nbdkit ("-o", "file", "file-data", NULL) == -1)
     exit (EXIT_FAILURE);
 
   if (asprintf (&sockarg, "socket=%s", sock) < 0) {

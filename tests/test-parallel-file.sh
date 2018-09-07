@@ -56,7 +56,7 @@ qemu-io -f raw -c "aio_write -P 1 0 512" -c "aio_write -P 2 512 512" \
 # tuning the delays may help.
 
 # With --threads=1, the write should complete first because it was issued first
-nbdkit -v -t 1 -U - --filter=delay file file=test-parallel-file.data \
+nbdkit -v -t 1 -U - --filter=delay file test-parallel-file.data \
   wdelay=2 rdelay=1 --run 'qemu-io -f raw -c "aio_write -P 2 512 512" \
                            -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
     tee test-parallel-file.out
@@ -67,7 +67,7 @@ read 512/512 bytes at offset 0"; then
 fi
 
 # With default --threads, the faster read should complete first
-nbdkit -v -U - --filter=delay file file=test-parallel-file.data \
+nbdkit -v -U - --filter=delay file test-parallel-file.data \
   wdelay=2 rdelay=1 --run 'qemu-io -f raw -c "aio_write -P 2 512 512" \
                            -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
     tee test-parallel-file.out

@@ -42,7 +42,7 @@ guestfish -N cow-base.img=fs exit
 lastmod="$(stat -c "%y" cow-base.img)"
 
 # Run nbdkit with a COW overlay.
-nbdkit -P cow.pid -U cow.sock --filter=cow file file=cow-base.img
+nbdkit -P cow.pid -U cow.sock --filter=cow file cow-base.img
 
 # We may have to wait a short time for the pid file to appear.
 for i in `seq 1 10`; do

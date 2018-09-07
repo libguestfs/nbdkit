@@ -51,7 +51,7 @@ rm -f $files
 truncate -s 1G single.disk
 
 socat unix-listen:single.sock,reuseaddr,fork \
-    exec:'nbdkit -r -s file file=single.disk' &
+    exec:'nbdkit -r -s file single.disk' &
 pid=$!
 
 cleanup ()

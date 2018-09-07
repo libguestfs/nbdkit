@@ -73,9 +73,9 @@ trap cleanup INT QUIT TERM EXIT ERR
 
 # Run two parallel nbdkit; to compare the logs and see what changes.
 nbdkit -P blocksize1.pid -U blocksize1.sock \
-       --filter=log file logfile=blocksize1.log file=blocksize1.img
+       --filter=log file logfile=blocksize1.log blocksize1.img
 nbdkit -P blocksize2.pid -U blocksize2.sock --filter=blocksize \
-       --filter=log file logfile=blocksize2.log file=blocksize2.img \
+       --filter=log file logfile=blocksize2.log blocksize2.img \
        minblock=1024 maxdata=512k maxlen=1M
 
 # We may have to wait a short time for the pid files to appear.

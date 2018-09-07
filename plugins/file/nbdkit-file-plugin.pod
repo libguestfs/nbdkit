@@ -4,7 +4,7 @@ nbdkit-file-plugin - nbdkit file plugin
 
 =head1 SYNOPSIS
 
- nbdkit file file=FILENAME
+ nbdkit file [file=]FILENAME
 
 =head1 DESCRIPTION
 
@@ -25,6 +25,11 @@ Serve the file named C<FILENAME>.  A local block device name can also
 be used here.
 
 This parameter is required.
+
+In nbdkit E<ge> 1.8, C<file=> may be omitted.  To ensure that the
+filename does not end up being parsed accidentally as C<key=value>,
+prefix relative paths with C<./> (absolute paths do not need
+modification).
 
 =item B<rdelay>
 

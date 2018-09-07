@@ -41,7 +41,7 @@ rm -f $files
 truncate -s 1G cache.img
 
 # Run nbdkit with the caching filter.
-nbdkit -P cache.pid -U cache.sock --filter=cache file file=cache.img
+nbdkit -P cache.pid -U cache.sock --filter=cache file cache.img
 
 # We may have to wait a short time for the pid file to appear.
 for i in `seq 1 10`; do

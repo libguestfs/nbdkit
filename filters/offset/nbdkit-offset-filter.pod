@@ -44,7 +44,7 @@ Using L<nbdkit-file-plugin(1)>, serve the file C<disk.img> starting at
 offset C<1M>.  The total length served is C<100M> (the underlying file
 must therefore be at least C<101M> in length):
 
- nbdkit --filter=offset file file=disk.img offset=1M range=100M
+ nbdkit --filter=offset file disk.img offset=1M range=100M
 
 =head2 Serve a single partition
 
@@ -60,7 +60,7 @@ and length of the partition, eg using:
 
 You can then serve the partition only using:
 
- nbdkit --filter=offset file file=disk.img offset=65536 range=104727040
+ nbdkit --filter=offset file disk.img offset=65536 range=104727040
 
 =head1 SEE ALSO
 

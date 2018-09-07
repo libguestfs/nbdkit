@@ -45,7 +45,7 @@ Also create a service unit (eg. C</etc/systemd/system/nbdkit.service>)
 containing:
 
  [Service]
- ExecStart=/usr/sbin/nbdkit file file=/path/to/serve
+ ExecStart=/usr/sbin/nbdkit file /path/to/serve
 
 For more information on systemd and socket activation, see
 L<http://0pointer.de/blog/projects/socket-activation.html>
