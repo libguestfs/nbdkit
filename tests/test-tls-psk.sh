@@ -73,7 +73,7 @@ fi
 # Unfortunately qemu cannot do TLS over a Unix domain socket (nbdkit
 # probably can, although it is not tested).  Find an unused port to
 # listen on.
-for port in `seq 50000 65535`; do
+for port in `seq 51000 65535`; do
     if ! ss -ltn | grep -sqE ":$port\b"; then break; fi
 done
 echo picked unused port $port
