@@ -275,7 +275,7 @@ MAINTAINERCLEANFILES += disk
 
 disk:
 	rm -f $@ test1.img
-	guestfish -N fs -m /dev/sda1 write /hello.txt "hello,world"
+	guestfish -N fs:ext4:100M -m /dev/sda1 write /hello.txt "hello,world"
 	mv test1.img disk
 
 endif HAVE_GUESTFISH
