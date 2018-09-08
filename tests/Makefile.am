@@ -82,6 +82,7 @@ EXTRA_DIST = \
 	test-shebang-perl.sh \
 	test-shebang-python.sh \
 	test-shebang-ruby.sh \
+	test-shell.sh \
 	test-single.sh \
 	test-start.sh \
 	test-random-sock.sh \
