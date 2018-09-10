@@ -39,3 +39,27 @@ if [[ ! ( "$output" =~ ^nbdkit\ 1\. ) ]]; then
     echo "$output"
     exit 1
 fi
+
+# Get a list of all plugins and run --version on all of them.
+# However some of these tests are expected to fail.
+plugins="$(
+    cd ..;
+    ls -1 plugins/*/.libs/nbdkit-*-plugin.so plugins/*/nbdkit-*-plugin |
+        sed 's,^plugins/\([^/]*\)/.*,\1,'
+)"
+for p in $plugins; do
+    case "$p${NBDKIT_VALGRIND:+-valgrind}" in
+        vddk | vddk-valgrind)
+            # VDDK won't run without special environment variables
+            # being set, so ignore it.
+            ;;
+        lua-valgrind | perl-valgrind | python-valgrind | \
+        ruby-valgrind | tcl-valgrind | \
+        example4-valgrind | tar-valgrind)
+            # Plugins written in scripting languages can't run under valgrind.
+            ;;
+        *)
+            nbdkit $p --version
+            ;;
+    esac
+done
