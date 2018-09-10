@@ -45,6 +45,8 @@
 
 #include <nbdkit-plugin.h>
 
+static char tmpdir[] = "/tmp/nbdkitshXXXXXX";
+#define tmpdir_len 19       /* length in bytes of preceeding string */
 static char *script;
 
 /* Exit codes from the script - see nbdkit-sh-plugin(3). */
@@ -126,6 +128,9 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
     close (in_fd[0]);
     close (out_fd[1]);
     close (err_fd[1]);
+
+    /* Set $tmpdir for the script. */
+    setenv ("tmpdir", tmpdir, 1);
 
     execvp (argv[0], (char **) argv);
     perror (argv[0]);
@@ -406,10 +411,33 @@ call_write (const char *wbuf, size_t wbuflen, const char **argv)
 }
 
 static void
+sh_load (void)
+{
+  /* Create the temporary directory for the shell script to use. */
+  if (mkdtemp (tmpdir) == NULL) {
+    nbdkit_error ("mkdtemp: /tmp: %m");
+    exit (EXIT_FAILURE);
+  }
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+static void
 sh_unload (void)
 {
+  const char *args[] = { script, "unload", NULL };
+  char cmd[7 + tmpdir_len + 1]; /* "rm -rf " + tmpdir + \0 */
+
+  /* Run the unload method.  Ignore all errors. */
+  call (args);
+
+  /* Delete the temporary directory.  Ignore all errors. */
+  snprintf (cmd, sizeof cmd, "rm -rf %s", tmpdir);
+  system (cmd);
+
   free (script);
 }
+#pragma GCC diagnostic pop
 
 static void
 sh_dump_plugin (void)
@@ -449,6 +477,17 @@ sh_config (const char *key, const char *value)
     script = nbdkit_realpath (value);
     if (script == NULL)
       return -1;
+
+    /* Call the load method. */
+    const char *args[] = { script, "load", NULL };
+    switch (call (args)) {
+    case OK:
+    case MISSING:
+      break;
+    case ERROR:
+    default:
+      return -1;
+    }
   }
   else {
     const char *args[] = { script, "config", key, value, NULL };
@@ -768,6 +807,7 @@ sh_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 static struct nbdkit_plugin plugin = {
   .name              = "sh",
   .version           = PACKAGE_VERSION,
+  .load              = sh_load,
   .unload            = sh_unload,
 
   .dump_plugin       = sh_dump_plugin,

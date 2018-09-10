@@ -22,11 +22,11 @@
 #   ><fs> list-filesystems
 #   ><fs> mount /dev/sda1 /
 
-# It's highly insecure to save state in a known directory under /tmp
-# but this is just an example.  Don't do this in real code!
-state=/tmp/nbdkit-example-sh
-mkdir -p $state
-f=$state/file
+# $tmpdir is set to a random, empty directory by nbdkit.  Note
+# the contents are deleted when nbdkit exits.
+
+# We make a symlink to the file in the tmpdir directory.
+f=$tmpdir/file
 
 case "$1" in
     dump_plugin)
@@ -58,7 +58,17 @@ case "$1" in
 
     open)
         # Open a new client connection.
-        # We can return any handle here.
+        #
+        # If you want to keep per-handle state then create a temporary
+        # directory under $tmpdir using the command below (note the
+        # X's are literal).  This prints the new directory name on
+        # stdout, which is passed back as the handle parameter ($2) in
+        # calls below.  You can use this directory to store per-handle
+        # state, and it is cleaned up by nbdkit on exit.
+        #mktemp -d $tmpdir/handle-XXXXXX
+        #
+        # This example doesn't need per-handle state so we can
+        # return anything:
         echo handle
         ;;
 

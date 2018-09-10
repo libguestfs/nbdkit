@@ -44,10 +44,17 @@ parameter is always the method name.  For example:
  /path/to/script config <key> <value>
  /path/to/script pread <handle> <count> <offset>
 
+=head2 TEMPORARY DIRECTORY
+
 A fresh script is invoked for each method call (ie. scripts are
 stateless), so if the script needs to store state it has to store it
 somewhere in the filesystem in a format and location which is left up
 to the author of the script.
+
+However nbdkit helps by creating a randomly named, empty directory for
+the script.  This directory persists for the lifetime of nbdkit and is
+deleted when nbdkit exits.  The name of the directory is passed to
+each script invocation in the C<$tmpdir> environment variable.
 
 =head2 EXIT CODES
 
@@ -96,6 +103,17 @@ all other respects they work the same way as the C callbacks, so you
 should go and read L<nbdkit-plugin(3)>.
 
 =over 4
+
+=item C<load>
+
+ /path/to/script load
+
+=item C<unload>
+
+ /path/to/script unload
+
+This is called just before nbdkit exits.  Errors from this method are
+ignored.
 
 =item C<dump_plugin>
 
@@ -201,7 +219,7 @@ C<may_trim> will be either C<true> or C<false>.
 
 =over 4
 
-=item Missing: C<load>, C<unload>, C<name>, C<version>, C<longname>,
+=item Missing: C<name>, C<version>, C<longname>,
 C<description>, C<config_help>, C<can_zero>, C<can_fua>
 
 These are not yet supported.

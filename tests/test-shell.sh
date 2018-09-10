@@ -9,6 +9,12 @@ if [ ! -r $f ]; then
     exit 1
 fi
 
+# nbdkit is supposed to set $tmpdir.  If it doesn't, it's an error.
+if [ ! -d $tmpdir ]; then
+    echo "\$tmpdir was not set"
+    exit 1
+fi
+
 case "$1" in
     open)
         echo handle
