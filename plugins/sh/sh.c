@@ -514,6 +514,11 @@ sh_config_complete (void)
 {
   const char *args[] = { script, "config_complete", NULL };
 
+  if (!script) {
+    nbdkit_error ("missing script parameter");
+    return -1;
+  }
+
   switch (call (args)) {
   case OK:
   case MISSING:
