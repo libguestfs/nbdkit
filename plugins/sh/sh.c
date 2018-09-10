@@ -45,7 +45,7 @@
 
 #include <nbdkit-plugin.h>
 
-static const char *script;
+static char *script;
 
 /* Exit codes from the script - see nbdkit-sh-plugin(3). */
 #define OK        0
@@ -406,6 +406,12 @@ call_write (const char *wbuf, size_t wbuflen, const char **argv)
 }
 
 static void
+sh_unload (void)
+{
+  free (script);
+}
+
+static void
 sh_dump_plugin (void)
 {
   const char *args[] = { script, "dump_plugin", NULL };
@@ -440,7 +446,9 @@ sh_config (const char *key, const char *value)
       nbdkit_error ("the first parameter must be script=/path/to/script");
       return -1;
     }
-    script = value;
+    script = nbdkit_realpath (value);
+    if (script == NULL)
+      return -1;
   }
   else {
     const char *args[] = { script, "config", key, value, NULL };
@@ -760,6 +768,7 @@ sh_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 static struct nbdkit_plugin plugin = {
   .name              = "sh",
   .version           = PACKAGE_VERSION,
+  .unload            = sh_unload,
 
   .dump_plugin       = sh_dump_plugin,
 
