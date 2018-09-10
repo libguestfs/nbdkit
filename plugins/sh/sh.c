@@ -425,11 +425,14 @@ sh_load (void)
 static void
 sh_unload (void)
 {
-  const char *args[] = { script, "unload", NULL };
   char cmd[7 + tmpdir_len + 1]; /* "rm -rf " + tmpdir + \0 */
 
   /* Run the unload method.  Ignore all errors. */
-  call (args);
+  if (script) {
+    const char *args[] = { script, "unload", NULL };
+
+    call (args);
+  }
 
   /* Delete the temporary directory.  Ignore all errors. */
   snprintf (cmd, sizeof cmd, "rm -rf %s", tmpdir);
