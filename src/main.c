@@ -665,6 +665,7 @@ main (int argc, char *argv[])
       printf ("\n");
       b->usage (b);
     }
+    backend->free (backend);
     exit (EXIT_SUCCESS);
   }
 
@@ -679,6 +680,7 @@ main (int argc, char *argv[])
         printf (" %s", v);
       printf ("\n");
     }
+    backend->free (backend);
     exit (EXIT_SUCCESS);
   }
 
@@ -721,6 +723,7 @@ main (int argc, char *argv[])
    */
   if (dump_plugin) {
     backend->dump_fields (backend);
+    backend->free (backend);
     exit (EXIT_SUCCESS);
   }
 
