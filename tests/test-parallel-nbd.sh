@@ -63,21 +63,10 @@ qemu-io -f raw -c "aio_write -P 1 0 512" -c "aio_write -P 2 512 512" \
 # may have spurious failures under heavy loads on the test machine, where
 # tuning the delays may help.
 
-nbdkit --exit-with-parent -v \
-    -U test-parallel-nbd.sock -P test-parallel-nbd.pid \
-    --filter=delay \
-    file test-parallel-nbd.data wdelay=2 rdelay=1 &
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f test-parallel-nbd.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f test-parallel-nbd.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
+start_nbdkit -P test-parallel-nbd.pid \
+             -U test-parallel-nbd.sock \
+             --filter=delay \
+             file test-parallel-nbd.data wdelay=2 rdelay=1
 
 # With --threads=1, the write should complete first because it was issued first
 nbdkit -v -t 1 -U - nbd socket=test-parallel-nbd.sock --run '

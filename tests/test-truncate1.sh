@@ -39,6 +39,7 @@ set -x
 
 files="truncate1.out truncate1.pid truncate1.sock"
 rm -f $files
+cleanup_fn rm -f $files
 
 # Test that qemu-io works
 if ! qemu-io --help >/dev/null; then
@@ -47,32 +48,10 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit with pattern plugin and truncate filter in front.
-nbdkit -P truncate1.pid -U truncate1.sock \
+start_nbdkit -P truncate1.pid -U truncate1.sock \
        --filter=truncate \
        pattern size=503 \
        truncate=512
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f truncate1.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f truncate1.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat truncate1.pid)"
-
-# Kill the nbdkit process on exit.
-cleanup ()
-{
-    kill $pid
-    rm -f $files
-}
-cleanup_fn cleanup
 
 qemu-io -r -f raw 'nbd+unix://?socket=truncate1.sock' \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > truncate1.out
@@ -113,5 +92,3 @@ then
     cat truncate1.out
     exit 1
 fi
-
-# The cleanup() function is called implicitly on exit.

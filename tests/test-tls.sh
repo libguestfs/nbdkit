@@ -71,30 +71,9 @@ for port in `seq 50000 65535`; do
 done
 echo picked unused port $port
 
-nbdkit -P tls.pid -p $port -n --tls=require \
+cleanup_fn rm -f tls.pid tls.out
+start_nbdkit -P tls.pid -p $port -n --tls=require \
        --tls-certificates="$pkidir" example1
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f tls.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f tls.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat tls.pid)"
-
-# Kill the process on exit.
-cleanup ()
-{
-    kill $pid
-    rm -f tls.pid tls.out
-}
-cleanup_fn cleanup
 
 # Run qemu-img against the server.
 LANG=C \

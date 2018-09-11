@@ -51,16 +51,10 @@ if ! qemu-io -f raw -t none -c flush -c 'w -f -z 0 64k' fua.img; then
     exit 77
 fi
 
-pid1= pid2= pid3= pid4=
-
-# Kill any nbdkit processes on exit.
+# For easier debugging, dump the final log files before removing them
+# on exit.
 cleanup ()
 {
-    test "$pid1" && kill $pid1
-    test "$pid2" && kill $pid2
-    test "$pid3" && kill $pid3
-    test "$pid4" && kill $pid4
-    # For easier debugging, dump the final log files before removing them.
     echo "Log 1 file contents:"
     cat fua1.log || :
     echo "Log 2 file contents:"
@@ -78,34 +72,18 @@ cleanup_fn cleanup
 # 2: fuamode=emulate: log shows that blocksize optimizes fua to flush
 # 3: fuamode=native: log shows that blocksize preserves fua
 # 4: fuamode=force: log shows that fua is always enabled
-nbdkit -P fua1.pid -U fua1.sock --filter=log --filter=fua \
-       file logfile=fua1.log fua.img
-nbdkit -P fua2.pid -U fua2.sock --filter=blocksize --filter=log --filter=fua \
-       file logfile=fua2.log fua.img fuamode=emulate maxdata=4k maxlen=4k
-nbdkit -P fua3.pid -U fua3.sock --filter=blocksize --filter=log --filter=fua \
-       file logfile=fua3.log fua.img fuamode=native maxdata=4k maxlen=4k
-nbdkit -P fua4.pid -U fua4.sock --filter=fua --filter=log \
-       file logfile=fua4.log fua.img fuamode=force
-
-# We may have to wait a short time for the pid files to appear.
-for i in `seq 1 10`; do
-    if test -f fua1.pid && test -f fua2.pid && test -f fua3.pid &&
-       test -f fua4.pid; then
-        break
-    fi
-    sleep 1
-done
-
-pid1="$(cat fua1.pid)" || :
-pid2="$(cat fua2.pid)" || :
-pid3="$(cat fua3.pid)" || :
-pid4="$(cat fua4.pid)" || :
-
-if ! test -f fua1.pid || ! test -f fua2.pid || ! test -f fua3.pid ||
-   ! test -f fua4.pid; then
-    echo "$0: PID files were not created"
-    exit 1
-fi
+start_nbdkit -P fua1.pid -U fua1.sock \
+             --filter=log --filter=fua \
+             file logfile=fua1.log fua.img
+start_nbdkit -P fua2.pid -U fua2.sock \
+             --filter=blocksize --filter=log --filter=fua \
+             file logfile=fua2.log fua.img fuamode=emulate maxdata=4k maxlen=4k
+start_nbdkit -P fua3.pid -U fua3.sock \
+             --filter=blocksize --filter=log --filter=fua \
+             file logfile=fua3.log fua.img fuamode=native maxdata=4k maxlen=4k
+start_nbdkit -P fua4.pid -U fua4.sock \
+             --filter=fua --filter=log \
+             file logfile=fua4.log fua.img fuamode=force
 
 # Perform a flush, write, and zero, first without then with FUA
 for f in '' -f; do
@@ -145,5 +123,3 @@ if grep 'Flush' fua4.log; then
     echo "filter should have elided flush"
     exit 1
 fi
-
-# The cleanup() function is called implicitly on exit.

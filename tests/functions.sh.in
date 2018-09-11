@@ -57,6 +57,39 @@ _run_cleanup_hooks ()
 }
 trap _run_cleanup_hooks INT QUIT TERM EXIT ERR
 
+# start_nbdkit -P pidfile args...
+#
+# Run nbdkit with args and wait for it to start up.  If it fails to
+# start up, exit with an error message.  Also a cleanup handler is
+# installed automatically which kills nbdkit on exit.
+start_nbdkit ()
+{
+    # -P <pidfile> must be the first two parameters.
+    if [ "$1" != "-P" ]; then
+       echo "$0: start_nbdkit: -P <pidfile> option must be first"
+       exit 1
+    fi
+    pidfile="$2"
+
+    # Run nbdkit.
+    nbdkit "$@"
+
+    # Wait for the pidfile to appear.
+    for i in {1..10}; do
+        if test -f "$pidfile"; then
+            break
+        fi
+        sleep 1
+    done
+    if ! test -f "$pidfile"; then
+        echo "$0: start_nbdkit: PID file $pidfile was not created"
+        exit 1
+    fi
+
+    # Kill nbdkit on exit.
+    cleanup_fn kill "$(cat "$pidfile")"
+}
+
 # foreach_plugin f [args]
 #
 # For each plugin that was built, run the function or command f with

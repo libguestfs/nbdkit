@@ -61,18 +61,10 @@ if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
 fi
 cp nozero2.img nozero1.img
 
-pid1= pid2= pid3= pid4= pid5a= pid5b=
-
-# Kill any nbdkit processes on exit.
+# For easier debugging, dump the final log files before removing them
+# on exit.
 cleanup ()
 {
-    test "$pid1" && kill $pid1
-    test "$pid2" && kill $pid2
-    test "$pid3" && kill $pid3
-    test "$pid4" && kill $pid4
-    test "$pid5a" && kill $pid5a
-    test "$pid5b" && kill $pid5b
-    # For easier debugging, dump the final log files before removing them.
     echo "Log 1 file contents:"
     cat nozero1.log || :
     echo "Log 2 file contents:"
@@ -96,40 +88,18 @@ cleanup_fn cleanup
 # 4: log after filter with zeromode=emulate, to ensure no ZERO to plugin
 # 5a/b: both sides of nbd plugin: even though server side does not advertise
 # ZERO, the client side still exposes it, and just skips calling nbd's .zero
-nbdkit -P nozero1.pid -U nozero1.sock --filter=log \
+start_nbdkit -P nozero1.pid -U nozero1.sock --filter=log \
        file logfile=nozero1.log nozero1.img
-nbdkit -P nozero2.pid -U nozero2.sock --filter=log --filter=nozero \
+start_nbdkit -P nozero2.pid -U nozero2.sock --filter=log --filter=nozero \
        file logfile=nozero2.log nozero2.img
-nbdkit -P nozero3.pid -U nozero3.sock --filter=log --filter=nozero \
+start_nbdkit -P nozero3.pid -U nozero3.sock --filter=log --filter=nozero \
        file logfile=nozero3.log nozero3.img zeromode=emulate
-nbdkit -P nozero4.pid -U nozero4.sock --filter=nozero --filter=log \
+start_nbdkit -P nozero4.pid -U nozero4.sock --filter=nozero --filter=log \
        file logfile=nozero4.log nozero4.img zeromode=emulate
-nbdkit -P nozero5a.pid -U nozero5a.sock --filter=log --filter=nozero \
+start_nbdkit -P nozero5a.pid -U nozero5a.sock --filter=log --filter=nozero \
        file logfile=nozero5a.log nozero5.img
-nbdkit -P nozero5b.pid -U nozero5b.sock --filter=log \
+start_nbdkit -P nozero5b.pid -U nozero5b.sock --filter=log \
        nbd logfile=nozero5b.log socket=nozero5a.sock
-
-# We may have to wait a short time for the pid files to appear.
-for i in `seq 1 10`; do
-    if test -f nozero1.pid && test -f nozero2.pid && test -f nozero3.pid &&
-       test -f nozero4.pid && test -f nozero5a.pid && test -f nozero5b.pid; then
-        break
-    fi
-    sleep 1
-done
-
-pid1="$(cat nozero1.pid)" || :
-pid2="$(cat nozero2.pid)" || :
-pid3="$(cat nozero3.pid)" || :
-pid4="$(cat nozero4.pid)" || :
-pid5a="$(cat nozero5a.pid)" || :
-pid5b="$(cat nozero5b.pid)" || :
-
-if ! test -f nozero1.pid || ! test -f nozero2.pid || ! test -f nozero3.pid ||
-   ! test -f nozero4.pid || ! test -f nozero5a.pid || ! test -f nozero5b.pid; then
-    echo "$0: PID files were not created"
-    exit 1
-fi
 
 # Perform the zero write.
 qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero1.sock'
@@ -160,5 +130,3 @@ cmp nozero1.img nozero2.img
 cmp nozero2.img nozero3.img
 cmp nozero3.img nozero4.img
 cmp nozero4.img nozero5.img
-
-# The cleanup() function is called implicitly on exit.

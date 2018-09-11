@@ -31,29 +31,16 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 set -x
-source ./functions.sh
 
 # Test nbdkit starts up, forks in the background, writes a PID file,
 # and can be killed.
 
 rm -f start.pid start.sock
 
-nbdkit -P start.pid -U start.sock example1
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f start.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f start.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
+start_nbdkit -P start.pid -U start.sock example1
 pid="$(cat start.pid)"
 
 # Check the process exists.

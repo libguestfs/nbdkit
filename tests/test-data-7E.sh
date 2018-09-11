@@ -40,6 +40,7 @@ set -x
 
 files="data-7E.out data-7E.pid data-7E.sock"
 rm -f $files
+cleanup_fn rm -f $files
 
 # Test that qemu-io works
 if ! qemu-io --help >/dev/null; then
@@ -48,7 +49,7 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit.
-nbdkit -P data-7E.pid -U data-7E.sock \
+start_nbdkit -P data-7E.pid -U data-7E.sock \
        --filter=partition \
        data size=7E partition=1 \
        data="
@@ -88,28 +89,6 @@ nbdkit -P data-7E.pid -U data-7E.sock \
           0x80 0 0 0 0x80 0 0 0  0x79 0x8a 0xd0 0x7e 0 0 0 0
    "
 
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f data-7E.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f data-7E.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat data-7E.pid)"
-
-# Kill the nbdkit process on exit.
-cleanup ()
-{
-    kill $pid
-    rm -f $files
-}
-cleanup_fn cleanup
-
 # Since we're reading the empty first partition, any read returns zeroes.
 qemu-io -r -f raw 'nbd+unix://?socket=data-7E.sock' \
         -c 'r -v 498 16' | grep -E '^[[:xdigit:]]+:' > data-7E.out
@@ -119,5 +98,3 @@ then
     cat data-7E.out
     exit 1
 fi
-
-# The cleanup() function is called implicitly on exit.

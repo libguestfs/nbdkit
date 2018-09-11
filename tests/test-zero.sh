@@ -50,6 +50,3 @@ nbdkit -U - zero --run 'qemu-img convert $nbd test-zero.out'
 # Resulting file should be zero-sized.
 test -f test-zero.out
 ! test -s test-zero.out
-
-# Existing implicitly calls the trap function above to clean up.
-exit 0

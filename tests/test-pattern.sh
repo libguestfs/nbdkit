@@ -43,6 +43,7 @@ set -e
 
 files="pattern.out pattern.pid pattern.sock"
 rm -f $files
+cleanup_fn rm -f $files
 
 # Test that qemu-io works
 if ! qemu-io --help >/dev/null; then
@@ -51,29 +52,7 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit with pattern plugin.
-nbdkit -P pattern.pid -U pattern.sock pattern size=1G
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f pattern.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f pattern.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat pattern.pid)"
-
-# Kill the nbdkit process on exit.
-cleanup ()
-{
-    kill $pid
-    rm -f $files
-}
-cleanup_fn cleanup
+start_nbdkit -P pattern.pid -U pattern.sock pattern size=1G
 
 qemu-io -r -f raw 'nbd+unix://?socket=pattern.sock' \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > pattern.out
@@ -114,5 +93,3 @@ then
     cat pattern.out
     exit 1
 fi
-
-# The cleanup() function is called implicitly on exit.

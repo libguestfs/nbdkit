@@ -34,10 +34,11 @@
 # Every other test uses a Unix domain socket.  This tests nbdkit over
 # IPv4 and IPv6 localhost connections.
 
-set -e
 source ./functions.sh
+set -e
 
 rm -f ip.pid ipv4.out ipv6.out
+cleanup_fn rm -f ip.pid ipv4.out ipv6.out
 
 # Don't fail if certain commands aren't available.
 if ! ss --version; then
@@ -65,20 +66,7 @@ echo picked unused port $port
 
 # By default nbdkit will listen on all available interfaces, ie.
 # IPv4 and IPv6.
-nbdkit -P ip.pid -p $port example1
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f ip.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f ip.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
+start_nbdkit -P ip.pid -p $port example1
 pid="$(cat ip.pid)"
 
 # Check the process exists.
@@ -99,8 +87,3 @@ if test -n "$ipv6_lo"; then
     cat ipv6.out
     grep -sq "^virtual size: 100M" ipv6.out
 fi
-
-# Kill the process.
-kill $pid
-rm ip.pid
-rm -f ipv4.out ipv6.out

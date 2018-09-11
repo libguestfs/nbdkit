@@ -39,6 +39,7 @@ set -x
 
 files="offset2.out offset2.pid offset2.sock"
 rm -f $files
+cleanup_fn rm -f $files
 
 # Test that qemu-io works
 if ! qemu-io --help >/dev/null; then
@@ -48,32 +49,10 @@ fi
 
 # Run nbdkit with pattern plugin and offset filter in front.
 # 8070450532247927809 = 7E - 1023
-nbdkit -P offset2.pid -U offset2.sock \
+start_nbdkit -P offset2.pid -U offset2.sock \
        --filter=offset \
        pattern size=7E \
        offset=8070450532247927809 range=512
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f offset2.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f offset2.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat offset2.pid)"
-
-# Kill the nbdkit process on exit.
-cleanup ()
-{
-    kill $pid
-    rm -f $files
-}
-cleanup_fn cleanup
 
 qemu-io -r -f raw 'nbd+unix://?socket=offset2.sock' \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > offset2.out
@@ -114,5 +93,3 @@ then
     cat offset2.out
     exit 1
 fi
-
-# The cleanup() function is called implicitly on exit.

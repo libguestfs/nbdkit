@@ -39,6 +39,7 @@ set -e
 
 files="memory-largest.out memory-largest.pid memory-largest.sock"
 rm -f $files
+cleanup_fn rm -f $files
 
 # Test that qemu-io works
 if ! qemu-io --help >/dev/null; then
@@ -48,32 +49,8 @@ fi
 
 # Run nbdkit with memory plugin.
 # size = 2^63-1
-nbdkit -f -v \
-       -D memory.dir=1 \
-       -P memory-largest.pid -U memory-largest.sock \
-       memory size=9223372036854775807 &
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f memory-largest.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f memory-largest.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat memory-largest.pid)"
-
-# Kill the nbdkit process on exit.
-cleanup ()
-{
-    kill $pid
-    rm -f $files
-}
-cleanup_fn cleanup
+start_nbdkit -P memory-largest.pid -U memory-largest.sock \
+       memory size=9223372036854775807
 
 # qemu cannot open this image!
 #
@@ -82,5 +59,3 @@ cleanup_fn cleanup
 # Therefore we skip the remainder of this test (in effect, testing
 # only that nbdkit can create the file).
 exit 77
-
-# The cleanup() function is called implicitly on exit.

@@ -50,14 +50,10 @@ if ! qemu-io -f raw -c 'r 0 1' -c 'w -z 1000 2000' \
 fi
 truncate -s 10M blocksize2.img
 
-pid1= pid2=
-
-# Kill any nbdkit processes on exit.
+# For easier debugging, dump the final log files before removing them
+# on exit.
 cleanup ()
 {
-    test "$pid1" && kill $pid1
-    test "$pid2" && kill $pid2
-    # For easier debugging, dump the final log files before removing them.
     echo "Log 1 file contents:"
     cat blocksize1.log || :
     echo "Log 2 file contents:"
@@ -67,27 +63,11 @@ cleanup ()
 cleanup_fn cleanup
 
 # Run two parallel nbdkit; to compare the logs and see what changes.
-nbdkit -P blocksize1.pid -U blocksize1.sock \
+start_nbdkit -P blocksize1.pid -U blocksize1.sock \
        --filter=log file logfile=blocksize1.log blocksize1.img
-nbdkit -P blocksize2.pid -U blocksize2.sock --filter=blocksize \
+start_nbdkit -P blocksize2.pid -U blocksize2.sock --filter=blocksize \
        --filter=log file logfile=blocksize2.log blocksize2.img \
        minblock=1024 maxdata=512k maxlen=1M
-
-# We may have to wait a short time for the pid files to appear.
-for i in `seq 1 10`; do
-    if test -f blocksize1.pid && test -f blocksize2.pid; then
-        break
-    fi
-    sleep 1
-done
-
-pid1="$(cat blocksize1.pid)" || :
-pid2="$(cat blocksize2.pid)" || :
-
-if ! test -f blocksize1.pid || ! test -f blocksize2.pid; then
-    echo "$0: PID files were not created"
-    exit 1
-fi
 
 # Test behavior on short accesses.
 qemu-io -f raw -c 'r 1 1' -c 'w 10001 1' -c 'w -z 20001 1' \
@@ -147,5 +127,3 @@ if grep 'count=0x[0-9a-f]*\([1235679abdef]00\|[0-9a-f]\(.[^0]\|[^0].\)\) ' \
     exit 1;
 fi
 diff -u blocksize1.img blocksize2.img
-
-# The cleanup() function is called implicitly on exit.

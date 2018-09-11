@@ -39,6 +39,7 @@ set -x
 
 files="data-base64.out data-base64.pid data-base64.sock"
 rm -f $files
+cleanup_fn rm -f $files
 
 # Test if the base64 parameter is supported in this build.
 if ! nbdkit data --dump-plugin | grep -sq "data_base64=yes"; then
@@ -53,30 +54,8 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit.
-nbdkit -P data-base64.pid -U data-base64.sock \
+start_nbdkit -P data-base64.pid -U data-base64.sock \
        data base64=MTIz size=512
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f data-base64.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f data-base64.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat data-base64.pid)"
-
-# Kill the nbdkit process on exit.
-cleanup ()
-{
-    kill $pid
-    rm -f $files
-}
-cleanup_fn cleanup
 
 qemu-io -r -f raw 'nbd+unix://?socket=data-base64.sock' \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > data-base64.out
@@ -117,5 +96,3 @@ then
     cat data-base64.out
     exit 1
 fi
-
-# The cleanup() function is called implicitly on exit.

@@ -39,6 +39,7 @@ set -e
 
 files="pattern-largest-for-qemu.out pattern-largest-for-qemu.pid pattern-largest-for-qemu.sock"
 rm -f $files
+cleanup_fn rm -f $files
 
 # Test that qemu-io works
 if ! qemu-io --help >/dev/null; then
@@ -48,30 +49,8 @@ fi
 
 # Run nbdkit with pattern plugin.
 # size = (2^63-1) & ~511 which is the largest supported by qemu.
-nbdkit -P pattern-largest-for-qemu.pid -U pattern-largest-for-qemu.sock \
+start_nbdkit -P pattern-largest-for-qemu.pid -U pattern-largest-for-qemu.sock \
        pattern size=9223372036854775296
-
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f pattern-largest-for-qemu.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f pattern-largest-for-qemu.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat pattern-largest-for-qemu.pid)"
-
-# Kill the nbdkit process on exit.
-cleanup ()
-{
-    kill $pid
-    rm -f $files
-}
-cleanup_fn cleanup
 
 qemu-io -r -f raw 'nbd+unix://?socket=pattern-largest-for-qemu.sock' \
         -c 'r -v 9223372036854774784 512' | grep -E '^[[:xdigit:]]+:' > pattern-largest-for-qemu.out
@@ -112,5 +91,3 @@ then
     cat pattern-largest-for-qemu.out
     exit 1
 fi
-
-# The cleanup() function is called implicitly on exit.

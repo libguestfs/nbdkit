@@ -45,27 +45,12 @@ if ! qemu-io -f raw -c 'w 1M 2M' log.img; then
 fi
 
 # Run nbdkit with logging enabled to file.
-nbdkit -P log.pid -U log.sock --filter=log file log.img logfile=log.log
+start_nbdkit -P log.pid -U log.sock --filter=log file log.img logfile=log.log
 
-# We may have to wait a short time for the pid file to appear.
-for i in `seq 1 10`; do
-    if test -f log.pid; then
-        break
-    fi
-    sleep 1
-done
-if ! test -f log.pid; then
-    echo "$0: PID file was not created"
-    exit 1
-fi
-
-pid="$(cat log.pid)"
-
-# Kill the nbdkit process on exit.
+# For easier debugging, dump the final log files before removing them
+# on exit.
 cleanup ()
 {
-    kill $pid
-    # For easier debugging, dump the final log file before removing it.
     echo "Log file contents:"
     cat log.log
     rm -f $files
@@ -79,5 +64,3 @@ qemu-io -r -f raw -c 'r -P 11 2M 1M' 'nbd+unix://?socket=log.sock'
 # The log should show a write on connection 1, and read on connection 2.
 grep 'connection=1 Write id=1 offset=0x100000 count=0x200000 ' log.log
 grep 'connection=2 Read id=1 offset=0x200000 count=0x100000 ' log.log
-
-# The cleanup() function is called implicitly on exit.
