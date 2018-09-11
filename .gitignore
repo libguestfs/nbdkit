@@ -55,6 +55,7 @@ Makefile.in
 /tests/disk.xz
 /tests/ext2.img
 /tests/file-data
+/tests/functions.sh
 /tests/keys.psk
 /tests/offset-data
 /tests/partition-disk

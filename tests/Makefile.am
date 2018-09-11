@@ -35,7 +35,6 @@ include $(top_srcdir)/common-rules.mk
 MAINTAINERCLEANFILES =
 
 EXTRA_DIST = \
-	functions.sh \
 	make-pki.sh \
 	make-psk.sh \
 	python-exception.py \

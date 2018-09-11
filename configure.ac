@@ -651,6 +651,7 @@ AC_CONFIG_FILES([Makefile
                  filters/truncate/Makefile
                  src/Makefile
                  src/nbdkit.pc
+                 tests/functions.sh
                  tests/Makefile])
 
 AC_OUTPUT

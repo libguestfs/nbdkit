@@ -31,6 +31,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 
 output="$(nbdkit --version)"
@@ -40,15 +41,11 @@ if [[ ! ( "$output" =~ ^nbdkit\ 1\. ) ]]; then
     exit 1
 fi
 
-# Get a list of all plugins and run --version on all of them.
+# Run nbdkit plugin --version for each plugin.
 # However some of these tests are expected to fail.
-plugins="$(
-    cd ..;
-    ls -1 plugins/*/.libs/nbdkit-*-plugin.so plugins/*/nbdkit-*-plugin |
-        sed 's,^plugins/\([^/]*\)/.*,\1,'
-)"
-for p in $plugins; do
-    case "$p${NBDKIT_VALGRIND:+-valgrind}" in
+test ()
+{
+    case "$1${NBDKIT_VALGRIND:+-valgrind}" in
         vddk | vddk-valgrind)
             # VDDK won't run without special environment variables
             # being set, so ignore it.
@@ -59,7 +56,8 @@ for p in $plugins; do
             # Plugins written in scripting languages can't run under valgrind.
             ;;
         *)
-            nbdkit $p --version
+            nbdkit $1 --version
             ;;
     esac
-done
+}
+foreach_plugin test

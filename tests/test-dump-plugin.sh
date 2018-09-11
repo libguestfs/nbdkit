@@ -31,9 +31,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 set -x
-source ./functions.sh
 
 # Basic check that the name field is present.
 output="$(nbdkit example1 --dump-plugin)"
@@ -51,15 +51,11 @@ if [[ ! ( "$output" =~ example2_extra\=hello ) ]]; then
     exit 1
 fi
 
-# Get a list of all plugins and run --dump-plugin on all of them.
+# Run nbdkit plugin --dump-plugin for each plugin.
 # However some of these tests are expected to fail.
-plugins="$(
-    cd ..;
-    ls -1 plugins/*/.libs/nbdkit-*-plugin.so plugins/*/nbdkit-*-plugin |
-        sed 's,^plugins/\([^/]*\)/.*,\1,'
-)"
-for p in $plugins; do
-    case "$p${NBDKIT_VALGRIND:+-valgrind}" in
+test ()
+{
+    case "$1${NBDKIT_VALGRIND:+-valgrind}" in
         vddk | vddk-valgrind)
             # VDDK won't run without special environment variables
             # being set, so ignore it.
@@ -70,7 +66,8 @@ for p in $plugins; do
             # Plugins written in scripting languages can't run under valgrind.
             ;;
         *)
-            nbdkit $p --dump-plugin
+            nbdkit $1 --dump-plugin
             ;;
     esac
-done
+}
+foreach_plugin test
