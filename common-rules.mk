@@ -30,50 +30,6 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-plugins = \
-	curl \
-	data \
-	example1 \
-	example2 \
-	example3 \
-	example4 \
-	ext2 \
-	file \
-	guestfs \
-	gzip \
-	libvirt \
-	lua \
-	memory \
-	nbd \
-	null \
-	ocaml \
-	pattern \
-	perl \
-	python \
-	random \
-	ruby \
-	sh \
-	split \
-	streaming \
-	tar \
-	tcl \
-	vddk \
-	xz \
-	zero
-
-filters = \
-	blocksize \
-	cache \
-	cow \
-	delay \
-	error \
-	fua \
-	log \
-	nozero \
-	offset \
-	partition \
-	truncate
-
 plugindir = $(libdir)/nbdkit/plugins
 filterdir = $(libdir)/nbdkit/filters
 

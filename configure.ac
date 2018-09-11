@@ -542,6 +542,59 @@ AC_ARG_ENABLE([vddk],[
     [enable_vddk=yes])
 AM_CONDITIONAL([HAVE_VDDK], [test "x$enable_vddk" = "xyes"])
 
+dnl List of plugins and filters.
+lang_plugins="\
+        lua \
+        ocaml \
+        perl \
+        python \
+        ruby \
+        sh \
+        tcl \
+        "
+non_lang_plugins="\
+        curl \
+        data \
+        example1 \
+        example2 \
+        example3 \
+        example4 \
+        ext2 \
+        file \
+        guestfs \
+        gzip \
+        libvirt \
+        memory \
+        nbd \
+        null \
+        pattern \
+        random \
+        split \
+        streaming \
+        tar \
+        vddk \
+        xz \
+        zero \
+        "
+plugins="$(echo $(printf %s\\n $lang_plugins $non_lang_plugins | sort -u))"
+filters="\
+        blocksize \
+        cache \
+        cow \
+        delay \
+        error \
+        fua \
+        log \
+        nozero \
+        offset \
+        partition \
+        truncate \
+        "
+AC_SUBST([plugins])
+AC_SUBST([lang_plugins])
+AC_SUBST([non_lang_plugins])
+AC_SUBST([filters])
+
 dnl Produce output files.
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([nbdkit],
