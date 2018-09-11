@@ -104,10 +104,11 @@ nbdkit-filter.3: nbdkit-filter.pod filter-links.pod
 
 endif HAVE_POD
 
-# XXX Language links are broken - they link to section 1 instead of section 3.
 plugin-links.pod: $(top_srcdir)/common-rules.mk
 	rm -f $@ $@-t
-	$(srcdir)/make-links.sh plugin 1 $(plugins) > $@-t
+	$(srcdir)/make-links.sh plugin 1 $(non_lang_plugins) > $@-t
+	echo \; >> $@-t
+	$(srcdir)/make-links.sh plugin 3 $(lang_plugins) >> $@-t
 	mv $@-t $@
 
 filter-links.pod: $(top_srcdir)/common-rules.mk
