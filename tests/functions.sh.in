@@ -32,6 +32,31 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# cleanup_fn f [args]
+#
+# A generic trap handling function.  This runs the function or command
+# f plus optional args when the script exits for any reason.
+declare -a _cleanup_hook
+cleanup_fn ()
+{
+    _cleanup_hook[${#_cleanup_hook[@]}]="$@"
+}
+
+_run_cleanup_hooks ()
+{
+    status=$?
+    set +e
+    trap '' INT QUIT TERM EXIT ERR
+    echo $0: run cleanup hooks: exit code $status
+
+    for (( i = 0; i < ${#_cleanup_hook[@]}; ++i )); do
+        ${_cleanup_hook[i]}
+    done
+
+    exit $status
+}
+trap _run_cleanup_hooks INT QUIT TERM EXIT ERR
+
 # foreach_plugin f [args]
 #
 # For each plugin that was built, run the function or command f with

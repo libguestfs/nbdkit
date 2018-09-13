@@ -31,9 +31,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 set -x
-source ./functions.sh
 
 # Don't fail if certain commands aren't available.
 if ! ss --version; then
@@ -91,16 +91,10 @@ pid="$(cat tls.pid)"
 # Kill the process on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     kill $pid
     rm -f tls.pid tls.out
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 # Run qemu-img against the server.
 LANG=C \

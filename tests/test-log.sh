@@ -31,6 +31,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 
 files="log.img log.log log.sock log.pid"
@@ -63,19 +64,13 @@ pid="$(cat log.pid)"
 # Kill the nbdkit process on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     kill $pid
     # For easier debugging, dump the final log file before removing it.
     echo "Log file contents:"
     cat log.log
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 # Write, then read some data in the file.
 qemu-io -f raw -c 'w -P 11 1M 2M' 'nbd+unix://?socket=log.sock'

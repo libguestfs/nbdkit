@@ -33,6 +33,7 @@
 
 # Test the data plugin with base64= parameter.
 
+source ./functions.sh
 set -e
 set -x
 
@@ -72,16 +73,10 @@ pid="$(cat data-base64.pid)"
 # Kill the nbdkit process on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     kill $pid
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 qemu-io -r -f raw 'nbd+unix://?socket=data-base64.sock' \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > data-base64.out

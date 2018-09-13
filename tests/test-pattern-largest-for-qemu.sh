@@ -34,6 +34,7 @@
 # Test the pattern plugin with the largest possible size supported
 # by qemu and nbdkit.
 
+source ./functions.sh
 set -e
 
 files="pattern-largest-for-qemu.out pattern-largest-for-qemu.pid pattern-largest-for-qemu.sock"
@@ -67,16 +68,10 @@ pid="$(cat pattern-largest-for-qemu.pid)"
 # Kill the nbdkit process on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     kill $pid
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 qemu-io -r -f raw 'nbd+unix://?socket=pattern-largest-for-qemu.sock' \
         -c 'r -v 9223372036854774784 512' | grep -E '^[[:xdigit:]]+:' > pattern-largest-for-qemu.out

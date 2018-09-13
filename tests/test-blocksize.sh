@@ -31,6 +31,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 
 files="blocksize1.img blocksize1.log blocksize1.sock blocksize1.pid
@@ -54,10 +55,6 @@ pid1= pid2=
 # Kill any nbdkit processes on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     test "$pid1" && kill $pid1
     test "$pid2" && kill $pid2
     # For easier debugging, dump the final log files before removing them.
@@ -66,10 +63,8 @@ cleanup ()
     echo "Log 2 file contents:"
     cat blocksize2.log || :
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 # Run two parallel nbdkit; to compare the logs and see what changes.
 nbdkit -P blocksize1.pid -U blocksize1.sock \

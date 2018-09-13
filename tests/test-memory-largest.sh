@@ -34,6 +34,7 @@
 # Test the memory plugin with the largest possible size supported
 # by nbdkit.
 
+source ./functions.sh
 set -e
 
 files="memory-largest.out memory-largest.pid memory-largest.sock"
@@ -69,16 +70,10 @@ pid="$(cat memory-largest.pid)"
 # Kill the nbdkit process on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     kill $pid
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 # qemu cannot open this image!
 #

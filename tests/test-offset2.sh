@@ -33,6 +33,7 @@
 
 # Additional test of the offset filter using the pattern plugin.
 
+source ./functions.sh
 set -e
 set -x
 
@@ -69,16 +70,10 @@ pid="$(cat offset2.pid)"
 # Kill the nbdkit process on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     kill $pid
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 qemu-io -r -f raw 'nbd+unix://?socket=offset2.sock' \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > offset2.out

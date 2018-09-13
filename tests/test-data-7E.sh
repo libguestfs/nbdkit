@@ -34,6 +34,7 @@
 # Test the data plugin creating a 7 EB partitioned disk, and
 # the partition filter on top.
 
+source ./functions.sh
 set -e
 set -x
 
@@ -104,16 +105,10 @@ pid="$(cat data-7E.pid)"
 # Kill the nbdkit process on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     kill $pid
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 # Since we're reading the empty first partition, any read returns zeroes.
 qemu-io -r -f raw 'nbd+unix://?socket=data-7E.sock' \

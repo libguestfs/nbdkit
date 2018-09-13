@@ -31,6 +31,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -x
 set -e
 
@@ -42,18 +43,7 @@ fi
 
 files="test-zero.out"
 rm -f $files
-
-cleanup ()
-{
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
-    rm $files
-
-    exit $status
-}
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn rm -f $files
 
 nbdkit -U - zero --run 'qemu-img convert $nbd test-zero.out'
 

@@ -31,6 +31,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 set -x
 
@@ -55,10 +56,6 @@ pid1= pid2= pid3= pid4=
 # Kill any nbdkit processes on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     test "$pid1" && kill $pid1
     test "$pid2" && kill $pid2
     test "$pid3" && kill $pid3
@@ -73,10 +70,8 @@ cleanup ()
     echo "Log 4 file contents:"
     cat fua4.log || :
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 # Run four parallel nbdkit; to compare the logs and see what changes.
 # 1: fuamode=none (default): client should send flush instead

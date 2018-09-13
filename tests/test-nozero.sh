@@ -31,6 +31,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 
 files="nozero1.img nozero1.log nozero1.sock nozero1.pid
@@ -65,10 +66,6 @@ pid1= pid2= pid3= pid4= pid5a= pid5b=
 # Kill any nbdkit processes on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     test "$pid1" && kill $pid1
     test "$pid2" && kill $pid2
     test "$pid3" && kill $pid3
@@ -89,10 +86,8 @@ cleanup ()
     echo "Log 5b file contents:"
     cat nozero5b.log || :
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 # Run four parallel nbdkit; to compare the logs and see what changes.
 # 1: unfiltered, to check that qemu-io sends ZERO request and plugin trims

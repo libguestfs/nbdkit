@@ -38,6 +38,7 @@
 # what read parameters we give it.  Hence these tests are rather
 # limited. (XXX)
 
+source ./functions.sh
 set -e
 
 files="pattern.out pattern.pid pattern.sock"
@@ -69,16 +70,10 @@ pid="$(cat pattern.pid)"
 # Kill the nbdkit process on exit.
 cleanup ()
 {
-    status=$?
-    trap '' INT QUIT TERM EXIT ERR
-    echo $0: cleanup: exit code $status
-
     kill $pid
     rm -f $files
-
-    exit $status
 }
-trap cleanup INT QUIT TERM EXIT ERR
+cleanup_fn cleanup
 
 qemu-io -r -f raw 'nbd+unix://?socket=pattern.sock' \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > pattern.out
