@@ -288,6 +288,11 @@ at runtime.
 If this is printed then the C<nfchostport=PORT> parameter is supported
 by this build.
 
+=item C<vddk_dll=...>
+
+Prints the full path to the VDDK shared library.  Since this requires
+a glibc extension it may not be available in all builds of the plugin.
+
 =back
 
 =head1 DEBUGGING VDDK

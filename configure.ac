@@ -142,6 +142,12 @@ dnl Check for functions in libc, all optional.
 AC_CHECK_FUNCS([\
 	get_current_dir_name])
 
+dnl Check for dladdr in -ldl, optional.  This is a glibc extension.
+old_LIBS="$LIBS"
+LIBS="-ldl $LIBS"
+AC_CHECK_FUNCS([dladdr])
+LIBS="$old_LIBS"
+
 dnl Check support for setsockcreatecon_raw (part of SELinux).
 AC_CHECK_LIB([selinux], [setsockcreatecon_raw], [], [:])
 

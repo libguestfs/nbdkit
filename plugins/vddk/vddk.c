@@ -332,9 +332,22 @@ vddk_dump_plugin (void)
   printf ("vddk_default_libdir=%s\n", VDDK_LIBDIR);
   printf ("vddk_has_nfchostport=1\n");
 
-  /* XXX We really need to print the version of the dynamically
-   * linked library here, but VDDK does not provide it.
+#if defined(HAVE_DLADDR)
+  /* It would be nice to print the version of VDDK from the shared
+   * library, but VDDK does not provide it.  Instead we can get the
+   * path to the library using the glibc extension dladdr, and then
+   * resolve symlinks using realpath.  The final pathname should
+   * contain the version number.
    */
+  Dl_info info;
+  char *p;
+  if (dladdr (VixDiskLib_InitEx, &info) != 0 &&
+      info.dli_fname != NULL &&
+      (p = nbdkit_realpath (info.dli_fname)) != NULL) {
+    printf ("vddk_dll=%s\n", p);
+    free (p);
+  }
+#endif
 }
 
 /* XXX To really do threading correctly in accordance with the VDDK
