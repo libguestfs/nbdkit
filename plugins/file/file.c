@@ -397,13 +397,13 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
 #ifdef BLKZEROOUT
   /* For aligned range and block device, we can use BLKZEROOUT. */
-  if (h->can_zeroout && is_aligned (offset | count, h->sector_size)) {
+  if (h->can_zeroout && IS_ALIGNED (offset | count, h->sector_size)) {
     uint64_t range[2] = {offset, count};
 
     r = ioctl (h->fd, BLKZEROOUT, &range);
     if (r == 0) {
       if (file_debug_zero)
-        nbdkit_debug ("h->can_zeroout && is_aligned: "
+        nbdkit_debug ("h->can_zeroout && IS_ALIGNED: "
                       "zero succeeded using BLKZEROOUT");
       return 0;
     }
