@@ -1,0 +1,106 @@
+=head1 NAME
+
+nbdkit-iso-plugin - create virtual ISO from directory
+
+=head1 SYNOPSIS
+
+ nbdkit iso [dir=]DIRECTORY [[dir=]DIRECTORY ...]
+            [prog=mkisofs] [params='-JrT']
+
+=head1 DESCRIPTION
+
+C<nbdkit-iso-plugin> is a plugin for L<nbdkit(1)> which creates a
+virtual ISO (CD-ROM) image from a directory on the fly.  The files
+from F<DIRECTORY> are added to a virtual ISO image which is served
+read-only over the NBD protocol.
+
+This plugin uses L<genisoimage(1)> or L<mkisofs(1)> to create the ISO
+content.
+
+=head1 EXAMPLE
+
+Create a virtual ISO which supports Joliet, Rock Ridge and TRANS.TBL
+extensions, from files in a directory:
+
+ nbdkit iso /path/to/directory params='-JrT'
+
+C<params> adds I<-JrT> to the L<genisoimage(1)> or L<mkisofs(1)>
+command line, specifying the required extensions.  Note that unless
+you use at least one of these extensions, filenames inside the ISO
+will be truncated because of limitations of the basic S<ISO 9660>
+format.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<dir=>DIRECTORY
+
+Specify the directory containing files and subdirectories which will
+be added to the virtual ISO.  Files inside this directory will appear
+in the root directory of the ISO.
+
+This parameter is required and may be specified one or more times.  If
+multiple directories are specified, they are merged together.
+
+In nbdkit E<ge> 1.8, C<dir=> may be omitted.  To ensure that the
+directory name does not end up being parsed accidentally as
+C<key=value>, prefix relative paths with C<./> (absolute paths do not
+need modification).
+
+=item B<prog=>mkisofs
+
+Choose which program to use to create the ISO content.  The default is
+either L<genisoimage(1)> or L<mkisofs(1)> and is picked when nbdkit is
+compiled.  You only need to use this parameter if you want to override
+it at run time.
+
+=item B<params=>'parameters ...'
+
+Any other parameters may be passed through to L<genisoimage(1)> or
+L<mkisofs(1)> by specifying this option.
+
+For example:
+
+ params='-JrT -V "My Disk Image"'
+
+would specify Joliet (I<-J>), Rock Ridge (I<-r>) and TRANS.TBL (I<-T>)
+extensions, and specify the volume ID (I<-V>) as C<My Disk Image>.
+
+Take care when quoting this parameter.
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item C<PATH>
+
+L<genisoimage(1)>, L<mkisofs(1)> or whatever you supply to the
+optional C<prog> parameter must be available on the C<$PATH>.
+
+=item C<TMPDIR>
+
+A temporary copy of the ISO is created in C<TMPDIR>.  If this
+environment variable is not set then C</var/tmp> is used instead.
+There must be enough free space here to store the ISO, which might be
+quite large.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-file-plugin(1)>,
+L<genisoimage(1)>,
+L<mkisofs(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

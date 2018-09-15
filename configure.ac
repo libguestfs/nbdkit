@@ -443,6 +443,32 @@ AS_IF([test "$with_curl" != "no"],[
 ])
 AM_CONDITIONAL([HAVE_CURL],[test "x$CURL_LIBS" != "x"])
 
+dnl Check for genisoimage or mkisofs
+dnl (only if you want to compile the iso plugin).
+ISOPROG="no"
+AC_ARG_WITH([iso],[
+    AS_HELP_STRING([--without-iso],
+                   [disable iso plugin @<:@default=check@:>@])],
+    [],
+    [with_iso=check])
+AS_IF([test "$with_iso" != "no"],[
+    AC_CHECK_PROG([GENISOIMAGE],[genisoimage],[genisoimage],[no])
+    AC_CHECK_PROG([MKISOFS],[mkisofs],[mkisofs],[no])
+    AS_IF([test "x$GENISOIMAGE" != "xno"],[
+        ISOPROG="$GENISOIMAGE"
+    ],[
+        AS_IF([test "x$MKISOFS" != "xno"],[
+            ISOPROG="$MKISOFS"
+        ])
+    ])
+    AS_IF([test "x$ISOPROG" != "xno"],[
+        AC_DEFINE_UNQUOTED([ISOPROG],["$ISOPROG"],
+                           [Program used by iso plugin to make ISOs.])
+    ])
+])
+AC_SUBST([ISOPROG])
+AM_CONDITIONAL([HAVE_ISO],[test "x$ISOPROG" != "xno"])
+
 dnl Check for libvirt (only if you want to compile the libvirt plugin).
 AC_ARG_WITH([libvirt],[
     AS_HELP_STRING([--without-libvirt],
@@ -575,6 +601,7 @@ non_lang_plugins="\
         file \
         guestfs \
         gzip \
+        iso \
         libvirt \
         memory \
         nbd \
@@ -631,6 +658,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/file/Makefile
                  plugins/guestfs/Makefile
                  plugins/gzip/Makefile
+                 plugins/iso/Makefile
                  plugins/libvirt/Makefile
                  plugins/lua/Makefile
                  plugins/memory/Makefile

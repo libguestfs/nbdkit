@@ -73,6 +73,10 @@ For the curl (HTTP/FTP) plugin:
 
  - libcurl
 
+For the iso plugin:
+
+ - genisoimage or mkisofs
+
 For the libvirt plugin:
 
  - libvirt

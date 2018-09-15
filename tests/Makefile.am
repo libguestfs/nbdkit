@@ -60,6 +60,7 @@ EXTRA_DIST = \
 	test-help.sh \
 	test-help-plugin.sh \
 	test-ip.sh \
+	test-iso.sh \
 	test-layers.sh \
 	test-log.sh \
 	test.lua \
@@ -353,6 +354,15 @@ disk.gz: disk
 
 endif HAVE_GUESTFISH
 endif HAVE_ZLIB
+
+# iso plugin test.
+if HAVE_ISO
+if HAVE_GUESTFISH
+
+TESTS += test-iso.sh
+
+endif HAVE_GUESTFISH
+endif HAVE_ISO
 
 # memory plugin test.
 LIBGUESTFS_TESTS += test-memory
