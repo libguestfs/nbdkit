@@ -1,0 +1,118 @@
+=head1 NAME
+
+nbdkit-partitioning-plugin - create virtual disk from partitions
+
+=head1 SYNOPSIS
+
+ nbdkit partitioning [file=]part1 [[file=]part2 [file=]part3 ...]
+                     [partition-type=mbr|gpt]
+
+=head1 DESCRIPTION
+
+C<nbdkit-partitioning-plugin> is a plugin for L<nbdkit(1)> which
+creates a partitioned virtual drive from a list of one or more files
+each containing single partitions.  The plugin concatenates the files
+together and generates a virtual partition table so that NBD clients
+see a single partitioned disk.
+
+If you just want to concatenate files together (without adding a
+partition table) use L<nbdkit-split-plugin(1)>.  If you want to select
+a single partition from an existing disk, use
+L<nbdkit-partition-filter(1)>.
+
+The plugin supports read/write access.  To limit clients to read-only
+access use the I<-r> flag.
+
+=head2 Partition type
+
+You can choose either MBR (limited to 4 partitions) or GPT (limited to
+128 partitions) partition table type.
+
+If the C<partition-type> parameter is not supplied then the default is
+chosen as follows: If the number of files is E<gt> 4 then GPT is used.
+If the total file size is larger than supported by MBR (approximately
+2 TB), then GPT is used.  Otherwise MBR is used for maximum
+compatibility.
+
+=head2 Padding and alignment
+
+Partition sizes are automatically rounded up to a multiple of the 512
+byte sector size.  Padding may be added between partitions to provide
+the best alignment.  NBD clients may write to partitions, but will get
+an I/O error if they try to change the virtual partition table or any
+padding areas of the disk.
+
+=head1 EXAMPLES
+
+Create a virtual disk containing boot, swap and root partitions (note
+this will not be bootable since the virtual partition table does not
+contain a boot sector or boot loader):
+
+ nbdkit partitioning boot.img swap.img root.img
+
+From a bare ext4 filesystem, create a virtual partitioned disk:
+
+ nbdkit partitioning ext4fs.img
+
+If the underlying file is a multiple of 512 bytes then this is a
+no-op:
+
+ nbdkit --filter=partition partitioning file --partition=1
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<file=>FILENAME
+
+One or more files containing partition data.
+
+This parameter is required.
+
+C<file=> may be omitted.  To ensure that the filename does not end up
+being parsed accidentally as C<key=value>, prefix relative paths with
+C<./> (absolute paths do not need modification).
+
+=item B<partition-type=mbr>
+
+Add an MBR (DOS-style) partition table.  The MBR format is maximally
+compatible with clients, but only supports up to 4 partitions.
+
+=item B<partition-type=gpt>
+
+Add a GPT partition table.  This plugin supports up to 128 GPT
+partitions.  Note that as well as the virtual primary partition table
+added at the beginning of the disk, a virtual secondary partition
+table is added at the end, as required by GPT.
+
+=back
+
+=head1 LIMITS
+
+This plugin only supports primary MBR partitions, hence the limit of 4
+partitions with MBR.  This might be increased in future if we
+implement support for logical/extended partitions.
+
+This plugin only supports 128 GPT partitions.  The GPT format can
+support more, but this plugin does not implement that.
+
+Zero length partitions are not allowed and will cause nbdkit to exit
+with an error.
+
+The sector size is fixed at 512 bytes.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-partition-filter(1)>,
+L<nbdkit-split-plugin(1)>,
+L<nbdkit-plugin(3)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

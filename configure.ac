@@ -573,6 +573,7 @@ non_lang_plugins="\
         memory \
         nbd \
         null \
+        partitioning \
         pattern \
         random \
         split \
@@ -630,6 +631,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/nbd/Makefile
                  plugins/null/Makefile
                  plugins/ocaml/Makefile
+                 plugins/partitioning/Makefile
                  plugins/pattern/Makefile
                  plugins/perl/Makefile
                  plugins/python/Makefile

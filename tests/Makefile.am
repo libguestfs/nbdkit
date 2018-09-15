@@ -70,6 +70,8 @@ EXTRA_DIST = \
 	test-offset2.sh \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
+	test-partitioning1.sh \
+	test-partitioning2.sh \
 	test-pattern.sh \
 	test-pattern-largest.sh \
 	test-pattern-largest-for-qemu.sh \
@@ -355,6 +357,14 @@ TESTS += test-memory-largest.sh test-memory-largest-for-qemu.sh
 test_memory_SOURCES = test-memory.c test.h
 test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# partitioning plugin test.
+TESTS += \
+	test-partitioning1.sh
+if HAVE_GUESTFISH
+TESTS += \
+	test-partitioning2.sh
+endif HAVE_GUESTFISH
 
 # pattern plugin test.
 TESTS += \

@@ -89,7 +89,8 @@ or block device efficiently or not.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
-L<nbdkit-split-plugin(1)>.
+L<nbdkit-split-plugin(1)>,
+L<nbdkit-partitioning-plugin(1)>.
 
 =head1 AUTHORS
 

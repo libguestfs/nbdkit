@@ -12,6 +12,9 @@ C<nbdkit-split-plugin> is a file plugin for L<nbdkit(1)>.  One or more
 filenames may be given using the C<FILENAME> parameter.  These
 files are logically concatenated into a single disk image.
 
+If you want to add a virtual partition table, see
+L<nbdkit-partitioning-plugin(1)>.
+
 =head2 Differences from nbdkit-file-plugin
 
 Normally to serve a single file you should use
@@ -73,7 +76,8 @@ modification).
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
-L<nbdkit-file-plugin(1)>.
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-partitioning-plugin(1)>.
 
 =head1 AUTHORS
 
