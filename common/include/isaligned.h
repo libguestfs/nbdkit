@@ -35,17 +35,14 @@
 #define NBDKIT_ISALIGNED_H
 
 #include <assert.h>
-#include <stdbool.h>
 
 #include "ispowerof2.h"
 
 /* Return true if size is a multiple of align. align must be power of 2.
  */
-static inline bool
-is_aligned (unsigned int size, unsigned int align)
-{
-  assert (is_power_of_2 (align));
-  return !(size & (align - 1));
-}
+#define IS_ALIGNED(size, align) ({              \
+      assert (is_power_of_2 ((align)));         \
+      !((size) & ((align) - 1));                \
+})
 
 #endif /* NBDKIT_ISALIGNED_H */

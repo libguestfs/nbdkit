@@ -475,11 +475,11 @@ vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   VixError err;
 
   /* Align to sectors. */
-  if (!is_aligned (offset, VIXDISKLIB_SECTOR_SIZE)) {
+  if (!IS_ALIGNED (offset, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("read is not aligned to sectors");
     return -1;
   }
-  if (!is_aligned (count, VIXDISKLIB_SECTOR_SIZE)) {
+  if (!IS_ALIGNED (count, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("read is not aligned to sectors");
     return -1;
   }
@@ -508,11 +508,11 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   VixError err;
 
   /* Align to sectors. */
-  if (!is_aligned (offset, VIXDISKLIB_SECTOR_SIZE)) {
+  if (!IS_ALIGNED (offset, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("read is not aligned to sectors");
     return -1;
   }
-  if (!is_aligned (count, VIXDISKLIB_SECTOR_SIZE)) {
+  if (!IS_ALIGNED (count, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("read is not aligned to sectors");
     return -1;
   }
