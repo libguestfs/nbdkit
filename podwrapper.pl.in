@@ -372,7 +372,7 @@ if ($man) {
     my $parser = Podwrapper::Man->new (
         name => $name,
         release => $release, section => $section,
-        center => "Virtualization Support",
+        center => "NBDKIT",
         date => $date,
         stderr => 1, utf8 => 1
     );
