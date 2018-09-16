@@ -46,6 +46,7 @@
 
 #include "ispowerof2.h"
 #include "iszero.h"
+#include "rounding.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
@@ -157,9 +158,9 @@ truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (truncate_size >= 0)
     size = truncate_size;
   if (round_up > 0)
-    size = (size + round_up - 1) & ~(round_up - 1);
+    size = ROUND_UP (size, round_up);
   if (round_down > 0)
-    size &= ~(round_down - 1);
+    size = ROUND_DOWN (size, round_down);
   ret = size;
 
   pthread_mutex_unlock (&lock);
