@@ -39,4 +39,5 @@ EXTRA_DIST = \
 	exit-with-parent.h \
 	isaligned.h \
 	ispowerof2.h \
-	iszero.h
+	iszero.h \
+	rounding.h

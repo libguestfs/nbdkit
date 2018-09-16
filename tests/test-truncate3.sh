@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # nbdkit
 # Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
@@ -30,32 +31,32 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Regression test for problem with truncate filter and C type
+# promotion, spotted by Eric Blake.
 
-EXTRA_DIST = nbdkit-cache-filter.pod
+source ./functions.sh
+set -e
+set -x
 
-filter_LTLIBRARIES = nbdkit-cache-filter.la
+files="truncate3.out truncate3.pid truncate3.sock"
+rm -f $files
+cleanup_fn rm -f $files
 
-nbdkit_cache_filter_la_SOURCES = \
-	cache.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+# Test that qemu-img works
+if ! qemu-img --help >/dev/null; then
+    echo "$0: missing or broken qemu-img"
+    exit 77
+fi
 
-nbdkit_cache_filter_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-nbdkit_cache_filter_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
-nbdkit_cache_filter_la_LDFLAGS = \
-	-module -avoid-version -shared
+# Run nbdkit with pattern plugin and truncate filter in front.
+start_nbdkit -P truncate3.pid -U truncate3.sock \
+       --filter=truncate \
+       pattern size=5G \
+       round-up=512
 
-if HAVE_POD
-
-man_MANS = nbdkit-cache-filter.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-cache-filter.1: nbdkit-cache-filter.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+LANG=C qemu-img info nbd:unix:truncate3.sock > truncate3.out
+if ! grep "virtual size: 5.0G" truncate3.out; then
+    echo "$0: unexpected output from truncate3 regression test:"
+    cat truncate3.out
+    exit 1
+fi

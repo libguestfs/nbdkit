@@ -89,7 +89,7 @@
 
 #include <nbdkit-filter.h>
 
-#define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
+#include "rounding.h"
 
 /* XXX See design comment above. */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS

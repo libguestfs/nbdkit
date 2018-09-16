@@ -89,6 +89,7 @@ EXTRA_DIST = \
 	test-tls-psk.sh \
 	test-truncate1.sh \
 	test-truncate2.sh \
+	test-truncate3.sh \
 	test-vddk.sh \
 	test-version.sh \
 	test-version-filter.sh \
@@ -703,6 +704,7 @@ test_partition_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # truncate filter tests.
 TESTS += \
 	test-truncate1.sh \
-	test-truncate2.sh
+	test-truncate2.sh \
+	test-truncate3.sh
 
 endif HAVE_PLUGINS
