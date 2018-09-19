@@ -42,7 +42,7 @@
  */
 #define ROUND_UP(i, n) ({                          \
       assert (is_power_of_2 (n));                  \
-      ((i) + (n) - 1) & -((typeof (i))n);          \
+      ((i) + (n) - 1) & -((typeof (i))(n));        \
 })
 
 /* Round down i to next multiple of n (n must be a power of 2).
