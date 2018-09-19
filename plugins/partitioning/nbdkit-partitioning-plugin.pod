@@ -57,7 +57,7 @@ From a bare ext4 filesystem, create a virtual partitioned disk:
 If the underlying file is a multiple of 512 bytes then this is a
 no-op:
 
- nbdkit --filter=partition partitioning file --partition=1
+ nbdkit --filter=partition partitioning file partition=1
 
 =head1 PARAMETERS
 
