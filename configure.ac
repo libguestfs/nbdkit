@@ -408,6 +408,12 @@ AS_IF([test "x$enable_lua" != "xno"],[
     PKG_CHECK_MODULES([LUA], [lua], [
         AC_SUBST([LUA_CFLAGS])
         AC_SUBST([LUA_LIBS])
+
+	dnl Lua 5.1 used by RHEL 7 does not have lua_isinteger.
+	old_LIBS="$LIBS"
+	LIBS="$LUA_LIBS $LIBS"
+	AC_CHECK_FUNCS([lua_isinteger])
+	LIBS="$old_LIBS"
     ],[
         AC_MSG_WARN([Lua not found])
         enable_lua=no

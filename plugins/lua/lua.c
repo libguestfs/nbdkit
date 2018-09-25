@@ -46,6 +46,26 @@
 
 #include <nbdkit-plugin.h>
 
+/* Backwards compatibility function for Lua 5.1.
+ *
+ * This is taken from https://github.com/keplerproject/lua-compat-5.3
+ * where it is distributed under a compatible license to nbdkit.
+ */
+#ifndef HAVE_LUA_ISINTEGER
+static int
+lua_isinteger (lua_State *L, int index)
+{
+  if (lua_type (L, index) == LUA_TNUMBER) {
+    lua_Number n = lua_tonumber (L, index);
+    lua_Integer i = lua_tointeger (L, index);
+
+    if (i == n)
+      return 1;
+  }
+  return 0;
+}
+#endif /* HAVE_LUA_ISINTEGER */
+
 static lua_State *L;
 static const char *script;
 
