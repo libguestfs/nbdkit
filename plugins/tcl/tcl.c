@@ -95,6 +95,14 @@ proc_defined (const char *name)
 static void
 tcl_dump_plugin (void)
 {
+#ifdef TCL_VERSION
+  printf ("tcl_version=%s\n", TCL_VERSION);
+#endif
+
+#ifdef TCL_PATCH_LEVEL
+  printf ("tcl_patch_level=%s\n", TCL_PATCH_LEVEL);
+#endif
+
   if (script && proc_defined ("dump_plugin")) {
     int r;
     Tcl_Obj *cmd;

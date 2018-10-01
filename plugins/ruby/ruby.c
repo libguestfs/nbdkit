@@ -41,6 +41,9 @@
 #include <nbdkit-plugin.h>
 
 #include <ruby.h>
+#ifdef HAVE_RUBY_VERSION_H
+#include <ruby/version.h>
+#endif
 
 static VALUE nbdkit_module = Qnil;
 static int last_error;
@@ -168,6 +171,17 @@ plugin_rb_unload (void)
 static void
 plugin_rb_dump_plugin (void)
 {
+#ifdef RUBY_API_VERSION_MAJOR
+  printf ("ruby_api_version=%d", RUBY_API_VERSION_MAJOR);
+#ifdef RUBY_API_VERSION_MINOR
+  printf (".%d", RUBY_API_VERSION_MINOR);
+#ifdef RUBY_API_VERSION_TEENY
+  printf (".%d", RUBY_API_VERSION_TEENY);
+#endif
+#endif
+  printf ("\n");
+#endif
+
   if (!script)
     return;
 

@@ -169,6 +169,10 @@ perl_dump_plugin (void)
 {
   dSP;
 
+#ifdef PERL_VERSION_STRING
+  printf ("perl_version=%s\n", PERL_VERSION_STRING);
+#endif
+
   if (script && callback_defined ("dump_plugin")) {
     ENTER;
     SAVETMPS;

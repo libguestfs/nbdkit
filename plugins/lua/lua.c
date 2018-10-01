@@ -102,6 +102,17 @@ function_defined (const char *name)
 static void
 lua_plugin_dump_plugin (void)
 {
+#ifdef LUA_VERSION_MAJOR
+  printf ("lua_version=%s", LUA_VERSION_MAJOR);
+#ifdef LUA_VERSION_MINOR
+  printf (".%s", LUA_VERSION_MINOR);
+#ifdef LUA_VERSION_RELEASE
+  printf (".%s", LUA_VERSION_RELEASE);
+#endif
+#endif
+  printf ("\n");
+#endif
+
   if (script && function_defined ("dump_plugin")) {
     lua_getglobal (L, "dump_plugin");
     if (lua_pcall (L, 0, 0, 0) != 0) {

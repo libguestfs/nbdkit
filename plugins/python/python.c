@@ -259,6 +259,14 @@ py_dump_plugin (void)
   PyObject *fn;
   PyObject *r;
 
+#ifdef PY_VERSION
+  printf ("python_version=%s\n", PY_VERSION);
+#endif
+
+#ifdef PYTHON_ABI_VERSION
+  printf ("python_pep_384_abi_version=%d\n", PYTHON_ABI_VERSION);
+#endif
+
   if (script && callback_defined ("dump_plugin", &fn)) {
     PyErr_Clear ();
 
