@@ -105,6 +105,46 @@ read_base64 (const char *value)
 #endif
 }
 
+/* Store file at current offset in the sparse array, updating
+ * the offset.
+ */
+static int
+store_file (const char *filename, int64_t *offset)
+{
+  FILE *fp;
+  char buf[BUFSIZ];
+  size_t n;
+
+  fp = fopen (filename, "r");
+  if (fp == NULL) {
+    nbdkit_error ("%s: %m", filename);
+    return -1;
+  }
+
+  while (!feof (fp)) {
+    n = fread (buf, 1, BUFSIZ, fp);
+    if (n > 0) {
+      if (sparse_array_write (sa, buf, n, *offset) == -1) {
+        fclose (fp);
+        return -1;
+      }
+    }
+    if (ferror (fp)) {
+      nbdkit_error ("fread: %s: %m", filename);
+      fclose (fp);
+      return -1;
+    }
+    (*offset) += n;
+  }
+
+  if (fclose (fp) == EOF) {
+    nbdkit_error ("fclose: %s: %m", filename);
+    return -1;
+  }
+
+  return 0;
+}
+
 /* Parse the data parameter. */
 static int
 read_data (const char *value)
@@ -124,6 +164,37 @@ read_data (const char *value)
       }
       i += n;
       offset = j;
+    }
+    /* We need %1s for obscure reasons.  sscanf " <%n" can return 0
+     * if nothing is matched, not only if the '<' is matched.
+     */
+    else if (sscanf (&value[i], " <%1s%n", &c, &n) == 1) {
+      char *filename;
+      size_t flen;
+
+      i += n-1;
+
+      /* The filename follows next in the string. */
+      flen = strcspn (&value[i], " \t\n");
+      if (flen == 0) {
+        nbdkit_error ("data parameter <FILE not a filename");
+        return -1;
+      }
+      filename = strndup (&value[i], flen);
+      if (filename == NULL) {
+        nbdkit_error ("strndup: %m");
+        return -1;
+      }
+      i += len;
+
+      if (store_file (filename, &offset) == -1) {
+        free (filename);
+        return -1;
+      }
+      free (filename);
+
+      if (data_size < offset)
+        data_size = offset;
     }
     else if (sscanf (&value[i], " %" SCNi64 "%n", &j, &n) == 1) {
       if (j < 0 || j > 255) {

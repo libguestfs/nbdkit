@@ -68,6 +68,18 @@ This example was created by running:
 The C<disk2data.pl> script is provided in the nbdkit sources
 (L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>).
 
+=item Create a disk with a partition from another file:
+
+ nbdkit data data="
+   @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
+   @0x1fe 85 170
+   @0x200 <partition-data
+   " size=1048576
+
+The C<E<lt>FILE> syntax is used to include a file of binary data.
+Note that L<nbdkit-partitioning-plugin(1)> is easier to use and more
+flexible.
+
 =item Create a 7 EB (exabyte) disk with one empty GPT-formatted partition:
 
 The data plugin supports huge sparse virtual disks, up to the maximum
@@ -189,6 +201,13 @@ Moves the current offset to C<OFFSET>.  The offset may be specified as
 either decimal, octal (prefixed by C<0>) or hexadecimal (prefixed by
 C<0x>).
 
+=item B<E<lt>>FILE
+
+Read the contents of F<FILE> into the disk image at the current
+offset.  The offset is incremented by the size of the file.  The
+filename can be a relative or absolute path, but cannot contain
+whitespace in the name.
+
 =item BYTE
 
 Write C<BYTE> at the current offset and advance the offset by 1 byte.
@@ -218,6 +237,7 @@ L<nbdkit-captive(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-memory-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
+L<nbdkit-partitioning-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-random-plugin(1)>,
 L<nbdkit-zero-plugin(1)>,

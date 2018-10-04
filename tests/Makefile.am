@@ -49,6 +49,7 @@ EXTRA_DIST = \
 	test-cxx.sh \
 	test-data-7E.sh \
 	test-data-base64.sh \
+	test-data-file.sh \
 	test-data-raw.sh \
 	test-debug-flags.sh \
 	test-dump-config.sh \
@@ -287,6 +288,7 @@ LIBGUESTFS_TESTS += test-data
 TESTS += \
 	test-data-7E.sh \
 	test-data-base64.sh \
+	test-data-file.sh \
 	test-data-raw.sh
 
 test_data_SOURCES = test-data.c test.h
