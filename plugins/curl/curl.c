@@ -203,8 +203,10 @@ CURLOPT_PROXY
   curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1);
   if (timeout > 0)
     curl_easy_setopt (h->c, CURLOPT_TIMEOUT, timeout);
-  if (sslverify == 0)
-    curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYPEER, sslverify);
+  if (sslverify == 0) {
+    curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYHOST, 0L);
+  }
   if (user)
     curl_easy_setopt (h->c, CURLOPT_USERNAME, user);
   if (password)
