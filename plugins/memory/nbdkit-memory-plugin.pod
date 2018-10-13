@@ -10,11 +10,11 @@ nbdkit-memory-plugin - nbdkit virtual memory plugin
 
 C<nbdkit-memory-plugin> is a plugin for L<nbdkit(1)> which stores a
 single disk image in virtual memory, and discards it when nbdkit
-exits.
+exits.  This plugin can be used for testing or where you don't care
+about the final content of the disk image.
 
 All nbdkit clients will see the same disk content, initially all
-zeroes.  This plugin can be used for testing or where you don't care
-about the final content of the disk image.
+zeroes.
 
 The disk image is stored in memory using a sparse array.  The
 allocated parts of the disk image cannot be larger than physical RAM
