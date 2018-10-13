@@ -62,7 +62,14 @@ truncate -s 511 partitioning1-p6
 nbdkit -f -v -D partitioning.regions=1 -U - \
        --filter=partition \
        partitioning \
-       partitioning1-p1 partitioning1-p2 file-data partitioning1-p3 \
+       mbr-id=0x83 alignment=512 \
+       partitioning1-p1 \
+       mbr-id=0x82 alignment=$((2048 * 512)) \
+       partitioning1-p2 \
+       mbr-id=0x83 \
+       file-data \
+       mbr-id=0x82 \
+       partitioning1-p3 \
        partition-type=mbr \
        partition=3 \
        --run 'qemu-img convert $nbd partitioning1.out'
@@ -74,8 +81,15 @@ cmp file-data partitioning1.out
 nbdkit -f -v -D partitioning.regions=1 -U - \
        --filter=partition \
        partitioning \
-       partitioning1-p1 partitioning1-p2 partitioning1-p3 \
-       partitioning1-p4 file-data partitioning1-p5 partitioning1-p6 \
+       partitioning1-p1 \
+       partitioning1-p2 \
+       partitioning1-p3 \
+       partitioning1-p4 \
+       type-guid=A2A0D0EB-E5B9-3344-87C0-68B6B72699C7 \
+       file-data \
+       type-guid=AF3DC60F-8384-7247-8E79-3D69D8477DE4 \
+       partitioning1-p5 \
+       partitioning1-p6 \
        partition-type=gpt \
        partition=5 \
        --run 'qemu-img convert $nbd partitioning1.out'

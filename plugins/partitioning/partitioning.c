@@ -38,6 +38,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -64,14 +65,24 @@ int partitioning_debug_regions;
  * known limit (2^32 sectors) and an estimate based on the amount of
  * padding between partitions.
  */
-#define MAX_MBR_DISK_SIZE (UINT32_MAX * SECTOR_SIZE - 5 * ALIGNMENT)
+#define MAX_MBR_DISK_SIZE (UINT32_MAX * SECTOR_SIZE - 5 * MAX_ALIGNMENT)
 
 #define GPT_PT_ENTRY_SIZE 128
 
-/* XXX Make these configurable in future? */
-#define ALIGNMENT (2048 * SECTOR_SIZE)
-#define PARTITION_ID 0x83
-#define PARTITION_GUID "\xaf\x3d\xc6\x0f\x83\x84\x72\x47\x8e\x79\x3d\x69\xd8\x47\x7d\xe4"
+/* Maximum possible and default alignment between partitions. */
+#define MAX_ALIGNMENT (2048 * SECTOR_SIZE)
+#define DEFAULT_ALIGNMENT MAX_ALIGNMENT
+
+/* Default MBR partition ID and GPT partition type GUID. */
+#define DEFAULT_MBR_ID 0x83
+#define DEFAULT_TYPE_GUID "0FC63DAF-8483-4772-8E79-3D69D8477DE4"
+
+/* alignment, mbr_id, type_guid set on the command line for
+ * following partitions.
+ */
+static unsigned long alignment = DEFAULT_ALIGNMENT;
+static int mbr_id = DEFAULT_MBR_ID;
+static char type_guid[16] /* set by partitioning_load function below */;
 
 /* Files supplied on the command line. */
 struct file {
@@ -79,6 +90,9 @@ struct file {
   int fd;
   struct stat statbuf;
   char guid[16];                /* random GUID used for GPT */
+  unsigned long alignment;      /* alignment of this partition */
+  int mbr_id;                   /* MBR ID of this partition */
+  char type_guid[16];           /* partition type GUID of this partition */
 };
 
 static struct file *files = NULL;
@@ -112,10 +126,13 @@ static size_t nr_regions = 0;
 /* Primary and secondary partition tables (secondary is only used for GPT). */
 static unsigned char *primary = NULL, *secondary = NULL;
 
+static int parse_guid (const char *str, char *out);
+
 static void
 partitioning_load (void)
 {
   srandom (time (NULL));
+  parse_guid (DEFAULT_TYPE_GUID, type_guid);
 }
 
 static void
@@ -243,9 +260,9 @@ create_virtual_disk_layout (void)
     assert (IS_ALIGNED (offset, SECTOR_SIZE));
 
     /* Make sure each partition is aligned for best performance. */
-    if (!IS_ALIGNED (offset, ALIGNMENT)) {
+    if (!IS_ALIGNED (offset, files[i].alignment)) {
       region.start = offset;
-      region.end = (offset & ~(ALIGNMENT-1)) + ALIGNMENT - 1;
+      region.end = (offset & ~(files[i].alignment-1)) + files[i].alignment - 1;
       region.len = region.end - region.start + 1;
       region.type = region_zero;
       if (expand ((void *)&regions, sizeof (struct region), &nr_regions) == -1)
@@ -254,7 +271,7 @@ create_virtual_disk_layout (void)
     }
 
     offset = regions[nr_regions-1].end + 1;
-    assert (IS_ALIGNED (offset, ALIGNMENT));
+    assert (IS_ALIGNED (offset, files[i].alignment));
 
     /* Create the partition region for this file. */
     region.start = offset;
@@ -376,7 +393,8 @@ create_mbr_partition_table (unsigned char *out)
     if (regions[j].type == region_file) {
       i = regions[j].u.i;
       assert (i < 4);
-      create_mbr_partition_table_entry (&regions[j], i == 0, PARTITION_ID,
+      create_mbr_partition_table_entry (&regions[j], i == 0,
+                                        files[i].mbr_id,
                                         &out[0x1be + 16*i]);
     }
   }
@@ -484,7 +502,8 @@ create_gpt_partition_table (unsigned char *out)
     if (regions[j].type == region_file) {
       i = regions[j].u.i;
       assert (i < 128);
-      create_gpt_partition_table_entry (&regions[j], i == 0, PARTITION_GUID,
+      create_gpt_partition_table_entry (&regions[j], i == 0,
+                                        files[i].type_guid,
                                         out);
       out += GPT_PT_ENTRY_SIZE;
     }
@@ -562,6 +581,91 @@ create_gpt_protective_mbr (unsigned char *out)
   out[0x1ff] = 0xaa;
 }
 
+/* Try to parse a GPT GUID. */
+static unsigned char
+hexdigit (const char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  else if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+  else /* if (c >= 'A' && c <= 'F') */
+    return c - 'A' + 10;
+}
+
+static unsigned char
+hexbyte (const char *p)
+{
+  unsigned char c0, c1;
+
+  c0 = hexdigit (p[0]);
+  c1 = hexdigit (p[1]);
+  return c0 << 4 | c1;
+}
+
+static int
+parse_guid (const char *str, char *out)
+{
+  size_t i;
+  size_t len = strlen (str);
+
+  if (len == 36)
+    /* nothing */;
+  else if (len == 38 && str[0] == '{' && str[37] == '}') {
+    str++;
+    len -= 2;
+  }
+  else
+    return -1;
+
+  assert (len == 36);
+
+  if (str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-')
+    return -1;
+
+  for (i = 0; i < 8; ++i)
+    if (!isxdigit (str[i]))
+      return -1;
+  for (i = 9; i < 13; ++i)
+    if (!isxdigit (str[i]))
+      return -1;
+  for (i = 14; i < 18; ++i)
+    if (!isxdigit (str[i]))
+      return -1;
+  for (i = 19; i < 23; ++i)
+    if (!isxdigit (str[i]))
+      return -1;
+  for (i = 24; i < 36; ++i)
+    if (!isxdigit (str[i]))
+      return -1;
+
+  /* The first, second and third blocks are parsed as little endian,
+   * while the fourth and fifth blocks are big endian.
+   */
+  *out++ = hexbyte (&str[6]);   /* first block */
+  *out++ = hexbyte (&str[4]);
+  *out++ = hexbyte (&str[2]);
+  *out++ = hexbyte (&str[0]);
+
+  *out++ = hexbyte (&str[11]);  /* second block */
+  *out++ = hexbyte (&str[9]);
+
+  *out++ = hexbyte (&str[16]);  /* third block */
+  *out++ = hexbyte (&str[14]);
+
+  *out++ = hexbyte (&str[19]);  /* fourth block */
+  *out++ = hexbyte (&str[21]);
+
+  *out++ = hexbyte (&str[24]);  /* fifth block */
+  *out++ = hexbyte (&str[26]);
+  *out++ = hexbyte (&str[28]);
+  *out++ = hexbyte (&str[30]);
+  *out++ = hexbyte (&str[32]);
+  *out++ = hexbyte (&str[34]);
+
+  return 0;
+}
+
 static int
 partitioning_config (const char *key, const char *value)
 {
@@ -571,6 +675,10 @@ partitioning_config (const char *key, const char *value)
 
   if (strcmp (key, "file") == 0) {
     file.filename = value;
+    file.alignment = alignment;
+    file.mbr_id = mbr_id;
+    memcpy (file.type_guid, type_guid, sizeof type_guid);
+
     file.fd = open (file.filename, O_RDWR);
     if (file.fd == -1) {
       nbdkit_error ("%s: %m", file.filename);
@@ -614,6 +722,32 @@ partitioning_config (const char *key, const char *value)
       parttype = PARTTYPE_GPT;
     else {
       nbdkit_error ("unknown partition-type: %s", value);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "alignment") == 0) {
+    if (sscanf (value, "%lu", &alignment) != 1) {
+      nbdkit_error ("could not parse partition alignment: %s", value);
+      return -1;
+    }
+    if (!(alignment >= SECTOR_SIZE && alignment <= MAX_ALIGNMENT)) {
+      nbdkit_error ("partition alignment %lu should be "
+                    ">= sector size %lu and <= maximum alignment %lu",
+                    alignment,
+                    (unsigned long) SECTOR_SIZE,
+                    (unsigned long) MAX_ALIGNMENT);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "mbr-id") == 0) {
+    if (sscanf (value, "%i", &mbr_id) != 1) {
+      nbdkit_error ("could not parse mbr-id: %s", value);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "type-guid") == 0) {
+    if (parse_guid (value, type_guid) == -1) {
+      nbdkit_error ("could not validate GUID: %s", value);
       return -1;
     }
   }

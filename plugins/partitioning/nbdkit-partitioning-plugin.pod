@@ -23,7 +23,7 @@ L<nbdkit-partition-filter(1)>.
 The plugin supports read/write access.  To limit clients to read-only
 access use the I<-r> flag.
 
-=head2 Partition type
+=head2 Partition table type
 
 You can choose either MBR (limited to 4 partitions) or GPT (limited to
 128 partitions) partition table type.
@@ -34,13 +34,25 @@ If the total file size is larger than supported by MBR (approximately
 2 TB), then GPT is used.  Otherwise MBR is used for maximum
 compatibility.
 
+=head2 Type of each partition
+
+The type of each partition is controlled by a partition type byte (for
+MBR) or a partition type GUID (for GPT).  This can be set using the
+C<mbr-id> or C<type-guid> parameters respectively and affects the type
+of all following files.
+
 =head2 Padding and alignment
 
 Partition sizes are automatically rounded up to a multiple of the 512
-byte sector size.  Padding may be added between partitions to provide
-the best alignment.  NBD clients may write to partitions, but will get
-an I/O error if they try to change the virtual partition table or any
-padding areas of the disk.
+byte sector size.
+
+Padding may be added between partitions to provide the best alignment.
+This is controlled by the C<alignment> parameter, which affects the
+alignment of all following files.
+
+NBD clients may write to partitions, but will get an I/O error if they
+try to change the virtual partition table or any padding areas of the
+disk.
 
 =head1 EXAMPLES
 
@@ -48,7 +60,12 @@ Create a virtual disk containing boot, swap and root partitions (note
 this will not be bootable since the virtual partition table does not
 contain a boot sector or boot loader):
 
- nbdkit partitioning boot.img swap.img root.img
+ nbdkit partitioning boot.img mbr-id=0x82 swap.img mbr-id=0x83 root.img
+
+Notice that the swap partition is bracketed by C<mbr-id=0x82> to set
+the MBR partition type byte to C<0x82> (Linux swap) for the swap
+partition, followed by C<mbr-id=0x83> to set the MBR partition type
+byte back to C<0x83> (Linux filesystem) for the remaining partition.
 
 From a bare ext4 filesystem, create a virtual partitioned disk:
 
@@ -84,6 +101,24 @@ Add a GPT partition table.  This plugin supports up to 128 GPT
 partitions.  Note that as well as the virtual primary partition table
 added at the beginning of the disk, a virtual secondary partition
 table is added at the end, as required by GPT.
+
+=item B<alignment=>N
+
+Set the alignment of all following files to C<N>.  The default
+alignment is 2048 sectors (1 MB).
+
+=item B<mbr-id=>0xN
+
+Set the MBR type byte of all following files to C<0xN>.  Type bytes
+are normally specified in hexadecimal, and you must use the C<0x>
+prefix to indicate this.  The default is C<0x83> which indicates a
+Linux filesystem.
+
+=item B<type-guid=>GUID
+
+Set the GPT partition type GUID of all following files to C<GUID>.
+The default is C<0FC63DAF-8483-4772-8E79-3D69D8477DE4> which indicates
+a Linux filesystem.
 
 =back
 

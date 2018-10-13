@@ -73,6 +73,7 @@ EXTRA_DIST = \
 	test-parallel-nbd.sh \
 	test-partitioning1.sh \
 	test-partitioning2.sh \
+	test-partitioning3.sh \
 	test-pattern.sh \
 	test-pattern-largest.sh \
 	test-pattern-largest-for-qemu.sh \
@@ -365,7 +366,8 @@ TESTS += \
 	test-partitioning1.sh
 if HAVE_GUESTFISH
 TESTS += \
-	test-partitioning2.sh
+	test-partitioning2.sh \
+	test-partitioning3.sh
 endif HAVE_GUESTFISH
 
 # pattern plugin test.
