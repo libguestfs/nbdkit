@@ -25,8 +25,8 @@ access use the I<-r> flag.
 
 =head2 Partition table type
 
-You can choose either MBR (limited to 4 partitions) or GPT (limited to
-128 partitions) partition table type.
+You can choose either MBR (limited to 4 partitions) or GPT (unlimited)
+partition table type.
 
 If the C<partition-type> parameter is not supplied then the default is
 chosen as follows: If the number of files is E<gt> 4 then GPT is used.
@@ -97,10 +97,9 @@ compatible with clients, but only supports up to 4 partitions.
 
 =item B<partition-type=gpt>
 
-Add a GPT partition table.  This plugin supports up to 128 GPT
-partitions.  Note that as well as the virtual primary partition table
-added at the beginning of the disk, a virtual secondary partition
-table is added at the end, as required by GPT.
+Add a GPT partition table.  Note that as well as the virtual primary
+partition table added at the beginning of the disk, a virtual
+secondary partition table is added at the end, as required by GPT.
 
 =item B<alignment=>N
 
@@ -128,8 +127,10 @@ This plugin only supports primary MBR partitions, hence the limit of 4
 partitions with MBR.  This might be increased in future if we
 implement support for logical/extended partitions.
 
-This plugin only supports 128 GPT partitions.  The GPT format can
-support more, but this plugin does not implement that.
+Although this plugin can create GPT partition tables containing more
+than 128 GPT partitions (in fact, unlimited numbers of partitions,
+assuming you have disk space for it), some clients will not be able to
+handle this.
 
 Zero length partitions are not allowed and will cause nbdkit to exit
 with an error.

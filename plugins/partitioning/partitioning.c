@@ -67,8 +67,25 @@ int partitioning_debug_regions;
  */
 #define MAX_MBR_DISK_SIZE (UINT32_MAX * SECTOR_SIZE - 5 * MAX_ALIGNMENT)
 
-#define GPT_MAX_PARTITIONS 128
+/* GPT_MIN_PARTITIONS is the minimum number of partitions and is
+ * defined by the UEFI standard (assuming 512 byte sector size).  If
+ * we are requested to allocate more than GPT_MIN_PARTITIONS then we
+ * increase the partition table in chunks of this size.  Note that
+ * clients may not support > GPT_MIN_PARTITIONS.
+ *
+ * GPT_PT_ENTRY_SIZE is the minimum specified by the UEFI spec, but
+ * increasing it is not useful.
+ */
+#define GPT_MIN_PARTITIONS 128
 #define GPT_PT_ENTRY_SIZE 128
+
+/* For GPT, the number of entries in the partition table array (PTA),
+ * and the number of LBAs which the PTA occupies.  The latter will be
+ * 32 if the number of files is <= GPT_MIN_PARTITIONS, which is the
+ * normal case.
+ */
+#define GPT_PTA_SIZE ROUND_UP (nr_files, GPT_MIN_PARTITIONS)
+#define GPT_PTA_LBAs (GPT_PTA_SIZE * GPT_PT_ENTRY_SIZE / SECTOR_SIZE)
 
 /* Maximum possible and default alignment between partitions. */
 #define MAX_ALIGNMENT (2048 * SECTOR_SIZE)
@@ -216,12 +233,14 @@ create_virtual_disk_layout (void)
     }
   }
   else /* PARTTYPE_GPT */ {
-    primary = calloc (34, SECTOR_SIZE);
+    /* Protective MBR + PT header + PTA = 2 + GPT_PTA_LBAs */
+    primary = calloc (2+GPT_PTA_LBAs, SECTOR_SIZE);
     if (primary == NULL) {
       nbdkit_error ("malloc: %m");
       return -1;
     }
-    secondary = calloc (33, SECTOR_SIZE);
+    /* Secondary PTA + PT secondary header = GPT_PTA_LBAs + 1 */
+    secondary = calloc (GPT_PTA_LBAs+1, SECTOR_SIZE);
     if (secondary == NULL) {
       nbdkit_error ("malloc: %m");
       return -1;
@@ -241,7 +260,7 @@ create_virtual_disk_layout (void)
   }
   else /* PARTTYPE_GPT */ {
     region.start = 0;
-    region.len = 34 * SECTOR_SIZE;
+    region.len = (2+GPT_PTA_LBAs) * SECTOR_SIZE;
     region.end = region.start + region.len - 1;
     region.type = region_data;
     region.u.data = primary;
@@ -301,7 +320,7 @@ create_virtual_disk_layout (void)
   /* For GPT add the virtual secondary/backup partition table. */
   if (parttype == PARTTYPE_GPT) {
     region.start = regions[nr_regions-1].end + 1;
-    region.len = 33 * SECTOR_SIZE;
+    region.len = (GPT_PTA_LBAs+1) * SECTOR_SIZE;
     region.end = region.start + region.len - 1;
     region.type = region_data;
     region.u.data = secondary;
@@ -362,24 +381,22 @@ create_partition_table (void)
   else /* parttype == PARTTYPE_GPT */ {
     void *pt;
 
-    assert (nr_files <= GPT_MAX_PARTITIONS);
-
     /* Protective MBR.  LBA 0 */
     create_gpt_protective_mbr (primary);
 
-    /* Primary partition table.  LBA 2-33 */
+    /* Primary partition table.  LBA 2-(LBAs+1) */
     pt = &primary[2*SECTOR_SIZE];
     create_gpt_partition_table (pt);
 
     /* Partition table header.  LBA 1 */
     create_gpt_partition_header (pt, 1, &primary[SECTOR_SIZE]);
 
-    /* Backup partition table.  LBA -33 */
+    /* Backup partition table.  LBA -(LBAs+2) */
     pt = secondary;
     create_gpt_partition_table (pt);
 
     /* Backup partition table header.  LBA -1 */
-    create_gpt_partition_header (pt, 0, &secondary[32*SECTOR_SIZE]);
+    create_gpt_partition_header (pt, 0, &secondary[GPT_PTA_LBAs*SECTOR_SIZE]);
   }
 
   return 0;
@@ -480,16 +497,16 @@ create_gpt_partition_header (const void *pt, int is_primary,
     header->current_lba = htole64 (nr_lbas - 1);
     header->backup_lba = htole64 (1);
   }
-  header->first_usable_lba = htole64 (34);
-  header->last_usable_lba = htole64 (nr_lbas - 34);
+  header->first_usable_lba = htole64 (2 + GPT_PTA_LBAs);
+  header->last_usable_lba = htole64 (nr_lbas - GPT_PTA_LBAs - 2);
   if (is_primary)
     header->partition_entries_lba = htole64 (2);
   else
-    header->partition_entries_lba = htole64 (nr_lbas - 33);
-  header->nr_partition_entries = htole32 (GPT_MAX_PARTITIONS);
+    header->partition_entries_lba = htole64 (nr_lbas - GPT_PTA_LBAs - 1);
+  header->nr_partition_entries = htole32 (GPT_PTA_SIZE);
   header->size_partition_entry = htole32 (GPT_PT_ENTRY_SIZE);
   header->crc_partitions =
-    htole32 (crc32 (pt, GPT_PT_ENTRY_SIZE * GPT_MAX_PARTITIONS));
+    htole32 (crc32 (pt, GPT_PT_ENTRY_SIZE * GPT_PTA_SIZE));
 
   /* Must be computed last. */
   header->crc = htole32 (crc32 (header, sizeof *header));
@@ -503,7 +520,7 @@ create_gpt_partition_table (unsigned char *out)
   for (j = 0; j < nr_regions; ++j) {
     if (regions[j].type == region_file) {
       i = regions[j].u.i;
-      assert (i < GPT_MAX_PARTITIONS);
+      assert (i < GPT_PTA_SIZE);
       create_gpt_partition_table_entry (&regions[j], i == 0,
                                         files[i].type_guid,
                                         out);
@@ -771,11 +788,6 @@ partitioning_config_complete (void)
   /* Not enough / too many files? */
   if (nr_files == 0) {
     nbdkit_error ("at least one file= parameter must be supplied");
-    return -1;
-  }
-  if (nr_files > GPT_MAX_PARTITIONS) {
-    nbdkit_error ("too many files, the plugin supports a maximum of %d files",
-                  GPT_MAX_PARTITIONS);
     return -1;
   }
 
