@@ -67,6 +67,7 @@ int partitioning_debug_regions;
  */
 #define MAX_MBR_DISK_SIZE (UINT32_MAX * SECTOR_SIZE - 5 * MAX_ALIGNMENT)
 
+#define GPT_MAX_PARTITIONS 128
 #define GPT_PT_ENTRY_SIZE 128
 
 /* Maximum possible and default alignment between partitions. */
@@ -361,7 +362,7 @@ create_partition_table (void)
   else /* parttype == PARTTYPE_GPT */ {
     void *pt;
 
-    assert (nr_files <= 128);
+    assert (nr_files <= GPT_MAX_PARTITIONS);
 
     /* Protective MBR.  LBA 0 */
     create_gpt_protective_mbr (primary);
@@ -485,9 +486,10 @@ create_gpt_partition_header (const void *pt, int is_primary,
     header->partition_entries_lba = htole64 (2);
   else
     header->partition_entries_lba = htole64 (nr_lbas - 33);
-  header->nr_partition_entries = htole32 (128);
+  header->nr_partition_entries = htole32 (GPT_MAX_PARTITIONS);
   header->size_partition_entry = htole32 (GPT_PT_ENTRY_SIZE);
-  header->crc_partitions = htole32 (crc32 (pt, GPT_PT_ENTRY_SIZE * 128));
+  header->crc_partitions =
+    htole32 (crc32 (pt, GPT_PT_ENTRY_SIZE * GPT_MAX_PARTITIONS));
 
   /* Must be computed last. */
   header->crc = htole32 (crc32 (header, sizeof *header));
@@ -501,7 +503,7 @@ create_gpt_partition_table (unsigned char *out)
   for (j = 0; j < nr_regions; ++j) {
     if (regions[j].type == region_file) {
       i = regions[j].u.i;
-      assert (i < 128);
+      assert (i < GPT_MAX_PARTITIONS);
       create_gpt_partition_table_entry (&regions[j], i == 0,
                                         files[i].type_guid,
                                         out);
@@ -771,8 +773,9 @@ partitioning_config_complete (void)
     nbdkit_error ("at least one file= parameter must be supplied");
     return -1;
   }
-  if (nr_files > 128) {
-    nbdkit_error ("too many files, the plugin supports a maximum of 128 files");
+  if (nr_files > GPT_MAX_PARTITIONS) {
+    nbdkit_error ("too many files, the plugin supports a maximum of %d files",
+                  GPT_MAX_PARTITIONS);
     return -1;
   }
 
