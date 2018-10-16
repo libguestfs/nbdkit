@@ -199,26 +199,30 @@ find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
   int i;
   int err;
 
-  if (partnum > 128) {
-  out_of_range:
+  get_gpt_header (header_bytes, &header);
+  if (partnum > header.nr_partitions) {
     nbdkit_error ("GPT partition number out of range");
     return -1;
   }
-  get_gpt_header (header_bytes, &header);
-  if (partnum > header.nr_partitions)
-    goto out_of_range;
 
-  if (header.partition_entry_size != 128) {
-    nbdkit_error ("GPT partition entry is not 128 bytes");
+  if (header.partition_entry_size < 128) {
+    nbdkit_error ("GPT partition entry size is < 128 bytes");
     return -1;
   }
 
-  for (i = 0; i < 128; ++i) {
-    /* We already checked these are within bounds in the
-     * partition_prepare call above.
-     */
+  /* Check the disk is large enough to contain the partition table
+   * array (twice) plus other GPT overheads.  Otherwise it is likely
+   * that the GPT header is bogus.
+   */
+  if (size < 3*512 + 2*header.nr_partitions*header.partition_entry_size) {
+    nbdkit_error ("GPT partition table is too large for this disk");
+    return -1;
+  }
+
+  for (i = 0; i < header.nr_partitions; ++i) {
+    /* We already checked these are within bounds above. */
     if (next_ops->pread (nxdata, partition_bytes, sizeof partition_bytes,
-                         2*512 + i*128, 0, &err) == -1)
+                         2*512 + i*header.partition_entry_size, 0, &err) == -1)
       return -1;
     get_gpt_partition (partition_bytes, &partition);
     if (memcmp (partition.partition_type_guid,
