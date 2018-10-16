@@ -103,8 +103,8 @@ secondary partition table is added at the end, as required by GPT.
 
 =item B<alignment=>N
 
-Set the alignment of all following files to C<N>.  The default
-alignment is 2048 sectors (1 MB).
+Set the alignment of all following files to C<N> bytes.  The default
+alignment is 1M (2048 sectors).
 
 =item B<mbr-id=>0xN
 

@@ -745,18 +745,27 @@ partitioning_config (const char *key, const char *value)
     }
   }
   else if (strcmp (key, "alignment") == 0) {
-    if (sscanf (value, "%lu", &alignment) != 1) {
-      nbdkit_error ("could not parse partition alignment: %s", value);
+    int64_t r;
+
+    r = nbdkit_parse_size (value);
+    if (r == -1)
+      return -1;
+
+    if (!(r >= SECTOR_SIZE && r <= MAX_ALIGNMENT)) {
+      nbdkit_error ("partition alignment %" PRIi64 " should be "
+                    ">= sector size %" PRIu64 " and "
+                    "<= maximum alignment %" PRIu64,
+                    r, SECTOR_SIZE, MAX_ALIGNMENT);
       return -1;
     }
-    if (!(alignment >= SECTOR_SIZE && alignment <= MAX_ALIGNMENT)) {
-      nbdkit_error ("partition alignment %lu should be "
-                    ">= sector size %lu and <= maximum alignment %lu",
-                    alignment,
-                    (unsigned long) SECTOR_SIZE,
-                    (unsigned long) MAX_ALIGNMENT);
+    if (!IS_ALIGNED (r, SECTOR_SIZE)) {
+      nbdkit_error ("partition alignment %" PRIi64 " should be "
+                    "a multiple of sector size %" PRIu64,
+                    r, SECTOR_SIZE);
       return -1;
     }
+
+    alignment = r;
   }
   else if (strcmp (key, "mbr-id") == 0) {
     if (sscanf (value, "%i", &mbr_id) != 1) {
