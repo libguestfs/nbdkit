@@ -202,11 +202,11 @@ iso_config (const char *key, const char *value)
     dirs[nr_dirs] = dir;
     nr_dirs++;
   }
-  else if (strcmp (key, "prog") == 0) {
-    isoprog = value;
-  }
   else if (strcmp (key, "params") == 0) {
     params = value;
+  }
+  else if (strcmp (key, "prog") == 0) {
+    isoprog = value;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -232,8 +232,8 @@ iso_config_complete (void)
 
 #define iso_config_help \
   "dir=<DIRECTORY>     (required) The directory to serve.\n" \
-  "prog=<ISOPROG>                 The program used to make ISOs.\n" \
-  "params='<PARAMS>'              Extra parameters to pass." \
+  "params='<PARAMS>'              Extra parameters to pass.\n" \
+  "prog=<ISOPROG>                 The program used to make ISOs." \
 
 static void *
 iso_open (int readonly)
