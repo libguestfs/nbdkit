@@ -64,7 +64,8 @@ partition table or padding areas.
 
 =head1 EXAMPLES
 
-From a bare ext4 filesystem, create a virtual partitioned disk:
+From a bare filesystem stored in a file, create a virtual disk with a
+single partition containing the filesystem:
 
  nbdkit partitioning ext4fs.img
 
