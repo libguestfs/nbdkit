@@ -177,6 +177,16 @@ create_virtual_disk_layout (void)
   /* We must have created some regions. */
   assert (nr_regions (&regions) > 0);
 
+  /* Check the final alignment of all the partitions is the same as
+   * what was requested.
+   */
+  for (i = 0; i < nr_regions (&regions); ++i) {
+    const struct region *region = get_region (&regions, i);
+
+    if (region->type == region_file)
+      assert (IS_ALIGNED (region->start, files[region->u.i].alignment));
+  }
+
   return create_partition_table ();
 }
 
