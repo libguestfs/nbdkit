@@ -39,7 +39,13 @@ plugin_LTLIBRARIES = nbdkit-partitioning-plugin.la
 nbdkit_partitioning_plugin_la_SOURCES = \
 	crc32.c \
 	crc32.h \
+	regions.c \
+	regions.h \
 	partitioning.c \
+	partition-gpt.c \
+	partition-mbr.c \
+	virtual-disk.c \
+	virtual-disk.h \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
 nbdkit_partitioning_plugin_la_CPPFLAGS = \
