@@ -55,6 +55,7 @@ SUBDIRS = \
 
 if HAVE_PLUGINS
 SUBDIRS += \
+	common/regions \
 	common/sparse \
 	plugins \
 	filters

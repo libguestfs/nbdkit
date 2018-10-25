@@ -644,6 +644,7 @@ AC_CONFIG_FILES([podwrapper.pl],
 AC_CONFIG_FILES([Makefile
                  bash/Makefile
                  common/include/Makefile
+                 common/regions/Makefile
                  common/sparse/Makefile
                  docs/Makefile
                  include/Makefile

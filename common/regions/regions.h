@@ -38,7 +38,7 @@
 #include <assert.h>
 
 /* This defines a very simple structure used to define the virtual
- * disk in the partitioning plugin.
+ * disk in the partitioning and floppy plugins.
  *
  * We split the virtual disk into non-overlapping, contiguous regions.
  * These are stored in an array, ordered by address.
@@ -50,7 +50,7 @@
 /* Region type. */
 enum region_type {
   region_file,        /* contents of the i'th file */
-  region_data,        /* pointer to data (used for partition table) */
+  region_data,        /* pointer to in-memory data */
   region_zero,        /* padding */
 };
 
@@ -60,7 +60,7 @@ struct region {
   enum region_type type;
   union {
     size_t i;                  /* region_file: i'th file */
-    const unsigned char *data; /* region_data: data (partition table) */
+    const unsigned char *data; /* region_data: data */
   } u;
 };
 

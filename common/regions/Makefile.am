@@ -32,40 +32,13 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = nbdkit-partitioning-plugin.pod
+noinst_LTLIBRARIES = libregions.la
 
-plugin_LTLIBRARIES = nbdkit-partitioning-plugin.la
-
-nbdkit_partitioning_plugin_la_SOURCES = \
-	crc32.c \
-	crc32.h \
-	partitioning.c \
-	partition-gpt.c \
-	partition-mbr.c \
-	virtual-disk.c \
-	virtual-disk.h \
-	$(top_srcdir)/include/nbdkit-plugin.h
-
-nbdkit_partitioning_plugin_la_CPPFLAGS = \
+libregions_la_SOURCES = \
+        regions.c \
+        regions.h
+libregions_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/regions \
-	-I.
-nbdkit_partitioning_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
-nbdkit_partitioning_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared
-nbdkit_partitioning_plugin_la_LIBADD = \
-	$(top_builddir)/common/regions/libregions.la
-
-if HAVE_POD
-
-man_MANS = nbdkit-partitioning-plugin.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-partitioning-plugin.1: nbdkit-partitioning-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+	-I$(top_srcdir)/common/include
+libregions_la_CFLAGS = \
+        $(WARNINGS_CFLAGS)
