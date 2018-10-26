@@ -102,5 +102,7 @@ test_utils_SOURCES = \
 	test-utils.c \
 	utils.c \
 	cleanup.c
-test_utils_CPPFLAGS = -I$(top_srcdir)/include
+test_utils_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include
 test_utils_CFLAGS = $(WARNINGS_CFLAGS) $(VALGRIND_CFLAGS)
