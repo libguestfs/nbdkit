@@ -37,6 +37,7 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = \
 	byte-swapping.h \
 	exit-with-parent.h \
+	get-current-dir-name.h \
 	isaligned.h \
 	ispowerof2.h \
 	iszero.h \
