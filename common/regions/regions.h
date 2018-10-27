@@ -62,6 +62,12 @@ struct region {
     size_t i;                  /* region_file: i'th file */
     const unsigned char *data; /* region_data: data */
   } u;
+
+  /* Optional name or description of this region.  This is not used by
+   * the regions code but can be added to regions to make debugging
+   * easier.
+   */
+  const char *description;
 };
 
 /* Array of regions. */
