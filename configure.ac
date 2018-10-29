@@ -599,6 +599,7 @@ non_lang_plugins="\
         example4 \
         ext2 \
         file \
+        floppy \
         guestfs \
         gzip \
         iso \
@@ -657,6 +658,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/example4/Makefile
                  plugins/ext2/Makefile
                  plugins/file/Makefile
+                 plugins/floppy/Makefile
                  plugins/guestfs/Makefile
                  plugins/gzip/Makefile
                  plugins/iso/Makefile

@@ -55,6 +55,7 @@ EXTRA_DIST = \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
 	test-dump-plugin-example4.sh \
+	test-floppy.sh \
 	test-foreground.sh \
 	test-fua.sh \
 	test-help.sh \
@@ -335,6 +336,11 @@ test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 test_file_block_SOURCES = test-file-block.c test.h
 test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_file_block_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# floppy plugin test.
+if HAVE_GUESTFISH
+TESTS += test-floppy.sh
+endif HAVE_GUESTFISH
 
 # gzip plugin test.
 if HAVE_ZLIB

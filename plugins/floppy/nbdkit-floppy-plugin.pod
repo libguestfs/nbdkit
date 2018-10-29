@@ -1,0 +1,87 @@
+=head1 NAME
+
+nbdkit-floppy-plugin - create virtual floppy disk from directory
+
+=head1 SYNOPSIS
+
+ nbdkit floppy [dir=]DIRECTORY
+               [label=LABEL]
+
+=head1 DESCRIPTION
+
+C<nbdkit-floppy-plugin> is a plugin for L<nbdkit(1)> which creates a
+virtual FAT-formatted floppy disk image from a directory on the fly.
+The files in the specified directory (and subdirectories) appear in
+the virtual floppy, which is served read-only over the NBD protocol.
+
+The virtual floppy disk will have a single partition (using an MBR
+partition table).  In that partition will be a virtual FAT32
+filesystem containing the files.  Long filenames are supported.
+
+=head1 EXAMPLE
+
+Create a virtual floppy disk:
+
+ nbdkit floppy /path/to/directory
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<dir=>DIRECTORY
+
+Specify the directory containing files and subdirectories which will
+be added to the virtual floppy disk.  Files inside this directory will
+appear in the root directory of the virtual floppy.
+
+This parameter is required.
+
+In nbdkit E<ge> 1.8, C<dir=> may be omitted.  To ensure that the
+directory name does not end up being parsed accidentally as
+C<key=value>, prefix relative paths with C<./> (absolute paths do not
+need modification).
+
+=item B<label=>LABEL
+
+The optional volume label for the filesystem.  This may be up to 11
+ASCII characters.  If omitted, C<NBDKITFLOPY> is used.
+
+=back
+
+=head1 LIMITATIONS
+
+The maximum size of the disk is around 2TB.  The maximum size of a
+single file is 4GB.  Non-regular files (such as block special,
+symbolic links, sockets) are not supported and will be ignored.
+
+The plugin does not support writes.
+
+The plugin does not save a temporary copy of the files, so you must
+leave the directory alone while nbdkit is running, else you may get an
+error for example if the plugin tries to open one of the files which
+you have moved or deleted.  (This is different from how
+L<nbdkit-iso-plugin(1)> works).
+
+The virtual floppy will not be bootable.  This could be added in
+future (using SYSLINUX) but requires considerable work.  As a
+workaround use L<nbdkit-iso-plugin(1)> instead.
+
+FAT32 is always used, even for small disks (where dosfstools, for
+example, would choose FAT12 or FAT16).  This results in extra wasted
+space, but since it is only I<virtual> wasted space it isn't really
+important, and it simplifies the implementation greatly.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-iso-plugin(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.
