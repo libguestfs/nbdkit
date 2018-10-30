@@ -62,6 +62,8 @@
 # include <valgrind.h>
 /* http://valgrind.org/docs/manual/faq.html#faq.unhelpful */
 # define DO_DLCLOSE !RUNNING_ON_VALGRIND
+#elif defined(__SANITIZE_ADDRESS__)
+# define DO_DLCLOSE 1
 #else
 # define DO_DLCLOSE 1
 #endif
