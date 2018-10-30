@@ -155,7 +155,7 @@ read_data (const char *value)
   for (i = 0; i < len; ++i) {
     int64_t j;
     int n;
-    char c;
+    char c, cc[2];
 
     if (sscanf (&value[i], " @%" SCNi64 "%n", &j, &n) == 1) {
       if (j < 0) {
@@ -168,7 +168,7 @@ read_data (const char *value)
     /* We need %1s for obscure reasons.  sscanf " <%n" can return 0
      * if nothing is matched, not only if the '<' is matched.
      */
-    else if (sscanf (&value[i], " <%1s%n", &c, &n) == 1) {
+    else if (sscanf (&value[i], " <%1s%n", cc, &n) == 1) {
       char *filename;
       size_t flen;
 
