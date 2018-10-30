@@ -71,6 +71,11 @@ static int
 floppy_config (const char *key, const char *value)
 {
   if (strcmp (key, "dir") == 0) {
+    if (dir != NULL) {
+      /* TODO: Support merging of multiple directories, like iso plugin. */
+      nbdkit_error ("dir=<DIRECTORY> must only be set once");
+      return -1;
+    }
     dir = nbdkit_realpath (value);
     if (dir == NULL)
       return -1;
