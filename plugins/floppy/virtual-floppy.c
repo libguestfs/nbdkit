@@ -278,8 +278,7 @@ visit (const char *dir, struct virtual_floppy *floppy)
     goto error1;
   }
 
-  errno = 0;
-  while ((d = readdir (DIR)) != NULL) {
+  while (errno = 0, (d = readdir (DIR)) != NULL) {
     if (strcmp (d->d_name, ".") == 0 ||
         strcmp (d->d_name, "..") == 0)
       continue;
