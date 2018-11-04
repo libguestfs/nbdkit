@@ -111,12 +111,18 @@ static int
 parse_error_rate (const char *key, const char *value, double *retp)
 {
   double d;
+  int n;
 
-  if (sscanf (value, "%lg%%", &d) == 1) /* percentage */
-    d /= 100.0;
-  else if (sscanf (value, "%lg", &d) == 1) /* probability */
-    ;
+  if (sscanf (value, "%lg%n", &d, &n) == 1) {
+    if (strcmp (&value[n], "%") == 0) /* percentage */
+      d /= 100.0;
+    else if (strcmp (&value[n], "") == 0) /* probability */
+      ;
+    else
+      goto bad_parse;
+  }
   else {
+  bad_parse:
     nbdkit_error ("%s: could not parse rate '%s'", key, value);
     return -1;
   }
