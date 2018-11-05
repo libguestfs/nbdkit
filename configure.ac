@@ -42,6 +42,8 @@ AM_INIT_AUTOMAKE(foreign)
 AC_PROG_LIBTOOL
 LT_INIT
 
+AC_CANONICAL_HOST
+
 AC_PROG_SED
 
 dnl Check for basic C environment.
@@ -79,6 +81,13 @@ if test "x$gcc_warnings" = "xyes"; then
     WARNINGS_CFLAGS="-Wall -Werror"
     AC_SUBST([WARNINGS_CFLAGS])
 fi
+
+dnl on Haiku we must use BSD-compatibility headers to get the endian macros we use
+AC_MSG_CHECKING(whether OS-dependent include paths are required)
+AS_CASE([$host_os],
+  [haiku*], [CFLAGS="$CFLAGS -I`findpaths -p /system B_FIND_PATH_HEADERS_DIRECTORY`/bsd"; AC_MSG_RESULT(yes)],
+  [AC_MSG_RESULT(no)]
+)
 
 dnl Check if libc has program_invocation_short_name.
 AC_CHECK_DECLS([program_invocation_short_name], [], [], [#include <errno.h>])
