@@ -48,6 +48,10 @@
 
 #include <nbdkit-plugin.h>
 
+#ifndef HAVE_FDATASYNC
+#define fdatasync fsync
+#endif
+
 /* The size of disk in bytes (initialized by size=<SIZE> parameter).
  * If size parameter is not specified, it defaults to 100M.
  */

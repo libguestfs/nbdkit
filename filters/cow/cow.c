@@ -91,6 +91,10 @@
 
 #include "rounding.h"
 
+#ifndef HAVE_FDATASYNC
+#define fdatasync fsync
+#endif
+
 /* XXX See design comment above. */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 

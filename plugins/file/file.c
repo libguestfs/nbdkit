@@ -60,6 +60,10 @@
 #define O_CLOEXEC 0
 #endif
 
+#ifndef HAVE_FDATASYNC
+#define fdatasync fsync
+#endif
+
 static char *filename = NULL;
 
 int file_debug_zero;            /* to enable: -D file.zero=1 */

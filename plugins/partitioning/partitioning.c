@@ -56,6 +56,10 @@
 #include "regions.h"
 #include "virtual-disk.h"
 
+#ifndef HAVE_FDATASYNC
+#define fdatasync fsync
+#endif
+
 /* Debug flag: -D partitioning.regions=1: Print the regions table. */
 int partitioning_debug_regions;
 
