@@ -38,6 +38,9 @@
 #include <byteswap.h>
 #endif
 
+#ifdef __HAIKU__
+#define _BSD_SOURCE
+#endif
 #ifdef HAVE_ENDIAN_H
 #include <endian.h>
 #endif
