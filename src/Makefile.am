@@ -71,10 +71,10 @@ nbdkit_CFLAGS = \
 	$(VALGRIND_CFLAGS)
 nbdkit_LDADD = \
 	$(GNUTLS_LIBS) \
-	-ldl
+	$(DL_LIBS)
 nbdkit_LDFLAGS = \
 	-pthread \
-	-rdynamic
+	$(DL_LDFLAGS)
 
 # synopsis.c is generated from docs/synopsis.txt where it is also
 # used to generate the man page.  It is included in main.c.

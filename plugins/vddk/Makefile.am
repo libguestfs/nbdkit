@@ -52,7 +52,7 @@ nbdkit_vddk_plugin_la_CPPFLAGS = \
 nbdkit_vddk_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_vddk_plugin_la_LIBADD = \
-	-ldl
+	$(DL_LIBS)
 nbdkit_vddk_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared
 

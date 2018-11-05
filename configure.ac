@@ -142,9 +142,41 @@ dnl Check for functions in libc, all optional.
 AC_CHECK_FUNCS([\
 	get_current_dir_name])
 
+old_LIBS="$LIBS"
+AC_SEARCH_LIBS([dlopen], [dl dld], [
+        AS_IF([test "x$ac_cv_search_dlopen" != "xnone required"],
+	    [DL_LIBS="$ac_cv_search_dlopen"], [DL_LIBS=])
+        AC_SUBST([DL_LIBS])
+    ], [AC_MSG_ERROR([unable to find the dlopen() function])
+])
+LIBS="$old_LIBS"
+
+dnl Check if -rdynamic linker flag works.
+acx_nbdkit_save_LDFLAGS="${LDFLAGS}"
+LDFLAGS="${LDFLAGS} -rdynamic"
+AC_MSG_CHECKING([if linker supports -rdynamic])
+AC_LINK_IFELSE([
+AC_LANG_SOURCE([[
+#include <stdlib.h>
+int
+main (int argc, char *argv[])
+{
+  exit (EXIT_SUCCESS);
+}
+]])
+    ],[
+    AC_MSG_RESULT([yes])
+    DL_LDFLAGS=-rdynamic
+    ],[
+    AC_MSG_RESULT([no])
+])
+dnl restore CFLAGS
+LDFLAGS="${acx_nbdkit_save_LDFLAGS}"
+AC_SUBST([DL_LDFLAGS])
+
 dnl Check for dladdr in -ldl, optional.  This is a glibc extension.
 old_LIBS="$LIBS"
-LIBS="-ldl $LIBS"
+LIBS="$DL_LIBS $LIBS"
 AC_CHECK_FUNCS([dladdr])
 LIBS="$old_LIBS"
 
