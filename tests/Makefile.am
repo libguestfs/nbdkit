@@ -617,9 +617,9 @@ test_layers_CPPFLAGS = \
 	-I$(top_srcdir)/src
 test_layers_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	-pthread
+	$(PTHREAD_CFLAGS)
 test_layers_LDFLAGS = \
-	-pthread
+	$(PTHREAD_LIBS)
 test_layers_DEPENDENCIES = \
 	test-layers-plugin.la \
 	test-layers-filter1.la \

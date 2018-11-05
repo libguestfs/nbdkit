@@ -92,6 +92,8 @@ AS_CASE([$host_os],
 dnl Check if libc has program_invocation_short_name.
 AC_CHECK_DECLS([program_invocation_short_name], [], [], [#include <errno.h>])
 
+AX_PTHREAD
+
 dnl Check if __attribute__((cleanup(...))) works.
 dnl Set -Werror, otherwise gcc will only emit a warning for attributes
 dnl that it doesn't understand.

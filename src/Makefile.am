@@ -65,7 +65,7 @@ nbdkit_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include
 nbdkit_CFLAGS = \
-	-pthread \
+	$(PTHREAD_CFLAGS) \
 	$(WARNINGS_CFLAGS) \
 	$(GNUTLS_CFLAGS) \
 	$(VALGRIND_CFLAGS)
@@ -73,7 +73,7 @@ nbdkit_LDADD = \
 	$(GNUTLS_LIBS) \
 	$(DL_LIBS)
 nbdkit_LDFLAGS = \
-	-pthread \
+	$(PTHREAD_LIBS) \
 	$(DL_LDFLAGS)
 
 # synopsis.c is generated from docs/synopsis.txt where it is also
