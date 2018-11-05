@@ -129,7 +129,12 @@ cow_load (void)
   template = alloca (len);
   snprintf (template, len, "%s/XXXXXX", tmpdir);
 
+#ifdef HAVE_MKOSTEMP
   fd = mkostemp (template, O_CLOEXEC);
+#else
+  fd = mkstemp (template);
+  fcntl (fd, F_SETFD, FD_CLOEXEC);
+#endif
   if (fd == -1) {
     nbdkit_error ("mkostemp: %s: %m", tmpdir);
     exit (EXIT_FAILURE);

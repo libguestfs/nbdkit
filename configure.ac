@@ -150,7 +150,8 @@ AC_CHECK_HEADERS([\
 dnl Check for functions in libc, all optional.
 AC_CHECK_FUNCS([\
 	fdatasync \
-	get_current_dir_name])
+	get_current_dir_name \
+	mkostemp])
 
 old_LIBS="$LIBS"
 AC_SEARCH_LIBS([dlopen], [dl dld], [
