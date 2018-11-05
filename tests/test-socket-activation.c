@@ -216,7 +216,12 @@ main (int argc, char *argv[])
    * not from the path), so we should be able to connect to the Unix
    * domain socket by its path and receive an NBD magic string.
    */
+#ifdef SOCK_CLOEXEC
   sock = socket (AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0);
+#else
+  sock = socket (AF_UNIX, SOCK_STREAM, 0);
+  fcntl (sock, F_SETFD, FD_CLOEXEC);
+#endif
   if (sock == -1) {
     perror ("socket");
     exit (EXIT_FAILURE);
