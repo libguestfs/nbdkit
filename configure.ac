@@ -148,6 +148,8 @@ LIBS="-ldl $LIBS"
 AC_CHECK_FUNCS([dladdr])
 LIBS="$old_LIBS"
 
+AC_SEARCH_LIBS([getaddrinfo], [network socket])
+
 dnl Check support for setsockcreatecon_raw (part of SELinux).
 AC_CHECK_LIB([selinux], [setsockcreatecon_raw], [], [:])
 
