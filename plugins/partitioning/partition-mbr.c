@@ -41,6 +41,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "byte-swapping.h"
+
 #include "isaligned.h"
 #include "rounding.h"
 

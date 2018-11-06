@@ -42,6 +42,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "byte-swapping.h"
+
 #include "crc32.h"
 #include "regions.h"
 #include "virtual-disk.h"
