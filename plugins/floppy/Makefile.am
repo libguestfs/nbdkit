@@ -34,6 +34,8 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-floppy-plugin.pod
 
+if HAVE_ICONV
+
 plugin_LTLIBRARIES = nbdkit-floppy-plugin.la
 
 nbdkit_floppy_plugin_la_SOURCES = \
@@ -51,7 +53,8 @@ nbdkit_floppy_plugin_la_CPPFLAGS = \
 nbdkit_floppy_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_floppy_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	$(ICONV_LIBS)
 nbdkit_floppy_plugin_la_LIBADD = \
 	$(top_builddir)/common/regions/libregions.la
 
@@ -66,3 +69,5 @@ nbdkit-floppy-plugin.1: nbdkit-floppy-plugin.pod
 	    $<
 
 endif HAVE_POD
+
+endif
