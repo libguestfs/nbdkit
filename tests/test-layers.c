@@ -152,6 +152,12 @@ main (int argc, char *argv[])
     perror ("pthread_create");
     exit (EXIT_FAILURE);
   }
+  err = pthread_detach (thread);
+  if (err) {
+    errno = err;
+    perror ("pthread_detach");
+    exit (EXIT_FAILURE);
+  }
 
   /* Note for the purposes of this test we're not very careful about
    * checking for errors (except for the bare minimum) or handling the
