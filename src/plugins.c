@@ -103,19 +103,22 @@ static void
 plugin_usage (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  const char *t;
 
   printf ("plugin: %s", p->name);
   if (p->plugin.longname)
     printf (" (%s)", p->plugin.longname);
   printf ("\n");
-  printf ("(%s)", p->filename);
+  printf ("(%s)\n", p->filename);
   if (p->plugin.description) {
-    printf ("\n");
-    printf ("%s\n", p->plugin.description);
+    printf ("%s", p->plugin.description);
+    if ((t = strrchr (p->plugin.description, '\n')) == NULL || t[1])
+      printf ("\n");
   }
   if (p->plugin.config_help) {
-    printf ("\n");
-    printf ("%s\n", p->plugin.config_help);
+    printf ("%s", p->plugin.config_help);
+    if ((t = strrchr (p->plugin.config_help, '\n')) == NULL || t[1])
+      printf ("\n");
   }
 }
 

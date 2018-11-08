@@ -134,19 +134,22 @@ static void
 filter_usage (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  const char *p;
 
   printf ("filter: %s", f->name);
   if (f->filter.longname)
     printf (" (%s)", f->filter.longname);
   printf ("\n");
-  printf ("(%s)", f->filename);
+  printf ("(%s)\n", f->filename);
   if (f->filter.description) {
-    printf ("\n");
-    printf ("%s\n", f->filter.description);
+    printf ("%s", f->filter.description);
+    if ((p = strrchr (f->filter.description, '\n')) == NULL || p[1])
+      printf ("\n");
   }
   if (f->filter.config_help) {
-    printf ("\n");
-    printf ("%s\n", f->filter.config_help);
+    printf ("%s", f->filter.config_help);
+    if ((p = strrchr (f->filter.config_help, '\n')) == NULL || p[1])
+      printf ("\n");
   }
 }
 
