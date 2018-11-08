@@ -48,7 +48,7 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit.
-start_nbdkit -P data-raw.pid -U data-raw.sock \
+start_nbdkit -P data-raw.pid -U data-raw.sock --export "" \
        data raw=123 size=512
 
 qemu-io -r -f raw 'nbd+unix://?socket=data-raw.sock' \

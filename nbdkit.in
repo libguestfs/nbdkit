@@ -64,19 +64,8 @@ verbose=
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        # Flags that take an argument.  We must not rewrite the argument.
-        # But make sure globs don't mishandle longopts with =.
-        --export*=* | --pid*=*)
-            args[$i]="$1"
-            shift
-            ;;
-        -e | --export* | -g | --group | -i | --ip* | -P | --pid* | -p | --port | --run | --selinux-label | -t | --threads | --tls | --tls-certificates | --tls-psk | -U | --unix | -u | --user)
-            args[$i]="$1"
-            ((++i))
-            args[$i]="$2"
-            ((++i))
-            shift 2
-            ;;
+        # Options that we special-case.  Unlike getopt_long with short option
+        # squashing, we only recognize -v in isolation. Oh well.
         -v | --verbose)
             verbose=1
             args[$i]="$1"
@@ -93,6 +82,7 @@ while [ $# -gt 0 ]; do
         --filter)
             args[$i]="--filter"
             ((++i))
+            [ $# -gt 1 ] || break
             if [[ "$2" =~ ^[a-zA-Z0-9]+$ ]]; then
                 if [ -x "$b/filters/$2/.libs/nbdkit-$2-filter.so" ]; then
                     args[$i]="$b/filters/$2/.libs/nbdkit-$2-filter.so"
@@ -102,6 +92,24 @@ while [ $# -gt 0 ]; do
             else
                 args[$i]="$2"
             fi
+            ((++i))
+            shift 2
+            ;;
+
+        # Remaining options that take an argument, which we pass through as is.
+        # Although getopt_long handles abbreviations, we don't. Oh well.
+        --*=*)
+            args[$i]="$1"
+            ((++i))
+            shift
+            ;;
+        -D | --debug | -e | --export* | -g | --group | -i | --ip* | --log | \
+        -P | --pid* | -p | --port | --run | --selinux-label | -t | --threads | \
+        --tls | --tls-certificates | --tls-psk | -U | --unix | -u | --user)
+            args[$i]="$1"
+            ((++i))
+            [ $# -gt 1 ] || break
+            args[$i]="$2"
             ((++i))
             shift 2
             ;;

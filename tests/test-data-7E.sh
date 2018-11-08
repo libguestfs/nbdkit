@@ -49,7 +49,7 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit.
-start_nbdkit -P data-7E.pid -U data-7E.sock \
+start_nbdkit -P data-7E.pid -U data-7E.sock --export= \
        --filter=partition \
        data size=7E partition=1 \
        data="
