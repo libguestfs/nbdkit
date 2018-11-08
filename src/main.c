@@ -376,18 +376,14 @@ main (int argc, char *argv[])
 
     case TLS_OPTION:
       tls_set_on_cli = 1;
-      if (strcmp (optarg, "off") == 0 || strcmp (optarg, "0") == 0)
-        tls = 0;
-      else if (strcmp (optarg, "on") == 0 || strcmp (optarg, "1") == 0)
-        tls = 1;
-      else if (strcmp (optarg, "require") == 0 ||
-               strcmp (optarg, "required") == 0 ||
-               strcmp (optarg, "force") == 0)
+      if (strcasecmp (optarg, "require") == 0 ||
+          strcasecmp (optarg, "required") == 0 ||
+          strcasecmp (optarg, "force") == 0)
         tls = 2;
       else {
-        fprintf (stderr, "%s: --tls flag must be off|on|require\n",
-                 program_name);
-        exit (EXIT_FAILURE);
+        tls = nbdkit_parse_bool (optarg);
+        if (tls == -1)
+          exit (EXIT_FAILURE);
       }
       break;
 
