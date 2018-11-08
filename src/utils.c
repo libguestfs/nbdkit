@@ -158,6 +158,31 @@ nbdkit_parse_size (const char *str)
   return size * scale;
 }
 
+/* Parse a string as a boolean, or return -1 after reporting the error.
+ */
+int
+nbdkit_parse_bool (const char *str)
+{
+  if (!strcmp (str, "1") ||
+      !strcasecmp (str, "true") ||
+      !strcasecmp (str, "t") ||
+      !strcasecmp (str, "yes") ||
+      !strcasecmp (str, "y") ||
+      !strcasecmp (str, "on"))
+    return 1;
+
+  if (!strcmp (str, "0") ||
+      !strcasecmp (str, "false") ||
+      !strcasecmp (str, "f") ||
+      !strcasecmp (str, "no") ||
+      !strcasecmp (str, "n") ||
+      !strcasecmp (str, "off"))
+    return 0;
+
+  nbdkit_error ("could not decipher boolean (%s)", str);
+  return -1;
+}
+
 /* Read a password from configuration value. */
 int
 nbdkit_read_password (const char *value, char **password)
