@@ -4,7 +4,7 @@ nbdkit-log-filter - nbdkit log filter
 
 =head1 SYNOPSIS
 
- nbdkit --filter=log plugin logfile=FILE [plugin-args...]
+ nbdkit --filter=log plugin logfile=FILE [logappend=BOOL] [plugin-args...]
 
 =head1 DESCRIPTION
 
@@ -22,7 +22,8 @@ work even when nbdkit is run as a daemon.
 
 The nbdkit-log-filter requires a single parameter C<logfile> which
 specifies the path of the file to use for logging.  If the file
-already exists, it will be truncated.
+already exists, it will be truncated unless the C<logappend> parameter
+was specified with a value that can be parsed as a boolean true.
 
 =head1 EXAMPLES
 

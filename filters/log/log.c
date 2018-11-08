@@ -51,6 +51,7 @@
 static uint64_t connections;
 static char *logfilename;
 static FILE *logfile;
+static int append;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void
@@ -75,6 +76,12 @@ log_config (nbdkit_next_config *next, void *nxdata,
     }
     return 0;
   }
+  if (strcmp (key, "logappend") == 0) {
+    append = nbdkit_parse_bool (value);
+    if (append < 0)
+      return -1;
+    return 0;
+  }
   return next (nxdata, key, value);
 }
 
@@ -86,7 +93,7 @@ log_config_complete (nbdkit_next_config_complete *next, void *nxdata)
     nbdkit_error ("missing logfile= parameter for the log filter");
     return -1;
   }
-  logfile = fopen (logfilename, "w");
+  logfile = fopen (logfilename, append ? "a" : "w");
   if (!logfile) {
     nbdkit_error ("fopen: %m");
     return -1;
@@ -96,7 +103,8 @@ log_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 }
 
 #define log_config_help \
-  "logfile=<FILE>    The file to place the log in."
+  "logfile=<FILE>    (required) The file to place the log in.\n" \
+  "logappend=<BOOL>  True to append to the log (default false).\n"
 
 struct handle {
   uint64_t connection;

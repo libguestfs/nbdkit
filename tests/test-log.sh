@@ -45,7 +45,9 @@ if ! qemu-io -f raw -c 'w 1M 2M' log.img; then
 fi
 
 # Run nbdkit with logging enabled to file.
-start_nbdkit -P log.pid -U log.sock --filter=log file log.img logfile=log.log
+echo '# My log' > log.log
+start_nbdkit -P log.pid -U log.sock --filter=log file log.img \
+	     logfile=log.log logappend=1
 
 # For easier debugging, dump the final log files before removing them
 # on exit.
@@ -61,6 +63,8 @@ cleanup_fn cleanup
 qemu-io -f raw -c 'w -P 11 1M 2M' 'nbd+unix://?socket=log.sock'
 qemu-io -r -f raw -c 'r -P 11 2M 1M' 'nbd+unix://?socket=log.sock'
 
+# The log should have been appended, preserving our marker.
+grep '# My log' log.log
 # The log should show a write on connection 1, and read on connection 2.
 grep 'connection=1 Write id=1 offset=0x100000 count=0x200000 ' log.log
 grep 'connection=2 Read id=1 offset=0x200000 count=0x100000 ' log.log
