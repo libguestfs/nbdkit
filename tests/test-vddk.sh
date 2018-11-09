@@ -37,6 +37,7 @@ set -e
 rm -f test-vddk.out
 
 LD_LIBRARY_PATH=.libs:$LD_LIBRARY_PATH \
+LIBRARY_PATH=.libs:$LIBRARY_PATH \
 nbdkit vddk --dump-plugin > test-vddk.out
 cat test-vddk.out
 
