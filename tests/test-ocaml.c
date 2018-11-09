@@ -109,11 +109,8 @@ main (int argc, char *argv[])
     data[i] = i & 0x7f;
   }
 
-  for (i = 0; i < 8 * 512; i += 4) {
-    if (guestfs_pwrite_device (g, "/dev/sda", &data[i], 4, i) == -1)
-      exit (EXIT_FAILURE);
-  }
-
+  if (guestfs_pwrite_device (g, "/dev/sda", data, 8 * 512, 0) == -1)
+    exit (EXIT_FAILURE);
   free (data);
 
   data = guestfs_pread_device (g, "/dev/sda", 8 * 512, 0, &size);
