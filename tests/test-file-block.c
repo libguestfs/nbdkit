@@ -55,7 +55,7 @@ main (int argc, char *argv[])
   int r;
   int fd;
   char cmd[64], buf[64];
-  char disk[] = "/tmp/diskXXXXXX"; /* Backing disk. */
+  char disk[] = LARGE_TMPDIR "/diskXXXXXX"; /* Backing disk. */
   FILE *pp;
   char *data;
   size_t len;
