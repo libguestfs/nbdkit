@@ -55,18 +55,18 @@ main (int argc, char *argv[])
 #if 0
   int error;
 #endif
-  char tempdir[] = "/tmp/errorXXXXXX";
+  char tmpdir[] = "/tmp/errorXXXXXX";
   char error_file[] = "/tmp/errorXXXXXX/trigger";
   char error_file_param[] = "error-file=/tmp/errorXXXXXX/trigger";
 
   /* Create temporary directory to store the trigger file. */
-  if (mkdtemp (tempdir) == NULL) {
+  if (mkdtemp (tmpdir) == NULL) {
     perror ("mkdtemp");
     exit (EXIT_FAILURE);
   }
 
-  memcpy (error_file, tempdir, strlen (tempdir));
-  memcpy (&error_file_param[11], tempdir, strlen (tempdir));
+  memcpy (error_file, tmpdir, strlen (tmpdir));
+  memcpy (&error_file_param[11], tmpdir, strlen (tmpdir));
 
   if (test_start_nbdkit ("--filter", "error",
                          "memory", "size=1M",
@@ -166,7 +166,7 @@ main (int argc, char *argv[])
 
   guestfs_close (g);
 
-  rmdir (tempdir);
+  rmdir (tmpdir);
 
   exit (EXIT_SUCCESS);
 }
