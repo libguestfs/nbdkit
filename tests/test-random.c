@@ -48,12 +48,11 @@
 #define SIZE 1024*1024
 static char data[SIZE];
 
-/* By reading a large number of random areas of data and comparing
- * with previously read data we should be able to check that the same
- * random data is read every time.
+/* After reading the whole disk above, we then read randomly selected
+ * subsets of the disk and compare the data (it should be identical).
  */
-#define RSIZE 1024
-#define NR_READS 1000
+#define RSIZE 10240
+#define NR_READS 50
 
 int
 main (int argc, char *argv[])
