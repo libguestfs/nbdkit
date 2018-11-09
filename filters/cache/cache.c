@@ -106,7 +106,7 @@ cache_load (void)
 
   tmpdir = getenv ("TMPDIR");
   if (!tmpdir)
-    tmpdir = "/var/tmp";
+    tmpdir = LARGE_TMPDIR;
 
   nbdkit_debug ("cache: temporary directory for cache: %s", tmpdir);
 

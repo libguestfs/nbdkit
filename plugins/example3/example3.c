@@ -107,7 +107,7 @@ static void *
 example3_open (int readonly)
 {
   struct example3_handle *h;
-  char template[] = "/var/tmp/diskXXXXXX";
+  char template[] = LARGE_TMPDIR "/diskXXXXXX";
 
   h = malloc (sizeof *h);
   if (h == NULL) {

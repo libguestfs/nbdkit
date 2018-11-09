@@ -89,6 +89,17 @@ AS_CASE([$host_os],
   [AC_MSG_RESULT(no)]
 )
 
+dnl On Linux /tmp is often tmpfs which is not large enough, so use /var/tmp.
+dnl But Haiku only has /tmp.
+AC_MSG_CHECKING([for temporary directory for large files])
+AS_CASE([$host_os],
+  [haiku*], [LARGE_TMPDIR=/tmp],
+  [LARGE_TMPDIR=/var/tmp]
+)
+AC_MSG_RESULT([$LARGE_TMPDIR])
+AC_DEFINE_UNQUOTED([LARGE_TMPDIR],["$LARGE_TMPDIR"],
+                   [Temporary directory for large files])
+
 dnl Check if libc has program_invocation_short_name.
 AC_CHECK_DECLS([program_invocation_short_name], [], [], [#include <errno.h>])
 

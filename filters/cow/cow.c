@@ -121,7 +121,7 @@ cow_load (void)
 
   tmpdir = getenv ("TMPDIR");
   if (!tmpdir)
-    tmpdir = "/var/tmp";
+    tmpdir = LARGE_TMPDIR;
 
   nbdkit_debug ("cow: temporary directory for overlay: %s", tmpdir);
 

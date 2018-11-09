@@ -75,7 +75,7 @@ make_iso (void)
   /* Path for temporary file. */
   tmpdir = getenv ("TMPDIR");
   if (tmpdir == NULL)
-    tmpdir = "/var/tmp";
+    tmpdir = LARGE_TMPDIR;
   if (asprintf (&template, "%s/isoXXXXXX", tmpdir) == -1) {
     nbdkit_error ("asprintf: %m");
     return -1;
