@@ -354,11 +354,12 @@ sh_pwrite (void *handle, const void *buf,
   }
 }
 
+/* Common code for handling all boolean methods like can_write etc. */
 static int
-sh_can_write (void *handle)
+boolean_method (void *handle, const char *method_name)
 {
   char *h = handle;
-  const char *args[] = { script, "can_write", h, NULL };
+  const char *args[] = { script, method_name, h, NULL };
 
   switch (call (args)) {
   case OK:                      /* true */
@@ -371,63 +372,30 @@ sh_can_write (void *handle)
     return -1;
   default: abort ();
   }
+}
+
+static int
+sh_can_write (void *handle)
+{
+  return boolean_method (handle, "can_write");
 }
 
 static int
 sh_can_flush (void *handle)
 {
-  char *h = handle;
-  const char *args[] = { script, "can_flush", h, NULL };
-
-  switch (call (args)) {
-  case OK:                      /* true */
-    return 1;
-  case RET_FALSE:               /* false */
-    return 0;
-  case MISSING:                 /* missing => assume false */
-    return 0;
-  case ERROR:                   /* error cases */
-    return -1;
-  default: abort ();
-  }
+  return boolean_method (handle, "can_flush");
 }
 
 static int
 sh_can_trim (void *handle)
 {
-  char *h = handle;
-  const char *args[] = { script, "can_trim", h, NULL };
-
-  switch (call (args)) {
-  case OK:                      /* true */
-    return 1;
-  case RET_FALSE:               /* false */
-    return 0;
-  case MISSING:                 /* missing => assume false */
-    return 0;
-  case ERROR:                   /* error cases */
-    return -1;
-  default: abort ();
-  }
+  return boolean_method (handle, "can_trim");
 }
 
 static int
 sh_is_rotational (void *handle)
 {
-  char *h = handle;
-  const char *args[] = { script, "is_rotational", h, NULL };
-
-  switch (call (args)) {
-  case OK:                      /* true */
-    return 1;
-  case RET_FALSE:               /* false */
-    return 0;
-  case MISSING:                 /* missing => assume false */
-    return 0;
-  case ERROR:                   /* error cases */
-    return -1;
-  default: abort ();
-  }
+  return boolean_method (handle, "is_rotational");
 }
 
 static int
