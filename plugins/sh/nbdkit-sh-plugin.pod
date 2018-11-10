@@ -134,7 +134,8 @@ ignored.
 The C<readonly> parameter will be C<true> or C<false>.
 
 On success this should print the handle (any string) on stdout and
-exit with code C<0>.
+exit with code C<0>.  If the handle ends with a newline character then
+the newline is removed.
 
 =item C<close>
 

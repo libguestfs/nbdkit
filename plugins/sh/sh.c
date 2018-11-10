@@ -55,6 +55,7 @@ sh_load (void)
     nbdkit_error ("mkdtemp: /tmp: %m");
     exit (EXIT_FAILURE);
   }
+  nbdkit_debug ("sh: load: tmpdir: %s", tmpdir);
 }
 
 #pragma GCC diagnostic push
@@ -213,6 +214,13 @@ sh_open (int readonly)
   /* We store the string returned by open in the handle. */
   switch (call_read (&h, &hlen, args)) {
   case OK:
+    /* Remove final newline if present. */
+    if (hlen > 0 && h[hlen-1] == '\n') {
+      h[hlen-1] = '\0';
+      hlen--;
+    }
+    if (hlen > 0)
+      nbdkit_debug ("sh: handle: %s", h);
     return h;
 
   case MISSING:
