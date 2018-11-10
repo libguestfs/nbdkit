@@ -22,6 +22,13 @@
 #   ><fs> list-filesystems
 #   ><fs> mount /dev/sda1 /
 
+# Note that the exit code of the script matters:
+#  0 => OK
+#  1 => Error
+#  2 => Method is missing
+#  3 => False
+# For other values, see the nbdkit-sh-plugin(3) manual page.
+
 # $tmpdir is set to a random, empty directory by nbdkit.  Note
 # the contents are deleted when nbdkit exits.
 
@@ -78,8 +85,7 @@ case "$1" in
         ;;
 
     pread)
-        dd iflag=skip_bytes,count_bytes skip=$4 count=$3 if=$f || \
-            exit 1
+        dd iflag=skip_bytes,count_bytes skip=$4 count=$3 if=$f || exit 1
         ;;
 
     pwrite)
@@ -94,7 +100,7 @@ case "$1" in
         ;;
 
     trim)
-        fallocate -p -o $4 -l $3 -n $f
+        fallocate -p -o $4 -l $3 -n $f || exit 1
         ;;
     can_trim)
         # We can trim if the fallocate command exists.
@@ -102,7 +108,7 @@ case "$1" in
         ;;
 
     zero)
-        fallocate -z -o $4 -l $3 -n $f
+        fallocate -z -o $4 -l $3 -n $f || exit 1
         ;;
     can_zero)
         # We can zero efficiently if the fallocate command exists.
