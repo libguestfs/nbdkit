@@ -166,11 +166,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
     }
 
     /* Check stdout. */
-    if (pfds[1].revents & POLLHUP) {
-      close (out_fd[0]);
-      out_fd[0] = -1;           /* poll will ignore this fd */
-    }
-    else if (pfds[1].revents & POLLIN) {
+    if (pfds[1].revents & POLLIN) {
       if (expand_buf (rbuf, rbuflen, &rbufalloc) == -1)
         goto error;
       r = read (pfds[1].fd, *rbuf + *rbuflen, rbufalloc - *rbuflen);
@@ -178,16 +174,20 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
         nbdkit_error ("%s: read: %m", script);
         goto error;
       }
+      else if (r == 0) {
+      close_out:
+        close (out_fd[0]);
+        out_fd[0] = -1;         /* poll will ignore this fd */
+      }
       else if (r > 0)
         *rbuflen += r;
     }
+    else if (pfds[1].revents & POLLHUP) {
+      goto close_out;
+    }
 
     /* Check stderr. */
-    if (pfds[2].revents & POLLHUP) {
-      close (err_fd[0]);
-      err_fd[0] = -1;           /* poll will ignore this fd */
-    }
-    else if (pfds[2].revents & POLLIN) {
+    if (pfds[2].revents & POLLIN) {
       if (expand_buf (ebuf, ebuflen, &ebufalloc) == -1)
         goto error;
       r = read (pfds[2].fd, *ebuf + *ebuflen, ebufalloc - *ebuflen);
@@ -195,8 +195,16 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
         nbdkit_error ("%s: read: %m", script);
         goto error;
       }
+      else if (r == 0) {
+      close_err:
+        close (err_fd[0]);
+        err_fd[0] = -1;         /* poll will ignore this fd */
+      }
       else if (r > 0)
         *ebuflen += r;
+    }
+    else if (pfds[2].revents & POLLHUP) {
+      goto close_err;
     }
   }
 
