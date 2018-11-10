@@ -535,7 +535,7 @@ ocaml_nbdkit_set_error (value nv)
 {
   int err;
 
-  switch (Val_int (nv)) {
+  switch (Int_val (nv)) {
   case 1: err = EPERM; break;
   case 2: err = EIO; break;
   case 3: err = ENOMEM; break;
