@@ -100,8 +100,16 @@ sh_dump_plugin (void)
       break;
 
     case ERROR:
-    default:
       free (o);
+      break;
+
+    case RET_FALSE:
+      nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                    script, "dump_plugin");
+      errno = EIO;
+      return;
+
+    default: abort ();
     }
   }
 }
@@ -126,8 +134,13 @@ sh_config (const char *key, const char *value)
     case MISSING:
       break;
     case ERROR:
-    default:
       return -1;
+    case RET_FALSE:
+      nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                    script, "load");
+      errno = EIO;
+      return -1;
+    default: abort ();
     }
   }
   else {
@@ -142,8 +155,13 @@ sh_config (const char *key, const char *value)
                     script);
       return -1;
     case ERROR:
-    default:
       return -1;
+    case RET_FALSE:
+      nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                    script, "config");
+      errno = EIO;
+      return -1;
+    default: abort ();
     }
   }
 
@@ -165,8 +183,13 @@ sh_config_complete (void)
   case MISSING:
     return 0;
   case ERROR:
-  default:
     return -1;
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "config_complete");
+    errno = EIO;
+    return -1;
+  default: abort ();
   }
 }
 
@@ -182,13 +205,19 @@ sh_open (int readonly)
   case OK:
     return h;
   case MISSING:
-    nbdkit_error ("%s: the open method is required", script);
     free (h);
+    nbdkit_error ("%s: the open method is required", script);
     return NULL;
   case ERROR:
-  default:
     free (h);
     return NULL;
+  case RET_FALSE:
+    free (h);
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "open");
+    errno = EIO;
+    return NULL;
+  default: abort ();
   }
 }
 
@@ -205,6 +234,7 @@ sh_close (void *handle)
   case RET_FALSE:
     free (h);
     return;
+  default: abort ();
   }
 }
 
@@ -229,14 +259,22 @@ sh_get_size (void *handle)
     return r;
 
   case MISSING:
-    nbdkit_error ("%s: the get_size method is required", script);
     free (s);
+    nbdkit_error ("%s: the get_size method is required", script);
     return -1;
 
   case ERROR:
-  default:
     free (s);
     return -1;
+
+  case RET_FALSE:
+    free (s);
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "get_size");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
   }
 }
 
@@ -265,14 +303,22 @@ sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
     return 0;
 
   case MISSING:
-    nbdkit_error ("%s: the pread method is required", script);
     free (data);
+    nbdkit_error ("%s: the pread method is required", script);
     return -1;
 
   case ERROR:
-  default:
     free (data);
     return -1;
+
+  case RET_FALSE:
+    free (data);
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "pread");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
   }
 }
 
@@ -296,8 +342,15 @@ sh_pwrite (void *handle, const void *buf,
     return -1;
 
   case ERROR:
-  default:
     return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "pwrite");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
   }
 }
 
@@ -315,8 +368,8 @@ sh_can_write (void *handle)
   case MISSING:                 /* missing => assume false */
     return 0;
   case ERROR:                   /* error cases */
-  default:
     return -1;
+  default: abort ();
   }
 }
 
@@ -334,8 +387,8 @@ sh_can_flush (void *handle)
   case MISSING:                 /* missing => assume false */
     return 0;
   case ERROR:                   /* error cases */
-  default:
     return -1;
+  default: abort ();
   }
 }
 
@@ -353,8 +406,8 @@ sh_can_trim (void *handle)
   case MISSING:                 /* missing => assume false */
     return 0;
   case ERROR:                   /* error cases */
-  default:
     return -1;
+  default: abort ();
   }
 }
 
@@ -372,8 +425,8 @@ sh_is_rotational (void *handle)
   case MISSING:                 /* missing => assume false */
     return 0;
   case ERROR:                   /* error cases */
-  default:
     return -1;
+  default: abort ();
   }
 }
 
@@ -390,8 +443,13 @@ sh_flush (void *handle)
     /* Ignore lack of flush callback. */
     return 0;
   case ERROR:                   /* error cases */
-  default:
     return -1;
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "flush");
+    errno = EIO;
+    return -1;
+  default: abort ();
   }
 }
 
@@ -414,8 +472,15 @@ sh_trim (void *handle, uint32_t count, uint64_t offset)
     return 0;
 
   case ERROR:
-  default:
     return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "trim");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
   }
 }
 
@@ -440,8 +505,15 @@ sh_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     return -1;
 
   case ERROR:
-  default:
     return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "zero");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
   }
 }
 
