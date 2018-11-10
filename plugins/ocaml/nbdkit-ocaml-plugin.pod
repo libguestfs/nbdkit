@@ -16,26 +16,6 @@ compiled OCaml code.
 Note this requires OCaml E<ge> 4.02.2, which has support for shared
 libraries.  See L<http://caml.inria.fr/mantis/view.php?id=6693>
 
-=head1 COMPILING AN OCAML NBDKIT PLUGIN
-
-After writing your OCaml plugin (C<myplugin.ml>), link it using this
-command:
-
- ocamlopt.opt \
-   -output-obj -runtime-variant _pic \
-   -o nbdkit-myplugin-plugin.so \
-   NBDKit.cmx myplugin.ml \
-   -cclib -lnbdkitocaml
-
-You can then use C<nbdkit-myplugin-plugin.so> as if it were a regular
-nbdkit plugin (see L<nbdkit(1)>, L<nbdkit-plugin(3)>):
-
- nbdkit ./nbdkit-myplugin-plugin.so [args ...]
-
-or if the C<.so> file is installed in the C<$plugindir> directory:
-
- nbdkit myplugin [args ...]
-
 =head1 WRITING AN OCAML NBDKIT PLUGIN
 
 Broadly speaking, OCaml nbdkit plugins work like C ones, so you should
@@ -62,7 +42,29 @@ Your OCaml code should call C<NBDKit.register_plugin> like this:
 
 Your plugin can only call C<register_plugin> once.
 
-=head2 HANDLE
+=head2 Compiling an OCaml nbdkit plugin
+
+OCaml nbdkit plugins are natively compiled into shared object
+(C<*.so>) files which nbdkit loads like regular C plugins.
+
+After writing your OCaml plugin (C<myplugin.ml>), compile and link it
+using this command:
+
+ ocamlopt.opt -output-obj -runtime-variant _pic \
+              -o nbdkit-myplugin-plugin.so \
+              NBDKit.cmx myplugin.ml \
+              -cclib -lnbdkitocaml
+
+You can then use C<nbdkit-myplugin-plugin.so> as an nbdkit plugin (see
+L<nbdkit(1)>, L<nbdkit-plugin(3)>):
+
+ nbdkit ./nbdkit-myplugin-plugin.so [args ...]
+
+or if the C<.so> file is installed in the C<$plugindir> directory:
+
+ nbdkit myplugin [args ...]
+
+=head2 Handle
 
 Your C<open_connection> callback can return an OCaml value of any
 type.  The same value is passed back to the per-connection callbacks
@@ -87,7 +89,7 @@ handle struct in your plugin:
    printf "handle ID = %d\n" handle.h_id;
    (* ... *)
 
-=head2 THREADS
+=head2 Threads
 
 The first parameter of C<NBDKit.register_plugin> is the thread model,
 which can be one of the values in the table below.  For more
