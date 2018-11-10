@@ -29,8 +29,21 @@
 #  3 => False
 # For other values, see the nbdkit-sh-plugin(3) manual page.
 
-# $tmpdir is set to a random, empty directory by nbdkit.  Note
-# the contents are deleted when nbdkit exits.
+# Check we're being run from nbdkit.
+#
+# Because the script has to be executable (for nbdkit to run it) there
+# is a danger that someone could run the script standalone which won't
+# work.  Use two tests to try to make sure we are run from nbdkit:
+#
+# - $tmpdir is set to a random, empty directory by nbdkit.  Note the
+# contents are deleted when nbdkit exits.
+#
+# - $1 is set (to a method name).
+if [ ! -d $tmpdir ] || [ "x$1" = "x" ]; then
+    echo "$0: this script must be run from nbdkit" >&2
+    echo "Use ‘nbdkit sh $0’" >&2
+    exit 1
+fi
 
 # We make a symlink to the file in the tmpdir directory.
 f=$tmpdir/file
