@@ -436,7 +436,7 @@ sh_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
   case MISSING:
     nbdkit_debug ("zero falling back to pwrite");
-    nbdkit_set_error (EOPNOTSUPP);
+    errno = EOPNOTSUPP;
     return -1;
 
   case ERROR:
