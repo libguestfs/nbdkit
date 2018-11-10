@@ -39,6 +39,8 @@ EXTRA_DIST = \
 plugin_LTLIBRARIES = nbdkit-sh-plugin.la
 
 nbdkit_sh_plugin_la_SOURCES = \
+	call.c \
+	call.h \
 	sh.c \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
