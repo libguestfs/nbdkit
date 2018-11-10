@@ -133,13 +133,16 @@ sh_config (const char *key, const char *value)
     case OK:
     case MISSING:
       break;
+
     case ERROR:
       return -1;
+
     case RET_FALSE:
       nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                     script, "load");
       errno = EIO;
       return -1;
+
     default: abort ();
     }
   }
@@ -149,18 +152,22 @@ sh_config (const char *key, const char *value)
     switch (call (args)) {
     case OK:
       return 0;
+
     case MISSING:
       /* Emulate what core nbdkit does if a config callback is NULL. */
       nbdkit_error ("%s: this plugin does not need command line configuration",
                     script);
       return -1;
+
     case ERROR:
       return -1;
+
     case RET_FALSE:
       nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                     script, "config");
       errno = EIO;
       return -1;
+
     default: abort ();
     }
   }
@@ -182,13 +189,16 @@ sh_config_complete (void)
   case OK:
   case MISSING:
     return 0;
+
   case ERROR:
     return -1;
+
   case RET_FALSE:
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, "config_complete");
     errno = EIO;
     return -1;
+
   default: abort ();
   }
 }
@@ -204,19 +214,23 @@ sh_open (int readonly)
   switch (call_read (&h, &hlen, args)) {
   case OK:
     return h;
+
   case MISSING:
     free (h);
     nbdkit_error ("%s: the open method is required", script);
     return NULL;
+
   case ERROR:
     free (h);
     return NULL;
+
   case RET_FALSE:
     free (h);
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, "open");
     errno = EIO;
     return NULL;
+
   default: abort ();
   }
 }
@@ -407,16 +421,20 @@ sh_flush (void *handle)
   switch (call (args)) {
   case OK:
     return 0;
+
   case MISSING:
     /* Ignore lack of flush callback. */
     return 0;
+
   case ERROR:                   /* error cases */
     return -1;
+
   case RET_FALSE:
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, "flush");
     errno = EIO;
     return -1;
+
   default: abort ();
   }
 }
@@ -436,7 +454,7 @@ sh_trim (void *handle, uint32_t count, uint64_t offset)
     return 0;
 
   case MISSING:
-    /* Ignore lack of flush callback. */
+    /* Ignore lack of trim callback. */
     return 0;
 
   case ERROR:
