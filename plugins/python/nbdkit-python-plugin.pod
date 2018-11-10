@@ -11,19 +11,7 @@ nbdkit-python-plugin - nbdkit python plugin
 C<nbdkit-python-plugin> is an embedded Python interpreter for
 L<nbdkit(1)>, allowing you to write nbdkit plugins in Python.
 
-Broadly speaking, Python nbdkit plugins work like C ones, so you should
-read L<nbdkit-plugin(3)> first.
-
-=head2 PYTHON 2 AND PYTHON 3
-
-The Python plugin has to be compiled for either Python 2 or Python 3
-when building nbdkit.  You can set the C<PYTHON> environment variable
-to the desired interpreter, otherwise nbdkit will use the interpreter
-called C<python> on the current C<$PATH>.  For example:
-
- PYTHON=/usr/bin/python3 ./configure
-
-=head2 USING A PYTHON NBDKIT PLUGIN
+=head2 If you have been given an nbdkit Python plugin
 
 Assuming you have a Python script which is an nbdkit plugin, you run it
 like this:
@@ -37,6 +25,9 @@ line.  Read the Python script to see if it requires any.
 
 For an example plugin written in Python, see:
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/python/example.py>
+
+Broadly speaking, Python nbdkit plugins work like C ones, so you should
+read L<nbdkit-plugin(3)> first.
 
 To write a Python nbdkit plugin, you create a Python file which
 contains at least the following required functions (in the top level
@@ -55,7 +46,24 @@ may want to include documentation and globals (eg. for storing global
 state).  Any other top level statements are run when the script is
 loaded, just like ordinary Python.
 
-=head2 EXECUTABLE SCRIPT
+=head2 Python 2 and Python 3
+
+The Python plugin has to be compiled for either Python 2 or Python 3
+when building nbdkit.  You can set the C<PYTHON> environment variable
+to the desired interpreter, otherwise nbdkit will use the interpreter
+called C<python> on the current C<$PATH>.  For example:
+
+ PYTHON=/usr/bin/python3 ./configure
+
+To find out which version the Python plugin was compiled for, use the
+I<--dump-plugin> option, eg:
+
+ $ nbdkit python --dump-plugin
+ ...
+ python_version=3.7.0
+ python_pep_384_abi_version=3
+
+=head2 Executable script
 
 If you want you can make the script executable and include a "shebang"
 at the top:
@@ -67,24 +75,24 @@ See also L<nbdkit(1)/Shebang scripts>.
 These scripts can also be installed in the C<$plugindir>.  See
 L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
-=head2 METHODS
+=head2 Methods
 
 Your script may use C<import nbdkit> to have access to the following
 methods in the C<nbdkit> module:
 
- nbdkit.set_error(I<err>)
+ nbdkit.set_error(err)
 
 Record C<err> as the reason you are about to throw an exception. C<err>
 should correspond to usual errno values, where it may help to
 C<import errno>.
 
-=head2 EXCEPTIONS
+=head2 Exceptions
 
 Python callbacks should throw exceptions to indicate errors.  Remember
 to use C<nbdkit.set_error> if you need to control which error is sent
 back to the client; if omitted, the client will see an error of C<EIO>.
 
-=head2 PYTHON CALLBACKS
+=head2 Python callbacks
 
 This just documents the arguments to the callbacks in Python, and any
 way that they differ from the C callbacks.  In all other respects they
@@ -247,7 +255,7 @@ use C<nbdkit.set_error(errno.EOPNOTSUPP)>.
 
 =back
 
-=head2 MISSING CALLBACKS
+=head2 Missing callbacks
 
 =over 4
 
@@ -263,7 +271,7 @@ These are not yet supported.
 
 =back
 
-=head2 THREADS
+=head2 Threads
 
 The thread model for Python callbacks currently cannot be set from
 Python.  It is hard-coded in the C part to

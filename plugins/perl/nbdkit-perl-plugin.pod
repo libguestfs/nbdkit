@@ -11,10 +11,7 @@ nbdkit-perl-plugin - nbdkit perl plugin
 C<nbdkit-perl-plugin> is an embedded Perl interpreter for
 L<nbdkit(1)>, allowing you to write nbdkit plugins in Perl.
 
-Broadly speaking, Perl nbdkit plugins work like C ones, so you should
-read L<nbdkit-plugin(3)> first.
-
-=head2 USING A PERL NBDKIT PLUGIN
+=head2 If you have been given an nbdkit Perl plugin
 
 Assuming you have a Perl script which is an nbdkit plugin, you run it
 like this:
@@ -28,6 +25,9 @@ line.  Read the Perl script to see if it requires any.
 
 For an example plugin written in Perl, see:
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/perl/example.pl>
+
+Broadly speaking, Perl nbdkit plugins work like C ones, so you should
+read L<nbdkit-plugin(3)> first.
 
 To write a Perl nbdkit plugin, you create a Perl file which contains
 at least the following required subroutines:
@@ -52,7 +52,7 @@ storing global state).  Also any top-level statements, C<BEGIN>
 statements, C<END> statements and so on are run when nbdkit starts up
 and shuts down, just like ordinary Perl.
 
-=head2 EXECUTABLE SCRIPT
+=head2 Executable script
 
 If you want you can make the script executable and include a "shebang"
 at the top:
@@ -64,7 +64,7 @@ See also L<nbdkit(1)/Shebang scripts>.
 These scripts can also be installed in the C<$plugindir>.  See
 L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
-=head2 METHODS
+=head2 Methods
 
 Your script has access to the following methods in the C<Nbdkit>
 package (in fact, attempting to C<use Nbdkit> will fail, the methods
@@ -76,7 +76,7 @@ Record C<$err> as the reason you are about to throw an exception. C<$err>
 should correspond to usual errno values, where it may help to
 C<use POSIX()>.
 
-=head2 EXCEPTIONS
+=head2 Exceptions
 
 Instead of returning error codes as in C, Perl callbacks should
 indicate problems by throwing Perl exceptions (ie. C<die>, C<croak>
@@ -85,7 +85,7 @@ Remember to use C<Nbdkit::set_error> if you need to control which
 error is sent back to the client; if omitted, the client will see an
 error of C<EIO>.
 
-=head2 32 vs 64 BIT
+=head2 32 vs 64 bit
 
 It is likely that Perl plugins won't work well, or maybe won't work at
 all, on 32 bit platforms.  This is simply because Perl doesn't have an
@@ -93,7 +93,7 @@ easy way to use 64 bit integers on 32 bit platforms, and 64 bit
 integers (eg. file offsets, disk sizes) are required for many nbdkit
 operations.
 
-=head2 PERL CALLBACKS
+=head2 Perl callbacks
 
 This just documents the arguments to the callbacks in Perl, and any
 way that they differ from the C callbacks.  In all other respects they
@@ -328,7 +328,7 @@ C<Nbdkit::set_error(POSIX::EOPNOTSUPP)>.
 
 =back
 
-=head2 MISSING CALLBACKS
+=head2 Missing callbacks
 
 =over 4
 
@@ -344,7 +344,7 @@ These are not yet supported.
 
 =back
 
-=head2 THREADS
+=head2 Threads
 
 The thread model for Perl callbacks currently cannot be set from Perl.
 It is hard-coded in the C part to

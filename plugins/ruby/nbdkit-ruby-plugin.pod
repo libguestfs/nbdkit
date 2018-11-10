@@ -21,10 +21,7 @@ L<https://redmine.ruby-lang.org/issues/2294>
 C<nbdkit-ruby-plugin> is an embedded Ruby interpreter for
 L<nbdkit(1)>, allowing you to write nbdkit plugins in Ruby.
 
-Broadly speaking, Ruby nbdkit plugins work like C ones, so you should
-read L<nbdkit-plugin(3)> first.
-
-=head2 USING A RUBY NBDKIT PLUGIN
+=head2 If you have been given an nbdkit Ruby plugin
 
 Assuming you have a Ruby script which is an nbdkit plugin, you run it
 like this:
@@ -38,6 +35,9 @@ line.  Read the Ruby script to see if it requires any.
 
 For an example plugin written in Ruby, see:
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/ruby/example.rb>
+
+Broadly speaking, Ruby nbdkit plugins work like C ones, so you should
+read L<nbdkit-plugin(3)> first.
 
 To write a Ruby nbdkit plugin, you create a Ruby file which
 contains at least the following required functions:
@@ -58,7 +58,7 @@ may want to include documentation and globals (eg. for storing global
 state).  Any other top level statements are run when the script is
 loaded, just like ordinary Ruby.
 
-=head2 EXECUTABLE SCRIPT
+=head2 Executable script
 
 If you want you can make the script executable and include a "shebang"
 at the top:
@@ -70,12 +70,12 @@ See also L<nbdkit(1)/Shebang scripts>.
 These scripts can also be installed in the C<$plugindir>.  See
 L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
-=head2 METHODS
+=head2 Methods
 
 Your script has access to the C<Nbdkit> module, with the following
 singleton methods:
 
- Nbdkit.set_error(I<err>)
+ Nbdkit.set_error(err)
 
 Record C<err> as the reason you are about to raise an
 exception. C<err> should either be a class that defines an C<Errno>
@@ -85,13 +85,13 @@ method with no arguments (all instances of C<SystemCallError> have
 this property), or an integer value corresponding to the usual errno
 values.
 
-=head2 EXCEPTIONS
+=head2 Exceptions
 
 Ruby callbacks should throw exceptions to indicate errors. Remember
 to use C<Nbdkit.set_error> if you need to control which error is sent
 back to the client; if omitted, the client will see an error of C<EIO>.
 
-=head2 RUBY CALLBACKS
+=head2 Ruby callbacks
 
 This just documents the arguments to the callbacks in Ruby, and any
 way that they differ from the C callbacks.  In all other respects they
@@ -262,7 +262,7 @@ use C<Nbdkit.set_error(Errno::EOPNOTSUPP)>.
 
 =back
 
-=head2 MISSING CALLBACKS
+=head2 Missing callbacks
 
 =over 4
 
@@ -278,7 +278,7 @@ These are not yet supported.
 
 =back
 
-=head2 THREADS
+=head2 Threads
 
 The thread model for Ruby callbacks currently cannot be set from Ruby.
 It is hard-coded in the C part to

@@ -16,10 +16,7 @@ language like Perl or Python, then nbdkit has specific plugins to
 handle those languages and those will be more efficient (see
 L<nbdkit(1)> for a complete list).
 
-Broadly speaking, nbdkit shell plugins work like C ones, so you should
-read L<nbdkit-plugin(3)> first.
-
-=head2 USING AN NBDKIT SH PLUGIN
+=head2 If you have been given an nbdkit sh plugin
 
 Assuming you have a shell script which is an nbdkit plugin, you run it
 like this:
@@ -34,7 +31,10 @@ line.
 For an example plugin written in Bash, see:
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/sh/example.sh>
 
-=head2 PROGRAMMING MODEL
+Broadly speaking, nbdkit shell plugins work like C ones, so you should
+read L<nbdkit-plugin(3)> first.
+
+=head2 Programming model
 
 This plugin has a simple programming model: For every plugin method
 that needs to be called, the external script is invoked with
@@ -44,7 +44,7 @@ parameter is always the method name.  For example:
  /path/to/script config <key> <value>
  /path/to/script pread <handle> <count> <offset>
 
-=head2 TEMPORARY DIRECTORY
+=head2 Temporary directory
 
 A fresh script is invoked for each method call (ie. scripts are
 stateless), so if the script needs to store state it has to store it
@@ -56,7 +56,7 @@ the script.  This directory persists for the lifetime of nbdkit and is
 deleted when nbdkit exits.  The name of the directory is passed to
 each script invocation in the C<$tmpdir> environment variable.
 
-=head2 EXIT CODES
+=head2 Exit codes
 
 The script should exit with specific exit codes:
 
@@ -90,12 +90,12 @@ These exit codes are reserved for future use.
 
 =back
 
-=head2 HANDLES
+=head2 Handles
 
 Handles are arbitrary strings, but it is best to limit them to short
 alphanumeric strings.
 
-=head2 METHODS
+=head2 Methods
 
 This just documents the arguments to the script corresponding to each
 plugin method, and any way that they differ from the C callbacks.  In
@@ -216,7 +216,7 @@ C<may_trim> will be either C<true> or C<false>.
 
 =back
 
-=head2 MISSING CALLBACKS
+=head2 Missing callbacks
 
 =over 4
 
@@ -227,7 +227,7 @@ These are not yet supported.
 
 =back
 
-=head2 THREADS
+=head2 Threads
 
 The thread model for scripts currently cannot be set from this plugin.
 It is hard-coded in the C part to

@@ -11,10 +11,7 @@ nbdkit-tcl-plugin - nbdkit Tcl plugin
 C<nbdkit-tcl-plugin> is an embedded Tcl interpreter for
 L<nbdkit(1)>, allowing you to write nbdkit plugins in Tcl.
 
-Broadly speaking, Tcl nbdkit plugins work like C ones, so you should
-read L<nbdkit-plugin(3)> first.
-
-=head2 USING A TCL NBDKIT PLUGIN
+=head2 If you have been given an nbdkit Tcl plugin
 
 Assuming you have a Tcl script which is an nbdkit plugin, you run it
 like this:
@@ -28,6 +25,9 @@ line.  Read the Tcl script to see if it requires any.
 
 For an example plugin written in Tcl, see:
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/tcl/example.tcl>
+
+Broadly speaking, Tcl nbdkit plugins work like C ones, so you should
+read L<nbdkit-plugin(3)> first.
 
 To write a Tcl nbdkit plugin, you create a Tcl file which contains
 at least the following required subroutines:
@@ -51,7 +51,7 @@ directly.  You may want to include documentation and globals (eg. for
 storing global state).  Also any top-level statements are run when
 nbdkit starts up.
 
-=head2 EXECUTABLE SCRIPT
+=head2 Executable script
 
 If you want you can make the script executable and include a "shebang"
 at the top:
@@ -63,11 +63,11 @@ See also L<nbdkit(1)/Shebang scripts>.
 These scripts can also be installed in the C<$plugindir>.  See
 L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
-=head2 EXCEPTIONS
+=head2 Exceptions
 
 Tcl plugin methods can indicate an error by calling C<error>.
 
-=head2 BINARY DATA
+=head2 Binary data
 
 When writing your Tcl script, be careful to ensure that it is
 processing binary data (not Unicode).  If reading and writing from
@@ -80,7 +80,7 @@ a byte array, and the buffer passed to C<pwrite> is also a byte array.
 
 See also: L<https://wiki.tcl.tk/1180>
 
-=head2 TCL CALLBACKS
+=head2 Tcl callbacks
 
 This just documents the arguments to the callbacks in Tcl, and any
 way that they differ from the C callbacks.  In all other respects they
@@ -260,7 +260,7 @@ partial, your function should call C<error>.
 
 =back
 
-=head2 MISSING CALLBACKS
+=head2 Missing callbacks
 
 =over 4
 
@@ -271,7 +271,7 @@ These are not yet supported.
 
 =back
 
-=head2 THREADS
+=head2 Threads
 
 The thread model for Tcl callbacks currently cannot be set from Tcl.
 It is hard-coded in the C part to

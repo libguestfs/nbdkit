@@ -11,10 +11,7 @@ nbdkit-lua-plugin - nbdkit Lua plugin
 C<nbdkit-lua-plugin> is an embedded Lua interpreter for
 L<nbdkit(1)>, allowing you to write nbdkit plugins in Lua.
 
-Broadly speaking, Lua nbdkit plugins work like C ones, so you should
-read L<nbdkit-plugin(3)> first.
-
-=head2 USING A LUA NBDKIT PLUGIN
+=head2 If you have been given an nbdkit Lua plugin
 
 Assuming you have a Lua script which is an nbdkit plugin, you run it
 like this:
@@ -28,6 +25,9 @@ line.  Read the Lua script to see if it requires any.
 
 For an example plugin written in Lua, see:
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/lua/example.lua>
+
+Broadly speaking, Lua nbdkit plugins work like C ones, so you should
+read L<nbdkit-plugin(3)> first.
 
 To write a Lua nbdkit plugin, you create a Lua file which contains
 at least the following required functions:
@@ -51,7 +51,7 @@ directly.  You may want to include documentation and globals (eg. for
 storing global state).  Also any top-level statements are run when
 nbdkit starts up.
 
-=head2 EXECUTABLE SCRIPT
+=head2 Executable script
 
 If you want you can make the script executable and include a "shebang"
 at the top:
@@ -63,7 +63,7 @@ See also L<nbdkit(1)/Shebang scripts>.
 These scripts can also be installed in the C<$plugindir>.  See
 L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
-=head2 ERRORS
+=head2 Errors
 
 Lua plugin methods can indicate an error by calling C<error> or
 C<assert>.  The error message will contain the method name, filename
@@ -72,7 +72,7 @@ and line number where the error occurred, eg:
  error ("could not open " .. filename)
  --> nbdkit: error: open: myplugin.lua:123: could not open disk.img
 
-=head2 LUA CALLBACKS
+=head2 Lua callbacks
 
 This just documents the arguments to the callbacks in Lua, and any
 way that they differ from the C callbacks.  In all other respects they
@@ -254,7 +254,7 @@ partial, your function should call C<error>.
 
 =back
 
-=head2 MISSING CALLBACKS
+=head2 Missing callbacks
 
 =over 4
 
@@ -265,7 +265,7 @@ These are not yet supported.
 
 =back
 
-=head2 THREADS
+=head2 Threads
 
 The thread model for Lua callbacks currently cannot be set from Lua.
 It is hard-coded in the C part to
