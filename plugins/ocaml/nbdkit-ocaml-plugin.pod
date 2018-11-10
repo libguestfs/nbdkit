@@ -122,6 +122,15 @@ never truly concurrent.
 
 =back
 
+=head2 Debugging
+
+You can add debugging messages which are printed only when nbdkit is
+in verbose mode by calling:
+
+ NBDKit.debug fs [...]
+
+This function works like C<Printf.printf>.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

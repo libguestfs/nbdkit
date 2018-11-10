@@ -3,9 +3,10 @@ type handle = {
 }
 
 let test_load () =
-  ()
+  NBDKit.debug "test ocaml plugin loaded"
+
 let test_unload () =
-  ()
+  NBDKit.debug "test ocaml plugin unloaded"
 
 let params = ref []
 
@@ -17,6 +18,7 @@ let test_config_complete () =
   assert (params = [ "a", "1"; "b", "2"; "c", "3" ])
 
 let test_open readonly =
+  NBDKit.debug "test ocaml plugin handle opened readonly=%b" readonly;
   let disk =
     let s = Bytes.create (512 * 8) in
     for i = 0 to 511 do

@@ -74,3 +74,6 @@ val set_error : Unix.error -> unit
     Notice however that the NBD protocol only supports a small
     handful of errno values.  Any other errno will be translated
     into [EINVAL]. *)
+
+val debug : ('a, unit, string, unit) format4 -> 'a
+(** Print a debug message when nbdkit is in verbose mode. *)

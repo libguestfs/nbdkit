@@ -187,3 +187,8 @@ let set_error unix_error =
     | _               -> 4 (* EINVAL *) in
 
   _set_error nbd_error
+
+external _debug : string -> unit = "ocaml_nbdkit_debug" "noalloc"
+
+let debug fs =
+  ksprintf _debug fs

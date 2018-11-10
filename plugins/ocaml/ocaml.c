@@ -550,6 +550,15 @@ ocaml_nbdkit_set_error (value nv)
   return Val_unit;
 }
 
+/* NB: noalloc function. */
+value
+ocaml_nbdkit_debug (value strv)
+{
+  nbdkit_debug ("%s", String_val (strv));
+
+  return Val_unit;
+}
+
 /* We can't directly use NBDKIT_REGISTER_PLUGIN(). */
 struct nbdkit_plugin *
 plugin_init (void)
