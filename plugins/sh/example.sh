@@ -94,14 +94,17 @@ case "$1" in
         ;;
 
     get_size)
+        # Print the disk size on stdout.
         stat -L -c '%s' $f || exit 1
         ;;
 
     pread)
+        # Read the requested part of the disk and write to stdout.
         dd iflag=skip_bytes,count_bytes skip=$4 count=$3 if=$f || exit 1
         ;;
 
     pwrite)
+        # Copy data from stdin and write it to the disk.
         dd oflag=seek_bytes conv=notrunc seek=$4 of=$f || exit 1
         ;;
 
@@ -113,6 +116,7 @@ case "$1" in
         ;;
 
     trim)
+        # Punch a hole in the backing file, if supported.
         fallocate -p -o $4 -l $3 -n $f || exit 1
         ;;
     can_trim)
@@ -121,10 +125,11 @@ case "$1" in
         ;;
 
     zero)
+        # Efficiently zero the backing file, if supported.
         fallocate -z -o $4 -l $3 -n $f || exit 1
         ;;
     can_zero)
-        # We can zero efficiently if the fallocate command exists.
+        # We can efficiently zero if the fallocate command exists.
         fallocate --help >/dev/null 2>&1 || exit 3
         ;;
 
