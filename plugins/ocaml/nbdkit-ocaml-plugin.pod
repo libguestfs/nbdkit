@@ -89,6 +89,19 @@ handle struct in your plugin:
    printf "handle ID = %d\n" handle.h_id;
    (* ... *)
 
+=head2 Errors
+
+Plugins can return errors from methods by raising an exception.
+
+If you need to control which errno is sent back to the client you have
+to call C<NBDKit.set_error> before raising the exception.
+
+Note if you call some function in the OCaml C<Unix> module or another
+library which fails, then the errno of the failing system call will
+not be returned to the client.  You have to catch the exception and
+call C<NBDKit.set_error> before re-raising the exception if you need
+to control this.
+
 =head2 Threads
 
 The first parameter of C<NBDKit.register_plugin> is the thread model,

@@ -167,3 +167,23 @@ let register_plugin thread_model plugin =
   may set_flush plugin.flush;
   may set_trim plugin.trim;
   may set_zero plugin.zero
+
+external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
+
+let set_error unix_error =
+  (* There's an awkward triple translation going on here, because
+   * OCaml Unix.error codes, errno on the host system, and NBD_*
+   * errnos are not all the same integer value.  Plus we cannot
+   * read the host system errno values from OCaml.
+   *)
+  let nbd_error =
+    match unix_error with
+    | Unix.EPERM      -> 1
+    | Unix.EIO        -> 2
+    | Unix.ENOMEM     -> 3
+    | Unix.EINVAL     -> 4
+    | Unix.ENOSPC     -> 5
+    | Unix.ESHUTDOWN  -> 6
+    | _               -> 4 (* EINVAL *) in
+
+  _set_error nbd_error

@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <caml/alloc.h>
 #include <caml/callback.h>
@@ -527,6 +528,27 @@ SET(pwrite)
 SET(flush)
 SET(trim)
 SET(zero)
+
+/* NB: noalloc function. */
+value
+ocaml_nbdkit_set_error (value nv)
+{
+  int err;
+
+  switch (Val_int (nv)) {
+  case 1: err = EPERM; break;
+  case 2: err = EIO; break;
+  case 3: err = ENOMEM; break;
+  case 4: err = EINVAL; break;
+  case 5: err = ENOSPC; break;
+  case 6: err = ESHUTDOWN; break;
+  default: abort ();
+  }
+
+  nbdkit_set_error (err);
+
+  return Val_unit;
+}
 
 /* We can't directly use NBDKIT_REGISTER_PLUGIN(). */
 struct nbdkit_plugin *

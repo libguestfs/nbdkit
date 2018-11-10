@@ -67,3 +67,10 @@ type thread_model =
 | THREAD_MODEL_PARALLEL
 
 val register_plugin : thread_model -> 'a plugin -> unit
+
+val set_error : Unix.error -> unit
+(** Set the errno returned over the NBD protocol to the client.
+
+    Notice however that the NBD protocol only supports a small
+    handful of errno values.  Any other errno will be translated
+    into [EINVAL]. *)
