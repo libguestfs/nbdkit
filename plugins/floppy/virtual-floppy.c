@@ -314,7 +314,7 @@ visit (const char *dir, struct virtual_floppy *floppy)
 
   if (chdir (origdir) == -1) {
     nbdkit_error ("chdir: %s: %m", origdir);
-    goto error0;
+    goto error1;
   }
   free (origdir);
   return di;
