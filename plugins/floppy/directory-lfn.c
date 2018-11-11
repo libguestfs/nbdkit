@@ -479,7 +479,7 @@ convert_to_utf16le (const char *name, char **out, size_t *output_len)
   inlen = input_len;
   outlen = outalloc;
   *out = malloc (outlen + 1);
-  if (out == NULL) {
+  if (*out == NULL) {
     nbdkit_error ("malloc: %m");
     iconv_close (ic);
     return -1;
