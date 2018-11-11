@@ -61,7 +61,7 @@ case "$1" in
                 echo "file $3 does not exist or is not readable" >&2
                 exit 1
             fi
-            ln -sf `realpath "$3"` $f
+            ln -sf "$(realpath "$3")" $f
         else
             echo "unknown parameter $2=$3" >&2
             exit 1
