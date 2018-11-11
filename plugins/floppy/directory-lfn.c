@@ -509,6 +509,7 @@ convert_to_utf16le (const char *name, char **out, size_t *output_len)
       nbdkit_error ("iconv: %s: %m", name);
       free (*out);
       *out = NULL;
+      iconv_close (ic);
       return -1;
     }
   }
