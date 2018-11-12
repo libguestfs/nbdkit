@@ -81,6 +81,7 @@ nbdkit_LDFLAGS = \
 
 EXTRA_DIST = synopsis.c
 nbdkit_DEPENDENCIES = synopsis.c
+CLEANFILES = synopsis.c
 main.c: synopsis.c
 synopsis.c: $(top_srcdir)/docs/synopsis.txt
 	rm -f $@ $@-t

@@ -44,6 +44,8 @@ EXTRA_DIST = \
 	valgrind-suppressions \
 	m4/.gitignore
 
+CLEANFILES += html/*.html
+
 noinst_SCRIPTS = nbdkit
 
 SUBDIRS = \

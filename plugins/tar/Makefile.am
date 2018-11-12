@@ -40,6 +40,7 @@ EXTRA_DIST = \
 if HAVE_PERL
 
 plugin_SCRIPTS = nbdkit-tar-plugin
+CLEANFILES += nbdkit-tar-plugin
 
 # We have to do the rewriting here to avoid stupid exec_prefix.
 nbdkit-tar-plugin: $(source)

@@ -212,6 +212,12 @@ check_DATA += keys.psk
 keys.psk: $(srcdir)/make-psk.sh
 	$(srcdir)/make-psk.sh
 
+# Keys are expensive to recreate so only delete them when we do
+# ‘make maintainer-clean’.
+MAINTAINERCLEANFILES += keys.psk
+maintainer-clean-local:
+	rm -rf pki
+
 #----------------------------------------------------------------------
 # Tests of C plugins or tests which require plugins.
 

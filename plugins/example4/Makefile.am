@@ -40,6 +40,7 @@ EXTRA_DIST = \
 if HAVE_PERL
 
 plugin_SCRIPTS = nbdkit-example4-plugin
+CLEANFILES += nbdkit-example4-plugin
 
 # We have to do the rewriting here to avoid stupid exec_prefix.
 nbdkit-example4-plugin: $(source)
