@@ -155,7 +155,6 @@ AC_CHECK_HEADERS([\
 	alloca.h \
 	byteswap.h \
 	endian.h \
-	iconv.h \
 	selinux/selinux.h \
 	sys/endian.h \
 	sys/prctl.h \
@@ -176,28 +175,42 @@ AC_SEARCH_LIBS([dlopen], [dl dld], [
 ])
 LIBS="$old_LIBS"
 
-old_LIBS="$LIBS"
-AC_SEARCH_LIBS([iconv], [iconv], [
-        AS_IF([test "x$ac_cv_search_iconv" != "xnone required"],
-	    [ICONV_LIBS="$ac_cv_search_iconv"
-             have_iconv=yes
-            ],
-            [ICONV_LIBS=
-             have_iconv=yes])
-	], [
-        AC_SEARCH_LIBS([libiconv], [iconv], [
-                AS_IF([test "x$ac_cv_search_libiconv" != "xnone required"],
-                [ICONV_LIBS="$ac_cv_search_libiconv"
-                 have_iconv=yes
-                ],
-                [ICONV_LIBS=
-                 have_iconv=yes])
-            ], [AC_MSG_WARN([unable to find a library containing iconv])
+dnl Test if <iconv.h> header can build working binaries.
+dnl
+dnl On FreeBSD: iconv and libiconv both exist, both can be installed
+dnl simultaneously, <iconv.h> can exist in two separate places, and
+dnl if you get the wrong header/library mix everything breaks.
+dnl
+dnl On Haiku: libiconv is required to link to iconv_* functions.
+AC_ARG_WITH([iconv],
+    AS_HELP_STRING([--without-iconv], [Don't try to link against iconv]),
+    [],
+    [with_iconv=check])
+AS_IF([test "x$with_iconv" != "xno"],[
+    AC_CHECK_HEADER([iconv.h],[
+        AC_MSG_CHECKING([if <iconv.h> can be used to link a program])
+        AC_LINK_IFELSE([
+AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <stdlib.h>
+#include <iconv.h>
+int
+main (int argc, char *argv[])
+{
+  iconv_t ic = iconv_open ("", "");
+  iconv_close (ic);
+  exit (0);
+}
+]])
+            ],[
+            AC_MSG_RESULT([yes])
+            iconv_working=yes
+            ],[
+            AC_MSG_RESULT([no])
+            ])
         ])
-])
-AC_SUBST([ICONV_LIBS])
-AM_CONDITIONAL([HAVE_ICONV],[test "x$have_iconv" = "xyes"])
-LIBS="$old_LIBS"
+    ])
+AM_CONDITIONAL([HAVE_ICONV], [test "x$iconv_working" = "xyes"])
 
 dnl Check if -rdynamic linker flag works.
 acx_nbdkit_save_LDFLAGS="${LDFLAGS}"
