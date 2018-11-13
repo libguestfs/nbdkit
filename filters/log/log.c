@@ -138,10 +138,11 @@ output (struct handle *h, const char *act, uint64_t id, const char *fmt, ...)
       size_t s;
 
       gmtime_r (&tv.tv_sec, &tm);
-      s = strftime (timestamp, sizeof timestamp, "%F %T", &tm);
+      s = strftime (timestamp, sizeof timestamp - sizeof ".000000" + 1,
+                    "%F %T", &tm);
       assert (s);
-      s = snprintf (timestamp + s, sizeof timestamp - s, ".%06ld",
-                    0L + tv.tv_usec);
+      snprintf (timestamp + s, sizeof timestamp - s, ".%06ld",
+                0L + tv.tv_usec);
     }
   flockfile (logfile);
   fprintf (logfile, "%s connection=%" PRIu64 " %s ", timestamp, h->connection,
