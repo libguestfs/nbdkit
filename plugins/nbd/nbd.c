@@ -470,6 +470,7 @@ nbd_open (int readonly)
     return NULL;
   }
   /* We already validated length during nbd_config_complete */
+  assert (strlen (sockname) <= sizeof sock.sun_path);
   memcpy (sock.sun_path, sockname, strlen (sockname));
   if (connect (h->fd, (const struct sockaddr *) &sock, sizeof sock) < 0) {
     nbdkit_error ("connect: %m");
