@@ -44,7 +44,7 @@
 
 #include "byte-swapping.h"
 
-#include "crc32.h"
+#include "efi-crc32.h"
 #include "regions.h"
 #include "virtual-disk.h"
 
@@ -121,10 +121,10 @@ create_gpt_partition_header (const void *pt, int is_primary,
   header->nr_partition_entries = htole32 (GPT_PTA_SIZE);
   header->size_partition_entry = htole32 (GPT_PT_ENTRY_SIZE);
   header->crc_partitions =
-    htole32 (crc32 (pt, GPT_PT_ENTRY_SIZE * GPT_PTA_SIZE));
+    htole32 (efi_crc32 (pt, GPT_PT_ENTRY_SIZE * GPT_PTA_SIZE));
 
   /* Must be computed last. */
-  header->crc = htole32 (crc32 (header, sizeof *header));
+  header->crc = htole32 (efi_crc32 (header, sizeof *header));
 }
 
 static void

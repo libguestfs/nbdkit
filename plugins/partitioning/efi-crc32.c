@@ -58,7 +58,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "crc32.h"
+#include "efi-crc32.h"
 
 static const uint32_t crc32_tab[] = {
       0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
@@ -118,7 +118,7 @@ static const uint32_t crc32_tab[] = {
 /* Return a 32-bit CRC of the contents of the buffer. */
 
 static uint32_t
-efi_crc32 (const void *buf, size_t len, uint32_t seed)
+_efi_crc32 (const void *buf, size_t len, uint32_t seed)
 {
   size_t i;
   uint32_t crc32val;
@@ -134,7 +134,7 @@ efi_crc32 (const void *buf, size_t len, uint32_t seed)
 }
 
 uint32_t
-crc32 (const void *buf, size_t len)
+efi_crc32 (const void *buf, size_t len)
 {
-  return efi_crc32 (buf, len, ~0L) ^ ~0L;
+  return _efi_crc32 (buf, len, ~0L) ^ ~0L;
 }

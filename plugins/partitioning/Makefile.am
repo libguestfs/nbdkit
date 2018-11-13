@@ -37,8 +37,8 @@ EXTRA_DIST = nbdkit-partitioning-plugin.pod
 plugin_LTLIBRARIES = nbdkit-partitioning-plugin.la
 
 nbdkit_partitioning_plugin_la_SOURCES = \
-	crc32.c \
-	crc32.h \
+	efi-crc32.c \
+	efi-crc32.h \
 	partitioning.c \
 	partition-gpt.c \
 	partition-mbr.c \
