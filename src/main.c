@@ -55,11 +55,11 @@
 #include <dlfcn.h>
 
 #include "internal.h"
+#include "options.h"
 #include "exit-with-parent.h"
 
 #define FIRST_SOCKET_ACTIVATION_FD 3 /* defined by systemd ABI */
 
-static int is_short_name (const char *);
 static char *make_random_fifo (void);
 static struct backend *open_plugin_so (size_t i, const char *filename, int short_name);
 static struct backend *open_filter_so (struct backend *next, size_t i, const char *filename, int short_name);
@@ -113,67 +113,6 @@ struct backend *backend;
 
 static char *random_fifo_dir = NULL;
 static char *random_fifo = NULL;
-
-enum {
-  HELP_OPTION = CHAR_MAX + 1,
-  DUMP_CONFIG_OPTION,
-  DUMP_PLUGIN_OPTION,
-  EXIT_WITH_PARENT_OPTION,
-  FILTER_OPTION,
-  LOG_OPTION,
-  LONG_OPTIONS_OPTION,
-  RUN_OPTION,
-  SELINUX_LABEL_OPTION,
-  SHORT_OPTIONS_OPTION,
-  TLS_OPTION,
-  TLS_CERTIFICATES_OPTION,
-  TLS_PSK_OPTION,
-  TLS_VERIFY_PEER_OPTION,
-};
-
-static const char *short_options = "D:e:fg:i:nop:P:rst:u:U:vV";
-static const struct option long_options[] = {
-  { "debug",            required_argument, NULL, 'D' },
-  { "dump-config",      no_argument,       NULL, DUMP_CONFIG_OPTION },
-  { "dump-plugin",      no_argument,       NULL, DUMP_PLUGIN_OPTION },
-  { "exit-with-parent", no_argument,       NULL, EXIT_WITH_PARENT_OPTION },
-  { "export",           required_argument, NULL, 'e' },
-  { "export-name",      required_argument, NULL, 'e' },
-  { "exportname",       required_argument, NULL, 'e' },
-  { "filter",           required_argument, NULL, FILTER_OPTION },
-  { "foreground",       no_argument,       NULL, 'f' },
-  { "no-fork",          no_argument,       NULL, 'f' },
-  { "group",            required_argument, NULL, 'g' },
-  { "help",             no_argument,       NULL, HELP_OPTION },
-  { "ip-addr",          required_argument, NULL, 'i' },
-  { "ipaddr",           required_argument, NULL, 'i' },
-  { "log",              required_argument, NULL, LOG_OPTION },
-  { "long-options",     no_argument,       NULL, LONG_OPTIONS_OPTION },
-  { "new-style",        no_argument,       NULL, 'n' },
-  { "newstyle",         no_argument,       NULL, 'n' },
-  { "old-style",        no_argument,       NULL, 'o' },
-  { "oldstyle",         no_argument,       NULL, 'o' },
-  { "pid-file",         required_argument, NULL, 'P' },
-  { "pidfile",          required_argument, NULL, 'P' },
-  { "port",             required_argument, NULL, 'p' },
-  { "read-only",        no_argument,       NULL, 'r' },
-  { "readonly",         no_argument,       NULL, 'r' },
-  { "run",              required_argument, NULL, RUN_OPTION },
-  { "selinux-label",    required_argument, NULL, SELINUX_LABEL_OPTION },
-  { "short-options",    no_argument,       NULL, SHORT_OPTIONS_OPTION },
-  { "single",           no_argument,       NULL, 's' },
-  { "stdin",            no_argument,       NULL, 's' },
-  { "threads",          required_argument, NULL, 't' },
-  { "tls",              required_argument, NULL, TLS_OPTION },
-  { "tls-certificates", required_argument, NULL, TLS_CERTIFICATES_OPTION },
-  { "tls-psk",          required_argument, NULL, TLS_PSK_OPTION },
-  { "tls-verify-peer",  no_argument,       NULL, TLS_VERIFY_PEER_OPTION },
-  { "unix",             required_argument, NULL, 'U' },
-  { "user",             required_argument, NULL, 'u' },
-  { "verbose",          no_argument,       NULL, 'v' },
-  { "version",          no_argument,       NULL, 'V' },
-  { NULL },
-};
 
 static void
 usage (void)
@@ -745,13 +684,6 @@ main (int argc, char *argv[])
   crypto_free ();
 
   exit (EXIT_SUCCESS);
-}
-
-/* Is it a plugin or filter name relative to the plugindir/filterdir? */
-static int
-is_short_name (const char *filename)
-{
-  return strchr (filename, '.') == NULL && strchr (filename, '/') == NULL;
 }
 
 /* Implementation of '-U -' */

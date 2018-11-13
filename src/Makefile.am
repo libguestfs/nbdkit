@@ -46,6 +46,7 @@ nbdkit_SOURCES = \
 	log-stderr.c \
 	log-syslog.c \
 	main.c \
+	options.h \
 	plugins.c \
 	protocol.h \
 	sockets.c \
