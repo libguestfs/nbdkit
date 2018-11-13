@@ -46,7 +46,17 @@ EXTRA_DIST = \
 
 CLEANFILES += html/*.html
 
-noinst_SCRIPTS = nbdkit
+# NB: This is not the real nbdkit binary.  It's a wrapper that allows
+# you to run nbdkit from the build directory before it is installed.
+noinst_PROGRAMS = nbdkit
+nbdkit_SOURCES = wrapper.c src/options.h
+nbdkit_CPPFLAGS = \
+	-I$(top_srcdir)/src \
+	-Dbuilddir=\"$(abs_top_builddir)\" \
+	-Dsrcdir=\"$(abs_top_srcdir)\" \
+	-DVALGRIND=\"$(VALGRIND)\"
+nbdkit_CFLAGS = $(WARNINGS_CFLAGS)
+nbdkit_DEPENDENCIES = config.status
 
 SUBDIRS = \
 	bash \
