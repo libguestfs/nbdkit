@@ -154,7 +154,7 @@ Building
     make check                     make check
 
 To run nbdkit from the source directory, use the top level ./nbdkit
-script.  It will run nbdkit and plugins from the locally compiled
+wrapper.  It will run nbdkit and plugins from the locally compiled
 directory:
 
     $ ./nbdkit example1 -f -v
