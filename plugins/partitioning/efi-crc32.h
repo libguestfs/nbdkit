@@ -31,11 +31,11 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NBDKIT_CRC32_H
-#define NBDKIT_CRC32_H
+#ifndef NBDKIT_EFI_CRC32_H
+#define NBDKIT_EFI_CRC32_H
 
 #include <stdint.h>
 
-extern uint32_t crc32 (const void *buf, size_t len);
+extern uint32_t efi_crc32 (const void *buf, size_t len);
 
-#endif /* NBDKIT_CRC32_H */
+#endif /* NBDKIT_EFI_CRC32_H */
