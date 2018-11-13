@@ -183,7 +183,8 @@ dnl if you get the wrong header/library mix everything breaks.
 dnl
 dnl On Haiku: libiconv is required to link to iconv_* functions.
 AC_ARG_WITH([iconv],
-    AS_HELP_STRING([--without-iconv], [Don't try to link against iconv]),
+    [AS_HELP_STRING([--without-iconv],
+                    [don't try to link against iconv @<:@default=check@:>@])],
     [],
     [with_iconv=check])
 AS_IF([test "x$with_iconv" != "xno"],[
@@ -257,9 +258,9 @@ PKG_CHECK_MODULES([GNUTLS], [gnutls >= 3.3.0], [
 
 AS_IF([test "$GNUTLS_LIBS" != ""],[
     AC_MSG_CHECKING([for default TLS session priority string])
-    AC_ARG_WITH([tls-priority],[
-        AS_HELP_STRING([--with-tls-priority],
-                       [default TLS session priority string @<:@default=NORMAL@:>@])],
+    AC_ARG_WITH([tls-priority],
+        [AS_HELP_STRING([--with-tls-priority],
+                        [default TLS session priority string @<:@default=NORMAL@:>@])],
         [tls_priority=$withval],
         [tls_priority=NORMAL])
     AC_MSG_RESULT([$tls_priority])
@@ -283,7 +284,8 @@ dnl If valgrind headers are available (optional).
 dnl Since this is only useful for developers, you have to enable
 dnl it explicitly using --enable-valgrind.
 AC_ARG_ENABLE([valgrind],
-    AS_HELP_STRING([--enable-valgrind], [enable Valgrind extensions, for developers]),
+    [AS_HELP_STRING([--enable-valgrind],
+                    [enable Valgrind extensions (for developers)])],
     [enable_valgrind=yes],
     [enable_valgrind=no])
 AS_IF([test "x$enable_valgrind" = "xyes"],[
@@ -334,13 +336,14 @@ AC_SUBST([PODWRAPPER])
 
 dnl Allow all plugins and filters to be disabled.
 AC_ARG_ENABLE([plugins],
-    [AS_HELP_STRING([--disable-plugins], [disable all bundled plugins and filters])])
+    [AS_HELP_STRING([--disable-plugins],
+                    [disable all bundled plugins and filters])])
 AM_CONDITIONAL([HAVE_PLUGINS], [test "x$enable_plugins" != "xno"])
 
 dnl Check for Perl, for embedding in the perl plugin.
 dnl Note that the perl binary is checked above.
 AC_ARG_ENABLE([perl],
-    AS_HELP_STRING([--disable-perl], [disable Perl embed plugin]),
+    [AS_HELP_STRING([--disable-perl], [disable Perl embed plugin])],
     [],
     [enable_perl=yes])
 AS_IF([test "x$PERL" != "xno" && test "x$enable_perl" != "xno"],[
@@ -379,7 +382,7 @@ AC_SUBST([PERL_LDOPTS])
 dnl Check for Python, for embedding in the python plugin.
 AC_CHECK_PROG([PYTHON],[python],[python],[no])
 AC_ARG_ENABLE([python],
-    AS_HELP_STRING([--disable-python], [disable Python embed plugin]),
+    [AS_HELP_STRING([--disable-python], [disable Python embed plugin])],
     [],
     [enable_python=yes])
 AS_IF([test "x$PYTHON" != "xno" && test "x$enable_python" != "xno"],[
@@ -448,7 +451,7 @@ AC_SUBST([OCAMLOPTFLAGS])
 dnl Check for OCaml, for embedding in the ocaml plugin.
 AC_PROG_OCAML
 AC_ARG_ENABLE([ocaml],
-    AS_HELP_STRING([--disable-ocaml], [disable OCaml embed plugin]),
+    [AS_HELP_STRING([--disable-ocaml], [disable OCaml embed plugin])],
     [],
     [enable_ocaml=yes])
 AS_IF([test "x$OCAMLOPT" != "xno" && test "x$enable_ocaml" != "xno"],[
@@ -469,7 +472,7 @@ AM_CONDITIONAL([HAVE_OCAML],[test "x$OCAMLOPT" != "xno" &&
 dnl Check for Ruby, for embedding in the Ruby plugin.
 AC_CHECK_PROG([RUBY],[ruby],[ruby],[no])
 AC_ARG_ENABLE([ruby],
-    AS_HELP_STRING([--disable-ruby], [disable Ruby plugin]),
+    [AS_HELP_STRING([--disable-ruby], [disable Ruby plugin])],
     [],
     [enable_ruby=yes])
 AS_IF([test "x$RUBY" != "xno" && test "x$enable_ruby" != "xno"],[
@@ -486,7 +489,7 @@ AM_CONDITIONAL([HAVE_RUBY],[test "x$RUBY" != "xno" &&
 
 dnl Check for Tcl, for embedding in the Tcl plugin.
 AC_ARG_ENABLE([tcl],
-    AS_HELP_STRING([--disable-tcl], [disable Tcl plugin]),
+    [AS_HELP_STRING([--disable-tcl], [disable Tcl plugin])],
     [],
     [enable_tcl=yes])
 AS_IF([test "x$enable_tcl" != "xno"],[
@@ -502,7 +505,7 @@ AM_CONDITIONAL([HAVE_TCL],[test "x$enable_tcl" = "xyes"])
 
 dnl Check for Lua, for embedding in the Lua plugin.
 AC_ARG_ENABLE([lua],
-    AS_HELP_STRING([--disable-lua], [disable Lua plugin]),
+    [AS_HELP_STRING([--disable-lua], [disable Lua plugin])],
     [],
     [enable_lua=yes])
 AS_IF([test "x$enable_lua" != "xno"],[
@@ -523,9 +526,9 @@ AS_IF([test "x$enable_lua" != "xno"],[
 AM_CONDITIONAL([HAVE_LUA],[test "x$enable_lua" = "xyes"])
 
 dnl Check for curl (only if you want to compile the curl plugin).
-AC_ARG_WITH([curl],[
-    AS_HELP_STRING([--without-curl],
-                   [disable curl plugin @<:@default=check@:>@])],
+AC_ARG_WITH([curl],
+    [AS_HELP_STRING([--without-curl],
+                    [disable curl plugin @<:@default=check@:>@])],
     [],
     [with_curl=check])
 AS_IF([test "$with_curl" != "no"],[
@@ -541,9 +544,9 @@ AM_CONDITIONAL([HAVE_CURL],[test "x$CURL_LIBS" != "x"])
 dnl Check for genisoimage or mkisofs
 dnl (only if you want to compile the iso plugin).
 ISOPROG="no"
-AC_ARG_WITH([iso],[
-    AS_HELP_STRING([--without-iso],
-                   [disable iso plugin @<:@default=check@:>@])],
+AC_ARG_WITH([iso],
+    [AS_HELP_STRING([--without-iso],
+                    [disable iso plugin @<:@default=check@:>@])],
     [],
     [with_iso=check])
 AS_IF([test "$with_iso" != "no"],[
@@ -565,9 +568,9 @@ AC_SUBST([ISOPROG])
 AM_CONDITIONAL([HAVE_ISO],[test "x$ISOPROG" != "xno"])
 
 dnl Check for libvirt (only if you want to compile the libvirt plugin).
-AC_ARG_WITH([libvirt],[
-    AS_HELP_STRING([--without-libvirt],
-                   [disable libvirt plugin @<:@default=check@:>@])],
+AC_ARG_WITH([libvirt],
+    [AS_HELP_STRING([--without-libvirt],
+                    [disable libvirt plugin @<:@default=check@:>@])],
     [],
     [with_libvirt=check])
 AS_IF([test "$with_libvirt" != "no"],[
@@ -581,9 +584,9 @@ AS_IF([test "$with_libvirt" != "no"],[
 AM_CONDITIONAL([HAVE_LIBVIRT],[test "x$LIBVIRT_LIBS" != "x"])
 
 dnl Check for zlib (only if you want to compile the gzip plugin).
-AC_ARG_WITH([zlib],[
-    AS_HELP_STRING([--without-zlib],
-                   [disable gzip plugin @<:@default=check@:>@])],
+AC_ARG_WITH([zlib],
+    [AS_HELP_STRING([--without-zlib],
+                    [disable gzip plugin @<:@default=check@:>@])],
     [],
     [with_zlib=check])
 AS_IF([test "$with_zlib" != "no"],[
@@ -597,9 +600,9 @@ AS_IF([test "$with_zlib" != "no"],[
 AM_CONDITIONAL([HAVE_ZLIB],[test "x$ZLIB_LIBS" != "x"])
 
 dnl Check for liblzma (only if you want to compile the xz plugin).
-AC_ARG_WITH([liblzma],[
-    AS_HELP_STRING([--without-liblzma],
-                   [disable xz plugin @<:@default=check@:>@])],
+AC_ARG_WITH([liblzma],
+    [AS_HELP_STRING([--without-liblzma],
+                    [disable xz plugin @<:@default=check@:>@])],
     [],
     [with_liblzma=check])
 AS_IF([test "$with_liblzma" != "no"],[
@@ -613,9 +616,9 @@ AS_IF([test "$with_liblzma" != "no"],[
 AM_CONDITIONAL([HAVE_LIBLZMA],[test "x$LIBLZMA_LIBS" != "x"])
 
 dnl Check for libguestfs (only for the guestfs plugin and the test suite).
-AC_ARG_WITH([libguestfs],[
-    AS_HELP_STRING([--without-libguestfs],
-                   [disable guestfs plugin and tests @<:@default=check@:>@])],
+AC_ARG_WITH([libguestfs],
+    [AS_HELP_STRING([--without-libguestfs],
+                    [disable guestfs plugin and tests @<:@default=check@:>@])],
     [],
     [with_libguestfs=check])
 AS_IF([test "$with_libguestfs" != "no"],[
@@ -644,9 +647,9 @@ AC_CHECK_PROG([GUESTFISH], [guestfish], [guestfish], [no])
 AM_CONDITIONAL([HAVE_GUESTFISH], [test "x$GUESTFISH" != "xno"])
 
 dnl Check for ext2fs and com_err, for the ext2 plugin.
-AC_ARG_WITH([ext2],[
-    AS_HELP_STRING([--without-ext2],
-                   [disable ext2 plugin @<:@default=check@:>@])],
+AC_ARG_WITH([ext2],
+    [AS_HELP_STRING([--without-ext2],
+                    [disable ext2 plugin @<:@default=check@:>@])],
     [],
     [with_ext2=check])
 AS_IF([test "$with_ext2" != "no"], [
@@ -668,9 +671,9 @@ AM_CONDITIONAL([HAVE_EXT2],
 
 dnl Check if the user wants to disable VDDK support.
 dnl See plugins/vddk/README.VDDK.
-AC_ARG_ENABLE([vddk],[
-    AS_HELP_STRING([--disable-vddk],
-                   [disable VMware VDDK plugin])],
+AC_ARG_ENABLE([vddk],
+    [AS_HELP_STRING([--disable-vddk],
+                    [disable VMware VDDK plugin])],
     [],
     [enable_vddk=yes])
 AM_CONDITIONAL([HAVE_VDDK], [test "x$enable_vddk" = "xyes"])
