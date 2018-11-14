@@ -39,7 +39,6 @@ EXTRA_DIST = \
 	.gitignore \
 	html/pod.css \
 	LICENSE \
-	nbdkit.in \
 	OTHER_PLUGINS \
 	valgrind-suppressions \
 	m4/.gitignore
