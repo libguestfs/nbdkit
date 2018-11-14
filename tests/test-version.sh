@@ -45,7 +45,8 @@ fi
 # However some of these tests are expected to fail.
 test ()
 {
-    case "$1${NBDKIT_VALGRIND:+-valgrind}" in
+    vg=; [ "$NBDKIT_VALGRIND" = "1" ] && vg="-valgrind"
+    case "$1$vg" in
         vddk | vddk-valgrind)
             # VDDK won't run without special environment variables
             # being set, so ignore it.

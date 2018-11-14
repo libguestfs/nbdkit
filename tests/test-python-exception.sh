@@ -36,7 +36,7 @@ set -x
 
 # Python language leaks like a sieve as well as a lot of worrying
 # "Conditional jump or move depends on uninitialised value(s)".
-if test -n "$NBDKIT_VALGRIND"; then
+if [ "$NBDKIT_VALGRIND" = "1" ]; then
     echo "$0: skipping Python test under valgrind."
     exit 77
 fi
