@@ -112,6 +112,7 @@ main (int argc, char *argv[])
              program_name, filename, data, content);
     exit (EXIT_FAILURE);
   }
+  free (data);
 
   /* Run sync to test flush path. */
   if (guestfs_sync (g) == -1)
@@ -130,8 +131,8 @@ main (int argc, char *argv[])
   if (guestfs_umount (g, "/") == -1)
     exit (EXIT_FAILURE);
   const char *cmd[] = { "fallocate", "-nzl", "64k", "/dev/sda", NULL };
-  char *s = guestfs_debug (g, "sh", (char **) cmd);
-  free (s);
+  data = guestfs_debug (g, "sh", (char **) cmd);
+  free (data);
 
   if (guestfs_shutdown (g) == -1)
     exit (EXIT_FAILURE);
