@@ -221,7 +221,6 @@ int
 main (int argc, char *argv[])
 {
   int c;
-  int option_index;
   int help = 0, version = 0, dump_plugin = 0;
   int tls_set_on_cli = 0;
   int short_name;
@@ -249,7 +248,7 @@ main (int argc, char *argv[])
   socket_activation = get_socket_activation ();
 
   for (;;) {
-    c = getopt_long (argc, argv, short_options, long_options, &option_index);
+    c = getopt_long (argc, argv, short_options, long_options, NULL);
     if (c == -1)
       break;
 
