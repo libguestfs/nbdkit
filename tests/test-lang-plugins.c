@@ -49,21 +49,20 @@ main (int argc, char *argv[])
 {
   guestfs_h *g;
   int r;
+  const char *s;
   char *data;
 
   /* These languages currently fail completely when run under
    * valgrind, so skip them.
    */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-  if (getenv ("NBDKIT_VALGRIND") != NULL &&
+  s = getenv ("NBDKIT_VALGRIND");
+  if (s && strcmp (s, "1") == 0 &&
       (strcmp (LANG, "python") == 0 ||
        strcmp (LANG, "ruby") == 0 ||
        strcmp (LANG, "tcl") == 0)) {
     fprintf (stderr, "%s test skipped under valgrind.\n", LANG);
     exit (77);                  /* Tells automake to skip the test. */
   }
-#pragma GCC diagnostic pop
 
   if (test_start_nbdkit (LANG, SCRIPT, NULL) == -1)
     exit (EXIT_FAILURE);

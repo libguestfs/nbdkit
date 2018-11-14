@@ -49,12 +49,14 @@ main (int argc, char *argv[])
 {
   guestfs_h *g;
   int r;
+  const char *s;
   char *data;
 
   /* The ext2 test fails valgrind.  It seems as if the ext2fs error
    * table cannot be freed.
    */
-  if (getenv ("NBDKIT_VALGRIND") != NULL) {
+  s = getenv ("NBDKIT_VALGRIND");
+  if (s && strcmp (s, "1") == 0) {
     fprintf (stderr, "ext2 test skipped under valgrind.\n");
     exit (77);                  /* Tells automake to skip the test. */
   }
