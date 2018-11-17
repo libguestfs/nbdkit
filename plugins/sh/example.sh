@@ -79,17 +79,17 @@ case "$1" in
     open)
         # Open a new client connection.
 
-        # Create a directory to store per-handle state.  The directory
-        # name is printed out by the mktemp command, that output is
-        # captured by nbdkit, and it is passed back as the handle
-        # parameter ($2) in subsequent calls below.
+        # Create a directory to store per-connection state.  The
+        # directory name is printed out by the mktemp command, that
+        # output is captured by nbdkit, and it is passed back as the
+        # handle parameter ($2) in subsequent calls below.
         #
-        # You can use this directory to store per-handle state, and it
-        # along with everything in $tmpdir is cleaned up by nbdkit on
-        # exit.
+        # You can use this directory to store per-connection state,
+        # and it along with everything in $tmpdir is cleaned up by
+        # nbdkit on exit.
         #
-        # (This plugin does not actually use per-handle state, it's
-        # just an example.)
+        # (This plugin does not actually use per-connection state,
+        # it's just an example.)
         mktemp -d $tmpdir/handle-XXXXXX
         ;;
 

@@ -44,18 +44,6 @@ parameter is always the method name.  For example:
  /path/to/script config <key> <value>
  /path/to/script pread <handle> <count> <offset>
 
-=head2 Temporary directory
-
-A fresh script is invoked for each method call (ie. scripts are
-stateless), so if the script needs to store state it has to store it
-somewhere in the filesystem in a format and location which is left up
-to the author of the script.
-
-However nbdkit helps by creating a randomly named, empty directory for
-the script.  This directory persists for the lifetime of nbdkit and is
-deleted when nbdkit exits.  The name of the directory is passed to
-each script invocation in the C<$tmpdir> environment variable.
-
 =head2 Exit codes
 
 The script should exit with specific exit codes:
@@ -90,10 +78,40 @@ These exit codes are reserved for future use.
 
 =back
 
+=head2 Temporary directory
+
+A fresh script is invoked for each method call (ie. scripts are
+stateless), so if the script needs to store state it has to store it
+somewhere in the filesystem in a format and location which is left up
+to the author of the script.
+
+However nbdkit helps by creating a randomly named, empty directory for
+the script.  This directory persists for the lifetime of nbdkit and is
+deleted when nbdkit exits.  The name of the directory is passed to
+each script invocation in the C<$tmpdir> environment variable.
+
 =head2 Handles
 
 Handles are arbitrary strings, but it is best to limit them to short
 alphanumeric strings.
+
+=head3 Per-connection state
+
+The temporary directory described above can be used for state for the
+lifetime of the nbdkit instance (across multiple connections).  If you
+want to store state per connection then one way to do it is to create
+a randomly named subdirectory under the temporary directory:
+
+ case "$1" in
+   ...
+   open)
+     mktemp -d $tmpdir/handle-XXXXXX
+     ;;
+
+The handle will be the subdirectory name, returned to the script as
+C<$2> in all connected calls (eg. C<pread>, C<get_size>).  The
+subdirectory may be deleted in C<close>, or you can rely on nbdkit
+deleting the whole temporary directory when it exits.
 
 =head2 Methods
 
