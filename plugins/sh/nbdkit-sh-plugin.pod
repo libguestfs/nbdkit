@@ -190,7 +190,7 @@ C<count> bytes must be printed.
 The script should read the binary data to be written from stdin.
 
 Unlike in other languages, if you provide a C<pwrite> method you
-B<must> also provide a C<can_pwrite> method which exits with code C<0>
+B<must> also provide a C<can_write> method which exits with code C<0>
 (true).
 
 =item C<flush>
