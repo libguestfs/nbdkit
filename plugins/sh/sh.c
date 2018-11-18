@@ -224,9 +224,15 @@ sh_open (int readonly)
     return h;
 
   case MISSING:
+    /* Unlike regular C plugins, open is not required.  If it is
+     * missing then we return "" as the handle.  Allocate a new string
+     * for it because we don't know what call_read returned here.
+     */
     free (h);
-    nbdkit_error ("%s: the open method is required", script);
-    return NULL;
+    h = strdup ("");
+    if (h == NULL)
+      nbdkit_error ("strdup: %m");
+    return h;
 
   case ERROR:
     free (h);
