@@ -155,6 +155,9 @@ On success this should print the handle (any string) on stdout and
 exit with code C<0>.  If the handle ends with a newline character then
 the newline is removed.
 
+Unlike C plugins, this method is I<not> required.  If omitted then the
+handle will be C<""> (empty string).
+
 =item C<close>
 
  /path/to/script close <handle>
@@ -167,6 +170,8 @@ The script should print the size of the disk image on stdout.  You can
 print the size in bytes, or use any format understood by
 C<nbdkit_parse_size> such as C<1M> (see
 L<nbdkit-plugin(3)/PARSING SIZE PARAMETERS>).
+
+This method is required.
 
 =item C<can_write>
 
@@ -200,6 +205,8 @@ The script should exit with code C<0> for true or code C<3> for false.
 
 The script should print the requested binary data on stdout.  Exactly
 C<count> bytes must be printed.
+
+This method is required.
 
 =item C<pwrite>
 
