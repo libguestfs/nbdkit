@@ -771,6 +771,28 @@ disk.xz: disk
 # you should choose a 16M block size.
 	xz --best --block-size=32768 -c disk > $@
 
+if HAVE_CURL
+
+# xz filter + curl.
+LIBGUESTFS_TESTS += test-xz-curl
+
+test_xz_curl_SOURCES = \
+	test-xz-curl.c \
+	web-server.c \
+	web-server.h \
+	test.h
+test_xz_curl_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(PTHREAD_CFLAGS)
+test_xz_curl_LDFLAGS = \
+	$(PTHREAD_LIBS)
+test_xz_curl_LDADD = \
+	libtest.la \
+	$(LIBGUESTFS_LIBS)
+
+endif HAVE_CURL
+
 endif HAVE_GUESTFISH
 endif HAVE_LIBLZMA
 

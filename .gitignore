@@ -95,4 +95,5 @@ Makefile.in
 /tests/test-streaming
 /tests/test-tcl
 /tests/test-xz
+/tests/test-xz-curl
 /test-driver
