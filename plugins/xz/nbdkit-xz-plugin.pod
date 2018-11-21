@@ -6,6 +6,15 @@ nbdkit-xz-plugin - nbdkit xz plugin
 
  nbdkit xz [file=]FILENAME.xz
 
+=head1 DEPRECATED
+
+B<The xz plugin is deprecated in S<nbdkit E<ge> 1.9.2> and will be
+removed in S<nbdkit 1.12>>.  It has been replaced with a filter with
+the same functionality, see L<nbdkit-xz-filter(1)>.  You can use the
+filter like this:
+
+ nbdkit --filter=xz file file.xz
+
 =head1 DESCRIPTION
 
 C<nbdkit-xz-plugin> is a file serving plugin for L<nbdkit(1)>.
