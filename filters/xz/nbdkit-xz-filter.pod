@@ -1,0 +1,93 @@
+=head1 NAME
+
+nbdkit-xz-filter - nbdkit xz filter
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=xz file FILENAME.xz
+
+ nbdkit --filter=xz curl url=https://example.com/FILENAME.xz
+
+=head1 DESCRIPTION
+
+C<nbdkit-xz-filter> is a filter for L<nbdkit(1)> which uncompresses
+the underlying plugin on the fly.  The filter only supports read-only
+connections.
+
+=head2 Getting best random access performance from xz
+
+L<xz(1)> files are split into streams and blocks.  Most xz files
+contain only one stream which contains one or more blocks.  You can
+find out how many streams and blocks are in an xz file by doing:
+
+ $ xz --list winxp.img.xz
+ Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename
+     1       1  2,100.0 MiB  6,144.0 MiB  0.342  CRC64   winxp.img.xz
+    ↑↑↑     ↑↑↑
+  streams  blocks
+
+xz files are seekable on block boundaries only.  Seeking is done by
+seeking directly to the lower block boundary, then uncompressing data
+until the precise byte is reached.  As uncompressing xz data is slow,
+B<to get best random access performance, you must prepare your xz
+files with many small blocks.>
+
+Use the I<--block-size> option with a small-ish block size.  For
+example this is the same image compressed with a 16 MB block size:
+
+ $ xz --best --block-size=16777216 winxp.img
+             ─────────────────────
+ $ xz --list winxp.img.xz
+ Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename
+     1     384  2,120.1 MiB  6,144.0 MiB  0.345  CRC64   winxp.img.xz
+           ↑↑↑
+          blocks
+
+This file can be accessed randomly.  At most 16 MB will have to be
+uncompressed to seek to any byte.
+
+As you would expect, xz cannot compress as efficiently when using a
+smaller block size.  The space penalty in the above example is
+S<E<lt> 1%> of the compressed file size.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<xz-max-block=>SIZE
+
+The maximum block size that the filter will read.  The filter will
+refuse to read xz files that contain any block larger than this size.
+
+See the discussion above about creating xz files with small block
+sizes in order to reduce memory usage and increase performance.
+
+This parameter is optional.  If not specified it defaults to 512M.
+
+=item B<xz-max-depth=>N
+
+Maximum number of blocks stored in the LRU block cache.
+
+This parameter is optional.  If not specified it defaults to 8.
+
+The filter may allocate up to
+S<maximum block size in file * maxdepth>
+bytes of memory I<per connection>.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-curl-plugin(1)>,
+L<nbdkit-file-plugin(1)>,
+L<xz(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2018 Red Hat Inc.

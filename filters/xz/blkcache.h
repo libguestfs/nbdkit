@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,61 +31,20 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
+#ifndef NBDKIT_BLKCACHE_H
+#define NBDKIT_BLKCACHE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <string.h>
-#include <unistd.h>
+typedef struct blkcache blkcache;
 
-#include <guestfs.h>
+typedef struct blkcache_stats {
+  size_t hits;
+  size_t misses;
+} blkcache_stats;
 
-#include "test.h"
+extern blkcache *new_blkcache (size_t maxdepth);
+extern void free_blkcache (blkcache *);
+extern char *get_block (blkcache *, uint64_t offset, uint64_t *start, uint64_t *size);
+extern int put_block (blkcache *, uint64_t start, uint64_t size, char *data);
+extern void blkcache_get_stats (blkcache *, blkcache_stats *ret);
 
-int
-main (int argc, char *argv[])
-{
-  guestfs_h *g;
-  int r;
-  char *data;
-
-  if (test_start_nbdkit ("--filter=xz", "file", "disk.xz", NULL) == -1)
-    exit (EXIT_FAILURE);
-
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
-    exit (EXIT_FAILURE);
-  }
-
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_READONLY, 1,
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
-    exit (EXIT_FAILURE);
-
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
-
-  /* disk.xz contains one partition and a test file called "hello.txt" */
-  if (guestfs_mount_ro (g, "/dev/sda1", "/") == -1)
-    exit (EXIT_FAILURE);
-
-  data = guestfs_cat (g, "/hello.txt");
-  if (!data)
-    exit (EXIT_FAILURE);
-
-  if (strcmp (data, "hello,world") != 0) {
-    fprintf (stderr, "%s FAILED: unexpected content of /hello.txt file (actual: %s, expected: \"hello,world\")\n",
-             program_name, data);
-    exit (EXIT_FAILURE);
-  }
-
-  guestfs_close (g);
-  exit (EXIT_SUCCESS);
-}
+#endif /* NBDKIT_XZFILE_H */

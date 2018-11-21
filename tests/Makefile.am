@@ -472,25 +472,6 @@ libvixDiskLib_la_CXXFLAGS = \
 libvixDiskLib_la_LDFLAGS = \
 	-shared -version-number 6:0:0 -rpath /nowhere
 
-# xz plugin test.
-if HAVE_LIBLZMA
-if HAVE_GUESTFISH
-
-LIBGUESTFS_TESTS += test-xz
-check_DATA += disk.xz
-MAINTAINERCLEANFILES += disk.xz
-
-test_xz_SOURCES = test-xz.c test.h
-test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-disk.xz: disk
-	rm -f $@
-	xz --best --block-size=16777216 -c disk > $@
-
-endif HAVE_GUESTFISH
-endif HAVE_LIBLZMA
-
 # zero plugin test.
 TESTS += test-zero.sh
 
@@ -745,5 +726,24 @@ TESTS += \
 	test-truncate1.sh \
 	test-truncate2.sh \
 	test-truncate3.sh
+
+# xz filter test.
+if HAVE_LIBLZMA
+if HAVE_GUESTFISH
+
+LIBGUESTFS_TESTS += test-xz
+check_DATA += disk.xz
+MAINTAINERCLEANFILES += disk.xz
+
+test_xz_SOURCES = test-xz.c test.h
+test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+disk.xz: disk
+	rm -f $@
+	xz --best --block-size=16777216 -c disk > $@
+
+endif HAVE_GUESTFISH
+endif HAVE_LIBLZMA
 
 endif HAVE_PLUGINS

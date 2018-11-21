@@ -31,61 +31,41 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
+/* liblzma is a complex interface, so abstract it here. */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <string.h>
-#include <unistd.h>
+#ifndef NBDKIT_XZFILE_H
+#define NBDKIT_XZFILE_H
 
-#include <guestfs.h>
+#include <nbdkit-filter.h>
 
-#include "test.h"
+typedef struct xzfile xzfile;
 
-int
-main (int argc, char *argv[])
-{
-  guestfs_h *g;
-  int r;
-  char *data;
+/* Open (and verify) the named xz file. */
+extern xzfile *xzfile_open (struct nbdkit_next_ops *next_ops, void *nxdata);
 
-  if (test_start_nbdkit ("--filter=xz", "file", "disk.xz", NULL) == -1)
-    exit (EXIT_FAILURE);
+/* Close the file and free up all resources. */
+extern void xzfile_close (xzfile *);
 
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
-    exit (EXIT_FAILURE);
-  }
+/* Get (uncompressed) size of the largest block in the file. */
+extern uint64_t xzfile_max_uncompressed_block_size (xzfile *);
 
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_READONLY, 1,
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
-    exit (EXIT_FAILURE);
+/* Get the total uncompressed size of the file. */
+extern uint64_t xzfile_get_size (xzfile *);
 
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
+/* Read the xz file block that contains the byte at 'offset' in the
+ * uncompressed file.
+ *
+ * The uncompressed block of data, which probably begins before the
+ * requested byte and ends after it, is returned.  The caller must
+ * free it.  NULL is returned if there was an error.
+ *
+ * The start offset & size of the block relative to the uncompressed
+ * file are returned in *start and *size.
+ */
+extern char *xzfile_read_block (xzfile *xz,
+                                struct nbdkit_next_ops *next_ops,
+                                void *nxdata, uint32_t flags, int *err,
+                                uint64_t offset,
+                                uint64_t *start, uint64_t *size);
 
-  /* disk.xz contains one partition and a test file called "hello.txt" */
-  if (guestfs_mount_ro (g, "/dev/sda1", "/") == -1)
-    exit (EXIT_FAILURE);
-
-  data = guestfs_cat (g, "/hello.txt");
-  if (!data)
-    exit (EXIT_FAILURE);
-
-  if (strcmp (data, "hello,world") != 0) {
-    fprintf (stderr, "%s FAILED: unexpected content of /hello.txt file (actual: %s, expected: \"hello,world\")\n",
-             program_name, data);
-    exit (EXIT_FAILURE);
-  }
-
-  guestfs_close (g);
-  exit (EXIT_SUCCESS);
-}
+#endif /* NBDKIT_XZFILE_H */

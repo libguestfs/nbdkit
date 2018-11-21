@@ -90,8 +90,6 @@ Suggestions for filters
 
 * tar plugin should really be a filter
 
-* xz plugin should really be a filter
-
 * gzip plugin should really be a filter
 
 * masking plugin features for testing clients (see 'nozero' and 'fua'

@@ -599,10 +599,10 @@ AS_IF([test "$with_zlib" != "no"],[
 ])
 AM_CONDITIONAL([HAVE_ZLIB],[test "x$ZLIB_LIBS" != "x"])
 
-dnl Check for liblzma (only if you want to compile the xz plugin).
+dnl Check for liblzma (only if you want to compile the xz filter).
 AC_ARG_WITH([liblzma],
     [AS_HELP_STRING([--without-liblzma],
-                    [disable xz plugin @<:@default=check@:>@])],
+                    [disable xz filter @<:@default=check@:>@])],
     [],
     [with_liblzma=check])
 AS_IF([test "$with_liblzma" != "no"],[
@@ -611,7 +611,7 @@ AS_IF([test "$with_liblzma" != "no"],[
         AC_SUBST([LIBLZMA_LIBS])
         AC_DEFINE([HAVE_LIBLZMA],[1],[liblzma found at compile time.])
     ],
-    [AC_MSG_WARN([liblzma not found, xz plugin will be disabled])])
+    [AC_MSG_WARN([liblzma not found, xz filter will be disabled])])
 ])
 AM_CONDITIONAL([HAVE_LIBLZMA],[test "x$LIBLZMA_LIBS" != "x"])
 
@@ -728,6 +728,7 @@ filters="\
         offset \
         partition \
         truncate \
+        xz \
         "
 AC_SUBST([plugins])
 AC_SUBST([lang_plugins])
@@ -790,6 +791,7 @@ AC_CONFIG_FILES([Makefile
                  filters/offset/Makefile
                  filters/partition/Makefile
                  filters/truncate/Makefile
+                 filters/xz/Makefile
                  src/Makefile
                  src/nbdkit.pc
                  tests/functions.sh
