@@ -60,6 +60,7 @@ static const char *user = NULL;
 static char *password = NULL;
 static int sslverify = 1;
 static int timeout = 0;
+static const char *unix_socket_path = NULL;
 
 /* Use '-D curl.verbose=1' to set. */
 int curl_debug_verbose = 0;
@@ -107,6 +108,9 @@ curl_config (const char *key, const char *value)
     }
   }
 
+  else if (strcmp (key, "unix_socket_path") == 0)
+    unix_socket_path = value;
+
   else {
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
@@ -131,6 +135,7 @@ curl_config_complete (void)
   "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
   "sslverify=0                Do not verify SSL certificate of remote host.\n" \
+  "unix_socket_path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
   "url=<URL>       (required) The disk image URL to serve.\n" \
   "user=<USER>                The user to log in as."
 
@@ -186,6 +191,19 @@ curl_open (int readonly)
   curl_easy_setopt (h->c, CURLOPT_VERBOSE, curl_debug_verbose);
 
   curl_easy_setopt (h->c, CURLOPT_ERRORBUFFER, h->errbuf);
+
+  r = CURLE_OK;
+  if (unix_socket_path) {
+#if HAVE_CURLOPT_UNIX_SOCKET_PATH
+    r = curl_easy_setopt (h->c, CURLOPT_UNIX_SOCKET_PATH, unix_socket_path);
+#else
+    r = CURLE_UNKNOWN_OPTION;
+#endif
+  }
+  if (r != CURLE_OK) {
+    display_curl_error (h, r, "curl_easy_setopt: CURLOPT_UNIX_SOCKET_PATH");
+    goto err;
+  }
 
   r = curl_easy_setopt (h->c, CURLOPT_URL, url);
   if (r != CURLE_OK) {

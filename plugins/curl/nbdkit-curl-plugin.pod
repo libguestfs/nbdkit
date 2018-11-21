@@ -90,6 +90,12 @@ Set the timeout for requests.
 
 Use the default libcurl timeout for requests.
 
+=item B<unix_socket_path=>PATH
+
+Instead of using a TCP connection, connect to the server over the
+named Unix domain socket.  See
+L<curl_easy_setopt(3)/CURLOPT_UNIX_SOCKET_PATH>.
+
 =item B<url=>URL
 
 The URL of the remote disk image.  This is passed to libcurl directly

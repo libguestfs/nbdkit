@@ -536,6 +536,10 @@ AS_IF([test "$with_curl" != "no"],[
         AC_SUBST([CURL_CFLAGS])
         AC_SUBST([CURL_LIBS])
         AC_DEFINE([HAVE_CURL],[1],[curl found at compile time.])
+        AC_CHECK_DECL([CURLOPT_UNIX_SOCKET_PATH], [
+            AC_DEFINE([HAVE_CURLOPT_UNIX_SOCKET_PATH],[1],
+                      [CURLOPT_UNIX_SOCKET_PATH found at compile time.])
+            ], [], [#include <curl/curl.h>])
     ],
     [AC_MSG_WARN([curl not found, curl plugin will be disabled])])
 ])
