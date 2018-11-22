@@ -8,15 +8,25 @@ nbdkit-delay-filter - nbdkit delay filter
 
  nbdkit --filter=delay plugin rdelay=NNms wdelay=NNms [plugin-args...]
 
+ nbdkit --filter=delay plugin [plugin-args ...]
+          delay-read=(SECS|NNms) delay-write=(SECS|NNms)
+          delay-zero=(SECS|NNms) delay-trim=(SECS|NNms)
+
 =head1 DESCRIPTION
 
 C<nbdkit-delay-filter> is a filter that delays read and write requests
 by some seconds or milliseconds.  This is used to simulate a slow or
 remote server, or to test certain kinds of race conditions in Linux.
 
-=head1 EXAMPLE
+=head1 EXAMPLES
+
+Delays reads and writes by 100ms:
 
  nbdkit --filter=delay file disk.img rdelay=100ms wdelay=100ms
+
+Delay only zero operations by 1 second, nothing else is affected:
+
+ nbdkit --filter=delay file disk.img delay-zero=1
 
 =head1 PARAMETERS
 
@@ -26,13 +36,38 @@ remote server, or to test certain kinds of race conditions in Linux.
 
 =item B<rdelay=>NNB<ms>
 
-The optional read delay in seconds or milliseconds.
+=item B<delay-read=>SECS
+
+=item B<delay-read=>NNB<ms>
+
+Delay read operations by C<SECS> seconds or C<NN> milliseconds.
+
+The two forms C<rdelay> and C<delay-read> work identically.
+
+=item B<delay-write=>SECS
+
+=item B<delay-write=>NNB<ms>
+
+Delay write operations by C<SECS> seconds or C<NN> milliseconds.
+
+=item B<delay-zero=>SECS
+
+=item B<delay-zero=>NNB<ms>
+
+Delay zero operations by C<SECS> seconds or C<NN> milliseconds.
+
+=item B<delay-trim=>SECS
+
+=item B<delay-trim=>NNB<ms>
+
+Delay trim/discard operations by C<SECS> seconds or C<NN> milliseconds.
 
 =item B<wdelay=>SECS
 
 =item B<wdelay=>NNB<ms>
 
-The optional write delay in seconds or milliseconds.
+Delay write, zero and trim operations by C<SECS> seconds or C<NN>
+milliseconds.
 
 =back
 

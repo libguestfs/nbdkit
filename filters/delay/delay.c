@@ -43,11 +43,13 @@
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
-static int rdelayms = 0;        /* read delay (milliseconds) */
-static int wdelayms = 0;        /* write delay (milliseconds) */
+static int delay_read_ms = 0;   /* read delay (milliseconds) */
+static int delay_write_ms = 0;  /* write delay (milliseconds) */
+static int delay_zero_ms = 0;   /* zero delay (milliseconds) */
+static int delay_trim_ms = 0;   /* trim delay (milliseconds) */
 
 static int
-parse_delay (const char *value)
+parse_delay (const char *key, const char *value)
 {
   size_t len = strlen (value);
   int r;
@@ -56,8 +58,8 @@ parse_delay (const char *value)
     if (sscanf (value, "%d", &r) == 1)
       return r;
     else {
-      nbdkit_error ("cannot parse rdelay/wdelay milliseconds parameter: %s",
-                    value);
+      nbdkit_error ("cannot parse %s in milliseconds parameter: %s",
+                    key, value);
       return -1;
     }
   }
@@ -65,8 +67,8 @@ parse_delay (const char *value)
     if (sscanf (value, "%d", &r) == 1)
       return r * 1000;
     else {
-      nbdkit_error ("cannot parse rdelay/wdelay seconds parameter: %s",
-                    value);
+      nbdkit_error ("cannot parse %s in seconds parameter: %s",
+                    key, value);
       return -1;
     }
   }
@@ -87,13 +89,25 @@ delay (int ms)
 static void
 read_delay (void)
 {
-  delay (rdelayms);
+  delay (delay_read_ms);
 }
 
 static void
 write_delay (void)
 {
-  delay (wdelayms);
+  delay (delay_write_ms);
+}
+
+static void
+zero_delay (void)
+{
+  delay (delay_zero_ms);
+}
+
+static void
+trim_delay (void)
+{
+  delay (delay_trim_ms);
 }
 
 /* Called for each key=value passed on the command line. */
@@ -101,15 +115,42 @@ static int
 delay_config (nbdkit_next_config *next, void *nxdata,
               const char *key, const char *value)
 {
-  if (strcmp (key, "rdelay") == 0) {
-    rdelayms = parse_delay (value);
-    if (rdelayms == -1)
+  if (strcmp (key, "rdelay") == 0 ||
+      strcmp (key, "delay-read") == 0 ||
+      strcmp (key, "delay-reads") == 0) {
+    delay_read_ms = parse_delay (key, value);
+    if (delay_read_ms == -1)
       return -1;
     return 0;
   }
   else if (strcmp (key, "wdelay") == 0) {
-    wdelayms = parse_delay (value);
-    if (wdelayms == -1)
+    delay_write_ms = parse_delay (key, value);
+    if (delay_write_ms == -1)
+      return -1;
+    /* Historically wdelay set all write-related delays. */
+    delay_zero_ms = delay_trim_ms = delay_write_ms;
+    return 0;
+  }
+  else if (strcmp (key, "delay-write") == 0 ||
+           strcmp (key, "delay-writes") == 0) {
+    delay_write_ms = parse_delay (key, value);
+    if (delay_write_ms == -1)
+      return -1;
+    return 0;
+  }
+  else if (strcmp (key, "delay-zero") == 0 ||
+           strcmp (key, "delay-zeroes") == 0) {
+    delay_zero_ms = parse_delay (key, value);
+    if (delay_zero_ms == -1)
+      return -1;
+    return 0;
+  }
+  else if (strcmp (key, "delay-trim") == 0 ||
+           strcmp (key, "delay-trims") == 0 ||
+           strcmp (key, "delay-discard") == 0 ||
+           strcmp (key, "delay-discards") == 0) {
+    delay_trim_ms = parse_delay (key, value);
+    if (delay_trim_ms == -1)
       return -1;
     return 0;
   }
@@ -119,7 +160,11 @@ delay_config (nbdkit_next_config *next, void *nxdata,
 
 #define delay_config_help \
   "rdelay=<NN>[ms]                Read delay in seconds/milliseconds.\n" \
-  "wdelay=<NN>[ms]                Write delay in seconds/milliseconds." \
+  "delay-read=<NN>[ms]            Read delay in seconds/milliseconds.\n" \
+  "delay-write=<NN>[ms]           Write delay in seconds/milliseconds.\n" \
+  "delay-zero=<NN>[ms]            Zero delay in seconds/milliseconds.\n" \
+  "delay-trim=<NN>[ms]            Trim delay in seconds/milliseconds.\n" \
+  "wdelay=<NN>[ms]                Write, zero and trim delay in secs/msecs."
 
 /* Read data. */
 static int
@@ -148,7 +193,7 @@ delay_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
-  write_delay ();
+  zero_delay ();
   return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
@@ -158,7 +203,7 @@ delay_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
-  write_delay ();
+  trim_delay ();
   return next_ops->trim (nxdata, count, offset, flags, err);
 }
 
