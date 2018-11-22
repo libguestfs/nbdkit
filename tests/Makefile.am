@@ -294,6 +294,32 @@ disk:
 
 endif HAVE_GUESTFISH
 
+# curl plugin test.
+
+if HAVE_CURL
+if HAVE_GUESTFISH
+
+# curl plugin test.
+LIBGUESTFS_TESTS += test-curl
+
+test_curl_SOURCES = \
+	test-curl.c \
+	web-server.c \
+	web-server.h \
+	test.h
+test_curl_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(PTHREAD_CFLAGS)
+test_curl_LDFLAGS = \
+	$(PTHREAD_LIBS)
+test_curl_LDADD = \
+	libtest.la \
+	$(LIBGUESTFS_LIBS)
+
+endif HAVE_GUESTFISH
+endif HAVE_CURL
+
 # data plugin test.
 LIBGUESTFS_TESTS += test-data
 TESTS += \
