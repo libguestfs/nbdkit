@@ -152,6 +152,16 @@ delay_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
+/* Trim data. */
+static int
+delay_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+            void *handle, uint32_t count, uint64_t offset,
+            uint32_t flags, int *err)
+{
+  write_delay ();
+  return next_ops->trim (nxdata, count, offset, flags, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "delay",
   .longname          = "nbdkit delay filter",
@@ -161,6 +171,7 @@ static struct nbdkit_filter filter = {
   .pread             = delay_pread,
   .pwrite            = delay_pwrite,
   .zero              = delay_zero,
+  .trim              = delay_trim,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
