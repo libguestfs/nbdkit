@@ -67,7 +67,7 @@ line using L<nbdkit-data-plugin(1)>:
 
 Forward an NBD connection over HTTP using L<nbdkit-curl-plugin(1)>:
 
- nbdkit -r curl url=http://example.com/disk.img
+ nbdkit -r curl http://example.com/disk.img
 
 =head2 Combining plugins and filters
 

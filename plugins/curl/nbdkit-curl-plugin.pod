@@ -4,9 +4,9 @@ nbdkit-curl-plugin - nbdkit curl plugin (HTTP, FTP, SSH and other protocols)
 
 =head1 SYNOPSIS
 
- nbdkit -r curl url=http://example.com/disk.img
+ nbdkit -r curl [url=]http://example.com/disk.img
 
- nbdkit -r curl url=sftp://you@example.com/~/disk.img
+ nbdkit -r curl [url=]sftp://you@example.com/~/disk.img
 
 =head1 DESCRIPTION
 
@@ -40,7 +40,7 @@ B<To force nbdkit to use a readonly connection, pass the I<-r> flag>.
 
 =head3 Basic usage
 
- nbdkit -r curl url=http://example.com/disk.img
+ nbdkit -r curl http://example.com/disk.img
 
 which serves the remote disk image as a NBD on TCP port 10809 (to
 control ports and protocols used to serve NBD see L<nbdkit(1)>).
@@ -50,12 +50,12 @@ control ports and protocols used to serve NBD see L<nbdkit(1)>).
 You can also access SSH servers.  This uses the SFTP protocol which is
 built into most SSH servers:
 
- nbdkit -r curl url=sftp://example.com/~/disk.img
+ nbdkit -r curl sftp://example.com/~/disk.img
 
 You may need to specify a username and/or a password.  In this example
 the password is read from stdin:
 
- nbdkit -r curl url=sftp://example.com/~/disk.img username=fred password=-
+ nbdkit -r curl sftp://example.com/~/disk.img username=fred password=-
 
 =head1 PARAMETERS
 
@@ -96,6 +96,8 @@ The URL of the remote disk image.  This is passed to libcurl directly
 via L<curl_easy_setopt(3)/CURLOPT_URL>.
 
 This parameter is required.
+
+In nbdkit E<ge> 1.10, C<url=> may be omitted.
 
 =item B<user=>USERNAME
 

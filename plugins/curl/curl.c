@@ -443,6 +443,7 @@ static struct nbdkit_plugin plugin = {
   .config            = curl_config,
   .config_complete   = curl_config_complete,
   .config_help       = curl_config_help,
+  .magic_config_key  = "url",
   .open              = curl_open,
   .close             = curl_close,
   .get_size          = curl_get_size,
