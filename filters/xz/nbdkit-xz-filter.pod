@@ -6,7 +6,7 @@ nbdkit-xz-filter - nbdkit xz filter
 
  nbdkit --filter=xz file FILENAME.xz
 
- nbdkit --filter=xz curl url=https://example.com/FILENAME.xz
+ nbdkit --filter=xz curl https://example.com/FILENAME.xz
 
 =head1 DESCRIPTION
 
