@@ -523,7 +523,8 @@ vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   count /= VIXDISKLIB_SECTOR_SIZE;
 
   DEBUG_CALL ("VixDiskLib_Read",
-              "handle, %" PRIu64 ", %" PRIu32 ", buffer", offset, count);
+              "handle, %" PRIu64 " sectors, %" PRIu32 " sectors, buffer",
+              offset, count);
   err = VixDiskLib_Read (h->handle, offset, count, buf);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Read");
@@ -556,7 +557,8 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   count /= VIXDISKLIB_SECTOR_SIZE;
 
   DEBUG_CALL ("VixDiskLib_Write",
-              "handle, %" PRIu64 ", %" PRIu32 ", buffer", offset, count);
+              "handle, %" PRIu64 " sectors, %" PRIu32 " sectors, buffer",
+              offset, count);
   err = VixDiskLib_Write (h->handle, offset, count, buf);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Write");
