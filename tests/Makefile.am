@@ -228,7 +228,7 @@ check_DATA += file-data
 MAINTAINERCLEANFILES += file-data
 file-data:
 	rm -f $@ $@-t
-	for f in `seq 1 512`; do echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'; done > $@-t
+	for f in `$(SEQ) 1 512`; do echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'; done > $@-t
 	mv $@-t $@
 
 # While most tests need libguestfs, testing parallel I/O is easier when
@@ -724,7 +724,7 @@ LIBGUESTFS_TESTS += test-offset
 
 offset-data:
 	rm -f $@ $@-t
-	for f in `seq 1 $$((1024*1024))`; do echo -ne '\x55\xAA\x55\xAA\x55\xAA\x55\xAA\x55\xAA' ; done > $@-t
+	for f in `$(SEQ) 1 $$((1024*1024))`; do echo -ne '\x55\xAA\x55\xAA\x55\xAA\x55\xAA\x55\xAA' ; done > $@-t
 	mv $@-t $@
 
 test_offset_SOURCES = test-offset.c test.h

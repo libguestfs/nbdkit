@@ -59,7 +59,7 @@ if ! ip -V; then
 fi
 
 # Find an unused port to listen on.
-for port in `seq 49152 65535`; do
+for port in {49152..65535}; do
     if ! ss -ltn | grep -sqE ":$port\b"; then break; fi
 done
 echo picked unused port $port

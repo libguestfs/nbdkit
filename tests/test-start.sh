@@ -53,7 +53,7 @@ test -S start.sock
 kill $pid
 
 # Check the process exits (eventually).
-for i in `seq 1 10`; do
+for i in {1..10}; do
     if ! kill -s 0 $pid; then
         break;
     fi

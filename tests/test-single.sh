@@ -62,7 +62,7 @@ cleanup ()
 cleanup_fn cleanup
 
 # Wait for socat to start up and create the socket.
-for i in `seq 1 10`; do
+for i in {1..10}; do
     if test -S single.sock; then
         break
     fi
