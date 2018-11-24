@@ -46,6 +46,13 @@ AC_CANONICAL_HOST
 
 AC_PROG_SED
 
+dnl OpenBSD doesn't have seq.  However if you install coreutils
+dnl you can get gseq.
+AC_CHECK_PROGS([SEQ], [seq gseq], [no])
+AS_IF([test "x$SEQ" = "xno" ], [
+    AC_MSG_ERROR([No ‘seq’ or ‘gseq’ program.  Install coreutils.])
+])
+
 dnl Check for basic C environment.
 AC_PROG_CC_STDC
 AC_PROG_INSTALL

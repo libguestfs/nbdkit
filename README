@@ -38,7 +38,7 @@ Requirements
 ------------
 
 To build the basic server and some plugins nbdkit needs nothing except
-Linux or FreeBSD, and:
+Linux, FreeBSD or OpenBSD, and:
 
  - GCC or Clang
 
@@ -60,6 +60,10 @@ To build the man pages, you will optionally need to install:
  - Perl
 
  - Pod::Man and Pod::Simple (Perl library)
+
+To run the tests:
+
+ - GNU coreutils (for ‘seq’ and some other programs)
 
 For the gzip plugin:
 
