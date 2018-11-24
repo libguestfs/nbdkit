@@ -590,12 +590,12 @@ AC_ARG_WITH([zlib],
     [],
     [with_zlib=check])
 AS_IF([test "$with_zlib" != "no"],[
-    PKG_CHECK_MODULES([ZLIB], [zlib],[
+    PKG_CHECK_MODULES([ZLIB], [zlib >= 1.2.3.5],[
         AC_SUBST([ZLIB_CFLAGS])
         AC_SUBST([ZLIB_LIBS])
         AC_DEFINE([HAVE_ZLIB],[1],[zlib found at compile time.])
     ],
-    [AC_MSG_WARN([zlib not found, gzip plugin will be disabled])])
+    [AC_MSG_WARN([zlib >= 1.2.3.5 not found, gzip plugin will be disabled])])
 ])
 AM_CONDITIONAL([HAVE_ZLIB],[test "x$ZLIB_LIBS" != "x"])
 
