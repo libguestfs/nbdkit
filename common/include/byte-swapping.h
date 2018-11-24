@@ -31,16 +31,26 @@
  * SUCH DAMAGE.
  */
 
+/* The job of this header is to define macros (or functions) called
+ * things like 'htobe32' and 'le64toh' which byte swap N-bit integers
+ * between host representation, and little and big endian.  The core
+ * code and plugins in nbdkit uses these names and relies on this
+ * header to provide the platform-specific implementation.  On Linux
+ * these are defined in <endian.h> but other platforms have other
+ * requirements.
+ */
+
 #ifndef NBDKIT_BYTE_SWAPPING_H
 #define NBDKIT_BYTE_SWAPPING_H
+
+#ifdef __HAIKU__
+#define _BSD_SOURCE
+#endif
 
 #ifdef HAVE_BYTESWAP_H
 #include <byteswap.h>
 #endif
 
-#ifdef __HAIKU__
-#define _BSD_SOURCE
-#endif
 #ifdef HAVE_ENDIAN_H
 #include <endian.h>
 #endif
