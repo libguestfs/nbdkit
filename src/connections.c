@@ -705,7 +705,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
     case NBD_OPT_ABORT:
       if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
         return -1;
-      nbdkit_error ("client sent NBD_OPT_ABORT to abort the connection");
+      debug ("client sent NBD_OPT_ABORT to abort the connection");
       return -1;
 
     case NBD_OPT_LIST:
