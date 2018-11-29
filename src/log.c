@@ -88,8 +88,11 @@ nbdkit_vfprintf(FILE *f, const char *fmt, va_list args)
   char *p = strstr (fmt, "%m"); /* assume strstr doesn't touch errno */
   int ret;
 
-  if (p && asprintf(&repl, "%.*s%s%s", (int) (p - fmt), fmt, strerror (errno),
-                    p + 2) > 0)
+  /* We only handle the first %m; if a user passes more than one, they
+   * deserve broken output.
+   */
+  if (p && asprintf (&repl, "%.*s%s%s", (int) (p - fmt), fmt, strerror (errno),
+                     p + 2) > 0)
     fmt = repl;
   ret = vfprintf (f, fmt, args);
   free (repl);
