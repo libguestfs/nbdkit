@@ -1204,8 +1204,8 @@ get_socket_activation (void)
        * and we should exit.
        */
       fprintf (stderr, "%s: socket activation: "
-               "invalid file descriptor fd = %d: %m\n",
-               program_name, fd);
+               "invalid file descriptor fd = %d: %s\n",
+               program_name, fd, strerror(errno));
       exit (EXIT_FAILURE);
     }
   }
