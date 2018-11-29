@@ -1,0 +1,129 @@
+=head1 NAME
+
+nbdkit-loop - use nbdkit with the Linux kernel client to create loop
+devices and loop mounts
+
+=head1 DESCRIPTION
+
+nbdkit (server) can be used with the Linux kernel nbd (client) in a
+loop mode allowing any of the plugins supported by nbdkit to be turned
+into Linux block devices.
+
+In addition to L<nbdkit(1)> itself, the main commands you will use
+are:
+
+ nbd-client -b 512 localhost /dev/nbd0
+
+which attaches a locally running nbdkit instance to the kernel device
+F</dev/nbd0>.  I<-b 512> can be omitted when using
+S<L<nbd-client(8)> E<ge> 3.19>.
+
+ nbd-client -d /dev/nbd0
+
+which detaches F</dev/nbd0>, and:
+
+ nbd-client -c /dev/nbd0
+
+which queries whether F</dev/nbd0> is attached or not.
+
+The L<nbd-client(8)> command must be run as root.
+
+=head2 Loop mount a filesystem from a compressed file
+
+If you have a filesystem or disk image in xz-compressed format then
+you can use L<nbdkit-xz-filter(1)> and L<nbdkit-file-plugin(1)> to
+loop mount it as follows:
+
+ nbdkit --filter=xz file disk.xz
+ nbd-client -b 512 localhost /dev/nbd0
+ mount /dev/nbd0p1 /mnt
+
+=head2 Loop mount a filesystem from a web server
+
+You can use L<nbdkit-curl-plugin(1)> to loop mount a filesystem from a
+disk image on a web server:
+
+ nbdkit [--filter=xz] curl https://example.com/disk.img
+ nbd-client -b 512 localhost /dev/nbd0
+ mount /dev/nbd0p1 /mnt
+
+Use I<--filter=xz> if the remote image is XZ-compressed.
+
+=head2 Create a giant btrfs filesystem
+
+nbdkit is useful for testing the limits of Linux filesystems.  Using
+L<nbdkit-memory-plugin(1)> you can create virtual disks stored in RAM
+with a virtual size up to S<2⁶³-1 bytes>, and then create filesystems
+on these:
+
+ nbdkit memory $(( 2**63 - 1 ))
+ nbd-client -b 512 localhost /dev/nbd0
+
+Partition the device using GPT, creating a single partition with all
+default settings:
+
+ gdisk /dev/nbd0
+
+Make a btrfs filesystem on the disk and mount it:
+
+ mkfs.btrfs -K /dev/nbd0p1
+ mount /dev/nbd0p1 /mnt
+
+=head2 Inject errors into Linux devices
+
+Using L<nbdkit-error-filter(1)> you can see how Linux devices react to
+errors:
+
+ nbdkit --filter=error error-rate=100% error-file=/tmp/inject \
+        memory size=64M
+ nbd-client -b 512 localhost /dev/nbd0
+ mkfs -t ext4 /dev/nbd0
+ mount /dev/nbd0 /mnt
+
+Inject errors by touching F</tmp/inject>, and stop injecting errors by
+removing this file.
+
+=head2 Write Linux block devices in shell script
+
+Using L<nbdkit-sh-plugin(3)> you can write custom Linux block devices
+in shell script for testing.  For example the following shell script
+creates a disk which contains a bad sector:
+
+ #!/bin/bash -
+ case "$1" in
+     get_size) echo 64M ;;
+     pread)
+         if [ $4 -le 100000 ] && [ $(( $4+$3 )) -gt 100000 ]; then
+             echo EIO Bad block >&2
+             exit 1
+         else
+             dd if=/dev/zero count=$3 iflag=count_bytes
+         fi ;;
+     *) exit 2 ;;
+ esac
+
+Create a loop from this shell script using:
+
+ nbdkit sh ./bad-sector.sh
+ nbd-client -b 512 localhost /dev/nbd0
+
+You can then try running tests such as:
+
+ badblocks /dev/nbd0
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<loop(4)>,
+L<losetup(8)>,
+L<mount(8)>,
+L<nbd-client(8)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2018 Red Hat Inc.

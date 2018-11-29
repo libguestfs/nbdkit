@@ -36,6 +36,7 @@ EXTRA_DIST = \
 	make-links.sh \
 	nbdkit.pod \
 	nbdkit-captive.pod \
+	nbdkit-loop.pod \
 	nbdkit-probing.pod \
 	nbdkit-protocol.pod \
 	nbdkit-service.pod \
@@ -49,6 +50,7 @@ if HAVE_POD
 man_MANS = \
 	nbdkit.1 \
 	nbdkit-captive.1 \
+	nbdkit-loop.1 \
 	nbdkit-probing.1 \
 	nbdkit-protocol.1 \
 	nbdkit-service.1 \
@@ -66,6 +68,11 @@ nbdkit.1: nbdkit.pod plugin-links.pod filter-links.pod synopsis.txt
 	    $<
 
 nbdkit-captive.1: nbdkit-captive.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-loop.1: nbdkit-loop.pod
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
