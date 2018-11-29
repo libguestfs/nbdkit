@@ -49,18 +49,17 @@ static const int PRIORITY = LOG_DAEMON|LOG_ERR;
 void
 log_syslog_verror (const char *fs, va_list args)
 {
-  int err;
+  int err = errno;
   const char *name = threadlocal_get_name ();
   size_t instance_num = threadlocal_get_instance_num ();
   CLEANUP_FREE char *msg = NULL;
   size_t len = 0;
   FILE *fp = NULL;
 
-  err = errno;
-
   fp = open_memstream (&msg, &len);
   if (fp == NULL) {
     /* Fallback to logging using fs, args directly. */
+    errno = err; /* Must restore in case fs contains %m */
     vsyslog (PRIORITY, fs, args);
     goto out;
   }
@@ -72,6 +71,7 @@ log_syslog_verror (const char *fs, va_list args)
     fprintf (fp, ": ");
   }
 
+  errno = err; /* Must restore in case fs contains %m */
   vfprintf (fp, fs, args);
   fclose (fp);
 
