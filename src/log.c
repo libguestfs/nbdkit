@@ -75,3 +75,24 @@ nbdkit_error (const char *fs, ...)
   nbdkit_verror (fs, args);
   va_end (args);
 }
+
+#if !HAVE_VFPRINTF_PERCENT_M
+/* Work around lack of %m in BSD */
+#undef vfprintf
+
+/* Call the real vfprintf after first changing %m into strerror(errno). */
+int
+nbdkit_vfprintf(FILE *f, const char *fmt, va_list args)
+{
+  char *repl = NULL;
+  char *p = strstr (fmt, "%m"); /* assume strstr doesn't touch errno */
+  int ret;
+
+  if (p && asprintf(&repl, "%.*s%s%s", (int) (p - fmt), fmt, strerror (errno),
+                    p + 2) > 0)
+    fmt = repl;
+  ret = vfprintf (f, fmt, args);
+  free (repl);
+  return ret;
+}
+#endif

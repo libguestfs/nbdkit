@@ -57,6 +57,7 @@ dnl Check for basic C environment.
 AC_PROG_CC_STDC
 AC_PROG_INSTALL
 AC_PROG_CPP
+AC_CANONICAL_HOST
 
 AC_C_PROTOTYPES
 test "x$U" != "x" && AC_MSG_ERROR([Compiler not ANSI compliant])
@@ -172,6 +173,32 @@ AC_CHECK_FUNCS([\
 	fdatasync \
 	get_current_dir_name \
 	mkostemp])
+
+dnl Check whether printf("%m") works
+AC_CACHE_CHECK([whether the printf family supports %m],
+  [nbdkit_cv_func_printf_percent_m],
+  [AC_RUN_IFELSE(
+    [AC_LANG_PROGRAM([[
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+    ]], [[
+    char buf[200] = "";
+    errno = EINVAL;
+    snprintf(buf, sizeof buf, "%m");
+    return !!strcmp (buf, strerror (EINVAL));
+    ]])],
+    [nbdkit_cv_func_printf_percent_m=yes],
+    [nbdkit_cv_func_printf_percent_m=no],
+    [[
+    case "$host_os" in
+      *-gnu* | gnu*) nbdkit_cv_func_printf_percent_m=yes;;
+      *) nbdkit_cv_func_printf_percent_m="guessing no";;
+    esac
+    ]])])
+AS_IF([test "x$nbdkit_cv_func_printf_percent_m" = xyes],
+  [AC_DEFINE([HAVE_VFPRINTF_PERCENT_M],[1],
+    [Define to 1 if vfprintf supports %m.])])
 
 old_LIBS="$LIBS"
 AC_SEARCH_LIBS([dlopen], [dl dld], [

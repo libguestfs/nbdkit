@@ -254,7 +254,10 @@ L<printf(3)>:
  void nbdkit_error (const char *fs, ...);
  void nbdkit_verror (const char *fs, va_list args);
 
-For convenience, C<nbdkit_error> preserves the value of C<errno>.
+For convenience, C<nbdkit_error> preserves the value of C<errno>, and
+also supports the glibc extension of a single C<%m> in a format string
+expanding to C<strerror(errno)>, even on platforms that don't support
+that natively.
 
 C<nbdkit_set_error> can be called at any time, but only has an impact
 during callbacks for serving data, and only when the callback returns
@@ -831,9 +834,11 @@ L<printf(3)>:
  void nbdkit_debug (const char *fs, ...);
  void nbdkit_vdebug (const char *fs, va_list args);
 
-For convenience, C<nbdkit_debug> preserves the value of C<errno>.
-Note that C<nbdkit_debug> only prints things when the server is in
-verbose mode (I<-v> option).
+For convenience, C<nbdkit_debug> preserves the value of C<errno>, and
+also supports the glibc extension of a single C<%m> in a format string
+expanding to C<strerror(errno)>, even on platforms that don't support
+that natively. Note that C<nbdkit_debug> only prints things when the
+server is in verbose mode (I<-v> option).
 
 =head2 Debug Flags
 
