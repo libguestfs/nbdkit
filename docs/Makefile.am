@@ -62,7 +62,7 @@ nbdkit.1: nbdkit.pod plugin-links.pod filter-links.pod synopsis.txt
 	    --html $(top_builddir)/html/$@.html \
 	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
 	    --insert filter-links.pod:__FILTER_LINKS__ \
-	    --verbatim synopsis.txt:__SYNOPSIS__ \
+	    --verbatim $(srcdir)/synopsis.txt:__SYNOPSIS__ \
 	    $<
 
 nbdkit-captive.1: nbdkit-captive.pod
