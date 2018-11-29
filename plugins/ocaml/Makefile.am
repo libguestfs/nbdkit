@@ -43,10 +43,10 @@ ocamllibdir = $(OCAMLLIB)
 ocamllib_DATA = NBDKit.mli NBDKit.cmi NBDKit.cmx NBDKit.o
 
 NBDKit.cmi: NBDKit.mli
-	$(OCAMLC) -c $<
+	$(OCAMLC) -c $< -o $@
 
 NBDKit.cmx: NBDKit.ml NBDKit.cmi
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $<
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $< -o $@
 NBDKit.o: NBDKit.cmx
 
 # NB: libnbdkitocaml is not plugin.  It's a library that you have to
