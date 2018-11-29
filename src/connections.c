@@ -636,6 +636,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
   uint32_t optlen;
   char data[MAX_OPTION_LENGTH+1];
   struct new_handshake_finish handshake_finish;
+  const char *optname;
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
     if (conn->recv (conn, &new_option, sizeof new_option) == -1) {
@@ -774,14 +775,16 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       }
       break;
 
+    case NBD_OPT_INFO:
     case NBD_OPT_GO:
+      optname = option == NBD_OPT_INFO ? "NBD_OPT_INFO" : "NBD_OPT_GO";
       if (conn->recv (conn, data, optlen) == -1) {
         nbdkit_error ("read: %m");
         return -1;
       }
 
       if (optlen < 6) { /* 32 bit export length + 16 bit nr info */
-        debug ("newstyle negotiation: NBD_OPT_GO option length < 6");
+        debug ("newstyle negotiation: %s option length < 6", optname);
 
         if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
             == -1)
@@ -800,7 +803,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         memcpy (&exportnamelen, &data[0], 4);
         exportnamelen = be32toh (exportnamelen);
         if (exportnamelen > optlen-6 /* NB optlen >= 6, see above */) {
-          debug ("newstyle negotiation: NBD_OPT_GO: export name too long");
+          debug ("newstyle negotiation: %s: export name too long", optname);
           if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
@@ -809,8 +812,8 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         memcpy (&nrinfos, &data[exportnamelen+4], 2);
         nrinfos = be16toh (nrinfos);
         if (optlen != 4 + exportnamelen + 2 + 2*nrinfos) {
-          debug ("newstyle negotiation: NBD_OPT_GO: "
-                 "number of information requests incorrect");
+          debug ("newstyle negotiation: %s: "
+                 "number of information requests incorrect", optname);
           if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
@@ -827,9 +830,9 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         }
         memcpy (requested_exportname, &data[4], exportnamelen);
         requested_exportname[exportnamelen] = '\0';
-        debug ("newstyle negotiation: NBD_OPT_GO: "
+        debug ("newstyle negotiation: %s: "
                "client requested export '%s' (ignored)",
-               requested_exportname);
+               optname, requested_exportname);
 
         /* The spec is confusing, but it is required that we send back
          * NBD_INFO_EXPORT, even if the client did not request it!
@@ -855,8 +858,8 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
           switch (info) {
           case NBD_INFO_EXPORT: /* ignore - reply sent above */ break;
           default:
-            debug ("newstyle negotiation: NBD_OPT_GO: "
-                   "ignoring NBD_INFO_* request %u", (unsigned) info);
+            debug ("newstyle negotiation: %s: "
+                   "ignoring NBD_INFO_* request %u", optname, (unsigned) info);
             break;
           }
         }

@@ -109,6 +109,13 @@ Supported in nbdkit E<ge> 1.5.3.
 This protocol enhancement allows the server to return errors when
 negotiating the export name.
 
+=item C<NBD_OPT_INFO>
+
+Supported in nbdkit E<ge> 1.9.3.
+
+This protocol enhancement allows a client to inspect details about
+the export without actually connecting.
+
 =item Structured Replies
 
 I<Not supported>.

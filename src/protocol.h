@@ -98,6 +98,7 @@ struct fixed_new_option_reply {
 #define NBD_OPT_ABORT        2
 #define NBD_OPT_LIST         3
 #define NBD_OPT_STARTTLS     5
+#define NBD_OPT_INFO         6
 #define NBD_OPT_GO           7
 
 #define NBD_REP_ACK          1
