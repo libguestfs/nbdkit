@@ -36,7 +36,7 @@ set -e
 # This creates the PSK keys for the TLS-PSK tests.  However if pkstool
 # doesn't exist, just create an empty directory instead.
 
-if [ ! -f test-tls-psk.sh ]; then
+if [ -z "$SRCDIR" ] || [ ! -f "$SRCDIR/test-tls-psk.sh" ]; then
     echo "$0: script is being run from the wrong directory."
     echo "Don't try to run this script by hand."
     exit 1

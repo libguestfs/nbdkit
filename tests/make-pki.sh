@@ -36,7 +36,7 @@ set -e
 # This creates the PKI files for the TLS tests.  However if certtool
 # doesn't exist, just create an empty directory instead.
 
-if [ ! -f test-tls.sh ]; then
+if [ -z "$SRCDIR" ] || [ ! -f "$SRCDIR/test-tls.sh" ]; then
     echo "$0: script is being run from the wrong directory."
     echo "Don't try to run this script by hand."
     exit 1

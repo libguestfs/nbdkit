@@ -205,12 +205,12 @@ test_exit_with_parent_CFLAGS = \
 # PKI files for the TLS tests.
 check_DATA += pki/.stamp
 pki/.stamp: $(srcdir)/make-pki.sh
-	$(srcdir)/make-pki.sh
+	SRCDIR=$(srcdir) $(srcdir)/make-pki.sh
 
 # PSK keys for the TLS-PSK tests.
 check_DATA += keys.psk
 keys.psk: $(srcdir)/make-psk.sh
-	$(srcdir)/make-psk.sh
+	SRCDIR=$(srcdir) $(srcdir)/make-psk.sh
 
 # Keys are expensive to recreate so only delete them when we do
 # ‘make maintainer-clean’.
