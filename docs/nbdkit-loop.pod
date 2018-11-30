@@ -74,8 +74,9 @@ Make a btrfs filesystem on the disk and mount it:
 Using L<nbdkit-error-filter(1)> you can see how Linux devices react to
 errors:
 
- nbdkit --filter=error error-rate=100% error-file=/tmp/inject \
-        memory size=64M
+ nbdkit --filter=error \
+        memory size=64M \
+        error-rate=100% error-file=/tmp/inject
  nbd-client -b 512 localhost /dev/nbd0
  mkfs -t ext4 /dev/nbd0
  mount /dev/nbd0 /mnt
