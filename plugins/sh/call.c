@@ -121,6 +121,9 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
     close (out_fd[1]);
     close (err_fd[1]);
 
+    /* Restore SIGPIPE back to SIG_DFL, since shell can't undo SIG_IGN */
+    signal (SIGPIPE, SIG_DFL);
+
     /* Set $tmpdir for the script. */
     setenv ("tmpdir", tmpdir, 1);
 
