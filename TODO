@@ -92,6 +92,8 @@ Suggestions for filters
 
 * gzip plugin should really be a filter
 
+* libarchive could be used to implement a general tar/zip filter
+
 * masking plugin features for testing clients (see 'nozero' and 'fua'
   filters for examples)
 
