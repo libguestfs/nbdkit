@@ -530,7 +530,7 @@ LIBGUESTFS_TESTS += test-perl
 
 test_perl_SOURCES = test-lang-plugins.c test.h
 test_perl_CFLAGS = \
-	-DLANG='"perl"' -DSCRIPT='"test.pl"' \
+	-DLANG='"perl"' -DSCRIPT='"$(srcdir)/test.pl"' \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_perl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
@@ -546,7 +546,7 @@ LIBGUESTFS_TESTS += test-python
 
 test_python_SOURCES = test-lang-plugins.c test.h
 test_python_CFLAGS = \
-	-DLANG='"python"' -DSCRIPT='"test.py"' \
+	-DLANG='"python"' -DSCRIPT='"$(srcdir)/test.py"' \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_python_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
@@ -565,7 +565,7 @@ EXTRA_PROGRAMS += test-ruby
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \
-	-DLANG='"ruby"' -DSCRIPT='"test.rb"' \
+	-DLANG='"ruby"' -DSCRIPT='"$(srcdir)/test.rb"' \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_ruby_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
@@ -578,7 +578,7 @@ MAINTAINERCLEANFILES += test-shell.img
 
 test_shell_SOURCES = test-lang-plugins.c test.h
 test_shell_CFLAGS = \
-	-DLANG='"sh"' -DSCRIPT='"./test-shell.sh"' \
+	-DLANG='"sh"' -DSCRIPT='"$(srcdir)/test-shell.sh"' \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_shell_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
@@ -592,7 +592,7 @@ LIBGUESTFS_TESTS += test-tcl
 
 test_tcl_SOURCES = test-lang-plugins.c test.h
 test_tcl_CFLAGS = \
-	-DLANG='"tcl"' -DSCRIPT='"test.tcl"' \
+	-DLANG='"tcl"' -DSCRIPT='"$(srcdir)/test.tcl"' \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_tcl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
@@ -605,7 +605,7 @@ LIBGUESTFS_TESTS += test-lua
 
 test_lua_SOURCES = test-lang-plugins.c test.h
 test_lua_CFLAGS = \
-	-DLANG='"lua"' -DSCRIPT='"test.lua"' \
+	-DLANG='"lua"' -DSCRIPT='"$(srcdir)/test.lua"' \
 	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_lua_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
