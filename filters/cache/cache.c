@@ -52,7 +52,7 @@
 
 #include <nbdkit-filter.h>
 
-#include "rounding.h"
+#include "bitmap.h"
 
 /* XXX See design comment in filters/cow/cow.c. */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
@@ -75,10 +75,7 @@ static int fd = -1;
  * 10 = <unused>
  * 11 = block cached and dirty
  */
-static uint8_t *bitmap;
-
-/* Size of the bitmap in bytes. */
-static size_t bm_size;
+static struct bitmap bm;
 
 enum bm_entry {
   BLOCK_NOT_CACHED = 0,
@@ -93,9 +90,7 @@ static enum cache_mode {
   CACHE_MODE_UNSAFE,
 } cache_mode = CACHE_MODE_WRITEBACK;
 
-static int
-cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
-             uint32_t flags, int *err);
+static int cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
 
 static void
 cache_load (void)
@@ -103,6 +98,8 @@ cache_load (void)
   const char *tmpdir;
   size_t len;
   char *template;
+
+  bitmap_init (&bm, BLKSIZE, 2 /* bits per block */);
 
   tmpdir = getenv ("TMPDIR");
   if (!tmpdir)
@@ -133,6 +130,8 @@ cache_unload (void)
 {
   if (fd >= 0)
     close (fd);
+
+  bitmap_free (&bm);
 }
 
 static int
@@ -180,28 +179,8 @@ cache_open (nbdkit_next_open *next, void *nxdata, int readonly)
 static int
 blk_set_size (uint64_t new_size)
 {
-  uint8_t *new_bm;
-  const size_t old_bm_size = bm_size;
-  uint64_t new_bm_size_u64 = DIV_ROUND_UP (new_size, BLKSIZE*8/2);
-  size_t new_bm_size;
-
-  if (new_bm_size_u64 > SIZE_MAX) {
-    nbdkit_error ("bitmap too large for this architecture");
+  if (bitmap_resize (&bm, new_size) == -1)
     return -1;
-  }
-  new_bm_size = (size_t) new_bm_size_u64;
-
-  new_bm = realloc (bitmap, new_bm_size);
-  if (new_bm == NULL) {
-    nbdkit_error ("realloc: %m");
-    return -1;
-  }
-  bitmap = new_bm;
-  bm_size = new_bm_size;
-  if (old_bm_size < new_bm_size)
-    memset (&bitmap[old_bm_size], 0, new_bm_size-old_bm_size);
-
-  nbdkit_debug ("cache: bitmap resized to %zu bytes", new_bm_size);
 
   if (ftruncate (fd, new_size) == -1) {
     nbdkit_error ("ftruncate: %m");
@@ -246,36 +225,6 @@ cache_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
-/* Return true if the block is allocated.  Consults the bitmap. */
-static enum bm_entry
-blk_get_bitmap_entry (uint64_t blknum)
-{
-  uint64_t bm_offset = blknum / 4;
-  uint64_t bm_bit = 2 * (blknum % 4);
-
-  if (bm_offset >= bm_size) {
-    nbdkit_debug ("blk_get_bitmap_entry: block number is out of range");
-    return BLOCK_NOT_CACHED;
-  }
-
-  return (bitmap[bm_offset] & (3 << bm_bit)) >> bm_bit;
-}
-
-/* Update cache state of a block. */
-static void
-blk_set_bitmap_entry (uint64_t blknum, enum bm_entry state)
-{
-  uint64_t bm_offset = blknum / 4;
-  uint64_t bm_bit = 2 * (blknum % 4);
-
-  if (bm_offset >= bm_size) {
-    nbdkit_debug ("blk_set_bitmap_entry: block number is out of range");
-    return;
-  }
-
-  bitmap[bm_offset] |= (unsigned) state << bm_bit;
-}
-
 /* These are the block operations.  They always read or write a single
  * whole block of size ‘blksize’.
  */
@@ -284,7 +233,7 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
           uint64_t blknum, uint8_t *block, int *err)
 {
   off_t offset = blknum * BLKSIZE;
-  enum bm_entry state = blk_get_bitmap_entry (blknum);
+  enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_CACHED);
 
   nbdkit_debug ("cache: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
                 blknum, (uint64_t) offset,
@@ -326,7 +275,7 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (next_ops->pwrite (nxdata, block, BLKSIZE, offset, flags, err) == -1)
     return -1;
 
-  blk_set_bitmap_entry (blknum, BLOCK_CLEAN);
+  bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
 
   return 0;
 }
@@ -354,7 +303,7 @@ blk_writeback (struct nbdkit_next_ops *next_ops, void *nxdata,
     nbdkit_error ("pwrite: %m");
     return -1;
   }
-  blk_set_bitmap_entry (blknum, BLOCK_DIRTY);
+  bitmap_set_blk (&bm, blknum, BLOCK_DIRTY);
 
   return 0;
 }
@@ -509,7 +458,6 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
              uint32_t flags, int *err)
 {
   uint8_t *block = NULL;
-  uint64_t i, j;
   uint64_t blknum;
   enum bm_entry state;
   unsigned errors = 0;
@@ -524,35 +472,27 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
    * underlying storage.
    */
   assert (!flags);
-  for (i = 0; i < bm_size; ++i) {
-    if (bitmap[i] != 0) {
-      /* The bitmap stores information about 4 blocks per byte,
-       * therefore ...
-       */
-      for (j = 0; j < 4; ++j) {
-        blknum = i*4+j;
-        state = blk_get_bitmap_entry (blknum);
-        if (state == BLOCK_DIRTY) {
-          /* Lazily allocate the bounce buffer. */
-          if (!block) {
-            block = malloc (BLKSIZE);
-            if (block == NULL) {
-              *err = errno;
-              nbdkit_error ("malloc: %m");
-              return -1;
-            }
-          }
-          /* Perform a read + writethrough which will read from the
-           * cache and write it through to the underlying storage.
-           */
-          if (blk_read (next_ops, nxdata, blknum, block,
-                        errors ? &tmp : err) == -1 ||
-              blk_writethrough (next_ops, nxdata, blknum, block, 0,
-                                errors ? &tmp : err) == -1) {
-            nbdkit_error ("cache: flush of block %" PRIu64 " failed", blknum);
-            errors++;
-          }
+  bitmap_for (&bm, blknum) {
+    state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_CACHED);
+    if (state == BLOCK_DIRTY) {
+      /* Lazily allocate the bounce buffer. */
+      if (!block) {
+        block = malloc (BLKSIZE);
+        if (block == NULL) {
+          *err = errno;
+          nbdkit_error ("malloc: %m");
+          return -1;
         }
+      }
+      /* Perform a read + writethrough which will read from the
+       * cache and write it through to the underlying storage.
+       */
+      if (blk_read (next_ops, nxdata, blknum, block,
+                    errors ? &tmp : err) == -1 ||
+          blk_writethrough (next_ops, nxdata, blknum, block, 0,
+                            errors ? &tmp : err) == -1) {
+        nbdkit_error ("cache: flush of block %" PRIu64 " failed", blknum);
+        errors++;
       }
     }
   }

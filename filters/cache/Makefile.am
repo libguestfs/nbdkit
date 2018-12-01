@@ -42,11 +42,14 @@ nbdkit_cache_filter_la_SOURCES = \
 
 nbdkit_cache_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/bitmap \
 	-I$(top_srcdir)/common/include
 nbdkit_cache_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_cache_filter_la_LDFLAGS = \
 	-module -avoid-version -shared
+nbdkit_cache_filter_la_LIBADD = \
+	$(top_builddir)/common/bitmap/libbitmap.la
 
 if HAVE_POD
 

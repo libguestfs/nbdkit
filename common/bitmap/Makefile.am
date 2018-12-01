@@ -32,33 +32,13 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = nbdkit-cow-filter.pod
+noinst_LTLIBRARIES = libbitmap.la
 
-filter_LTLIBRARIES = nbdkit-cow-filter.la
-
-nbdkit_cow_filter_la_SOURCES = \
-	cow.c \
-	$(top_srcdir)/include/nbdkit-filter.h
-
-nbdkit_cow_filter_la_CPPFLAGS = \
+libbitmap_la_SOURCES = \
+        bitmap.c \
+        bitmap.h
+libbitmap_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/bitmap \
 	-I$(top_srcdir)/common/include
-nbdkit_cow_filter_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
-nbdkit_cow_filter_la_LDFLAGS = \
-	-module -avoid-version -shared
-nbdkit_cow_filter_la_LIBADD = \
-	$(top_builddir)/common/bitmap/libbitmap.la
-
-if HAVE_POD
-
-man_MANS = nbdkit-cow-filter.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-cow-filter.1: nbdkit-cow-filter.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+libbitmap_la_CFLAGS = \
+        $(WARNINGS_CFLAGS)

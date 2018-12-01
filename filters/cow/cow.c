@@ -89,7 +89,7 @@
 
 #include <nbdkit-filter.h>
 
-#include "rounding.h"
+#include "bitmap.h"
 
 #ifndef HAVE_FDATASYNC
 #define fdatasync fsync
@@ -106,11 +106,8 @@
 /* The temporary overlay. */
 static int fd = -1;
 
-/* Bitmap.  Bit 1 = allocated, 0 = hole. */
-static uint8_t *bitmap;
-
-/* Size of the bitmap in bytes. */
-static size_t bm_size;
+/* Bitmap.  Bit = 1 => allocated, 0 => hole. */
+static struct bitmap bm;
 
 static void
 cow_load (void)
@@ -118,6 +115,8 @@ cow_load (void)
   const char *tmpdir;
   size_t len;
   char *template;
+
+  bitmap_init (&bm, BLKSIZE, 1 /* bits per block */);
 
   tmpdir = getenv ("TMPDIR");
   if (!tmpdir)
@@ -148,6 +147,8 @@ cow_unload (void)
 {
   if (fd >= 0)
     close (fd);
+
+  bitmap_free (&bm);
 }
 
 static void *
@@ -169,28 +170,8 @@ cow_open (nbdkit_next_open *next, void *nxdata, int readonly)
 static int
 blk_set_size (uint64_t new_size)
 {
-  uint8_t *new_bm;
-  const size_t old_bm_size = bm_size;
-  uint64_t new_bm_size_u64 = DIV_ROUND_UP (new_size, BLKSIZE*8);
-  size_t new_bm_size;
-
-  if (new_bm_size_u64 > SIZE_MAX) {
-    nbdkit_error ("bitmap too large for this architecture");
+  if (bitmap_resize (&bm, new_size) == -1)
     return -1;
-  }
-  new_bm_size = (size_t) new_bm_size_u64;
-
-  new_bm = realloc (bitmap, new_bm_size);
-  if (new_bm == NULL) {
-    nbdkit_error ("realloc: %m");
-    return -1;
-  }
-  bitmap = new_bm;
-  bm_size = new_bm_size;
-  if (old_bm_size < new_bm_size)
-    memset (&bitmap[old_bm_size], 0, new_bm_size-old_bm_size);
-
-  nbdkit_debug ("cow: bitmap resized to %zu bytes", new_bm_size);
 
   if (ftruncate (fd, new_size) == -1) {
     nbdkit_error ("ftruncate: %m");
@@ -263,30 +244,14 @@ cow_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 static bool
 blk_is_allocated (uint64_t blknum)
 {
-  uint64_t bm_offset = blknum / 8;
-  uint64_t bm_bit = blknum % 8;
-
-  if (bm_offset >= bm_size) {
-    nbdkit_debug ("blk_is_allocated: block number is out of range");
-    return false;
-  }
-
-  return bitmap[bm_offset] & (1 << bm_bit);
+  return bitmap_get_blk (&bm, blknum, false);
 }
 
 /* Mark a block as allocated. */
 static void
 blk_set_allocated (uint64_t blknum)
 {
-  uint64_t bm_offset = blknum / 8;
-  uint64_t bm_bit = blknum % 8;
-
-  if (bm_offset >= bm_size) {
-    nbdkit_debug ("blk_set_allocated: block number is out of range");
-    return;
-  }
-
-  bitmap[bm_offset] |= 1 << bm_bit;
+  bitmap_set_blk (&bm, blknum, true);
 }
 
 /* These are the block operations.  They always read or write a single
@@ -333,9 +298,7 @@ blk_write (uint64_t blknum, const uint8_t *block, int *err)
   return 0;
 }
 
-static int
-cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
-           uint32_t flags, int *err);
+static int cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
 
 /* Read data. */
 static int

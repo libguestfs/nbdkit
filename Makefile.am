@@ -67,6 +67,7 @@ SUBDIRS = \
 
 if HAVE_PLUGINS
 SUBDIRS += \
+	common/bitmap \
 	common/regions \
 	common/sparse \
 	plugins \

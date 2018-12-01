@@ -779,6 +779,7 @@ AC_CONFIG_FILES([podwrapper.pl],
                 [chmod +x,-w podwrapper.pl])
 AC_CONFIG_FILES([Makefile
                  bash/Makefile
+                 common/bitmap/Makefile
                  common/include/Makefile
                  common/regions/Makefile
                  common/sparse/Makefile
