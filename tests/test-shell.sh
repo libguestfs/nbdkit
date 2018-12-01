@@ -11,8 +11,20 @@ fi
 
 # nbdkit is supposed to set $tmpdir.  If it doesn't, it's an error.
 if [ ! -d $tmpdir ]; then
-    echo "\$tmpdir was not set"
+    echo "\$tmpdir was not set" >&2
     exit 1
+fi
+
+# Check that SIGPIPE is not ignored unless we want it that way.
+if (type yes) >/dev/null 2>&1; then
+    ignored=$(trap "" 13;
+              ({ yes; echo $? >&3; } | head -c1) 3>&1 >/dev/null 2>&1)
+    default=$(trap - 13;
+              ({ yes; echo $? >&3; } | head -c1) 3>&1 >/dev/null 2>&1)
+    if [ $ignored = $default ]; then
+        echo "SIGPIPE was inherited ignored" >&2
+        exit 1;
+    fi
 fi
 
 case "$1" in
