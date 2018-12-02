@@ -51,7 +51,7 @@ test ()
             # VDDK won't run without special environment variables
             # being set, so ignore it.
             ;;
-        python-valgrind | ruby-valgrind | tcl-valgrind)
+        ruby-valgrind | tcl-valgrind)
             # Plugins written in scripting languages can't run under valgrind.
             ;;
         *)

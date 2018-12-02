@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# nbdkit
+# Python valgrind suppressions
 # Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
 #
@@ -31,23 +30,46 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-set -e
-set -x
+# Python leaks lots of memory by design.
+{
+  python_1
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:Py_InitializeEx
+}
 
-output=test-python-exception.out
+{
+  python_2
+  Memcheck:Leak
+  fun:calloc
+  ...
+  fun:Py_InitializeEx
+}
 
-rm -f $output
+{
+  python_3
+  Memcheck:Leak
+  fun:realloc
+  ...
+  fun:Py_InitializeEx
+}
 
-nbdkit -f -v python ./python-exception.py test=simple > $output 2>&1 ||:
-cat $output
+# As far as I can tell there is no way to stop the Python object
+# (representing the compiled code?) from leaking from this API.
+{
+  python_4
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:PyRun_SimpleFileExFlags
+}
 
-grep 'this is the test string' $output
-
-nbdkit -f -v python ./python-exception.py test=traceback > $output 2>&1 ||:
-cat $output
-
-grep 'raise_error1' $output
-grep 'raise_error2' $output
-grep 'this is the test string' $output
-
-rm $output
+# This seems like a bug in Python itself.
+{
+  python_5
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:Py_Finalize
+}

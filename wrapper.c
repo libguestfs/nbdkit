@@ -135,7 +135,7 @@ main (int argc, char *argv[])
     passthru_format ("--suppressions=%s/valgrind/suppressions", builddir);
     passthru ("--trace-children=no");
     passthru ("--run-libc-freeres=no");
-    passthru ("--num-callers=20");
+    passthru ("--num-callers=100");
   }
   else {
     s = getenv ("NBDKIT_GDB");
