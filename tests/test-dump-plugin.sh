@@ -58,11 +58,10 @@ test ()
     vg=; [ "$NBDKIT_VALGRIND" = "1" ] && vg="-valgrind"
     case "$1$vg" in
         vddk | vddk-valgrind)
-            # VDDK won't run without special environment variables
-            # being set, so ignore it.
+            echo "$0: skipping $1$vg because VDDK cannot run without special environment variables"
             ;;
         ruby-valgrind | tcl-valgrind)
-            # Plugins written in scripting languages can't run under valgrind.
+            echo "$0: skipping $1$vg because this language doesn't support valgrind"
             ;;
         *)
             nbdkit $1 --dump-plugin
