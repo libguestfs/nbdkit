@@ -49,18 +49,8 @@ main (int argc, char *argv[])
 {
   guestfs_h *g;
   int r;
-  const char *s;
   char *data;
   size_t i, size;
-
-  /* The OCaml tests fail valgrind, so skip them.  We should be able
-   * to get this working with a bit of effort.  XXX
-   */
-  s = getenv ("NBDKIT_VALGRIND");
-  if (s && strcmp (s, "1") == 0) {
-    fprintf (stderr, "ocaml test skipped under valgrind.\n");
-    exit (77);                  /* Tells automake to skip the test. */
-  }
 
   if (test_start_nbdkit ("./test-ocaml-plugin.so", "a=1", "b=2", "c=3",
                          NULL) == -1)
