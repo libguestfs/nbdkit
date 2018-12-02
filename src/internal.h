@@ -232,7 +232,7 @@ extern void threadlocal_init (void);
 extern void threadlocal_new_server_thread (void);
 extern void threadlocal_set_name (const char *name);
 extern void threadlocal_set_instance_num (size_t instance_num);
-extern void threadlocal_set_sockaddr (struct sockaddr *addr, socklen_t addrlen);
+extern void threadlocal_set_sockaddr (const struct sockaddr *addr, socklen_t addrlen);
 extern const char *threadlocal_get_name (void);
 extern size_t threadlocal_get_instance_num (void);
 extern void threadlocal_set_error (int err);

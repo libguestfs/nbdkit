@@ -125,7 +125,7 @@ threadlocal_set_instance_num (size_t instance_num)
 }
 
 void
-threadlocal_set_sockaddr (struct sockaddr *addr, socklen_t addrlen)
+threadlocal_set_sockaddr (const struct sockaddr *addr, socklen_t addrlen)
 {
   struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
