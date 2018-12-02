@@ -325,6 +325,10 @@ crypto_close (struct connection *conn)
     close (sockin);
   if (sockout >= 0 && sockin != sockout)
     close (sockout);
+
+  gnutls_deinit (*session);
+  free (session);
+  connection_set_crypto_session (conn, NULL);
 }
 
 /* Upgrade an existing connection to TLS.  Also this should do access
@@ -380,15 +384,8 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
 #endif
   }
 
-  /* Set up GnuTLS so it reads and writes on the raw sockets, and set
-   * up the connection recv/send/close functions so they call GnuTLS
-   * wrappers instead.
-   */
+  /* Set up GnuTLS so it reads and writes on the raw sockets. */
   gnutls_transport_set_int2 (*session, sockin, sockout);
-  connection_set_crypto_session (conn, session);
-  connection_set_recv (conn, crypto_recv);
-  connection_set_send (conn, crypto_send);
-  connection_set_close (conn, crypto_close);
 
   /* Perform the handshake. */
   debug ("starting TLS handshake");
@@ -404,6 +401,13 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
   }
   debug ("TLS handshake completed");
 
+  /* Set up the connection recv/send/close functions so they call
+   * GnuTLS wrappers instead.
+   */
+  connection_set_crypto_session (conn, session);
+  connection_set_recv (conn, crypto_recv);
+  connection_set_send (conn, crypto_send);
+  connection_set_close (conn, crypto_close);
   return 0;
 
  error:
