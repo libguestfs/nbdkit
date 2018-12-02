@@ -97,3 +97,4 @@ Makefile.in
 /tests/test-xz
 /tests/test-xz-curl
 /test-driver
+/valgrind/suppressions

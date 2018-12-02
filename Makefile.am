@@ -40,7 +40,6 @@ EXTRA_DIST = \
 	html/pod.css \
 	LICENSE \
 	OTHER_PLUGINS \
-	valgrind-suppressions \
 	m4/.gitignore
 
 CLEANFILES += html/*.html
@@ -60,6 +59,7 @@ nbdkit_DEPENDENCIES = config.status
 SUBDIRS = \
 	bash \
 	docs \
+	valgrind \
 	include \
 	common/include \
 	src

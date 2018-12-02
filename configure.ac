@@ -833,6 +833,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/nbdkit.pc
                  tests/functions.sh
-                 tests/Makefile])
+                 tests/Makefile
+                 valgrind/Makefile])
 
 AC_OUTPUT

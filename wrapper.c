@@ -130,8 +130,9 @@ main (int argc, char *argv[])
     passthru (VALGRIND);
     passthru ("--vgdb=no");
     passthru ("--leak-check=full");
+    passthru ("--show-leak-kinds=all");
     passthru ("--error-exitcode=119");
-    passthru_format ("--suppressions=%s/valgrind-suppressions", srcdir);
+    passthru_format ("--suppressions=%s/valgrind/suppressions", builddir);
     passthru ("--trace-children=no");
     passthru ("--run-libc-freeres=no");
     passthru ("--num-callers=20");

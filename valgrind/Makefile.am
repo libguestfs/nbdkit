@@ -1,6 +1,5 @@
-#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2014 Red Hat Inc.
+# Copyright (C) 2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,42 +30,18 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-source ./functions.sh
-set -e
-set -x
+include $(top_srcdir)/common-rules.mk
 
-# Basic check that the name field is present.
-output="$(nbdkit example1 --dump-plugin)"
-if [[ ! ( "$output" =~ name\=example1 ) ]]; then
-    echo "$0: unexpected output from nbdkit example1 --dump-plugin"
-    echo "$output"
-    exit 1
-fi
+suppressions_files = $(wildcard *.suppressions)
 
-# example2 overrides the --dump-plugin with extra data.
-output="$(nbdkit example2 --dump-plugin)"
-if [[ ! ( "$output" =~ example2_extra\=hello ) ]]; then
-    echo "$0: unexpected output from nbdkit example2 --dump-plugin"
-    echo "$output"
-    exit 1
-fi
+EXTRA_DIST = $(suppressions_files)
 
-# Run nbdkit plugin --dump-plugin for each plugin.
-# However some of these tests are expected to fail.
-test ()
-{
-    vg=; [ "$NBDKIT_VALGRIND" = "1" ] && vg="-valgrind"
-    case "$1$vg" in
-        vddk | vddk-valgrind)
-            # VDDK won't run without special environment variables
-            # being set, so ignore it.
-            ;;
-        python-valgrind | ruby-valgrind | tcl-valgrind)
-            # Plugins written in scripting languages can't run under valgrind.
-            ;;
-        *)
-            nbdkit $1 --dump-plugin
-            ;;
-    esac
-}
-foreach_plugin test
+noinst_DATA = suppressions
+
+suppressions: $(suppressions_files)
+	rm -f $@ $@-t
+	cat $^ > $@-t
+	mv $@-t $@
+	chmod 0444 $@
+
+DISTCLEANFILES = suppressions

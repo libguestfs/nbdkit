@@ -34,13 +34,6 @@
 set -e
 source ./functions.sh
 
-# Skip test if running under valgrind because the Perl interpreter
-# leaks like a sieve.
-if [ "$NBDKIT_VALGRIND" = "1" ]; then
-    echo "$0: skipping valgrind test"
-    exit 77
-fi
-
 output="$(nbdkit example4 --dump-plugin)"
 if [[ ! ( "$output" =~ example4_extra\=hello ) ]]; then
     echo "$0: unexpected output from nbdkit example4 --dump-plugin"

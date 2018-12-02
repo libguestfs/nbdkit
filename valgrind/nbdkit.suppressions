@@ -1,5 +1,5 @@
 # nbdkit valgrind suppressions
-# Copyright (C) 2016 Red Hat Inc.
+# Copyright (C) 2016-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -50,22 +50,13 @@
   fun:allocate_stack
 }
 
-# Allow thread-local storage from pthread_create to leak.
-{
-  nbdkit_3
-  Memcheck:Leak
-  fun:calloc
-  ...
-  fun:_dl_allocate_tls
-}
-
 # close methods are not guaranteed to be called if a connection is in
 # progress when the server is being shut down, so leaks in various
 # *_open functions are fairly inevitable.  We simply have to check by
 # hand that the following leaks are not possible under normal
 # circumstances, and then add them to this list.
 {
-  nbdkit_4
+  nbdkit_3
   Memcheck:Leak
   fun:malloc
   fun:error_open
@@ -73,7 +64,7 @@
 }
 
 {
-  nbdkit_5
+  nbdkit_4
   Memcheck:Leak
   fun:malloc
   fun:file_open
@@ -81,7 +72,7 @@
 }
 
 {
-  nbdkit_6
+  nbdkit_5
   Memcheck:Leak
   fun:malloc
   fun:memory_open
@@ -89,7 +80,7 @@
 }
 
 {
-  nbdkit_7
+  nbdkit_6
   Memcheck:Leak
   fun:malloc
   fun:null_open
@@ -97,7 +88,7 @@
 }
 
 {
-  nbdkit_8
+  nbdkit_7
   Memcheck:Leak
   fun:malloc
   fun:partition_open
