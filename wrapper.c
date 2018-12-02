@@ -133,7 +133,6 @@ main (int argc, char *argv[])
     passthru ("--error-exitcode=119");
     passthru_format ("--suppressions=%s/valgrind-suppressions", srcdir);
     passthru ("--trace-children=no");
-    passthru ("--child-silent-after-fork=yes");
     passthru ("--run-libc-freeres=no");
     passthru ("--num-callers=20");
   }
