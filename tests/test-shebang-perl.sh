@@ -33,7 +33,12 @@
 
 pidfile=shebang-perl.pid
 sockfile=shebang-perl.sock
-script=./shebang.pl
+script=$SRCDIR/shebang.pl
+
+if test ! -d "$SRCDIR"; then
+    echo "$0: could not locate shebang.pl"
+    exit 1
+fi
 
 rm -f $pidfile $sockfile
 

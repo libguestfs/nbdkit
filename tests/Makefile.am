@@ -123,7 +123,7 @@ noinst_LTLIBRARIES =
 
 # Ensure we're testing the local copy by running everything through
 # the nbdkit helper script in the top build directory.
-TESTS_ENVIRONMENT = PATH=$(abs_top_builddir):$(PATH)
+TESTS_ENVIRONMENT = PATH=$(abs_top_builddir):$(PATH) SRCDIR=$(srcdir)
 
 TESTS = \
 	test-help.sh \

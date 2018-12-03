@@ -33,7 +33,12 @@
 
 pidfile=shebang-python.pid
 sockfile=shebang-python.sock
-script=./shebang.py
+script=$SRCDIR/shebang.py
+
+if test ! -d "$SRCDIR"; then
+    echo "$0: could not locate shebang.py"
+    exit 1
+fi
 
 rm -f $pidfile $sockfile
 

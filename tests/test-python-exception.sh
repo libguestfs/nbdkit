@@ -34,16 +34,21 @@
 set -e
 set -x
 
+if test ! -d "$SRCDIR"; then
+    echo "$0: could not locate python-exception.py"
+    exit 1
+fi
+
 output=test-python-exception.out
 
 rm -f $output
 
-nbdkit -f -v python ./python-exception.py test=simple > $output 2>&1 ||:
+nbdkit -f -v python $SRCDIR/python-exception.py test=simple > $output 2>&1 ||:
 cat $output
 
 grep 'this is the test string' $output
 
-nbdkit -f -v python ./python-exception.py test=traceback > $output 2>&1 ||:
+nbdkit -f -v python $SRCDIR/python-exception.py test=traceback > $output 2>&1 ||:
 cat $output
 
 grep 'raise_error1' $output
