@@ -40,7 +40,8 @@ EXTRA_DIST = \
 	html/pod.css \
 	LICENSE \
 	OTHER_PLUGINS \
-	m4/.gitignore
+	m4/.gitignore \
+	scripts/git.orderfile
 
 CLEANFILES += html/*.html
 
