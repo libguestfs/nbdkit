@@ -103,7 +103,7 @@ via L<curl_easy_setopt(3)/CURLOPT_URL>.
 
 This parameter is required.
 
-In nbdkit E<ge> 1.10, C<url=> may be omitted.
+In nbdkit E<ge> 1.8.2, C<url=> may be omitted.
 
 =item B<user=>USERNAME
 
