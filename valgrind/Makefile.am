@@ -32,7 +32,7 @@
 
 include $(top_srcdir)/common-rules.mk
 
-suppressions_files = $(wildcard *.suppressions)
+suppressions_files = $(wildcard $(srcdir)/*.suppressions)
 
 EXTRA_DIST = $(suppressions_files)
 
