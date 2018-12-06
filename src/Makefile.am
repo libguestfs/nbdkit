@@ -80,6 +80,7 @@ nbdkit_LDFLAGS = \
 # synopsis.c is generated from docs/synopsis.txt where it is also
 # used to generate the man page.  It is included in main.c.
 
+BUILT_SOURCES = synopsis.c
 EXTRA_DIST = synopsis.c
 nbdkit_DEPENDENCIES = synopsis.c
 CLEANFILES += synopsis.c
