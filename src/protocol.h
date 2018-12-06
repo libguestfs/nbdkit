@@ -81,10 +81,12 @@ struct fixed_new_option_reply {
 #define NBD_REP_MAGIC UINT64_C(0x3e889045565a9)
 
 /* Global flags. */
+extern const char *name_of_nbd_global_flag (int);
 #define NBD_FLAG_FIXED_NEWSTYLE 1
 #define NBD_FLAG_NO_ZEROES      2
 
 /* Per-export flags. */
+extern const char *name_of_nbd_flag (int);
 #define NBD_FLAG_HAS_FLAGS         (1 << 0)
 #define NBD_FLAG_READ_ONLY         (1 << 1)
 #define NBD_FLAG_SEND_FLUSH        (1 << 2)
@@ -94,6 +96,7 @@ struct fixed_new_option_reply {
 #define NBD_FLAG_SEND_WRITE_ZEROES (1 << 6)
 
 /* NBD options (new style handshake only). */
+extern const char *name_of_nbd_opt (int);
 #define NBD_OPT_EXPORT_NAME  1
 #define NBD_OPT_ABORT        2
 #define NBD_OPT_LIST         3
@@ -101,6 +104,7 @@ struct fixed_new_option_reply {
 #define NBD_OPT_INFO         6
 #define NBD_OPT_GO           7
 
+extern const char *name_of_nbd_rep (int);
 #define NBD_REP_ACK          1
 #define NBD_REP_SERVER       2
 #define NBD_REP_INFO         3
@@ -110,6 +114,7 @@ struct fixed_new_option_reply {
 #define NBD_REP_ERR_PLATFORM 0x80000004
 #define NBD_REP_ERR_TLS_REQD 0x80000005
 
+extern const char *name_of_nbd_info (int);
 #define NBD_INFO_EXPORT      0
 
 /* NBD_INFO_EXPORT reply (follows fixed_new_option_reply). */
@@ -148,6 +153,8 @@ struct reply {
 #define NBD_REQUEST_MAGIC 0x25609513
 #define NBD_REPLY_MAGIC 0x67446698
 
+/* NBD commands. */
+extern const char *name_of_nbd_cmd (int);
 #define NBD_CMD_READ              0
 #define NBD_CMD_WRITE             1
 #define NBD_CMD_DISC              2 /* Disconnect. */
@@ -155,12 +162,14 @@ struct reply {
 #define NBD_CMD_TRIM              4
 #define NBD_CMD_WRITE_ZEROES      6
 
+extern const char *name_of_nbd_cmd_flag (int);
 #define NBD_CMD_FLAG_FUA      (1<<0)
 #define NBD_CMD_FLAG_NO_HOLE  (1<<1)
 
 /* Error codes (previously errno).
  * See http://git.qemu.org/?p=qemu.git;a=commitdiff;h=ca4414804114fd0095b317785bc0b51862e62ebb
  */
+extern const char *name_of_nbd_error (int);
 #define NBD_SUCCESS     0
 #define NBD_EPERM       1
 #define NBD_EIO         5

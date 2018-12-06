@@ -49,6 +49,7 @@ nbdkit_SOURCES = \
 	options.h \
 	plugins.c \
 	protocol.h \
+	protostrings.c \
 	sockets.c \
 	threadlocal.c \
 	utils.c \
@@ -77,11 +78,23 @@ nbdkit_LDFLAGS = \
 	$(PTHREAD_LIBS) \
 	$(DL_LDFLAGS)
 
+# protostrings.c is generated from the protocol.h header file where it
+# is used to map NBD protocol flags to strings.
+
+BUILT_SOURCES = protostrings.c
+EXTRA_DIST = protostrings.c
+CLEANFILES += protostrings.c
+protostrings.c: protocol.h protostrings.sed Makefile
+	rm -f $@ $@-t
+	$(SED) -n -f protostrings.sed < $< > $@-t
+	mv $@-t $@
+	chmod 0444 $@
+
 # synopsis.c is generated from docs/synopsis.txt where it is also
 # used to generate the man page.  It is included in main.c.
 
-BUILT_SOURCES = synopsis.c
-EXTRA_DIST = synopsis.c
+BUILT_SOURCES += synopsis.c
+EXTRA_DIST += synopsis.c
 nbdkit_DEPENDENCIES = synopsis.c
 CLEANFILES += synopsis.c
 main.c: synopsis.c
