@@ -676,14 +676,14 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
     switch (option) {
     case NBD_OPT_EXPORT_NAME:
       if (conn->recv (conn, data, optlen) == -1) {
-        nbdkit_error ("read: %m");
+        nbdkit_error ("read: %s: %m", name_of_nbd_opt (option));
         return -1;
       }
       /* Apart from printing it, ignore the export name. */
       data[optlen] = '\0';
-      debug ("newstyle negotiation: NBD_OPT_EXPORT_NAME: "
+      debug ("newstyle negotiation: %s: "
              "client requested export '%s' (ignored)",
-             data);
+             name_of_nbd_opt (option), data);
 
       /* We have to finish the handshake by sending handshake_finish. */
       if (finish_newstyle_options (conn) == -1)
@@ -706,7 +706,8 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
     case NBD_OPT_ABORT:
       if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
         return -1;
-      debug ("client sent NBD_OPT_ABORT to abort the connection");
+      debug ("client sent %s to abort the connection",
+             name_of_nbd_opt (option));
       return -1;
 
     case NBD_OPT_LIST:
@@ -715,14 +716,15 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
             == -1)
           return -1;
         if (conn->recv (conn, data, optlen) == -1) {
-          nbdkit_error ("read: %m");
+          nbdkit_error ("read: %s: %m", name_of_nbd_opt (option));
           return -1;
         }
         continue;
       }
 
       /* Send back the exportname. */
-      debug ("newstyle negotiation: advertising export '%s'", exportname);
+      debug ("newstyle negotiation: %s: advertising export '%s'",
+             name_of_nbd_opt (option), exportname);
       if (send_newstyle_option_reply_exportname (conn, option, NBD_REP_SERVER,
                                                  exportname) == -1)
         return -1;
@@ -737,7 +739,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
             == -1)
           return -1;
         if (conn->recv (conn, data, optlen) == -1) {
-          nbdkit_error ("read: %m");
+          nbdkit_error ("read: %s: %m", name_of_nbd_opt (option));
           return -1;
         }
         continue;
@@ -779,7 +781,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
     case NBD_OPT_GO:
       optname = name_of_nbd_opt (option);
       if (conn->recv (conn, data, optlen) == -1) {
-        nbdkit_error ("read: %m");
+        nbdkit_error ("read: %s: %m", optname);
         return -1;
       }
 
@@ -859,7 +861,8 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
           case NBD_INFO_EXPORT: /* ignore - reply sent above */ break;
           default:
             debug ("newstyle negotiation: %s: "
-                   "ignoring NBD_INFO_* request %u", optname, (unsigned) info);
+                   "ignoring NBD_INFO_* request %u (%s)",
+                   optname, (unsigned) info, name_of_nbd_info (info));
             break;
           }
         }
@@ -979,7 +982,8 @@ validate_request (struct connection *conn,
   if (conn->readonly &&
       (cmd == NBD_CMD_WRITE || cmd == NBD_CMD_TRIM ||
        cmd == NBD_CMD_WRITE_ZEROES)) {
-    nbdkit_error ("invalid request: write request on readonly connection");
+    nbdkit_error ("invalid request: %s: write request on readonly connection",
+                  name_of_nbd_cmd (cmd));
     *error = EROFS;
     return false;
   }
@@ -992,9 +996,9 @@ validate_request (struct connection *conn,
   case NBD_CMD_WRITE_ZEROES:
     if (!valid_range (conn, offset, count)) {
       /* XXX Allow writes to extend the disk? */
-      nbdkit_error ("invalid request: offset and count are out of range: "
+      nbdkit_error ("invalid request: %s: offset and count are out of range: "
                     "offset=%" PRIu64 " count=%" PRIu32,
-                    offset, count);
+                    name_of_nbd_cmd (cmd), offset, count);
       *error = (cmd == NBD_CMD_WRITE ||
                 cmd == NBD_CMD_WRITE_ZEROES) ? ENOSPC : EINVAL;
       return false;
@@ -1003,7 +1007,8 @@ validate_request (struct connection *conn,
 
   case NBD_CMD_FLUSH:
     if (offset != 0 || count != 0) {
-      nbdkit_error ("invalid flush request: expecting offset and count = 0");
+      nbdkit_error ("invalid request: %s: expecting offset and count = 0",
+                    name_of_nbd_cmd (cmd));
       *error = EINVAL;
       return false;
     }
@@ -1037,29 +1042,33 @@ validate_request (struct connection *conn,
   /* Refuse over-large read and write requests. */
   if ((cmd == NBD_CMD_WRITE || cmd == NBD_CMD_READ) &&
       count > MAX_REQUEST_SIZE) {
-    nbdkit_error ("invalid request: data request is too large (%" PRIu32
-                  " > %d)", count, MAX_REQUEST_SIZE);
+    nbdkit_error ("invalid request: %s: data request is too large (%" PRIu32
+                  " > %d)",
+                  name_of_nbd_cmd (cmd), count, MAX_REQUEST_SIZE);
     *error = ENOMEM;
     return false;
   }
 
   /* Flush allowed? */
   if (!conn->can_flush && cmd == NBD_CMD_FLUSH) {
-    nbdkit_error ("invalid request: flush operation not supported");
+    nbdkit_error ("invalid request: %s: flush operation not supported",
+                  name_of_nbd_cmd (cmd));
     *error = EINVAL;
     return false;
   }
 
   /* Trim allowed? */
   if (!conn->can_trim && cmd == NBD_CMD_TRIM) {
-    nbdkit_error ("invalid request: trim operation not supported");
+    nbdkit_error ("invalid request: %s: trim operation not supported",
+                  name_of_nbd_cmd (cmd));
     *error = EINVAL;
     return false;
   }
 
   /* Zero allowed? */
   if (!conn->can_zero && cmd == NBD_CMD_WRITE_ZEROES) {
-    nbdkit_error ("invalid request: write zeroes operation not supported");
+    nbdkit_error ("invalid request: %s: write zeroes operation not supported",
+                  name_of_nbd_cmd (cmd));
     *error = EINVAL;
     return false;
   }
@@ -1229,7 +1238,7 @@ recv_request_send_reply (struct connection *conn)
     count = be32toh (request.count);
 
     if (cmd == NBD_CMD_DISC) {
-      debug ("client sent disconnect command, closing connection");
+      debug ("client sent %s, closing connection", name_of_nbd_cmd (cmd));
       return set_status (conn, 0);                   /* disconnect */
     }
 
@@ -1262,7 +1271,7 @@ recv_request_send_reply (struct connection *conn)
         r = -1;
       }
       if (r == -1) {
-        nbdkit_error ("read data: %m");
+        nbdkit_error ("read data: %s: %m", name_of_nbd_cmd (cmd));
         return set_status (conn, -1);
       }
     }
@@ -1300,7 +1309,7 @@ recv_request_send_reply (struct connection *conn)
 
     r = conn->send (conn, &reply, sizeof reply);
     if (r == -1) {
-      nbdkit_error ("write reply: %m");
+      nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
       return set_status (conn, -1);
     }
 
@@ -1308,7 +1317,7 @@ recv_request_send_reply (struct connection *conn)
     if (cmd == NBD_CMD_READ && !error) {
       r = conn->send (conn, buf, count);
       if (r == -1) {
-        nbdkit_error ("write data: %m");
+        nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
         return set_status (conn, -1);
       }
     }
