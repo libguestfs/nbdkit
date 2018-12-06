@@ -777,7 +777,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
 
     case NBD_OPT_INFO:
     case NBD_OPT_GO:
-      optname = option == NBD_OPT_INFO ? "NBD_OPT_INFO" : "NBD_OPT_GO";
+      optname = name_of_nbd_opt (option);
       if (conn->recv (conn, data, optlen) == -1) {
         nbdkit_error ("read: %m");
         return -1;
