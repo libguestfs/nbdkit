@@ -154,6 +154,7 @@ struct reply {
 #define NBD_CMD_FLUSH             3
 #define NBD_CMD_TRIM              4
 #define NBD_CMD_WRITE_ZEROES      6
+
 #define NBD_CMD_FLAG_FUA      (1<<0)
 #define NBD_CMD_FLAG_NO_HOLE  (1<<1)
 
