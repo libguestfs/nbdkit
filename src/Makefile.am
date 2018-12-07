@@ -82,11 +82,11 @@ nbdkit_LDFLAGS = \
 # is used to map NBD protocol flags to strings.
 
 BUILT_SOURCES = protostrings.c
-EXTRA_DIST = protostrings.c
+EXTRA_DIST = protostrings.c protostrings.sed
 CLEANFILES += protostrings.c
 protostrings.c: protocol.h protostrings.sed Makefile
 	rm -f $@ $@-t
-	$(SED) -n -f protostrings.sed < $< > $@-t
+	$(SED) -n -f $(srcdir)/protostrings.sed < $< > $@-t
 	mv $@-t $@
 	chmod 0444 $@
 
