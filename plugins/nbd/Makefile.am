@@ -38,7 +38,8 @@ plugin_LTLIBRARIES = nbdkit-nbd-plugin.la
 
 nbdkit_nbd_plugin_la_SOURCES = \
 	nbd.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(top_srcdir)/src/protostrings.c
 
 nbdkit_nbd_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \

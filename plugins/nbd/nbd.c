@@ -267,8 +267,9 @@ nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
   int r;
 
   pthread_mutex_lock (&h->write_lock);
-  nbdkit_debug ("sending request with type %d and cookie %#" PRIx64, type,
-                cookie);
+  nbdkit_debug ("sending request type %d (%s), flags %#x, offset %#" PRIx64
+                ", count %#x, cookie %#" PRIx64, type, name_of_nbd_cmd(type),
+                flags, offset, count, cookie);
   r = write_full (h->fd, &req, sizeof req);
   if (buf && !r)
     r = write_full (h->fd, buf, count);
@@ -353,7 +354,8 @@ nbd_reply_raw (struct handle *h, int *fd)
     return nbd_mark_dead (h);
   if (be32toh (rep.magic) != NBD_REPLY_MAGIC)
     return nbd_mark_dead (h);
-  nbdkit_debug ("received reply for cookie %#" PRIx64, rep.handle);
+  nbdkit_debug ("received reply for cookie %#" PRIx64 ", status %s",
+                rep.handle, name_of_nbd_error(be32toh (rep.error)));
   trans = find_trans_by_cookie (h, rep.handle);
   if (!trans) {
     nbdkit_error ("reply with unexpected cookie %#" PRIx64, rep.handle);
