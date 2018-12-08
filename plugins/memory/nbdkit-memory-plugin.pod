@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit-memory-plugin - nbdkit virtual memory plugin
+nbdkit-memory-plugin - nbdkit virtual memory (RAM disk) plugin
 
 =head1 SYNOPSIS
 
