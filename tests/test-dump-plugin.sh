@@ -60,7 +60,7 @@ test ()
         vddk | vddk-valgrind)
             echo "$0: skipping $1$vg because VDDK cannot run without special environment variables"
             ;;
-        ruby-valgrind | tcl-valgrind)
+        python-valgrind | ruby-valgrind | tcl-valgrind)
             echo "$0: skipping $1$vg because this language doesn't support valgrind"
             ;;
         *)
