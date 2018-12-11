@@ -42,6 +42,7 @@ If not specified then a random seed is chosen.
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-data-plugin(1)>,
+L<nbdkit-full-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-zero-plugin(1)>.

@@ -1,0 +1,59 @@
+=head1 NAME
+
+nbdkit-full-plugin - nbdkit plugin which is always full
+
+=head1 SYNOPSIS
+
+ nbdkit full size=SIZE
+
+=head1 DESCRIPTION
+
+C<nbdkit-full-plugin> is a plugin for L<nbdkit(1)>.  Reads from this
+virtual disk return zeroes.  All writes and similar operations like
+zero and trim fail with C<ENOSPC> S<(No space left on device)> error.
+
+In other words this behaves like a sparse (thin-provisioned) virtual
+disk which has run out of space on the host.
+
+=head2 Equivalent nbdkit-error-filter command
+
+Although his is as a standalone plugin, it is equivalent to using
+L<nbdkit-error-filter(1)>:
+
+ nbdkit --filter=error null size=SIZE \
+                       error-pwrite=ENOSPC error-pwrite-rate=100% \
+                       error-trim=ENOSPC error-trim-rate=100% \
+                       error-zero=ENOSPC error-zero-rate=100%
+
+nbdkit-error-filter can be more flexible because you can place it on
+top of other plugins and you can control when to inject errors.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<size=>SIZE
+
+Specify the virtual size of the disk image.
+
+This parameter is required.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-error-filter(1)>,
+L<nbdkit-null-plugin(1)>,
+L<nbdkit-pattern-plugin(1)>,
+L<nbdkit-random-plugin(1)>.
+L<nbdkit-zero-plugin(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2017-2018 Red Hat Inc.

@@ -127,6 +127,7 @@ injects an error you will see something like:
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-full-plugin(1)>,
 L<nbdkit-filter(3)>.
 
 =head1 AUTHORS

@@ -375,6 +375,9 @@ if HAVE_GUESTFISH
 TESTS += test-floppy.sh
 endif HAVE_GUESTFISH
 
+# full plugin test.
+TESTS += test-full.sh
+
 # gzip plugin test.
 if HAVE_ZLIB
 if HAVE_GUESTFISH
