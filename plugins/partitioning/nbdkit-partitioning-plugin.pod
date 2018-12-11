@@ -25,15 +25,36 @@ access use the I<-r> flag.
 
 =head2 Partition table type
 
-You can choose either the MBR partition table type, which is limited
-to 4 partitions, or the GPT partition table type which, in theory,
-supports an unlimited number of partitions.
+You can choose either an MBR partition table, which is limited to 4
+partitions, or a GPT partition table.  In theory GPT supports an
+unlimited number of partitions.
 
-If the C<partition-type> parameter is not supplied then the default is
-chosen as follows: If the number of files is E<gt> 4 then GPT is used.
-If the total file size is larger than supported by MBR (approximately
-2 TB), then GPT is used.  Otherwise MBR is used for maximum
-compatibility.
+The rule for selecting the partition table type is:
+
+=over 4
+
+=item C<partition-type=mbr> parameter on the command line
+
+⇒ MBR is selected
+
+=item C<partition-type=gpt> parameter on the command line
+
+⇒ GPT is selected
+
+=item else, number of files E<gt> 4
+
+⇒ GPT
+
+=item else, total file size is larger than supported by MBR
+(approx. 2 TB)
+
+⇒ GPT
+
+=item otherwise
+
+⇒ MBR (for maximum compatibility with clients)
+
+=back
 
 =head2 Type of each partition
 
@@ -53,7 +74,8 @@ alignment of all following files.
 
 =head2 Writing to the virtual disk
 
-NBD clients may read and write freely to partitions.
+NBD clients may read and write freely to partitions.  Writes are
+propagated through to the underlying files.
 
 NBD clients may read from the virtual partition table, and padding
 areas of the virtual disk.  When reading from padding areas, clients
@@ -148,7 +170,7 @@ than 128 GPT partitions (in fact, unlimited numbers of partitions),
 some clients will not be able to handle this.
 
 Zero length partitions are not allowed and will cause nbdkit to exit
-with an error.
+with an error when it starts up.
 
 The sector size is fixed at 512 bytes.
 
