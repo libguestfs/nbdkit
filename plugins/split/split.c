@@ -94,7 +94,6 @@ split_config (const char *key, const char *value)
 
 /* The per-connection handle. */
 struct handle {
-  int readonly;
   struct file *files;
   uint64_t size;                /* Total concatenated size. */
 };
@@ -120,7 +119,6 @@ split_open (int readonly)
     return NULL;
   }
 
-  h->readonly = readonly;
   h->files = malloc (nr_files * sizeof (struct file));
   if (h->files == NULL) {
     nbdkit_error ("malloc: %m");
