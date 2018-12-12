@@ -68,34 +68,13 @@ null_config (const char *key, const char *value)
 #define null_config_help \
   "size=<SIZE>             Size of the backing disk"
 
-/* The per-connection handle. */
-struct null_handle {
-  int readonly;
-};
-
 /* Create the per-connection handle. */
 static void *
 null_open (int readonly)
 {
-  struct null_handle *h;
+  static int handle;
 
-  h = malloc (sizeof *h);
-  if (h == NULL) {
-    nbdkit_error ("malloc: %m");
-    return NULL;
-  }
-
-  h->readonly = readonly;
-  return h;
-}
-
-/* Free up the per-connection handle. */
-static void
-null_close (void *handle)
-{
-  struct null_handle *h = handle;
-
-  free (h);
+  return &handle;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
@@ -133,14 +112,6 @@ null_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   return 0;
 }
 
-static int
-null_can_write (void *handle)
-{
-  struct null_handle *h = handle;
-
-  return !h->readonly;
-}
-
 /* Flush is a no-op, so advertise native FUA support */
 static int
 null_can_fua (void *handle)
@@ -169,14 +140,11 @@ static struct nbdkit_plugin plugin = {
   .config            = null_config,
   .config_help       = null_config_help,
   .open              = null_open,
-  .close             = null_close,
   .get_size          = null_get_size,
   .pread             = null_pread,
   .pwrite            = null_pwrite,
-  .can_write         = null_can_write,
   .zero              = null_zero,
   .trim              = null_trim,
-  .can_trim          = null_can_write,
   .can_fua           = null_can_fua,
   .flush             = null_flush,
   /* In this plugin, errno is preserved properly along error return
