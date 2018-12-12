@@ -118,7 +118,6 @@ ext2_config_complete (void)
 
 /* The per-connection handle. */
 struct handle {
-  int readonly;
   ext2_filsys fs;               /* Filesystem handle. */
   ext2_ino_t ino;               /* Inode of open file. */
   ext2_file_t file;             /* File handle. */
@@ -139,8 +138,6 @@ ext2_open (int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
-
-  h->readonly = readonly;
 
   fs_flags = 0;
 #ifdef EXT2_FLAG_64BITS
