@@ -4,7 +4,7 @@ nbdkit-null-plugin - nbdkit bitbucket plugin
 
 =head1 SYNOPSIS
 
- nbdkit null size=SIZE
+ nbdkit null [size=SIZE]
 
 =head1 DESCRIPTION
 
@@ -23,7 +23,8 @@ caching writes locally then you will get inconsistent read behaviour.
 
 Specify the virtual size of the disk image.
 
-This parameter is required.
+This parameter is optional.  If omitted then a zero-sized device is
+created.
 
 =back
 
