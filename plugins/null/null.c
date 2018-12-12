@@ -66,7 +66,7 @@ null_config (const char *key, const char *value)
 }
 
 #define null_config_help \
-  "size=<SIZE>  (required) Size of the backing disk"
+  "size=<SIZE>             Size of the backing disk"
 
 /* The per-connection handle. */
 struct null_handle {
