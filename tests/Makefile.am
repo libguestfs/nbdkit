@@ -58,6 +58,7 @@ EXTRA_DIST = \
 	test-floppy.sh \
 	test-foreground.sh \
 	test-fua.sh \
+	test-full.sh \
 	test-help.sh \
 	test-help-plugin.sh \
 	test-ip.sh \
