@@ -32,8 +32,6 @@
 
 include $(top_srcdir)/common-rules.mk
 
-MAINTAINERCLEANFILES =
-
 EXTRA_DIST = \
 	make-pki.sh \
 	make-psk.sh \
@@ -214,9 +212,10 @@ keys.psk: $(srcdir)/make-psk.sh
 	SRCDIR=$(srcdir) $(srcdir)/make-psk.sh
 
 # Keys are expensive to recreate so only delete them when we do
-# ‘make maintainer-clean’.
-MAINTAINERCLEANFILES += keys.psk
-maintainer-clean-local:
+# ‘make distclean’.
+DISTCLEANFILES = keys.psk
+distclean-local: distclean-local-tls
+distclean-local-tls:
 	rm -rf pki
 
 #----------------------------------------------------------------------
@@ -226,7 +225,7 @@ if HAVE_PLUGINS
 
 # Common data shared by multiple tests
 check_DATA += file-data
-MAINTAINERCLEANFILES += file-data
+CLEANFILES += file-data
 file-data:
 	rm -f $@ $@-t
 	for f in `$(SEQ) 1 512`; do echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'; done > $@-t
@@ -286,7 +285,7 @@ endif HAVE_LIBGUESTFS
 # common disk image shared with several tests
 if HAVE_GUESTFISH
 check_DATA += disk
-MAINTAINERCLEANFILES += disk
+CLEANFILES += disk
 
 disk:
 	rm -f $@ test1.img
@@ -340,7 +339,7 @@ if HAVE_GUESTFISH
 
 LIBGUESTFS_TESTS += test-ext2
 check_DATA += ext2.img
-MAINTAINERCLEANFILES += ext2.img
+CLEANFILES += ext2.img
 
 ext2.img: disk
 	rm -f $@ $@-t
@@ -385,7 +384,7 @@ if HAVE_GUESTFISH
 
 LIBGUESTFS_TESTS += test-gzip
 check_DATA += disk.gz
-MAINTAINERCLEANFILES += disk.gz
+CLEANFILES += disk.gz
 
 test_gzip_SOURCES = test-gzip.c test.h
 test_gzip_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -454,7 +453,7 @@ test_random_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # split files plugin test.
 check_DATA += split1 split2 split3
-MAINTAINERCLEANFILES += split1 split2 split3
+CLEANFILES += split1 split2 split3
 split1: file-data
 	rm -f $@ $@-t
 	dd if=$< of=$@-t bs=1 count=100
@@ -585,7 +584,7 @@ endif HAVE_RUBY
 # Shell (sh) plugin test.
 LIBGUESTFS_TESTS += test-shell
 check_DATA += test-shell.img
-MAINTAINERCLEANFILES += test-shell.img
+CLEANFILES += test-shell.img
 
 test_shell_SOURCES = test-lang-plugins.c test.h
 test_shell_CFLAGS = \
@@ -732,7 +731,7 @@ TESTS += test-nozero.sh
 
 # offset filter test.
 check_DATA += offset-data
-MAINTAINERCLEANFILES += offset-data
+CLEANFILES += offset-data
 LIBGUESTFS_TESTS += test-offset
 
 offset-data:
@@ -765,7 +764,7 @@ if HAVE_GUESTFISH
 
 LIBGUESTFS_TESTS += test-xz
 check_DATA += disk.xz
-MAINTAINERCLEANFILES += disk.xz
+CLEANFILES += disk.xz
 
 test_xz_SOURCES = test-xz.c test.h
 test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)

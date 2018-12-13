@@ -123,4 +123,4 @@ filter-links.pod: $(top_srcdir)/common-rules.mk
 	$(srcdir)/make-links.sh filter 1 $(filters) > $@-t
 	mv $@-t $@
 
-MAINTAINERCLEANFILES = plugin-links.pod filter-links.pod
+DISTCLEANFILES = plugin-links.pod filter-links.pod
