@@ -17,7 +17,7 @@ disk which has run out of space on the host.
 
 =head2 Equivalent nbdkit-error-filter command
 
-Although his is as a standalone plugin, it is equivalent to using
+Although this is a standalone plugin, it is equivalent to using
 L<nbdkit-error-filter(1)>:
 
  nbdkit --filter=error null size=SIZE \
