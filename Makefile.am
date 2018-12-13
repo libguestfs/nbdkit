@@ -36,6 +36,14 @@ ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = \
 	.dir-locals.el \
+	fuzzing/README \
+	fuzzing/testcase_dir/newstyle-cflags \
+	fuzzing/testcase_dir/newstyle-cflags-exportname \
+	fuzzing/testcase_dir/newstyle-cflags-exportname-read4 \
+	fuzzing/testcase_dir/newstyle-cflags-go \
+	fuzzing/testcase_dir/newstyle-cflags-go-read \
+	fuzzing/testcase_dir/newstyle-cflags-go-read4 \
+	fuzzing/testcase_dir/newstyle-cflags-go-write \
 	.gitignore \
 	html/pod.css \
 	LICENSE \

@@ -1,0 +1,49 @@
+Fuzzing nbdkit using the American Fuzzy Lop (afl) fuzzer
+--------------------------------------------------------
+
+We can fuzz nbdkit using the -s (read from stdin) option, and feeding
+in a file of "network" input.  The stdout from nbdkit (ie. data that
+would normally be sent back to the client) is ignored.
+
+You will need to recompile nbdkit with afl instrumentation:
+
+  ./configure CC=/usr/bin/afl-gcc CXX=/usr/bin/afl-g++
+  make clean
+  make
+
+The fuzzing/testcase_dir directory contains some initial testcases
+that afl can use.
+
+Run multiple copies of afl-fuzz.  Usually you should run 1 master (-M)
+and as many slaves (-S) as you can.
+
+Master:
+
+  mkdir -p fuzzing/sync_dir
+  afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -M fuzz01 \
+      ./src/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1M
+
+Slaves:
+
+  # replace fuzzNN with fuzz02, fuzz03, etc.
+  afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -S fuzzNN \
+      ./src/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1M
+
+Notes
+-----
+
+If you find a serious or possible security bug that you don't want to
+report on a public mailing list, then send email to both
+<rjones@redhat.com> and <eblake@redhat.com>.  Make it clear in the
+email Subject line that it's a serious or security-related bug in
+nbdkit.
+
+We only have testcases for the newstyle fixed protocol so far, but if
+people report that they are exposing the oldstyle protocol to the
+internet / untrusted clients then we could extend the testing for
+that.
+
+We have only fuzzed the memory plugin, which is convenient because it
+stores everything in memory and throws it away when nbdkit exits.
+Since plugins can have bugs as well as the core server, it may be
+productive to test other plugins and filters.

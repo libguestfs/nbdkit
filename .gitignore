@@ -35,6 +35,7 @@ Makefile.in
 /depcomp
 /docs/filter-links.pod
 /docs/plugin-links.pod
+/fuzzing/sync_dir/
 /html/*.html
 /INSTALL
 /install-sh
