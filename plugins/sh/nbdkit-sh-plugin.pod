@@ -6,6 +6,10 @@ nbdkit-sh-plugin - nbdkit shell, script or executable plugin
 
  nbdkit sh /path/to/script [arguments...]
 
+ nbdkit sh - <<'EOF'
+ ... shell script ...
+ EOF
+
 =head1 DESCRIPTION
 
 C<nbdkit-sh-plugin> allows you to write plugins for L<nbdkit(1)> using
@@ -25,6 +29,22 @@ like this:
 
 You may have to add further C<key=value> arguments to the command
 line.
+
+=head2 Inline shell scripts
+
+It is also possible to write a shell script plugin "inline" using C<->
+as the name of the script, like this:
+
+ nbdkit sh - <<'EOF'
+   case "$1" in
+     get_size) echo 1M ;;
+     pread) dd if=/dev/zero count=$3 iflag=count_bytes ;;
+     *) exit 2 ;;
+   esac
+ EOF
+
+By default the inline script runs under F</bin/sh>.  You can add a
+shebang (C<#!>) to use other scripting languages.
 
 =head1 WRITING AN NBDKIT SH PLUGIN
 

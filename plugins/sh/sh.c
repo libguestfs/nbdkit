@@ -39,6 +39,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include <nbdkit-plugin.h>
 
@@ -115,6 +116,50 @@ sh_dump_plugin (void)
   }
 }
 
+/* This implements the "inline script" feature.  Read stdin into a
+ * temporary file and return the name of the file which the caller
+ * must free.  For convenience we put the temporary file into tmpdir
+ * but that's an implementation detail.
+ */
+static char *
+inline_script (void)
+{
+  const char scriptname[] = "inline-script.sh";
+  char *filename = NULL;
+  char *cmd = NULL;
+
+  if (asprintf (&filename, "%s/%s", tmpdir, scriptname) == -1) {
+    nbdkit_error ("asprintf: %m");
+    goto err;
+  }
+
+  /* Safe because both the tmpdir and script name are controlled by us
+   * and don't contain characters that need quoting.
+   */
+  if (asprintf (&cmd, "cat > %s", filename) == -1) {
+    nbdkit_error ("asprintf: %m");
+    goto err;
+  }
+
+  if (system (cmd) != 0) {
+    nbdkit_error ("sh: failed to copy inline script to temporary file");
+    goto err;
+  }
+
+  if (chmod (filename, 0500) == -1) {
+    nbdkit_error ("chmod: %s: %m", filename);
+    goto err;
+  }
+
+  free (cmd);
+  return filename;
+
+ err:
+  free (filename);
+  free (cmd);
+  return NULL;
+}
+
 static int
 sh_config (const char *key, const char *value)
 {
@@ -124,7 +169,15 @@ sh_config (const char *key, const char *value)
       nbdkit_error ("the first parameter must be script=/path/to/script");
       return -1;
     }
-    script = nbdkit_realpath (value);
+
+    /* If the script name is not "-" then it's expected to be a
+     * filename, otherwise it's an inline script which must be read
+     * into a temporary file.  Either way we want an absolute path.
+     */
+    if (strcmp (value, "-") != 0)
+      script = nbdkit_realpath (value);
+    else
+      script = inline_script ();
     if (script == NULL)
       return -1;
 
