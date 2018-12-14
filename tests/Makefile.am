@@ -53,6 +53,7 @@ EXTRA_DIST = \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
 	test-dump-plugin-example4.sh \
+	test-eflags.sh \
 	test-floppy.sh \
 	test-foreground.sh \
 	test-fua.sh \
@@ -281,6 +282,9 @@ test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_LIBGUESTFS
+
+# Test export flags.
+TESTS += test-eflags.sh
 
 # common disk image shared with several tests
 if HAVE_GUESTFISH

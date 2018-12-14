@@ -141,6 +141,8 @@ For non-essential enhancements to the test suite:
 
  - losetup (from util-linux package)
 
+ - od (from coreutils)
+
  - qemu-io (usually shipped with qemu)
 
  - socat
