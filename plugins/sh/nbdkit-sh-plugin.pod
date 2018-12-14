@@ -208,17 +208,21 @@ This method is required.
 
 =item C<can_trim>
 
+=item C<can_zero>
+
 Unlike in other languages, you B<must> provide the C<can_*> methods
 otherwise they are assumed to all return false and your C<pwrite>,
-C<flush> and C<trim> methods will never be called.  The reason for
-this is obscure: In other languages we can detect if (eg) a C<pwrite>
-method is defined and synthesize an appropriate response if no actual
-C<can_write> method is defined.  However detecting if methods are
-present without running them is not possible with this plugin.
+C<flush>, C<trim> and C<zero> methods will never be called.  The
+reason for this is obscure: In other languages we can detect if (eg) a
+C<pwrite> method is defined and synthesize an appropriate response if
+no actual C<can_write> method is defined.  However detecting if
+methods are present without running them is not possible with this
+plugin.
 
  /path/to/script can_write <handle>
  /path/to/script can_flush <handle>
  /path/to/script can_trim <handle>
+ /path/to/script can_zero <handle>
 
 The script should exit with code C<0> for true or code C<3> for false.
 
@@ -227,6 +231,16 @@ The script should exit with code C<0> for true or code C<3> for false.
  /path/to/script is_rotational <handle>
 
 The script should exit with code C<0> for true or code C<3> for false.
+
+=item C<can_fua>
+
+ /path/to/script can_fua <handle>
+
+This controls Forced Unit Access (FUA) behaviour of the core server.
+
+Unlike the other C<can_*> callbacks, this one is I<not> a boolean.  It
+must print either "none", "emulate" or "native" to stdout.  The
+meaning of these is described in L<nbdkit-plugin(3)>.
 
 =item C<pread>
 
@@ -239,9 +253,12 @@ This method is required.
 
 =item C<pwrite>
 
- /path/to/script pwrite <handle> <count> <offset>
+ /path/to/script pwrite <handle> <count> <offset> <flags>
 
 The script should read the binary data to be written from stdin.
+
+The C<flags> parameter can be an empty string or C<"fua">.  In the
+future, a comma-separated list of flags may be present.
 
 Unlike in other languages, if you provide a C<pwrite> method you
 B<must> also provide a C<can_write> method which exits with code C<0>
@@ -257,16 +274,24 @@ B<must> also provide a C<can_flush> method which exits with code C<0>
 
 =item C<trim>
 
- /path/to/script trim <handle> <count> <offset>
+ /path/to/script trim <handle> <count> <offset> <flags>
+
+The C<flags> parameter can be an empty string or C<"fua">.  In the
+future, a comma-separated list of flags may be present.
 
 Unlike in other languages, if you provide a C<trim> method you B<must>
 also provide a C<can_trim> method which exits with code C<0> (true).
 
 =item C<zero>
 
- /path/to/script zero <handle> <count> <offset> <may_trim>
+ /path/to/script zero <handle> <count> <offset> <flags>
 
-C<may_trim> will be either C<true> or C<false>.
+The C<flags> parameter can be an empty string or a comma-separated
+list of the flags: C<"fua"> and C<"may_trim"> (eg. C<"">, C<"fua">,
+C<"fua,may_trim"> are all possible values).
+
+Unlike in other languages, if you provide a C<zero> method you B<must>
+also provide a C<can_zero> method which exits with code C<0> (true).
 
 =back
 

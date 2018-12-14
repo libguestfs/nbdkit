@@ -35,11 +35,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
+
+#define NBDKIT_API_VERSION 2
 
 #include <nbdkit-plugin.h>
 
@@ -360,7 +363,8 @@ sh_get_size (void *handle)
 }
 
 static int
-sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+          uint32_t flags)
 {
   char *h = handle;
   char cbuf[32], obuf[32];
@@ -403,16 +407,53 @@ sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   }
 }
 
+/* Convert NBDKIT_FLAG_* to flags string. */
+static void flag_append (const char *str, bool *comma, char **buf, size_t *len);
+
+static void
+flags_string (uint32_t flags, char *buf, size_t len)
+{
+  bool comma = false;
+
+  if (flags & NBDKIT_FLAG_FUA)
+    flag_append ("fua", &comma, &buf, &len);
+
+  if (flags & NBDKIT_FLAG_MAY_TRIM)
+    flag_append ("may_trim", &comma, &buf, &len);
+}
+
+static void
+flag_append (const char *str, bool *comma, char **buf, size_t *len)
+{
+  size_t slen = strlen (str);
+
+  if (*comma) {
+    /* Too short flags buffer is an internal error so abort. */
+    if (*len <= 1) abort ();
+    strcpy (*buf, ",");
+    (*buf)++;
+    (*len)--;
+  }
+
+  if (*len <= slen) abort ();
+  strcpy (*buf, str);
+  (*buf) += slen;
+  (*len) -= slen;
+
+  *comma = true;
+}
+
 static int
-sh_pwrite (void *handle, const void *buf,
-                   uint32_t count, uint64_t offset)
+sh_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+           uint32_t flags)
 {
   char *h = handle;
-  char cbuf[32], obuf[32];
-  const char *args[] = { script, "pwrite", h, cbuf, obuf, NULL };
+  char cbuf[32], obuf[32], fbuf[32];
+  const char *args[] = { script, "pwrite", h, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
+  flags_string (flags, fbuf, sizeof fbuf);
 
   switch (call_write (buf, count, args)) {
   case OK:
@@ -468,19 +509,76 @@ sh_can_flush (void *handle)
 }
 
 static int
-sh_can_trim (void *handle)
-{
-  return boolean_method (handle, "can_trim");
-}
-
-static int
 sh_is_rotational (void *handle)
 {
   return boolean_method (handle, "is_rotational");
 }
 
 static int
-sh_flush (void *handle)
+sh_can_trim (void *handle)
+{
+  return boolean_method (handle, "can_trim");
+}
+
+static int
+sh_can_zero (void *handle)
+{
+  return boolean_method (handle, "can_zero");
+}
+
+/* Not a boolean method, the method prints "none", "emulate" or "native". */
+static int
+sh_can_fua (void *handle)
+{
+  char *h = handle;
+  const char *args[] = { script, "can_fua", h, NULL };
+  char *s = NULL;
+  size_t slen;
+  int r;
+
+  switch (call_read (&s, &slen, args)) {
+  case OK:
+    if (slen > 0 && s[slen-1] == '\n')
+      s[slen-1] = '\0';
+    if (strcasecmp (s, "none") == 0)
+      r = NBDKIT_FUA_NONE;
+    else if (strcasecmp (s, "emulate") == 0)
+      r = NBDKIT_FUA_EMULATE;
+    else if (strcasecmp (s, "native") == 0)
+      r = NBDKIT_FUA_NATIVE;
+    else {
+      nbdkit_error ("%s: could not parse output from can_fua method: %s",
+                    script, s);
+      r = -1;
+    }
+    free (s);
+    return r;
+
+  case MISSING:
+    free (s);
+    /* NBDKIT_FUA_EMULATE means that nbdkit will call .flush.  However
+     * we cannot know if that callback exists, so the safest default
+     * is to return NBDKIT_FUA_NONE.
+     */
+    return NBDKIT_FUA_NONE;
+
+  case ERROR:
+    free (s);
+    return -1;
+
+  case RET_FALSE:
+    free (s);
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "can_fua");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
+  }
+}
+
+static int
+sh_flush (void *handle, uint32_t flags)
 {
   char *h = handle;
   const char *args[] = { script, "flush", h, NULL };
@@ -507,14 +605,15 @@ sh_flush (void *handle)
 }
 
 static int
-sh_trim (void *handle, uint32_t count, uint64_t offset)
+sh_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   char *h = handle;
-  char cbuf[32], obuf[32];
-  const char *args[] = { script, "trim", h, cbuf, obuf, NULL };
+  char cbuf[32], obuf[32], fbuf[32];
+  const char *args[] = { script, "trim", h, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
+  flags_string (flags, fbuf, sizeof fbuf);
 
   switch (call (args)) {
   case OK:
@@ -538,15 +637,15 @@ sh_trim (void *handle, uint32_t count, uint64_t offset)
 }
 
 static int
-sh_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+sh_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   char *h = handle;
-  char cbuf[32], obuf[32];
-  const char *args[] = { script, "zero", h, cbuf, obuf,
-                         may_trim ? "true" : "false", NULL };
+  char cbuf[32], obuf[32], fbuf[32];
+  const char *args[] = { script, "zero", h, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
+  flags_string (flags, fbuf, sizeof fbuf);
 
   switch (call (args)) {
   case OK:
@@ -596,6 +695,8 @@ static struct nbdkit_plugin plugin = {
   .can_flush         = sh_can_flush,
   .is_rotational     = sh_is_rotational,
   .can_trim          = sh_can_trim,
+  .can_zero          = sh_can_zero,
+  .can_fua           = sh_can_fua,
 
   .pread             = sh_pread,
   .pwrite            = sh_pwrite,
