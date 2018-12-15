@@ -28,7 +28,7 @@ like this:
  nbdkit sh /path/to/script
 
 You may have to add further C<key=value> arguments to the command
-line.
+line.  The script must be executable (C<chmod +x>).
 
 =head2 Inline shell scripts
 
