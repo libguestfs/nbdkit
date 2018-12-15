@@ -41,8 +41,17 @@ that needs to be called, the external script is invoked with
 parameters describing the method and its arguments.  The first
 parameter is always the method name.  For example:
 
- /path/to/script config <key> <value>
+ /path/to/script config file disk.img
+                   │      │   │
+                   │      │   └─ value ($3)
+                   │      └── key ($2)
+               method ($1)
+
  /path/to/script pread <handle> <count> <offset>
+                   │       │       │       │
+                   │       │       │       └─ offset in bytes ($4)
+                   │       │       └── request size in bytes ($3)
+               method ($1) └── handle ($2) ─ see "Handles" below
 
 =head2 Exit codes
 
