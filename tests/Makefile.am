@@ -158,7 +158,7 @@ endif HAVE_PLUGINS
 
 if HAVE_CXX
 # This builds a plugin and a filter using the C++ compiler.  They
-# doesn't do anything interesting when run.
+# don't do anything interesting when run.
 TESTS += \
 	test-cxx.sh
 # check_LTLIBRARIES won't build a shared library (see automake manual).
