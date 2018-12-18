@@ -467,8 +467,10 @@ main (int argc, char *argv[])
 
     /* Otherwise this is an error. */
     fprintf (stderr,
-             "%s: no plugins given on the command line.\nRead nbdkit(1) for documentation.\n",
-             program_name);
+             "%s: no plugins given on the command line.\n"
+             "Use '%s --help' or "
+             "read the nbdkit(1) manual page for documentation.\n",
+             program_name, program_name);
     exit (EXIT_FAILURE);
   }
 
