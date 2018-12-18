@@ -116,3 +116,11 @@ maintainer-commit:
 # Tag HEAD with the current version.
 maintainer-tag:
 	git tag -a v$(VERSION) -m "Version $(VERSION)." -f
+
+# Run tests and display the time taken to run each test, which is
+# useful for diagnosing slow-running tests.
+#
+# Try also setting LIBGUESTFS_BACKEND_SETTINGS=force_tcg which
+# emulates what happens in Koji.
+maintainer-check-times:
+	make check -j1 | ts -i
