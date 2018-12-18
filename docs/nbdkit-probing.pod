@@ -54,7 +54,8 @@ To find out if a plugin is installed (and working) in the plugin
 directory, use I<--dump-plugin> as above:
 
  $ nbdkit foo --dump-plugin
- nbdkit: /usr/lib64/nbdkit/plugins/nbdkit-foo-plugin.so: /usr/lib64/nbdkit/plugins/nbdkit-foo-plugin.so: cannot open shared object file: No such file or directory
+ nbdkit: error: cannot open plugin 'foo': /usr/lib64/nbdkit/plugins/nbdkit-foo-plugin.so: cannot open shared object file: No such file or directory
+ Use 'nbdkit --help' or read the nbdkit(1) manual page for documentation.
 
 Note it is better to test for the existence of plugins this way rather
 than just seeing if the F<.so> file exists, because nbdkit will load

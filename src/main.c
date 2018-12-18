@@ -742,7 +742,12 @@ open_plugin_so (size_t i, const char *name, int short_name)
 
   dl = dlopen (filename, RTLD_NOW|RTLD_GLOBAL);
   if (dl == NULL) {
-    fprintf (stderr, "%s: %s: %s\n", program_name, filename, dlerror ());
+    fprintf (stderr,
+             "%s: error: cannot open plugin '%s': %s\n"
+             "Use '%s --help' or "
+             "read the nbdkit(1) manual page for documentation.\n",
+             program_name, name, dlerror (),
+             program_name);
     exit (EXIT_FAILURE);
   }
 
@@ -790,7 +795,8 @@ open_filter_so (struct backend *next, size_t i,
 
   dl = dlopen (filename, RTLD_NOW|RTLD_GLOBAL);
   if (dl == NULL) {
-    fprintf (stderr, "%s: %s: %s\n", program_name, filename, dlerror ());
+    fprintf (stderr, "%s: error: cannot open filter '%s': %s\n",
+             program_name, name, dlerror ());
     exit (EXIT_FAILURE);
   }
 
