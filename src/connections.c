@@ -640,7 +640,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
     if (conn->recv (conn, &new_option, sizeof new_option) == -1) {
-      nbdkit_error ("read: %m");
+      nbdkit_error ("reading option: conn->recv: %m");
       return -1;
     }
 
@@ -881,7 +881,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
         return -1;
       if (conn->recv (conn, data, optlen) == -1) {
-        nbdkit_error ("read: %m");
+        nbdkit_error ("reading unknown option data: conn->recv: %m");
         return -1;
       }
     }
@@ -932,7 +932,7 @@ _negotiate_handshake_newstyle (struct connection *conn)
 
   /* Client now sends us its 32 bit flags word ... */
   if (conn->recv (conn, &conn->cflags, sizeof conn->cflags) == -1) {
-    nbdkit_error ("read: %m");
+    nbdkit_error ("reading initial client flags: conn->recv: %m");
     return -1;
   }
   conn->cflags = be32toh (conn->cflags);
