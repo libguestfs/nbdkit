@@ -5,6 +5,7 @@ nbdkit-cache-filter - nbdkit caching filter
 =head1 SYNOPSIS
 
  nbdkit --filter=cache plugin [cache=writeback|writethrough|unsafe]
+                              [cache-on-read=true|false]
                               [plugin-args...]
 
 =head1 DESCRIPTION
@@ -49,6 +50,22 @@ grows too large.
 This is dangerous and can cause data loss, but this may be acceptable
 if you only use it for testing or with data that you don't care about
 or can cheaply reconstruct.
+
+=item B<cache-on-read=true>
+
+Cache read requests as well as write requests.  Any time a block is
+read from the plugin, it is saved in the cache (if there is sufficient
+space) so the same data can be served more quickly later.
+
+Note that if the underlying data served by the plugin can be modified
+by some other means (eg. something else can write to a file which is
+being served by L<nbdkit-file-plugin(1)>), this option will cause
+nbdkit to serve stale data because reads won't always go through to
+the plugin.
+
+=item B<cache-on-read=false>
+
+Do not cache read requests (this is the default).
 
 =back
 

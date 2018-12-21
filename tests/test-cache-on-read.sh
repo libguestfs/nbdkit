@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# nbdkit
+# Copyright (C) 2018 Red Hat Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# * Neither the name of Red Hat nor the names of its contributors may be
+# used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY RED HAT AND CONTRIBUTORS ''AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL RED HAT OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+# XXX Suggestion to improve this test: Use the delay filter below the
+# cache filter, and time reads to prove that the second read is faster
+# because it isn't going through the delay filter and plugin.
+
+source ./functions.sh
+set -e
+set -x
+
+files="cache-on-read.img cache-on-read.sock cache-on-read.pid"
+rm -f $files
+cleanup_fn rm -f $files
+
+# Create an empty base image.
+truncate -s 1G cache-on-read.img
+
+# Run nbdkit with the caching filter and cache-on-read set.
+start_nbdkit -P cache-on-read.pid -U cache-on-read.sock \
+             --filter=cache \
+             file cache-on-read.img \
+             cache-on-read=true
+
+# Open the overlay and perform some operations.
+guestfish --format=raw -a "nbd://?socket=$PWD/cache-on-read.sock" <<'EOF'
+  run
+  part-disk /dev/sda gpt
+  mkfs ext4 /dev/sda1
+  mount /dev/sda1 /
+  fill-dir / 10000
+  fill-pattern "abcde" 5M /large
+  write /hello "hello, world"
+EOF
+
+# Check the last files we created exist.
+guestfish --ro -a cache-on-read.img -m /dev/sda1 <<'EOF'
+  cat /hello
+  cat /large | cat >/dev/null
+EOF

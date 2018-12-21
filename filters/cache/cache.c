@@ -90,6 +90,9 @@ static enum cache_mode {
   CACHE_MODE_UNSAFE,
 } cache_mode = CACHE_MODE_WRITEBACK;
 
+/* Cache read requests. */
+static bool cache_on_read = false;
+
 static int cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
 
 static void
@@ -156,6 +159,15 @@ cache_config (nbdkit_next_config *next, void *nxdata,
                     "writeback|writethrough|unsafe");
       return -1;
     }
+  }
+  else if (strcmp (key, "cache-on-read") == 0) {
+    int r;
+
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    cache_on_read = r;
+    return 0;
   }
   else {
     return next (nxdata, key, value);
@@ -243,9 +255,28 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
                 state == BLOCK_DIRTY ? "dirty" :
                 "unknown");
 
-  if (state == BLOCK_NOT_CACHED) /* Read underlying plugin. */
-    return next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err);
-  else {                         /* Read cache. */
+  if (state == BLOCK_NOT_CACHED) { /* Read underlying plugin. */
+    if (next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err) == -1)
+      return -1;
+
+    /* If cache-on-read, copy the block to the cache. */
+    if (cache_on_read) {
+      off_t offset = blknum * BLKSIZE;
+
+      nbdkit_debug ("cache: cache-on-read block %" PRIu64
+                    " (offset %" PRIu64 ")",
+                    blknum, (uint64_t) offset);
+
+      if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+        *err = errno;
+        nbdkit_error ("pwrite: %m");
+        return -1;
+      }
+      bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
+    }
+    return 0;
+  }
+  else {                        /* Read cache. */
     if (pread (fd, block, BLKSIZE, offset) == -1) {
       *err = errno;
       nbdkit_error ("pread: %m");
