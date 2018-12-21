@@ -600,6 +600,31 @@ send_newstyle_option_reply_info_export (struct connection *conn,
   return 0;
 }
 
+/* Sub-function during _negotiate_handshake_newstyle, to uniformly handle
+ * a client hanging up on a message boundary.
+ */
+static int __attribute__ ((format (printf, 4, 5)))
+conn_recv_full (struct connection *conn, void *buf, size_t len,
+                const char *fmt, ...)
+{
+  int r = conn->recv (conn, buf, len);
+  va_list args;
+
+  if (r == -1) {
+    va_start (args, fmt);
+    nbdkit_verror (fmt, args);
+    va_end (args);
+    return -1;
+  }
+  if (r == 0) {
+    /* During negotiation, client EOF on message boundary is less
+     * severe than failure in the middle of the buffer. */
+    debug ("client closed input socket, closing connection");
+    return -1;
+  }
+  return r;
+}
+
 /* Sub-function of _negotiate_handshake_newstyle_options below.  It
  * must be called on all non-error paths out of the options for-loop
  * in that function.
@@ -638,10 +663,9 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
   struct new_handshake_finish handshake_finish;
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
-    if (conn->recv (conn, &new_option, sizeof new_option) == -1) {
-      nbdkit_error ("reading option: conn->recv: %m");
+    if (conn_recv_full (conn, &new_option, sizeof new_option,
+                        "reading option: conn->recv: %m") == -1)
       return -1;
-    }
 
     version = be64toh (new_option.version);
     if (version != NEW_VERSION) {
@@ -674,10 +698,9 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
 
     switch (option) {
     case NBD_OPT_EXPORT_NAME:
-      if (conn->recv (conn, data, optlen) == -1) {
-        nbdkit_error ("read: %m");
+      if (conn_recv_full (conn, data, optlen,
+                          "read: %m") == -1)
         return -1;
-      }
       /* Apart from printing it, ignore the export name. */
       data[optlen] = '\0';
       debug ("newstyle negotiation: NBD_OPT_EXPORT_NAME: "
@@ -713,10 +736,9 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
-        if (conn->recv (conn, data, optlen) == -1) {
-          nbdkit_error ("read: %m");
+        if (conn_recv_full (conn, data, optlen,
+                            "read: %m") == -1)
           return -1;
-        }
         continue;
       }
 
@@ -735,10 +757,9 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
-        if (conn->recv (conn, data, optlen) == -1) {
-          nbdkit_error ("read: %m");
+        if (conn_recv_full (conn, data, optlen,
+                            "read: %m") == -1)
           return -1;
-        }
         continue;
       }
 
@@ -775,10 +796,9 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       break;
 
     case NBD_OPT_GO:
-      if (conn->recv (conn, data, optlen) == -1) {
-        nbdkit_error ("read: %m");
+      if (conn_recv_full (conn, data, optlen,
+                          "read: %m") == -1)
         return -1;
-      }
 
       if (optlen < 6) { /* 32 bit export length + 16 bit nr info */
         debug ("newstyle negotiation: NBD_OPT_GO option length < 6");
@@ -874,10 +894,9 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       /* Unknown option. */
       if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
         return -1;
-      if (conn->recv (conn, data, optlen) == -1) {
-        nbdkit_error ("reading unknown option data: conn->recv: %m");
+      if (conn_recv_full (conn, data, optlen,
+                          "reading unknown option data: conn->recv: %m") == -1)
         return -1;
-      }
     }
 
     /* Note, since it's not very clear from the protocol doc, that the
@@ -925,10 +944,9 @@ _negotiate_handshake_newstyle (struct connection *conn)
   }
 
   /* Client now sends us its 32 bit flags word ... */
-  if (conn->recv (conn, &conn->cflags, sizeof conn->cflags) == -1) {
-    nbdkit_error ("reading initial client flags: conn->recv: %m");
+  if (conn_recv_full (conn, &conn->cflags, sizeof conn->cflags,
+                      "reading initial client flags: conn->recv: %m") == -1)
     return -1;
-  }
   conn->cflags = be32toh (conn->cflags);
   /* ... which we check for accuracy. */
   debug ("newstyle negotiation: client flags: 0x%x", conn->cflags);
