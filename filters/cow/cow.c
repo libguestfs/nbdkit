@@ -41,12 +41,18 @@
 #include <string.h>
 #include <errno.h>
 
+#include <pthread.h>
+
 #include <nbdkit-filter.h>
 
 #include "blk.h"
 
-/* XXX See design comment in blk.c. */
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
+
+/* In order to handle parallel requests safely, this lock must be held
+ * when calling any blk_* functions.
+ */
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void
 cow_load (void)
@@ -82,6 +88,7 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
               void *handle)
 {
   int64_t size;
+  int r;
 
   size = next_ops->get_size (nxdata);
   if (size == -1)
@@ -89,7 +96,10 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   nbdkit_debug ("cow: underlying file size: %" PRIi64, size);
 
-  if (blk_set_size (size))
+  pthread_mutex_lock (&lock);
+  r = blk_set_size (size);
+  pthread_mutex_unlock (&lock);
+  if (r == -1)
     return -1;
 
   return size;
@@ -154,6 +164,7 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
+    int r;
 
     blknum = offset / BLKSIZE;  /* block number */
     blkoffs = offset % BLKSIZE; /* offset within the block */
@@ -161,7 +172,10 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    if (blk_read (next_ops, nxdata, blknum, block, err) == -1) {
+    pthread_mutex_lock (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    pthread_mutex_unlock (&lock);
+    if (r == -1) {
       free (block);
       return -1;
     }
@@ -194,6 +208,7 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
+    int r;
 
     blknum = offset / BLKSIZE;  /* block number */
     blkoffs = offset % BLKSIZE; /* offset within the block */
@@ -201,13 +216,17 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    /* Do a read-modify-write operation on the current block. */
-    if (blk_read (next_ops, nxdata, blknum, block, err) == -1) {
-      free (block);
-      return -1;
+    /* Do a read-modify-write operation on the current block.
+     * Hold the lock over the whole operation.
+     */
+    pthread_mutex_lock (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r != -1) {
+      memcpy (&block[blkoffs], buf, n);
+      r = blk_write (blknum, block, err);
     }
-    memcpy (&block[blkoffs], buf, n);
-    if (blk_write (blknum, block, err) == -1) {
+    pthread_mutex_unlock (&lock);
+    if (r == -1) {
       free (block);
       return -1;
     }
@@ -240,6 +259,7 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
+    int r;
 
     blknum = offset / BLKSIZE;  /* block number */
     blkoffs = offset % BLKSIZE; /* offset within the block */
@@ -247,15 +267,20 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    /* XXX There is the possibility of optimizing this: ONLY if we are
+    /* Do a read-modify-write operation on the current block.
+     * Hold the lock over the whole operation.
+     *
+     * XXX There is the possibility of optimizing this: ONLY if we are
      * writing a whole, aligned block, then use FALLOC_FL_ZERO_RANGE.
      */
-    if (blk_read (next_ops, nxdata, blknum, block, err) == -1) {
-      free (block);
-      return -1;
+    pthread_mutex_lock (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r != -1) {
+      memset (&block[blkoffs], 0, n);
+      r = blk_write (blknum, block, err);
     }
-    memset (&block[blkoffs], 0, n);
-    if (blk_write (blknum, block, err) == -1) {
+    pthread_mutex_unlock (&lock);
+    if (r == -1) {
       free (block);
       return -1;
     }
@@ -274,11 +299,14 @@ static int
 cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
            uint32_t flags, int *err)
 {
-  if (blk_flush () == -1) {
+  int r;
+
+  pthread_mutex_lock (&lock);
+  r = blk_flush ();
+  if (r == -1)
     *err = errno;
-    return -1;
-  }
-  return 0;
+  pthread_mutex_unlock (&lock);
+  return r;
 }
 
 static struct nbdkit_filter filter = {

@@ -55,18 +55,9 @@
  * When writing a block we unconditionally write the data to the
  * temporary file, setting the bit in the bitmap.
  *
- * No locking is needed for blk_* calls, but there is a potential
- * problem of multiple pwrite calls doing a read-modify-write cycle
- * because the last write would win, erasing earlier writes.  To avoid
- * this we limit the thread model to SERIALIZE_ALL_REQUESTS so that
- * there cannot be concurrent pwrite requests.  We could relax this
- * restriction with a bit of work.
- *
  * We allow the client to request FUA, and emulate it with a flush
- * (arguably, since the write overlay is temporary, and since we
- * serialize all requests, we could ignore FUA altogether, but
- * flushing will be more correct if we improve the thread model to be
- * more parallel).
+ * (arguably, since the write overlay is temporary, we could ignore
+ * FUA altogether).
  */
 
 #include <config.h>

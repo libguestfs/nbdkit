@@ -45,6 +45,13 @@ extern int blk_init (void);
 /* Close the overlay, free the bitmap. */
 extern void blk_free (void);
 
+/*----------------------------------------------------------------------
+ * ** NOTE **
+ *
+ * An exclusive lock must be held when you call any function below
+ * this line.
+ */
+
 /* Allocate or resize the overlay and bitmap. */
 extern int blk_set_size (uint64_t new_size);
 
