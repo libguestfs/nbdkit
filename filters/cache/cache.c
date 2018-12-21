@@ -46,6 +46,8 @@
 #include <sys/ioctl.h>
 #include <assert.h>
 
+#include <pthread.h>
+
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
@@ -55,8 +57,12 @@
 #include "cache.h"
 #include "blk.h"
 
-/* XXX See design comment in filters/cow/cow.c. */
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
+
+/* In order to handle parallel requests safely, this lock must be held
+ * when calling any blk_* functions.
+ */
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 enum cache_mode cache_mode = CACHE_MODE_WRITEBACK;
 bool cache_on_read = false;
@@ -133,6 +139,7 @@ cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
               void *handle)
 {
   int64_t size;
+  int r;
 
   size = next_ops->get_size (nxdata);
   if (size == -1)
@@ -140,7 +147,10 @@ cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   nbdkit_debug ("cache: underlying file size: %" PRIi64, size);
 
-  if (blk_set_size (size))
+  pthread_mutex_lock (&lock);
+  r = blk_set_size (size);
+  pthread_mutex_unlock (&lock);
+  if (r == -1)
     return -1;
 
   return size;
@@ -180,6 +190,7 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
+    int r;
 
     blknum = offset / BLKSIZE;  /* block number */
     blkoffs = offset % BLKSIZE; /* offset within the block */
@@ -187,7 +198,10 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    if (blk_read (next_ops, nxdata, blknum, block, err) == -1) {
+    pthread_mutex_lock (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    pthread_mutex_unlock (&lock);
+    if (r == -1) {
       free (block);
       return -1;
     }
@@ -226,6 +240,7 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
+    int r;
 
     blknum = offset / BLKSIZE;  /* block number */
     blkoffs = offset % BLKSIZE; /* offset within the block */
@@ -233,13 +248,17 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    /* Do a read-modify-write operation on the current block. */
-    if (blk_read (next_ops, nxdata, blknum, block, err) == -1){
-      free (block);
-      return -1;
+    /* Do a read-modify-write operation on the current block.
+     * Hold the lock over the whole operation.
+     */
+    pthread_mutex_lock (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r != -1) {
+      memcpy (&block[blkoffs], buf, n);
+      r = blk_write (next_ops, nxdata, blknum, block, flags, err);
     }
-    memcpy (&block[blkoffs], buf, n);
-    if (blk_write (next_ops, nxdata, blknum, block, flags, err) == -1) {
+    pthread_mutex_unlock (&lock);
+    if (r == -1) {
       free (block);
       return -1;
     }
@@ -279,6 +298,7 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
+    int r;
 
     blknum = offset / BLKSIZE;  /* block number */
     blkoffs = offset % BLKSIZE; /* offset within the block */
@@ -286,12 +306,17 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    if (blk_read (next_ops, nxdata, blknum, block, err) == -1) {
-      free (block);
-      return -1;
+    /* Do a read-modify-write operation on the current block.
+     * Hold the lock over the whole operation.
+     */
+    pthread_mutex_lock (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r != -1) {
+      memset (&block[blkoffs], 0, n);
+      r = blk_write (next_ops, nxdata, blknum, block, flags, err);
     }
-    memset (&block[blkoffs], 0, n);
-    if (blk_write (next_ops, nxdata, blknum, block, flags, err) == -1) {
+    pthread_mutex_unlock (&lock);
+    if (r == -1) {
       free (block);
       return -1;
     }
@@ -343,7 +368,9 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
    * to be sure.  Also we still need to issue the flush to the
    * underlying storage.
    */
+  pthread_mutex_lock (&lock);
   for_each_dirty_block (flush_dirty_block, &data);
+  pthread_mutex_unlock (&lock);
   free (data.block);
 
   /* Now issue a flush request to the underlying storage. */

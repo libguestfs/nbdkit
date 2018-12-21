@@ -40,6 +40,13 @@ extern int blk_init (void);
 /* Close the cache, free the bitmap. */
 extern void blk_free (void);
 
+/*----------------------------------------------------------------------
+ * ** NOTE **
+ *
+ * An exclusive lock must be held when you call any function below
+ * this line.
+ */
+
 /* Allocate or resize the cache file and bitmap. */
 extern int blk_set_size (uint64_t new_size);
 
