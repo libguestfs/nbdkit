@@ -263,8 +263,7 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   off_t offset = blknum * BLKSIZE;
 
-  nbdkit_debug ("cache: blk_writethrough block %" PRIu64
-                " (offset %" PRIu64 ")",
+  nbdkit_debug ("cache: writethrough block %" PRIu64 " (offset %" PRIu64 ")",
                 blknum, (uint64_t) offset);
 
   if (pwrite (fd, block, BLKSIZE, offset) == -1) {
@@ -281,11 +280,18 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
-/* Write to the cache only. */
+/* Write a whole block.
+ *
+ * If the cache is in writethrough mode, or the FUA flag is set, then
+ * this calls blk_writethrough above which will write both to the
+ * cache and through to the underlying device.
+ *
+ * Otherwise it will only write to the cache.
+ */
 static int
-blk_writeback (struct nbdkit_next_ops *next_ops, void *nxdata,
-               uint64_t blknum, const uint8_t *block, uint32_t flags,
-               int *err)
+blk_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+           uint64_t blknum, const uint8_t *block, uint32_t flags,
+           int *err)
 {
   off_t offset;
 
@@ -295,8 +301,7 @@ blk_writeback (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   offset = blknum * BLKSIZE;
 
-  nbdkit_debug ("cache: blk_writeback block %" PRIu64
-                " (offset %" PRIu64 ")",
+  nbdkit_debug ("cache: writeback block %" PRIu64 " (offset %" PRIu64 ")",
                 blknum, (uint64_t) offset);
 
   if (pwrite (fd, block, BLKSIZE, offset) == -1) {
@@ -386,7 +391,7 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
       return -1;
     }
     memcpy (&block[blkoffs], buf, n);
-    if (blk_writeback (next_ops, nxdata, blknum, block, flags, err) == -1) {
+    if (blk_write (next_ops, nxdata, blknum, block, flags, err) == -1) {
       free (block);
       return -1;
     }
@@ -438,7 +443,7 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
       return -1;
     }
     memset (&block[blkoffs], 0, n);
-    if (blk_writeback (next_ops, nxdata, blknum, block, flags, err) == -1) {
+    if (blk_write (next_ops, nxdata, blknum, block, flags, err) == -1) {
       free (block);
       return -1;
     }
