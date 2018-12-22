@@ -41,6 +41,8 @@ nbdkit_cache_filter_la_SOURCES = \
 	blk.h \
 	cache.c \
 	cache.h \
+	lru.c \
+	lru.h \
 	$(top_srcdir)/include/nbdkit-filter.h
 
 nbdkit_cache_filter_la_CPPFLAGS = \

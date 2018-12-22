@@ -53,6 +53,7 @@
 
 #include "cache.h"
 #include "blk.h"
+#include "lru.h"
 
 /* The cache. */
 static int fd = -1;
@@ -79,6 +80,8 @@ blk_init (void)
   const char *tmpdir;
   size_t len;
   char *template;
+
+  lru_init ();
 
   bitmap_init (&bm, BLKSIZE, 2 /* bits per block */);
 
@@ -115,6 +118,8 @@ blk_free (void)
     close (fd);
 
   bitmap_free (&bm);
+
+  lru_free ();
 }
 
 int
@@ -127,6 +132,9 @@ blk_set_size (uint64_t new_size)
     nbdkit_error ("ftruncate: %m");
     return -1;
   }
+
+  if (lru_set_size (new_size) == -1)
+    return -1;
 
   return 0;
 }
@@ -163,6 +171,7 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
         return -1;
       }
       bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
+      lru_set_recently_accessed (blknum);
     }
     return 0;
   }
@@ -172,6 +181,7 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
       nbdkit_error ("pread: %m");
       return -1;
     }
+    lru_set_recently_accessed (blknum);
     return 0;
   }
 }
@@ -196,6 +206,7 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
 
   bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
+  lru_set_recently_accessed (blknum);
 
   return 0;
 }
@@ -222,6 +233,7 @@ blk_write (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
   }
   bitmap_set_blk (&bm, blknum, BLOCK_DIRTY);
+  lru_set_recently_accessed (blknum);
 
   return 0;
 }
