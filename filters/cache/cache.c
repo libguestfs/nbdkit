@@ -52,89 +52,28 @@
 
 #include <nbdkit-filter.h>
 
-#include "bitmap.h"
+#include "cache.h"
+#include "blk.h"
 
 /* XXX See design comment in filters/cow/cow.c. */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
-/* Size of a block in the cache.  A 4K block size means that we need
- * 64 MB of memory to store the bitmaps for a 1 TB underlying image.
- * It is also smaller than the usual hole size for sparse files, which
- * means we have no reason to call next_ops->zero.
- */
-#define BLKSIZE 4096
-
-/* The cache. */
-static int fd = -1;
-
-/* Bitmap.  There are two bits per block which are updated as we read,
- * write back or write through blocks.
- *
- * 00 = not in cache
- * 01 = block cached and clean
- * 10 = <unused>
- * 11 = block cached and dirty
- */
-static struct bitmap bm;
-
-enum bm_entry {
-  BLOCK_NOT_CACHED = 0,
-  BLOCK_CLEAN = 1,
-  BLOCK_DIRTY = 3,
-};
-
-/* Caching mode. */
-static enum cache_mode {
-  CACHE_MODE_WRITEBACK,
-  CACHE_MODE_WRITETHROUGH,
-  CACHE_MODE_UNSAFE,
-} cache_mode = CACHE_MODE_WRITEBACK;
-
-/* Cache read requests. */
-static bool cache_on_read = false;
+enum cache_mode cache_mode = CACHE_MODE_WRITEBACK;
+bool cache_on_read = false;
 
 static int cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
 
 static void
 cache_load (void)
 {
-  const char *tmpdir;
-  size_t len;
-  char *template;
-
-  bitmap_init (&bm, BLKSIZE, 2 /* bits per block */);
-
-  tmpdir = getenv ("TMPDIR");
-  if (!tmpdir)
-    tmpdir = LARGE_TMPDIR;
-
-  nbdkit_debug ("cache: temporary directory for cache: %s", tmpdir);
-
-  len = strlen (tmpdir) + 8;
-  template = alloca (len);
-  snprintf (template, len, "%s/XXXXXX", tmpdir);
-
-#ifdef HAVE_MKOSTEMP
-  fd = mkostemp (template, O_CLOEXEC);
-#else
-  fd = mkstemp (template);
-  fcntl (fd, F_SETFD, FD_CLOEXEC);
-#endif
-  if (fd == -1) {
-    nbdkit_error ("mkostemp: %s: %m", tmpdir);
+  if (blk_init () == -1)
     exit (EXIT_FAILURE);
-  }
-
-  unlink (template);
 }
 
 static void
 cache_unload (void)
 {
-  if (fd >= 0)
-    close (fd);
-
-  bitmap_free (&bm);
+  blk_free ();
 }
 
 static int
@@ -188,21 +127,6 @@ cache_open (nbdkit_next_open *next, void *nxdata, int readonly)
   return &handle;
 }
 
-/* Allocate or resize the cache file and bitmap. */
-static int
-blk_set_size (uint64_t new_size)
-{
-  if (bitmap_resize (&bm, new_size) == -1)
-    return -1;
-
-  if (ftruncate (fd, new_size) == -1) {
-    nbdkit_error ("ftruncate: %m");
-    return -1;
-  }
-
-  return 0;
-}
-
 /* Get the file size and ensure the cache is the correct size. */
 static int64_t
 cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -235,113 +159,6 @@ cache_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (r < 0)
     return -1;
   /* TODO: cache per-connection FUA mode? */
-  return 0;
-}
-
-/* These are the block operations.  They always read or write a single
- * whole block of size ‘blksize’.
- */
-static int
-blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
-          uint64_t blknum, uint8_t *block, int *err)
-{
-  off_t offset = blknum * BLKSIZE;
-  enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_CACHED);
-
-  nbdkit_debug ("cache: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
-                blknum, (uint64_t) offset,
-                state == BLOCK_NOT_CACHED ? "not cached" :
-                state == BLOCK_CLEAN ? "clean" :
-                state == BLOCK_DIRTY ? "dirty" :
-                "unknown");
-
-  if (state == BLOCK_NOT_CACHED) { /* Read underlying plugin. */
-    if (next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err) == -1)
-      return -1;
-
-    /* If cache-on-read, copy the block to the cache. */
-    if (cache_on_read) {
-      off_t offset = blknum * BLKSIZE;
-
-      nbdkit_debug ("cache: cache-on-read block %" PRIu64
-                    " (offset %" PRIu64 ")",
-                    blknum, (uint64_t) offset);
-
-      if (pwrite (fd, block, BLKSIZE, offset) == -1) {
-        *err = errno;
-        nbdkit_error ("pwrite: %m");
-        return -1;
-      }
-      bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
-    }
-    return 0;
-  }
-  else {                        /* Read cache. */
-    if (pread (fd, block, BLKSIZE, offset) == -1) {
-      *err = errno;
-      nbdkit_error ("pread: %m");
-      return -1;
-    }
-    return 0;
-  }
-}
-
-/* Write to the cache and the plugin. */
-static int
-blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
-                  uint64_t blknum, const uint8_t *block, uint32_t flags,
-                  int *err)
-{
-  off_t offset = blknum * BLKSIZE;
-
-  nbdkit_debug ("cache: writethrough block %" PRIu64 " (offset %" PRIu64 ")",
-                blknum, (uint64_t) offset);
-
-  if (pwrite (fd, block, BLKSIZE, offset) == -1) {
-    *err = errno;
-    nbdkit_error ("pwrite: %m");
-    return -1;
-  }
-
-  if (next_ops->pwrite (nxdata, block, BLKSIZE, offset, flags, err) == -1)
-    return -1;
-
-  bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
-
-  return 0;
-}
-
-/* Write a whole block.
- *
- * If the cache is in writethrough mode, or the FUA flag is set, then
- * this calls blk_writethrough above which will write both to the
- * cache and through to the underlying device.
- *
- * Otherwise it will only write to the cache.
- */
-static int
-blk_write (struct nbdkit_next_ops *next_ops, void *nxdata,
-           uint64_t blknum, const uint8_t *block, uint32_t flags,
-           int *err)
-{
-  off_t offset;
-
-  if (cache_mode == CACHE_MODE_WRITETHROUGH ||
-      (cache_mode == CACHE_MODE_WRITEBACK && (flags & NBDKIT_FLAG_FUA)))
-    return blk_writethrough (next_ops, nxdata, blknum, block, flags, err);
-
-  offset = blknum * BLKSIZE;
-
-  nbdkit_debug ("cache: writeback block %" PRIu64 " (offset %" PRIu64 ")",
-                blknum, (uint64_t) offset);
-
-  if (pwrite (fd, block, BLKSIZE, offset) == -1) {
-    *err = errno;
-    nbdkit_error ("pwrite: %m");
-    return -1;
-  }
-  bitmap_set_blk (&bm, blknum, BLOCK_DIRTY);
-
   return 0;
 }
 
@@ -490,57 +307,79 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 /* Flush: Go through all the dirty blocks, flushing them to disk. */
+struct flush_data {
+  uint8_t *block;               /* bounce buffer */
+  unsigned errors;              /* count of errors seen */
+  int first_errno;              /* first errno seen */
+  struct nbdkit_next_ops *next_ops;
+  void *nxdata;
+};
+
+static int flush_dirty_block (uint64_t blknum, void *);
+
 static int
 cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
              uint32_t flags, int *err)
 {
-  uint8_t *block = NULL;
-  uint64_t blknum;
-  enum bm_entry state;
-  unsigned errors = 0;
+  struct flush_data data =
+    { .errors = 0, .first_errno = 0, .next_ops = next_ops, .nxdata = nxdata };
   int tmp;
 
   if (cache_mode == CACHE_MODE_UNSAFE)
     return 0;
+
+  assert (!flags);
+
+  /* Allocate the bounce buffer. */
+  data.block = malloc (BLKSIZE);
+  if (data.block == NULL) {
+    *err = errno;
+    nbdkit_error ("malloc: %m");
+    return -1;
+  }
 
   /* In theory if cache_mode == CACHE_MODE_WRITETHROUGH then there
    * should be no dirty blocks.  However we go through the cache here
    * to be sure.  Also we still need to issue the flush to the
    * underlying storage.
    */
-  assert (!flags);
-  bitmap_for (&bm, blknum) {
-    state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_CACHED);
-    if (state == BLOCK_DIRTY) {
-      /* Lazily allocate the bounce buffer. */
-      if (!block) {
-        block = malloc (BLKSIZE);
-        if (block == NULL) {
-          *err = errno;
-          nbdkit_error ("malloc: %m");
-          return -1;
-        }
-      }
-      /* Perform a read + writethrough which will read from the
-       * cache and write it through to the underlying storage.
-       */
-      if (blk_read (next_ops, nxdata, blknum, block,
-                    errors ? &tmp : err) == -1 ||
-          blk_writethrough (next_ops, nxdata, blknum, block, 0,
-                            errors ? &tmp : err) == -1) {
-        nbdkit_error ("cache: flush of block %" PRIu64 " failed", blknum);
-        errors++;
-      }
-    }
-  }
-
-  free (block);
+  for_each_dirty_block (flush_dirty_block, &data);
+  free (data.block);
 
   /* Now issue a flush request to the underlying storage. */
-  if (next_ops->flush (nxdata, 0, errors ? &tmp : err) == -1)
-    errors++;
+  if (next_ops->flush (nxdata, 0,
+                       data.errors ? &tmp : &data.first_errno) == -1)
+    data.errors++;
 
-  return errors == 0 ? 0 : -1;
+  if (data.errors > 0) {
+    *err = data.first_errno;
+    return -1;
+  }
+  return 0;
+}
+
+static int
+flush_dirty_block (uint64_t blknum, void *datav)
+{
+  struct flush_data *data = datav;
+  int tmp;
+
+  /* Perform a read + writethrough which will read from the
+   * cache and write it through to the underlying storage.
+   */
+  if (blk_read (data->next_ops, data->nxdata, blknum, data->block,
+                data->errors ? &tmp : &data->first_errno) == -1)
+    goto err;
+  if (blk_writethrough (data->next_ops, data->nxdata, blknum, data->block, 0,
+                        data->errors ? &tmp : &data->first_errno) == -1)
+    goto err;
+
+  return 0;
+
+ err:
+  nbdkit_error ("cache: flush of block %" PRIu64 " failed", blknum);
+  data->errors++;
+  return 0; /* continue scanning and flushing. */
 }
 
 static struct nbdkit_filter filter = {

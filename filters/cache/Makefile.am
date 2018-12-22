@@ -37,7 +37,10 @@ EXTRA_DIST = nbdkit-cache-filter.pod
 filter_LTLIBRARIES = nbdkit-cache-filter.la
 
 nbdkit_cache_filter_la_SOURCES = \
+	blk.c \
+	blk.h \
 	cache.c \
+	cache.h \
 	$(top_srcdir)/include/nbdkit-filter.h
 
 nbdkit_cache_filter_la_CPPFLAGS = \
