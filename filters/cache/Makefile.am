@@ -43,6 +43,8 @@ nbdkit_cache_filter_la_SOURCES = \
 	cache.h \
 	lru.c \
 	lru.h \
+	reclaim.c \
+	reclaim.h \
 	$(top_srcdir)/include/nbdkit-filter.h
 
 nbdkit_cache_filter_la_CPPFLAGS = \

@@ -90,8 +90,8 @@ static unsigned N = 100;
 void
 lru_init (void)
 {
-  bitmap_init (&bm[0], BLKSIZE, 1 /* bits per block */);
-  bitmap_init (&bm[1], BLKSIZE, 1 /* bits per block */);
+  bitmap_init (&bm[0], blksize, 1 /* bits per block */);
+  bitmap_init (&bm[1], blksize, 1 /* bits per block */);
 }
 
 void
@@ -109,8 +109,11 @@ lru_set_size (uint64_t new_size)
   if (bitmap_resize (&bm[1], new_size) == -1)
     return -1;
 
-  /* XXX Choose this better. */
-  N = MAX (new_size / BLKSIZE / 4, 100);
+  if (max_size != -1)
+    /* Make the threshold about 1/4 the maximum size of the cache. */
+    N = MAX (max_size / blksize / 4, 100);
+  else
+    N = MAX (new_size / blksize / 4, 100);
 
   return 0;
 }

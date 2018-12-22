@@ -56,6 +56,7 @@
 
 #include "cache.h"
 #include "blk.h"
+#include "reclaim.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
@@ -64,7 +65,10 @@
  */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
+unsigned blksize;
 enum cache_mode cache_mode = CACHE_MODE_WRITEBACK;
+int64_t max_size = -1;
+int hi_thresh = 95, lo_thresh = 80;
 bool cache_on_read = false;
 
 static int cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
@@ -105,6 +109,53 @@ cache_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     }
   }
+#ifdef HAVE_CACHE_RECLAIM
+  else if (strcmp (key, "cache-max-size") == 0) {
+    int64_t r;
+
+    r = nbdkit_parse_size (value);
+    if (r == -1)
+      return -1;
+    /* We set a lower limit for the cache size just to keep out of
+     * trouble.
+     */
+    if (r < 1024*1024) {
+      nbdkit_error ("cache-max-size is too small");
+      return -1;
+    }
+    max_size = r;
+    return 0;
+  }
+  else if (strcmp (key, "cache-high-threshold") == 0) {
+    if (sscanf (value, "%d", &hi_thresh) != 1) {
+      nbdkit_error ("invalid cache-high-threshold parameter: %s", value);
+      return -1;
+    }
+    if (hi_thresh <= 0) {
+      nbdkit_error ("cache-high-threshold must be greater than zero");
+      return -1;
+    }
+    return 0;
+  }
+  else if (strcmp (key, "cache-low-threshold") == 0) {
+    if (sscanf (value, "%d", &lo_thresh) != 1) {
+      nbdkit_error ("invalid cache-low-threshold parameter: %s", value);
+      return -1;
+    }
+    if (lo_thresh <= 0) {
+      nbdkit_error ("cache-low-threshold must be greater than zero");
+      return -1;
+    }
+    return 0;
+  }
+#else /* !HAVE_CACHE_RECLAIM */
+  else if (strcmp (key, "cache-max-size") == 0 ||
+           strcmp (key, "cache-high-threshold") == 0 ||
+           strcmp (key, "cache-low-threshold") == 0) {
+    nbdkit_error ("this platform does not support cache reclaim");
+    return -1;
+  }
+#endif /* !HAVE_CACHE_RECLAIM */
   else if (strcmp (key, "cache-on-read") == 0) {
     int r;
 
@@ -117,6 +168,21 @@ cache_config (nbdkit_next_config *next, void *nxdata,
   else {
     return next (nxdata, key, value);
   }
+}
+
+static int
+cache_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+{
+  /* If cache-max-size was set then check the thresholds. */
+  if (max_size != -1) {
+    if (lo_thresh >= hi_thresh) {
+      nbdkit_error ("cache-low-threshold must be "
+                    "less than cache-high-threshold");
+      return -1;
+    }
+  }
+
+  return next (nxdata);
 }
 
 static void *
@@ -176,7 +242,7 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint8_t *block;
 
   assert (!flags);
-  block = malloc (BLKSIZE);
+  block = malloc (blksize);
   if (block == NULL) {
     *err = errno;
     nbdkit_error ("malloc: %m");
@@ -187,9 +253,9 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     uint64_t blknum, blkoffs, n;
     int r;
 
-    blknum = offset / BLKSIZE;  /* block number */
-    blkoffs = offset % BLKSIZE; /* offset within the block */
-    n = BLKSIZE - blkoffs;      /* max bytes we can read from this block */
+    blknum = offset / blksize;  /* block number */
+    blkoffs = offset % blksize; /* offset within the block */
+    n = blksize - blkoffs;      /* max bytes we can read from this block */
     if (n > count)
       n = count;
 
@@ -221,7 +287,7 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint8_t *block;
   bool need_flush = false;
 
-  block = malloc (BLKSIZE);
+  block = malloc (blksize);
   if (block == NULL) {
     *err = errno;
     nbdkit_error ("malloc: %m");
@@ -237,9 +303,9 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     uint64_t blknum, blkoffs, n;
     int r;
 
-    blknum = offset / BLKSIZE;  /* block number */
-    blkoffs = offset % BLKSIZE; /* offset within the block */
-    n = BLKSIZE - blkoffs;      /* max bytes we can read from this block */
+    blknum = offset / blksize;  /* block number */
+    blkoffs = offset % blksize; /* offset within the block */
+    n = blksize - blkoffs;      /* max bytes we can read from this block */
     if (n > count)
       n = count;
 
@@ -278,14 +344,14 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint8_t *block;
   bool need_flush = false;
 
-  block = malloc (BLKSIZE);
+  block = malloc (blksize);
   if (block == NULL) {
     *err = errno;
     nbdkit_error ("malloc: %m");
     return -1;
   }
 
-  flags &= ~NBDKIT_FLAG_MAY_TRIM; /* See BLKSIZE comment above. */
+  flags &= ~NBDKIT_FLAG_MAY_TRIM;
   if ((flags & NBDKIT_FLAG_FUA) &&
       next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
     flags &= ~NBDKIT_FLAG_FUA;
@@ -295,9 +361,9 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     uint64_t blknum, blkoffs, n;
     int r;
 
-    blknum = offset / BLKSIZE;  /* block number */
-    blkoffs = offset % BLKSIZE; /* offset within the block */
-    n = BLKSIZE - blkoffs;      /* max bytes we can read from this block */
+    blknum = offset / blksize;  /* block number */
+    blkoffs = offset % blksize; /* offset within the block */
+    n = blksize - blkoffs;      /* max bytes we can read from this block */
     if (n > count)
       n = count;
 
@@ -351,7 +417,7 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   assert (!flags);
 
   /* Allocate the bounce buffer. */
-  data.block = malloc (BLKSIZE);
+  data.block = malloc (blksize);
   if (data.block == NULL) {
     *err = errno;
     nbdkit_error ("malloc: %m");
@@ -411,6 +477,7 @@ static struct nbdkit_filter filter = {
   .load              = cache_load,
   .unload            = cache_unload,
   .config            = cache_config,
+  .config_complete   = cache_config_complete,
   .open              = cache_open,
   .prepare           = cache_prepare,
   .get_size          = cache_get_size,

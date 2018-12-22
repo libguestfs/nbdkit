@@ -42,6 +42,7 @@ EXTRA_DIST = \
 	shebang.rb \
 	test-blocksize.sh \
 	test-cache.sh \
+	test-cache-max-size.sh \
 	test-cache-on-read.sh \
 	test-captive.sh \
 	test-cow.sh \
@@ -711,6 +712,7 @@ TESTS += \
 	test-cache.sh \
 	test-cache-on-read.sh
 endif HAVE_GUESTFISH
+TESTS += test-cache-max-size.sh
 
 # cow filter test.
 if HAVE_GUESTFISH

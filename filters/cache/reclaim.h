@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,26 +31,23 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NBDKIT_CACHE_H
-#define NBDKIT_CACHE_H
+#ifndef NBDKIT_RECLAIM_H
+#define NBDKIT_RECLAIM_H
 
-#include <fcntl.h>
+#include "bitmap.h"
 
-/* Caching mode. */
-extern enum cache_mode {
-  CACHE_MODE_WRITEBACK,
-  CACHE_MODE_WRITETHROUGH,
-  CACHE_MODE_UNSAFE,
-} cache_mode;
+/* Do we support reclaiming cache blocks? */
+#ifdef FALLOC_FL_PUNCH_HOLE
+#define HAVE_CACHE_RECLAIM 1
+#else
+#undef HAVE_CACHE_RECLAIM
+#endif
 
-/* Size of a block in the cache. */
-extern unsigned blksize;
+/* Check if we need to reclaim blocks, and if so reclaim up to two
+ * blocks.
+ *
+ * Note this must be called with the blk lock held.
+ */
+extern void reclaim (int fd, struct bitmap *bm);
 
-/* Maximum size of the cache and high/low thresholds. */
-extern int64_t max_size;
-extern int hi_thresh, lo_thresh;
-
-/* Cache read requests. */
-extern bool cache_on_read;
-
-#endif /* NBDKIT_CACHE_H */
+#endif /* NBDKIT_RECLAIM_H */

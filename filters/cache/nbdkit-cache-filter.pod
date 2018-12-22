@@ -5,6 +5,9 @@ nbdkit-cache-filter - nbdkit caching filter
 =head1 SYNOPSIS
 
  nbdkit --filter=cache plugin [cache=writeback|writethrough|unsafe]
+                              [cache-max-size=SIZE]
+                              [cache-high-threshold=N]
+                              [cache-low-threshold=N]
                               [cache-on-read=true|false]
                               [plugin-args...]
 
@@ -51,6 +54,14 @@ This is dangerous and can cause data loss, but this may be acceptable
 if you only use it for testing or with data that you don't care about
 or can cheaply reconstruct.
 
+=item B<cache-max-size=SIZE>
+
+=item B<cache-high-threshold=N>
+
+=item B<cache-low-threshold=N>
+
+Limit the size of the cache to C<SIZE>.  See L</CACHE MAXIMUM SIZE> below.
+
 =item B<cache-on-read=true>
 
 Cache read requests as well as write requests.  Any time a block is
@@ -68,6 +79,45 @@ the plugin.
 Do not cache read requests (this is the default).
 
 =back
+
+=head1 CACHE MAXIMUM SIZE
+
+By default the cache can grow to any size (although not larger than
+the virtual size of the underlying plugin) and you have to ensure
+there is sufficient space in C<$TMPDIR> for it.
+
+Using the parameters C<cache-max-size>, C<cache-high-threshold> and
+C<cache-low-threshold> you can limit the maximum size of the cache.
+
+This requires kernel and filesystem support (for L<fallocate(2)>
+C<FALLOC_FL_PUNCH_HOLE>), so it may not work on all platforms.
+
+Some examples:
+
+=over 4
+
+=item C<cache-max-size=1G>
+
+The cache is limited to around 1 gigabyte.
+
+=item C<cache-max-size=1G cache-high-threshold=95 cache-low-threshold=80>
+
+Once the cache size reaches 972M (95% of 1G), blocks are reclaimed
+from the cache until the size is reduced to 819M (80% of 1G).
+
+=back
+
+The way this works is once the size of the cache exceeds
+S<C<SIZE> ✕ the high threshold>, the filter works to reduce the size
+of the cache until it is less than S<C<SIZE> ✕ the low threshold>.
+Once the size is below the low threshold, no more reclaim work is done
+until the size exceeds the high threshold again.
+
+The default thresholds are high 95% and low 80%.  You must set
+S<0 E<lt> low E<lt> high>.  The thresholds are expressed as integer
+percentages of C<cache-max-size>.
+
+Least recently used blocks are discarded first.
 
 =head1 ENVIRONMENT VARIABLES
 

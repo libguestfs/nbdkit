@@ -46,14 +46,17 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/statvfs.h>
 
 #include <nbdkit-filter.h>
 
 #include "bitmap.h"
+#include "minmax.h"
 
 #include "cache.h"
 #include "blk.h"
 #include "lru.h"
+#include "reclaim.h"
 
 /* The cache. */
 static int fd = -1;
@@ -65,11 +68,16 @@ static int fd = -1;
  * 01 = block cached and clean
  * 10 = <unused>
  * 11 = block cached and dirty
+ *
+ * Idea for future enhancement: Use 10 (currently unused) to store
+ * blocks which are known to be zero and are not allocated in the
+ * cache layer.  You can set this when clients call cache_zero and
+ * defer calling plugin->zero until flush.
  */
 static struct bitmap bm;
 
 enum bm_entry {
-  BLOCK_NOT_CACHED = 0,
+  BLOCK_NOT_CACHED = 0, /* assumed to be zero by reclaim code */
   BLOCK_CLEAN = 1,
   BLOCK_DIRTY = 3,
 };
@@ -80,10 +88,7 @@ blk_init (void)
   const char *tmpdir;
   size_t len;
   char *template;
-
-  lru_init ();
-
-  bitmap_init (&bm, BLKSIZE, 2 /* bits per block */);
+  struct statvfs statvfs;
 
   tmpdir = getenv ("TMPDIR");
   if (!tmpdir)
@@ -107,6 +112,24 @@ blk_init (void)
   }
 
   unlink (template);
+
+  /* Choose the block size.
+   *
+   * A 4K block size means that we need 64 MB of memory to store the
+   * bitmaps for a 1 TB underlying image.  However to support
+   * hole-punching (for reclaiming) we need the block size to be at
+   * least as large as the filesystem block size.
+   */
+  if (fstatvfs (fd, &statvfs) == -1) {
+    nbdkit_error ("fstatvfs: %s: %m", tmpdir);
+    return -1;
+  }
+  blksize = MAX (4096, statvfs.f_bsize);
+  nbdkit_debug ("cache: block size: %u", blksize);
+
+  bitmap_init (&bm, blksize, 2 /* bits per block */);
+
+  lru_init ();
 
   return 0;
 }
@@ -143,8 +166,10 @@ int
 blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
           uint64_t blknum, uint8_t *block, int *err)
 {
-  off_t offset = blknum * BLKSIZE;
+  off_t offset = blknum * blksize;
   enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_CACHED);
+
+  reclaim (fd, &bm);
 
   nbdkit_debug ("cache: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
                 blknum, (uint64_t) offset,
@@ -154,18 +179,18 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
                 "unknown");
 
   if (state == BLOCK_NOT_CACHED) { /* Read underlying plugin. */
-    if (next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err) == -1)
+    if (next_ops->pread (nxdata, block, blksize, offset, 0, err) == -1)
       return -1;
 
     /* If cache-on-read, copy the block to the cache. */
     if (cache_on_read) {
-      off_t offset = blknum * BLKSIZE;
+      off_t offset = blknum * blksize;
 
       nbdkit_debug ("cache: cache-on-read block %" PRIu64
                     " (offset %" PRIu64 ")",
                     blknum, (uint64_t) offset);
 
-      if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+      if (pwrite (fd, block, blksize, offset) == -1) {
         *err = errno;
         nbdkit_error ("pwrite: %m");
         return -1;
@@ -176,7 +201,7 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
     return 0;
   }
   else {                        /* Read cache. */
-    if (pread (fd, block, BLKSIZE, offset) == -1) {
+    if (pread (fd, block, blksize, offset) == -1) {
       *err = errno;
       nbdkit_error ("pread: %m");
       return -1;
@@ -191,18 +216,20 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
                   uint64_t blknum, const uint8_t *block, uint32_t flags,
                   int *err)
 {
-  off_t offset = blknum * BLKSIZE;
+  off_t offset = blknum * blksize;
+
+  reclaim (fd, &bm);
 
   nbdkit_debug ("cache: writethrough block %" PRIu64 " (offset %" PRIu64 ")",
                 blknum, (uint64_t) offset);
 
-  if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+  if (pwrite (fd, block, blksize, offset) == -1) {
     *err = errno;
     nbdkit_error ("pwrite: %m");
     return -1;
   }
 
-  if (next_ops->pwrite (nxdata, block, BLKSIZE, offset, flags, err) == -1)
+  if (next_ops->pwrite (nxdata, block, blksize, offset, flags, err) == -1)
     return -1;
 
   bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
@@ -222,12 +249,14 @@ blk_write (struct nbdkit_next_ops *next_ops, void *nxdata,
       (cache_mode == CACHE_MODE_WRITEBACK && (flags & NBDKIT_FLAG_FUA)))
     return blk_writethrough (next_ops, nxdata, blknum, block, flags, err);
 
-  offset = blknum * BLKSIZE;
+  offset = blknum * blksize;
+
+  reclaim (fd, &bm);
 
   nbdkit_debug ("cache: writeback block %" PRIu64 " (offset %" PRIu64 ")",
                 blknum, (uint64_t) offset);
 
-  if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+  if (pwrite (fd, block, blksize, offset) == -1) {
     *err = errno;
     nbdkit_error ("pwrite: %m");
     return -1;
