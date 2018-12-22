@@ -44,6 +44,8 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <nbdkit-plugin.h>
+
 #include "ispowerof2.h"
 
 /* This is the bitmap structure. */
