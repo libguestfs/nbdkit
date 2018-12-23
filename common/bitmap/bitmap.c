@@ -42,6 +42,7 @@
 
 #include "bitmap.h"
 #include "rounding.h"
+#include "nextnonzero.h"
 
 int
 bitmap_resize (struct bitmap *bm, uint64_t new_size)
@@ -72,4 +73,38 @@ bitmap_resize (struct bitmap *bm, uint64_t new_size)
   nbdkit_debug ("bitmap resized to %zu bytes", new_bm_size);
 
   return 0;
+}
+
+int64_t
+bitmap_next (const struct bitmap *bm, uint64_t blk)
+{
+  uint64_t limit = bm->size * bm->ibpb;
+  const uint8_t *p;
+
+  /* Align to the next byte boundary. */
+  for (; blk < limit && (blk & (bm->ibpb-1)) != 0; ++blk) {
+    if (bitmap_get_blk (bm, blk, 0) != 0)
+      return blk;
+  }
+  if (blk == limit)
+    return -1;
+
+  /* Now we're at a byte boundary we can use a fast string function to
+   * find the next non-zero byte.
+   */
+  p = &bm->bitmap[blk >> (3 - bm->bitshift)];
+  p = (const uint8_t *) next_non_zero ((const char *) p,
+                                       &bm->bitmap[bm->size] - p);
+  if (p == NULL)
+    return -1;
+
+  /* Now check the non-zero byte to find out which bit (ie. block) is set. */
+  blk = (p - bm->bitmap) << (3 - bm->bitshift);
+  for (; blk < limit; ++blk) {
+    if (bitmap_get_blk (bm, blk, 0) != 0)
+      return blk;
+  }
+
+  /* Should never be reached. */
+  abort ();
 }

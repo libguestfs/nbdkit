@@ -166,4 +166,11 @@ bitmap_set (const struct bitmap *bm, uint64_t offset, unsigned v)
 #define bitmap_for(bm, /* uint64_t */ blknum)                           \
   for ((blknum) = 0; (blknum) < (bm)->size * (bm)->ibpb; ++(blknum))
 
+/* Find the next non-zero block in the bitmap, starting at ‘blk’.
+ * Returns -1 if the bitmap is all zeroes from blk to the end of the
+ * bitmap.
+ */
+extern int64_t bitmap_next (const struct bitmap *bm, uint64_t blk)
+  __attribute__((__nonnull__ (1)));
+
 #endif /* NBDKIT_BITMAP_H */

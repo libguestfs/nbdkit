@@ -42,3 +42,15 @@ libbitmap_la_CPPFLAGS = \
 	-I$(top_srcdir)/common/include
 libbitmap_la_CFLAGS = \
         $(WARNINGS_CFLAGS)
+
+# Unit tests.
+
+TESTS = test-bitmap
+check_PROGRAMS = test-bitmap
+
+test_bitmap_SOURCES = test-bitmap.c bitmap.c bitmap.h
+test_bitmap_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include
+test_bitmap_CFLAGS = \
+        $(WARNINGS_CFLAGS)

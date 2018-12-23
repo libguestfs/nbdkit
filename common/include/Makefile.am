@@ -41,6 +41,7 @@ EXTRA_DIST = \
 	isaligned.h \
 	ispowerof2.h \
 	iszero.h \
+	nextnonzero.h \
 	random.h \
 	rounding.h
 
