@@ -44,31 +44,13 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
+#include "random.h"
+
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
 static int64_t size = 0;
 
 /* Seed. */
 static uint32_t seed;
-
-/* We use a Linear Congruential Generator (LCG) to make low quality
- * but easy to compute random numbers.  However we're not quite using
- * it in the ordinary way.  In order to be able to read any byte of
- * data without needing to run the LCG from the start, the random data
- * is computed from the index and seed through two rounds of LCG:
- *
- * index i     LCG(seed) -> +i   -> LCG -> LCG -> mod 256 -> b[i]
- * index i+1   LCG(seed) -> +i+1 -> LCG -> LCG -> mod 256 -> b[i+1]
- * etc
- *
- * This LCG is the same one as used in glibc.
- */
-static inline uint32_t
-LCG (uint32_t s)
-{
-  s *= 1103515245;
-  s += 12345;
-  return s;
-}
 
 static void
 random_load (void)
@@ -135,13 +117,27 @@ random_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 {
   uint32_t i;
   unsigned char *b = buf;
-  uint32_t s;
+  uint64_t s;
 
   for (i = 0; i < count; ++i) {
-    s = LCG (seed) + offset + i;
-    s = LCG (s);
-    s = LCG (s);
-    s = s % 255;
+    /* We use nbdkit common/include/random.h to make random numbers.
+     *
+     * However we're not quite using it in the ordinary way.  In order
+     * to be able to read any byte of data without needing to run the
+     * PRNG from the start, the random data is computed from the index
+     * and seed through three rounds of PRNG:
+     *
+     * index i     PRNG(seed+i)   -> PRNG -> PRNG -> mod 256 -> b[i]
+     * index i+1   PRNG(seed+i+1) -> PRNG -> PRNG -> mod 256 -> b[i+1]
+     * etc
+     */
+    struct random_state state;
+
+    xsrandom (seed + offset + i, &state);
+    xrandom (&state);
+    xrandom (&state);
+    s = xrandom (&state);
+    s &= 255;
     b[i] = s;
   }
   return 0;

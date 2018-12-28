@@ -419,6 +419,7 @@ test_null_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 LIBGUESTFS_TESTS += test-random
 
 test_random_SOURCES = test-random.c test.h
+test_random_CPPFLAGS = -I $(top_srcdir)/common/include
 test_random_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_random_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 

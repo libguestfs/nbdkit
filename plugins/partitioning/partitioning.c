@@ -53,6 +53,7 @@
 #include "iszero.h"
 #include "rounding.h"
 
+#include "random.h"
 #include "regions.h"
 #include "virtual-disk.h"
 
@@ -83,12 +84,15 @@ struct regions regions;
 /* Primary and secondary partition tables (secondary is only used for GPT). */
 unsigned char *primary = NULL, *secondary = NULL;
 
+/* Used to generate random unique partition GUIDs for GPT. */
+static struct random_state random_state;
+
 static void
 partitioning_load (void)
 {
   init_regions (&regions);
   parse_guid (DEFAULT_TYPE_GUID, type_guid);
-  srandom (time (NULL));
+  xsrandom (time (NULL), &random_state);
 }
 
 static void
@@ -149,7 +153,7 @@ partitioning_config (const char *key, const char *value)
      * and secondary PT entries.
      */
     for (i = 0; i < 16; ++i)
-      file.guid[i] = random () & 0xff;
+      file.guid[i] = xrandom (&random_state) & 0xff;
 
     p = realloc (files, (nr_files+1) * sizeof (struct file));
     if (p == NULL) {

@@ -43,10 +43,14 @@
 
 #include <guestfs.h>
 
+#include "random.h"
+
 #include "test.h"
 
 #define SIZE 1024*1024
 static char data[SIZE];
+
+static unsigned histogram[256];
 
 /* After reading the whole disk above, we then read randomly selected
  * subsets of the disk and compare the data (it should be identical).
@@ -59,6 +63,7 @@ main (int argc, char *argv[])
 {
   guestfs_h *g;
   int r, i;
+  struct random_state random_state;
   unsigned offset;
   char sizearg[32];
   char *rdata;
@@ -98,9 +103,30 @@ main (int argc, char *argv[])
   memcpy (data, rdata, SIZE);
   free (rdata);
 
-  srandom (time (NULL));
+  /* Test that the data is sufficiently random using a simple
+   * histogram.  This just tests for gross errors and is not a
+   * complete statistical study.
+   */
+  for (i = 0; i < SIZE; ++i) {
+    unsigned char c = (unsigned char) data[i];
+    histogram[c]++;
+  }
+  for (i = 0; i < 256; ++i) {
+    const unsigned expected = SIZE / 256;
+    if (histogram[i] < 80 * expected / 100) {
+      fprintf (stderr, "test-random: "
+               "random data is not uniformly distributed\n"
+               "eg. byte %d occurs %u times (expected about %u times)\n",
+               i, histogram[i], expected);
+      exit (EXIT_FAILURE);
+    }
+  }
+
+  /* Randomly read parts of the disk to ensure we get the same data.
+   */
+  xsrandom (time (NULL), &random_state);
   for (i = 0; i < NR_READS; ++i) {
-    offset = random ();
+    offset = xrandom (&random_state);
     offset %= SIZE - RSIZE;
     rdata = guestfs_pread_device (g, "/dev/sda", RSIZE, offset, &rsize);
     if (rdata == NULL)
