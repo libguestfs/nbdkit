@@ -42,6 +42,7 @@
 #define NBDKIT_BITMAP_H
 
 #include <stdint.h>
+#include <string.h>
 #include <assert.h>
 
 #include <nbdkit-plugin.h>
@@ -100,6 +101,13 @@ bitmap_free (struct bitmap *bm)
  */
 extern int bitmap_resize (struct bitmap *bm, uint64_t new_size)
   __attribute__((__nonnull__ (1)));
+
+/* Clear the bitmap (set everything to zero). */
+static inline void  __attribute__((__nonnull__ (1)))
+bitmap_clear (struct bitmap *bm)
+{
+  memset (bm->bitmap, 0, bm->size);
+}
 
 /* This macro calculates the byte offset in the bitmap and which
  * bit/mask we are addressing within that byte.
