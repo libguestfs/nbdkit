@@ -41,6 +41,7 @@ nbdkit_random_plugin_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
 nbdkit_random_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/include
 nbdkit_random_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)

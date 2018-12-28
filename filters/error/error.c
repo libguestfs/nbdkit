@@ -44,6 +44,8 @@
 
 #include <nbdkit-filter.h>
 
+#include "random.h"
+
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 struct error_settings {
@@ -222,17 +224,13 @@ error_config (nbdkit_next_config *next, void *nxdata,
   "                               Apply settings only to read/write/trim/zero"
 
 struct handle {
-#ifdef __GNU_LIBRARY__
-  struct random_data rd;
-  char rd_state[32];
-#endif
+  struct random_state random_state;
 };
 
 static void *
 error_open (nbdkit_next_open *next, void *nxdata, int readonly)
 {
   struct handle *h;
-  time_t t;
 
   if (next (nxdata, readonly) == -1)
     return NULL;
@@ -242,11 +240,7 @@ error_open (nbdkit_next_open *next, void *nxdata, int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
-#ifdef __GNU_LIBRARY__
-  memset (&h->rd, 0, sizeof h->rd);
-  time (&t);
-  initstate_r (t, (char *) &h->rd_state, sizeof h->rd_state, &h->rd);
-#endif
+  xsrandom (time (NULL), &h->random_state);
   return h;
 }
 
@@ -264,7 +258,7 @@ random_error (struct handle *h,
               const struct error_settings *error_settings,
               const char *fn, int *err)
 {
-  int32_t rand;
+  uint64_t rand;
 
   if (error_settings->rate <= 0)       /* 0% = never inject */
     return false;
@@ -278,12 +272,12 @@ random_error (struct handle *h,
   if (error_settings->rate >= 1)       /* 100% = always inject */
     goto inject;
 
-#ifdef __GNU_LIBRARY__
-  random_r (&h->rd, &rand);
-#else
-  rand = random ();
-#endif
-  if (rand >= error_settings->rate * RAND_MAX)
+  /* To avoid the question if (double)1.0 * UINT64_MAX is
+   * representable in a 64 bit integer, and because we don't need all
+   * this precision anyway, let's work in 32 bits.
+   */
+  rand = xrandom (&h->random_state) & UINT32_MAX;
+  if (rand >= error_settings->rate * UINT32_MAX)
     return false;
 
  inject:
