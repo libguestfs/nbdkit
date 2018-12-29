@@ -42,3 +42,33 @@ EXTRA_DIST = \
 	ispowerof2.h \
 	iszero.h \
 	rounding.h
+
+# Unit tests.
+
+TESTS = \
+	test-byte-swapping \
+	test-current-dir-name \
+	test-isaligned \
+	test-ispowerof2 \
+	test-iszero
+check_PROGRAMS = $(TESTS)
+
+test_byte_swapping_SOURCES = test-byte-swapping.c byte-swapping.h
+test_byte_swapping_CPPFLAGS = -I$(srcdir)
+test_byte_swapping_CFLAGS = $(WARNINGS_CFLAGS)
+
+test_current_dir_name_SOURCES = test-current-dir-name.c get-current-dir-name.h
+test_current_dir_name_CPPFLAGS = -I$(srcdir)
+test_current_dir_name_CFLAGS = $(WARNINGS_CFLAGS)
+
+test_isaligned_SOURCES = test-isaligned.c isaligned.h
+test_isaligned_CPPFLAGS = -I$(srcdir)
+test_isaligned_CFLAGS = $(WARNINGS_CFLAGS)
+
+test_ispowerof2_SOURCES = test-ispowerof2.c ispowerof2.h
+test_ispowerof2_CPPFLAGS = -I$(srcdir)
+test_ispowerof2_CFLAGS = $(WARNINGS_CFLAGS)
+
+test_iszero_SOURCES = test-iszero.c iszero.h
+test_iszero_CPPFLAGS = -I$(srcdir)
+test_iszero_CFLAGS = $(WARNINGS_CFLAGS)

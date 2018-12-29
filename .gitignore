@@ -24,6 +24,11 @@ Makefile.in
 
 /aclocal.m4
 /autom4te.cache
+/common/include/test-byte-swapping
+/common/include/test-current-dir-name
+/common/include/test-isaligned
+/common/include/test-ispowerof2
+/common/include/test-iszero
 /compile
 /config.guess
 /config.h
