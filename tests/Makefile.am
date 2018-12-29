@@ -54,6 +54,9 @@ EXTRA_DIST = \
 	test-dump-plugin.sh \
 	test-dump-plugin-example4.sh \
 	test-eflags.sh \
+	test-error0.sh \
+	test-error10.sh \
+	test-error100.sh \
 	test-floppy.sh \
 	test-foreground.sh \
 	test-fua.sh \
@@ -724,6 +727,11 @@ LIBGUESTFS_TESTS += test-error
 test_error_SOURCES = test-error.c test.h
 test_error_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_error_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+TESTS += \
+	test-error0.sh \
+	test-error10.sh \
+	test-error100.sh
 
 # fua filter test.
 TESTS += test-fua.sh
