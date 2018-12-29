@@ -42,6 +42,8 @@
 #include <time.h>
 #include <errno.h>
 
+#include <pthread.h>
+
 #include <nbdkit-filter.h>
 
 #include "random.h"
@@ -61,6 +63,18 @@ static struct error_settings pread_settings = ERROR_DEFAULT;
 static struct error_settings pwrite_settings = ERROR_DEFAULT;
 static struct error_settings trim_settings = ERROR_DEFAULT;
 static struct error_settings zero_settings = ERROR_DEFAULT;
+
+/* Random state.
+ * This must only be accessed when holding the lock (except for load).
+ */
+static struct random_state random_state;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void
+error_load (void)
+{
+  xsrandom (time (NULL), &random_state);
+}
 
 static void
 error_unload (void)
@@ -223,39 +237,20 @@ error_config (nbdkit_next_config *next, void *nxdata,
   "error-pread*, error-pwrite*, error-trim*, error-zero*\n" \
   "                               Apply settings only to read/write/trim/zero"
 
-struct handle {
-  struct random_state random_state;
-};
-
 static void *
 error_open (nbdkit_next_open *next, void *nxdata, int readonly)
 {
-  struct handle *h;
+  static int handle;
 
   if (next (nxdata, readonly) == -1)
     return NULL;
 
-  h = malloc (sizeof *h);
-  if (h == NULL) {
-    nbdkit_error ("malloc: %m");
-    return NULL;
-  }
-  xsrandom (time (NULL), &h->random_state);
-  return h;
-}
-
-static void
-error_close (void *handle)
-{
-  struct handle *h = handle;
-
-  free (h);
+  return &handle;
 }
 
 /* This function injects a random error. */
 static bool
-random_error (struct handle *h,
-              const struct error_settings *error_settings,
+random_error (const struct error_settings *error_settings,
               const char *fn, int *err)
 {
   uint64_t rand;
@@ -276,7 +271,9 @@ random_error (struct handle *h,
    * representable in a 64 bit integer, and because we don't need all
    * this precision anyway, let's work in 32 bits.
    */
-  rand = xrandom (&h->random_state) & UINT32_MAX;
+  pthread_mutex_lock (&lock);
+  rand = xrandom (&random_state) & UINT32_MAX;
+  pthread_mutex_unlock (&lock);
   if (rand >= error_settings->rate * UINT32_MAX)
     return false;
 
@@ -292,7 +289,7 @@ error_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
-  if (random_error (handle, &pread_settings, "pread", err))
+  if (random_error (&pread_settings, "pread", err))
     return -1;
 
   return next_ops->pread (nxdata, buf, count, offset, flags, err);
@@ -305,7 +302,7 @@ error_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
               const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
-  if (random_error (handle, &pwrite_settings, "pwrite", err))
+  if (random_error (&pwrite_settings, "pwrite", err))
     return -1;
 
   return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
@@ -317,7 +314,7 @@ error_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
-  if (random_error (handle, &trim_settings, "trim", err))
+  if (random_error (&trim_settings, "trim", err))
     return -1;
 
   return next_ops->trim (nxdata, count, offset, flags, err);
@@ -329,7 +326,7 @@ error_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
-  if (random_error (handle, &zero_settings, "zero", err))
+  if (random_error (&zero_settings, "zero", err))
     return -1;
 
   return next_ops->zero (nxdata, count, offset, flags, err);
@@ -339,11 +336,11 @@ static struct nbdkit_filter filter = {
   .name              = "error",
   .longname          = "nbdkit error filter",
   .version           = PACKAGE_VERSION,
+  .load              = error_load,
   .unload            = error_unload,
   .config            = error_config,
   .config_help       = error_config_help,
   .open              = error_open,
-  .close             = error_close,
   .pread             = error_pread,
   .pwrite            = error_pwrite,
   .trim              = error_trim,
