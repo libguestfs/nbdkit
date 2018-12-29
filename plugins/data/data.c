@@ -280,14 +280,14 @@ data_config_complete (void)
     return -1;
   }
 
-  nbdkit_debug ("implicit data size: %zu", data_size);
+  nbdkit_debug ("implicit data size: %" PRIi64, data_size);
 
   /* If size == -1 it means the size= parameter was not given so we
    * must use the data size.
    */
   if (size == -1)
     size = data_size;
-  nbdkit_debug ("final size: %zu", data_size);
+  nbdkit_debug ("final size: %" PRIi64, data_size);
 
   return 0;
 }
