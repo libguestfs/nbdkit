@@ -29,6 +29,29 @@ Slaves:
   afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -S fuzzNN \
       ./src/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1M
 
+Test Coverage
+-------------
+
+To find out if the fuzzing is covering all of the code, I used afl-cov
+(https://github.com/mrash/afl-cov).  Usage is rather complex, so
+consult the README of that project, but in brief:
+
+(1) Create a second copy of the nbdkit source, and compile it with
+profiling:
+
+  CFLAGS="-O2 -g -pg -fprofile-arcs -ftest-coverage"
+
+(2) Assuming ../nbdkit-afl is the nbdkit source compiled with afl, and
+the current directory is nbdkit compiled with profiling, then run the
+command below.  You can run this even while afl-fuzz is running.
+
+  afl-cov -d ../nbdkit-afl/fuzzing/sync_dir \
+      --code-dir . \
+      --coverage-cmd "cat AFL_FILE | ./src/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1M"
+
+This will create an HTML test coverage report in
+../nbdkit-afl/fuzzing/sync_dir/cov/web/
+
 Notes
 -----
 
