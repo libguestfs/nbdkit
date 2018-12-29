@@ -55,11 +55,7 @@ This will create an HTML test coverage report in
 Notes
 -----
 
-If you find a serious or possible security bug that you don't want to
-report on a public mailing list, then send email to both
-<rjones@redhat.com> and <eblake@redhat.com>.  Make it clear in the
-email Subject line that it's a serious or security-related bug in
-nbdkit.
+To report security bugs, see ‘SECURITY’ in the top source directory.
 
 We only have testcases for the newstyle fixed protocol so far, but if
 people report that they are exposing the oldstyle protocol to the
