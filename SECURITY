@@ -1,0 +1,9 @@
+If you think you've found a serious or potential security bug that you
+don't want to report on a public mailing list, then send email to both
+<rjones@redhat.com> and <eblake@redhat.com>.
+
+Make it clear in the email Subject line that it's a serious or
+security-related bug in nbdkit.
+
+You can also sign and/or encrypt messages using our GPG public keys
+available on the usual keyservers.

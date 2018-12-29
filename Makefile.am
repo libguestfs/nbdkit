@@ -40,6 +40,7 @@ EXTRA_DIST = \
 	html/pod.css \
 	LICENSE \
 	OTHER_PLUGINS \
+	SECURITY \
 	valgrind-suppressions \
 	m4/.gitignore
 
