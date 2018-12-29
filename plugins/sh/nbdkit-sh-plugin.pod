@@ -300,7 +300,7 @@ also provide a C<can_zero> method which exits with code C<0> (true).
 =over 4
 
 =item Missing: C<name>, C<version>, C<longname>,
-C<description>, C<config_help>, C<can_zero>, C<can_fua>
+C<description>, C<config_help>
 
 These are not yet supported.
 
