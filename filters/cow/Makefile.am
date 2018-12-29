@@ -37,6 +37,8 @@ EXTRA_DIST = nbdkit-cow-filter.pod
 filter_LTLIBRARIES = nbdkit-cow-filter.la
 
 nbdkit_cow_filter_la_SOURCES = \
+	blk.c \
+	blk.h \
 	cow.c \
 	$(top_srcdir)/include/nbdkit-filter.h
 
