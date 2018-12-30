@@ -80,8 +80,11 @@ do_nbdkit ()
     '
 
     # Protocol is big endian, we want native endian.
-    eflags=$(( $(od -An -N1     -tu1 eflags.out) << 8 |
-               $(od -An -N1 -j1 -tu1 eflags.out)       ))
+    # xargs trick to trim whitespace from
+    # https://stackoverflow.com/a/12973694
+    eflags_hi=$(od -An -N1     -tx1 eflags.out | xargs)
+    eflags_lo=$(od -An -N1 -j1 -tx1 eflags.out | xargs)
+    eflags=$(( 0x$eflags_hi << 8 | 0x$eflags_lo ))
 
     # Print the eflags in hex and text.
     printf "eflags 0x%04x" $eflags
