@@ -45,7 +45,8 @@ nbdkit_split_plugin_la_CPPFLAGS = \
 nbdkit_split_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_split_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
 
 if HAVE_POD
 

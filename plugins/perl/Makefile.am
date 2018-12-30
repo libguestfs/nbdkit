@@ -52,6 +52,7 @@ nbdkit_perl_plugin_la_CFLAGS = \
 	-I$(PERL_ARCHLIB)/CORE
 nbdkit_perl_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(PERL_LDOPTS)
 
 if HAVE_POD

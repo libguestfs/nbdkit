@@ -54,7 +54,8 @@ nbdkit_xz_filter_la_CFLAGS = \
 nbdkit_xz_filter_la_LIBADD = \
 	$(LIBLZMA_LIBS)
 nbdkit_xz_filter_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
 
 if HAVE_POD
 

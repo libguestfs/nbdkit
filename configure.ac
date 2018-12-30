@@ -247,6 +247,18 @@ main (int argc, char *argv[])
     ])
 AM_CONDITIONAL([HAVE_ICONV], [test "x$iconv_working" = "xyes"])
 
+dnl Don't use linker script for the server on FreeBSD because
+dnl FreeBSD's linker is broken.  See eg:
+dnl https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=190851
+AC_MSG_CHECKING([if we should use a linker script for the server])
+AS_CASE([$host_os],
+  [freebsd*], [use_linker_script_for_server=no],
+  [use_linker_script_for_server=yes]
+)
+AC_MSG_RESULT([$use_linker_script_for_server])
+AM_CONDITIONAL([USE_LINKER_SCRIPT_FOR_SERVER],
+               [test "x$use_linker_script_for_server" = "xyes"])
+
 dnl Check if -rdynamic linker flag works.
 acx_nbdkit_save_LDFLAGS="${LDFLAGS}"
 LDFLAGS="${LDFLAGS} -rdynamic"

@@ -50,7 +50,8 @@ nbdkit_data_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(GNUTLS_CFLAGS)
 nbdkit_data_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
 nbdkit_data_plugin_la_LIBADD = \
 	$(top_builddir)/common/sparse/libsparse.la \
 	$(GNUTLS_LIBS)

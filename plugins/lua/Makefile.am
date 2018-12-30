@@ -51,6 +51,7 @@ nbdkit_lua_plugin_la_CFLAGS = \
 	$(LUA_CFLAGS)
 nbdkit_lua_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(LUA_LIBS)
 
 if HAVE_POD

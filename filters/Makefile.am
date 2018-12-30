@@ -32,4 +32,6 @@
 
 include $(top_srcdir)/common-rules.mk
 
+EXTRA_DIST = filters.syms
+
 SUBDIRS = $(filters)

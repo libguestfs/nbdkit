@@ -54,7 +54,8 @@ nbdkit_vddk_plugin_la_CFLAGS = \
 nbdkit_vddk_plugin_la_LIBADD = \
 	$(DL_LIBS)
 nbdkit_vddk_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
 
 if HAVE_POD
 

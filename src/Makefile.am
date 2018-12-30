@@ -32,6 +32,8 @@
 
 include $(top_srcdir)/common-rules.mk
 
+EXTRA_DIST = nbdkit.syms
+
 sbin_PROGRAMS = nbdkit
 
 nbdkit_SOURCES = \
@@ -77,12 +79,15 @@ nbdkit_LDADD = \
 nbdkit_LDFLAGS = \
 	$(PTHREAD_LIBS) \
 	$(DL_LDFLAGS)
+if USE_LINKER_SCRIPT_FOR_SERVER
+nbdkit_LDFLAGS += -Wl,--version-script=$(srcdir)/nbdkit.syms
+endif
 
 # protostrings.c is generated from the protocol.h header file where it
 # is used to map NBD protocol flags to strings.
 
 BUILT_SOURCES = protostrings.c
-EXTRA_DIST = protostrings.c protostrings.sed
+EXTRA_DIST += protostrings.c protostrings.sed
 CLEANFILES += protostrings.c
 protostrings.c: protocol.h protostrings.sed Makefile
 	rm -f $@ $@-t

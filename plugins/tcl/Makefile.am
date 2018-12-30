@@ -51,6 +51,7 @@ nbdkit_tcl_plugin_la_CFLAGS = \
 	$(TCL_CFLAGS)
 nbdkit_tcl_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(TCL_LIBS)
 
 if HAVE_POD

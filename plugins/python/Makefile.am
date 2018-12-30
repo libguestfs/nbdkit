@@ -53,6 +53,7 @@ nbdkit_python_plugin_la_LIBADD = \
 	$(PYTHON_LIBS)
 nbdkit_python_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(PYTHON_LDFLAGS)
 
 if HAVE_POD

@@ -47,7 +47,8 @@ nbdkit_cow_filter_la_CPPFLAGS = \
 nbdkit_cow_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_cow_filter_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
 nbdkit_cow_filter_la_LIBADD = \
 	$(top_builddir)/common/bitmap/libbitmap.la
 

@@ -46,7 +46,8 @@ nbdkit_error_filter_la_CPPFLAGS = \
 nbdkit_error_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_error_filter_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
 
 if HAVE_POD
 

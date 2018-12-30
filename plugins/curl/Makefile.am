@@ -50,7 +50,8 @@ nbdkit_curl_plugin_la_CFLAGS = \
 nbdkit_curl_plugin_la_LIBADD = \
 	$(CURL_LIBS)
 nbdkit_curl_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
 
 if HAVE_POD
 

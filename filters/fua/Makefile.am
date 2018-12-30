@@ -45,7 +45,8 @@ nbdkit_fua_filter_la_CPPFLAGS = \
 nbdkit_fua_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_fua_filter_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
 
 if HAVE_POD
 
