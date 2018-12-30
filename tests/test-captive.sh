@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2014 Red Hat Inc.
+# Copyright (C) 2014-2018 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,9 +44,9 @@ nbdkit -U captive.sock example1 --run '
   ' > captive.out
 
 # Check the output.
-if [ "$(cat captive.out)" != "nbd=nbd:unix:$(pwd)/captive.sock
+if [ "$(cat captive.out)" != "nbd=nbd:unix:$PWD/captive.sock
 port=
-socket=$(pwd)/captive.sock" ]; then
+socket=$PWD/captive.sock" ]; then
     echo "$0: unexpected output"
     cat captive.out
     exit 1

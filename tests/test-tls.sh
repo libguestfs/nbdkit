@@ -57,7 +57,7 @@ fi
 
 # Did we create the PKI files?
 # Probably 'certtool' is missing.
-pkidir="$(pwd)/pki"
+pkidir="$PWD/pki"
 if [ ! -f "$pkidir/ca-cert.pem" ]; then
     echo "$0: PKI files were not created by the test harness"
     exit 77
