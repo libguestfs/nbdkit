@@ -147,6 +147,8 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
     pfds[2].events = POLLIN;
 
     if (poll (pfds, 3, -1) == -1) {
+      if (errno == EINTR || errno == EAGAIN)
+        continue;
       nbdkit_error ("%s: poll: %m", script);
       goto error;
     }
