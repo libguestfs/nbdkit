@@ -43,7 +43,7 @@ nbdkit -f -P foreground.pid -U foreground.sock example1 &
 bg_pid=$!
 
 # We may have to wait a short time for the pid file to appear.
-for i in {1..10}; do
+for i in {1..60}; do
     if test -f foreground.pid; then
         break
     fi

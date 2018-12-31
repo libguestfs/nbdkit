@@ -40,7 +40,7 @@ rm -f $pidfile $sockfile
 $script -P $pidfile -U $sockfile -f -v &
 
 # We may have to wait a short time for the pid file to appear.
-for i in {1..10}; do
+for i in {1..60}; do
     if test -f $pidfile; then
         break
     fi

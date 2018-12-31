@@ -75,7 +75,7 @@ start_nbdkit ()
     nbdkit -v "$@"
 
     # Wait for the pidfile to appear.
-    for i in {1..10}; do
+    for i in {1..60}; do
         if test -f "$pidfile"; then
             break
         fi
