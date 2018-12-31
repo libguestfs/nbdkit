@@ -94,11 +94,11 @@ bytes during protocol negotiation.
 
 Supported in nbdkit E<ge> 1.1.13.
 
-=item TLS
+=item TLS with X.509 certificates
 
 Supported in nbdkit E<ge> 1.1.15.
 
-=item TLS-PSK
+=item TLS with Pre-Shared Keys (PSK)
 
 Supported in nbdkit E<ge> 1.4.0.
 
