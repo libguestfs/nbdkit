@@ -89,7 +89,8 @@ if test "x$gcc_warnings" = "xyes"; then
     AC_SUBST([WARNINGS_CFLAGS])
 fi
 
-dnl on Haiku we must use BSD-compatibility headers to get the endian macros we use
+dnl On Haiku we must use BSD-compatibility headers to get the endian
+dnl macros we use.
 AC_MSG_CHECKING(whether OS-dependent include paths are required)
 AS_CASE([$host_os],
   [haiku*], [CFLAGS="$CFLAGS -I`findpaths -p /system B_FIND_PATH_HEADERS_DIRECTORY`/bsd"; AC_MSG_RESULT(yes)],
