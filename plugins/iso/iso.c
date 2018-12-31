@@ -220,7 +220,8 @@ static int
 iso_config_complete (void)
 {
   if (nr_dirs == 0) {
-    nbdkit_error ("you must supply the dir=<DIRECTORY> parameter after the plugin name on the command line");
+    nbdkit_error ("you must supply the dir=<DIRECTORY> parameter "
+                  "after the plugin name on the command line");
     return -1;
   }
 

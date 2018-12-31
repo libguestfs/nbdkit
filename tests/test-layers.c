@@ -237,7 +237,8 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
   if ((eflags & NBD_FLAG_SEND_WRITE_ZEROES) == 0) {
-    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_WRITE_ZEROES not set\n",
+    fprintf (stderr,
+             "%s: unexpected eflags: NBD_FLAG_SEND_WRITE_ZEROES not set\n",
              program_name);
     exit (EXIT_FAILURE);
   }

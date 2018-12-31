@@ -256,7 +256,11 @@ partitioning_config_complete (void)
     }
   }
   else if (parttype == PARTTYPE_MBR && needs_gpt) {
-    nbdkit_error ("MBR partition table type supports a maximum of 4 partitions and a maximum virtual disk size of about 2 TB, but you requested %zu partition(s) and a total size of %" PRIu64 " bytes (> %" PRIu64 ").  Try using: partition-type=gpt",
+    nbdkit_error ("MBR partition table type supports a maximum of 4 partitions "
+                  "and a maximum virtual disk size of about 2 TB, "
+                  "but you requested %zu partition(s) "
+                  "and a total size of %" PRIu64 " bytes (> %" PRIu64 ").  "
+                  "Try using: partition-type=gpt",
                   nr_files, total_size, (uint64_t) MAX_MBR_DISK_SIZE);
     return -1;
   }

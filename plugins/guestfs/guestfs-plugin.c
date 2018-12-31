@@ -407,7 +407,8 @@ inspect_and_mount (guestfs_h *g, const char *options)
   }
 
   if (roots[1] != NULL) {
-    nbdkit_error ("multiple operating system were found; the plugin doesn't support that");
+    nbdkit_error ("multiple operating system were found.  "
+                  "The plugin doesn't support that.");
     goto out;
   }
   root = roots[0];

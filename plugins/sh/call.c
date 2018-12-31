@@ -315,7 +315,8 @@ handle_script_error (char *ebuf, size_t len)
     nbdkit_error ("%s: %s", script, ebuf);
   }
   else
-    nbdkit_error ("%s: script exited with error, but did not print an error message on stderr", script);
+    nbdkit_error ("%s: script exited with error, "
+                  "but did not print an error message on stderr", script);
 
   /* Set errno. */
   errno = err;

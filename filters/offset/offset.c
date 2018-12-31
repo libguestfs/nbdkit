@@ -85,7 +85,8 @@ offset_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   if (range >= 0) {
     if (offset + range > real_size) {
-      nbdkit_error ("offset+range is larger than the real size of the underlying file or device");
+      nbdkit_error ("offset+range is larger than the real size "
+                    "of the underlying file or device");
       return -1;
     }
     return range;

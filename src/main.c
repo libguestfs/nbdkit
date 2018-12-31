@@ -251,7 +251,9 @@ main (int argc, char *argv[])
       foreground = 1;
       break;
 #else
-      fprintf (stderr, "%s: --exit-with-parent is not implemented for this operating system\n",
+      fprintf (stderr,
+               "%s: --exit-with-parent is not implemented "
+               "for this operating system\n",
                program_name);
       exit (EXIT_FAILURE);
 #endif

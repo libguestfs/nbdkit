@@ -210,7 +210,8 @@ plugin_config (struct backend *b, const char *key, const char *value)
   debug ("%s: config key=%s, value=%s", p->name, key, value);
 
   if (p->plugin.config == NULL) {
-    fprintf (stderr, "%s: %s: this plugin does not need command line configuration\n"
+    fprintf (stderr,
+             "%s: %s: this plugin does not need command line configuration\n"
              "Try using: %s --help %s\n",
              program_name, p->filename,
              program_name, p->filename);
@@ -697,7 +698,9 @@ plugin_register (size_t index, const char *filename,
 
   /* Check for incompatible future versions. */
   if (plugin->_api_version < 0 || plugin->_api_version > 2) {
-    fprintf (stderr, "%s: %s: plugin is incompatible with this version of nbdkit (_api_version = %d)\n",
+    fprintf (stderr,
+             "%s: %s: plugin is incompatible with this version of nbdkit "
+             "(_api_version = %d)\n",
              program_name, p->filename, plugin->_api_version);
     exit (EXIT_FAILURE);
   }
@@ -747,7 +750,9 @@ plugin_register (size_t index, const char *filename,
     if (!((p->plugin.name[i] >= '0' && p->plugin.name[i] <= '9') ||
           (p->plugin.name[i] >= 'a' && p->plugin.name[i] <= 'z') ||
           (p->plugin.name[i] >= 'A' && p->plugin.name[i] <= 'Z'))) {
-      fprintf (stderr, "%s: %s: plugin.name ('%s') field must contain only ASCII alphanumeric characters\n",
+      fprintf (stderr,
+               "%s: %s: plugin.name ('%s') field "
+               "must contain only ASCII alphanumeric characters\n",
                program_name, p->filename, p->plugin.name);
       exit (EXIT_FAILURE);
     }

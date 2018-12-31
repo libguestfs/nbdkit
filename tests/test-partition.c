@@ -87,7 +87,9 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
 
   if (strcmp (data, "hello,world") != 0) {
-    fprintf (stderr, "%s FAILED: unexpected content of /hello.txt file (actual: %s, expected: \"hello,world\")\n",
+    fprintf (stderr,
+             "%s FAILED: unexpected content of /hello.txt file "
+             "(actual: %s, expected: \"hello,world\")\n",
              program_name, data);
     exit (EXIT_FAILURE);
   }

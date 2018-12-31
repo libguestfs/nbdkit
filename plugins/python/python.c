@@ -287,7 +287,8 @@ py_config (const char *key, const char *value)
   if (!script) {
     /* The first parameter MUST be "script". */
     if (strcmp (key, "script") != 0) {
-      nbdkit_error ("the first parameter must be script=/path/to/python/script.py");
+      nbdkit_error ("the first parameter must be "
+                    "script=/path/to/python/script.py");
       return -1;
     }
     script = value;
@@ -322,7 +323,10 @@ py_config (const char *key, const char *value)
     if (!callback_defined ("open", NULL) ||
         !callback_defined ("get_size", NULL) ||
         !callback_defined ("pread", NULL)) {
-      nbdkit_error ("%s: one of the required callbacks 'open', 'get_size' or 'pread' is not defined by this Python script.  nbdkit requires these callbacks.", script);
+      nbdkit_error ("%s: one of the required callbacks "
+                    "'open', 'get_size' or 'pread' "
+                    "is not defined by this Python script.  "
+                    "nbdkit requires these callbacks.", script);
       return -1;
     }
   }

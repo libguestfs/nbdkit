@@ -64,7 +64,9 @@ set_selinux_label (void)
       exit (EXIT_FAILURE);
     }
 #else
-    fprintf (stderr, "%s: --selinux-label option used, but this binary was compiled without SELinux support\n",
+    fprintf (stderr,
+             "%s: --selinux-label option used, but "
+             "this binary was compiled without SELinux support\n",
              program_name);
     exit (EXIT_FAILURE);
 #endif

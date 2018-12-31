@@ -692,7 +692,9 @@ filter_register (struct backend *next, size_t index, const char *filename,
    * mismatch when the API changes.
    */
   if (filter->_api_version != NBDKIT_FILTER_API_VERSION) {
-    fprintf (stderr, "%s: %s: filter is incompatible with this version of nbdkit (_api_version = %d)\n",
+    fprintf (stderr,
+             "%s: %s: filter is incompatible with this version of nbdkit "
+             "(_api_version = %d)\n",
              program_name, f->filename, filter->_api_version);
     exit (EXIT_FAILURE);
   }
@@ -716,7 +718,9 @@ filter_register (struct backend *next, size_t index, const char *filename,
     if (!((f->filter.name[i] >= '0' && f->filter.name[i] <= '9') ||
           (f->filter.name[i] >= 'a' && f->filter.name[i] <= 'z') ||
           (f->filter.name[i] >= 'A' && f->filter.name[i] <= 'Z'))) {
-      fprintf (stderr, "%s: %s: filter.name ('%s') field must contain only ASCII alphanumeric characters\n",
+      fprintf (stderr,
+               "%s: %s: filter.name ('%s') field "
+               "must contain only ASCII alphanumeric characters\n",
                program_name, f->filename, f->filter.name);
       exit (EXIT_FAILURE);
     }

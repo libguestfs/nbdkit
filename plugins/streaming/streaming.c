@@ -90,7 +90,8 @@ static int
 streaming_config_complete (void)
 {
   if (filename == NULL) {
-    nbdkit_error ("you must supply the pipe=<FILENAME> parameter after the plugin name on the command line");
+    nbdkit_error ("you must supply the pipe=<FILENAME> parameter "
+                  "after the plugin name on the command line");
     return -1;
   }
 
@@ -139,7 +140,8 @@ streaming_open (int readonly)
   }
 
   if (errorstate) {
-    nbdkit_error ("unrecoverable error state, no new connections can be opened");
+    nbdkit_error ("unrecoverable error state, "
+                  "no new connections can be opened");
     return NULL;
   }
 
@@ -179,7 +181,8 @@ streaming_pwrite (void *handle, const void *buf,
   }
 
   if (offset < highestwrite) {
-    nbdkit_error ("client tried to seek backwards and write: the streaming plugin does not currently support this");
+    nbdkit_error ("client tried to seek backwards and write: "
+                  "the streaming plugin does not currently support this");
     errorstate = 1;
     errno = EIO;
     return -1;
@@ -237,7 +240,8 @@ streaming_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
     return 0;
   }
 
-  nbdkit_error ("client tried to read: the streaming plugin does not currently support this");
+  nbdkit_error ("client tried to read: "
+                "the streaming plugin does not currently support this");
   errorstate = 1;
   errno = EIO;
   return -1;

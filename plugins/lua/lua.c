@@ -154,7 +154,10 @@ lua_plugin_config (const char *key, const char *value)
     if (!function_defined ("open") ||
         !function_defined ("get_size") ||
         !function_defined ("pread")) {
-      nbdkit_error ("%s: one of the required callbacks 'open', 'get_size' or 'pread' is not defined by this Lua script.  nbdkit requires these callbacks.", script);
+      nbdkit_error ("%s: one of the required callbacks "
+                    "'open', 'get_size' or 'pread' "
+                    "is not defined by this Lua script.  "
+                    "nbdkit requires these callbacks.", script);
       return -1;
     }
   }
