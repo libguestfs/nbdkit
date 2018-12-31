@@ -124,7 +124,8 @@ static int
 curl_config_complete (void)
 {
   if (url == NULL) {
-    nbdkit_error ("you must supply the url=<URL> parameter after the plugin name on the command line");
+    nbdkit_error ("you must supply the url=<URL> parameter "
+                  "after the plugin name on the command line");
     return -1;
   }
 
@@ -239,7 +240,9 @@ CURLOPT_PROXY
   curl_easy_setopt (h->c, CURLOPT_HEADERDATA, h);
   r = curl_easy_perform (h->c);
   if (r != CURLE_OK) {
-    display_curl_error (h, r, "problem doing HEAD request to fetch size of URL [%s]", url);
+    display_curl_error (h, r,
+                        "problem doing HEAD request to fetch size of URL [%s]",
+                        url);
     goto err;
   }
 
@@ -250,7 +253,8 @@ CURLOPT_PROXY
   }
 
   if (d == -1) {
-    nbdkit_error ("could not get length of remote file [%s], is the URL correct?", url);
+    nbdkit_error ("could not get length of remote file [%s], "
+                  "is the URL correct?", url);
     goto err;
   }
 

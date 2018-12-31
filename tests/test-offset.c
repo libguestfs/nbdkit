@@ -119,7 +119,9 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
 
   if (strcmp (data, content) != 0) {
-    fprintf (stderr, "%s FAILED: unexpected content of %s file (actual: %s, expected: %s)\n",
+    fprintf (stderr,
+             "%s FAILED: unexpected content of %s file "
+             "(actual: %s, expected: %s)\n",
              program_name, filename, data, content);
     exit (EXIT_FAILURE);
   }

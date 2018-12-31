@@ -98,7 +98,8 @@ nbd_config_complete (void)
   struct sockaddr_un sock;
 
   if (sockname == NULL) {
-    nbdkit_error ("you must supply the socket=<SOCKNAME> parameter after the plugin name on the command line");
+    nbdkit_error ("you must supply the socket=<SOCKNAME> parameter "
+                  "after the plugin name on the command line");
     return -1;
   }
   if (strlen (sockname) > sizeof sock.sun_path) {

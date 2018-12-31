@@ -269,7 +269,8 @@ vddk_config_complete (void)
   VixError err;
 
   if (filename == NULL) {
-    nbdkit_error ("you must supply the file=<FILENAME> parameter after the plugin name on the command line");
+    nbdkit_error ("you must supply the file=<FILENAME> parameter "
+                  "after the plugin name on the command line");
     return -1;
   }
 

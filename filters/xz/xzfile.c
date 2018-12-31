@@ -442,7 +442,9 @@ xzfile_read_block (xzfile *xz,
   data = malloc (*size_rtn);
   if (data == NULL) {
     nbdkit_error ("malloc (%" PRIu64 " bytes): %m\n"
-                  "NOTE: If this error occurs, you need to recompress your xz files with a smaller block size.  Use: 'xz --block-size=16777216 ...'.",
+                  "NOTE: If this error occurs, you need to recompress your "
+                  "xz files with a smaller block size.  "
+                  "Use: 'xz --block-size=16777216 ...'.",
                   *size_rtn);
     goto err2;
   }

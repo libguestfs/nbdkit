@@ -80,7 +80,9 @@ main (int argc, char *argv[])
   if (!data)
     exit (EXIT_FAILURE);
   if (size != 8 * 512) {
-    fprintf (stderr, "%s FAILED: unexpected size (actual: %zu, expected: 512)\n",
+    fprintf (stderr,
+             "%s FAILED: unexpected size "
+             "(actual: %zu, expected: 512)\n",
              program_name, size);
     exit (EXIT_FAILURE);
   }

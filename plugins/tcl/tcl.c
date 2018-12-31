@@ -149,7 +149,10 @@ tcl_config (const char *key, const char *value)
     if (!proc_defined ("plugin_open") ||
         !proc_defined ("get_size") ||
         !proc_defined ("pread")) {
-      nbdkit_error ("%s: one of the required callbacks 'plugin_open', 'get_size' or 'pread' is not defined by this Tcl script.  nbdkit requires these callbacks.", script);
+      nbdkit_error ("%s: one of the required callbacks "
+                    "'plugin_open', 'get_size' or 'pread' "
+                    "is not defined by this Tcl script.  "
+                    "nbdkit requires these callbacks.", script);
       return -1;
     }
   }

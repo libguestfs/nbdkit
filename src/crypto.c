@@ -441,7 +441,8 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
       gnutls_certificate_server_set_request (*session, GNUTLS_CERT_REQUEST);
       gnutls_session_set_verify_cert (*session, NULL, 0);
 #else
-      nbdkit_error ("--tls-verify-peer: GnuTLS >= 3.4.6 is required for this feature");
+      nbdkit_error ("--tls-verify-peer: "
+                    "GnuTLS >= 3.4.6 is required for this feature");
       goto error;
 #endif
     }
@@ -523,7 +524,9 @@ void
 crypto_init (int tls_set_on_cli)
 {
   if (tls > 0) {
-    fprintf (stderr, "%s: TLS cannot be enabled because this binary was compiled without GnuTLS.\n",
+    fprintf (stderr,
+             "%s: TLS cannot be enabled because "
+             "this binary was compiled without GnuTLS.\n",
              program_name);
     exit (EXIT_FAILURE);
   }

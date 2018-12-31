@@ -378,7 +378,9 @@ sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
   switch (call_read (&data, &len, args)) {
   case OK:
     if (count != len) {
-      nbdkit_error ("%s: incorrect amount of data read: expecting %" PRIu32 " bytes but received %zu bytes from the script",
+      nbdkit_error ("%s: incorrect amount of data read: "
+                    "expecting %" PRIu32 " bytes but "
+                    "received %zu bytes from the script",
                     script, count, len);
       free (data);
       return -1;

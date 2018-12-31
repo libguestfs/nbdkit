@@ -152,7 +152,8 @@ cache_config (nbdkit_next_config *next, void *nxdata,
       return 0;
     }
     else {
-      nbdkit_error ("invalid cache parameter, should be writeback|writethrough|unsafe");
+      nbdkit_error ("invalid cache parameter, should be "
+                    "writeback|writethrough|unsafe");
       return -1;
     }
   }

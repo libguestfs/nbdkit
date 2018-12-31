@@ -195,7 +195,8 @@ perl_config (const char *key, const char *value)
 
     /* The first parameter MUST be "script". */
     if (strcmp (key, "script") != 0) {
-      nbdkit_error ("the first parameter must be script=/path/to/perl/script.pl");
+      nbdkit_error ("the first parameter must be "
+                    "script=/path/to/perl/script.pl");
       return -1;
     }
     script = value;
@@ -221,7 +222,10 @@ perl_config (const char *key, const char *value)
     if (!callback_defined ("open") ||
         !callback_defined ("get_size") ||
         !callback_defined ("pread")) {
-      nbdkit_error ("%s: one of the required callbacks 'open', 'get_size' or 'pread' is not defined by this Perl script.  nbdkit requires these callbacks.", script);
+      nbdkit_error ("%s: one of the required callbacks "
+                    "'open', 'get_size' or 'pread' "
+                    "is not defined by this Perl script.  "
+                    "nbdkit requires these callbacks.", script);
       return -1;
     }
   }

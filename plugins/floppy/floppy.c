@@ -95,7 +95,8 @@ static int
 floppy_config_complete (void)
 {
   if (dir == NULL) {
-    nbdkit_error ("you must supply the dir=<DIRECTORY> parameter after the plugin name on the command line");
+    nbdkit_error ("you must supply the dir=<DIRECTORY> parameter "
+                  "after the plugin name on the command line");
     return -1;
   }
 
