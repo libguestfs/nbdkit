@@ -49,9 +49,9 @@ CLEANFILES += html/*.html
 # NB: This is not the real nbdkit binary.  It's a wrapper that allows
 # you to run nbdkit from the build directory before it is installed.
 noinst_PROGRAMS = nbdkit
-nbdkit_SOURCES = wrapper.c src/options.h
+nbdkit_SOURCES = wrapper.c server/options.h
 nbdkit_CPPFLAGS = \
-	-I$(top_srcdir)/src \
+	-I$(top_srcdir)/server \
 	-Dbuilddir=\"$(abs_top_builddir)\" \
 	-Dsrcdir=\"$(abs_top_srcdir)\" \
 	-DVALGRIND=\"$(VALGRIND)\"
@@ -65,7 +65,7 @@ SUBDIRS = \
 	valgrind \
 	include \
 	common/include \
-	src
+	server
 
 if HAVE_PLUGINS
 SUBDIRS += \

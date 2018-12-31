@@ -164,7 +164,7 @@ wrapper.  It will run nbdkit and plugins from the locally compiled
 directory:
 
     $ ./nbdkit example1 -f -v
-    ./src/nbdkit ./plugins/example1/.libs/nbdkit-example1-plugin.so -f -v
+    ./server/nbdkit ./plugins/example1/.libs/nbdkit-example1-plugin.so -f -v
     [etc]
 
 Optionally run this command as root to install everything:

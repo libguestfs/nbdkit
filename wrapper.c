@@ -44,7 +44,7 @@
  *
  * The wrapper modifies the bare plugin name (eg. "file") to be the
  * full path to the locally compiled plugin.  If you don't use this
- * program and run src/nbdkit directly then it will pick up the
+ * program and run server/nbdkit directly then it will pick up the
  * installed plugins which is not usually what you want.
  *
  * This program is also used to run the tests (make check).
@@ -146,7 +146,7 @@ main (int argc, char *argv[])
   }
 
   /* Absolute path of the real nbdkit command. */
-  passthru_format ("%s/src/nbdkit", builddir);
+  passthru_format ("%s/server/nbdkit", builddir);
 
   /* Option parsing.  We don't really parse options here.  We are only
    * interested in which options have arguments and which need

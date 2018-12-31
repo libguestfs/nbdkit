@@ -635,10 +635,10 @@ TESTS += test-layers.sh test-layers
 
 test_layers_SOURCES = \
 	test-layers.c \
-	$(top_srcdir)/src/protocol.h
+	$(top_srcdir)/server/protocol.h
 test_layers_CPPFLAGS = \
 	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/src
+	-I$(top_srcdir)/server
 test_layers_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(PTHREAD_CFLAGS)

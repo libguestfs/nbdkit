@@ -51,11 +51,11 @@ Makefile.in
 /plugins/example4/nbdkit-example4-plugin
 /plugins/tar/nbdkit-tar-plugin
 /podwrapper.pl
-/src/nbdkit
-/src/nbdkit.pc
-/src/protostrings.c
-/src/synopsis.c
-/src/test-utils
+/server/nbdkit
+/server/nbdkit.pc
+/server/protostrings.c
+/server/synopsis.c
+/server/test-utils
 /stamp-h1
 /tests/disk
 /tests/disk.gz
