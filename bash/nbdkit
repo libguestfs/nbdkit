@@ -91,7 +91,7 @@ _nbdkit ()
             COMPREPLY=( $(compgen -W "$shortopts $longopts" -- "$cur") )
             return ;;
         *)
-            if [ "$plugin" = "" ]; then
+            if [ "$plugin" = "" ] || [ "$plugin" = "$cur" ]; then
                 # Complete plugin name.
                 plugins="$(_nbdkit_list_plugins)"
                 COMPREPLY=( $(compgen -W "$plugins" "$cur") )
