@@ -845,6 +845,7 @@ AC_CONFIG_FILES([Makefile
                  filters/partition/Makefile
                  filters/truncate/Makefile
                  filters/xz/Makefile
+                 fuzzing/Makefile
                  src/Makefile
                  src/nbdkit.pc
                  tests/functions.sh
