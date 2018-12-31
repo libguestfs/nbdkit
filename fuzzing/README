@@ -39,7 +39,9 @@ consult the README of that project, but in brief:
 (1) Create a second copy of the nbdkit source, and compile it with
 profiling:
 
-  CFLAGS="-O2 -g -pg -fprofile-arcs -ftest-coverage"
+  ./configure CFLAGS="-O2 -g -pg -fprofile-arcs -ftest-coverage"
+  make clean
+  make
 
 (2) Assuming ../nbdkit-afl is the nbdkit source compiled with afl, and
 the current directory is nbdkit compiled with profiling, then run the
