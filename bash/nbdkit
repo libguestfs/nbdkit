@@ -100,7 +100,7 @@ _nbdkit ()
                 # Complete plugin args.
                 args="$(
                     nbdkit $plugin --help 2>/dev/null |
-                        grep -E '^[a-z0-9]+=' | sed 's/=.*/=/'
+                        grep -E '^[-a-z0-9]+=' | sed 's/=.*/=/'
                 )"
                 COMPREPLY=( $(compgen -W "$args" "$cur") )
                 return
