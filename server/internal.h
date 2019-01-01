@@ -79,7 +79,7 @@ struct debug_flag {
   char *name;                   /* plugin or filter name */
   char *flag;                   /* flag name */
   int value;                    /* value of flag */
-  int used;                     /* if flag was successfully set */
+  bool used;                    /* if flag was successfully set */
 };
 
 enum log_to {
@@ -94,22 +94,22 @@ extern struct debug_flag *debug_flags;
 extern const char *exportname;
 extern const char *ipaddr;
 extern enum log_to log_to;
-extern int newstyle;
+extern bool newstyle;
 extern const char *port;
-extern int readonly;
+extern bool readonly;
 extern const char *selinux_label;
+extern int threads;
 extern int tls;
 extern const char *tls_certificates_dir;
 extern const char *tls_psk;
-extern int tls_verify_peer;
+extern bool tls_verify_peer;
 extern char *unixsocket;
-extern int verbose;
-extern int threads;
+extern bool verbose;
 
 extern volatile int quit;
 extern int quit_fd;
 
-extern int forked_into_background;
+extern bool forked_into_background;
 
 extern struct backend *backend;
 #define for_each_backend(b) for (b = backend; b != NULL; b = b->next)
@@ -140,7 +140,7 @@ extern void connection_set_close (struct connection *, connection_close_function
 
 /* crypto.c */
 #define root_tls_certificates_dir sysconfdir "/pki/" PACKAGE_NAME
-extern void crypto_init (int tls_set_on_cli);
+extern void crypto_init (bool tls_set_on_cli);
 extern void crypto_free (void);
 extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockout);
 

@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -75,26 +76,26 @@ static unsigned int get_socket_activation (void);
 static int is_config_key (const char *key, size_t len);
 
 struct debug_flag *debug_flags; /* -D */
-int exit_with_parent;           /* --exit-with-parent */
+bool exit_with_parent;          /* --exit-with-parent */
 const char *exportname;         /* -e */
-int foreground;                 /* -f */
+bool foreground;                /* -f */
 const char *ipaddr;             /* -i */
 enum log_to log_to = LOG_TO_DEFAULT; /* --log */
-int newstyle = 1;               /* 0 = -o, 1 = -n */
+bool newstyle = true;           /* false = -o, true = -n */
 char *pidfile;                  /* -P */
 const char *port;               /* -p */
-int readonly;                   /* -r */
+bool readonly;                  /* -r */
 char *run;                      /* --run */
-int listen_stdin;               /* -s */
+bool listen_stdin;              /* -s */
 const char *selinux_label;      /* --selinux-label */
 int threads;                    /* -t */
 int tls;                        /* --tls : 0=off 1=on 2=require */
 const char *tls_certificates_dir; /* --tls-certificates */
 const char *tls_psk;            /* --tls-psk */
-int tls_verify_peer;            /* --tls-verify-peer */
+bool tls_verify_peer;           /* --tls-verify-peer */
 char *unixsocket;               /* -U */
 const char *user, *group;       /* -u & -g */
-int verbose;                    /* -v */
+bool verbose;                   /* -v */
 unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
 
 /* Detection of request to exit via signal.  Most places in the code
@@ -106,7 +107,7 @@ int quit_fd;
 static int write_quit_fd;
 
 /* True if we forked into the background (used to control log messages). */
-int forked_into_background;
+bool forked_into_background;
 
 /* The currently loaded plugin. */
 struct backend *backend;
@@ -160,8 +161,8 @@ int
 main (int argc, char *argv[])
 {
   int c;
-  int help = 0, version = 0, dump_plugin = 0;
-  int tls_set_on_cli = 0;
+  bool help = false, version = false, dump_plugin = false;
+  int tls_set_on_cli = false;
   int short_name;
   const char *filename;
   char *p;
@@ -229,7 +230,7 @@ main (int argc, char *argv[])
         flag->flag = strndup (p, q-p-1);
         if (!flag->flag) goto debug_flag_perror;
         if (sscanf (q, "%d", &flag->value) != 1) goto bad_debug_flag;
-        flag->used = 0;
+        flag->used = false;
 
         /* Add flag to the linked list. */
         flag->next = debug_flags;
@@ -242,13 +243,13 @@ main (int argc, char *argv[])
       exit (EXIT_SUCCESS);
 
     case DUMP_PLUGIN_OPTION:
-      dump_plugin = 1;
+      dump_plugin = true;
       break;
 
     case EXIT_WITH_PARENT_OPTION:
 #ifdef HAVE_EXIT_WITH_PARENT
-      exit_with_parent = 1;
-      foreground = 1;
+      exit_with_parent = true;
+      foreground = true;
       break;
 #else
       fprintf (stderr,
@@ -300,7 +301,7 @@ main (int argc, char *argv[])
         exit (EXIT_FAILURE);
       }
       run = optarg;
-      foreground = 1;
+      foreground = true;
       break;
 
     case SELINUX_LABEL_OPTION:
@@ -315,7 +316,7 @@ main (int argc, char *argv[])
       exit (EXIT_SUCCESS);
 
     case TLS_OPTION:
-      tls_set_on_cli = 1;
+      tls_set_on_cli = true;
       if (strcasecmp (optarg, "require") == 0 ||
           strcasecmp (optarg, "required") == 0 ||
           strcasecmp (optarg, "force") == 0)
@@ -336,16 +337,16 @@ main (int argc, char *argv[])
       break;
 
     case TLS_VERIFY_PEER_OPTION:
-      tls_verify_peer = 1;
+      tls_verify_peer = true;
       break;
 
     case 'e':
       exportname = optarg;
-      newstyle = 1;
+      newstyle = true;
       break;
 
     case 'f':
-      foreground = 1;
+      foreground = true;
       break;
 
     case 'g':
@@ -362,11 +363,11 @@ main (int argc, char *argv[])
       break;
 
     case 'n':
-      newstyle = 1;
+      newstyle = true;
       break;
 
     case 'o':
-      newstyle = 0;
+      newstyle = false;
       break;
 
     case 'P':
@@ -385,7 +386,7 @@ main (int argc, char *argv[])
       break;
 
     case 'r':
-      readonly = 1;
+      readonly = true;
       break;
 
     case 's':
@@ -394,7 +395,7 @@ main (int argc, char *argv[])
                  program_name);
         exit (EXIT_FAILURE);
       }
-      listen_stdin = 1;
+      listen_stdin = true;
       break;
 
     case 't':
@@ -431,15 +432,15 @@ main (int argc, char *argv[])
       break;
 
     case 'v':
-      verbose = 1;
+      verbose = true;
       break;
 
     case 'V':
-      version = 1;
+      version = true;
       break;
 
     case HELP_OPTION:
-      help = 1;
+      help = true;
       break;
 
     default:
@@ -477,7 +478,7 @@ main (int argc, char *argv[])
   }
 
   /* Oldstyle protocol + exportname not allowed. */
-  if (newstyle == 0 && exportname != NULL) {
+  if (!newstyle && exportname != NULL) {
     fprintf (stderr,
              "%s: cannot use oldstyle protocol (-o) and exportname (-e)\n",
              program_name);
@@ -489,7 +490,7 @@ main (int argc, char *argv[])
     exportname = "";
 
   /* --tls=require and oldstyle won't work. */
-  if (tls == 2 && newstyle == 0) {
+  if (tls == 2 && !newstyle) {
     fprintf (stderr,
              "%s: cannot use oldstyle protocol (-o) and require TLS\n",
              program_name);
@@ -727,7 +728,7 @@ open_plugin_so (size_t i, const char *name, int short_name)
 {
   struct backend *ret;
   char *filename = (char *) name;
-  int free_filename = 0;
+  bool free_filename = false;
   void *dl;
   struct nbdkit_plugin *(*plugin_init) (void);
   char *error;
@@ -739,7 +740,7 @@ open_plugin_so (size_t i, const char *name, int short_name)
       perror ("asprintf");
       exit (EXIT_FAILURE);
     }
-    free_filename = 1;
+    free_filename = true;
   }
 
   dl = dlopen (filename, RTLD_NOW|RTLD_GLOBAL);
@@ -780,7 +781,7 @@ open_filter_so (struct backend *next, size_t i,
 {
   struct backend *ret;
   char *filename = (char *) name;
-  int free_filename = 0;
+  bool free_filename = false;
   void *dl;
   struct nbdkit_filter *(*filter_init) (void);
   char *error;
@@ -792,7 +793,7 @@ open_filter_so (struct backend *next, size_t i,
       perror ("asprintf");
       exit (EXIT_FAILURE);
     }
-    free_filename = 1;
+    free_filename = true;
   }
 
   dl = dlopen (filename, RTLD_NOW|RTLD_GLOBAL);
@@ -1023,7 +1024,7 @@ fork_into_background (void)
   if (!verbose)
     dup2 (1, 2);
 
-  forked_into_background = 1;
+  forked_into_background = true;
   debug ("forked into background (new pid = %d)", getpid ());
 }
 

@@ -78,13 +78,13 @@ struct connection {
   uint32_t cflags;
   uint64_t exportsize;
   uint16_t eflags;
-  int readonly;
-  int can_flush;
-  int is_rotational;
-  int can_trim;
-  int can_zero;
-  int can_fua;
-  int using_tls;
+  bool readonly;
+  bool can_flush;
+  bool is_rotational;
+  bool can_trim;
+  bool can_zero;
+  bool can_fua;
+  bool using_tls;
 
   int sockin, sockout;
   connection_recv_function recv;
@@ -419,7 +419,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
     return -1;
   if (readonly || !fl) {
     eflags |= NBD_FLAG_READ_ONLY;
-    conn->readonly = 1;
+    conn->readonly = true;
   }
   if (!conn->readonly) {
     fl = backend->can_zero (backend, conn);
@@ -427,7 +427,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
       return -1;
     if (fl) {
       eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
-      conn->can_zero = 1;
+      conn->can_zero = true;
     }
 
     fl = backend->can_trim (backend, conn);
@@ -435,7 +435,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
       return -1;
     if (fl) {
       eflags |= NBD_FLAG_SEND_TRIM;
-      conn->can_trim = 1;
+      conn->can_trim = true;
     }
 
     fl = backend->can_fua (backend, conn);
@@ -443,7 +443,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
       return -1;
     if (fl) {
       eflags |= NBD_FLAG_SEND_FUA;
-      conn->can_fua = 1;
+      conn->can_fua = true;
     }
   }
 
@@ -452,7 +452,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
     return -1;
   if (fl) {
     eflags |= NBD_FLAG_SEND_FLUSH;
-    conn->can_flush = 1;
+    conn->can_flush = true;
   }
 
   fl = backend->is_rotational (backend, conn);
@@ -460,7 +460,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
     return -1;
   if (fl) {
     eflags |= NBD_FLAG_ROTATIONAL;
-    conn->is_rotational = 1;
+    conn->is_rotational = true;
   }
 
   *flags = eflags;
@@ -793,7 +793,7 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
         /* Upgrade the connection to TLS.  Also performs access control. */
         if (crypto_negotiate_tls (conn, conn->sockin, conn->sockout) == -1)
           return -1;
-        conn->using_tls = 1;
+        conn->using_tls = true;
         debug ("using TLS on this connection");
       }
       break;
