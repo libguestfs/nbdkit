@@ -223,11 +223,20 @@ struct virtual_floppy {
 #define SECTORS_PER_CLUSTER 32
 #define CLUSTER_SIZE (SECTOR_SIZE * SECTORS_PER_CLUSTER)
 
-extern void init_virtual_floppy (struct virtual_floppy *floppy);
-extern int create_virtual_floppy (const char *dir, const char *label, struct virtual_floppy *floppy);
-extern void free_virtual_floppy (struct virtual_floppy *floppy);
-extern int create_directory (size_t di, const char *label, struct virtual_floppy *floppy);
-extern int update_directory_first_cluster (size_t di, struct virtual_floppy *floppy);
-extern void pad_string (const char *label, size_t n, uint8_t *out);
+extern void init_virtual_floppy (struct virtual_floppy *floppy)
+  __attribute__((__nonnull__ (1)));
+extern int create_virtual_floppy (const char *dir, const char *label,
+                                  struct virtual_floppy *floppy)
+  __attribute__((__nonnull__ (1, 2, 3)));
+extern void free_virtual_floppy (struct virtual_floppy *floppy)
+  __attribute__((__nonnull__ (1)));
+extern int create_directory (size_t di, const char *label,
+                             struct virtual_floppy *floppy)
+  __attribute__((__nonnull__ (2, 3)));
+extern int update_directory_first_cluster (size_t di,
+                                           struct virtual_floppy *floppy)
+  __attribute__((__nonnull__ (2)));
+extern void pad_string (const char *label, size_t n, uint8_t *out)
+  __attribute__((__nonnull__ (1, 3)));
 
 #endif /* NBDKIT_VIRTUAL_FLOPPY_H */

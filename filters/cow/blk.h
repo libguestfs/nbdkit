@@ -56,10 +56,13 @@ extern void blk_free (void);
 extern int blk_set_size (uint64_t new_size);
 
 /* Read a single block from the overlay or plugin. */
-extern int blk_read (struct nbdkit_next_ops *next_ops, void *nxdata, uint64_t blknum, uint8_t *block, int *err);
+extern int blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
+                     uint64_t blknum, uint8_t *block, int *err)
+  __attribute__((__nonnull__ (1, 4, 5)));
 
 /* Write a single block. */
-extern int blk_write (uint64_t blknum, const uint8_t *block, int *err);
+extern int blk_write (uint64_t blknum, const uint8_t *block, int *err)
+  __attribute__((__nonnull__ (2, 3)));
 
 /* Flush the overlay to disk. */
 extern int blk_flush (void);

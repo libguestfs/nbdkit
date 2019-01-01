@@ -55,6 +55,7 @@
  * cleaned up automatically on exit.  Note that the returned string
  * must NOT be freed by the main program.
  */
-extern const char *web_server (const char *filename);
+extern const char *web_server (const char *filename)
+  __attribute__((__nonnull__ (1)));
 
 #endif /* NBDKIT_WEB_SERVER_H */

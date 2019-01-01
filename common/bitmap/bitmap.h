@@ -64,7 +64,7 @@ struct bitmap {
   size_t size;                  /* Size of bitmap in bytes. */
 };
 
-static inline void
+static inline void __attribute__((__nonnull__ (1)))
 bitmap_init (struct bitmap *bm, unsigned blksize, unsigned bpb)
 {
   assert (is_power_of_2 (blksize));
@@ -98,7 +98,8 @@ bitmap_free (struct bitmap *bm)
 /* Resize the bitmap to the virtual disk size in bytes.
  * Returns -1 on error, setting nbdkit_error.
  */
-extern int bitmap_resize (struct bitmap *bm, uint64_t new_size);
+extern int bitmap_resize (struct bitmap *bm, uint64_t new_size)
+  __attribute__((__nonnull__ (1)));
 
 /* This macro calculates the byte offset in the bitmap and which
  * bit/mask we are addressing within that byte.
@@ -117,7 +118,7 @@ extern int bitmap_resize (struct bitmap *bm, uint64_t new_size);
 /* Return the bit(s) associated with the given block.
  * If the request is out of range, returns the default value.
  */
-static inline unsigned
+static inline unsigned __attribute__((__nonnull__ (1)))
 bitmap_get_blk (const struct bitmap *bm, uint64_t blk, unsigned default_)
 {
   BITMAP_OFFSET_BIT_MASK (bm, blk);
@@ -131,7 +132,7 @@ bitmap_get_blk (const struct bitmap *bm, uint64_t blk, unsigned default_)
 }
 
 /* As above but works with virtual disk offset in bytes. */
-static inline unsigned
+static inline unsigned __attribute__((__nonnull__ (1)))
 bitmap_get (const struct bitmap *bm, uint64_t offset, unsigned default_)
 {
   return bitmap_get_blk (bm, offset / bm->blksize, default_);
@@ -140,7 +141,7 @@ bitmap_get (const struct bitmap *bm, uint64_t offset, unsigned default_)
 /* Set the bit(s) associated with the given block.
  * If out of range, it is ignored.
  */
-static inline void
+static inline void __attribute__((__nonnull__ (1)))
 bitmap_set_blk (const struct bitmap *bm, uint64_t blk, unsigned v)
 {
   BITMAP_OFFSET_BIT_MASK (bm, blk);
@@ -155,7 +156,7 @@ bitmap_set_blk (const struct bitmap *bm, uint64_t blk, unsigned v)
 }
 
 /* As above bit works with virtual disk offset in bytes. */
-static inline void
+static inline void __attribute__((__nonnull__ (1)))
 bitmap_set (const struct bitmap *bm, uint64_t offset, unsigned v)
 {
   return bitmap_set_blk (bm, offset / bm->blksize, v);

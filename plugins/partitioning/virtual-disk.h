@@ -111,14 +111,19 @@ extern int create_virtual_disk_layout (void);
 /* Parse a GPT GUID.  Note that GPT GUIDs have peculiar
  * characteristics which make them unlike general GUIDs.
  */
-extern int parse_guid (const char *str, char *out);
+extern int parse_guid (const char *str, char *out)
+  __attribute__((__nonnull__ (1, 2)));
 
 /* Internal functions for creating MBR and GPT layouts.  These are
  * published here because the GPT code calls into the MBR code, but
  * are not meant to be called from the main plugin.
  */
-extern void create_mbr_partition_table (unsigned char *out);
-extern void create_mbr_partition_table_entry (const struct region *, int bootable, int partition_id, unsigned char *);
+extern void create_mbr_partition_table (unsigned char *out)
+  __attribute__((__nonnull__ (1)));
+extern void create_mbr_partition_table_entry (const struct region *,
+                                              int bootable, int partition_id,
+                                              unsigned char *)
+  __attribute__((__nonnull__ (1, 4)));
 extern void create_gpt_layout (void);
 
 #endif /* NBDKIT_VIRTUAL_DISK_H */

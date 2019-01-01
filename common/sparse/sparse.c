@@ -123,10 +123,12 @@ free_sparse_array (struct sparse_array *sa)
 {
   size_t i;
 
-  for (i = 0; i < sa->l1_size; ++i)
-    free_l2_dir (sa->l1_dir[i].l2_dir);
-  free (sa->l1_dir);
-  free (sa);
+  if (sa) {
+    for (i = 0; i < sa->l1_size; ++i)
+      free_l2_dir (sa->l1_dir[i].l2_dir);
+    free (sa->l1_dir);
+    free (sa);
+  }
 }
 
 struct sparse_array *

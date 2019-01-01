@@ -42,9 +42,13 @@ typedef enum exit_code {
   RET_FALSE = 3        /* script exited with code 3 meaning false */
 } exit_code;
 
-extern exit_code call (const char **argv);
-extern exit_code call_read (char **rbuf, size_t *rbuflen, const char **argv);
-extern exit_code call_write (const char *wbuf, size_t wbuflen, const char **argv);
+extern exit_code call (const char **argv)
+  __attribute__((__nonnull__ (1)));
+extern exit_code call_read (char **rbuf, size_t *rbuflen, const char **argv)
+  __attribute__((__nonnull__ (1, 2, 3)));
+extern exit_code call_write (const char *wbuf, size_t wbuflen,
+                             const char **argv)
+  __attribute__((__nonnull__ (1, 3)));
 
 extern char tmpdir[];
 extern char *script;

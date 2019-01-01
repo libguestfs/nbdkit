@@ -64,12 +64,16 @@ extern void free_sparse_array (struct sparse_array *sa);
 /* Read bytes from the sparse array.
  * Note this can never return an error and never allocates.
  */
-extern void sparse_array_read (struct sparse_array *sa, void *buf, uint32_t count, uint64_t offset);
+extern void sparse_array_read (struct sparse_array *sa, void *buf,
+                               uint32_t count, uint64_t offset)
+  __attribute__((__nonnull__ (1, 2)));
 
 /* Write bytes to the sparse array.
  * This can allocate and can return an error.
  */
-extern int sparse_array_write (struct sparse_array *sa, const void *buf, uint32_t count, uint64_t offset);
+extern int sparse_array_write (struct sparse_array *sa, const void *buf,
+                               uint32_t count, uint64_t offset)
+  __attribute__((__nonnull__ (1, 2)));
 
 /* Zero byte range in the sparse array.
  *
@@ -79,6 +83,8 @@ extern int sparse_array_write (struct sparse_array *sa, const void *buf, uint32_
  *
  * This may free memory, but never returns an error.
  */
-extern void sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset);
+extern void sparse_array_zero (struct sparse_array *sa,
+                               uint32_t count, uint64_t offset)
+  __attribute__((__nonnull__ (1)));
 
 #endif /* NBDKIT_SPARSE_H */

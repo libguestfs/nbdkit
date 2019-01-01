@@ -43,7 +43,7 @@
  * https://www.redhat.com/archives/libguestfs/2017-April/msg00171.html
  * https://rusty.ozlabs.org/?p=560
  */
-static inline bool
+static inline bool __attribute__((__nonnull__ (1)))
 is_zero (const char *buffer, size_t size)
 {
   size_t i;

@@ -67,7 +67,7 @@ snext (uint64_t *seed)
 }
 
 /* Seed the random state from a 64 bit seed. */
-static inline void
+static inline void  __attribute__((__nonnull__ (2)))
 xsrandom (uint64_t seed, struct random_state *state)
 {
   state->s[0] = snext (&seed);
@@ -83,7 +83,7 @@ rotl (const uint64_t x, int k)
 }
 
 /* Returns 64 random bits.  Updates the state. */
-static inline uint64_t
+static inline uint64_t __attribute__((__nonnull__ (1)))
 xrandom (struct random_state *state)
 {
   const uint64_t result_starstar = rotl (state->s[1] * 5, 7) * 9;

@@ -76,25 +76,30 @@ struct regions {
   size_t nr_regions;
 };
 
-extern void init_regions (struct regions *regions);
-extern void free_regions (struct regions *regions);
-extern const struct region *find_region (const struct regions *regions, uint64_t offset);
-extern int append_region (struct regions *regions, struct region region);
+extern void init_regions (struct regions *regions)
+  __attribute__((__nonnull__ (1)));
+extern void free_regions (struct regions *regions)
+  __attribute__((__nonnull__ (1)));
+extern const struct region *find_region (const struct regions *regions,
+                                         uint64_t offset)
+  __attribute__((__nonnull__ (1)));
+extern int append_region (struct regions *regions, struct region region)
+  __attribute__((__nonnull__ (1)));
 
-static inline const struct region *
+static inline const struct region * __attribute__((__nonnull__ (1)))
 get_region (const struct regions *regions, size_t i)
 {
   assert (i < regions->nr_regions);
   return &regions->regions[i];
 }
 
-static inline size_t
+static inline size_t __attribute__((__nonnull__ (1)))
 nr_regions (struct regions *regions)
 {
   return regions->nr_regions;
 }
 
-static inline int64_t
+static inline int64_t __attribute__((__nonnull__ (1)))
 virtual_size (struct regions *regions)
 {
   if (regions->nr_regions == 0)

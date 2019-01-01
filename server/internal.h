@@ -125,24 +125,44 @@ extern void cleanup_unlock (pthread_mutex_t **ptr);
 
 /* connections.c */
 struct connection;
-typedef int (*connection_recv_function) (struct connection *, void *buf, size_t len);
-typedef int (*connection_send_function) (struct connection *, const void *buf, size_t len);
-typedef void (*connection_close_function) (struct connection *);
+typedef int (*connection_recv_function) (struct connection *,
+                                         void *buf, size_t len)
+  __attribute__((__nonnull__ (1, 2)));
+typedef int (*connection_send_function) (struct connection *,
+                                         const void *buf, size_t len)
+  __attribute__((__nonnull__ (1, 2)));
+typedef void (*connection_close_function) (struct connection *)
+  __attribute__((__nonnull__ (1)));
 extern int handle_single_connection (int sockin, int sockout);
-extern int connection_set_handle (struct connection *conn, size_t i, void *handle);
-extern void *connection_get_handle (struct connection *conn, size_t i);
-extern pthread_mutex_t *connection_get_request_lock (struct connection *conn);
-extern void connection_set_crypto_session (struct connection *conn, void *session);
-extern void *connection_get_crypto_session (struct connection *conn);
-extern void connection_set_recv (struct connection *, connection_recv_function);
-extern void connection_set_send (struct connection *, connection_send_function);
-extern void connection_set_close (struct connection *, connection_close_function);
+extern int connection_set_handle (struct connection *conn,
+                                  size_t i, void *handle)
+  __attribute__((__nonnull__ (1 /* not 3 */)));
+extern void *connection_get_handle (struct connection *conn, size_t i)
+  __attribute__((__nonnull__ (1)));
+extern pthread_mutex_t *connection_get_request_lock (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
+extern void connection_set_crypto_session (struct connection *conn,
+                                           void *session)
+  __attribute__((__nonnull__ (1 /* not 2 */)));
+extern void *connection_get_crypto_session (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
+extern void connection_set_recv (struct connection *,
+                                 connection_recv_function)
+  __attribute__((__nonnull__ (1, 2)));
+extern void connection_set_send (struct connection *,
+                                 connection_send_function)
+  __attribute__((__nonnull__ (1, 2)));
+extern void connection_set_close (struct connection *,
+                                  connection_close_function)
+  __attribute__((__nonnull__ (1, 2)));
 
 /* crypto.c */
 #define root_tls_certificates_dir sysconfdir "/pki/" PACKAGE_NAME
 extern void crypto_init (bool tls_set_on_cli);
 extern void crypto_free (void);
-extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockout);
+extern int crypto_negotiate_tls (struct connection *conn,
+                                 int sockin, int sockout)
+  __attribute__((__nonnull__ (1)));
 
 /* debug.c */
 #define debug nbdkit_debug
@@ -206,33 +226,48 @@ struct backend {
 };
 
 /* plugins.c */
-extern struct backend *plugin_register (size_t index, const char *filename, void *dl, struct nbdkit_plugin *(*plugin_init) (void));
-extern void set_debug_flags (void *dl, const char *name);
+extern struct backend *plugin_register (size_t index, const char *filename,
+                                        void *dl, struct nbdkit_plugin *(*plugin_init) (void))
+  __attribute__((__nonnull__ (2, 3, 4)));
+extern void set_debug_flags (void *dl, const char *name)
+  __attribute__((__nonnull__ (1, 2)));
 
 /* filters.c */
-extern struct backend *filter_register (struct backend *next, size_t index, const char *filename, void *dl, struct nbdkit_filter *(*filter_init) (void));
+extern struct backend *filter_register (struct backend *next, size_t index,
+                                        const char *filename, void *dl,
+                                        struct nbdkit_filter *(*filter_init) (void))
+  __attribute__((__nonnull__ (1, 3, 4, 5)));
 
 /* locks.c */
 extern void lock_init_thread_model (void);
 extern void lock_connection (void);
 extern void unlock_connection (void);
-extern void lock_request (struct connection *conn);
-extern void unlock_request (struct connection *conn);
+extern void lock_request (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
+extern void unlock_request (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
 extern void lock_unload (void);
 extern void unlock_unload (void);
 
 /* sockets.c */
-extern int *bind_unix_socket (size_t *);
-extern int *bind_tcpip_socket (size_t *);
-extern void accept_incoming_connections (int *socks, size_t nr_socks);
-extern void free_listening_sockets (int *socks, size_t nr_socks);
+extern int *bind_unix_socket (size_t *)
+  __attribute__((__nonnull__ (1)));
+extern int *bind_tcpip_socket (size_t *)
+  __attribute__((__nonnull__ (1)));
+extern void accept_incoming_connections (int *socks, size_t nr_socks)
+  __attribute__((__nonnull__ (1)));
+extern void free_listening_sockets (int *socks, size_t nr_socks)
+  __attribute__((__nonnull__ (1)));
 
 /* threadlocal.c */
 extern void threadlocal_init (void);
 extern void threadlocal_new_server_thread (void);
-extern void threadlocal_set_name (const char *name);
+extern void threadlocal_set_name (const char *name)
+  __attribute__((__nonnull__ (1)));
 extern void threadlocal_set_instance_num (size_t instance_num);
-extern void threadlocal_set_sockaddr (const struct sockaddr *addr, socklen_t addrlen);
+extern void threadlocal_set_sockaddr (const struct sockaddr *addr,
+                                      socklen_t addrlen)
+  __attribute__((__nonnull__ (1)));
 extern const char *threadlocal_get_name (void);
 extern size_t threadlocal_get_instance_num (void);
 extern void threadlocal_set_error (int err);
