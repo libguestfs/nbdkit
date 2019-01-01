@@ -230,7 +230,7 @@ start_psk (void)
  * and loading the server certificate.
  */
 void
-crypto_init (int tls_set_on_cli)
+crypto_init (bool tls_set_on_cli)
 {
   int err, r;
   const char *what;
@@ -521,7 +521,7 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
  */
 
 void
-crypto_init (int tls_set_on_cli)
+crypto_init (bool tls_set_on_cli)
 {
   if (tls > 0) {
     fprintf (stderr,

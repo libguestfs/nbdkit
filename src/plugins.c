@@ -811,7 +811,7 @@ set_debug_flags (void *dl, const char *name)
       *sym = flag->value;
 
       /* Mark this flag as used. */
-      flag->used = 1;
+      flag->used = true;
     }
   }
 }
