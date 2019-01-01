@@ -49,8 +49,8 @@ main (int argc, char *argv[])
 {
   guestfs_h *g;
   int r;
+  int64_t size;
   char *data;
-  size_t i, size;
 
   if (test_start_nbdkit ("./test-ocaml-plugin.so", "a=1", "b=2", "c=3",
                          NULL) == -1)
@@ -73,58 +73,63 @@ main (int argc, char *argv[])
   if (guestfs_launch (g) == -1)
     exit (EXIT_FAILURE);
 
-  /* Check the inital data read from the plugin is \x01-\x08,
-   * repeated 512 times.
+  /* Check the size is exactly 1M. */
+  if (guestfs_blockdev_getsize64 (g, "/dev/sda") != 1024 * 1024) {
+    fprintf (stderr, "%s FAILED: unexpected size "
+             "(actual: %" PRIi64 ", expected: 1024*1024)\n",
+             program_name, size);
+    exit (EXIT_FAILURE);
+  }
+
+  if (guestfs_part_disk (g, "/dev/sda", "mbr") == -1)
+    exit (EXIT_FAILURE);
+  if (guestfs_mkfs (g, "ext2", "/dev/sda1") == -1)
+    exit (EXIT_FAILURE);
+
+  if (guestfs_mount_options (g, "discard", "/dev/sda1", "/") == -1)
+    exit (EXIT_FAILURE);
+
+#define filename "/hello.txt"
+#define content "hello, people of the world"
+
+  if (guestfs_write (g, filename, content, strlen (content)) == -1)
+    exit (EXIT_FAILURE);
+
+  data = guestfs_cat (g, filename);
+  if (!data)
+    exit (EXIT_FAILURE);
+
+  if (strcmp (data, content) != 0) {
+    fprintf (stderr,
+             "%s FAILED: unexpected content of %s file "
+             "(actual: %s, expected: %s)\n",
+             program_name, filename, data, content);
+    exit (EXIT_FAILURE);
+  }
+  free (data);
+
+  /* Run sync to test flush path. */
+  if (guestfs_sync (g) == -1)
+    exit (EXIT_FAILURE);
+
+  /* Run fstrim to test trim path.  However only recent versions of
+   * libguestfs have this, and it probably only works in recent
+   * versions of qemu.
    */
-  data = guestfs_pread_device (g, "/dev/sda", 8 * 512, 0, &size);
-  if (!data)
+#ifdef GUESTFS_HAVE_FSTRIM
+  if (guestfs_fstrim (g, "/", -1) == -1)
     exit (EXIT_FAILURE);
-  if (size != 8 * 512) {
-    fprintf (stderr,
-             "%s FAILED: unexpected size (actual: %zu, expected: 512)\n",
-             program_name, size);
+#endif
+
+  /* Run fallocate(1) on the device to test zero path. */
+  if (guestfs_umount (g, "/") == -1)
     exit (EXIT_FAILURE);
-  }
-
-  for (i = 0; i < 512 * 8; i += 8) {
-    if (data[i] != 1 || data[i+1] != 2 ||
-        data[i+2] != 3 || data[i+3] != 4 ||
-        data[i+4] != 5 || data[i+5] != 6 ||
-        data[i+6] != 7 || data[i+7] != 8) {
-      fprintf (stderr, "%s FAILED: unexpected data returned at offset %zu\n",
-               program_name, i);
-      exit (EXIT_FAILURE);
-    }
-  }
-
-  /* Write some alternate data, and read it back. */
-  for (i = 0; i < 512 * 8; ++i) {
-    data[i] = i & 0x7f;
-  }
-
-  if (guestfs_pwrite_device (g, "/dev/sda", data, 8 * 512, 0) == -1)
-    exit (EXIT_FAILURE);
+  const char *cmd[] = { "fallocate", "-nzl", "64k", "/dev/sda", NULL };
+  data = guestfs_debug (g, "sh", (char **) cmd);
   free (data);
 
-  data = guestfs_pread_device (g, "/dev/sda", 8 * 512, 0, &size);
-  if (!data)
+  if (guestfs_shutdown (g) == -1)
     exit (EXIT_FAILURE);
-  if (size != 8 * 512) {
-    fprintf (stderr,
-             "%s FAILED: unexpected size (actual: %zu, expected: 512)\n",
-             program_name, size);
-    exit (EXIT_FAILURE);
-  }
-
-  for (i = 0; i < 512 * 8; ++i) {
-    if (data[i] != (i & 0x7f)) {
-      fprintf (stderr, "%s FAILED: unexpected data returned at offset %zu\n",
-               program_name, i);
-      exit (EXIT_FAILURE);
-    }
-  }
-
-  free (data);
 
   guestfs_close (g);
   exit (EXIT_SUCCESS);

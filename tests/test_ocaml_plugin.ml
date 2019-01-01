@@ -19,14 +19,7 @@ let test_config_complete () =
 
 let test_open readonly =
   NBDKit.debug "test ocaml plugin handle opened readonly=%b" readonly;
-  let disk =
-    let s = Bytes.create (512 * 8) in
-    for i = 0 to 511 do
-      for j = 0 to 7 do
-        Bytes.set s (i*8+j) (Char.chr (j+1))
-      done
-    done;
-    s in
+  let disk = Bytes.make (1024*1024) '\000' in
   { disk }
 
 let test_close h =
