@@ -1,5 +1,5 @@
 (* nbdkit OCaml interface
- * Copyright (C) 2014 Red Hat Inc.
+ * Copyright (C) 2014-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,11 @@
 
 open Printf
 
+type flags = flag list
+and flag = May_trim | FUA
+
+type fua_flag = FuaNone | FuaEmulate | FuaNative
+
 type 'a plugin = {
   name : string;
   longname : string;
@@ -41,23 +46,31 @@ type 'a plugin = {
 
   load : (unit -> unit) option;
   unload : (unit -> unit) option;
-  dump_plugin : (unit -> unit) option;
+
   config : (string -> string -> unit) option;
   config_complete : (unit -> unit) option;
   config_help : string;
 
   open_connection : (bool -> 'a) option;
   close : ('a -> unit) option;
+
   get_size : ('a -> int64) option;
+
   can_write : ('a -> bool) option;
   can_flush : ('a -> bool) option;
   is_rotational : ('a -> bool) option;
   can_trim : ('a -> bool) option;
-  pread : ('a -> bytes -> int64 -> unit) option;
-  pwrite : ('a -> string -> int64 -> unit) option;
-  flush : ('a -> unit) option;
-  trim : ('a -> int32 -> int64 -> unit) option;
-  zero : ('a -> int32 -> int64 -> bool -> unit) option;
+
+  dump_plugin : (unit -> unit) option;
+
+  can_zero : ('a -> bool) option;
+  can_fua : ('a -> fua_flag) option;
+
+  pread : ('a -> bytes -> int64 -> flags -> unit) option;
+  pwrite : ('a -> string -> int64 -> flags -> unit) option;
+  flush : ('a -> flags -> unit) option;
+  trim : ('a -> int32 -> int64 -> flags -> unit) option;
+  zero : ('a -> int32 -> int64 -> flags -> unit) option;
 }
 
 let default_callbacks = {
@@ -68,18 +81,26 @@ let default_callbacks = {
 
   load = None;
   unload = None;
-  dump_plugin = None;
+
   config = None;
   config_complete = None;
   config_help = "";
 
   open_connection = None;
   close = None;
+
   get_size = None;
+
   can_write = None;
   can_flush = None;
   is_rotational = None;
   can_trim = None;
+
+  dump_plugin = None;
+
+  can_zero = None;
+  can_fua = None;
+
   pread = None;
   pwrite = None;
   flush = None;
@@ -102,23 +123,31 @@ external set_description : string -> unit = "ocaml_nbdkit_set_description" "noal
 
 external set_load : (unit -> unit) -> unit = "ocaml_nbdkit_set_load"
 external set_unload : (unit -> unit) -> unit = "ocaml_nbdkit_set_unload"
-external set_dump_plugin : (unit -> unit) -> unit = "ocaml_nbdkit_set_dump_plugin" "noalloc"
+
 external set_config : (string -> string -> unit) -> unit = "ocaml_nbdkit_set_config"
 external set_config_complete : (unit -> unit) -> unit = "ocaml_nbdkit_set_config_complete"
 external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" "noalloc"
 
 external set_open : (bool -> 'a) -> unit = "ocaml_nbdkit_set_open"
 external set_close : ('a -> unit) -> unit = "ocaml_nbdkit_set_close"
+
 external set_get_size : ('a -> int64) -> unit = "ocaml_nbdkit_set_get_size"
+
 external set_can_write : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_write"
 external set_can_flush : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_flush"
 external set_is_rotational : ('a -> bool) -> unit = "ocaml_nbdkit_set_is_rotational"
 external set_can_trim : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_trim"
-external set_pread : ('a -> bytes -> int64 -> unit) -> unit = "ocaml_nbdkit_set_pread"
-external set_pwrite : ('a -> string -> int64 -> unit) -> unit = "ocaml_nbdkit_set_pwrite"
-external set_flush : ('a -> unit) -> unit = "ocaml_nbdkit_set_flush"
-external set_trim : ('a -> int32 -> int64 -> unit) -> unit = "ocaml_nbdkit_set_trim"
-external set_zero : ('a -> int32 -> int64 -> bool -> unit) -> unit = "ocaml_nbdkit_set_zero"
+
+external set_dump_plugin : (unit -> unit) -> unit = "ocaml_nbdkit_set_dump_plugin" "noalloc"
+
+external set_can_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_zero"
+external set_can_fua : ('a -> fua_flag) -> unit = "ocaml_nbdkit_set_can_fua"
+
+external set_pread : ('a -> bytes -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_pread"
+external set_pwrite : ('a -> string -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_pwrite"
+external set_flush : ('a -> flags -> unit) -> unit = "ocaml_nbdkit_set_flush"
+external set_trim : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_trim"
+external set_zero : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_zero"
 
 let may f = function None -> () | Some a -> f a
 
@@ -149,7 +178,7 @@ let register_plugin thread_model plugin =
 
   may set_load plugin.load;
   may set_unload plugin.unload;
-  may set_dump_plugin plugin.dump_plugin;
+
   may set_config plugin.config;
   may set_config_complete plugin.config_complete;
   if plugin.config_help <> "" then
@@ -157,11 +186,19 @@ let register_plugin thread_model plugin =
 
   may set_open plugin.open_connection;
   may set_close plugin.close;
+
   may set_get_size plugin.get_size;
+
   may set_can_write plugin.can_write;
   may set_can_flush plugin.can_flush;
   may set_is_rotational plugin.is_rotational;
   may set_can_trim plugin.can_trim;
+
+  may set_dump_plugin plugin.dump_plugin;
+
+  may set_can_zero plugin.can_zero;
+  may set_can_fua plugin.can_fua;
+
   may set_pread plugin.pread;
   may set_pwrite plugin.pwrite;
   may set_flush plugin.flush;

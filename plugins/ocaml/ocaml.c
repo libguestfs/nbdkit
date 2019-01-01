@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014 Red Hat Inc.
+ * Copyright (C) 2014-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,6 +45,8 @@
 #include <caml/printexc.h>
 #include <caml/threads.h>
 
+#define NBDKIT_API_VERSION 2
+
 #include <nbdkit-plugin.h>
 
 /* This constructor runs when the plugin loads, and initializes the
@@ -84,16 +86,25 @@ static struct nbdkit_plugin plugin = {
  */
 static value load_fn;
 static value unload_fn;
-static value dump_plugin_fn;
+
 static value config_fn;
 static value config_complete_fn;
+
 static value open_fn;
 static value close_fn;
+
 static value get_size_fn;
+
 static value can_write_fn;
 static value can_flush_fn;
 static value is_rotational_fn;
 static value can_trim_fn;
+
+static value dump_plugin_fn;
+
+static value can_zero_fn;
+static value can_fua_fn;
+
 static value pread_fn;
 static value pwrite_fn;
 static value flush_fn;
@@ -132,36 +143,30 @@ unload_wrapper (void)
   if (fn##_fn) caml_remove_generational_global_root (&fn##_fn)
   REMOVE (load);
   REMOVE (unload);
-  REMOVE (dump_plugin);
+
   REMOVE (config);
   REMOVE (config_complete);
+
   REMOVE (open);
   REMOVE (close);
+
   REMOVE (get_size);
+
   REMOVE (can_write);
   REMOVE (can_flush);
   REMOVE (is_rotational);
   REMOVE (can_trim);
+
+  REMOVE (dump_plugin);
+
+  REMOVE (can_zero);
+  REMOVE (can_fua);
+
   REMOVE (pread);
   REMOVE (pwrite);
   REMOVE (flush);
   REMOVE (trim);
   REMOVE (zero);
-}
-
-static void
-dump_plugin_wrapper (void)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
-
-  rv = caml_callback_exn (dump_plugin_fn, Val_unit);
-  if (Is_exception_result (rv))
-    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-  caml_enter_blocking_section ();
-  CAMLreturn0;
 }
 
 static int
@@ -350,18 +355,97 @@ can_trim_wrapper (void *h)
   CAMLreturnT (int, Bool_val (rv));
 }
 
-static int
-pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset)
+static void
+dump_plugin_wrapper (void)
 {
   CAMLparam0 ();
-  CAMLlocal3 (rv, strv, offsetv);
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (dump_plugin_fn, Val_unit);
+  if (Is_exception_result (rv))
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+  caml_enter_blocking_section ();
+  CAMLreturn0;
+}
+
+static int
+can_zero_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_zero_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Bool_val (rv));
+}
+
+static int
+can_fua_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_fua_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Int_val (rv));
+}
+
+static value
+Val_flags (uint32_t flags)
+{
+  CAMLparam0 ();
+  CAMLlocal2 (consv, rv);
+
+  rv = Val_unit;
+  if (flags & NBDKIT_FLAG_MAY_TRIM) {
+    consv = caml_alloc (2, 0);
+    Store_field (consv, 0, 0); /* 0 = May_trim */
+    Store_field (consv, 1, rv);
+    rv = consv;
+  }
+  if (flags & NBDKIT_FLAG_FUA) {
+    consv = caml_alloc (2, 0);
+    Store_field (consv, 0, 1); /* 1 = FUA */
+    Store_field (consv, 1, rv);
+    rv = consv;
+  }
+
+  CAMLreturn (rv);
+}
+
+static int
+pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset,
+               uint32_t flags)
+{
+  CAMLparam0 ();
+  CAMLlocal4 (rv, strv, offsetv, flagsv);
 
   caml_leave_blocking_section ();
 
   strv = caml_alloc_string (count);
   offsetv = caml_copy_int64 (offset);
+  flagsv = Val_flags (flags);
 
-  rv = caml_callback3_exn (pread_fn, *(value *) h, strv, offsetv);
+  value args[] = { *(value *) h, strv, offsetv, flagsv };
+  rv = caml_callbackN_exn (pread_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     caml_enter_blocking_section ();
@@ -375,18 +459,21 @@ pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset)
 }
 
 static int
-pwrite_wrapper (void *h, const void *buf, uint32_t count, uint64_t offset)
+pwrite_wrapper (void *h, const void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags)
 {
   CAMLparam0 ();
-  CAMLlocal3 (rv, strv, offsetv);
+  CAMLlocal4 (rv, strv, offsetv, flagsv);
 
   caml_leave_blocking_section ();
 
   strv = caml_alloc_string (count);
   memcpy (String_val (strv), buf, count);
   offsetv = caml_copy_int64 (offset);
+  flagsv = Val_flags (flags);
 
-  rv = caml_callback3_exn (pwrite_fn, *(value *) h, strv, offsetv);
+  value args[] = { *(value *) h, strv, offsetv, flagsv };
+  rv = caml_callbackN_exn (pwrite_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     caml_enter_blocking_section ();
@@ -398,14 +485,16 @@ pwrite_wrapper (void *h, const void *buf, uint32_t count, uint64_t offset)
 }
 
 static int
-flush_wrapper (void *h)
+flush_wrapper (void *h, uint32_t flags)
 {
   CAMLparam0 ();
-  CAMLlocal1 (rv);
+  CAMLlocal2 (rv, flagsv);
 
   caml_leave_blocking_section ();
 
-  rv = caml_callback_exn (flush_fn, *(value *) h);
+  flagsv = Val_flags (flags);
+
+  rv = caml_callback2_exn (flush_fn, *(value *) h, flagsv);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -416,17 +505,19 @@ flush_wrapper (void *h)
 }
 
 static int
-trim_wrapper (void *h, uint32_t count, uint64_t offset)
+trim_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
 {
   CAMLparam0 ();
-  CAMLlocal3 (rv, countv, offsetv);
+  CAMLlocal4 (rv, countv, offsetv, flagsv);
 
   caml_leave_blocking_section ();
 
   countv = caml_copy_int32 (count);
   offsetv = caml_copy_int32 (offset);
+  flagsv = Val_flags (flags);
 
-  rv = caml_callback3_exn (trim_fn, *(value *) h, countv, offsetv);
+  value args[] = { *(value *) h, countv, offsetv, flagsv };
+  rv = caml_callbackN_exn (trim_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -437,19 +528,19 @@ trim_wrapper (void *h, uint32_t count, uint64_t offset)
 }
 
 static int
-zero_wrapper (void *h, uint32_t count, uint64_t offset, int may_trim)
+zero_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
 {
   CAMLparam0 ();
-  CAMLlocal4 (rv, countv, offsetv, may_trimv);
+  CAMLlocal4 (rv, countv, offsetv, flagsv);
 
   caml_leave_blocking_section ();
 
   countv = caml_copy_int32 (count);
   offsetv = caml_copy_int32 (offset);
-  may_trimv = Val_bool (may_trim);
+  flagsv = Val_flags (flags);
 
-  value args[4] = { *(value *) h, countv, offsetv, may_trimv };
-  rv = caml_callbackN_exn (zero_fn, 4, args);
+  value args[] = { *(value *) h, countv, offsetv, flagsv };
+  rv = caml_callbackN_exn (zero_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -513,16 +604,25 @@ ocaml_nbdkit_set_config_help (value helpv)
 
 SET(load)
 SET(unload)
-SET(dump_plugin)
+
 SET(config)
 SET(config_complete)
+
 SET(open)
 SET(close)
+
 SET(get_size)
+
 SET(can_write)
 SET(can_flush)
 SET(is_rotational)
 SET(can_trim)
+
+SET(dump_plugin)
+
+SET(can_zero)
+SET(can_fua)
+
 SET(pread)
 SET(pwrite)
 SET(flush)

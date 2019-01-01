@@ -35,11 +35,11 @@ let test_close h =
 let test_get_size h =
   Int64.of_int (Bytes.length h.disk)
 
-let test_pread h buf offset =
+let test_pread h buf offset _ =
   let len = Bytes.length buf in
   Bytes.blit h.disk (Int64.to_int offset) buf 0 len
 
-let test_pwrite h buf offset =
+let test_pwrite h buf offset _ =
   let len = String.length buf in
   String.blit buf 0 h.disk (Int64.to_int offset) len
 

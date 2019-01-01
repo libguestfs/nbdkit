@@ -1,5 +1,5 @@
 (* nbdkit OCaml interface
- * Copyright (C) 2014 Red Hat Inc.
+ * Copyright (C) 2014-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,15 @@
  * SUCH DAMAGE.
  *)
 
+(** The interface between nbdkit plugins written in OCaml and nbdkit.
+
+    Reading [nbdkit-ocaml-plugin(3)] is advised. *)
+
+type flags = flag list
+and flag = May_trim | FUA
+
+type fua_flag = FuaNone | FuaEmulate | FuaNative
+
 type 'a plugin = {
   name : string;                                  (* required *)
   longname : string;
@@ -39,24 +48,33 @@ type 'a plugin = {
 
   load : (unit -> unit) option;
   unload : (unit -> unit) option;
-  dump_plugin : (unit -> unit) option;
+
   config : (string -> string -> unit) option;
   config_complete : (unit -> unit) option;
   config_help : string;
 
   open_connection : (bool -> 'a) option;          (* required *)
   close : ('a -> unit) option;
+
   get_size : ('a -> int64) option;                (* required *)
+
   can_write : ('a -> bool) option;
   can_flush : ('a -> bool) option;
   is_rotational : ('a -> bool) option;
   can_trim : ('a -> bool) option;
-  pread : ('a -> bytes -> int64 -> unit) option;  (* required *)
-  pwrite : ('a -> string -> int64 -> unit) option;
-  flush : ('a -> unit) option;
-  trim : ('a -> int32 -> int64 -> unit) option;
-  zero : ('a -> int32 -> int64 -> bool -> unit) option;
+
+  dump_plugin : (unit -> unit) option;
+
+  can_zero : ('a -> bool) option;
+  can_fua : ('a -> fua_flag) option;
+
+  pread : ('a -> bytes -> int64 -> flags -> unit) option;  (* required *)
+  pwrite : ('a -> string -> int64 -> flags -> unit) option;
+  flush : ('a -> flags -> unit) option;
+  trim : ('a -> int32 -> int64 -> flags -> unit) option;
+  zero : ('a -> int32 -> int64 -> flags -> unit) option;
 }
+(** The plugin fields and callbacks.  ['a] is the handle type. *)
 
 val default_callbacks : 'a plugin
 
