@@ -83,9 +83,7 @@ full_config_complete (void)
 static void *
 full_open (int readonly)
 {
-  static int handle;
-
-  return &handle;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL

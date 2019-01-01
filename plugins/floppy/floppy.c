@@ -110,12 +110,7 @@ floppy_config_complete (void)
 static void *
 floppy_open (int readonly)
 {
-  /* We don't need a per-connection handle, so this just acts as a
-   * pointer to return.
-   */
-  static int h;
-
-  return &h;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL

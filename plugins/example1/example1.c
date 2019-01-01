@@ -131,11 +131,10 @@ static void *
 example1_open (int readonly)
 {
   /* In this trivial example we don't care about per-connection
-   * handles (every connection serves up the same content and there is
-   * no connection state), so we just have to return something that is
-   * non-NULL and doesn't need to be freed.
+   * handles because every connection serves up the same content and
+   * there is no connection state.
    */
-  return data;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 /* Size of the data we are going to serve. */

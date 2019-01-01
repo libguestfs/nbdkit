@@ -276,10 +276,7 @@ partitioning_config_complete (void)
 static void *
 partitioning_open (int readonly)
 {
-  /* We don't need a handle.  This is a non-NULL pointer we can return. */
-  static int h;
-
-  return &h;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL

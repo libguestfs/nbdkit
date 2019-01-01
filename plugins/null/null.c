@@ -72,9 +72,7 @@ null_config (const char *key, const char *value)
 static void *
 null_open (int readonly)
 {
-  static int handle;
-
-  return &handle;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL

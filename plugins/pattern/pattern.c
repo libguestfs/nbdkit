@@ -73,14 +73,11 @@ pattern_config (const char *key, const char *value)
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
-/* No meaning, just used as the address for the handle. */
-static int ph;
-
 /* Create the per-connection handle. */
 static void *
 pattern_open (int readonly)
 {
-  return &ph;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 /* Get the disk size. */

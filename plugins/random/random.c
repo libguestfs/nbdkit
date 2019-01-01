@@ -93,14 +93,11 @@ random_config (const char *key, const char *value)
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
-/* No meaning, just used as the address for the handle. */
-static int rndh;
-
 /* Create the per-connection handle. */
 static void *
 random_open (int readonly)
 {
-  return &rndh;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 /* Get the disk size. */

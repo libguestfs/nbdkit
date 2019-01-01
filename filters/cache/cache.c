@@ -122,15 +122,10 @@ cache_config (nbdkit_next_config *next, void *nxdata,
 static void *
 cache_open (nbdkit_next_open *next, void *nxdata, int readonly)
 {
-  /* We don't use the handle, so this just provides a non-NULL
-   * pointer that we can return.
-   */
-  static int handle;
-
   if (next (nxdata, readonly) == -1)
     return NULL;
 
-  return &handle;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 /* Get the file size and ensure the cache is the correct size. */

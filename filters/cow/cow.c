@@ -70,16 +70,11 @@ cow_unload (void)
 static void *
 cow_open (nbdkit_next_open *next, void *nxdata, int readonly)
 {
-  /* We don't use the handle, so this just provides a non-NULL
-   * pointer that we can return.
-   */
-  static int handle;
-
   /* Always pass readonly=1 to the underlying plugin. */
   if (next (nxdata, 1) == -1)
     return NULL;
 
-  return &handle;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 /* Get the file size and ensure the overlay is the correct size. */

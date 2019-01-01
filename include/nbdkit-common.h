@@ -75,6 +75,11 @@ extern int nbdkit_parse_bool (const char *str);
 extern int nbdkit_read_password (const char *value, char **password);
 extern char *nbdkit_realpath (const char *path);
 
+/* A static non-NULL pointer which can be used when you don't need a
+ * per-connection handle.
+ */
+#define NBDKIT_HANDLE_NOT_NEEDED ((void *) &nbdkit_error)
+
 #ifdef __cplusplus
 }
 #endif

@@ -281,7 +281,8 @@ to other filter callbacks and could be freed in the C<.close>
 callback.
 
 Note that the handle is completely opaque to nbdkit, but it must not
-be NULL.
+be NULL.  If you don't need to use a handle, return
+C<NBDKIT_HANDLE_NOT_NEEDED> which is a static non-NULL pointer.
 
 If there is an error, C<.open> should call C<nbdkit_error> with an
 error message and return C<NULL>.

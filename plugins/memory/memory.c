@@ -103,10 +103,7 @@ memory_config_complete (void)
 static void *
 memory_open (int readonly)
 {
-  /* Used only as a handle pointer. */
-  static int mh;
-
-  return &mh;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS

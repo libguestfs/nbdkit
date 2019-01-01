@@ -240,12 +240,10 @@ error_config (nbdkit_next_config *next, void *nxdata,
 static void *
 error_open (nbdkit_next_open *next, void *nxdata, int readonly)
 {
-  static int handle;
-
   if (next (nxdata, readonly) == -1)
     return NULL;
 
-  return &handle;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 /* This function injects a random error. */
