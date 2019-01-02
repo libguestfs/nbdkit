@@ -45,6 +45,13 @@
 extern "C" {
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define ATTRIBUTE_FORMAT_PRINTF(fmtpos, argpos) \
+  __attribute__((__format__ (__printf__, fmtpos, argpos)))
+#else
+#define ATTRIBUTE_FORMAT_PRINTF(fmtpos, argpos)
+#endif
+
 #define NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS     0
 #define NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS    1
 #define NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS        2
@@ -57,11 +64,9 @@ extern "C" {
 #define NBDKIT_FUA_EMULATE    1
 #define NBDKIT_FUA_NATIVE     2
 
-extern void nbdkit_error (const char *msg, ...)
-  __attribute__((__format__ (__printf__, 1, 2)));
+extern void nbdkit_error (const char *msg, ...) ATTRIBUTE_FORMAT_PRINTF (1, 2);
 extern void nbdkit_verror (const char *msg, va_list args);
-extern void nbdkit_debug (const char *msg, ...)
-  __attribute__((__format__ (__printf__, 1, 2)));
+extern void nbdkit_debug (const char *msg, ...) ATTRIBUTE_FORMAT_PRINTF (1, 2);
 extern void nbdkit_vdebug (const char *msg, va_list args);
 
 extern char *nbdkit_absolute_path (const char *path);
