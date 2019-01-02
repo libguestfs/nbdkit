@@ -148,8 +148,8 @@ extern int crypto_negotiate_tls (struct connection *conn, int sockin, int sockou
 #define debug nbdkit_debug
 
 /* log-*.c */
-void log_stderr_verror (const char *fs, va_list args);
-void log_syslog_verror (const char *fs, va_list args);
+extern void log_stderr_verror (const char *fs, va_list args);
+extern void log_syslog_verror (const char *fs, va_list args);
 
 struct backend {
   /* Next filter or plugin in the chain.  This is always NULL for
