@@ -41,7 +41,8 @@ nbdkit_nozero_filter_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-filter.h
 
 nbdkit_nozero_filter_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include
 nbdkit_nozero_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_nozero_filter_la_LDFLAGS = \

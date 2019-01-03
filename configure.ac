@@ -155,8 +155,26 @@ you may be using a C compiler which does not support this attribute,
 or the configure test may be wrong.
 
 This code requires the attribute to work for proper locking between threads.])])
-dnl restore CFLAGS
 CFLAGS="${acx_nbdkit_save_CFLAGS}"
+
+dnl Check for __auto_type (GCC extension).
+AC_MSG_CHECKING([if __auto_type is available in this compiler])
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+static int
+test (int a)
+{
+  __auto_type at = a;
+  return at;
+}
+]])
+    ],[
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([HAVE_AUTO_TYPE],[1],[__auto_type is available])
+    ],[
+    AC_MSG_RESULT([no])
+    ]
+)
 
 dnl Check for other headers, all optional.
 AC_CHECK_HEADERS([\

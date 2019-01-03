@@ -44,11 +44,12 @@
 
 #include <nbdkit-filter.h>
 
+#include "minmax.h"
+
 /* XXX See design comment in filters/cow/cow.c. */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
 #define BLOCKSIZE_MIN_LIMIT (64U * 1024)
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /* As long as we don't have parallel requests, we can reuse a common
  * buffer for alignment purposes; size it to the maximum we allow for
