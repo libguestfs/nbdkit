@@ -74,10 +74,11 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
 
   /* Check the size is exactly 1M. */
-  if (guestfs_blockdev_getsize64 (g, "/dev/sda") != 1024 * 1024) {
+  size = guestfs_blockdev_getsize64 (g, "/dev/sda");
+  if (size != 1024 * 1024) {
     fprintf (stderr, "%s FAILED: unexpected size "
-             "(actual: %" PRIi64 ", expected: 1024*1024)\n",
-             program_name, size);
+             "(actual: %" PRIi64 ", expected: %d)\n",
+             program_name, size, 1024*1024);
     exit (EXIT_FAILURE);
   }
 
