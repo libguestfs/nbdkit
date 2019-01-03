@@ -42,9 +42,10 @@
 
 #include <nbdkit-filter.h>
 
+#include "minmax.h"
+
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX_WRITE (64 * 1024 * 1024)
 
 static char buffer[MAX_WRITE];

@@ -45,6 +45,7 @@
 #include <nbdkit-plugin.h>
 
 #include "byte-swapping.h"
+#include "minmax.h"
 
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
 static int64_t size = 0;
@@ -86,8 +87,6 @@ pattern_get_size (void *handle)
 {
   return size;
 }
-
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /* Read data. */
 static int

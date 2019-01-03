@@ -46,12 +46,11 @@
 #include <nbdkit-filter.h>
 
 #include "bitmap.h"
+#include "minmax.h"
 
 #include "cache.h"
 #include "blk.h"
 #include "lru.h"
-
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 /* LRU bitmaps.  These bitmaps implement a simple, fast LRU structure.
  *
