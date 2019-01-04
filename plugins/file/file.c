@@ -52,6 +52,8 @@
 #include <linux/fs.h>       /* For BLKZEROOUT */
 #endif
 
+#define NBDKIT_API_VERSION 2
+
 #include <nbdkit-plugin.h>
 
 #include "isaligned.h"
@@ -263,9 +265,30 @@ file_can_trim (void *handle)
 #endif
 }
 
+static int
+file_can_fua (void *handle)
+{
+  return NBDKIT_FUA_NATIVE;
+}
+
+/* Flush the file to disk. */
+static int
+file_flush (void *handle, uint32_t flags)
+{
+  struct handle *h = handle;
+
+  if (fdatasync (h->fd) == -1) {
+    nbdkit_error ("fdatasync: %m");
+    return -1;
+  }
+
+  return 0;
+}
+
 /* Read data from the file. */
 static int
-file_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+file_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags)
 {
   struct handle *h = handle;
 
@@ -289,7 +312,8 @@ file_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 
 /* Write data to the file. */
 static int
-file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
+file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags)
 {
   struct handle *h = handle;
 
@@ -303,6 +327,9 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
     count -= r;
     offset += r;
   }
+
+  if ((flags & NBDKIT_FLAG_FUA) && file_flush (handle, 0) == -1)
+    return -1;
 
   return 0;
 }
@@ -323,20 +350,20 @@ do_fallocate(int fd, int mode, off_t offset, off_t len)
 
 /* Write zeroes to the file. */
 static int
-file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
   int r;
 
 #ifdef FALLOC_FL_PUNCH_HOLE
-  if (h->can_punch_hole && may_trim) {
+  if (h->can_punch_hole && (flags & NBDKIT_FLAG_MAY_TRIM)) {
     r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
                       offset, count);
     if (r == 0) {
       if (file_debug_zero)
         nbdkit_debug ("h->can_punch_hole && may_trim: "
                       "zero succeeded using fallocate");
-      return 0;
+      goto out;
     }
 
     if (errno != EOPNOTSUPP) {
@@ -355,7 +382,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
       if (file_debug_zero)
         nbdkit_debug ("h->can_zero-range: "
                       "zero succeeded using fallocate");
-      return 0;
+      goto out;
     }
 
     if (errno != EOPNOTSUPP) {
@@ -380,7 +407,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
         if (file_debug_zero)
           nbdkit_debug ("h->can_punch_hole && h->can_fallocate: "
                         "zero succeeded using fallocate");
-        return 0;
+        goto out;
       }
 
       if (errno != EOPNOTSUPP) {
@@ -410,7 +437,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
       if (file_debug_zero)
         nbdkit_debug ("h->can_zeroout && IS_ALIGNED: "
                       "zero succeeded using BLKZEROOUT");
-      return 0;
+      goto out;
     }
 
     if (errno != ENOTTY) {
@@ -427,25 +454,16 @@ file_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     nbdkit_debug ("zero falling back to writing");
   errno = EOPNOTSUPP;
   return -1;
-}
 
-/* Flush the file to disk. */
-static int
-file_flush (void *handle)
-{
-  struct handle *h = handle;
-
-  if (fdatasync (h->fd) == -1) {
-    nbdkit_error ("fdatasync: %m");
+ out:
+  if ((flags & NBDKIT_FLAG_FUA) && file_flush (handle, 0) == -1)
     return -1;
-  }
-
   return 0;
 }
 
 /* Punch a hole in the file. */
 static int
-file_trim (void *handle, uint32_t count, uint64_t offset)
+file_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
 #ifdef FALLOC_FL_PUNCH_HOLE
   struct handle *h = handle;
@@ -470,6 +488,9 @@ file_trim (void *handle, uint32_t count, uint64_t offset)
   }
 #endif
 
+  if ((flags & NBDKIT_FLAG_FUA) && file_flush (handle, 0) == -1)
+    return -1;
+
   return 0;
 }
 
@@ -487,6 +508,7 @@ static struct nbdkit_plugin plugin = {
   .close             = file_close,
   .get_size          = file_get_size,
   .can_trim          = file_can_trim,
+  .can_fua           = file_can_fua,
   .pread             = file_pread,
   .pwrite            = file_pwrite,
   .flush             = file_flush,
