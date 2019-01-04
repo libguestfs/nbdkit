@@ -71,6 +71,8 @@ type 'a plugin = {
   flush : ('a -> flags -> unit) option;
   trim : ('a -> int32 -> int64 -> flags -> unit) option;
   zero : ('a -> int32 -> int64 -> flags -> unit) option;
+
+  can_multi_conn : ('a -> bool) option;
 }
 
 let default_callbacks = {
@@ -106,6 +108,8 @@ let default_callbacks = {
   flush = None;
   trim = None;
   zero = None;
+
+  can_multi_conn = None;
 }
 
 type thread_model =
@@ -148,6 +152,8 @@ external set_pwrite : ('a -> string -> int64 -> flags -> unit) -> unit = "ocaml_
 external set_flush : ('a -> flags -> unit) -> unit = "ocaml_nbdkit_set_flush"
 external set_trim : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_trim"
 external set_zero : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_zero"
+
+external set_can_multi_conn : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_multi_conn"
 
 let may f = function None -> () | Some a -> f a
 
@@ -203,7 +209,9 @@ let register_plugin thread_model plugin =
   may set_pwrite plugin.pwrite;
   may set_flush plugin.flush;
   may set_trim plugin.trim;
-  may set_zero plugin.zero
+  may set_zero plugin.zero;
+
+  may set_can_multi_conn plugin.can_multi_conn
 
 external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
 

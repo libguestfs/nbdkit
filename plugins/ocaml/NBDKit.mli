@@ -73,6 +73,8 @@ type 'a plugin = {
   flush : ('a -> flags -> unit) option;
   trim : ('a -> int32 -> int64 -> flags -> unit) option;
   zero : ('a -> int32 -> int64 -> flags -> unit) option;
+
+  can_multi_conn : ('a -> bool) option;
 }
 (** The plugin fields and callbacks.  ['a] is the handle type. *)
 

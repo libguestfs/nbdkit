@@ -111,6 +111,8 @@ static value flush_fn;
 static value trim_fn;
 static value zero_fn;
 
+static value can_multi_conn_fn;
+
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
 
 static void
@@ -167,6 +169,8 @@ unload_wrapper (void)
   REMOVE (flush);
   REMOVE (trim);
   REMOVE (zero);
+
+  REMOVE (can_multi_conn);
 }
 
 static int
@@ -550,6 +554,25 @@ zero_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   CAMLreturnT (int, 0);
 }
 
+static int
+can_multi_conn_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_multi_conn_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Bool_val (rv));
+}
+
 value
 ocaml_nbdkit_set_thread_model (value modelv)
 {
@@ -628,6 +651,8 @@ SET(pwrite)
 SET(flush)
 SET(trim)
 SET(zero)
+
+SET(can_multi_conn)
 
 /* NB: noalloc function. */
 value
