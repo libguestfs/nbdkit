@@ -212,6 +212,7 @@ struct backend {
   int (*can_trim) (struct backend *, struct connection *conn);
   int (*can_zero) (struct backend *, struct connection *conn);
   int (*can_fua) (struct backend *, struct connection *conn);
+  int (*can_multi_conn) (struct backend *, struct connection *conn);
 
   int (*pread) (struct backend *, struct connection *conn, void *buf,
                 uint32_t count, uint64_t offset, uint32_t flags, int *err);

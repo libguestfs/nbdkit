@@ -349,6 +349,12 @@ main (int argc, char *argv[])
      "filter1: test_layers_filter_is_rotational",
      "test_layers_plugin_is_rotational",
      NULL);
+  log_verify_seen_in_order
+    ("filter3: test_layers_filter_can_multi_conn",
+     "filter2: test_layers_filter_can_multi_conn",
+     "filter1: test_layers_filter_can_multi_conn",
+     "test_layers_plugin_can_multi_conn",
+     NULL);
 
   fprintf (stderr, "%s: protocol connected\n", program_name);
 

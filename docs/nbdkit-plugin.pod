@@ -584,6 +584,34 @@ handle FUA requests.  If omitted, nbdkit checks whether C<.flush>
 exists, and behaves as if this function returns C<NBDKIT_FUA_NONE> or
 C<NBDKIT_FUA_EMULATE> as appropriate.
 
+=head2 C<.can_multi_conn>
+
+ int can_multi_conn (void *handle);
+
+This is called during the option negotiation phase to find out if the
+plugin is prepared to handle multiple connections from a single
+client.  If the plugin sets this to true then a client may try to open
+multiple connections to the nbdkit server and spread requests across
+all connections to maximize parallelism.  If the plugin sets it to
+false (which is the default) then well-behaved clients should only
+open a single connection, although we cannot control what clients do
+in practice.
+
+Specifically it means that either the plugin does not cache requests
+at all.  Or if it does cache them then the effects of a C<.flush>
+request or setting C<NBDKIT_FLAG_FUA> on a request must be visible
+across all connections to the plugin before the plugin replies to that
+request.
+
+If you use Linux L<nbd-client(8)> option S<I<-C num>> with
+S<num E<gt> 1> then Linux checks this flag and will refuse to connect
+if C<.can_multi_conn> is false.
+
+If there is an error, C<.can_multi_conn> should call C<nbdkit_error>
+with an error message and return C<-1>.
+
+This callback is not required.  If omitted, then we return false.
+
 =head2 C<.pread>
 
  int pread (void *handle, void *buf, uint32_t count, uint64_t offset,

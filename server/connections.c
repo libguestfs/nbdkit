@@ -84,6 +84,7 @@ struct connection {
   bool can_trim;
   bool can_zero;
   bool can_fua;
+  bool can_multi_conn;
   bool using_tls;
 
   int sockin, sockout;
@@ -461,6 +462,14 @@ compute_eflags (struct connection *conn, uint16_t *flags)
   if (fl) {
     eflags |= NBD_FLAG_ROTATIONAL;
     conn->is_rotational = true;
+  }
+
+  fl = backend->can_multi_conn (backend, conn);
+  if (fl == -1)
+    return -1;
+  if (fl) {
+    eflags |= NBD_FLAG_CAN_MULTI_CONN;
+    conn->can_multi_conn = true;
   }
 
   *flags = eflags;

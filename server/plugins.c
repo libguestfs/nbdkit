@@ -197,6 +197,7 @@ plugin_dump_fields (struct backend *b)
   HAS (flush);
   HAS (trim);
   HAS (zero);
+  HAS (can_multi_conn);
 #undef HAS
 
   /* Custom fields. */
@@ -412,6 +413,21 @@ plugin_can_fua (struct backend *b, struct connection *conn)
   if (p->plugin.flush || p->plugin._flush_old)
     return NBDKIT_FUA_EMULATE;
   return NBDKIT_FUA_NONE;
+}
+
+static int
+plugin_can_multi_conn (struct backend *b, struct connection *conn)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
+  assert (connection_get_handle (conn, 0));
+
+  debug ("can_multi_conn");
+
+  if (p->plugin.can_multi_conn)
+    return p->plugin.can_multi_conn (connection_get_handle (conn, 0));
+  else
+    return 0; /* assume false */
 }
 
 /* Plugins and filters can call this to set the true errno, in cases
@@ -656,6 +672,7 @@ static struct backend plugin_functions = {
   .can_trim = plugin_can_trim,
   .can_zero = plugin_can_zero,
   .can_fua = plugin_can_fua,
+  .can_multi_conn = plugin_can_multi_conn,
   .pread = plugin_pread,
   .pwrite = plugin_pwrite,
   .flush = plugin_flush,

@@ -138,6 +138,13 @@ test_layers_plugin_can_fua (void *handle)
 }
 
 static int
+test_layers_plugin_can_multi_conn (void *handle)
+{
+  DEBUG_FUNCTION;
+  return 1;
+}
+
+static int
 test_layers_plugin_pread (void *handle,
                           void *buf, uint32_t count, uint64_t offset,
                           uint32_t flags)
@@ -196,6 +203,7 @@ static struct nbdkit_plugin plugin = {
   .can_trim          = test_layers_plugin_can_trim,
   .can_zero          = test_layers_plugin_can_zero,
   .can_fua           = test_layers_plugin_can_fua,
+  .can_multi_conn    = test_layers_plugin_can_multi_conn,
   .pread             = test_layers_plugin_pread,
   .pwrite            = test_layers_plugin_pwrite,
   .flush             = test_layers_plugin_flush,

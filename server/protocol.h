@@ -94,6 +94,7 @@ extern const char *name_of_nbd_flag (int);
 #define NBD_FLAG_ROTATIONAL        (1 << 4)
 #define NBD_FLAG_SEND_TRIM         (1 << 5)
 #define NBD_FLAG_SEND_WRITE_ZEROES (1 << 6)
+#define NBD_FLAG_CAN_MULTI_CONN    (1 << 8)
 
 /* NBD options (new style handshake only). */
 extern const char *name_of_nbd_opt (int);

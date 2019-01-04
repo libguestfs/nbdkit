@@ -123,6 +123,8 @@ struct nbdkit_plugin {
 #endif
 
   const char *magic_config_key;
+
+  int (*can_multi_conn) (void *handle);
 };
 
 extern void nbdkit_set_error (int err);

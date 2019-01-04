@@ -116,6 +116,10 @@ Supported in nbdkit E<ge> 1.9.3.
 This protocol enhancement allows a client to inspect details about
 the export without actually connecting.
 
+=item C<NBD_FLAG_CAN_MULTI_CONN>
+
+Supported in nbdkit E<ge> 1.9.9.
+
 =item Structured Replies
 
 I<Not supported>.

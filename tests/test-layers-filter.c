@@ -168,6 +168,15 @@ test_layers_filter_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
+test_layers_filter_can_multi_conn (struct nbdkit_next_ops *next_ops,
+                                   void *nxdata,
+                                   void *handle)
+{
+  DEBUG_FUNCTION;
+  return next_ops->can_multi_conn (nxdata);
+}
+
+static int
 test_layers_filter_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
                            void *handle, void *buf,
                            uint32_t count, uint64_t offset,
@@ -233,6 +242,7 @@ static struct nbdkit_filter filter = {
   .can_trim          = test_layers_filter_can_trim,
   .can_zero          = test_layers_filter_can_zero,
   .can_fua           = test_layers_filter_can_fua,
+  .can_multi_conn    = test_layers_filter_can_multi_conn,
   .pread             = test_layers_filter_pread,
   .pwrite            = test_layers_filter_pwrite,
   .flush             = test_layers_filter_flush,

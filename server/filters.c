@@ -317,6 +317,13 @@ next_can_fua (void *nxdata)
 }
 
 static int
+next_can_multi_conn (void *nxdata)
+{
+  struct b_conn *b_conn = nxdata;
+  return b_conn->b->can_multi_conn (b_conn->b, b_conn->conn);
+}
+
+static int
 next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
@@ -365,6 +372,7 @@ static struct nbdkit_next_ops next_ops = {
   .can_trim = next_can_trim,
   .can_zero = next_can_zero,
   .can_fua = next_can_fua,
+  .can_multi_conn = next_can_multi_conn,
   .pread = next_pread,
   .pwrite = next_pwrite,
   .flush = next_flush,
@@ -519,6 +527,21 @@ filter_can_fua (struct backend *b, struct connection *conn)
 }
 
 static int
+filter_can_multi_conn (struct backend *b, struct connection *conn)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  void *handle = connection_get_handle (conn, f->backend.i);
+  struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
+
+  debug ("%s: can_multi_conn", f->name);
+
+  if (f->filter.can_multi_conn)
+    return f->filter.can_multi_conn (&next_ops, &nxdata, handle);
+  else
+    return f->backend.next->can_multi_conn (f->backend.next, conn);
+}
+
+static int
 filter_pread (struct backend *b, struct connection *conn,
               void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
@@ -645,6 +668,7 @@ static struct backend filter_functions = {
   .can_trim = filter_can_trim,
   .can_zero = filter_can_zero,
   .can_fua = filter_can_fua,
+  .can_multi_conn = filter_can_multi_conn,
   .pread = filter_pread,
   .pwrite = filter_pwrite,
   .flush = filter_flush,

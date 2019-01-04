@@ -352,6 +352,8 @@ calls.
 
 =head2 C<.can_fua>
 
+=head2 C<.can_multi_conn>
+
  int (*can_write) (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle);
  int (*can_flush) (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -365,6 +367,8 @@ calls.
                   void *handle);
  int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,
                  void *handle);
+ int (*can_multi_conn) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                        void *handle);
 
 These intercept the corresponding plugin methods, and control feature
 bits advertised to the client.
