@@ -580,6 +580,12 @@ sh_can_fua (void *handle)
 }
 
 static int
+sh_can_multi_conn (void *handle)
+{
+  return boolean_method (handle, "can_multi_conn");
+}
+
+static int
 sh_flush (void *handle, uint32_t flags)
 {
   char *h = handle;
@@ -699,6 +705,7 @@ static struct nbdkit_plugin plugin = {
   .can_trim          = sh_can_trim,
   .can_zero          = sh_can_zero,
   .can_fua           = sh_can_fua,
+  .can_multi_conn    = sh_can_multi_conn,
 
   .pread             = sh_pread,
   .pwrite            = sh_pwrite,
