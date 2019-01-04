@@ -165,6 +165,17 @@ blocksize_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
+blocksize_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+                          void *handle)
+{
+  /* Although we are serializing all requests anyway so this likely
+   * doesn't make a difference, return false because the bounce buffer
+   * is not consistent for flush.
+   */
+  return 0;
+}
+
+static int
 blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
                  void *handle, void *b, uint32_t count, uint64_t offs,
                  uint32_t flags, int *err)
@@ -370,6 +381,7 @@ static struct nbdkit_filter filter = {
   .config_help       = blocksize_config_help,
   .prepare           = blocksize_prepare,
   .get_size          = blocksize_get_size,
+  .can_multi_conn    = blocksize_can_multi_conn,
   .pread             = blocksize_pread,
   .pwrite            = blocksize_pwrite,
   .trim              = blocksize_trim,
