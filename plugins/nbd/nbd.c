@@ -644,6 +644,14 @@ nbd_can_fua (void *handle)
   return h->flags & NBD_FLAG_SEND_FUA ? NBDKIT_FUA_NATIVE : NBDKIT_FUA_NONE;
 }
 
+static int
+nbd_can_multi_conn (void *handle)
+{
+  struct handle *h = handle;
+
+  return h->flags & NBD_FLAG_CAN_MULTI_CONN;
+}
+
 /* Read data from the file. */
 static int
 nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -732,6 +740,7 @@ static struct nbdkit_plugin plugin = {
   .can_trim           = nbd_can_trim,
   .can_zero           = nbd_can_zero,
   .can_fua            = nbd_can_fua,
+  .can_multi_conn     = nbd_can_multi_conn,
   .pread              = nbd_pread,
   .pwrite             = nbd_pwrite,
   .zero               = nbd_zero,
