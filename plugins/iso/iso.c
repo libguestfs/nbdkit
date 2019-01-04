@@ -258,6 +258,13 @@ iso_get_size (void *handle)
   return statbuf.st_size;
 }
 
+/* Serves the same data over multiple connections. */
+static int
+iso_can_multi_conn (void *handle)
+{
+  return 1;
+}
+
 /* Read data from the file. */
 static int
 iso_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
@@ -291,6 +298,7 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key  = "dir",
   .open              = iso_open,
   .get_size          = iso_get_size,
+  .can_multi_conn    = iso_can_multi_conn,
   .pread             = iso_pread,
   .errno_is_preserved = 1,
 };

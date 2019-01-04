@@ -107,6 +107,13 @@ random_get_size (void *handle)
   return size;
 }
 
+/* Serves the same data over multiple connections. */
+static int
+random_can_multi_conn (void *handle)
+{
+  return 1;
+}
+
 /* Read data. */
 static int
 random_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -148,6 +155,7 @@ static struct nbdkit_plugin plugin = {
   .config_help       = random_config_help,
   .open              = random_open,
   .get_size          = random_get_size,
+  .can_multi_conn    = random_can_multi_conn,
   .pread             = random_pread,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.

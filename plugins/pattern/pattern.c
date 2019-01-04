@@ -88,6 +88,13 @@ pattern_get_size (void *handle)
   return size;
 }
 
+/* Serves the same data over multiple connections. */
+static int
+pattern_can_multi_conn (void *handle)
+{
+  return 1;
+}
+
 /* Read data. */
 static int
 pattern_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -118,6 +125,7 @@ static struct nbdkit_plugin plugin = {
   .config_help       = pattern_config_help,
   .open              = pattern_open,
   .get_size          = pattern_get_size,
+  .can_multi_conn    = pattern_can_multi_conn,
   .pread             = pattern_pread,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
