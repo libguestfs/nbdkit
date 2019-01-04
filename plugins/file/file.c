@@ -250,6 +250,13 @@ file_get_size (void *handle)
   }
 }
 
+/* Allow multiple parallel connections from a single client. */
+static int
+file_can_multi_conn (void *handle)
+{
+  return 1;
+}
+
 static int
 file_can_trim (void *handle)
 {
@@ -507,6 +514,7 @@ static struct nbdkit_plugin plugin = {
   .open              = file_open,
   .close             = file_close,
   .get_size          = file_get_size,
+  .can_multi_conn    = file_can_multi_conn,
   .can_trim          = file_can_trim,
   .can_fua           = file_can_fua,
   .pread             = file_pread,
