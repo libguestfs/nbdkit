@@ -1,0 +1,85 @@
+A guide to benchmarking nbdkit
+==============================
+
+
+General comments
+----------------
+
+* The plugin matters!  Different plugins have completely difference
+  uses, implementations and threading models.  There is little point
+  in talking about "the performance of nbdkit" without mentioning what
+  plugin you are testing.
+
+* The client matters!  Does the client support multi-conn?  Does the
+  client use the old or newstyle protocol?  Has the client been
+  written with performance in mind?  The currently best clients are
+  (a) the Linux kernel (nbd.ko) (b) qemu.  Also make sure you are
+  using recent versions.
+
+* Filters affect performance.  When benchmarking you should never use
+  filters unless filters are what you are trying to benchmark.
+
+
+Testing using Linux kernel client and fio
+-----------------------------------------
+
+(1) Install Jens Axboe's fio (Flexible I/O tester)
+
+https://github.com/axboe/fio
+
+(2) Create the fio configuation file:
+
+Create /var/tmp/test.fio containing:
+
+----------------------------------------------------------------------
+[test]
+rw=randrw
+size=64m
+directory=/var/tmp/nbd
+ioengine=libaio
+iodepth=4
+direct=1
+numjobs=8
+group_reporting
+time_based
+runtime=120
+----------------------------------------------------------------------
+
+(3) Run nbdkit.
+
+From the nbdkit source directory:
+
+rm /tmp/sock
+./nbdkit -f -U /tmp/sock memory size=1G
+
+(4) Loop mount the NBD server:
+
+modprobe nbd
+nbd-client -C 8 -b 512 -unix /tmp/sock /dev/nbd0
+mkfs.xfs -f /dev/nbd0
+mkdir /var/tmp/nbd
+mount /dev/nbd0 /var/tmp/nbd
+
+(5) Run the fio test:
+
+fio /var/tmp/test.fio
+
+
+Variations
+----------
+
+* Try turning multi-conn on or off or adjusting the number of
+  connections.  See the nbd-client -C option.
+
+* Try adjusting the number of fio threads.
+
+* Run nbdkit under perf:
+
+  perf record -a -g --call-graph=dwarf -- \
+      server/nbdkit  -f -U /tmp/sock \
+          ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1G
+
+* Use other plugins.  nbdkit-file-plugin is an important one to test.
+  It might also be worth devising a test using a readonly plugin.
+
+* Someone needs to write an NBD I/O engine for fio.
