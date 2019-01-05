@@ -176,7 +176,7 @@ is called once just before the plugin is unloaded from memory.
 
 =back
 
-=head1 Flags
+=head1 FLAGS
 
 The following flags are defined by nbdkit, and used in various data
 serving callbacks as follows:
