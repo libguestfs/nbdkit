@@ -115,6 +115,13 @@ memory_get_size (void *handle)
   return (int64_t) size;
 }
 
+/* Serves the same data over multiple connections. */
+static int
+memory_can_multi_conn (void *handle)
+{
+  return 1;
+}
+
 /* Read data. */
 static int
 memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
@@ -156,6 +163,7 @@ static struct nbdkit_plugin plugin = {
   .config_help       = memory_config_help,
   .open              = memory_open,
   .get_size          = memory_get_size,
+  .can_multi_conn    = memory_can_multi_conn,
   .pread             = memory_pread,
   .pwrite            = memory_pwrite,
   .zero              = memory_zero,
