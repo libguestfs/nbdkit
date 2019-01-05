@@ -288,6 +288,13 @@ partitioning_get_size (void *handle)
   return virtual_size (&regions);
 }
 
+/* Serves the same data over multiple connections. */
+static int
+partitioning_can_multi_conn (void *handle)
+{
+  return 1;
+}
+
 /* Read data. */
 static int
 partitioning_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
@@ -416,6 +423,7 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key = "file",
   .open              = partitioning_open,
   .get_size          = partitioning_get_size,
+  .can_multi_conn    = partitioning_can_multi_conn,
   .pread             = partitioning_pread,
   .pwrite            = partitioning_pwrite,
   .flush             = partitioning_flush,
