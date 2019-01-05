@@ -136,6 +136,8 @@ main (int argc, char *argv[])
     passthru ("--child-silent-after-fork=yes");
     passthru ("--run-libc-freeres=no");
     passthru ("--num-callers=20");
+    /* This is a temporary workaround until RHBZ#1662656 is fixed: */
+    passthru ("--read-inline-info=no");
   }
   else {
     s = getenv ("NBDKIT_GDB");
