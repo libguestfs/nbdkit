@@ -103,11 +103,9 @@ cases that leads to data corruption (new nbdkit cannot safely run old
 filters unaware of new methods).  Therefore, unlike plugins, you
 should not expect to distribute filters separately from nbdkit.
 
-=head1 C<nbdkit-filter.h>
+=head1 C<#include E<lt>nbdkit-filter.hE<gt>>
 
-All filters should start by including this header file:
-
- #include <nbdkit-filter.h>
+All filters should start by including this header file.
 
 =head1 C<#define THREAD_MODEL>
 

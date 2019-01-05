@@ -82,12 +82,10 @@ only covers the version 2 interface.  A newer nbdkit will always
 support plugins written in C which were compiled against any prior API
 version.
 
-=head1 C<nbdkit-plugin.h>
+=head1 C<#include E<lt>nbdkit-plugin.hE<gt>>
 
 All plugins should start by including this header file, after
-optionally choosing an API version:
-
- #include <nbdkit-plugin.h>
+optionally choosing an API version.
 
 =head1 C<#define THREAD_MODEL>
 
