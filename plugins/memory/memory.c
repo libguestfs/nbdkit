@@ -42,6 +42,8 @@
 #include <errno.h>
 #include <assert.h>
 
+#include <pthread.h>
+
 #include <nbdkit-plugin.h>
 
 #include "sparse.h"
@@ -52,7 +54,11 @@ static int64_t size = 0;
 /* Debug directory operations (-D memory.dir=1). */
 int memory_debug_dir;
 
+/* Sparse array - the lock must be held when accessing this from
+ * connected callbacks.
+ */
 static struct sparse_array *sa;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void
 memory_load (void)
@@ -106,7 +112,7 @@ memory_open (int readonly)
   return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 /* Get the disk size. */
 static int64_t
@@ -126,7 +132,9 @@ memory_can_multi_conn (void *handle)
 static int
 memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
+  pthread_mutex_lock (&lock);
   sparse_array_read (sa, buf, count, offset);
+  pthread_mutex_unlock (&lock);
   return 0;
 }
 
@@ -134,14 +142,21 @@ memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 static int
 memory_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 {
-  return sparse_array_write (sa, buf, count, offset);
+  int r;
+
+  pthread_mutex_lock (&lock);
+  r = sparse_array_write (sa, buf, count, offset);
+  pthread_mutex_unlock (&lock);
+  return r;
 }
 
 /* Zero. */
 static int
 memory_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
+  pthread_mutex_lock (&lock);
   sparse_array_zero (sa, count, offset);
+  pthread_mutex_unlock (&lock);
   return 0;
 }
 
@@ -149,7 +164,9 @@ memory_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 static int
 memory_trim (void *handle, uint32_t count, uint64_t offset)
 {
+  pthread_mutex_lock (&lock);
   sparse_array_zero (sa, count, offset);
+  pthread_mutex_unlock (&lock);
   return 0;
 }
 

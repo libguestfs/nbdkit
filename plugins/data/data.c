@@ -39,6 +39,8 @@
 #include <inttypes.h>
 #include <string.h>
 
+#include <pthread.h>
+
 #if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
 #include <gnutls/gnutls.h>
 #endif
@@ -56,8 +58,11 @@ static int64_t size = -1;
 /* Size of data specified on the command line. */
 static int64_t data_size = -1;
 
-/* Sparse array. */
+/* Sparse array - the lock must be held when accessing this from
+ * connected callbacks.
+ */
 static struct sparse_array *sa;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Debug directory operations (-D data.dir=1). */
 int data_debug_dir;
@@ -305,7 +310,7 @@ data_dump_plugin (void)
 #endif
 }
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 /* No meaning, just used as the address for the handle. */
 static int dh;
@@ -335,7 +340,9 @@ data_can_multi_conn (void *handle)
 static int
 data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
+  pthread_mutex_lock (&lock);
   sparse_array_read (sa, buf, count, offset);
+  pthread_mutex_unlock (&lock);
   return 0;
 }
 
@@ -343,14 +350,21 @@ data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 static int
 data_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 {
-  return sparse_array_write (sa, buf, count, offset);
+  int r;
+
+  pthread_mutex_lock (&lock);
+  r = sparse_array_write (sa, buf, count, offset);
+  pthread_mutex_unlock (&lock);
+  return r;
 }
 
 /* Zero. */
 static int
 data_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
+  pthread_mutex_lock (&lock);
   sparse_array_zero (sa, count, offset);
+  pthread_mutex_unlock (&lock);
   return 0;
 }
 
@@ -358,7 +372,9 @@ data_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 static int
 data_trim (void *handle, uint32_t count, uint64_t offset)
 {
+  pthread_mutex_lock (&lock);
   sparse_array_zero (sa, count, offset);
+  pthread_mutex_unlock (&lock);
   return 0;
 }
 
