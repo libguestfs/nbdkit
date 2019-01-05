@@ -511,13 +511,13 @@ test_ocaml_CFLAGS = \
 test_ocaml_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 check_SCRIPTS += test-ocaml-plugin.so
-test_ocaml_plugin.cmx: test_ocaml_plugin.ml
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml -c $< -o $@
 test-ocaml-plugin.so: test_ocaml_plugin.cmx ../plugins/ocaml/libnbdkitocaml.la ../plugins/ocaml/NBDKit.cmi ../plugins/ocaml/NBDKit.cmx
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml \
 	  -output-obj -runtime-variant _pic -o $@ \
 	  NBDKit.cmx $< \
 	  -cclib -L../plugins/ocaml/.libs -cclib -lnbdkitocaml
+test_ocaml_plugin.cmx: test_ocaml_plugin.ml ../plugins/ocaml/NBDKit.cmi
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml -c $< -o $@
 
 endif HAVE_OCAML
 
