@@ -30,6 +30,8 @@ Makefile.in
 /common/include/test-isaligned
 /common/include/test-ispowerof2
 /common/include/test-iszero
+/common/include/test-minmax
+/common/include/test-nextnonzero
 /compile
 /config.guess
 /config.h
