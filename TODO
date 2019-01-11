@@ -103,6 +103,22 @@ Suggestions for filters
 * nbdkit-cache-filter should handle ENOSPC errors automatically by
   reclaiming blocks from the cache
 
+Filters for security
+--------------------
+
+Things like blacklisting or whitelisting IP addresses can be done
+using external wrappers (TCP wrappers, systemd).
+
+However it might be nice to have a configurable filter for preventing
+valid but not sensible requests.  The server already filters invalid
+requests.  This would be like seccomp, and could be implemented using
+an eBPF-based parser.  Unfortunately actual eBPF is difficult to use
+for userspace processes.  The "standard" isn't solidly defined - the
+Linux kernel implementation is the standard - and Linux has by far the
+best implementation, particularly around bytecode verification and
+JITting.  There is a userspace VM (ubpf) but it has very limited
+capabilities compared to Linux.
+
 Composing nbdkit
 ----------------
 
