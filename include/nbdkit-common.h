@@ -40,6 +40,7 @@
 
 #include <stdarg.h>
 #include <stdint.h>
+#include <errno.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,7 +79,7 @@ extern char *nbdkit_realpath (const char *path);
 /* A static non-NULL pointer which can be used when you don't need a
  * per-connection handle.
  */
-#define NBDKIT_HANDLE_NOT_NEEDED ((void *) &nbdkit_error)
+#define NBDKIT_HANDLE_NOT_NEEDED (&errno)
 
 #ifdef __cplusplus
 }
