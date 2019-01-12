@@ -40,6 +40,7 @@ EXTRA_DIST = \
 	shebang.pl \
 	shebang.py \
 	shebang.rb \
+	test-ansi-c.sh \
 	test-blocksize.sh \
 	test-cache.sh \
 	test-cache-max-size.sh \
@@ -160,6 +161,29 @@ test_socket_activation_SOURCES = test-socket-activation.c
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 
 endif HAVE_PLUGINS
+
+# This builds a plugin using an ANSI (ISO C90) compiler to ensure that
+# the header file is compatible.  The plugin does nothing very
+# interesting, it's mainly a compile test.
+TESTS += \
+	test-ansi-c.sh
+# check_LTLIBRARIES won't build a shared library (see automake manual).
+# So we have to do this and add a dependency.
+noinst_LTLIBRARIES += test-ansi-c-plugin.la
+test-ansi-c.sh: test-ansi-c-plugin.la
+
+test_ansi_c_plugin_la_SOURCES = \
+	test-ansi-c-plugin.c \
+	$(top_srcdir)/include/nbdkit-plugin.h
+test_ansi_c_plugin_la_CPPFLAGS = \
+	-std=c90 -pedantic \
+	-I$(top_srcdir)/include
+test_ansi_c_plugin_la_CFLAGS = \
+        $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_ansi_c_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere
 
 if HAVE_CXX
 # This builds a plugin and a filter using the C++ compiler.  They
