@@ -134,13 +134,19 @@ a randomly named subdirectory under the temporary directory:
  case "$1" in
    ...
    open)
-     mktemp -d $tmpdir/handle-XXXXXX
-     ;;
+     mktemp -d $tmpdir/handle-XXXXXX ;;
 
 The handle will be the subdirectory name, returned to the script as
-C<$2> in all connected calls (eg. C<pread>, C<get_size>).  The
-subdirectory may be deleted in C<close>, or you can rely on nbdkit
-deleting the whole temporary directory when it exits.
+C<$2> in all connected calls (eg. C<pread>, C<get_size>).  You can
+delete the subdirectory explicitly in C<close>:
+
+ case "$1" in
+   ...
+   close)
+     rm -rf "$2" ;;
+
+or rely on nbdkit deleting the whole temporary directory including all
+per-handle subdirectories when it exits.
 
 =head2 Methods
 
