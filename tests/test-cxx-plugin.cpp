@@ -121,7 +121,7 @@ cxx_load (void)
 static void *
 cxx_open (int readonly)
 {
-  return data;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 static int64_t
