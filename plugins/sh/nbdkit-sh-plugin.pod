@@ -248,6 +248,12 @@ Unlike the other C<can_*> callbacks, this one is I<not> a boolean.  It
 must print either "none", "emulate" or "native" to stdout.  The
 meaning of these is described in L<nbdkit-plugin(3)>.
 
+=item C<can_multi_conn>
+
+ /path/to/script can_multi_conn <handle>
+
+The script should exit with code C<0> for true or code C<3> for false.
+
 =item C<pread>
 
  /path/to/script pread <handle> <count> <offset>
