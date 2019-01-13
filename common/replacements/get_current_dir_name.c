@@ -30,25 +30,30 @@
  * SUCH DAMAGE.
  */
 
+/* Implement get_current_dir_name(3) on platforms which don't have it. */
+
 #include <config.h>
 
-#include <stdio.h>
+#ifndef HAVE_GET_CURRENT_DIR_NAME
+
 #include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 #include <unistd.h>
-#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
-#include <assert.h>
+#include <limits.h>
 
-#include "get-current-dir-name.h"
+#include "get_current_dir_name.h"
 
-int
-main (void)
+char *
+get_current_dir_name (void)
 {
-  char *pwd;
+  char *ret;
 
-  pwd = get_current_dir_name ();
-  printf ("pwd = %s\n", pwd);
-  free (pwd);
-  exit (EXIT_SUCCESS);
+  ret = malloc (PATH_MAX);
+  if (ret == NULL)
+    return NULL;
+  ret = getcwd (ret, PATH_MAX);
+  if (ret == NULL)
+    return NULL;
+  return realloc (ret, strlen (ret) + 1);
 }
+
+#endif /* !HAVE_GET_CURRENT_DIR_NAME */

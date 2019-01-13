@@ -36,7 +36,6 @@ plugins/*/*.3
 /common/include/test-ascii-ctype
 /common/include/test-ascii-string
 /common/include/test-byte-swapping
-/common/include/test-current-dir-name
 /common/include/test-isaligned
 /common/include/test-ispowerof2
 /common/include/test-iszero
@@ -47,6 +46,7 @@ plugins/*/*.3
 /common/protocol/generate-protostrings.sh
 /common/protocol/protostrings.c
 /common/replacements/libcompat.a
+/common/replacements/test-current-dir-name
 /common/replacements/win32/MSG00001.bin
 /common/replacements/win32/nbdkit-cat.h
 /common/replacements/win32/nbdkit-cat.rc

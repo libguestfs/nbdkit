@@ -49,7 +49,7 @@
 
 #include "byte-swapping.h"
 #include "cleanup.h"
-#include "get-current-dir-name.h"
+#include "get_current_dir_name.h"
 #include "regions.h"
 #include "rounding.h"
 

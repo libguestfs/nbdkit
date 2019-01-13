@@ -53,7 +53,7 @@
 
 #include "ascii-ctype.h"
 #include "ascii-string.h"
-#include "get-current-dir-name.h"
+#include "get_current_dir_name.h"
 #include "getline.h"
 #include "realpath.h"
 

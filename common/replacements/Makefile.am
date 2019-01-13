@@ -39,6 +39,8 @@ libcompat_la_SOURCES =
 libcompat_la_LIBADD = $(LTLIBOBJS)
 
 EXTRA_DIST = \
+	get_current_dir_name.c \
+	get_current_dir_name.h \
 	getdelim.c \
 	getline.c \
 	getline.h \
@@ -50,3 +52,15 @@ EXTRA_DIST = \
 	syslog.c \
 	syslog.h \
 	vsyslog.c
+
+TESTS = \
+	test-current-dir-name
+check_PROGRAMS = $(TESTS)
+
+test_current_dir_name_SOURCES = \
+	test-current-dir-name.c \
+	get_current_dir_name.c \
+	get_current_dir_name.h \
+	$(NULL)
+test_current_dir_name_CPPFLAGS = -I$(srcdir)
+test_current_dir_name_CFLAGS = $(WARNINGS_CFLAGS)

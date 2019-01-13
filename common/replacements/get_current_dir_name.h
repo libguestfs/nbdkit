@@ -30,32 +30,19 @@
  * SUCH DAMAGE.
  */
 
-/* Implement get_current_dir_name(3) on platforms which don't have it. */
-
 #ifndef NBDKIT_GET_CURRENT_DIR_NAME_H
 #define NBDKIT_GET_CURRENT_DIR_NAME_H
 
 #include <config.h>
 
-#ifndef HAVE_GET_CURRENT_DIR_NAME
+#ifdef HAVE_GET_CURRENT_DIR_NAME
 
-#include <stdlib.h>
 #include <unistd.h>
-#include <limits.h>
 
-static inline char *
-get_current_dir_name (void)
-{
-  char *ret;
+#else
 
-  ret = malloc (PATH_MAX);
-  if (ret == NULL)
-    return NULL;
-  ret = getcwd (ret, PATH_MAX);
-  if (ret == NULL)
-    return NULL;
-  return realloc (ret, strlen (ret) + 1);
-}
+extern char *get_current_dir_name (void);
+
 #endif
 
 #endif /* NBDKIT_GET_CURRENT_DIR_NAME_H */
