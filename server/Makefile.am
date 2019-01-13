@@ -84,6 +84,7 @@ nbdkit_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/protocol \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_CFLAGS = \
@@ -99,6 +100,7 @@ nbdkit_LDADD = \
 	$(DL_LIBS) \
 	$(top_builddir)/common/protocol/libprotocol.la \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(NULL)
 nbdkit_LDFLAGS = \
 	$(PTHREAD_LIBS) \
@@ -147,6 +149,7 @@ test_public_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/protocol \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 test_public_CFLAGS = \

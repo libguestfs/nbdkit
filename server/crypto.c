@@ -41,12 +41,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <assert.h>
 
 #include "internal.h"
+#include "realpath.h"
 
 #ifdef HAVE_GNUTLS
 

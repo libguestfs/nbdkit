@@ -337,6 +337,17 @@ AC_CHECK_FUNCS([\
 	ppoll \
 	posix_fadvise])
 
+dnl Replacement functions that we provide for some platforms.
+AC_CONFIG_LIBOBJ_DIR([common/replacements])
+AC_REPLACE_FUNCS([\
+	getdelim \
+	getline \
+	openlog \
+	realpath \
+	strndup \
+	syslog \
+	vsyslog])
+
 dnl Check whether printf("%m") works
 AC_CACHE_CHECK([whether the printf family supports %m],
   [nbdkit_cv_func_printf_percent_m],
@@ -462,6 +473,15 @@ AS_CASE([$host_os],
 )
 AC_MSG_RESULT([$is_windows])
 AC_SUBST([NO_UNDEFINED_ON_WINDOWS])
+AM_CONDITIONAL([IS_WINDOWS],[test "x$is_windows" = "xyes"])
+
+dnl For Windows, look for the mc/windmc utility.
+dnl XXX Do we need to check for mc.exe as well?
+AS_IF([test "x$is_windows" = "xyes"],[
+    AC_CHECK_TOOLS([MC],[windmc mc],[no])
+    AS_IF([test "x$MC" = "xno"],
+          [AC_MSG_ERROR([mc/windmc utility must be available when compiling for Windows])])
+])
 
 AC_SEARCH_LIBS([getaddrinfo], [network socket])
 
@@ -1105,6 +1125,8 @@ AC_CONFIG_FILES([Makefile
                  common/include/Makefile
                  common/protocol/Makefile
                  common/regions/Makefile
+                 common/replacements/Makefile
+                 common/replacements/win32/Makefile
                  common/utils/Makefile
                  docs/Makefile
                  include/Makefile

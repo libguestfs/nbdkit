@@ -46,6 +46,10 @@ plugins/*/*.3
 /common/include/test-tvdiff
 /common/protocol/generate-protostrings.sh
 /common/protocol/protostrings.c
+/common/replacements/libcompat.a
+/common/replacements/win32/MSG00001.bin
+/common/replacements/win32/nbdkit-cat.h
+/common/replacements/win32/nbdkit-cat.rc
 /common/utils/test-quotes
 /common/utils/test-vector
 /compile

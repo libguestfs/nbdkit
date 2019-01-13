@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -30,54 +30,37 @@
  * SUCH DAMAGE.
  */
 
+/* Replacement for syslog for platforms which lack it.  Note this only
+ * implements "just enough syslog" for nbdkit.  It's not a general
+ * replacement.
+ */
+
+#ifndef NBDKIT_SYSLOG_H
+#define NBDKIT_SYSLOG_H
+
 #include <config.h>
 
-#include <stdio.h>
-#include <stdlib.h>
+#ifdef HAVE_SYSLOG_H
+
+#include_next <syslog.h>
+
+#else
+
 #include <stdarg.h>
-#include <string.h>
-#include <errno.h>
 
-#include "internal.h"
-#include "syslog.h"
+/* Since the replacement function ignores the priority field, we only
+ * need to define these to any integer.
+ */
+#define LOG_PID 0
+#define LOG_ERR 0
+#define LOG_DAEMON 0
 
-/* Tempted to use LOG_FTP instead of LOG_DAEMON! */
-static const int PRIORITY = LOG_DAEMON|LOG_ERR;
+extern void openlog (const char *ident, int option, int facility);
+extern void syslog (int pri, const char *fmt, ...)
+  __attribute__ ((format (printf, 2, 3)));
+extern void vsyslog (int pri, const char *fmt, va_list args)
+  __attribute__ ((format (printf, 2, 0)));
 
-/* Note: preserves the previous value of errno. */
-void
-log_syslog_verror (const char *fs, va_list args)
-{
-  int err = errno;
-  const char *name = threadlocal_get_name ();
-  size_t instance_num = threadlocal_get_instance_num ();
-  CLEANUP_FREE char *msg = NULL;
-  size_t len = 0;
-  FILE *fp = NULL;
+#endif /* !HAVE_SYSLOG_H */
 
-#ifdef HAVE_OPEN_MEMSTREAM
-  fp = open_memstream (&msg, &len);
-#endif
-  if (fp == NULL) {
-    /* Fallback to logging using fs, args directly. */
-    errno = err; /* Must restore in case fs contains %m */
-    vsyslog (PRIORITY, fs, args);
-    goto out;
-  }
-
-  if (name) {
-    fprintf (fp, "%s", name);
-    if (instance_num > 0)
-      fprintf (fp, "[%zu]", instance_num);
-    fprintf (fp, ": ");
-  }
-
-  errno = err; /* Must restore in case fs contains %m */
-  vfprintf (fp, fs, args);
-  fclose (fp);
-
-  syslog (PRIORITY, "%s", msg);
-
- out:
-  errno = err;
-}
+#endif /* NBDKIT_SYSLOG_H */

@@ -42,7 +42,6 @@
 #include <limits.h>
 #include <errno.h>
 #include <assert.h>
-#include <syslog.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -60,11 +59,13 @@
 #include <dlfcn.h>
 
 #include "ascii-string.h"
+#include "exit-with-parent.h"
+#include "nbd-protocol.h"
+#include "strndup.h"
+#include "syslog.h"
 
 #include "internal.h"
-#include "nbd-protocol.h"
 #include "options.h"
-#include "exit-with-parent.h"
 
 #ifdef ENABLE_LIBFUZZER
 #define main fuzzer_main

@@ -74,6 +74,7 @@ SUBDIRS = \
 	include \
 	common/include \
 	common/protocol \
+	common/replacements \
 	common/utils \
 	server \
 	$(NULL)
