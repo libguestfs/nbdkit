@@ -171,11 +171,13 @@ extern int crypto_negotiate_tls (struct connection *conn,
 #if !HAVE_VFPRINTF_PERCENT_M
 #include <stdio.h>
 #define vfprintf nbdkit_vfprintf
-extern int __attribute__ ((format (printf, 2, 0)))
-nbdkit_vfprintf (FILE *f, const char *fmt, va_list args);
+extern int nbdkit_vfprintf (FILE *f, const char *fmt, va_list args)
+  __attribute__((__format__ (printf, 2, 0)));
 #endif
-extern void log_stderr_verror (const char *fs, va_list args);
-extern void log_syslog_verror (const char *fs, va_list args);
+extern void log_stderr_verror (const char *fs, va_list args)
+  __attribute__((__format__ (printf, 1, 0)));
+extern void log_syslog_verror (const char *fs, va_list args)
+  __attribute__((__format__ (printf, 1, 0)));
 
 struct backend {
   /* Next filter or plugin in the chain.  This is always NULL for
