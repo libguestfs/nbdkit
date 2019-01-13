@@ -98,14 +98,6 @@ const char *user, *group;       /* -u & -g */
 bool verbose;                   /* -v */
 unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
 
-/* Detection of request to exit via signal.  Most places in the code
- * can just poll quit at opportune moments, while sockets.c needs a
- * pipe-to-self through quit_fd in order to break a poll loop without
- * a race. */
-volatile int quit;
-int quit_fd;
-static int write_quit_fd;
-
 /* True if we forked into the background (used to control log messages). */
 bool forked_into_background;
 
@@ -844,6 +836,7 @@ start_serving (void)
     exit (EXIT_FAILURE);
   }
 
+  set_up_quit_pipe ();
   set_up_signals ();
 
   /* Socket activation -- we are handling connections on pre-opened
@@ -892,29 +885,9 @@ start_serving (void)
 }
 
 static void
-handle_quit (int sig)
-{
-  char c = sig;
-
-  quit = 1;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-  write (write_quit_fd, &c, 1);
-#pragma GCC diagnostic pop
-}
-
-static void
 set_up_signals (void)
 {
   struct sigaction sa;
-  int fds[2];
-
-  if (pipe (fds) < 0) {
-    perror ("pipe");
-    exit (EXIT_FAILURE);
-  }
-  quit_fd = fds[0];
-  write_quit_fd = fds[1];
 
   memset (&sa, 0, sizeof sa);
   sa.sa_flags = SA_RESTART;

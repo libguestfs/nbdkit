@@ -52,6 +52,7 @@ nbdkit_SOURCES = \
 	plugins.c \
 	protocol.h \
 	protostrings.c \
+	quit.c \
 	sockets.c \
 	threadlocal.c \
 	utils.c \

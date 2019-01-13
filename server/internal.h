@@ -106,13 +106,17 @@ extern bool tls_verify_peer;
 extern char *unixsocket;
 extern bool verbose;
 
-extern volatile int quit;
-extern int quit_fd;
-
 extern bool forked_into_background;
 
 extern struct backend *backend;
 #define for_each_backend(b) for (b = backend; b != NULL; b = b->next)
+
+/* quit.c */
+extern volatile int quit;
+extern int quit_fd;
+extern void set_up_quit_pipe (void);
+extern void handle_quit (int sig);
+extern void set_quit (void);
 
 /* cleanup.c */
 extern void cleanup_free (void *ptr);
