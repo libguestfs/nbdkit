@@ -292,7 +292,7 @@ data_config_complete (void)
    */
   if (size == -1)
     size = data_size;
-  nbdkit_debug ("final size: %" PRIi64, data_size);
+  nbdkit_debug ("final size: %" PRIi64, size);
 
   return 0;
 }
