@@ -108,7 +108,7 @@ bind_unix_socket (size_t *nr_socks)
 
   sock = socket (AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0);
   if (sock == -1) {
-    perror ("socket");
+    perror ("bind_unix_socket: socket");
     exit (EXIT_FAILURE);
   }
 
@@ -176,7 +176,7 @@ bind_tcpip_socket (size_t *nr_socks)
 
     sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
     if (sock == -1) {
-      perror ("socket");
+      perror ("bind_tcpip_socket: socket");
       exit (EXIT_FAILURE);
     }
 
