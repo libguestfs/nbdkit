@@ -46,6 +46,7 @@
 #include "ispowerof2.h"
 #include "rounding.h"
 #include "allocator.h"
+#include "strndup.h"
 #include "format.h"
 
 /* Store file at current offset in the allocator, updating the offset. */

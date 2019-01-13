@@ -49,6 +49,7 @@ nbdkit_data_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/allocators \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_data_plugin_la_CFLAGS = \
@@ -62,6 +63,7 @@ nbdkit_data_plugin_la_LDFLAGS = \
 nbdkit_data_plugin_la_LIBADD = \
 	$(top_builddir)/common/allocators/liballocators.la \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(GNUTLS_LIBS) \
 	$(NULL)
 
