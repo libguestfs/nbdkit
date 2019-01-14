@@ -314,39 +314,55 @@ accept_connection (int listen_sock)
    */
 }
 
-void
-accept_incoming_connections (int *socks, size_t nr_socks)
+/* Check the list of sockets plus quit_fd until a POLLIN event occurs
+ * on any of them.
+ *
+ * If POLLIN occurs on quit_fd do nothing except returning early
+ * (don't call accept_connection in this case).
+ *
+ * If POLLIN occurs on one of the sockets, call
+ * accept_connection (socks[i]) on each of them.
+ */
+static void
+check_sockets_and_quit_fd (int *socks, size_t nr_socks)
 {
   struct pollfd fds[nr_socks + 1];
   size_t i;
   int r;
 
-  while (!quit) {
-    for (i = 0; i < nr_socks; ++i) {
-      fds[i].fd = socks[i];
-      fds[i].events = POLLIN;
-      fds[i].revents = 0;
-    }
-    fds[i].fd = quit_fd;
+  for (i = 0; i < nr_socks; ++i) {
+    fds[i].fd = socks[i];
     fds[i].events = POLLIN;
     fds[i].revents = 0;
-
-    r = poll (fds, nr_socks + 1, -1);
-    if (r == -1) {
-      if (errno == EINTR || errno == EAGAIN)
-        continue;
-      perror ("poll");
-      exit (EXIT_FAILURE);
-    }
-
-    /* We don't even have to read quit_fd - just knowing that it has data
-     * means the signal handler ran, so we are ready to quit the loop. */
-    if (fds[i].revents & POLLIN)
-      continue;
-
-    for (i = 0; i < nr_socks; ++i) {
-      if (fds[i].revents & POLLIN)
-        accept_connection (fds[i].fd);
-    }
   }
+  fds[nr_socks].fd = quit_fd;
+  fds[nr_socks].events = POLLIN;
+  fds[nr_socks].revents = 0;
+
+  r = poll (fds, nr_socks + 1, -1);
+  if (r == -1) {
+    if (errno == EINTR || errno == EAGAIN)
+      return;
+    perror ("poll");
+    exit (EXIT_FAILURE);
+  }
+
+  /* We don't even have to read quit_fd - just knowing that it has
+   * data means the signal handler ran, so we are ready to quit the
+   * loop.
+   */
+  if (fds[nr_socks].revents & POLLIN)
+    return;
+
+  for (i = 0; i < nr_socks; ++i) {
+    if (fds[i].revents & POLLIN)
+      accept_connection (socks[i]);
+  }
+}
+
+void
+accept_incoming_connections (int *socks, size_t nr_socks)
+{
+  while (!quit)
+    check_sockets_and_quit_fd (socks, nr_socks);
 }
