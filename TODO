@@ -46,6 +46,16 @@ General ideas for improvements
 * Test and document how to run nbdkit from inetd and xinetd in
   nbdkit-service(1).
 
+* Validate that requests which are forwarded by filters are not out of
+  range.  This is harder than it looks because filters don't "know"
+  the size of the layer below (unless they call .get_size, but that
+  might be expensive).  This gets particularly tricky if you assume
+  that .get_size cannot be cached and/or might change per-connection,
+  although the rest of nbdkit doesn't behave well in that case either.
+
+* Similarly validate the filters don't forward write requests to
+  read-only plugins.
+
 Suggestions for plugins
 -----------------------
 
