@@ -92,11 +92,13 @@ enum log_to {
 
 extern struct debug_flag *debug_flags;
 extern const char *exportname;
+extern bool foreground;
 extern const char *ipaddr;
 extern enum log_to log_to;
 extern bool newstyle;
 extern const char *port;
 extern bool readonly;
+extern const char *run;
 extern const char *selinux_label;
 extern int threads;
 extern int tls;
@@ -104,9 +106,8 @@ extern const char *tls_certificates_dir;
 extern const char *tls_psk;
 extern bool tls_verify_peer;
 extern char *unixsocket;
+extern const char *user, *group;
 extern bool verbose;
-
-extern bool forked_into_background;
 
 extern struct backend *backend;
 #define for_each_backend(b) for (b = backend; b != NULL; b = b->next)
@@ -117,6 +118,23 @@ extern int quit_fd;
 extern void set_up_quit_pipe (void);
 extern void handle_quit (int sig);
 extern void set_quit (void);
+
+/* signals.c */
+extern void set_up_signals (void);
+
+/* background.c */
+extern bool forked_into_background;
+extern void fork_into_background (void);
+
+/* captive.c */
+extern void run_command (void);
+
+/* socket-activation.c */
+#define FIRST_SOCKET_ACTIVATION_FD 3 /* defined by systemd ABI */
+extern unsigned int get_socket_activation (void);
+
+/* usergroup.c */
+extern void change_user (void);
 
 /* cleanup.c */
 extern void cleanup_free (void *ptr);

@@ -37,6 +37,8 @@ EXTRA_DIST = nbdkit.syms
 sbin_PROGRAMS = nbdkit
 
 nbdkit_SOURCES = \
+	background.c \
+	captive.c \
 	cleanup.c \
 	connections.c \
 	crypto.c \
@@ -53,8 +55,11 @@ nbdkit_SOURCES = \
 	protocol.h \
 	protostrings.c \
 	quit.c \
+	signals.c \
+	socket-activation.c \
 	sockets.c \
 	threadlocal.c \
+	usergroup.c \
 	utils.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(top_srcdir)/include/nbdkit-filter.h

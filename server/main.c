@@ -39,17 +39,13 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <signal.h>
 #include <getopt.h>
 #include <limits.h>
-#include <pwd.h>
-#include <grp.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
 #include <errno.h>
 #include <assert.h>
 #include <syslog.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <pthread.h>
 
@@ -59,20 +55,11 @@
 #include "options.h"
 #include "exit-with-parent.h"
 
-#define FIRST_SOCKET_ACTIVATION_FD 3 /* defined by systemd ABI */
-
 static char *make_random_fifo (void);
 static struct backend *open_plugin_so (size_t i, const char *filename, int short_name);
 static struct backend *open_filter_so (struct backend *next, size_t i, const char *filename, int short_name);
 static void start_serving (void);
-static void set_up_signals (void);
-static void run_command (void);
-static void change_user (void);
 static void write_pidfile (void);
-static void fork_into_background (void);
-static uid_t parseuser (const char *);
-static gid_t parsegroup (const char *);
-static unsigned int get_socket_activation (void);
 static int is_config_key (const char *key, size_t len);
 
 struct debug_flag *debug_flags; /* -D */
@@ -85,7 +72,7 @@ bool newstyle = true;           /* false = -o, true = -n */
 char *pidfile;                  /* -P */
 const char *port;               /* -p */
 bool readonly;                  /* -r */
-char *run;                      /* --run */
+const char *run;                /* --run */
 bool listen_stdin;              /* -s */
 const char *selinux_label;      /* --selinux-label */
 int threads;                    /* -t */
@@ -97,9 +84,6 @@ char *unixsocket;               /* -U */
 const char *user, *group;       /* -u & -g */
 bool verbose;                   /* -v */
 unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
-
-/* True if we forked into the background (used to control log messages). */
-bool forked_into_background;
 
 /* The currently loaded plugin. */
 struct backend *backend;
@@ -885,57 +869,6 @@ start_serving (void)
 }
 
 static void
-set_up_signals (void)
-{
-  struct sigaction sa;
-
-  memset (&sa, 0, sizeof sa);
-  sa.sa_flags = SA_RESTART;
-  sa.sa_handler = handle_quit;
-  sigaction (SIGINT, &sa, NULL);
-  sigaction (SIGQUIT, &sa, NULL);
-  sigaction (SIGTERM, &sa, NULL);
-  sigaction (SIGHUP, &sa, NULL);
-
-  memset (&sa, 0, sizeof sa);
-  sa.sa_flags = SA_RESTART;
-  sa.sa_handler = SIG_IGN;
-  sigaction (SIGPIPE, &sa, NULL);
-}
-
-static void
-change_user (void)
-{
-  if (group) {
-    gid_t gid = parsegroup (group);
-
-    if (setgid (gid) == -1) {
-      perror ("setgid");
-      exit (EXIT_FAILURE);
-    }
-
-    /* Kill supplemental groups from parent process. */
-    if (setgroups (1, &gid) == -1) {
-      perror ("setgroups");
-      exit (EXIT_FAILURE);
-    }
-
-    debug ("changed group to %s", group);
-  }
-
-  if (user) {
-    uid_t uid = parseuser (user);
-
-    if (setuid (uid) == -1) {
-      perror ("setuid");
-      exit (EXIT_FAILURE);
-    }
-
-    debug ("changed user to %s", user);
-  }
-}
-
-static void
 write_pidfile (void)
 {
   int fd;
@@ -963,238 +896,6 @@ write_pidfile (void)
   }
 
   debug ("written pidfile %s", pidfile);
-}
-
-static void
-fork_into_background (void)
-{
-  pid_t pid;
-
-  if (foreground)
-    return;
-
-  pid = fork ();
-  if (pid == -1) {
-    perror ("fork");
-    exit (EXIT_FAILURE);
-  }
-
-  if (pid > 0)                  /* Parent process exits. */
-    exit (EXIT_SUCCESS);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-  chdir ("/");
-#pragma GCC diagnostic pop
-
-  /* Close stdin/stdout and redirect to /dev/null. */
-  close (0);
-  close (1);
-  open ("/dev/null", O_RDONLY);
-  open ("/dev/null", O_WRONLY);
-
-  /* If not verbose, set stderr to the same as stdout as well. */
-  if (!verbose)
-    dup2 (1, 2);
-
-  forked_into_background = true;
-  debug ("forked into background (new pid = %d)", getpid ());
-}
-
-static void
-run_command (void)
-{
-  char *url;
-  char *cmd;
-  int r;
-  pid_t pid;
-
-  if (!run)
-    return;
-
-  /* Construct an nbd "URL".  Unfortunately guestfish and qemu take
-   * different syntax, so try to guess which one we need.
-   */
-  if (strstr (run, "guestfish")) {
-    if (port)
-      r = asprintf (&url, "nbd://localhost:%s", port);
-    else if (unixsocket)
-      /* XXX escaping? */
-      r = asprintf (&url, "nbd://?socket=%s", unixsocket);
-    else
-      abort ();
-  }
-  else /* qemu */ {
-    if (port)
-      r = asprintf (&url, "nbd:localhost:%s", port);
-    else if (unixsocket)
-      r = asprintf (&url, "nbd:unix:%s", unixsocket);
-    else
-      abort ();
-  }
-  if (r == -1) {
-    perror ("asprintf");
-    exit (EXIT_FAILURE);
-  }
-
-  /* Construct the final command including shell variables. */
-  /* XXX Escaping again. */
-  r = asprintf (&cmd,
-                "nbd='%s'\n"
-                "port='%s'\n"
-                "unixsocket='%s'\n"
-                "%s",
-                url, port ? port : "", unixsocket ? unixsocket : "", run);
-  if (r == -1) {
-    perror ("asprintf");
-    exit (EXIT_FAILURE);
-  }
-
-  free (url);
-
-  /* Fork.  Captive nbdkit runs as the child process. */
-  pid = fork ();
-  if (pid == -1) {
-    perror ("fork");
-    exit (EXIT_FAILURE);
-  }
-
-  if (pid > 0) {              /* Parent process is the run command. */
-    r = system (cmd);
-    if (WIFEXITED (r))
-      r = WEXITSTATUS (r);
-    else if (WIFSIGNALED (r)) {
-      fprintf (stderr, "%s: external command was killed by signal %d\n",
-               program_name, WTERMSIG (r));
-      r = 1;
-    }
-    else if (WIFSTOPPED (r)) {
-      fprintf (stderr, "%s: external command was stopped by signal %d\n",
-               program_name, WSTOPSIG (r));
-      r = 1;
-    }
-
-    kill (pid, SIGTERM);        /* Kill captive nbdkit. */
-
-    _exit (r);
-  }
-
-  free (cmd);
-
-  debug ("forked into background (new pid = %d)", getpid ());
-}
-
-static uid_t
-parseuser (const char *id)
-{
-  struct passwd *pwd;
-  int saved_errno;
-
-  errno = 0;
-  pwd = getpwnam (id);
-
-  if (NULL == pwd) {
-    int val;
-
-    saved_errno = errno;
-
-    if (sscanf (id, "%d", &val) == 1)
-      return val;
-
-    fprintf (stderr, "%s: -u option: %s is not a valid user name or uid",
-             program_name, id);
-    if (saved_errno != 0)
-      fprintf (stderr, " (getpwnam error: %s)", strerror (saved_errno));
-    fprintf (stderr, "\n");
-    exit (EXIT_FAILURE);
-  }
-
-  return pwd->pw_uid;
-}
-
-static gid_t
-parsegroup (const char *id)
-{
-  struct group *grp;
-  int saved_errno;
-
-  errno = 0;
-  grp = getgrnam (id);
-
-  if (NULL == grp) {
-    int val;
-
-    saved_errno = errno;
-
-    if (sscanf (id, "%d", &val) == 1)
-      return val;
-
-    fprintf (stderr, "%s: -g option: %s is not a valid group name or gid",
-             program_name, id);
-    if (saved_errno != 0)
-      fprintf (stderr, " (getgrnam error: %s)", strerror (saved_errno));
-    fprintf (stderr, "\n");
-    exit (EXIT_FAILURE);
-  }
-
-  return grp->gr_gid;
-}
-
-/* Returns 0 if no socket activation, or the number of FDs.
- * See also virGetListenFDs in libvirt.org:src/util/virutil.c
- */
-static unsigned int
-get_socket_activation (void)
-{
-  const char *s;
-  unsigned int pid;
-  unsigned int nr_fds;
-  unsigned int i;
-  int fd;
-
-  s = getenv ("LISTEN_PID");
-  if (s == NULL)
-    return 0;
-  if (sscanf (s, "%u", &pid) != 1) {
-    fprintf (stderr, "%s: malformed %s environment variable (ignored)\n",
-             program_name, "LISTEN_PID");
-    return 0;
-  }
-  if (pid != getpid ()) {
-    fprintf (stderr, "%s: %s was not for us (ignored)\n",
-             program_name, "LISTEN_PID");
-    return 0;
-  }
-
-  s = getenv ("LISTEN_FDS");
-  if (s == NULL)
-    return 0;
-  if (sscanf (s, "%u", &nr_fds) != 1) {
-    fprintf (stderr, "%s: malformed %s environment variable (ignored)\n",
-             program_name, "LISTEN_FDS");
-    return 0;
-  }
-
-  /* So these are not passed to any child processes we might start. */
-  unsetenv ("LISTEN_FDS");
-  unsetenv ("LISTEN_PID");
-
-  /* So the file descriptors don't leak into child processes. */
-  for (i = 0; i < nr_fds; ++i) {
-    fd = FIRST_SOCKET_ACTIVATION_FD + i;
-    if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
-      /* If we cannot set FD_CLOEXEC then it probably means the file
-       * descriptor is invalid, so socket activation has gone wrong
-       * and we should exit.
-       */
-      fprintf (stderr, "%s: socket activation: "
-               "invalid file descriptor fd = %d: %s\n",
-               program_name, fd, strerror(errno));
-      exit (EXIT_FAILURE);
-    }
-  }
-
-  return nr_fds;
 }
 
 /* When parsing plugin and filter config key=value from the command
