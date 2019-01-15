@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
+#include <errno.h>
 #include <sys/types.h>
 
 #include "internal.h"
