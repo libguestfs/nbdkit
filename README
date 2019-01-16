@@ -61,6 +61,10 @@ To build the man pages, you will optionally need to install:
 
  - Pod::Man and Pod::Simple (Perl library)
 
+For SELinux socket labelling support:
+
+ - libselinux
+
 To run the tests:
 
  - GNU coreutils (for ‘seq’ and some other programs)
