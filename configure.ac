@@ -127,10 +127,16 @@ dnl restore CFLAGS
 CFLAGS="${acx_nbdkit_save_CFLAGS}"
 
 dnl Check for other headers, all optional.
-AC_CHECK_HEADERS([selinux/selinux.h sys/prctl.h])
+AC_CHECK_HEADERS([sys/prctl.h])
 
-dnl Check support for setsockcreatecon_raw (part of SELinux).
-AC_CHECK_LIB([selinux], [setsockcreatecon_raw], [], [:])
+dnl Check for SELinux socket labelling (optional).
+PKG_CHECK_MODULES([LIBSELINUX], [libselinux], [
+    AC_SUBST([LIBSELINUX_CFLAGS])
+    AC_SUBST([LIBSELINUX_LIBS])
+    AC_DEFINE([HAVE_LIBSELINUX],[1],[libselinux found at compile time.])
+], [
+    AC_MSG_WARN([libselinux not found, SELinux socket labelling support will be disabled.])
+])
 
 dnl Check for GnuTLS (optional, for TLS support).
 PKG_CHECK_MODULES([GNUTLS], [gnutls >= 3.3.0], [

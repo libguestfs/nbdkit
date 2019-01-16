@@ -64,9 +64,11 @@ nbdkit_CPPFLAGS = \
 nbdkit_CFLAGS = \
 	-pthread \
 	$(WARNINGS_CFLAGS) \
-	$(GNUTLS_CFLAGS)
+	$(GNUTLS_CFLAGS) \
+	$(LIBSELINUX_CFLAGS)
 nbdkit_LDADD = \
 	$(GNUTLS_LIBS) \
+	$(LIBSELINUX_LIBS) \
 	-ldl
 nbdkit_LDFLAGS = \
 	-pthread \
