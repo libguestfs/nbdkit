@@ -46,7 +46,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#ifdef HAVE_SELINUX_SELINUX_H
+#ifdef HAVE_LIBSELINUX
 #include <selinux/selinux.h>
 #endif
 
