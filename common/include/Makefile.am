@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,8 @@ TESTS = \
 	test-ispowerof2 \
 	test-iszero \
 	test-minmax \
-	test-nextnonzero
+	test-nextnonzero \
+	test-random
 check_PROGRAMS = $(TESTS)
 
 test_byte_swapping_SOURCES = test-byte-swapping.c byte-swapping.h
@@ -85,3 +86,7 @@ test_minmax_CFLAGS = $(WARNINGS_CFLAGS)
 test_nextnonzero_SOURCES = test-nextnonzero.c nextnonzero.h
 test_nextnonzero_CPPFLAGS = -I$(srcdir)
 test_nextnonzero_CFLAGS = $(WARNINGS_CFLAGS)
+
+test_random_SOURCES = test-random.c random.h
+test_random_CPPFLAGS = -I$(srcdir)
+test_random_CFLAGS = $(WARNINGS_CFLAGS)

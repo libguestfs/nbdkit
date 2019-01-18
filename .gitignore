@@ -32,6 +32,7 @@ Makefile.in
 /common/include/test-iszero
 /common/include/test-minmax
 /common/include/test-nextnonzero
+/common/include/test-random
 /compile
 /config.guess
 /config.h
