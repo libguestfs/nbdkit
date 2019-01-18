@@ -12,21 +12,36 @@ into Linux block devices.
 In addition to L<nbdkit(1)> itself, the main commands you will use
 are:
 
- nbd-client -b 512 localhost /dev/nbd0
+=over 4
+
+=item nbd-client -b 512 localhost /dev/nbd0
 
 which attaches a locally running nbdkit instance to the kernel device
 F</dev/nbd0>.  I<-b 512> can be omitted when using
 S<L<nbd-client(8)> E<ge> 3.19>.
 
- nbd-client -d /dev/nbd0
+=item nbd-client -d /dev/nbd0
 
 which detaches F</dev/nbd0>, and:
 
- nbd-client -c /dev/nbd0
+=item nbd-client -c /dev/nbd0
 
 which queries whether F</dev/nbd0> is attached or not.
 
-The L<nbd-client(8)> command must be run as root.
+=item modprobe nbd
+
+which may be needed to load the nbd client kernel module.
+
+=back
+
+The L<nbd-client(8)> and L<modprobe(8)> commands must be run as root.
+
+=head2 Warning: Do not loop mount untrusted filesystems
+
+Untrusted filesystems and untrusted disk images should not be loop
+mounted because they could contain exploits that attack your host
+kernel.  Use the tools from L<libguestfs(3)> instead since it safely
+isolates untrusted filesystems from the host.
 
 =head2 Loop mount a filesystem from a compressed file
 
@@ -119,7 +134,9 @@ L<nbdkit-plugin(3)>,
 L<loop(4)>,
 L<losetup(8)>,
 L<mount(8)>,
-L<nbd-client(8)>.
+L<nbd-client(8)>,
+L<modprobe(8)>,
+L<libguestfs(3)>, L<http://libguestfs.org>.
 
 =head1 AUTHORS
 
