@@ -90,6 +90,19 @@ if test "x$gcc_warnings" = "xyes"; then
     AC_SUBST([WARNINGS_CFLAGS])
 fi
 
+dnl Check if the compiler supports -std=c90 flag.  This is only used
+dnl during a test.  OpenBSD GCC does not support this flag so we skip
+dnl that test.
+AC_MSG_CHECKING([if the compiler supports -std=c90 for ANSI C test])
+old_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -std=c90"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+    [supports_std_c90=yes],
+    [supports_std_c90=no])
+CFLAGS="$old_CFLAGS"
+AC_MSG_RESULT([$supports_std_c90])
+AM_CONDITIONAL([CAN_TEST_ANSI_C], [test "x$supports_std_c90" = "xyes"])
+
 dnl On Haiku we must use BSD-compatibility headers to get the endian
 dnl macros we use.
 AC_MSG_CHECKING(whether OS-dependent include paths are required)

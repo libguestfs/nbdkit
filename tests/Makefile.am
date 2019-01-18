@@ -162,6 +162,7 @@ test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 
 endif HAVE_PLUGINS
 
+if CAN_TEST_ANSI_C
 # This builds a plugin using an ANSI (ISO C90) compiler to ensure that
 # the header file is compatible.  The plugin does nothing very
 # interesting, it's mainly a compile test.
@@ -184,6 +185,7 @@ test_ansi_c_plugin_la_CFLAGS = \
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_ansi_c_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared -rpath /nowhere
+endif CAN_TEST_ANSI_C
 
 if HAVE_CXX
 # This builds a plugin and a filter using the C++ compiler.  They
