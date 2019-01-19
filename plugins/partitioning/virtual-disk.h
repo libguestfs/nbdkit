@@ -104,7 +104,7 @@ extern struct file *files;
 extern size_t nr_files;
 
 extern struct regions regions;
-extern unsigned char *primary, *secondary;
+extern unsigned char *primary, *secondary, **ebr;
 
 /* Main entry point called after files array has been populated. */
 extern int create_virtual_disk_layout (void);
@@ -115,16 +115,16 @@ extern int create_virtual_disk_layout (void);
 extern int parse_guid (const char *str, char *out)
   __attribute__((__nonnull__ (1, 2)));
 
-/* Internal functions for creating MBR and GPT layouts.  These are
- * published here because the GPT code calls into the MBR code, but
- * are not meant to be called from the main plugin.
+/* Internal function for creating a single MBR PTE.  The GPT code
+ * calls this for creating the protective MBR.
  */
-extern void create_mbr_partition_table (unsigned char *out)
-  __attribute__((__nonnull__ (1)));
 extern void create_mbr_partition_table_entry (const struct region *,
                                               bool bootable, int partition_id,
                                               unsigned char *)
   __attribute__((__nonnull__ (1, 4)));
+
+/* Create MBR or GPT layout. */
+extern void create_mbr_layout (void);
 extern void create_gpt_layout (void);
 
 #endif /* NBDKIT_VIRTUAL_DISK_H */

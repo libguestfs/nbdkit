@@ -50,27 +50,125 @@
 #include "regions.h"
 #include "virtual-disk.h"
 
-/* Create the partition table. */
+static const struct region *find_file_region (size_t i, size_t *j);
+static const struct region *find_ebr_region (size_t i, size_t *j);
+
+/* Create the MBR and optionally EBRs. */
 void
-create_mbr_partition_table (unsigned char *out)
+create_mbr_layout (void)
 {
-  size_t i, j;
-
-  for (j = 0; j < nr_regions (&regions); ++j) {
-    const struct region *region = get_region (&regions, j);
-
-    if (region->type == region_file) {
-      i = region->u.i;
-      assert (i < 4);
-      create_mbr_partition_table_entry (region, i == 0,
-                                        files[i].mbr_id,
-                                        &out[0x1be + 16*i]);
-    }
-  }
+  size_t i, j = 0;
 
   /* Boot signature. */
-  out[0x1fe] = 0x55;
-  out[0x1ff] = 0xaa;
+  primary[0x1fe] = 0x55;
+  primary[0x1ff] = 0xaa;
+
+  if (nr_files <= 4) {
+    /* Basic MBR with no extended partition. */
+    for (i = 0; i < nr_files; ++i) {
+      const struct region *region = find_file_region (i, &j);
+
+      create_mbr_partition_table_entry (region, i == 0, files[i].mbr_id,
+                                        &primary[0x1be + 16*i]);
+    }
+  }
+  else {
+    struct region region;
+    const struct region *rptr, *eptr0, *eptr;
+
+    /* The first three primary partitions correspond to the first
+     * three files.
+     */
+    for (i = 0; i < 3; ++i) {
+      rptr = find_file_region (i, &j);
+      create_mbr_partition_table_entry (rptr, i == 0, files[i].mbr_id,
+                                        &primary[0x1be + 16*i]);
+    }
+
+    /* The fourth partition is an extended PTE and does not correspond
+     * to any file.  This partition starts with the first EBR, so find
+     * it.  The partition extends to the end of the disk.
+     */
+    eptr0 = find_ebr_region (3, &j);
+    region.start = eptr0->start;
+    region.end = virtual_size (&regions) - 1; /* to end of disk */
+    region.len = region.end - region.start + 1;
+    create_mbr_partition_table_entry (&region, false, 0xf, &primary[0x1ee]);
+
+    /* The remaining files are mapped to logical partitions living in
+     * the fourth extended partition.
+     */
+    for (i = 3; i < nr_files; ++i) {
+      if (i == 3)
+        eptr = eptr0;
+      else
+        eptr = find_ebr_region (i, &j);
+      rptr = find_file_region (i, &j);
+
+      /* Signature. */
+      ebr[i-3][0x1fe] = 0x55;
+      ebr[i-3][0x1ff] = 0xaa;
+
+      /* First entry in EBR contains:
+       * offset from EBR sector to the first sector of the logical partition
+       * total count of sectors in the logical partition
+       */
+      region.start = rptr->start - eptr->start;
+      region.len = rptr->len;
+      create_mbr_partition_table_entry (&region, false, files[i].mbr_id,
+                                        &ebr[i-3][0x1be]);
+
+      if (i < nr_files-1) {
+        size_t j2 = j;
+        const struct region *enext = find_ebr_region (i+1, &j2);
+        const struct region *rnext = find_file_region (i+1, &j2);
+
+        /* Second entry in the EBR contains:
+         * address of next EBR relative to extended partition
+         * total count of sectors in the next logical partition including
+         * next EBR
+         */
+        region.start = enext->start - eptr0->start;
+        region.len = rnext->end - enext->start + 1;
+        create_mbr_partition_table_entry (&region, false, 0xf,
+                                          &ebr[i-3][0x1ce]);
+      }
+    }
+  }
+}
+
+/* Find the region corresponding to file[i].
+ * j is a scratch register ensuring we only do a linear scan.
+ */
+static const struct region *
+find_file_region (size_t i, size_t *j)
+{
+  const struct region *region;
+
+  for (; *j < nr_regions (&regions); ++(*j)) {
+    region = get_region (&regions, *j);
+    if (region->type == region_file && region->u.i == i)
+      return region;
+  }
+  abort ();
+}
+
+/* Find the region corresponding to EBR of file[i] (i >= 3).
+ * j is a scratch register ensuring we only do a linear scan.
+ */
+static const struct region *
+find_ebr_region (size_t i, size_t *j)
+{
+  const struct region *region;
+
+  assert (i >= 3);
+
+  for (; *j < nr_regions (&regions); ++(*j)) {
+    region = get_region (&regions, *j);
+    if (region->type == region_data && region->u.data == ebr[i-3])
+      return region;
+  }
+  abort ();
 }
 
 static void

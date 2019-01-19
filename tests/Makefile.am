@@ -83,6 +83,7 @@ EXTRA_DIST = \
 	test-partitioning2.sh \
 	test-partitioning3.sh \
 	test-partitioning4.sh \
+	test-partitioning5.sh \
 	test-pattern.sh \
 	test-pattern-largest.sh \
 	test-pattern-largest-for-qemu.sh \
@@ -458,7 +459,8 @@ TESTS += \
 if HAVE_GUESTFISH
 TESTS += \
 	test-partitioning2.sh \
-	test-partitioning3.sh
+	test-partitioning3.sh \
+	test-partitioning5.sh
 endif HAVE_GUESTFISH
 
 # pattern plugin test.

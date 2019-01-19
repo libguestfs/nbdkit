@@ -69,6 +69,25 @@ create_virtual_disk_layout (void)
       nbdkit_error ("malloc: %m");
       return -1;
     }
+
+    if (nr_files > 4) {
+      /* The first 3 primary partitions will be real partitions, the
+       * 4th will be an extended partition, and so we need to store
+       * EBRs for nr_files-3 logical partitions.
+       */
+      ebr = malloc (sizeof (unsigned char *) * (nr_files-3));
+      if (ebr == NULL) {
+        nbdkit_error ("malloc: %m");
+        return -1;
+      }
+      for (i = 0; i < nr_files-3; ++i) {
+        ebr[i] = calloc (1, SECTOR_SIZE);
+        if (ebr[i] == NULL) {
+          nbdkit_error ("malloc: %m");
+          return -1;
+        }
+      }
+    }
   }
   else /* PARTTYPE_GPT */ {
     /* Protective MBR + PT header + PTA = 2 + GPT_PTA_LBAs */
@@ -116,6 +135,20 @@ create_virtual_disk_layout (void)
      * must always be true.
      */
     assert (IS_ALIGNED (offset, SECTOR_SIZE));
+
+    /* Logical partitions are preceeded by an EBR. */
+    if (parttype == PARTTYPE_MBR && nr_files > 4 && i >= 3) {
+      region.start = offset;
+      region.len = SECTOR_SIZE;
+      region.end = region.start + region.len - 1;
+      region.type = region_data;
+      region.u.data = ebr[i-3];
+      region.description = "EBR";
+      if (append_region (&regions, region) == -1)
+        return -1;
+
+      offset = virtual_size (&regions);
+    }
 
     /* Make sure each partition is aligned for best performance. */
     if (!IS_ALIGNED (offset, files[i].alignment)) {
@@ -207,13 +240,10 @@ create_partition_table (void)
   if (parttype == PARTTYPE_GPT)
     assert (secondary != NULL);
 
-  if (parttype == PARTTYPE_MBR) {
-    assert (nr_files <= 4);
-    create_mbr_partition_table (primary);
-  }
-  else /* parttype == PARTTYPE_GPT */ {
+  if (parttype == PARTTYPE_MBR)
+    create_mbr_layout ();
+  else /* parttype == PARTTYPE_GPT */
     create_gpt_layout ();
-  }
 
   return 0;
 }

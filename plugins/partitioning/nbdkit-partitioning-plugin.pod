@@ -27,23 +27,12 @@ access use the I<-r> flag.
 
 =head2 Partition table type
 
-You can choose either an MBR partition table, which is limited to 4
-partitions, or a GPT partition table.  In theory GPT supports an
-unlimited number of partitions.
-
-The rule for selecting the partition table type is:
+Using the C<partition-type> parameter you can choose either an MBR or
+a GPT partition table.  If this parameter is I<not> present then:
 
 =over 4
 
-=item C<partition-type=mbr> parameter on the command line
-
-⇒ MBR is selected
-
-=item C<partition-type=gpt> parameter on the command line
-
-⇒ GPT is selected
-
-=item else, number of files E<gt> 4
+=item number of files E<gt> 4
 
 ⇒ GPT
 
@@ -131,7 +120,13 @@ C<./> (absolute paths do not need modification).
 =item B<partition-type=mbr>
 
 Add an MBR (DOS-style) partition table.  The MBR format is maximally
-compatible with all clients, but only supports up to 4 partitions.
+compatible with all clients.
+
+If there are E<gt> 4 partitions then the first three files are mapped
+to primary partitions, an extended partition
+(L<https://en.wikipedia.org/wiki/Extended_boot_record>) is created as
+partition 4, and the files starting from the 4th will appear as
+partition 5 and upwards.
 
 =item B<partition-type=gpt>
 
@@ -162,10 +157,6 @@ a Linux filesystem.
 =back
 
 =head1 LIMITS
-
-This plugin only supports B<primary> MBR partitions, hence the limit
-of 4 partitions with MBR.  This might be increased in future if we
-implement support for logical/extended MBR partitions.
 
 Although this plugin can create GPT partition tables containing more
 than 128 GPT partitions (in fact, unlimited numbers of partitions),

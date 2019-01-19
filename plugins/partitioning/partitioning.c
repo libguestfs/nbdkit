@@ -82,8 +82,11 @@ size_t nr_files = 0;
 /* Virtual disk layout. */
 struct regions regions;
 
-/* Primary and secondary partition tables (secondary is only used for GPT). */
-unsigned char *primary = NULL, *secondary = NULL;
+/* Primary and secondary partition tables and extended boot records.
+ * Secondary PT is only used for GPT.  EBR array of sectors is only
+ * used for MBR with > 4 partitions and has length equal to nr_files-3.
+ */
+unsigned char *primary = NULL, *secondary = NULL, **ebr = NULL;
 
 /* Used to generate random unique partition GUIDs for GPT. */
 static struct random_state random_state;
@@ -106,12 +109,17 @@ partitioning_unload (void)
   free (files);
 
   /* We don't need to free regions.regions[].u.data because it points
-   * to either primary or secondary which we free here.
+   * to primary, secondary or ebr which we free here.
    */
   free_regions (&regions);
 
   free (primary);
   free (secondary);
+  if (ebr) {
+    for (i = 0; i < nr_files-3; ++i)
+      free (ebr[i]);
+    free (ebr);
+  }
 }
 
 static int
@@ -237,17 +245,11 @@ partitioning_config_complete (void)
   total_size = 0;
   for (i = 0; i < nr_files; ++i)
     total_size += files[i].statbuf.st_size;
-
-  if (nr_files > 4)
-    needs_gpt = true;
-  else if (total_size > MAX_MBR_DISK_SIZE)
-    needs_gpt = true;
-  else
-    needs_gpt = false;
+  needs_gpt = total_size > MAX_MBR_DISK_SIZE;
 
   /* Choose default parttype if not set. */
   if (parttype == PARTTYPE_UNSET) {
-    if (needs_gpt) {
+    if (needs_gpt || nr_files > 4) {
       parttype = PARTTYPE_GPT;
       nbdkit_debug ("picking partition type GPT");
     }
@@ -257,8 +259,8 @@ partitioning_config_complete (void)
     }
   }
   else if (parttype == PARTTYPE_MBR && needs_gpt) {
-    nbdkit_error ("MBR partition table type supports a maximum of 4 partitions "
-                  "and a maximum virtual disk size of about 2 TB, "
+    nbdkit_error ("MBR partition table type supports "
+                  "a maximum virtual disk size of about 2 TB, "
                   "but you requested %zu partition(s) "
                   "and a total size of %" PRIu64 " bytes (> %" PRIu64 ").  "
                   "Try using: partition-type=gpt",
