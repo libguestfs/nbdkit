@@ -79,6 +79,7 @@ EXTRA_DIST = \
 	test-offset2.sh \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
+	test-partition1.sh \
 	test-partitioning1.sh \
 	test-partitioning2.sh \
 	test-partitioning3.sh \
@@ -794,11 +795,7 @@ test_offset_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 TESTS += test-offset2.sh
 
 # partition filter test.
-LIBGUESTFS_TESTS += test-partition
-
-test_partition_SOURCES = test-partition.c test.h
-test_partition_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_partition_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+TESTS += test-partition1.sh
 
 # truncate filter tests.
 TESTS += \

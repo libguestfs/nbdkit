@@ -149,6 +149,8 @@ For non-essential enhancements to the test suite:
 
  - qemu-io (usually shipped with qemu)
 
+ - sfdisk (from util-linux)
+
  - socat
 
  - ss (from iproute package)
