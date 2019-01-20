@@ -85,6 +85,7 @@ EXTRA_DIST = \
 	test-partitioning3.sh \
 	test-partitioning4.sh \
 	test-partitioning5.sh \
+	test-partitioning6.sh \
 	test-pattern.sh \
 	test-pattern-largest.sh \
 	test-pattern-largest-for-qemu.sh \
@@ -456,7 +457,8 @@ test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # partitioning plugin test.
 TESTS += \
 	test-partitioning1.sh \
-	test-partitioning4.sh
+	test-partitioning4.sh \
+	test-partitioning6.sh
 if HAVE_GUESTFISH
 TESTS += \
 	test-partitioning2.sh \

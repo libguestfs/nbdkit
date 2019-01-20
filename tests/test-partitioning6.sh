@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
 
 # Test the partitioning plugin.
 #
-# Test 4: Test > 128 partitions using GPT.
+# Test 4: Test > 128 partitions using MBR.
 #
 # virtio-scsi (used by libguestfs) doesn't support more than 15
 # partitions.  In fact the only client which supports this is our own
@@ -49,7 +49,7 @@ if ! qemu-img --help >/dev/null; then
     exit 77
 fi
 
-d=partitioning4.d
+d=partitioning6.d
 rm -rf $d
 mkdir $d
 cleanup_fn rm -rf $d
@@ -68,12 +68,15 @@ done
 truncate -s 6144 $d/part.0250
 
 # Run nbdkit.
+#
+# Note we select partition 251 (not 250) because partition 4 is the
+# extended partition and everything partition following moves up by 1.
 nbdkit -f -v -D partitioning.regions=1 -U - \
              --filter=partition \
              partitioning \
              $d/part.* \
-             partition-type=gpt \
-             partition=250 \
+             partition-type=mbr \
+             partition=251 \
              --run "qemu-img convert \$nbd $d/out"
 
 # The output should be identical to partition 250.
