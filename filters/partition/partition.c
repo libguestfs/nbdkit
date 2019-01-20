@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,9 +43,11 @@
 
 #include "byte-swapping.h"
 
+#include "partition.h"
+
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
-static int partnum = -1;
+int partnum = -1;
 
 /* Called for each key=value passed on the command line. */
 static int
@@ -111,134 +113,6 @@ partition_close (void *handle)
   free (h);
 }
 
-/* Inspect the underlying partition table.  partition_prepare is
- * called before data processing.
- */
-struct mbr_partition {
-  uint8_t part_type_byte;
-  uint32_t start_sector;
-  uint32_t nr_sectors;
-};
-
-static void
-get_mbr_partition (uint8_t *sector, int i, struct mbr_partition *part)
-{
-  int offset = 0x1BE + i*0x10;
-
-  part->part_type_byte = sector[offset+4];
-  memcpy (&part->start_sector, &sector[offset+8], 4);
-  part->start_sector = le32toh (part->start_sector);
-  memcpy (&part->nr_sectors, &sector[offset+0xC], 4);
-  part->nr_sectors = le32toh (part->nr_sectors);
-}
-
-static int
-find_mbr_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
-                    struct handle *h, int64_t size, uint8_t *mbr)
-{
-  int i;
-  struct mbr_partition partition;
-
-  if (partnum > 4) {
-    nbdkit_error ("MBR logical partitions are not supported");
-    return -1;
-  }
-
-  for (i = 0; i < 4; ++i) {
-    get_mbr_partition (mbr, i, &partition);
-    if (partition.nr_sectors > 0 &&
-        partition.part_type_byte != 0 &&
-        partnum == i+1) {
-      h->offset = partition.start_sector * 512;
-      h->range = partition.nr_sectors * 512;
-      return 0;
-    }
-  }
-
-  nbdkit_error ("MBR partition %d not found", partnum);
-  return -1;
-}
-
-struct gpt_header {
-  uint32_t nr_partitions;
-  uint32_t partition_entry_size;
-};
-
-static void
-get_gpt_header (uint8_t *sector, struct gpt_header *header)
-{
-  memcpy (&header->nr_partitions, &sector[0x50], 4);
-  header->nr_partitions = le32toh (header->nr_partitions);
-  memcpy (&header->partition_entry_size, &sector[0x54], 4);
-  header->partition_entry_size = le32toh (header->partition_entry_size);
-}
-
-struct gpt_partition {
-  uint8_t partition_type_guid[16];
-  uint64_t first_lba;
-  uint64_t last_lba;
-};
-
-static void
-get_gpt_partition (uint8_t *bytes, struct gpt_partition *part)
-{
-  memcpy (&part->partition_type_guid, &bytes[0], 16);
-  memcpy (&part->first_lba, &bytes[0x20], 8);
-  part->first_lba = le64toh (part->first_lba);
-  memcpy (&part->last_lba, &bytes[0x28], 8);
-  part->last_lba = le64toh (part->last_lba);
-}
-
-static int
-find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
-                    struct handle *h, int64_t size, uint8_t *header_bytes)
-{
-  uint8_t partition_bytes[128];
-  struct gpt_header header;
-  struct gpt_partition partition;
-  int i;
-  int err;
-
-  get_gpt_header (header_bytes, &header);
-  if (partnum > header.nr_partitions) {
-    nbdkit_error ("GPT partition number out of range");
-    return -1;
-  }
-
-  if (header.partition_entry_size < 128) {
-    nbdkit_error ("GPT partition entry size is < 128 bytes");
-    return -1;
-  }
-
-  /* Check the disk is large enough to contain the partition table
-   * array (twice) plus other GPT overheads.  Otherwise it is likely
-   * that the GPT header is bogus.
-   */
-  if (size < INT64_C(3*512) +
-      INT64_C(2) * header.nr_partitions * header.partition_entry_size) {
-    nbdkit_error ("GPT partition table is too large for this disk");
-    return -1;
-  }
-
-  for (i = 0; i < header.nr_partitions; ++i) {
-    /* We already checked these are within bounds above. */
-    if (next_ops->pread (nxdata, partition_bytes, sizeof partition_bytes,
-                         2*512 + i*header.partition_entry_size, 0, &err) == -1)
-      return -1;
-    get_gpt_partition (partition_bytes, &partition);
-    if (memcmp (partition.partition_type_guid,
-                "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16) != 0 &&
-        partnum == i+1) {
-      h->offset = partition.first_lba * 512;
-      h->range = (1 + partition.last_lba - partition.first_lba) * 512;
-      return 0;
-    }
-  }
-
-  nbdkit_error ("GPT partition %d not found", partnum);
-  return -1;
-}
-
 static int
 partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle)
@@ -264,10 +138,12 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Is it GPT? */
   if (size >= 2 * 34 * 512 && memcmp (&lba01[512], "EFI PART", 8) == 0)
-    r = find_gpt_partition (next_ops, nxdata, h, size, &lba01[512]);
+    r = find_gpt_partition (next_ops, nxdata, size, &lba01[512],
+                            &h->offset, &h->range);
   /* Is it MBR? */
   else if (lba01[0x1fe] == 0x55 && lba01[0x1ff] == 0xAA)
-    r = find_mbr_partition (next_ops, nxdata, h, size, lba01);
+    r = find_mbr_partition (next_ops, nxdata, size, lba01,
+                            &h->offset, &h->range);
   else {
     nbdkit_error ("disk does not contain MBR or GPT partition table signature");
     r = -1;
@@ -275,9 +151,9 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (r == -1)
     return -1;
 
-  /* The find_*_partition functions set h->offset & h->range in the
-   * handle to point to the partition boundaries.  However we
-   * additionally check that they are inside the underlying disk.
+  /* The find_*_partition functions set h->offset & h->range to the
+   * partition boundaries.  We additionally check that they are inside
+   * the underlying disk.
    */
   if (h->offset < 0 || h->range < 0 || h->offset + h->range > size) {
     nbdkit_error ("partition is outside the disk");

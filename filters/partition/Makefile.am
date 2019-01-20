@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,9 @@ filter_LTLIBRARIES = nbdkit-partition-filter.la
 
 nbdkit_partition_filter_la_SOURCES = \
 	partition.c \
+	partition.h \
+	partition-gpt.c \
+	partition-mbr.c \
 	$(top_srcdir)/include/nbdkit-filter.h
 
 nbdkit_partition_filter_la_CPPFLAGS = \
