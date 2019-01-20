@@ -60,7 +60,7 @@ static struct backend *open_plugin_so (size_t i, const char *filename, int short
 static struct backend *open_filter_so (struct backend *next, size_t i, const char *filename, int short_name);
 static void start_serving (void);
 static void write_pidfile (void);
-static int is_config_key (const char *key, size_t len);
+static bool is_config_key (const char *key, size_t len);
 
 struct debug_flag *debug_flags; /* -D */
 bool exit_with_parent;          /* --exit-with-parent */
@@ -899,14 +899,10 @@ write_pidfile (void)
 }
 
 /* When parsing plugin and filter config key=value from the command
- * line, check that the key is a simple alphanumeric with period,
- * underscore or dash.
- *
- * Note this doesn't return an error.  If the key is not valid then we
- * return false and the parsing code will assume that this is a bare
- * value instead.
+ * line, is the key a simple alphanumeric with period, underscore or
+ * dash?
  */
-static int
+static bool
 is_config_key (const char *key, size_t len)
 {
   static const char allowed_first[] =
@@ -919,14 +915,14 @@ is_config_key (const char *key, size_t len)
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
   if (len == 0)
-    return 0;
+    return false;
 
   if (strchr (allowed_first, key[0]) == NULL)
-    return 0;
+    return false;
 
   /* This works in context of the caller since key[len] == '='. */
   if (strspn (key, allowed) != len)
-    return 0;
+    return false;
 
-  return 1;
+  return true;
 }
