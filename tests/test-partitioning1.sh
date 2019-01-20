@@ -77,7 +77,25 @@ nbdkit -f -v -D partitioning.regions=1 -U - \
 # Contents of partitioning1.out should be identical to file-data.
 cmp file-data partitioning1.out
 
-# Same test with GPT and more partitions.
+# Same test with > 4 MBR partitions.
+# Note we select partition 6 because partition 4 is the extended partition.
+nbdkit -f -v -D partitioning.regions=1 -U - \
+       --filter=partition \
+       partitioning \
+       partitioning1-p1 \
+       partitioning1-p2 \
+       partitioning1-p3 \
+       partitioning1-p4 \
+       file-data \
+       partitioning1-p5 \
+       partitioning1-p6 \
+       partition-type=mbr \
+       partition=6 \
+       --run 'qemu-img convert $nbd partitioning1.out'
+
+cmp file-data partitioning1.out
+
+# Same test with GPT.
 nbdkit -f -v -D partitioning.regions=1 -U - \
        --filter=partition \
        partitioning \

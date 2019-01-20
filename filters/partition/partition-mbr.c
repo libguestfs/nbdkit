@@ -36,13 +36,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
+#include <errno.h>
 
 #include <nbdkit-filter.h>
 
 #include "byte-swapping.h"
+#include "isaligned.h"
 
 #include "partition.h"
+
+/* See also linux.git/block/partitions/msdos.c:is_extended_partition */
+#define is_extended(byte) ((byte) == 0x5 || (byte) == 0xf || (byte) == 0x85)
 
 struct mbr_partition {
   uint8_t part_type_byte;
@@ -69,20 +75,117 @@ find_mbr_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   int i;
   struct mbr_partition partition;
+  uint32_t ep_start_sector, ep_nr_sectors;
+  uint64_t ebr, next_ebr;
+  uint8_t sector[SECTOR_SIZE];
 
-  if (partnum > 4) {
-    nbdkit_error ("MBR logical partitions are not supported");
-    return -1;
+  /* Primary partition. */
+  if (partnum <= 4) {
+    for (i = 0; i < 4; ++i) {
+      get_mbr_partition (mbr, i, &partition);
+      if (partition.nr_sectors > 0 &&
+          partition.part_type_byte != 0 &&
+          !is_extended (partition.part_type_byte) &&
+          partnum == i+1) {
+        *offset_r = partition.start_sector * SECTOR_SIZE;
+        *range_r = partition.nr_sectors * SECTOR_SIZE;
+        return 0;
+      }
+    }
+
+    /* Not found falls through to error case at the end of the function. */
   }
 
-  for (i = 0; i < 4; ++i) {
-    get_mbr_partition (mbr, i, &partition);
-    if (partition.nr_sectors > 0 &&
-        partition.part_type_byte != 0 &&
-        partnum == i+1) {
-      *offset_r = partition.start_sector * SECTOR_SIZE;
-      *range_r = partition.nr_sectors * SECTOR_SIZE;
-      return 0;
+  /* Logical partition. */
+  else {
+    /* Find the extended partition in the primary partition table. */
+    for (i = 0; i < 4; ++i) {
+      get_mbr_partition (mbr, i, &partition);
+      if (partition.nr_sectors > 0 &&
+          is_extended (partition.part_type_byte)) {
+        goto found_extended;
+      }
+    }
+    nbdkit_error ("MBR logical partition selected, "
+                  "but there is no extended partition in the partition table");
+    return -1;
+
+  found_extended:
+    ep_start_sector = partition.start_sector;
+    ep_nr_sectors = partition.nr_sectors;
+    ebr = ep_start_sector * (uint64_t)SECTOR_SIZE;
+
+    /* This loop will terminate eventually because we only accept
+     * links which strictly increase the EBR pointer.  There are valid
+     * partition tables which do odd things like arranging the
+     * partitions in reverse order, but we will not accept them here.
+     */
+    for (i = 5; ; ++i) {
+      /* Check that the ebr is aligned and pointing inside the disk
+       * and doesn't point to the MBR.
+       */
+      if (!IS_ALIGNED (ebr, SECTOR_SIZE) ||
+          ebr < SECTOR_SIZE || ebr >= size-SECTOR_SIZE) {
+        nbdkit_error ("invalid EBR chain: "
+                      "next EBR boot sector is located outside disk boundary");
+        return -1;
+      }
+
+      /* Read the EBR sector. */
+      nbdkit_debug ("partition: reading EBR at %" PRIi64, ebr);
+      if (next_ops->pread (nxdata, sector, sizeof sector, ebr, 0,
+                           &errno) == -1)
+        return -1;
+
+      if (partnum == i) {
+        uint64_t offset, range;
+
+        /* First entry in EBR points to the logical partition. */
+        get_mbr_partition (sector, 0, &partition);
+
+        /* The first entry start sector is relative to the EBR. */
+        offset = ebr + partition.start_sector * (uint64_t)SECTOR_SIZE;
+        range = partition.nr_sectors * (uint64_t)SECTOR_SIZE;
+
+        /* Logical partition cannot be before the corresponding EBR,
+         * and it cannot extend beyond the enclosing extended
+         * partition.
+         */
+        if (offset <= ebr ||
+            offset + range >
+            ((uint64_t)ep_start_sector + ep_nr_sectors) * SECTOR_SIZE) {
+          nbdkit_error ("logical partition start or size out of range "
+                        "(offset=%" PRIu64 ", range=%" PRIu64 ", "
+                        "ep:startsect=%" PRIu32 ", ep:nrsects=%" PRIu32 ")",
+                        offset, range, ep_start_sector, ep_nr_sectors);
+          return -1;
+        }
+        *offset_r = offset;
+        *range_r = range;
+        return 0;
+      }
+
+      /* Second entry in EBR links to the next EBR. */
+      get_mbr_partition (sector, 1, &partition);
+
+      /* All zeroes means the end of the chain. */
+      if (partition.start_sector == 0 && partition.nr_sectors == 0)
+        break;
+
+      /* The second entry start sector is relative to the start to the
+       * extended partition.
+       */
+      next_ebr =
+        ((uint64_t)ep_start_sector + partition.start_sector) * SECTOR_SIZE;
+
+      /* Make sure the next EBR > current EBR. */
+      if (next_ebr <= ebr) {
+        nbdkit_error ("invalid EBR chain: "
+                      "next EBR %" PRIu64 " <= current EBR %" PRIu64,
+                      next_ebr, ebr);
+        return -1;
+      }
+      ebr = next_ebr;
     }
   }
 

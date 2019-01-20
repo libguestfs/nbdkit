@@ -19,11 +19,6 @@ This works like the C<qemu-nbd -P> option.
 The opposite of this filter is L<nbdkit-partitioning-plugin(1)> which
 adds a virtual partition table to a file or files.
 
-=head1 NOTE
-
-Only MBR primary partitions and GPT partition tables are supported.
-MBR logical partitions are B<not> supported.
-
 =head1 PARAMETERS
 
 =over 4
