@@ -119,14 +119,14 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   struct handle *h = handle;
   int64_t size;
-  uint8_t lba01[1024];          /* LBA 0 and 1 */
+  uint8_t lba01[2*SECTOR_SIZE]; /* LBA 0 and 1 */
   int r;
   int err;
 
   size = next_ops->get_size (nxdata);
   if (size == -1)
     return -1;
-  if (size < 1024) {
+  if (size < 2 * SECTOR_SIZE) {
     nbdkit_error ("disk is too small to be a partitioned disk");
     return -1;
   }
@@ -137,8 +137,9 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
 
   /* Is it GPT? */
-  if (size >= 2 * 34 * 512 && memcmp (&lba01[512], "EFI PART", 8) == 0)
-    r = find_gpt_partition (next_ops, nxdata, size, &lba01[512],
+  if (size >= 2 * 34 * SECTOR_SIZE &&
+      memcmp (&lba01[SECTOR_SIZE], "EFI PART", 8) == 0)
+    r = find_gpt_partition (next_ops, nxdata, size, &lba01[SECTOR_SIZE],
                             &h->offset, &h->range);
   /* Is it MBR? */
   else if (lba01[0x1fe] == 0x55 && lba01[0x1ff] == 0xAA)

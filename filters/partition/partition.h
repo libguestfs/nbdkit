@@ -36,6 +36,8 @@
 
 #include <nbdkit-filter.h>
 
+#define SECTOR_SIZE 512
+
 extern int partnum;
 
 extern int find_mbr_partition (struct nbdkit_next_ops *next_ops, void *nxdata,

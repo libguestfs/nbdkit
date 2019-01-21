@@ -80,8 +80,8 @@ find_mbr_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (partition.nr_sectors > 0 &&
         partition.part_type_byte != 0 &&
         partnum == i+1) {
-      *offset_r = partition.start_sector * 512;
-      *range_r = partition.nr_sectors * 512;
+      *offset_r = partition.start_sector * SECTOR_SIZE;
+      *range_r = partition.nr_sectors * SECTOR_SIZE;
       return 0;
     }
   }

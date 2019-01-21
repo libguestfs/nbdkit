@@ -100,7 +100,7 @@ find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
    * array (twice) plus other GPT overheads.  Otherwise it is likely
    * that the GPT header is bogus.
    */
-  if (size < INT64_C(3*512) +
+  if (size < INT64_C(3)*SECTOR_SIZE +
       INT64_C(2) * header.nr_partitions * header.partition_entry_size) {
     nbdkit_error ("GPT partition table is too large for this disk");
     return -1;
@@ -109,14 +109,14 @@ find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
   for (i = 0; i < header.nr_partitions; ++i) {
     /* We already checked these are within bounds above. */
     if (next_ops->pread (nxdata, partition_bytes, sizeof partition_bytes,
-                         2*512 + i*header.partition_entry_size, 0, &err) == -1)
+                         2*SECTOR_SIZE + i*header.partition_entry_size, 0, &err) == -1)
       return -1;
     get_gpt_partition (partition_bytes, &partition);
     if (memcmp (partition.partition_type_guid,
                 "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16) != 0 &&
         partnum == i+1) {
-      *offset_r = partition.first_lba * 512;
-      *range_r = (1 + partition.last_lba - partition.first_lba) * 512;
+      *offset_r = partition.first_lba * SECTOR_SIZE;
+      *range_r = (1 + partition.last_lba - partition.first_lba) * SECTOR_SIZE;
       return 0;
     }
   }
