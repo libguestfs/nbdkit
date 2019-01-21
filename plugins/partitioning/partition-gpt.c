@@ -210,7 +210,7 @@ create_gpt_protective_mbr (unsigned char *out)
   region.end = end;
   region.len = region.end - region.start + 1;
 
-  create_mbr_partition_table_entry (&region, 0, 0xee, &out[0x1be]);
+  create_mbr_partition_table_entry (&region, false, 0xee, &out[0x1be]);
 
   /* Boot signature. */
   out[0x1fe] = 0x55;

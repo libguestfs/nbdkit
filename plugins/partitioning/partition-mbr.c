@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <inttypes.h>
 #include <assert.h>
@@ -84,7 +85,7 @@ chs_too_large (unsigned char *out)
 
 void
 create_mbr_partition_table_entry (const struct region *region,
-                                  int bootable, int partition_id,
+                                  bool bootable, int partition_id,
                                   unsigned char *out)
 {
   uint64_t start_sector, nr_sectors;

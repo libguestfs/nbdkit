@@ -34,6 +34,7 @@
 #ifndef NBDKIT_VIRTUAL_DISK_H
 #define NBDKIT_VIRTUAL_DISK_H
 
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -121,7 +122,7 @@ extern int parse_guid (const char *str, char *out)
 extern void create_mbr_partition_table (unsigned char *out)
   __attribute__((__nonnull__ (1)));
 extern void create_mbr_partition_table_entry (const struct region *,
-                                              int bootable, int partition_id,
+                                              bool bootable, int partition_id,
                                               unsigned char *)
   __attribute__((__nonnull__ (1, 4)));
 extern void create_gpt_layout (void);

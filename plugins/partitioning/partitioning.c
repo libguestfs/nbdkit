@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
@@ -225,7 +226,7 @@ partitioning_config_complete (void)
 {
   size_t i;
   uint64_t total_size;
-  int needs_gpt;
+  bool needs_gpt;
 
   /* Not enough / too many files? */
   if (nr_files == 0) {
@@ -238,11 +239,11 @@ partitioning_config_complete (void)
     total_size += files[i].statbuf.st_size;
 
   if (nr_files > 4)
-    needs_gpt = 1;
+    needs_gpt = true;
   else if (total_size > MAX_MBR_DISK_SIZE)
-    needs_gpt = 1;
+    needs_gpt = true;
   else
-    needs_gpt = 0;
+    needs_gpt = false;
 
   /* Choose default parttype if not set. */
   if (parttype == PARTTYPE_UNSET) {
