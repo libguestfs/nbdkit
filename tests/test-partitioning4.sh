@@ -43,15 +43,6 @@ source ./functions.sh
 set -e
 set -x
 
-# Check if the printf utility is available.  This is probably using
-# the bash builtin (not the one from coreutils) which does not
-# understand --flags, so we have to test it using a dummy format
-# string.
-if ! printf ""; then
-    echo "$0: missing or broken printf"
-    exit 77
-fi
-
 # Test that qemu-img works
 if ! qemu-img --help >/dev/null; then
     echo "$0: missing or broken qemu-img"
