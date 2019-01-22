@@ -1364,7 +1364,7 @@ raw_send (struct connection *conn, const void *vbuf, size_t len)
   ssize_t r;
 
   while (len > 0) {
-    r = send (sock, buf, len, 0);
+    r = write (sock, buf, len);
     if (r == -1) {
       if (errno == EINTR || errno == EAGAIN)
         continue;
@@ -1389,7 +1389,7 @@ raw_recv (struct connection *conn, void *vbuf, size_t len)
   bool first_read = true;
 
   while (len > 0) {
-    r = recv (sock, buf, len, 0);
+    r = read (sock, buf, len);
     if (r == -1) {
       if (errno == EINTR || errno == EAGAIN)
         continue;
