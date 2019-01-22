@@ -80,6 +80,7 @@ EXTRA_DIST = \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
 	test-partition1.sh \
+	test-partition2.sh \
 	test-partitioning1.sh \
 	test-partitioning2.sh \
 	test-partitioning3.sh \
