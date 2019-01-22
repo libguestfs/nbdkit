@@ -795,7 +795,9 @@ test_offset_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 TESTS += test-offset2.sh
 
 # partition filter test.
-TESTS += test-partition1.sh
+TESTS += \
+	test-partition1.sh \
+	test-partition2.sh
 
 # truncate filter tests.
 TESTS += \
