@@ -96,6 +96,7 @@ EXTRA_DIST = \
 	test-shebang-ruby.sh \
 	test-shell.sh \
 	test-single.sh \
+	test-single-from-file.sh \
 	test-start.sh \
 	test-random-sock.sh \
 	test-tls.sh \
@@ -145,6 +146,7 @@ TESTS += \
 	test-dump-plugin.sh \
 	test-start.sh \
 	test-single.sh \
+	test-single-from-file.sh \
 	test-captive.sh \
 	test-random-sock.sh \
 	test-tls.sh \
