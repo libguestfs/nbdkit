@@ -109,7 +109,8 @@ find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
   for (i = 0; i < header.nr_partitions; ++i) {
     /* We already checked these are within bounds above. */
     if (next_ops->pread (nxdata, partition_bytes, sizeof partition_bytes,
-                         2*SECTOR_SIZE + i*header.partition_entry_size, 0, &err) == -1)
+                         2*SECTOR_SIZE + i*header.partition_entry_size, 0,
+                         &err) == -1)
       return -1;
     get_gpt_partition (partition_bytes, &partition);
     if (memcmp (partition.partition_type_guid,
