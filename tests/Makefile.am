@@ -801,7 +801,7 @@ TESTS += test-offset2.sh
 TESTS += test-partition1.sh
 if HAVE_GUESTFISH
 TESTS += test-partition2.sh
-endif
+endif HAVE_GUESTFISH
 
 # truncate filter tests.
 TESTS += \
