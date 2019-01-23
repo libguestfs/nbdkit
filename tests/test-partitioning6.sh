@@ -49,6 +49,14 @@ if ! qemu-img --help >/dev/null; then
     exit 77
 fi
 
+# This test requires the partitioning plugin to open at least 768
+# files (say 800 to make it a round number).  On OpenBSD the limit on
+# open files is set to 512 and so the test fails.
+if [ $(ulimit -n) -lt 800 ]; then
+    echo "$0: ulimit open files is too low for this test"
+    exit 77
+fi
+
 d=partitioning6.d
 rm -rf $d
 mkdir $d
