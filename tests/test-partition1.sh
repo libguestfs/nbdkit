@@ -108,7 +108,7 @@ test dos 4 <<'EOF'
 16384 16383 L -
 EOF
 
-# MBR with 3 primary partitions and 2 extended partitions.
+# MBR with 3 primary partitions and 2 logical partitions.
 # Ignore partition 4 which is the extended partition.
 test dos 6 4 <<'EOF'
 2048 2047 L -
