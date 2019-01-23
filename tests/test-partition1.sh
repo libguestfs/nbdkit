@@ -85,6 +85,7 @@ test ()
     done
 }
 
+# Regular MBR with 1-4 primary partitions.
 test dos 1 <<'EOF'
 2048 1023 L -
 EOF
@@ -107,6 +108,8 @@ test dos 4 <<'EOF'
 16384 16383 L -
 EOF
 
+# MBR with 3 primary partitions and 2 extended partitions.
+# Ignore partition 4 which is the extended partition.
 test dos 6 4 <<'EOF'
 2048 2047 L -
 4096 4095 L -
@@ -116,6 +119,7 @@ test dos 6 4 <<'EOF'
 18000 999 L -
 EOF
 
+# As above but the extended partition is 1.
 test dos 6 1 <<'EOF'
 16384 16383 E -
 2048 2047 L -
@@ -125,6 +129,13 @@ test dos 6 1 <<'EOF'
 18000 999 L -
 EOF
 
+# MBR also allows missing partitions.  This disk has only partition 2.
+# (Partition 1 must be ignored since it is missing.)
+test dos 2 1 <<'EOF'
+disk2: start=1024 size=1023 type=83
+EOF
+
+# Regular GPT with 1-6 partitions.
 test gpt 1 <<'EOF'
 2048 1023 L -
 EOF
