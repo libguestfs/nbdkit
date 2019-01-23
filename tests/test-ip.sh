@@ -40,11 +40,7 @@ set -e
 requires ss --version
 requires ip -V
 requires qemu-img --version
-
-if ! qemu-img --help | grep -- --image-opts; then
-    echo "$0: 'qemu-img' command does not have the --image-opts option"
-    exit 77
-fi
+requires qemu-img info --image-opts driver=file,filename=functions.sh
 
 rm -f ip.pid ipv4.out ipv6.out
 cleanup_fn rm -f ip.pid ipv4.out ipv6.out
