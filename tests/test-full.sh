@@ -37,15 +37,11 @@
 source ./functions.sh
 set -e
 
+requires qemu-io --version
+
 files="full.pid full.sock full.out"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
 
 # Run nbdkit with the full plugin.
 start_nbdkit -P full.pid -U full.sock full size=1M

@@ -37,15 +37,11 @@
 source ./functions.sh
 set -e
 
+requires qemu-io --version
+
 files="pattern-largest-for-qemu.out pattern-largest-for-qemu.pid pattern-largest-for-qemu.sock"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
 
 # Run nbdkit with pattern plugin.
 # size = (2^63-1) & ~511 which is the largest supported by qemu.

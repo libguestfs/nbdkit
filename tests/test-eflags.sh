@@ -45,16 +45,13 @@
 source ./functions.sh
 set -e
 
-if ! socat -h >/dev/null; then
-    echo "$0: 'socat' command not available"
-    exit 77
-fi
+requires socat -h
 
 # Check 'od' command exists.
-if ! od </dev/null >/dev/null; then
-    echo "$0: 'od' command not available"
-    exit 77
-fi
+#
+# Note that requires redirects stdin/stdout to /dev/null which
+# prevents od from hanging in this test.
+requires od
 
 files="eflags.out"
 rm -f $files

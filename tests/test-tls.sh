@@ -35,15 +35,9 @@ source ./functions.sh
 set -e
 set -x
 
-# Don't fail if certain commands aren't available.
-if ! ss --version; then
-    echo "$0: 'ss' command not available"
-    exit 77
-fi
-if ! command -v qemu-img > /dev/null; then
-    echo "$0: 'qemu-img' command not available"
-    exit 77
-fi
+requires ss --version
+requires qemu-img --version
+
 if ! qemu-img --help | grep -- --object; then
     echo "$0: 'qemu-img' command does not have the --object option"
     exit 77

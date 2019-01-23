@@ -37,15 +37,11 @@ source ./functions.sh
 set -e
 set -x
 
+requires qemu-io --version
+
 files="data-file.out data-file.pid data-file.sock data-hello.txt"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
 
 rm -f data-hello.txt
 for i in {0..1000}; do

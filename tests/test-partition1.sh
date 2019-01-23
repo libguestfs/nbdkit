@@ -35,28 +35,14 @@ source ./functions.sh
 set -e
 set -x
 
+requires sfdisk --help
+requires test -r /dev/urandom
+requires qemu-img --version
+
 d="partition1.d"
 rm -rf $d
 cleanup_fn rm -rf $d
 mkdir $d
-
-# Test that sfdisk is available and working.
-if ! sfdisk --help >/dev/null; then
-    echo "$0: missing or broken sfdisk"
-    exit 77
-fi
-
-# Test that /dev/urandom exists and can be read.
-if ! test -r /dev/urandom; then
-    echo "$0: mising or unreadable /dev/urandom"
-    exit 77
-fi
-
-# Test that qemu-img is available and working.
-if ! qemu-img --help >/dev/null; then
-    echo "$0: missing or broken qemu-img"
-    exit 77
-fi
 
 test ()
 {

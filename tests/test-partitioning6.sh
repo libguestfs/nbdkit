@@ -43,11 +43,7 @@ source ./functions.sh
 set -e
 set -x
 
-# Test that qemu-img works
-if ! qemu-img --help >/dev/null; then
-    echo "$0: missing or broken qemu-img"
-    exit 77
-fi
+requires qemu-img --version
 
 # This test requires the partitioning plugin to open at least 768
 # files (say 800 to make it a round number).  On OpenBSD the limit on

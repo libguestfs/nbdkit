@@ -37,9 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
-files="data-base64.out data-base64.pid data-base64.sock"
-rm -f $files
-cleanup_fn rm -f $files
+requires qemu-io --version
 
 # Test if the base64 parameter is supported in this build.
 if ! nbdkit data --dump-plugin | grep -sq "data_base64=yes"; then
@@ -47,11 +45,9 @@ if ! nbdkit data --dump-plugin | grep -sq "data_base64=yes"; then
     exit 77
 fi
 
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
+files="data-base64.out data-base64.pid data-base64.sock"
+rm -f $files
+cleanup_fn rm -f $files
 
 # Run nbdkit.
 start_nbdkit -P data-base64.pid -U data-base64.sock \

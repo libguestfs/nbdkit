@@ -35,15 +35,8 @@ source ./functions.sh
 set -e
 set -x
 
-if ! socat -h; then
-    echo "$0: 'socat' command not available"
-    exit 77
-fi
-
-if ! qemu-img --help >/dev/null; then
-    echo "$0: 'qemu-img' command not available"
-    exit 77
-fi
+requires socat -h
+requires qemu-img --version
 
 files="single.sock single.disk"
 rm -f $files

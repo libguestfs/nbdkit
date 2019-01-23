@@ -35,11 +35,7 @@ source ./functions.sh
 set -x
 set -e
 
-# Check qemu-img exists.
-if ! qemu-img --version; then
-    echo "$0: missing qemu-img"
-    exit 77
-fi
+requires qemu-img --version
 
 files="test-zero.out"
 rm -f $files

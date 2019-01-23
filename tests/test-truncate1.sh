@@ -37,15 +37,11 @@ source ./functions.sh
 set -e
 set -x
 
+requires qemu-io --version
+
 files="truncate1.out truncate1.pid truncate1.sock"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
 
 # Run nbdkit with pattern plugin and truncate filter in front.
 start_nbdkit -P truncate1.pid -U truncate1.sock \

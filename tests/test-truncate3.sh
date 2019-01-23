@@ -38,15 +38,11 @@ source ./functions.sh
 set -e
 set -x
 
+requires qemu-img --version
+
 files="truncate3.out truncate3.pid truncate3.sock"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-img works
-if ! qemu-img --help >/dev/null; then
-    echo "$0: missing or broken qemu-img"
-    exit 77
-fi
 
 # Run nbdkit with pattern plugin and truncate filter in front.
 start_nbdkit -P truncate3.pid -U truncate3.sock \

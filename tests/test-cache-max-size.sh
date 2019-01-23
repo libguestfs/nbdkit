@@ -36,22 +36,10 @@ set -e
 set -x
 
 # Check that this is a Linux-like system supporting /proc/$pid/fd.
-if ! test -d /proc/self/fd; then
-    echo "$0: not a Linux-like system supporting /proc/\$pid/fd"
-    exit 77
-fi
-
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
-
+requires test -d /proc/self/fd
+requires qemu-io --version
 # Need the stat command from coreutils.
-if ! stat --version >/dev/null; then
-    echo "$0: missing or broken stat command"
-    exit 77
-fi
+requires stat --version
 
 d=cache-max-size.d
 rm -rf $d

@@ -37,15 +37,11 @@ source ./functions.sh
 set -e
 set -x
 
+requires qemu-io --version
+
 files="offset2.out offset2.pid offset2.sock"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
 
 # Run nbdkit with pattern plugin and offset filter in front.
 # 8070450532247927809 = 7E - 1023

@@ -34,14 +34,8 @@
 source ./functions.sh
 
 # Check file-data was created by Makefile and qemu-io exists.
-if ! test -f file-data; then
-    echo "$0: missing file-data"
-    exit 77
-fi
-if ! qemu-io --version; then
-    echo "$0: missing qemu-io"
-    exit 77
-fi
+requires test -f file-data
+requires qemu-io --version
 
 cleanup_fn rm -f test-parallel-file.data test-parallel-file.out
 

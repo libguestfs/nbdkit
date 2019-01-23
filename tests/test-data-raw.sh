@@ -37,15 +37,11 @@ source ./functions.sh
 set -e
 set -x
 
+requires qemu-io --version
+
 files="data-raw.out data-raw.pid data-raw.sock"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
 
 # Run nbdkit.
 start_nbdkit -P data-raw.pid -U data-raw.sock --export "" \

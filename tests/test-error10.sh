@@ -35,11 +35,7 @@ source ./functions.sh
 set -e
 set -x
 
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
+requires qemu-io --version
 
 files="error10.sock error10.pid"
 rm -f $files

@@ -37,26 +37,17 @@
 source ./functions.sh
 set -e
 
-rm -f ip.pid ipv4.out ipv6.out
-cleanup_fn rm -f ip.pid ipv4.out ipv6.out
+requires ss --version
+requires ip -V
+requires qemu-img --version
 
-# Don't fail if certain commands aren't available.
-if ! ss --version; then
-    echo "$0: 'ss' command not available"
-    exit 77
-fi
-if ! command -v qemu-img; then
-    echo "$0: 'qemu-img' command not available"
-    exit 77
-fi
 if ! qemu-img --help | grep -- --image-opts; then
     echo "$0: 'qemu-img' command does not have the --image-opts option"
     exit 77
 fi
-if ! ip -V; then
-    echo "$0: 'ip' command not available"
-    exit 77
-fi
+
+rm -f ip.pid ipv4.out ipv6.out
+cleanup_fn rm -f ip.pid ipv4.out ipv6.out
 
 # Find an unused port to listen on.
 for port in {49152..65535}; do

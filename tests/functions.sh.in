@@ -1,7 +1,7 @@
 # nbdkit
 # Common functions used by the tests.
 # @configure_input@
-# Copyright (C) 2017-2018 Red Hat Inc.
+# Copyright (C) 2017-2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,21 @@ _run_cleanup_hooks ()
     exit $status
 }
 trap _run_cleanup_hooks INT QUIT TERM EXIT ERR
+
+# requires program [args]
+#
+# Check that ‘program [args]’ works.  If not, skip the test.
+# For example to check that qemu-img is available, do:
+#
+# requires qemu-img --version
+requires ()
+{
+    ( "$@" ) </dev/null >/dev/null 2>&1 || {
+        echo "$0: ‘$*’ failed with error code $?"
+        echo "$0: test prerequisite is missing or not working"
+        exit 77
+    }
+}
 
 # start_nbdkit -P pidfile args...
 #

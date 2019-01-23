@@ -39,15 +39,11 @@ source ./functions.sh
 set -e
 set -x
 
+requires qemu-img --version
+
 files="partitioning1.out partitioning1-p1 partitioning1-p2 partitioning1-p3 partitioning1-p4 partitioning1-p5 partitioning1-p6"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-img works
-if ! qemu-img --help >/dev/null; then
-    echo "$0: missing or broken qemu-img"
-    exit 77
-fi
 
 # Create some odd-sized partitions.  These exist to test alignment and
 # padding.

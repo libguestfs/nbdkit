@@ -35,11 +35,7 @@ source ./functions.sh
 set -e
 set -x
 
-# Test that qemu-img is available and working.
-if ! qemu-img --help >/dev/null; then
-    echo "$0: missing or broken qemu-img"
-    exit 77
-fi
+requires qemu-img --version
 
 files="partition2.log"
 rm -f $files

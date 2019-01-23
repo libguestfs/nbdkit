@@ -40,15 +40,11 @@ source ./functions.sh
 set -e
 set -x
 
+requires mke2fs -V
+
 files="partitioning2.pid partitioning2.sock partitioning2.fs partitioning2.p1 partitioning2.p3"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that mke2fs works
-if ! mke2fs -V; then
-    echo "$0: missing or broken mke2fs"
-    exit 77
-fi
 
 # Create partitions before and after.
 truncate -s 1 partitioning2.p1
