@@ -65,10 +65,6 @@ For SELinux socket labelling support:
 
  - libselinux
 
-To run the tests:
-
- - GNU coreutils (for ‘seq’ and some other programs)
-
 For the gzip plugin:
 
  - zlib
@@ -143,15 +139,17 @@ To test for memory leaks (‘make check-valgrind’):
 
 For non-essential enhancements to the test suite:
 
+ - ip, ss (from iproute package)
+
  - losetup (from util-linux package)
 
- - od (from coreutils)
+ - mke2fs (from e2fsprogs)
 
- - qemu-io (usually shipped with qemu)
+ - od, seq, stat (from coreutils)
+
+ - qemu-img, qemu-io (usually shipped with qemu)
 
  - socat
-
- - ss (from iproute package)
 
 Building
 --------
