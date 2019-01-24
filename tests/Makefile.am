@@ -33,6 +33,8 @@
 include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
+	generate-file-data.sh \
+	generate-offset-data.sh \
 	make-pki.sh \
 	make-psk.sh \
 	python-exception.py \
@@ -264,10 +266,8 @@ if HAVE_PLUGINS
 # Common data shared by multiple tests
 check_DATA += file-data
 CLEANFILES += file-data
-file-data:
-	rm -f $@ $@-t
-	for f in `$(SEQ) 1 512`; do echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'; done > $@-t
-	mv $@-t $@
+file-data: generate-file-data.sh
+	$(srcdir)/generate-file-data.sh $@
 
 # While most tests need libguestfs, testing parallel I/O is easier when
 # using qemu-io to kick off asynchronous requests.
@@ -786,10 +786,8 @@ check_DATA += offset-data
 CLEANFILES += offset-data
 LIBGUESTFS_TESTS += test-offset
 
-offset-data:
-	rm -f $@ $@-t
-	for f in `$(SEQ) 1 $$((1024*1024))`; do echo -ne '\x55\xAA\x55\xAA\x55\xAA\x55\xAA\x55\xAA' ; done > $@-t
-	mv $@-t $@
+offset-data: generate-offset-data.sh
+	$(srcdir)/generate-offset-data.sh $@
 
 test_offset_SOURCES = test-offset.c test.h
 test_offset_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
