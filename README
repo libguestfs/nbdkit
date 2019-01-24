@@ -145,7 +145,7 @@ For non-essential enhancements to the test suite:
 
  - mke2fs (from e2fsprogs)
 
- - seq, stat (from coreutils)
+ - stat (from coreutils)
 
  - qemu-img, qemu-io (usually shipped with qemu)
 
