@@ -224,7 +224,7 @@ check_python_failure (const char *callback)
 static struct PyModuleDef moduledef = {
   PyModuleDef_HEAD_INIT,
   "nbdkit",
-  NULL,
+  "Module used to access nbdkit server API",
   -1,
   NbdkitMethods,
   NULL,
