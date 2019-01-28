@@ -234,15 +234,30 @@ static struct PyModuleDef moduledef = {
 };
 #endif
 
+static PyMODINIT_FUNC
+create_nbdkit_module (void)
+{
+  PyObject *m;
+
+#if PY_MAJOR_VERSION >= 3
+  m = PyModule_Create (&moduledef);
+#else
+  m = Py_InitModule ("nbdkit", NbdkitMethods);
+#endif
+  if (m == NULL) {
+    nbdkit_error ("could not create the nbdkit API module");
+    exit (EXIT_FAILURE);
+  }
+#if PY_MAJOR_VERSION >= 3
+  return m;
+#endif
+}
+
 static void
 py_load (void)
 {
+  PyImport_AppendInittab ("nbdkit", create_nbdkit_module);
   Py_Initialize ();
-#if PY_MAJOR_VERSION >= 3
-  PyModule_Create (&moduledef);
-#else
-  Py_InitModule ("nbdkit", NbdkitMethods);
-#endif
 }
 
 static void
