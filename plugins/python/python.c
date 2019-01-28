@@ -225,7 +225,7 @@ static struct PyModuleDef moduledef = {
   PyModuleDef_HEAD_INIT,
   "nbdkit",
   NULL,
-  0,
+  -1,
   NbdkitMethods,
   NULL,
   NULL,
