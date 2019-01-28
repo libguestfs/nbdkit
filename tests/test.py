@@ -1,8 +1,10 @@
+import nbdkit
+
 disk = bytearray(1024*1024)
 
 
 def config_complete():
-    pass
+    print ("set_error = %r" % nbdkit.set_error)
 
 
 def open(readonly):
