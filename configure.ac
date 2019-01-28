@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2018 Red Hat Inc.
+# Copyright (C) 2013-2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-AC_INIT([nbdkit], [1.11.2])
+AC_INIT([nbdkit], [1.11.3])
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],[],
          [m4_define([AC_USE_SYSTEM_EXTENSIONS],[])])
