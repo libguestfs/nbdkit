@@ -173,6 +173,18 @@ xz_get_size (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   return xzfile_get_size (h->xz);
 }
 
+/* We need this because otherwise the layer below can_write is called
+ * and that might return true (eg. if the plugin has a pwrite method
+ * at all), resulting in writes being passed through to the layer
+ * below.  This is possibly a bug in nbdkit.
+ */
+static int
+xz_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+              void *handle)
+{
+  return 0;
+}
+
 /* Read data from the file. */
 static int
 xz_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -225,6 +237,7 @@ static struct nbdkit_filter filter = {
   .close             = xz_close,
   .prepare           = xz_prepare,
   .get_size          = xz_get_size,
+  .can_write         = xz_can_write,
   .pread             = xz_pread,
 };
 
