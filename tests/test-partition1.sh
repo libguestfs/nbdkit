@@ -61,9 +61,11 @@ test ()
         dd if=/dev/urandom of=$d/rand bs=512 count=1
 
         if [ "$part" != "$skip_extended" ]; then
-            nbdkit -f -v --filter=partition file $d/disk partition=$part \
+            nbdkit -f -v -U - \
+                   --filter=partition file $d/disk partition=$part \
                    --run "qemu-img convert -n $d/rand \$nbd"
-            nbdkit -f -v --filter=partition file $d/disk partition=$part \
+            nbdkit -f -v -U - \
+                   --filter=partition file $d/disk partition=$part \
                    --run "qemu-img convert \$nbd $d/out"
             truncate -s 512 $d/out
             cmp $d/rand $d/out
