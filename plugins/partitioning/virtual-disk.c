@@ -54,7 +54,6 @@ static int create_partition_table (void);
 int
 create_virtual_disk_layout (void)
 {
-  struct region region;
   size_t i;
 
   assert (nr_regions (&regions) == 0);
@@ -106,23 +105,15 @@ create_virtual_disk_layout (void)
 
   /* Virtual primary partition table region at the start of the disk. */
   if (parttype == PARTTYPE_MBR) {
-    region.start = 0;
-    region.len = SECTOR_SIZE;
-    region.end = region.start + region.len - 1;
-    region.type = region_data;
-    region.u.data = primary;
-    region.description = "MBR";
-    if (append_one_region (&regions, region) == -1)
+    if (append_region_len (&regions, "MBR",
+                           SECTOR_SIZE, 0, 0,
+                           region_data, primary) == -1)
       return -1;
   }
   else /* PARTTYPE_GPT */ {
-    region.start = 0;
-    region.len = (2+GPT_PTA_LBAs) * SECTOR_SIZE;
-    region.end = region.start + region.len - 1;
-    region.type = region_data;
-    region.u.data = primary;
-    region.description = "GPT primary";
-    if (append_one_region (&regions, region) == -1)
+    if (append_region_len (&regions, "GPT primary",
+                           (2+GPT_PTA_LBAs) * SECTOR_SIZE, 0, 0,
+                           region_data, primary) == -1)
       return -1;
   }
 
@@ -138,65 +129,29 @@ create_virtual_disk_layout (void)
 
     /* Logical partitions are preceeded by an EBR. */
     if (parttype == PARTTYPE_MBR && nr_files > 4 && i >= 3) {
-      region.start = offset;
-      region.len = SECTOR_SIZE;
-      region.end = region.start + region.len - 1;
-      region.type = region_data;
-      region.u.data = ebr[i-3];
-      region.description = "EBR";
-      if (append_one_region (&regions, region) == -1)
-        return -1;
-
-      offset = virtual_size (&regions);
-    }
-
-    /* Make sure each partition is aligned for best performance. */
-    if (!IS_ALIGNED (offset, files[i].alignment)) {
-      region.start = offset;
-      region.end = (offset & ~(files[i].alignment-1)) + files[i].alignment - 1;
-      region.len = region.end - region.start + 1;
-      region.type = region_zero;
-      region.description = "padding before partition";
-      if (append_one_region (&regions, region) == -1)
+      if (append_region_len (&regions, "EBR",
+                             SECTOR_SIZE, 0, 0,
+                             region_data, ebr[i-3]) == -1)
         return -1;
     }
 
-    offset = virtual_size (&regions);
-    assert (IS_ALIGNED (offset, files[i].alignment));
-
-    /* Create the partition region for this file. */
-    region.start = offset;
-    region.len = files[i].statbuf.st_size;
-    region.end = region.start + region.len - 1;
-    region.type = region_file;
-    region.u.i = i;
-    region.description = files[i].filename;
-    if (append_one_region (&regions, region) == -1)
-      return -1;
-
-    /* If the file size is not a multiple of SECTOR_SIZE then
+    /* Create the partition region for this file.
+     * Make sure each partition is aligned for best performance.
+     * If the file size is not a multiple of SECTOR_SIZE then
      * add a padding region at the end to round it up.
      */
-    if (!IS_ALIGNED (files[i].statbuf.st_size, SECTOR_SIZE)) {
-      region.start = virtual_size (&regions);
-      region.len = SECTOR_SIZE - (files[i].statbuf.st_size & (SECTOR_SIZE-1));
-      region.end = region.start + region.len - 1;
-      region.type = region_zero;
-      region.description = "padding after partition";
-      if (append_one_region (&regions, region) == -1)
-        return -1;
-    }
+    if (append_region_len (&regions, files[i].filename,
+                           files[i].statbuf.st_size,
+                           files[i].alignment, SECTOR_SIZE,
+                           region_file, i) == -1)
+      return -1;
   }
 
   /* For GPT add the virtual secondary/backup partition table. */
   if (parttype == PARTTYPE_GPT) {
-    region.start = virtual_size (&regions);
-    region.len = (GPT_PTA_LBAs+1) * SECTOR_SIZE;
-    region.end = region.start + region.len - 1;
-    region.type = region_data;
-    region.u.data = secondary;
-    region.description = "GPT secondary";
-    if (append_one_region (&regions, region) == -1)
+    if (append_region_len (&regions, "GPT secondary",
+                           (GPT_PTA_LBAs+1) * SECTOR_SIZE, 0, 0,
+                           region_data, secondary) == -1)
       return -1;
   }
 

@@ -618,113 +618,63 @@ write_fat_file (uint32_t first_cluster, uint32_t nr_clusters,
 static int
 create_regions (struct virtual_floppy *floppy)
 {
-  struct region region;
   size_t i;
 
-  /* MBR. */
-  region.start = 0;
-  region.end = SECTOR_SIZE-1;
-  region.len = region.end - region.start + 1;
-  region.type = region_data;
-  region.u.data = (void *) &floppy->mbr;
-  region.description = "MBR";
-  if (append_one_region (&floppy->regions, region) == -1)
-    return -1;
-
-  /* Free space before first partition. */
-  region.start = SECTOR_SIZE;
-  region.end = 2048*SECTOR_SIZE-1;
-  region.len = region.end - region.start + 1;
-  region.type = region_zero;
-  region.description = "first partition alignment";
-  if (append_one_region (&floppy->regions, region) == -1)
+  /* MBR + free space to pad the partition to sector 2048. */
+  if (append_region_len (&floppy->regions, "MBR",
+                         SECTOR_SIZE, 0, 2048*SECTOR_SIZE,
+                         region_data, (void *) &floppy->mbr) == -1)
     return -1;
 
   /* Partition boot sector. */
-  region.start = 2048*SECTOR_SIZE;
-  region.end = 2049*SECTOR_SIZE-1;
-  region.len = region.end - region.start + 1;
-  region.type = region_data;
-  region.u.data = (void *) &floppy->bootsect;
-  region.description = "partition boot sector";
-  if (append_one_region (&floppy->regions, region) == -1)
+  if (append_region_len (&floppy->regions, "partition boot sector",
+                         SECTOR_SIZE, 0, 0,
+                         region_data, (void *) &floppy->bootsect) == -1)
     return -1;
 
   /* Filesystem information sector. */
-  region.start = 2049*SECTOR_SIZE;
-  region.end = 2050*SECTOR_SIZE-1;
-  region.len = region.end - region.start + 1;
-  region.type = region_data;
-  region.u.data = (void *) &floppy->fsinfo;
-  region.description = "filesystem information sector";
-  if (append_one_region (&floppy->regions, region) == -1)
+  if (append_region_len (&floppy->regions, "filesystem information sector",
+                         SECTOR_SIZE, 0, 0,
+                         region_data, (void *) &floppy->fsinfo) == -1)
     return -1;
 
   /* Free space (reserved sectors 2-5). */
-  region.start = 2050*SECTOR_SIZE;
-  region.end = 2054*SECTOR_SIZE-1;
-  region.len = region.end - region.start + 1;
-  region.type = region_zero;
-  region.description = "reserved sectors 2-5";
-  if (append_one_region (&floppy->regions, region) == -1)
+  if (append_region_len (&floppy->regions, "reserved sectors 2-5",
+                         4*SECTOR_SIZE, 0, 0,
+                         region_zero) == -1)
     return -1;
 
   /* Backup boot sector. */
-  region.start = 2054*SECTOR_SIZE;
-  region.end = 2055*SECTOR_SIZE-1;
-  region.len = region.end - region.start + 1;
-  region.type = region_data;
-  region.u.data = (void *) &floppy->bootsect;
-  region.description = "backup boot sector";
-  if (append_one_region (&floppy->regions, region) == -1)
+  if (append_region_len (&floppy->regions, "backup boot sector",
+                         SECTOR_SIZE, 0, 0,
+                         region_data, (void *) &floppy->bootsect) == -1)
     return -1;
 
   /* Free space (reserved sectors 7-31). */
-  region.start = 2055*SECTOR_SIZE;
-  region.end = 2080*SECTOR_SIZE-1;
-  region.len = region.end - region.start + 1;
-  region.type = region_zero;
-  region.description = "reserved sectors 7-31";
-  if (append_one_region (&floppy->regions, region) == -1)
+  if (append_region_len (&floppy->regions, "reserved sectors 7-31",
+                         25*SECTOR_SIZE, 0, 0,
+                         region_zero) == -1)
     return -1;
 
   /* First copy of FAT. */
-  region.start = 2080*SECTOR_SIZE;
-  region.len = floppy->fat_entries*4;
-  region.end = region.start + region.len - 1;
-  region.type = region_data;
-  region.u.data = (void *) floppy->fat;
-  region.description = "FAT #1";
-  if (append_one_region (&floppy->regions, region) == -1)
+  if (append_region_len (&floppy->regions, "FAT #1",
+                         floppy->fat_entries*4, 0, CLUSTER_SIZE,
+                         region_data, (void *) floppy->fat) == -1)
     return -1;
 
-  /* Free space after FAT (optional). */
-  region.start = region.end + 1;
-  region.end = floppy->fat2_start_sector*SECTOR_SIZE - 1;
-  region.len = region.end - region.start + 1;
-  region.type = region_zero;
-  region.description = "FAT #2 alignment";
-  if (region.len > 0 && append_one_region (&floppy->regions, region) == -1)
-    return -1;
+  /* Check that fat2_start_sector and region calculation match. */
+  assert (virtual_size (&floppy->regions) ==
+          floppy->fat2_start_sector * SECTOR_SIZE);
 
   /* Second copy of FAT. */
-  region.start = floppy->fat2_start_sector*SECTOR_SIZE;
-  region.len = floppy->fat_entries*4;
-  region.end = region.start + region.len - 1;
-  region.type = region_data;
-  region.u.data = (void *) floppy->fat;
-  region.description = "FAT #2";
-  if (append_one_region (&floppy->regions, region) == -1)
+  if (append_region_len (&floppy->regions, "FAT #2",
+                         floppy->fat_entries*4, 0, CLUSTER_SIZE,
+                         region_data, (void *) floppy->fat) == -1)
     return -1;
 
-  /* Free space after FAT (optional). */
-  region.start = region.end + 1;
-  region.end = floppy->data_start_sector*SECTOR_SIZE - 1;
-  region.len = region.end - region.start + 1;
-  region.type = region_zero;
-  region.description = "data region alignment";
-  if (region.len > 0 && append_one_region (&floppy->regions, region) == -1)
-    return -1;
+  /* Check that data_start_sector and region calculation match. */
+  assert (virtual_size (&floppy->regions) ==
+          floppy->data_start_sector * SECTOR_SIZE);
 
   /* Now we're into the data region.  We add all directory tables
    * first.
@@ -735,23 +685,12 @@ create_regions (struct virtual_floppy *floppy)
      */
     assert (floppy->dirs[i].table_entries > 0);
 
-    region.start = region.end + 1;
-    region.len = floppy->dirs[i].table_entries * sizeof (struct dir_entry);
-    region.end = region.start + region.len - 1;
-    region.type = region_data;
-    region.u.data = (void *) floppy->dirs[i].table;
-    region.description = i == 0 ? "root directory" : "directory";
-    if (append_one_region (&floppy->regions, region) == -1)
-      return -1;
-
-    /* Optional free space to align to end of cluster. */
-    region.start = region.end + 1;
-    region.end = ROUND_UP (region.start, CLUSTER_SIZE) - 1;
-    region.len = region.end - region.start + 1;
-    region.type = region_zero;
-    region.description =
-      i == 0 ? "root directory padding" : "directory padding";
-    if (region.len > 0 && append_one_region (&floppy->regions, region) == -1)
+    if (append_region_len (&floppy->regions,
+                           i == 0 ? "root directory" : floppy->dirs[i].name,
+                           floppy->dirs[i].table_entries *
+                           sizeof (struct dir_entry),
+                           0, CLUSTER_SIZE,
+                           region_data, (void *) floppy->dirs[i].table) == -1)
       return -1;
   }
 
@@ -763,22 +702,10 @@ create_regions (struct virtual_floppy *floppy)
     if (floppy->files[i].statbuf.st_size == 0)
       continue;
 
-    region.start = region.end + 1;
-    region.len = floppy->files[i].statbuf.st_size;
-    region.end = region.start + region.len - 1;
-    region.type = region_file;
-    region.u.i = i;
-    region.description = "file";
-    if (append_one_region (&floppy->regions, region) == -1)
-      return -1;
-
-    /* Optional free space to align to end of cluster. */
-    region.start = region.end + 1;
-    region.end = ROUND_UP (region.start, CLUSTER_SIZE) - 1;
-    region.len = region.end - region.start + 1;
-    region.type = region_zero;
-    region.description = "file padding";
-    if (region.len > 0 && append_one_region (&floppy->regions, region) == -1)
+    if (append_region_len (&floppy->regions, floppy->files[i].name,
+                           floppy->files[i].statbuf.st_size,
+                           0, CLUSTER_SIZE,
+                           region_file, i) == -1)
       return -1;
   }
 

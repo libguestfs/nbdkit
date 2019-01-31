@@ -40,6 +40,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "isaligned.h"
 #include "regions.h"
 
 void
@@ -101,6 +102,75 @@ append_one_region (struct regions *regions, struct region region)
   regions->regions = p;
   regions->regions[regions->nr_regions] = region;
   regions->nr_regions++;
+
+  return 0;
+}
+
+static int
+append_padding (struct regions *regions, uint64_t alignment)
+{
+  struct region region;
+
+  assert (is_power_of_2 (alignment));
+
+  region.start = virtual_size (regions);
+  if (IS_ALIGNED (region.start, alignment))
+    return 0;                   /* nothing to do */
+  region.end = (region.start & ~(alignment-1)) + alignment - 1;
+  region.len = region.end - region.start + 1;
+  region.type = region_zero;
+  region.description = "padding";
+  return append_one_region (regions, region);
+}
+
+int
+append_region_len (struct regions *regions,
+                   const char *description, uint64_t len,
+                   uint64_t pre_aligment, uint64_t post_alignment,
+                   enum region_type type, ...)
+{
+  struct region region;
+
+  /* Pre-alignment. */
+  if (pre_aligment != 0) {
+    if (append_padding (regions, pre_aligment) == -1)
+      return -1;
+    assert (IS_ALIGNED (virtual_size (regions), pre_aligment));
+  }
+
+  /* Main region. */
+  region.description = description;
+  region.start = virtual_size (regions);
+  region.len = len;
+  region.end = region.start + region.len - 1;
+  region.type = type;
+  if (type == region_file) {
+    va_list ap;
+    size_t i;
+
+    va_start (ap, type);
+    i = va_arg (ap, size_t);
+    va_end (ap);
+    region.u.i = i;
+  }
+  else if (type == region_data) {
+    va_list ap;
+    const unsigned char *data;
+
+    va_start (ap, type);
+    data = va_arg (ap, const unsigned char *);
+    va_end (ap);
+    region.u.data = data;
+  }
+  if (append_one_region (regions, region) == -1)
+    return -1;
+
+  /* Post-alignment. */
+  if (post_alignment != 0) {
+    if (append_padding (regions, post_alignment) == -1)
+      return -1;
+    assert (IS_ALIGNED (virtual_size (regions), post_alignment));
+  }
 
   return 0;
 }
