@@ -112,7 +112,7 @@ create_virtual_disk_layout (void)
     region.type = region_data;
     region.u.data = primary;
     region.description = "MBR";
-    if (append_region (&regions, region) == -1)
+    if (append_one_region (&regions, region) == -1)
       return -1;
   }
   else /* PARTTYPE_GPT */ {
@@ -122,7 +122,7 @@ create_virtual_disk_layout (void)
     region.type = region_data;
     region.u.data = primary;
     region.description = "GPT primary";
-    if (append_region (&regions, region) == -1)
+    if (append_one_region (&regions, region) == -1)
       return -1;
   }
 
@@ -144,7 +144,7 @@ create_virtual_disk_layout (void)
       region.type = region_data;
       region.u.data = ebr[i-3];
       region.description = "EBR";
-      if (append_region (&regions, region) == -1)
+      if (append_one_region (&regions, region) == -1)
         return -1;
 
       offset = virtual_size (&regions);
@@ -157,7 +157,7 @@ create_virtual_disk_layout (void)
       region.len = region.end - region.start + 1;
       region.type = region_zero;
       region.description = "padding before partition";
-      if (append_region (&regions, region) == -1)
+      if (append_one_region (&regions, region) == -1)
         return -1;
     }
 
@@ -171,7 +171,7 @@ create_virtual_disk_layout (void)
     region.type = region_file;
     region.u.i = i;
     region.description = files[i].filename;
-    if (append_region (&regions, region) == -1)
+    if (append_one_region (&regions, region) == -1)
       return -1;
 
     /* If the file size is not a multiple of SECTOR_SIZE then
@@ -183,7 +183,7 @@ create_virtual_disk_layout (void)
       region.end = region.start + region.len - 1;
       region.type = region_zero;
       region.description = "padding after partition";
-      if (append_region (&regions, region) == -1)
+      if (append_one_region (&regions, region) == -1)
         return -1;
     }
   }
@@ -196,7 +196,7 @@ create_virtual_disk_layout (void)
     region.type = region_data;
     region.u.data = secondary;
     region.description = "GPT secondary";
-    if (append_region (&regions, region) == -1)
+    if (append_one_region (&regions, region) == -1)
       return -1;
   }
 

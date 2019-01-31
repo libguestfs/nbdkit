@@ -80,7 +80,7 @@ find_region (const struct regions *regions, uint64_t offset)
 }
 
 int
-append_region (struct regions *regions, struct region region)
+append_one_region (struct regions *regions, struct region region)
 {
   struct region *p;
 

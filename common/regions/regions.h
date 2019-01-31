@@ -80,12 +80,24 @@ extern void init_regions (struct regions *regions)
   __attribute__((__nonnull__ (1)));
 extern void free_regions (struct regions *regions)
   __attribute__((__nonnull__ (1)));
+
+/* Look up the region corresponding to the given offset.  If the
+ * offset is inside the disk image then this cannot return NULL.
+ */
 extern const struct region *find_region (const struct regions *regions,
                                          uint64_t offset)
   __attribute__((__nonnull__ (1)));
-extern int append_region (struct regions *regions, struct region region)
+
+/* This is the low level function for constructing the list of
+ * regions.  It appends one region to the list, checking that the
+ * invariants described above (about the regions being non-overlapping
+ * and contiguous) is maintained.  Note it is not possible to
+ * construct regions out of order using this function.
+ */
+extern int append_one_region (struct regions *regions, struct region region)
   __attribute__((__nonnull__ (1)));
 
+/* Used when iterating over the list of regions. */
 static inline const struct region * __attribute__((__nonnull__ (1)))
 get_region (const struct regions *regions, size_t i)
 {
@@ -93,12 +105,14 @@ get_region (const struct regions *regions, size_t i)
   return &regions->regions[i];
 }
 
+/* Return the number of regions. */
 static inline size_t __attribute__((__nonnull__ (1)))
 nr_regions (struct regions *regions)
 {
   return regions->nr_regions;
 }
 
+/* Return the virtual size of the disk. */
 static inline int64_t __attribute__((__nonnull__ (1)))
 virtual_size (struct regions *regions)
 {

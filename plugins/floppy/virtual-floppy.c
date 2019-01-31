@@ -628,7 +628,7 @@ create_regions (struct virtual_floppy *floppy)
   region.type = region_data;
   region.u.data = (void *) &floppy->mbr;
   region.description = "MBR";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Free space before first partition. */
@@ -637,7 +637,7 @@ create_regions (struct virtual_floppy *floppy)
   region.len = region.end - region.start + 1;
   region.type = region_zero;
   region.description = "first partition alignment";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Partition boot sector. */
@@ -647,7 +647,7 @@ create_regions (struct virtual_floppy *floppy)
   region.type = region_data;
   region.u.data = (void *) &floppy->bootsect;
   region.description = "partition boot sector";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Filesystem information sector. */
@@ -657,7 +657,7 @@ create_regions (struct virtual_floppy *floppy)
   region.type = region_data;
   region.u.data = (void *) &floppy->fsinfo;
   region.description = "filesystem information sector";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Free space (reserved sectors 2-5). */
@@ -666,7 +666,7 @@ create_regions (struct virtual_floppy *floppy)
   region.len = region.end - region.start + 1;
   region.type = region_zero;
   region.description = "reserved sectors 2-5";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Backup boot sector. */
@@ -676,7 +676,7 @@ create_regions (struct virtual_floppy *floppy)
   region.type = region_data;
   region.u.data = (void *) &floppy->bootsect;
   region.description = "backup boot sector";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Free space (reserved sectors 7-31). */
@@ -685,7 +685,7 @@ create_regions (struct virtual_floppy *floppy)
   region.len = region.end - region.start + 1;
   region.type = region_zero;
   region.description = "reserved sectors 7-31";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* First copy of FAT. */
@@ -695,7 +695,7 @@ create_regions (struct virtual_floppy *floppy)
   region.type = region_data;
   region.u.data = (void *) floppy->fat;
   region.description = "FAT #1";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Free space after FAT (optional). */
@@ -704,7 +704,7 @@ create_regions (struct virtual_floppy *floppy)
   region.len = region.end - region.start + 1;
   region.type = region_zero;
   region.description = "FAT #2 alignment";
-  if (region.len > 0 && append_region (&floppy->regions, region) == -1)
+  if (region.len > 0 && append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Second copy of FAT. */
@@ -714,7 +714,7 @@ create_regions (struct virtual_floppy *floppy)
   region.type = region_data;
   region.u.data = (void *) floppy->fat;
   region.description = "FAT #2";
-  if (append_region (&floppy->regions, region) == -1)
+  if (append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Free space after FAT (optional). */
@@ -723,7 +723,7 @@ create_regions (struct virtual_floppy *floppy)
   region.len = region.end - region.start + 1;
   region.type = region_zero;
   region.description = "data region alignment";
-  if (region.len > 0 && append_region (&floppy->regions, region) == -1)
+  if (region.len > 0 && append_one_region (&floppy->regions, region) == -1)
     return -1;
 
   /* Now we're into the data region.  We add all directory tables
@@ -741,7 +741,7 @@ create_regions (struct virtual_floppy *floppy)
     region.type = region_data;
     region.u.data = (void *) floppy->dirs[i].table;
     region.description = i == 0 ? "root directory" : "directory";
-    if (append_region (&floppy->regions, region) == -1)
+    if (append_one_region (&floppy->regions, region) == -1)
       return -1;
 
     /* Optional free space to align to end of cluster. */
@@ -751,7 +751,7 @@ create_regions (struct virtual_floppy *floppy)
     region.type = region_zero;
     region.description =
       i == 0 ? "root directory padding" : "directory padding";
-    if (region.len > 0 && append_region (&floppy->regions, region) == -1)
+    if (region.len > 0 && append_one_region (&floppy->regions, region) == -1)
       return -1;
   }
 
@@ -769,7 +769,7 @@ create_regions (struct virtual_floppy *floppy)
     region.type = region_file;
     region.u.i = i;
     region.description = "file";
-    if (append_region (&floppy->regions, region) == -1)
+    if (append_one_region (&floppy->regions, region) == -1)
       return -1;
 
     /* Optional free space to align to end of cluster. */
@@ -778,7 +778,7 @@ create_regions (struct virtual_floppy *floppy)
     region.len = region.end - region.start + 1;
     region.type = region_zero;
     region.description = "file padding";
-    if (region.len > 0 && append_region (&floppy->regions, region) == -1)
+    if (region.len > 0 && append_one_region (&floppy->regions, region) == -1)
       return -1;
   }
 
