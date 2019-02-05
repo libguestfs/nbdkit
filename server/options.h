@@ -34,6 +34,7 @@
 #ifndef NBDKIT_OPTIONS_H
 #define NBDKIT_OPTIONS_H
 
+#include <stdbool.h>
 #include <getopt.h>
 #include <limits.h>
 #include <string.h>
@@ -100,7 +101,7 @@ static const struct option long_options[] = {
 };
 
 /* Is it a plugin or filter name relative to the plugindir/filterdir? */
-static inline int
+static inline bool
 is_short_name (const char *filename)
 {
   return strchr (filename, '.') == NULL && strchr (filename, '/') == NULL;
