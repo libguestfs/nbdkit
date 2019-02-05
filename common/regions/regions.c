@@ -80,7 +80,13 @@ find_region (const struct regions *regions, uint64_t offset)
                   sizeof (struct region), compare_offset);
 }
 
-int
+/* This is the low level function for constructing the list of
+ * regions.  It appends one region to the list, checking that the
+ * invariants described above (about the regions being non-overlapping
+ * and contiguous) is maintained.  Note it is not possible to
+ * construct regions out of order using this function.
+ */
+static int __attribute__((__nonnull__ (1)))
 append_one_region (struct regions *regions, struct region region)
 {
   struct region *p;
