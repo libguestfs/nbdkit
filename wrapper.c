@@ -32,20 +32,24 @@
  */
 
 /*------------------------------------------------------------
- * This wrapper lets you run nbdkit from the source directory.
+ * This is not nbdkit.  This is a wrapper which lets you run nbdkit
+ * from the source directory without installing nbdkit.
  *
  * You can use either:
- * ./nbdkit file [arg=value] [arg=value] ...
+ *
+ *   ./nbdkit file [arg=value] [arg=value] ...
+ *
  * or:
+ *
  *   /path/to/nbdkit file [arg=value] [arg=value] ...
  *
- * Or you can set $PATH to include the nbdkit source directory and run
+ * or you can set $PATH to include the nbdkit source directory and run
  * the bare "nbdkit" command without supplying the full path.
  *
  * The wrapper modifies the bare plugin name (eg. "file") to be the
  * full path to the locally compiled plugin.  If you don't use this
  * program and run server/nbdkit directly then it will pick up the
- * installed plugins which is not usually what you want.
+ * globally installed plugins which is usually not what you want.
  *
  * This program is also used to run the tests (make check).
  *
