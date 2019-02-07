@@ -1,0 +1,105 @@
+=head1 NAME
+
+nbdkit-rust-plugin - writing nbdkit plugins in Rust
+
+=head1 SYNOPSIS
+
+ nbdkit /path/to/libplugin.so [arguments...]
+
+=head1 DESCRIPTION
+
+This manual page describes how to write nbdkit plugins in compiled
+Rust code.  Rust plugins are compiled to F<*.so> files (the same as
+plugins written in C) and are used in the same way.
+
+=head1 WRITING A RUST NBDKIT PLUGIN
+
+Broadly speaking, Rust nbdkit plugins work like C ones, so you should
+read L<nbdkit-plugin(3)> first.
+
+You should also look at
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/rust/src/lib.rs>
+and
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/rust/examples/ramdisk.rs>
+in the nbdkit source tree.  The first describes the plugin interface
+for Rust plugins and the second provides a simple example.
+
+We may change how Rust plugins are written in future to make them more
+idiomatic.  At the moment each callback corresponds directly to a C
+callback - in fact each is called directly from the server.
+
+Your Rust code should define a public C<plugin_init> function which
+returns a pointer to a C<Plugin> struct.  This struct is exactly
+compatible with the C struct used by C plugins.
+
+ extern crate nbdkit;
+ use nbdkit::*;
+ use nbdkit::ThreadModel::*;
+ 
+ #[no_mangle]
+ pub extern fn plugin_init () -> *const Plugin {
+    // Plugin name.
+    let name = "myplugin\0"
+      as *const str as *const [c_char] as *const c_char;
+
+    // Create a mutable plugin, setting the 5 required fields.
+    let mut plugin = Plugin::new (
+        Serialize_All_Requests,
+        name,
+        myplugin_open,
+        myplugin_get_size,
+        myplugin_pread
+    );
+    // Update any other fields as required.
+    plugin.close = Some (myplugin_close);
+    plugin.pwrite = Some (myplugin_pwrite);
+
+    // Return the pointer.
+    let plugin = Box::new(plugin);
+    return Box::into_raw(plugin);
+}
+
+=head2 Compiling a Rust nbdkit plugin
+
+Because you are building a C-compatible shared library, the crate type
+must be set to:
+
+ crate-type = ["cdylib"]
+
+After compiling using C<cargo build> you can then use
+C<libmyplugin.so> as an nbdkit plugin (see L<nbdkit(1)>,
+L<nbdkit-plugin(3)>):
+
+ nbdkit ./libmyplugin.so [args ...]
+
+=head2 Threads
+
+The first parameter of C<Plugin::new> is the thread model, which can
+be one of the values in the table below.  For more information on
+thread models, see L<nbdkit-plugin(3)/THREADS>.
+
+=over 4
+
+=item C<nbdkit::ThreadModel::Serialize_Connections>
+
+=item C<nbdkit::ThreadModel::Serialize_All_Requests>
+
+=item C<nbdkit::ThreadModel::Serialize_Requests>
+
+=item C<nbdkit::ThreadModel::Parallel>
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<cargo(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

@@ -54,6 +54,9 @@ Makefile.in
 /missing
 /nbdkit
 /plugins/example4/nbdkit-example4-plugin
+/plugins/rust/Cargo.lock
+/plugins/rust/Cargo.toml
+/plugins/rust/target
 /plugins/tar/nbdkit-tar-plugin
 /podwrapper.pl
 /server/nbdkit

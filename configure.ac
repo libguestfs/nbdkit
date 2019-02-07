@@ -545,6 +545,15 @@ AS_IF([test "x$OCAMLOPT" != "xno" && test "x$enable_ocaml" != "xno"],[
 AM_CONDITIONAL([HAVE_OCAML],[test "x$OCAMLOPT" != "xno" &&
                              test "x$ocaml_link_shared" = "xyes"])
 
+dnl For developing plugins in Rust, optional.
+AC_CHECK_PROG([CARGO],[cargo],[cargo],[no])
+AC_ARG_ENABLE([rust],
+    [AS_HELP_STRING([--disable-rust], [disable Rust plugin])],
+    [],
+    [enable_rust=yes])
+AM_CONDITIONAL([HAVE_RUST],
+               [test "x$CARGO" != "xno" && test "x$enable_rust" != "xno"])
+
 dnl Check for Ruby, for embedding in the Ruby plugin.
 AC_CHECK_PROG([RUBY],[ruby],[ruby],[no])
 AC_ARG_ENABLE([ruby],
@@ -765,6 +774,7 @@ lang_plugins="\
         perl \
         python \
         ruby \
+        rust \
         sh \
         tcl \
         "
@@ -854,6 +864,8 @@ AC_CONFIG_FILES([Makefile
                  plugins/python/Makefile
                  plugins/random/Makefile
                  plugins/ruby/Makefile
+                 plugins/rust/Cargo.toml
+                 plugins/rust/Makefile
                  plugins/sh/Makefile
                  plugins/split/Makefile
                  plugins/streaming/Makefile
