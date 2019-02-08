@@ -37,7 +37,7 @@ format.
 
 =over 4
 
-=item B<dir=>DIRECTORY
+=item [B<dir=>]DIRECTORY
 
 Specify the directory containing files and subdirectories which will
 be added to the virtual ISO.  Files inside this directory will appear
@@ -46,10 +46,8 @@ in the root directory of the ISO.
 This parameter is required and may be specified one or more times.  If
 multiple directories are specified, they are merged together.
 
-In nbdkit E<ge> 1.8, C<dir=> may be omitted.  To ensure that the
-directory name does not end up being parsed accidentally as
-C<key=value>, prefix relative paths with C<./> (absolute paths do not
-need modification).
+C<dir=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
 
 =item B<params=>'parameters ...'
 

@@ -96,14 +96,15 @@ Instead of using a TCP connection, connect to the server over the
 named Unix domain socket.  See
 L<curl_easy_setopt(3)/CURLOPT_UNIX_SOCKET_PATH>.
 
-=item B<url=>URL
+=item [B<url=>]URL
 
 The URL of the remote disk image.  This is passed to libcurl directly
 via L<curl_easy_setopt(3)/CURLOPT_URL>.
 
 This parameter is required.
 
-In nbdkit E<ge> 1.8.2, C<url=> may be omitted.
+C<url=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
 
 =item B<user=>USERNAME
 
