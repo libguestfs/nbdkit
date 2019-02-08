@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit-iso-plugin - create virtual ISO from directory
+nbdkit-iso-plugin - create virtual ISO (CD-ROM) from directory
 
 =head1 SYNOPSIS
 
