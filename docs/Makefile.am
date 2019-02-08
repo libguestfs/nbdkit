@@ -111,14 +111,14 @@ nbdkit-filter.3: nbdkit-filter.pod filter-links.pod
 
 endif HAVE_POD
 
-plugin-links.pod: $(top_srcdir)/common-rules.mk
+plugin-links.pod: $(top_srcdir)/configure.ac
 	rm -f $@ $@-t
 	$(srcdir)/make-links.sh plugin 1 $(non_lang_plugins) > $@-t
 	echo \; >> $@-t
 	$(srcdir)/make-links.sh plugin 3 $(lang_plugins) >> $@-t
 	mv $@-t $@
 
-filter-links.pod: $(top_srcdir)/common-rules.mk
+filter-links.pod: $(top_srcdir)/configure.ac
 	rm -f $@ $@-t
 	$(srcdir)/make-links.sh filter 1 $(filters) > $@-t
 	mv $@-t $@
