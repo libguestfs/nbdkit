@@ -88,21 +88,30 @@ nbdkit_absolute_path (const char *path)
 int64_t
 nbdkit_parse_size (const char *str)
 {
-  uint64_t size;
+  int64_t size;
   char *end;
   uint64_t scale = 1;
 
-  /* Disk sizes cannot usefully exceed off_t (which is signed), so
-   * scan unsigned, then range check later that result fits.  */
+  /* Disk sizes cannot usefully exceed off_t (which is signed) and
+   * cannot be negative.  */
   /* XXX Should we also parse things like '1.5M'? */
   /* XXX Should we allow hex? If so, hex cannot use scaling suffixes,
    * because some of them are valid hex digits */
   errno = 0;
-  size = strtoumax (str, &end, 10);
-  if (errno || str == end) {
+  size = strtoimax (str, &end, 10);
+  if (str == end) {
     nbdkit_error ("could not parse size string (%s)", str);
     return -1;
   }
+  if (size < 0) {
+    nbdkit_error ("size cannot be negative (%s)", str);
+    return -1;
+  }
+  if (errno) {
+    nbdkit_error ("size (%s) exceeds maximum value", str);
+    return -1;
+  }
+
   switch (*end) {
     /* No suffix */
   case '\0':
