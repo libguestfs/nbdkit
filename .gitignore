@@ -43,6 +43,7 @@ Makefile.in
 /configure
 /depcomp
 /docs/filter-links.pod
+/docs/lang-plugin-links.pod
 /docs/plugin-links.pod
 /fuzzing/sync_dir/
 /html/*.html

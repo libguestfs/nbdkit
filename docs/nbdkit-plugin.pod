@@ -61,13 +61,7 @@ The API guarantee does not always apply to plugins written in other
 against a newer nbdkit.
 
 To write plugins in other languages, see:
-L<nbdkit-lua-plugin(3)>,
-L<nbdkit-ocaml-plugin(3)>,
-L<nbdkit-perl-plugin(3)>,
-L<nbdkit-python-plugin(3)>,
-L<nbdkit-ruby-plugin(3)>,
-L<nbdkit-sh-plugin(3)>,
-L<nbdkit-tcl-plugin(3)>.
+__LANG_PLUGIN_LINKS__.
 
 =head1 C<#define NBDKIT_API_VERSION 2>
 
@@ -954,13 +948,7 @@ shell script or Tcl.  Other programming languages may be offered in
 future.
 
 For more information see:
-L<nbdkit-lua-plugin(3)>,
-L<nbdkit-ocaml-plugin(3)>,
-L<nbdkit-perl-plugin(3)>,
-L<nbdkit-python-plugin(3)>,
-L<nbdkit-ruby-plugin(3)>,
-L<nbdkit-sh-plugin(3)>,
-L<nbdkit-tcl-plugin(3)>.
+__LANG_PLUGIN_LINKS__.
 
 Plugins written in scripting languages may also be installed in
 C<$plugindir>.  These must be called C<nbdkit-I<name>-plugin> without

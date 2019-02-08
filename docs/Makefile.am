@@ -59,10 +59,12 @@ man_MANS = \
 	nbdkit-filter.3
 CLEANFILES += $(man_MANS)
 
-nbdkit.1: nbdkit.pod plugin-links.pod filter-links.pod synopsis.txt
+nbdkit.1: nbdkit.pod plugin-links.pod lang-plugin-links.pod filter-links.pod \
+		synopsis.txt
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
+	    --insert lang-plugin-links.pod:__LANG_PLUGIN_LINKS__ \
 	    --insert filter-links.pod:__FILTER_LINKS__ \
 	    --verbatim $(srcdir)/synopsis.txt:__SYNOPSIS__ \
 	    $<
@@ -97,10 +99,11 @@ nbdkit-tls.1: nbdkit-tls.pod
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-plugin.3: nbdkit-plugin.pod plugin-links.pod
+nbdkit-plugin.3: nbdkit-plugin.pod plugin-links.pod lang-plugin-links.pod
 	$(PODWRAPPER) --section=3 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
+	    --insert lang-plugin-links.pod:__LANG_PLUGIN_LINKS__ \
 	    $<
 
 nbdkit-filter.3: nbdkit-filter.pod filter-links.pod
@@ -111,6 +114,7 @@ nbdkit-filter.3: nbdkit-filter.pod filter-links.pod
 
 endif HAVE_POD
 
+# All plugins.
 plugin-links.pod: $(top_srcdir)/configure.ac
 	rm -f $@ $@-t
 	$(srcdir)/make-links.sh plugin 1 $(non_lang_plugins) > $@-t
@@ -118,9 +122,16 @@ plugin-links.pod: $(top_srcdir)/configure.ac
 	$(srcdir)/make-links.sh plugin 3 $(lang_plugins) >> $@-t
 	mv $@-t $@
 
+# Only language plugins (in section 3).
+lang-plugin-links.pod: $(top_srcdir)/configure.ac
+	rm -f $@ $@-t
+	$(srcdir)/make-links.sh plugin 3 $(lang_plugins) >> $@-t
+	mv $@-t $@
+
+# All filters.
 filter-links.pod: $(top_srcdir)/configure.ac
 	rm -f $@ $@-t
 	$(srcdir)/make-links.sh filter 1 $(filters) > $@-t
 	mv $@-t $@
 
-DISTCLEANFILES = plugin-links.pod filter-links.pod
+DISTCLEANFILES = plugin-links.pod lang-plugin-links.pod filter-links.pod
