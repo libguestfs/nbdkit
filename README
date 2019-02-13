@@ -102,6 +102,10 @@ For the ext2 plugin:
 
  - com_err
 
+For the linuxdisk plugin:
+
+ - mke2fs >= 1.42.10 (from e2fsprogs)
+
 For the Perl, example4 and tar plugins:
 
  - perl interpreter

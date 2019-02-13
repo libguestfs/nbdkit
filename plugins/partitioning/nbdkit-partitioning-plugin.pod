@@ -19,8 +19,8 @@ If you just want to concatenate files together (without adding a
 partition table) use L<nbdkit-split-plugin(1)>.  If you want to select
 a single partition from an existing disk, use
 L<nbdkit-partition-filter(1)>.  If you want to create a complete disk
-with a filesystem, look at L<nbdkit-floppy-plugin(1)> or
-L<nbdkit-iso-plugin(1)>.
+with a filesystem, look at L<nbdkit-floppy-plugin(1)>,
+L<nbdkit-iso-plugin(1)> or L<nbdkit-linuxdisk-plugin(1)>.
 
 The plugin supports read/write access.  To limit clients to read-only
 access use the I<-r> flag.
@@ -172,6 +172,7 @@ L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-floppy-plugin(1)>,
 L<nbdkit-iso-plugin(1)>,
+L<nbdkit-linuxdisk-plugin(1)>,
 L<nbdkit-partition-filter(1)>,
 L<nbdkit-split-plugin(1)>,
 L<nbdkit-plugin(3)>.

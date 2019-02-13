@@ -85,13 +85,6 @@ directed to qemu-nbd for these use cases.
   https://lists.gnu.org/archive/html/qemu-devel/2017-11/msg02971.html
   is a partial solution but it needs cleaning up.
 
-* Create ext2 filesystems
-
-  Similar to nbdkit-floppy-plugin which creates FAT32 filesystems, we
-  could also create ext2 filesystems.  This is relatively
-  straightforward using libext2fs (part of e2fsprogs).  In fact we
-  already use this library for the unrelated nbdkit-ext2-plugin.
-
 nbdkit-nbd-plugin could use enhancements:
 
 * FUA passthrough, rather than extra FLUSH calls.  For this, .can_fua
@@ -113,6 +106,10 @@ nbdkit-floppy-plugin:
   floppy is rather more complex.
 
 * Add multiple dir merging.
+
+nbdkit-linuxdisk-plugin:
+
+* Add multiple dir merging (in e2fsprogs mke2fs).
 
 Suggestions for filters
 -----------------------

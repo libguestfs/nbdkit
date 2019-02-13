@@ -17,8 +17,9 @@ read-only over the NBD protocol.
 This plugin uses L<genisoimage(1)> or L<mkisofs(1)> to create the ISO
 content.
 
-To create a virtual floppy disk instead of a CD, see
-L<nbdkit-floppy-plugin(1)>.
+To create a FAT-formatted virtual floppy disk instead of a CD, see
+L<nbdkit-floppy-plugin(1)>.  To create a Linux compatible virtual
+disk, see L<nbdkit-linuxdisk-plugin(1)>.
 
 =head1 EXAMPLE
 
@@ -96,6 +97,7 @@ L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-floppy-plugin(1)>,
+L<nbdkit-linuxdisk-plugin(1)>,
 L<genisoimage(1)>,
 L<mkisofs(1)>.
 

@@ -71,6 +71,8 @@ EXTRA_DIST = \
 	test-ip.sh \
 	test-iso.sh \
 	test-layers.sh \
+	test-linuxdisk.sh \
+	test-linuxdisk-copy-out.sh \
 	test-log.sh \
 	test.lua \
 	test-memory-largest.sh \
@@ -446,6 +448,13 @@ TESTS += test-iso.sh
 
 endif HAVE_GUESTFISH
 endif HAVE_ISO
+
+# linuxdisk plugin test.
+if HAVE_GUESTFISH
+TESTS += \
+	test-linuxdisk.sh \
+	test-linuxdisk-copy-out.sh
+endif HAVE_GUESTFISH
 
 # memory plugin test.
 LIBGUESTFS_TESTS += test-memory

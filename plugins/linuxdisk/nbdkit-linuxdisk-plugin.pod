@@ -1,0 +1,179 @@
+=head1 NAME
+
+nbdkit-linuxdisk-plugin - create virtual Linux disk from directory
+
+=head1 SYNOPSIS
+
+ nbdkit linuxdisk [dir=]DIRECTORY
+                  [label=LABEL] [type=ext2|ext3|ext4]
+                  [size=[+]SIZE]
+
+=head1 DESCRIPTION
+
+C<nbdkit-linuxdisk-plugin> is a plugin for L<nbdkit(1)> which creates
+an ext2-, ext3- or ext4-formatted disk image from a directory on the
+fly.  The files in the specified directory (and subdirectories) appear
+in the virtual disk, which is served read-only over the NBD protocol.
+
+The virtual disk is partitioned with a single GPT partition containing
+the filesystem.
+
+The virtual disk can be used as a Linux root (or other) filesystem.
+Most features of Linux filesystems are supported, such as hard links,
+symbolic links, block special devices etc.
+
+To create a FAT-formatted virtual floppy disk, see
+L<nbdkit-floppy-plugin(1)>.  To create a CD/ISO, see
+L<nbdkit-iso-plugin(1)>.
+
+=head1 EXAMPLES
+
+=over 4
+
+=item nbdkit linuxdisk /path/to/directory label=ROOTFS
+
+Create a virtual disk, giving it a filesystem label.  Note that
+clients will not be able to modify the filesystem, so it is safe to
+share it with multiple clients.
+
+=item nbdkit --filter=cow linuxdisk /path/to/directory
+
+Add a writable overlay (see L<nbdkit-cow-filter(1)>, allowing the disk
+to be written by the client.  B<Multiple clients must not be allowed
+to connect at the same time> (even if they all mount it read-only) as
+this will cause disk corruption.
+
+=item nbdkit --filter=cow linuxdisk /path/to/directory size=+1G
+
+The same but specifying that at least 1G of free space should be
+available in the filesystem (not including the space taken by the
+initial filesystem).
+
+=item nbdkit --filter=partition linuxdisk /path/to/directory partition=1
+
+Instead of serving a partitioned disk image, serve just the "naked"
+filesystem (ie. the first partition, see
+L<nbdkit-partition-filter(1)>).
+
+=item nbdkit -U - linuxdisk /path/to/directory
+--run 'qemu-img convert $nbd ext2fs.img'
+
+This serves nothing.  Instead it turns a directory into a disk image,
+writing it to F<ext2fs.img> (see L<nbdkit-captive(1)>).  The resulting
+image is a partitioned disk.
+
+=item Create a minimal virtual appliance
+
+This creates and boots a minimal L<busybox(1)>-based virtual
+appliance.  This assumes that your kernel (F</boot/vmlinuz>) contains
+the ext2 or ext4 driver compiled in, but most Linux distro kernels
+have that.
+
+ mkdir -p root/{bin,dev,proc,sbin,sys,usr/bin,usr/sbin}
+ sudo mknod root/dev/console c 5 1
+ cp /sbin/busybox root/sbin/
+ ln root/sbin/busybox root/sbin/init
+ ln root/sbin/busybox root/bin/ls
+ ln root/sbin/busybox root/bin/sh
+ nbdkit -U - linuxdisk root --run '
+   qemu-kvm -display none -kernel /boot/vmlinuz -drive file=nbd:unix:$unixsocket,snapshot=on -append "console=ttyS0 root=/dev/sda1 rw" -serial stdio
+ '
+
+You can drop any extra files you need into the F<root/> directory and
+they will be copied into the appliance before boot.  After booting
+type these commands to complete the environmental setup:
+
+ /sbin/busybox --install
+ mount -t proc proc /proc
+ mount -t sysfs sys /sys
+
+=back
+
+=head1 PARAMETERS
+
+=over 4
+
+=item [B<dir=>]DIRECTORY
+
+Specify the directory containing files and subdirectories which will
+be added to the virtual disk.  Files inside this directory will appear
+in the root directory of the virtual disk.
+
+This parameter is required.
+
+C<dir=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
+
+=item B<label=>LABEL
+
+The optional label for the filesystem.
+
+=item B<size=>SIZE
+
+=item B<size=+>SIZE
+
+The total (virtual) size of the filesystem.
+
+If the C<size> parameter is omitted the plugin will try to size the
+filesystem with just enough space to contain the files and directories
+that are initially loaded, and there will not be much extra space.
+
+Using C<size=SIZE> specifies the required virtual size of the whole
+filesystem (including initial files and extra space).  If this is set
+too small for the initial filesystem then the plugin will fail to
+start.
+
+Using C<size=+SIZE> specifies the minimum free space required after
+the initial filesystem has been loaded.  (The actual free space might
+be slightly larger).
+
+=item B<type=ext2>
+
+=item B<type=ext3>
+
+=item B<type=ext4>
+
+Select the filesystem type.  The default is C<ext2>.
+
+=back
+
+=head1 NOTES
+
+=head2 Users and groups.
+
+The original file UIDs and GIDs are recreated as far as possible.
+Note that UIDs/GIDs will likely map to different users and groups when
+read by a virtual machine or other NBD client machine.
+
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item C<TMPDIR>
+
+The filesystem image is stored in a temporary file located in
+F</var/tmp> by default.  You can override this location by setting the
+C<TMPDIR> environment variable before starting nbdkit.
+
+=back
+
+=head1 SEE ALSO
+
+L<mke2fs(8)>,
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-captive(1)>,
+L<nbdkit-cow-filter(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-floppy-plugin(1)>,
+L<nbdkit-iso-plugin(1)>,
+L<nbdkit-partition-filter(1)>,
+L<nbdkit-partitioning-plugin(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

@@ -793,6 +793,7 @@ non_lang_plugins="\
         gzip \
         iso \
         libvirt \
+        linuxdisk \
         memory \
         nbd \
         null \
@@ -855,6 +856,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/gzip/Makefile
                  plugins/iso/Makefile
                  plugins/libvirt/Makefile
+                 plugins/linuxdisk/Makefile
                  plugins/lua/Makefile
                  plugins/memory/Makefile
                  plugins/nbd/Makefile

@@ -18,6 +18,9 @@ The virtual floppy disk will have a single partition (using an MBR
 partition table).  In that partition will be a virtual FAT32
 filesystem containing the files.  Long filenames are supported.
 
+To create a CD/ISO, see L<nbdkit-iso-plugin(1)>.  To create a Linux
+compatible virtual disk, see L<nbdkit-linuxdisk-plugin(1)>.
+
 =head1 EXAMPLE
 
 Create a virtual floppy disk:
@@ -74,6 +77,7 @@ important, and it simplifies the implementation greatly.
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-linuxdisk-plugin(1)>,
 L<nbdkit-iso-plugin(1)>.
 
 =head1 AUTHORS
