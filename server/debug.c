@@ -43,7 +43,7 @@
 
 /* Called with flockfile (stderr) taken. */
 static void
-prologue (const char *type)
+prologue (void)
 {
   const char *name = threadlocal_get_name ();
   size_t instance_num = threadlocal_get_instance_num ();
@@ -57,7 +57,7 @@ prologue (const char *type)
     fprintf (stderr, ": ");
   }
 
-  fprintf (stderr, "%s: ", type);
+  fprintf (stderr, "debug: ");
 }
 
 /* Note: preserves the previous value of errno. */
@@ -69,7 +69,7 @@ nbdkit_vdebug (const char *fs, va_list args)
   if (!verbose)
     return;
   flockfile (stderr);
-  prologue ("debug");
+  prologue ();
 
   vfprintf (stderr, fs, args);
 
@@ -90,7 +90,7 @@ nbdkit_debug (const char *fs, ...)
     return;
 
   flockfile (stderr);
-  prologue ("debug");
+  prologue ();
 
   va_start (args, fs);
   vfprintf (stderr, fs, args);
