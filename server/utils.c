@@ -196,7 +196,7 @@ nbdkit_parse_bool (const char *str)
 int
 nbdkit_read_password (const char *value, char **password)
 {
-  int tty, err;;
+  int tty, err;
   struct termios orig, temp;
   ssize_t r;
   size_t n;
