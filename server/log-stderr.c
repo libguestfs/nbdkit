@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include "internal.h"
@@ -49,8 +50,11 @@ log_stderr_verror (const char *fs, va_list args)
 
   const char *name = threadlocal_get_name ();
   size_t instance_num = threadlocal_get_instance_num ();
+  int tty;
 
   flockfile (stderr);
+  tty = isatty (fileno (stderr));
+  if (tty) fputs ("\033[1;31m", stderr);
 
   fprintf (stderr, "%s: ", program_name);
 
@@ -65,6 +69,8 @@ log_stderr_verror (const char *fs, va_list args)
   errno = err;                  /* must restore in case fs contains %m */
   vfprintf (stderr, fs, args);
   fprintf (stderr, "\n");
+
+  if (tty) fputs ("\033[0m", stderr);
 
   funlockfile (stderr);
 
