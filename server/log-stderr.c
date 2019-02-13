@@ -45,7 +45,8 @@
 void
 log_stderr_verror (const char *fs, va_list args)
 {
-  int err = errno;
+  int err = errno;              /* must be first line of function */
+
   const char *name = threadlocal_get_name ();
   size_t instance_num = threadlocal_get_instance_num ();
 
@@ -61,10 +62,11 @@ log_stderr_verror (const char *fs, va_list args)
   }
 
   fprintf (stderr, "error: ");
-  errno = err; /* Must restore in case fs contains %m */
+  errno = err;                  /* must restore in case fs contains %m */
   vfprintf (stderr, fs, args);
   fprintf (stderr, "\n");
 
   funlockfile (stderr);
-  errno = err;
+
+  errno = err;                  /* must be last line of function */
 }
