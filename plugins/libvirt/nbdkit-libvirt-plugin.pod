@@ -36,7 +36,7 @@ This required parameter specifies the libvirt domain name
 This required parameter specifies the guest's disk that we want to
 read.
 
-You can either give the path to the backing device (C</path/to/disk>)
+You can either give the path to the backing device (F</path/to/disk>)
 or the target name (eg. C<sda>).
 
 In either case use C<virsh dumpxml DOMAIN> to list possible disks.

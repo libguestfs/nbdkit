@@ -98,7 +98,7 @@ can now be killed.
 =item C<TMPDIR>
 
 The copy-on-write changes are stored in a temporary file located in
-C</var/tmp> by default.  You can override this location by setting the
+F</var/tmp> by default.  You can override this location by setting the
 C<TMPDIR> environment variable before starting nbdkit.
 
 =back

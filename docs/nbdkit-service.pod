@@ -26,7 +26,7 @@ fork into the background (ie. I<-f> is implied).
 =head2 Using socket activation with systemd
 
 To use nbdkit with socket activation from systemd, create a unit file
-ending in C<.socket> (eg. C</etc/systemd/system/nbdkit.socket>)
+ending in C<.socket> (eg. F</etc/systemd/system/nbdkit.socket>)
 containing:
 
  [Unit]
@@ -41,7 +41,7 @@ containing:
 There are various formats for the C<ListenStream> key.  See
 L<systemd.socket(5)> for more information.
 
-Also create a service unit (eg. C</etc/systemd/system/nbdkit.service>)
+Also create a service unit (eg. F</etc/systemd/system/nbdkit.service>)
 containing:
 
  [Service]

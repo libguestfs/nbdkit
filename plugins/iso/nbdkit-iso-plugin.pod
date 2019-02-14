@@ -84,7 +84,7 @@ optional C<prog> parameter must be available on the C<$PATH>.
 =item C<TMPDIR>
 
 A temporary copy of the ISO is created in C<TMPDIR>.  If this
-environment variable is not set then C</var/tmp> is used instead.
+environment variable is not set then F</var/tmp> is used instead.
 There must be enough free space here to store the ISO, which might be
 quite large.
 

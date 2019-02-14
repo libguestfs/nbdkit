@@ -125,7 +125,7 @@ Least recently used blocks are discarded first.
 
 =item C<TMPDIR>
 
-The cache is stored in a temporary file located in C</var/tmp> by
+The cache is stored in a temporary file located in F</var/tmp> by
 default.  You can override this location by setting the C<TMPDIR>
 environment variable before starting nbdkit.
 

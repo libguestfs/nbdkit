@@ -89,8 +89,8 @@ Add the disk(s) from the libvirt guest called C<DOMAIN>.
 Export C<DEVICE> or C<FILE> (from inside the disk image or guest) over
 NBD.
 
-Device names are the usual libguestfs names like C</dev/sda1> (meaning
-the first partition of the first disk), or C</dev/VG/LV> (a logical
+Device names are the usual libguestfs names like F</dev/sda1> (meaning
+the first partition of the first disk), or F</dev/VG/LV> (a logical
 volume), or RAID arrays etc.  The device name should not be confused
 with host devices.
 
@@ -116,7 +116,7 @@ Use guest inspection to mount disks.  This is like C<guestfish -i>.
 =item B<mount=>DEVB<:>MOUNTPOINT
 
 Mount C<DEV> from inside the guest on C<MOUNTPOINT> (defaults to
-C</>).  This is like C<guestfish -m>.
+F</>).  This is like C<guestfish -m>.
 
 =item B<trace=1>
 
