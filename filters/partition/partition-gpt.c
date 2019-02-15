@@ -41,37 +41,29 @@
 #include <nbdkit-filter.h>
 
 #include "byte-swapping.h"
+#include "gpt.h"
 
 #include "partition.h"
 
-struct gpt_header {
-  uint32_t nr_partitions;
-  uint32_t partition_entry_size;
-};
-
 static void
-get_gpt_header (uint8_t *sector, struct gpt_header *header)
+get_gpt_header (uint8_t *sector,
+                uint32_t *nr_partition_entries,
+                uint32_t *size_partition_entry)
 {
-  memcpy (&header->nr_partitions, &sector[0x50], 4);
-  header->nr_partitions = le32toh (header->nr_partitions);
-  memcpy (&header->partition_entry_size, &sector[0x54], 4);
-  header->partition_entry_size = le32toh (header->partition_entry_size);
+  struct gpt_header *header = (struct gpt_header *) sector;
+  *nr_partition_entries = le32toh (header->nr_partition_entries);
+  *size_partition_entry = le32toh (header->size_partition_entry);
 }
 
-struct gpt_partition {
-  uint8_t partition_type_guid[16];
-  uint64_t first_lba;
-  uint64_t last_lba;
-};
-
 static void
-get_gpt_partition (uint8_t *bytes, struct gpt_partition *part)
+get_gpt_partition (uint8_t *bytes,
+                   uint8_t *partition_type_guid,
+                   uint64_t *first_lba, uint64_t *last_lba)
 {
-  memcpy (&part->partition_type_guid, &bytes[0], 16);
-  memcpy (&part->first_lba, &bytes[0x20], 8);
-  part->first_lba = le64toh (part->first_lba);
-  memcpy (&part->last_lba, &bytes[0x28], 8);
-  part->last_lba = le64toh (part->last_lba);
+  struct gpt_entry *entry = (struct gpt_entry *) bytes;
+  memcpy (partition_type_guid, entry->partition_type_guid, 16);
+  *first_lba = le64toh (entry->first_lba);
+  *last_lba = le64toh (entry->last_lba);
 }
 
 int
@@ -80,18 +72,19 @@ find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
                     int64_t *offset_r, int64_t *range_r)
 {
   uint8_t partition_bytes[128];
-  struct gpt_header header;
-  struct gpt_partition partition;
+  uint32_t nr_partition_entries, size_partition_entry;
+  uint8_t partition_type_guid[16];
+  uint64_t first_lba, last_lba;
   int i;
   int err;
 
-  get_gpt_header (header_bytes, &header);
-  if (partnum > header.nr_partitions) {
+  get_gpt_header (header_bytes, &nr_partition_entries, &size_partition_entry);
+  if (partnum > nr_partition_entries) {
     nbdkit_error ("GPT partition number out of range");
     return -1;
   }
 
-  if (header.partition_entry_size < 128) {
+  if (size_partition_entry < 128) {
     nbdkit_error ("GPT partition entry size is < 128 bytes");
     return -1;
   }
@@ -101,23 +94,24 @@ find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
    * that the GPT header is bogus.
    */
   if (size < INT64_C(3)*SECTOR_SIZE +
-      INT64_C(2) * header.nr_partitions * header.partition_entry_size) {
+      INT64_C(2) * nr_partition_entries * size_partition_entry) {
     nbdkit_error ("GPT partition table is too large for this disk");
     return -1;
   }
 
-  for (i = 0; i < header.nr_partitions; ++i) {
+  for (i = 0; i < nr_partition_entries; ++i) {
     /* We already checked these are within bounds above. */
     if (next_ops->pread (nxdata, partition_bytes, sizeof partition_bytes,
-                         2*SECTOR_SIZE + i*header.partition_entry_size, 0,
+                         2*SECTOR_SIZE + i*size_partition_entry, 0,
                          &err) == -1)
       return -1;
-    get_gpt_partition (partition_bytes, &partition);
-    if (memcmp (partition.partition_type_guid,
+    get_gpt_partition (partition_bytes,
+                       partition_type_guid, &first_lba, &last_lba);
+    if (memcmp (partition_type_guid,
                 "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16) != 0 &&
         partnum == i+1) {
-      *offset_r = partition.first_lba * SECTOR_SIZE;
-      *range_r = (1 + partition.last_lba - partition.first_lba) * SECTOR_SIZE;
+      *offset_r = first_lba * SECTOR_SIZE;
+      *range_r = (1 + last_lba - first_lba) * SECTOR_SIZE;
       return 0;
     }
   }

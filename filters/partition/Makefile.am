@@ -45,6 +45,7 @@ nbdkit_partition_filter_la_SOURCES = \
 
 nbdkit_partition_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/gpt \
 	-I$(top_srcdir)/common/include
 nbdkit_partition_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
