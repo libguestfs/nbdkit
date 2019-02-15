@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 #include <inttypes.h>
@@ -48,9 +49,13 @@
 #include "regions.h"
 #include "virtual-disk.h"
 
-static void create_gpt_partition_header (const void *pt, int is_primary, unsigned char *out);
+static void create_gpt_partition_header (const void *pt, bool is_primary,
+                                         unsigned char *out);
 static void create_gpt_partition_table (unsigned char *out);
-static void create_gpt_partition_table_entry (const struct region *region, int bootable, char partition_type_guid[16], unsigned char *out);
+static void create_gpt_partition_table_entry (const struct region *region,
+                                              bool bootable,
+                                              char partition_type_guid[16],
+                                              unsigned char *out);
 static void create_gpt_protective_mbr (unsigned char *out);
 
 void
@@ -66,18 +71,18 @@ create_gpt_layout (void)
   create_gpt_partition_table (pt);
 
   /* Partition table header.  LBA 1 */
-  create_gpt_partition_header (pt, 1, &primary[SECTOR_SIZE]);
+  create_gpt_partition_header (pt, true, &primary[SECTOR_SIZE]);
 
   /* Backup partition table.  LBA -(LBAs+2) */
   pt = secondary;
   create_gpt_partition_table (pt);
 
   /* Backup partition table header.  LBA -1 */
-  create_gpt_partition_header (pt, 0, &secondary[GPT_PTA_LBAs*SECTOR_SIZE]);
+  create_gpt_partition_header (pt, false, &secondary[GPT_PTA_LBAs*SECTOR_SIZE]);
 }
 
 static void
-create_gpt_partition_header (const void *pt, int is_primary,
+create_gpt_partition_header (const void *pt, bool is_primary,
                              unsigned char *out)
 {
   uint64_t nr_lbas;
@@ -148,7 +153,8 @@ create_gpt_partition_table (unsigned char *out)
 
 static void
 create_gpt_partition_table_entry (const struct region *region,
-                                  int bootable, char partition_type_guid[16],
+                                  bool bootable,
+                                  char partition_type_guid[16],
                                   unsigned char *out)
 {
   size_t i, len;
