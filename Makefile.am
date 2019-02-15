@@ -74,6 +74,7 @@ SUBDIRS += \
 	common/gpt \
 	common/regions \
 	common/sparse \
+	common/utils \
 	plugins \
 	filters
 endif

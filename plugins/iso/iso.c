@@ -43,6 +43,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "utils.h"
+
 /* List of directories parsed from the command line. */
 static char **dirs = NULL;
 static size_t nr_dirs = 0;
@@ -59,8 +61,6 @@ static const char *params = NULL;
 static int fd = -1;
 
 /* Construct the temporary ISO. */
-static void shell_quote (const char *str, FILE *fp);
-
 static int
 make_iso (void)
 {
@@ -134,38 +134,6 @@ make_iso (void)
   }
 
   return 0;
-}
-
-/* Print str to fp, shell quoting if necessary.  This comes from
- * libguestfs, but was written by me so I'm relicensing it to a BSD
- * license for nbdkit.
- */
-static void
-shell_quote (const char *str, FILE *fp)
-{
-  const char *safe_chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_=,:/";
-  size_t i, len;
-
-  /* If the string consists only of safe characters, output it as-is. */
-  len = strlen (str);
-  if (len == strspn (str, safe_chars)) {
-    fputs (str, fp);
-    return;
-  }
-
-  /* Double-quote the string. */
-  fputc ('"', fp);
-  for (i = 0; i < len; ++i) {
-    switch (str[i]) {
-    case '$': case '`': case '\\': case '"':
-      fputc ('\\', fp);
-      /*FALLTHROUGH*/
-    default:
-      fputc (str[i], fp);
-    }
-  }
-  fputc ('"', fp);
 }
 
 static void
