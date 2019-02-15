@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
@@ -87,7 +88,7 @@ static const char *thumb_print = NULL;     /* thumbprint */
 static const char *transport_modes = NULL; /* transports */
 static const char *username = NULL;        /* user */
 static const char *vmx_spec = NULL;        /* vm */
-static int is_remote = 0;
+static bool is_remote = false;
 
 #define VDDK_ERROR(err, fs, ...)                                \
   do {                                                          \
