@@ -46,6 +46,7 @@
 #include "byte-swapping.h"
 
 #include "efi-crc32.h"
+#include "gpt.h"
 #include "regions.h"
 #include "virtual-disk.h"
 
@@ -86,28 +87,13 @@ create_gpt_partition_header (const void *pt, bool is_primary,
                              unsigned char *out)
 {
   uint64_t nr_lbas;
-  struct gpt_header {
-    char signature[8];
-    char revision[4];
-    uint32_t header_size;
-    uint32_t crc;
-    uint32_t reserved;
-    uint64_t current_lba;
-    uint64_t backup_lba;
-    uint64_t first_usable_lba;
-    uint64_t last_usable_lba;
-    char guid[16];
-    uint64_t partition_entries_lba;
-    uint32_t nr_partition_entries;
-    uint32_t size_partition_entry;
-    uint32_t crc_partitions;
-  } *header = (struct gpt_header *) out;
+  struct gpt_header *header = (struct gpt_header *) out;
 
   nr_lbas = virtual_size (&regions) / SECTOR_SIZE;
 
   memset (header, 0, sizeof *header);
-  memcpy (header->signature, "EFI PART", 8);
-  memcpy (header->revision, "\0\0\1\0", 4); /* revision 1.0 */
+  memcpy (header->signature, GPT_SIGNATURE, sizeof (header->signature));
+  memcpy (header->revision, GPT_REVISION, sizeof (header->revision));
   header->header_size = htole32 (sizeof *header);
   if (is_primary) {
     header->current_lba = htole64 (1);
@@ -159,14 +145,7 @@ create_gpt_partition_table_entry (const struct region *region,
 {
   size_t i, len;
   const char *filename;
-  struct gpt_entry {
-    char partition_type_guid[16];
-    char unique_guid[16];
-    uint64_t first_lba;
-    uint64_t last_lba;
-    uint64_t attributes;
-    char name[72];              /* UTF-16LE */
-  } *entry = (struct gpt_entry *) out;
+  struct gpt_entry *entry = (struct gpt_entry *) out;
 
   assert (sizeof (struct gpt_entry) == GPT_PT_ENTRY_SIZE);
 

@@ -833,6 +833,7 @@ AC_CONFIG_FILES([podwrapper.pl],
 AC_CONFIG_FILES([Makefile
                  bash/Makefile
                  common/bitmap/Makefile
+                 common/gpt/Makefile
                  common/include/Makefile
                  common/regions/Makefile
                  common/sparse/Makefile

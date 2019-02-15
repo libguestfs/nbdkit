@@ -40,6 +40,7 @@
 
 #include "rounding.h"
 
+#include "gpt.h"
 #include "regions.h"
 
 #define SECTOR_SIZE UINT64_C(512)
@@ -49,18 +50,6 @@
  * padding between partitions.
  */
 #define MAX_MBR_DISK_SIZE (UINT32_MAX * SECTOR_SIZE - 5 * MAX_ALIGNMENT)
-
-/* GPT_MIN_PARTITIONS is the minimum number of partitions and is
- * defined by the UEFI standard (assuming 512 byte sector size).  If
- * we are requested to allocate more than GPT_MIN_PARTITIONS then we
- * increase the partition table in chunks of this size.  Note that
- * clients may not support > GPT_MIN_PARTITIONS.
- *
- * GPT_PT_ENTRY_SIZE is the minimum specified by the UEFI spec, but
- * increasing it is not useful.
- */
-#define GPT_MIN_PARTITIONS 128
-#define GPT_PT_ENTRY_SIZE 128
 
 /* For GPT, the number of entries in the partition table array (PTA),
  * and the number of LBAs which the PTA occupies.  The latter will be

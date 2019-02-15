@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,41 +32,11 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = nbdkit-partitioning-plugin.pod
+noinst_LTLIBRARIES = libgpt.la
 
-plugin_LTLIBRARIES = nbdkit-partitioning-plugin.la
-
-nbdkit_partitioning_plugin_la_SOURCES = \
-	partitioning.c \
-	partition-gpt.c \
-	partition-mbr.c \
-	virtual-disk.c \
-	virtual-disk.h \
-	$(top_srcdir)/include/nbdkit-plugin.h
-
-nbdkit_partitioning_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/gpt \
-	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/regions \
-	-I.
-nbdkit_partitioning_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
-nbdkit_partitioning_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
-nbdkit_partitioning_plugin_la_LIBADD = \
-	$(top_builddir)/common/gpt/libgpt.la \
-	$(top_builddir)/common/regions/libregions.la
-
-if HAVE_POD
-
-man_MANS = nbdkit-partitioning-plugin.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-partitioning-plugin.1: nbdkit-partitioning-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+libgpt_la_SOURCES = \
+        efi-crc32.c \
+        efi-crc32.h \
+        gpt.h
+libgpt_la_CFLAGS = \
+        $(WARNINGS_CFLAGS)
