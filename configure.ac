@@ -826,6 +826,7 @@ AC_CONFIG_FILES([Makefile
                  common/include/Makefile
                  common/regions/Makefile
                  common/sparse/Makefile
+                 common/utils/Makefile
                  docs/Makefile
                  include/Makefile
                  plugins/Makefile

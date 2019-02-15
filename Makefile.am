@@ -73,6 +73,7 @@ SUBDIRS += \
 	common/bitmap \
 	common/regions \
 	common/sparse \
+	common/utils \
 	plugins \
 	filters
 endif

@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,38 +32,10 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = nbdkit-iso-plugin.pod
+noinst_LTLIBRARIES = libutils.la
 
-if HAVE_ISO
-
-plugin_LTLIBRARIES = nbdkit-iso-plugin.la
-
-nbdkit_iso_plugin_la_SOURCES = \
-	iso.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
-
-nbdkit_iso_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils \
-	-I$(top_srcdir)/include \
-	-I.
-nbdkit_iso_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
-nbdkit_iso_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
-nbdkit_iso_plugin_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la
-
-if HAVE_POD
-
-man_MANS = nbdkit-iso-plugin.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-iso-plugin.1: nbdkit-iso-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
-
-endif
+libutils_la_SOURCES = \
+        utils.c \
+	utils.h
+libutils_la_CFLAGS = \
+        $(WARNINGS_CFLAGS)
