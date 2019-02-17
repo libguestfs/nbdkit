@@ -65,6 +65,12 @@ General ideas for improvements
   newline. Commit ef4f72ef has some ideas on smart newlines, but that
   should probably be factored into a utility function.
 
+* We may need a way to lock nbdkit into memory and adjust the OOM
+  killer score.  See this LKML discussion:
+  https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg1933394.html
+  and also look at the implementation of the -swap option in
+  nbd-client.
+
 Suggestions for plugins
 -----------------------
 
