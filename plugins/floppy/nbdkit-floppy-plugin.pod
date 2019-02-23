@@ -21,6 +21,14 @@ filesystem containing the files.  Long filenames are supported.
 To create a CD/ISO, see L<nbdkit-iso-plugin(1)>.  To create a Linux
 compatible virtual disk, see L<nbdkit-linuxdisk-plugin(1)>.
 
+B<Note:> The plugin does not save a temporary copy of the files, so
+you must leave the directory alone while nbdkit is running, else you
+may get an error (for example if the plugin tries to open one of the
+files which you have moved or deleted).  This is different from how
+L<nbdkit-iso-plugin(1)> and L<nbdkit-linuxdisk-plugin(1)> work, as
+both of those plugins keep a temporary copy of the files and
+directories.
+
 =head1 EXAMPLE
 
 Create a virtual floppy disk:
@@ -56,12 +64,6 @@ single file is 4GB.  Non-regular files (such as block special,
 symbolic links, sockets) are not supported and will be ignored.
 
 The plugin does not support writes.
-
-The plugin does not save a temporary copy of the files, so you must
-leave the directory alone while nbdkit is running, else you may get an
-error for example if the plugin tries to open one of the files which
-you have moved or deleted.  (This is different from how
-L<nbdkit-iso-plugin(1)> works).
 
 The virtual floppy will not be bootable.  This could be added in
 future (using SYSLINUX) but requires considerable work.  As a
