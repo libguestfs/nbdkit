@@ -35,5 +35,6 @@
 #define NBDKIT_UTILS_H
 
 extern void shell_quote (const char *str, FILE *fp);
+extern int exit_status_to_nbd_error (int status, const char *cmd);
 
 #endif /* NBDKIT_UTILS_H */

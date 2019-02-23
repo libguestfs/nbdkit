@@ -36,6 +36,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <nbdkit-plugin.h>
 
 /* Print str to fp, shell quoting if necessary.  This comes from
  * libguestfs, but was written by me so I'm relicensing it to a BSD
@@ -70,4 +74,29 @@ shell_quote (const char *str, FILE *fp)
     }
   }
   fputc ('"', fp);
+}
+
+/* Convert exit status to nbd_error.  If the exit status was nonzero
+ * or another failure then -1 is returned.
+ */
+int
+exit_status_to_nbd_error (int status, const char *cmd)
+{
+  if (WIFEXITED (status) && WEXITSTATUS (status) != 0) {
+    nbdkit_error ("%s: command failed with exit code %d",
+                  cmd, WEXITSTATUS (status));
+    return -1;
+  }
+  else if (WIFSIGNALED (status)) {
+    nbdkit_error ("%s: command was killed by signal %d",
+                  cmd, WTERMSIG (status));
+    return -1;
+  }
+  else if (WIFSTOPPED (status)) {
+    nbdkit_error ("%s: command was stopped by signal %d",
+                  cmd, WSTOPSIG (status));
+    return -1;
+  }
+
+  return 0;
 }

@@ -39,7 +39,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 
 #include <nbdkit-plugin.h>
 
@@ -116,22 +115,8 @@ make_iso (void)
   nbdkit_debug ("%s", command);
   r = system (command);
   free (command);
-
-  if (WIFEXITED (r) && WEXITSTATUS (r) != 0) {
-    nbdkit_error ("external %s command failed with exit code %d",
-                  isoprog, WEXITSTATUS (r));
+  if (exit_status_to_nbd_error (r, isoprog) == -1)
     return -1;
-  }
-  else if (WIFSIGNALED (r)) {
-    nbdkit_error ("external %s command was killed by signal %d",
-                  isoprog, WTERMSIG (r));
-    return -1;
-  }
-  else if (WIFSTOPPED (r)) {
-    nbdkit_error ("external %s command was stopped by signal %d",
-                  isoprog, WSTOPSIG (r));
-    return -1;
-  }
 
   return 0;
 }
