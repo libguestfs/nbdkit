@@ -82,14 +82,6 @@ perl_unload (void)
 
 /* We use this function to test if the named callback is defined
  * in the loaded Perl code.
- *
- * There is a subtle nbdkit problem here.  Because we don't load the
- * script until the configuration phase, we don't know until too late
- * which callbacks are defined in Perl.  Therefore we cannot set the
- * .plugin fields to NULL appropriately (also because nbdkit copies
- * that struct, we cannot modify the struct after the module is
- * loaded).  So what we have to do is copy the default behaviour of
- * nbdkit for missing Perl callbacks.
  */
 static int
 callback_defined (const char *perl_func_name)
@@ -368,6 +360,64 @@ perl_get_size (void *handle)
 }
 
 static int
+perl_boolean (void *handle, const char *callback_name, const char *fn_name)
+{
+  dSP;
+  SV *sv;
+  int r;
+
+  if (callback_defined (callback_name)) {
+    /* If there's a Perl callback, call it. */
+    ENTER;
+    SAVETMPS;
+    PUSHMARK (SP);
+    XPUSHs (handle);
+    PUTBACK;
+    call_pv (callback_name, G_EVAL|G_SCALAR);
+    SPAGAIN;
+    sv = POPs;
+    r = SvIV (sv);
+    PUTBACK;
+    FREETMPS;
+    LEAVE;
+
+    if (check_perl_failure () == -1)
+      return -1;
+
+    return r;
+  }
+  /* No Perl callback.  If the function is defined, return 1. */
+  else if (fn_name && callback_defined (fn_name))
+    return 1;
+  else
+    return 0;
+}
+
+static int
+perl_can_write (void *handle)
+{
+  return perl_boolean (handle, "can_write", "write");
+}
+
+static int
+perl_can_flush (void *handle)
+{
+  return perl_boolean (handle, "can_flush", "flush");
+}
+
+static int
+perl_can_trim (void *handle)
+{
+  return perl_boolean (handle, "can_trim", "trim");
+}
+
+static int
+perl_is_rotational (void *handle)
+{
+  return perl_boolean (handle, "is_rotational", NULL);
+}
+
+static int
 perl_pread (void *handle, void *buf,
             uint32_t count, uint64_t offset)
 {
@@ -436,114 +486,6 @@ perl_pwrite (void *handle, const void *buf,
 }
 
 static int
-perl_can_write (void *handle)
-{
-  dSP;
-  SV *sv;
-  int r;
-
-  if (callback_defined ("can_write")) {
-    /* If there's a Perl callback, call it. */
-    ENTER;
-    SAVETMPS;
-    PUSHMARK (SP);
-    XPUSHs (handle);
-    PUTBACK;
-    call_pv ("can_write", G_EVAL|G_SCALAR);
-    SPAGAIN;
-    sv = POPs;
-    r = SvIV (sv);
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
-
-    if (check_perl_failure () == -1)
-      return -1;
-
-    return r;
-  }
-  /* No Perl can_write callback, but there's a Perl pwrite callback
-   * defined, so return 1.  (In C modules, nbdkit would do this).
-   */
-  else if (callback_defined ("pwrite"))
-    return 1;
-  else
-    return 0;
-}
-
-static int
-perl_can_flush (void *handle)
-{
-  dSP;
-  SV *sv;
-  int r;
-
-  if (callback_defined ("can_flush")) {
-    /* If there's a Perl callback, call it. */
-    ENTER;
-    SAVETMPS;
-    PUSHMARK (SP);
-    XPUSHs (handle);
-    PUTBACK;
-    call_pv ("can_flush", G_EVAL|G_SCALAR);
-    SPAGAIN;
-    sv = POPs;
-    r = SvIV (sv);
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
-
-    if (check_perl_failure () == -1)
-      return -1;
-
-    return r;
-  }
-  /* No Perl can_flush callback, but there's a Perl flush callback
-   * defined, so return 1.  (In C modules, nbdkit would do this).
-   */
-  else if (callback_defined ("flush"))
-    return 1;
-  else
-    return 0;
-}
-
-static int
-perl_can_trim (void *handle)
-{
-  dSP;
-  SV *sv;
-  int r;
-
-  if (callback_defined ("can_trim")) {
-    /* If there's a Perl callback, call it. */
-    ENTER;
-    SAVETMPS;
-    PUSHMARK (SP);
-    XPUSHs (handle);
-    PUTBACK;
-    call_pv ("can_trim", G_EVAL|G_SCALAR);
-    SPAGAIN;
-    sv = POPs;
-    r = SvIV (sv);
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
-
-    if (check_perl_failure () == -1)
-      return -1;
-
-    return r;
-  }
-  /* No Perl can_trim callback, but there's a Perl trim callback
-   * defined, so return 1.  (In C modules, nbdkit would do this).
-   */
-  else if (callback_defined ("trim"))
-    return 1;
-  else
-    return 0;
-}
-
-static int
 perl_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
   dSP;
@@ -580,37 +522,6 @@ perl_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
   nbdkit_debug ("zero falling back to pwrite");
   nbdkit_set_error (EOPNOTSUPP);
   return -1;
-}
-
-static int
-perl_is_rotational (void *handle)
-{
-  dSP;
-  SV *sv;
-  int r;
-
-  if (callback_defined ("is_rotational")) {
-    /* If there's a Perl callback, call it. */
-    ENTER;
-    SAVETMPS;
-    PUSHMARK (SP);
-    XPUSHs (handle);
-    PUTBACK;
-    call_pv ("is_rotational", G_EVAL|G_SCALAR);
-    SPAGAIN;
-    sv = POPs;
-    r = SvIV (sv);
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
-
-    if (check_perl_failure () == -1)
-      return -1;
-
-    return r;
-  }
-  else
-    return 0;
 }
 
 static int
