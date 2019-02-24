@@ -73,7 +73,8 @@ nbdkit_CPPFLAGS = \
 	-Dsbindir=\"$(sbindir)\" \
 	-Dsysconfdir=\"$(sysconfdir)\" \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
+	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils
 nbdkit_CFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	$(WARNINGS_CFLAGS) \
@@ -83,7 +84,8 @@ nbdkit_CFLAGS = \
 nbdkit_LDADD = \
 	$(GNUTLS_LIBS) \
 	$(LIBSELINUX_LIBS) \
-	$(DL_LIBS)
+	$(DL_LIBS) \
+	$(top_builddir)/common/utils/libutils.la
 nbdkit_LDFLAGS = \
 	$(PTHREAD_LIBS) \
 	$(DL_LDFLAGS)
