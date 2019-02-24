@@ -66,6 +66,7 @@ SUBDIRS = \
 	valgrind \
 	include \
 	common/include \
+	common/utils \
 	server
 
 if HAVE_PLUGINS
@@ -73,7 +74,6 @@ SUBDIRS += \
 	common/bitmap \
 	common/regions \
 	common/sparse \
-	common/utils \
 	plugins \
 	filters
 endif

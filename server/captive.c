@@ -42,6 +42,8 @@
 #include <sys/wait.h>
 #include <signal.h>
 
+#include "utils.h"
+
 #include "internal.h"
 
 /* Handle the --run option.  If run is NULL, does nothing.  If run is
@@ -50,53 +52,68 @@
 void
 run_command (void)
 {
-  char *url;
-  char *cmd;
+  FILE *fp;
+  char *cmd = NULL;
+  size_t len = 0;
   int r;
   pid_t pid;
 
   if (!run)
     return;
 
-  /* Construct an nbd "URL".  Unfortunately guestfish and qemu take
+  fp = open_memstream (&cmd, &len);
+  if (fp == NULL) {
+    perror ("open_memstream");
+    exit (EXIT_FAILURE);
+  }
+
+  /* Construct $nbd "URL".  Unfortunately guestfish and qemu take
    * different syntax, so try to guess which one we need.
    */
+  fprintf (fp, "nbd=");
   if (strstr (run, "guestfish")) {
-    if (port)
-      r = asprintf (&url, "nbd://localhost:%s", port);
-    else if (unixsocket)
-      /* XXX escaping? */
-      r = asprintf (&url, "nbd://?socket=%s", unixsocket);
+    if (port) {
+      fprintf (fp, "nbd://localhost:");
+      shell_quote (port, fp);
+    }
+    else if (unixsocket) {
+      fprintf (fp, "nbd://?socket=");
+      shell_quote (unixsocket, fp);
+    }
     else
       abort ();
   }
   else /* qemu */ {
-    if (port)
-      r = asprintf (&url, "nbd:localhost:%s", port);
-    else if (unixsocket)
-      r = asprintf (&url, "nbd:unix:%s", unixsocket);
+    if (port) {
+      fprintf (fp, "nbd:localhost:");
+      shell_quote (port, fp);
+    }
+    else if (unixsocket) {
+      fprintf (fp, "nbd:unix:");
+      shell_quote (unixsocket, fp);
+    }
     else
       abort ();
   }
-  if (r == -1) {
-    perror ("asprintf");
+  fprintf (fp, "\n");
+
+  /* Construct $port and $unixsocket. */
+  fprintf (fp, "port=");
+  if (port)
+    shell_quote (port, fp);
+  fprintf (fp, "\n");
+  fprintf (fp, "unixsocket=");
+  if (unixsocket)
+    shell_quote (unixsocket, fp);
+  fprintf (fp, "\n");
+
+  /* Add the --run command.  Note we don't have to quote this. */
+  fprintf (fp, "%s", run);
+
+  if (fclose (fp) == EOF) {
+    perror ("memstream failed");
     exit (EXIT_FAILURE);
   }
-
-  /* Construct the final command including shell variables. */
-  /* XXX Escaping again. */
-  r = asprintf (&cmd,
-                "nbd='%s'\n"
-                "port='%s'\n"
-                "unixsocket='%s'\n"
-                "%s",
-                url, port ? port : "", unixsocket ? unixsocket : "", run);
-  if (r == -1) {
-    perror ("asprintf");
-    exit (EXIT_FAILURE);
-  }
-
-  free (url);
 
   /* Fork.  Captive nbdkit runs as the child process. */
   pid = fork ();
