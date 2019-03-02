@@ -37,5 +37,7 @@ noinst_LTLIBRARIES = libutils.la
 libutils_la_SOURCES = \
         utils.c \
 	utils.h
+libutils_la_CPPFLAGS = \
+	-I$(top_srcdir)/include
 libutils_la_CFLAGS = \
         $(WARNINGS_CFLAGS)
