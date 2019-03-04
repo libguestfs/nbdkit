@@ -77,7 +77,7 @@ run_command (void)
       shell_quote (port, fp);
     }
     else if (unixsocket) {
-      fprintf (fp, "nbd://?socket=");
+      fprintf (fp, "nbd://\\?socket=");
       shell_quote (unixsocket, fp);
     }
     else
