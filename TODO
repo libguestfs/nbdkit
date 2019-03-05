@@ -129,6 +129,15 @@ Suggestions for filters
 * nbdkit-cache-filter should handle ENOSPC errors automatically by
   reclaiming blocks from the cache
 
+nbdkit-rate-filter:
+
+* allow other kinds of traffic shaping such as VBR
+
+* limit traffic per client (ie. per IP address)
+
+* split large requests to avoid long, lumpy sleeps when request size
+  is much larger than rate limit
+
 Filters for security
 --------------------
 

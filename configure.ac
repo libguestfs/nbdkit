@@ -819,6 +819,7 @@ filters="\
         nozero \
         offset \
         partition \
+        rate \
         truncate \
         xz \
         "
@@ -889,6 +890,7 @@ AC_CONFIG_FILES([Makefile
                  filters/nozero/Makefile
                  filters/offset/Makefile
                  filters/partition/Makefile
+                 filters/rate/Makefile
                  filters/truncate/Makefile
                  filters/xz/Makefile
                  fuzzing/Makefile

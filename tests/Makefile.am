@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2018 Red Hat Inc.
+# Copyright (C) 2013-2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -97,6 +97,7 @@ EXTRA_DIST = \
 	test-python-exception.sh \
 	test.pl \
 	test.py \
+	test-rate.sh \
 	test.rb \
 	test.tcl \
 	test-shebang-perl.sh \
@@ -809,6 +810,9 @@ TESTS += test-partition1.sh
 if HAVE_GUESTFISH
 TESTS += test-partition2.sh
 endif HAVE_GUESTFISH
+
+# rate filter test.
+TESTS += test-rate.sh
 
 # truncate filter tests.
 TESTS += \

@@ -1,0 +1,86 @@
+=head1 NAME
+
+nbdkit-rate-filter - limit bandwidth by connection or server
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=rate PLUGIN [PLUGIN-ARGS...]
+                      [rate=BITSPERSEC]
+                      [connection-rate=BITSPERSEC]
+
+=head1 DESCRIPTION
+
+C<nbdkit-rate-filter> is a filter that limits the bandwidth that can
+be used by the server.  Limits can be applied per connection and/or
+for the server as a whole.
+
+=head1 EXAMPLES
+
+=over 4
+
+=item nbdkit --filter=rate memory size=64M rate=1M
+
+Create a 64M RAM disk and limit server bandwidth as a whole to a
+maximum of S<1 Mbps> (megabit per second).
+
+=item nbdkit --filter=rate memory size=64M connection-rate=50K
+
+Limit each connection to S<50 Kbps> (kilobits per second).  However as
+there is no limit to the number of simultaneous connections this does
+not limit overall server bandwidth.
+
+=item nbdkit --filter=rate memory size=64M connection-rate=50K rate=1M
+
+Limit each connection to S<50 Kbps>.  Additionally the total bandwidth
+across all connections to the server is limited to S<1 Mbps>.
+
+=back
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<connection-rate=>BITSPERSEC
+
+Limit each connection to C<BITSPERSEC>.
+
+=item B<rate=>BITSPERSEC
+
+Limit total bandwidth across all connections to C<BITSPERSEC>.
+
+=back
+
+C<BITSPERSEC> can be specified as a simple number, or you can use a
+number followed by C<K>, C<M> etc to mean kilobits, megabits and so
+on.
+
+=head1 NOTES
+
+You can specify C<rate> and C<connection-rate> on their own or
+together.  If you specify neither, the filter is turned off.
+
+The rate filter approximates the bandwidth used by the NBD protocol on
+the wire.  Some operations such as zeroing and trimming are
+effectively free (because only a tiny NBD message is sent over the
+network) and so do not count against the bandwidth limit.  NBD and TCP
+protocol overhead is not included, so you may find that other tools
+such as L<tc(8)> and L<iptables(8)> give more accurate results.
+
+There are separate bandwidth limits for read and write (ie. download
+and upload to the server).
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-delay-filter(1)>,
+L<nbdkit-filter(3)>,
+L<iptables(8)>,
+L<tc(8)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.
