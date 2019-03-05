@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit-curl-plugin - nbdkit curl plugin (HTTP, FTP, SSH and other protocols)
+nbdkit-curl-plugin - nbdkit curl plugin (HTTP, FTP and other protocols)
 
 =head1 SYNOPSIS
 
@@ -11,12 +11,12 @@ nbdkit-curl-plugin - nbdkit curl plugin (HTTP, FTP, SSH and other protocols)
 =head1 DESCRIPTION
 
 C<nbdkit-curl-plugin> is a plugin for L<nbdkit(1)> which turns content
-served over HTTP, FTP, SSH, and more, into a Network Block Device.  It
-uses a library called libcurl (also known as cURL) to read data from
-URLs.  The exact list of protocols that libcurl can handle depends on
-how it was compiled, but most versions will handle HTTP, HTTPS, FTP,
-FTPS and SFTP (see: S<C<curl -V>>).  For more information about
-libcurl, see L<http://curl.haxx.se>.
+served over HTTP, FTP, and more, into a Network Block Device.  It uses
+a library called libcurl (also known as cURL) to read data from URLs.
+The exact list of protocols that libcurl can handle depends on how it
+was compiled, but most versions will handle HTTP, HTTPS, FTP, FTPS and
+SFTP (see: S<C<curl -V>>).  For more information about libcurl, see
+L<http://curl.haxx.se>.
 
 B<Note:> This plugin supports writes.  However:
 
@@ -47,8 +47,11 @@ control ports and protocols used to serve NBD see L<nbdkit(1)>).
 
 =head3 Accessing SSH servers
 
-You can also access SSH servers.  This uses the SFTP protocol which is
-built into most SSH servers:
+You can also access SSH servers via this plugin, although it is
+usually better to use the L<nbdkit-ssh-plugin(1)> instead.
+
+This plugin uses the SFTP protocol which is built into most SSH
+servers:
 
  nbdkit -r curl sftp://example.com/~/disk.img
 
@@ -131,6 +134,7 @@ L<curl(1)>,
 L<libcurl(3)>,
 L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
+L<nbdkit-ssh-plugin(1)>,
 L<nbdkit-plugin(3)>.
 
 =head1 AUTHORS

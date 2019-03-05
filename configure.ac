@@ -630,6 +630,21 @@ AS_IF([test "$with_curl" != "no"],[
 ])
 AM_CONDITIONAL([HAVE_CURL],[test "x$CURL_LIBS" != "x"])
 
+dnl Check for libssh (only if you want to compile the ssh plugin).
+AC_ARG_WITH([ssh],
+    [AS_HELP_STRING([--without-ssh],
+                    [disable ssh plugin @<:@default=check@:>@])],
+    [],
+    [with_ssh=check])
+AS_IF([test "$with_ssh" != "no"],[
+    PKG_CHECK_MODULES([SSH], [libssh >= 0.8.0],[
+        AC_SUBST([SSH_CFLAGS])
+        AC_SUBST([SSH_LIBS])
+    ],
+    [AC_MSG_WARN([libssh not found, ssh plugin will be disabled])])
+])
+AM_CONDITIONAL([HAVE_SSH],[test "x$SSH_LIBS" != "x"])
+
 dnl Check for genisoimage or mkisofs
 dnl (only if you want to compile the iso plugin).
 ISOPROG="no"
@@ -800,6 +815,7 @@ non_lang_plugins="\
         partitioning \
         pattern \
         random \
+        ssh \
         split \
         streaming \
         tar \
@@ -872,6 +888,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/rust/Cargo.toml
                  plugins/rust/Makefile
                  plugins/sh/Makefile
+                 plugins/ssh/Makefile
                  plugins/split/Makefile
                  plugins/streaming/Makefile
                  plugins/tar/Makefile

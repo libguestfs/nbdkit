@@ -77,6 +77,11 @@ For the curl (HTTP/FTP) plugin:
 
  - libcurl
 
+For the ssh plugin:
+
+ - libssh >= 0.8.0
+   (this is a different library from libssh2 - that will not work)
+
 For the iso plugin:
 
  - genisoimage or mkisofs

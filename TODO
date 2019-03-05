@@ -74,11 +74,11 @@ General ideas for improvements
 Suggestions for plugins
 -----------------------
 
-Note: qemu supports other formats such as libssh, libnfs, iscsi,
-gluster and ceph/rbd, and while similar plugins could be written for
-nbdkit there is no compelling reason unless the result is better than
-qemu-nbd.  For the majority of users it would be better if they were
-directed to qemu-nbd for these use cases.
+Note: qemu supports other formats such as libnfs, iscsi, gluster and
+ceph/rbd, and while similar plugins could be written for nbdkit there
+is no compelling reason unless the result is better than qemu-nbd.
+For the majority of users it would be better if they were directed to
+qemu-nbd for these use cases.
 
 * XVA files
 

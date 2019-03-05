@@ -1,0 +1,150 @@
+=head1 NAME
+
+nbdkit-ssh-plugin - access disk images over the SSH protocol
+
+=head1 SYNOPSIS
+
+ nbdkit ssh host=HOST path=PATH
+            [port=PORT] [user=USER] [password=PASSWORD|-|+FILENAME]
+            [config=CONFIG_FILE]
+
+=head1 DESCRIPTION
+
+This is an L<nbdkit(1)> plugin which lets you access remote disk
+images over Secure Shell (SSH).  Any server which hosts disk images
+and runs an SSH server can be turned into an NBD source using this
+plugin.
+
+=head2 EXAMPLES
+
+=over 4
+
+=item nbdkit ssh host=ssh.example.com path=disk.img
+
+Open a file called F<disk.img> on remote host C<ssh.example.com>.
+Because the pathname is relative, it is opened relative to the user’s
+home directory on the remote server.
+
+The remote file can be read or written.  To force read-only access add
+the I<-r> flag.
+
+=item nbdkit ssh host=ssh.example.com path=disk.img user=bob
+
+As above but log in using username C<bob> (instead of trying the local
+username).
+
+=back
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<config=>CONFIG_FILE
+
+Read local SSH configuration from an alternate configuration file.
+
+=item B<config=>
+
+Do not read any local SSH configuration.
+
+The C<config> parameter is optional.  If not specified then
+F<~/.ssh/config> is read.
+
+=item B<host=>HOST
+
+Specify the name or IP address of the remote host.
+
+This parameter is required.
+
+=item B<password=>PASSWORD
+
+Set the password to use when connecting to the remote server.
+
+Note that passing this on the command line is not secure on shared
+machines.
+
+=item B<password=->
+
+Ask for the password (interactively) when nbdkit starts up.
+
+=item B<password=+>FILENAME
+
+Read the password from the named file.  This is the most secure method
+to supply a password, as long as you set the permissions on the file
+appropriately.
+
+=item B<path=>PATH
+
+Specify the path to the remote file.  This can be a relative path in
+which case it is relative to the remote home directory.
+
+This parameter is required.
+
+=item B<port=>PORT
+
+Specify the SSH protocol port name or number.
+
+This parameter is optional.  If not given then the default ssh port is
+used.
+
+=item B<user=>USER
+
+Specify the remote username.
+
+This parameter is optional.  If not given then the local username is
+used.
+
+=back
+
+=head1 NOTES
+
+=head2 Known hosts
+
+The SSH server’s host key is checked at connection time, and must be
+present and correct in the local "known hosts" file (usually
+F<~/.ssh/known_hosts>).  If you have never connected to the SSH server
+before then the connection will usually fail.  You may have to connect
+to the server first using L<ssh(1)> so you can manually accept the
+host key.
+
+=head2 Supported authentication methods
+
+This plugin supports only the following authentication methods:
+C<none>, C<publickey> or C<password>.  In particular note that
+C<keyboard-interactive> is I<not> supported.
+
+=head2 SSH agent
+
+There is no means for nbdkit to ask for the public key passphrase when
+it is running as a server.  Therefore C<publickey> authentication must
+be done in conjunction with L<ssh-agent(1)>.
+
+=head1 FILES
+
+=over 4
+
+=item F<~/.ssh/config>
+
+This is the default local SSH config file which is read to get other
+options.  You can change this using the C<config> option.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-curl-plugin(1)>,
+L<nbdkit-plugin(3)>,
+L<ssh(1)>,
+L<ssh-agent(1)>,
+L<https://libssh.org>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+Parts derived from Pino Toscano’s qemu libssh driver.
+
+=head1 COPYRIGHT
+
+Copyright (C) 2014-2019 Red Hat Inc.
