@@ -193,3 +193,22 @@ Rust plugins
 * There is no attempt to ‘make install’ or otherwise package the
   crate.  Since it looks as if Rust code is normally distributed as
   source it's not clear what that would even mean.
+
+V3 plugin protocol
+------------------
+
+From time to time we may update the plugin protocol.  This section
+collects ideas for things which might be fixed in the next version of
+the protocol.
+
+Note that we keep the old protocol(s) around so that source
+compatibility is retained.  Plugins must opt in to the new protocol
+using ‘#define NBDKIT_API_VERSION <version>’.
+
+* All methods taking a ‘count’ field should be uint64_t (instead of
+  uint32_t).  Although the NBD protocol does not support 64 bit
+  lengths, it might do in future.
+
+* pread could be changed to allow it to support Structured Replies
+  (SRs).  This could mean allowing it to return partial data, holes,
+  zeroes, etc.
