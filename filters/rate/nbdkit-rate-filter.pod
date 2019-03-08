@@ -69,9 +69,17 @@ such as L<tc(8)> and L<iptables(8)> give more accurate results.
 There are separate bandwidth limits for read and write (ie. download
 and upload to the server).
 
+If the size of requests made by your client is much larger than the
+rate limit then you can see long, lumpy sleeps in this filter.  In the
+future we may modify the filter to break up large requests
+automatically in order to limit the length of sleeps.  Placing the
+L<nbdkit-blocksize-filter(1)> in front of this filter may help in the
+meantime.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
+L<nbdkit-blocksize-filter(1)>,
 L<nbdkit-delay-filter(1)>,
 L<nbdkit-filter(3)>,
 L<iptables(8)>,
