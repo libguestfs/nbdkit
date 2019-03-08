@@ -92,7 +92,7 @@ main (int argc, char *argv[])
   struct new_handshake_finish handshake_finish;
   uint16_t eflags;
   struct request request;
-  struct reply reply;
+  struct simple_reply reply;
   char data[512];
 
 #ifndef HAVE_EXIT_WITH_PARENT

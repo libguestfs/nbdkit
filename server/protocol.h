@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -98,12 +98,13 @@ extern const char *name_of_nbd_flag (int);
 
 /* NBD options (new style handshake only). */
 extern const char *name_of_nbd_opt (int);
-#define NBD_OPT_EXPORT_NAME  1
-#define NBD_OPT_ABORT        2
-#define NBD_OPT_LIST         3
-#define NBD_OPT_STARTTLS     5
-#define NBD_OPT_INFO         6
-#define NBD_OPT_GO           7
+#define NBD_OPT_EXPORT_NAME        1
+#define NBD_OPT_ABORT              2
+#define NBD_OPT_LIST               3
+#define NBD_OPT_STARTTLS           5
+#define NBD_OPT_INFO               6
+#define NBD_OPT_GO                 7
+#define NBD_OPT_STRUCTURED_REPLY   8
 
 extern const char *name_of_nbd_rep (int);
 #define NBD_REP_ACK          1
@@ -144,15 +145,49 @@ struct request {
   uint32_t count;               /* Request length. */
 } __attribute__((packed));
 
-/* Reply (server -> client). */
-struct reply {
-  uint32_t magic;               /* NBD_REPLY_MAGIC. */
+/* Simple reply (server -> client). */
+struct simple_reply {
+  uint32_t magic;               /* NBD_SIMPLE_REPLY_MAGIC. */
   uint32_t error;               /* NBD_SUCCESS or one of NBD_E*. */
   uint64_t handle;              /* Opaque handle. */
 } __attribute__((packed));
 
-#define NBD_REQUEST_MAGIC 0x25609513
-#define NBD_REPLY_MAGIC 0x67446698
+/* Structured reply (server -> client). */
+struct structured_reply {
+  uint32_t magic;               /* NBD_STRUCTURED_REPLY_MAGIC. */
+  uint16_t flags;               /* NBD_REPLY_FLAG_* */
+  uint16_t type;                /* NBD_REPLY_TYPE_* */
+  uint64_t handle;              /* Opaque handle. */
+  uint32_t length;              /* Length of payload which follows. */
+} __attribute__((packed));
+
+struct structured_reply_offset_data {
+  uint64_t offset;              /* offset */
+  /* Followed by data. */
+} __attribute__((packed));
+
+struct structured_reply_error {
+  uint32_t error;               /* NBD_E* error number */
+  uint16_t len;                 /* Length of human readable error. */
+  /* Followed by human readable error string. */
+} __attribute__((packed));
+
+#define NBD_REQUEST_MAGIC           0x25609513
+#define NBD_SIMPLE_REPLY_MAGIC      0x67446698
+#define NBD_STRUCTURED_REPLY_MAGIC  0x668e33ef
+
+/* Structured reply flags. */
+extern const char *name_of_nbd_reply_flag (int);
+#define NBD_REPLY_FLAG_DONE         (1<<0)
+
+/* Structured reply types. */
+extern const char *name_of_nbd_reply_type (int);
+#define NBD_REPLY_TYPE_NONE         0
+#define NBD_REPLY_TYPE_OFFSET_DATA  1
+#define NBD_REPLY_TYPE_OFFSET_HOLE  2
+#define NBD_REPLY_TYPE_BLOCK_STATUS 3
+#define NBD_REPLY_TYPE_ERROR        ((1<<15) + 1)
+#define NBD_REPLY_TYPE_ERROR_OFFSET ((1<<15) + 2)
 
 /* NBD commands. */
 extern const char *name_of_nbd_cmd (int);

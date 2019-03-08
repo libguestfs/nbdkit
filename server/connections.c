@@ -86,6 +86,7 @@ struct connection {
   bool can_fua;
   bool can_multi_conn;
   bool using_tls;
+  bool structured_replies;
 
   int sockin, sockout;
   connection_recv_function recv;
@@ -905,6 +906,26 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
 
       break;
 
+    case NBD_OPT_STRUCTURED_REPLY:
+      if (optlen != 0) {
+        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+            == -1)
+          return -1;
+        if (conn_recv_full (conn, data, optlen,
+                            "read: %s: %m", name_of_nbd_opt (option)) == -1)
+          return -1;
+        continue;
+      }
+
+      debug ("newstyle negotiation: %s: client requested structured replies",
+             name_of_nbd_opt (option));
+
+      if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+        return -1;
+
+      conn->structured_replies = true;
+      break;
+
     default:
       /* Unknown option. */
       if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
@@ -1225,11 +1246,122 @@ nbd_errno (int error)
 }
 
 static int
+send_simple_reply (struct connection *conn,
+                   uint64_t handle, uint16_t cmd,
+                   const char *buf, uint32_t count,
+                   uint32_t error)
+{
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
+  struct simple_reply reply;
+  int r;
+
+  reply.magic = htobe32 (NBD_SIMPLE_REPLY_MAGIC);
+  reply.handle = handle;
+  reply.error = htobe32 (nbd_errno (error));
+
+  r = conn->send (conn, &reply, sizeof reply);
+  if (r == -1) {
+    nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
+    return set_status (conn, -1);
+  }
+
+  /* Send the read data buffer. */
+  if (cmd == NBD_CMD_READ && !error) {
+    r = conn->send (conn, buf, count);
+    if (r == -1) {
+      nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
+      return set_status (conn, -1);
+    }
+  }
+
+  return 1;                     /* command processed ok */
+}
+
+static int
+send_structured_reply_read (struct connection *conn,
+                            uint64_t handle, uint16_t cmd,
+                            const char *buf, uint32_t count, uint64_t offset)
+{
+  /* Once we are really using structured replies and sending data back
+   * in chunks, we'll be able to grab the write lock for each chunk,
+   * allowing other threads to interleave replies.  As we're not doing
+   * that yet we acquire the lock for the whole function.
+   */
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
+  struct structured_reply reply;
+  struct structured_reply_offset_data offset_data;
+  int r;
+
+  assert (cmd == NBD_CMD_READ);
+
+  reply.magic = htobe32 (NBD_STRUCTURED_REPLY_MAGIC);
+  reply.handle = handle;
+  reply.flags = htobe16 (NBD_REPLY_FLAG_DONE);
+  reply.type = htobe16 (NBD_REPLY_TYPE_OFFSET_DATA);
+  reply.length = htobe32 (count + sizeof offset_data);
+
+  r = conn->send (conn, &reply, sizeof reply);
+  if (r == -1) {
+    nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
+    return set_status (conn, -1);
+  }
+
+  /* Send the offset + read data buffer. */
+  offset_data.offset = htobe64 (offset);
+  r = conn->send (conn, &offset_data, sizeof offset_data);
+  if (r == -1) {
+    nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
+    return set_status (conn, -1);
+  }
+
+  r = conn->send (conn, buf, count);
+  if (r == -1) {
+    nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
+    return set_status (conn, -1);
+  }
+
+  return 1;                     /* command processed ok */
+}
+
+static int
+send_structured_reply_error (struct connection *conn,
+                             uint64_t handle, uint16_t cmd, uint32_t error)
+{
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
+  struct structured_reply reply;
+  struct structured_reply_error error_data;
+  int r;
+
+  reply.magic = htobe32 (NBD_STRUCTURED_REPLY_MAGIC);
+  reply.handle = handle;
+  reply.flags = htobe16 (NBD_REPLY_FLAG_DONE);
+  reply.type = htobe16 (NBD_REPLY_TYPE_ERROR);
+  reply.length = htobe32 (0 /* no human readable error */ + sizeof error_data);
+
+  r = conn->send (conn, &reply, sizeof reply);
+  if (r == -1) {
+    nbdkit_error ("write error reply: %m");
+    return set_status (conn, -1);
+  }
+
+  /* Send the error. */
+  error_data.error = htobe32 (error);
+  error_data.len = htobe16 (0);
+  r = conn->send (conn, &error_data, sizeof error_data);
+  if (r == -1) {
+    nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
+    return set_status (conn, -1);
+  }
+  /* No human readable error message at the moment. */
+
+  return 1;                     /* command processed ok */
+}
+
+static int
 recv_request_send_reply (struct connection *conn)
 {
   int r;
   struct request request;
-  struct reply reply;
   uint16_t cmd, flags;
   uint32_t magic, count, error = 0;
   uint64_t offset;
@@ -1317,40 +1449,33 @@ recv_request_send_reply (struct connection *conn)
 
   /* Send the reply packet. */
  send_reply:
-  {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
-    if (get_status (conn) < 0)
-      return -1;
-    reply.magic = htobe32 (NBD_REPLY_MAGIC);
-    reply.handle = request.handle;
-    reply.error = htobe32 (nbd_errno (error));
+  if (get_status (conn) < 0)
+    return -1;
 
-    if (error != 0) {
-      /* Since we're about to send only the limited NBD_E* errno to the
-       * client, don't lose the information about what really happened
-       * on the server side.  Make sure there is a way for the operator
-       * to retrieve the real error.
-       */
-      debug ("sending error reply: %s", strerror (error));
-    }
-
-    r = conn->send (conn, &reply, sizeof reply);
-    if (r == -1) {
-      nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-      return set_status (conn, -1);
-    }
-
-    /* Send the read data buffer. */
-    if (cmd == NBD_CMD_READ && !error) {
-      r = conn->send (conn, buf, count);
-      if (r == -1) {
-        nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-        return set_status (conn, -1);
-      }
-    }
+  if (error != 0) {
+    /* Since we're about to send only the limited NBD_E* errno to the
+     * client, don't lose the information about what really happened
+     * on the server side.  Make sure there is a way for the operator
+     * to retrieve the real error.
+     */
+    debug ("sending error reply: %s", strerror (error));
   }
 
-  return 1;                     /* command processed ok */
+  /* Currently we prefer to send simple replies for everything except
+   * where we have to (ie. NBD_CMD_READ when structured_replies have
+   * been negotiated).  However this prevents us from sending
+   * human-readable error messages to the client, so we should
+   * reconsider this in future.
+   */
+  if (conn->structured_replies && cmd == NBD_CMD_READ) {
+    if (!error)
+      return send_structured_reply_read (conn, request.handle, cmd,
+                                         buf, count, offset);
+    else
+      return send_structured_reply_error (conn, request.handle, cmd, error);
+  }
+  else
+    return send_simple_reply (conn, request.handle, cmd, buf, count, error);
 }
 
 /* Write buffer to conn->sockout and either succeed completely

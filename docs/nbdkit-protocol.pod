@@ -122,7 +122,11 @@ Supported in nbdkit E<ge> 1.9.9.
 
 =item Structured Replies
 
-I<Not supported>.
+Supported in nbdkit E<ge> 1.11.8.
+
+However we don’t expose the capability to send structured replies to
+plugins yet, nor do we send human-readable error messages using this
+facility.
 
 =item Block Status
 

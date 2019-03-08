@@ -345,7 +345,7 @@ nbd_request (struct handle *h, uint16_t flags, uint16_t type, uint64_t offset,
 static int
 nbd_reply_raw (struct handle *h, int *fd)
 {
-  struct reply rep;
+  struct simple_reply rep;
   struct transaction *trans;
   void *buf;
   uint32_t count;
@@ -353,7 +353,7 @@ nbd_reply_raw (struct handle *h, int *fd)
   *fd = -1;
   if (read_full (h->fd, &rep, sizeof rep) < 0)
     return nbd_mark_dead (h);
-  if (be32toh (rep.magic) != NBD_REPLY_MAGIC)
+  if (be32toh (rep.magic) != NBD_SIMPLE_REPLY_MAGIC)
     return nbd_mark_dead (h);
   nbdkit_debug ("received reply for cookie %#" PRIx64 ", status %s",
                 rep.handle, name_of_nbd_error(be32toh (rep.error)));
