@@ -926,6 +926,93 @@ _negotiate_handshake_newstyle_options (struct connection *conn)
       conn->structured_replies = true;
       break;
 
+    case NBD_OPT_LIST_META_CONTEXT:
+    case NBD_OPT_SET_META_CONTEXT:
+      {
+        uint32_t opt_index;
+        uint32_t exportnamelen;
+        uint32_t nr_queries;
+        uint32_t querylen;
+        const char *what;
+
+        optname = name_of_nbd_opt (option);
+        if (conn_recv_full (conn, data, optlen, "read: %s: %m", optname) == -1)
+          return -1;
+
+        if (!conn->structured_replies) {
+          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+              == -1)
+            return -1;
+          continue;
+        }
+
+        /* Minimum length of the option payload is:
+         *   32 bit export name length followed by empty export name
+         * + 32 bit number of queries followed by no queries
+         * = 8 bytes.
+         */
+        what = "optlen < 8";
+        if (optlen < 8) {
+        opt_meta_invalid_option_len:
+          debug ("newstyle negotiation: %s: invalid option length: %s",
+                 optname, what);
+
+          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+              == -1)
+            return -1;
+          continue;
+        }
+
+        /* Discard the export name. */
+        memcpy (&exportnamelen, &data[0], 4);
+        exportnamelen = be32toh (exportnamelen);
+        opt_index = 4 + exportnamelen;
+
+        /* Read the number of queries. */
+        what = "reading number of queries";
+        if (opt_index+4 > optlen)
+          goto opt_meta_invalid_option_len;
+        memcpy (&nr_queries, &data[opt_index], 4);
+        nr_queries = be32toh (nr_queries);
+        opt_index += 4;
+
+        /* for LIST: nr_queries == 0 means return all meta contexts
+         * for SET: nr_queries == 0 means reset all contexts
+         */
+        if (nr_queries == 0) {
+          /* Nothing is supported now. */
+          if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+            return -1;
+        }
+        else {
+          /* Read and answer each query. */
+          while (nr_queries > 0) {
+            what = "reading query string length";
+            if (opt_index+4 > optlen)
+              goto opt_meta_invalid_option_len;
+            memcpy (&querylen, &data[opt_index], 4);
+            querylen = be32toh (querylen);
+            opt_index += 4;
+            what = "reading query string";
+            if (opt_index + querylen > optlen)
+              goto opt_meta_invalid_option_len;
+
+            debug ("newstyle negotiation: %s: %s %.*s",
+                   optname,
+                   option == NBD_OPT_LIST_META_CONTEXT ? "query" : "set",
+                   (int) querylen, &data[opt_index]);
+
+            /* Ignore query - nothing is supported. */
+
+            opt_index += querylen;
+            nr_queries--;
+          }
+          if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+            return -1;
+        }
+      }
+      break;
+
     default:
       /* Unknown option. */
       if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)

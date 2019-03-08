@@ -128,6 +128,10 @@ However we don’t expose the capability to send structured replies to
 plugins yet, nor do we send human-readable error messages using this
 facility.
 
+=item Metadata Querying
+
+Supported in nbdkit E<ge> 1.11.8.
+
 =item Block Status
 
 I<Not supported>.

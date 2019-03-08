@@ -105,6 +105,8 @@ extern const char *name_of_nbd_opt (int);
 #define NBD_OPT_INFO               6
 #define NBD_OPT_GO                 7
 #define NBD_OPT_STRUCTURED_REPLY   8
+#define NBD_OPT_LIST_META_CONTEXT  9
+#define NBD_OPT_SET_META_CONTEXT   10
 
 extern const char *name_of_nbd_rep (int);
 #define NBD_REP_ACK          1
