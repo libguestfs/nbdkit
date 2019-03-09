@@ -42,6 +42,7 @@ EXTRA_DIST = \
 	shebang.pl \
 	shebang.py \
 	shebang.rb \
+	ssh/sshd_config.in \
 	test-ansi-c.sh \
 	test-blocksize.sh \
 	test-cache.sh \
@@ -99,6 +100,7 @@ EXTRA_DIST = \
 	test.py \
 	test-rate.sh \
 	test.rb \
+	test-ssh.sh \
 	test.tcl \
 	test-shebang-perl.sh \
 	test-shebang-python.sh \
@@ -525,6 +527,54 @@ LIBGUESTFS_TESTS += test-split
 test_split_SOURCES = test-split.c test.h
 test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_split_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# ssh plugin test.
+# Uses ‘disk’ so we have to make it conditional on guestfish.
+if HAVE_GUESTFISH
+TESTS += test-ssh.sh
+endif HAVE_GUESTFISH
+check_DATA += \
+	ssh/sshd_config \
+	ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub \
+	ssh/authorized_keys
+SSH_RANDOM_PORT := $(shell bash -c 'echo $$(( 10000 + $$RANDOM ))')
+CLEANFILES += \
+	ssh/*~ \
+	ssh/sshd_config \
+	ssh/authorized_keys
+DISTCLEANFILES += \
+	ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub \
+	ssh/id_rsa ssh/id_rsa.pub \
+	stamp-ssh-host-key stamp-ssh-user-key
+
+ssh/sshd_config: ssh/sshd_config.in Makefile
+	rm -f $@ $@-t
+	$(SED) \
+	    -e 's,__abs_builddir__,$(abs_builddir),g' \
+	    -e 's,__RANDOM_PORT__,$(SSH_RANDOM_PORT),g' \
+	    < $< > $@-t
+	mv $@-t $@
+
+ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub: stamp-ssh-host-key
+stamp-ssh-host-key:
+	rm -f $@
+	rm -f ssh/ssh_host_rsa_key
+	rm -f ssh/ssh_host_rsa_key.pub
+	ssh-keygen -t rsa -f ssh/ssh_host_rsa_key -N ''
+	touch $@
+
+ssh/authorized_keys: ssh/id_rsa.pub
+	rm -f $@ $@-t
+	cp $< $@-t
+	mv $@-t $@
+
+ssh/id_rsa ssh/id_rsa.pub: stamp-ssh-user-key
+stamp-ssh-user-key:
+	rm -f $@
+	rm -f ssh/id_rsa
+	rm -f ssh/id_rsa.pub
+	ssh-keygen -t rsa -f ssh/id_rsa -N ''
+	touch $@
 
 # streaming plugin test.
 # Doesn't work:

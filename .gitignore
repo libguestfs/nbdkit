@@ -78,6 +78,14 @@ Makefile.in
 /tests/split1
 /tests/split2
 /tests/split3
+/tests/ssh/authorized_keys
+/tests/ssh/id_rsa
+/tests/ssh/id_rsa.pub
+/tests/ssh/ssh_host_rsa_key
+/tests/ssh/ssh_host_rsa_key.pub
+/tests/ssh/sshd_config
+/tests/stamp-ssh-host-key
+/tests/stamp-ssh-user-key
 /tests/test-connect
 /tests/test-curl
 /tests/test-data
