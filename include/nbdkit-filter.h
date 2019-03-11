@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,18 @@ extern "C" {
 
 #define NBDKIT_FILTER_API_VERSION 2
 
+struct nbdkit_extent {
+  uint64_t offset;
+  uint64_t length;
+  uint32_t type;
+};
+
+extern struct nbdkit_extents *nbdkit_extents_new (uint64_t start, uint64_t end);
+extern void nbdkit_extents_free (struct nbdkit_extents *);
+extern size_t nbdkit_extents_count (const struct nbdkit_extents *);
+extern struct nbdkit_extent nbdkit_get_extent (const struct nbdkit_extents *,
+                                               size_t);
+
 typedef int nbdkit_next_config (void *nxdata,
                                 const char *key, const char *value);
 typedef int nbdkit_next_config_complete (void *nxdata);
@@ -58,6 +70,7 @@ struct nbdkit_next_ops {
   int (*is_rotational) (void *nxdata);
   int (*can_trim) (void *nxdata);
   int (*can_zero) (void *nxdata);
+  int (*can_extents) (void *nxdata);
   int (*can_fua) (void *nxdata);
   int (*can_multi_conn) (void *nxdata);
 
@@ -71,6 +84,8 @@ struct nbdkit_next_ops {
                int *err);
   int (*zero) (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
                int *err);
+  int (*extents) (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
+                  struct nbdkit_extents *extents, int *err);
 };
 
 struct nbdkit_filter {
@@ -120,6 +135,8 @@ struct nbdkit_filter {
                    void *handle);
   int (*can_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle);
+  int (*can_extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                      void *handle);
   int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,
                   void *handle);
   int (*can_multi_conn) (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -140,6 +157,9 @@ struct nbdkit_filter {
   int (*zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
                void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                int *err);
+  int (*extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                  void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+                  struct nbdkit_extents *extents, int *err);
 };
 
 #define NBDKIT_REGISTER_FILTER(filter)                                  \

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -125,6 +125,10 @@ struct nbdkit_plugin {
   const char *magic_config_key;
 
   int (*can_multi_conn) (void *handle);
+
+  int (*can_extents) (void *handle);
+  int (*extents) (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+                  struct nbdkit_extents *extents);
 };
 
 extern void nbdkit_set_error (int err);

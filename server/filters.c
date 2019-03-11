@@ -310,6 +310,13 @@ next_can_zero (void *nxdata)
 }
 
 static int
+next_can_extents (void *nxdata)
+{
+  struct b_conn *b_conn = nxdata;
+  return b_conn->b->can_extents (b_conn->b, b_conn->conn);
+}
+
+static int
 next_can_fua (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
@@ -364,6 +371,15 @@ next_zero (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
   return b_conn->b->zero (b_conn->b, b_conn->conn, count, offset, flags, err);
 }
 
+static int
+next_extents (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
+              struct nbdkit_extents *extents, int *err)
+{
+  struct b_conn *b_conn = nxdata;
+  return b_conn->b->extents (b_conn->b, b_conn->conn, count, offset, flags,
+                             extents, err);
+}
+
 static struct nbdkit_next_ops next_ops = {
   .get_size = next_get_size,
   .can_write = next_can_write,
@@ -371,6 +387,7 @@ static struct nbdkit_next_ops next_ops = {
   .is_rotational = next_is_rotational,
   .can_trim = next_can_trim,
   .can_zero = next_can_zero,
+  .can_extents = next_can_extents,
   .can_fua = next_can_fua,
   .can_multi_conn = next_can_multi_conn,
   .pread = next_pread,
@@ -378,6 +395,7 @@ static struct nbdkit_next_ops next_ops = {
   .flush = next_flush,
   .trim = next_trim,
   .zero = next_zero,
+  .extents = next_extents,
 };
 
 static int
@@ -509,6 +527,21 @@ filter_can_zero (struct backend *b, struct connection *conn)
     return f->filter.can_zero (&next_ops, &nxdata, handle);
   else
     return f->backend.next->can_zero (f->backend.next, conn);
+}
+
+static int
+filter_can_extents (struct backend *b, struct connection *conn)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  void *handle = connection_get_handle (conn, f->backend.i);
+  struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
+
+  debug ("%s: can_extents", f->name);
+
+  if (f->filter.can_extents)
+    return f->filter.can_extents (&next_ops, &nxdata, handle);
+  else
+    return f->backend.next->can_extents (f->backend.next, conn);
 }
 
 static int
@@ -646,6 +679,30 @@ filter_zero (struct backend *b, struct connection *conn,
                                   count, offset, flags, err);
 }
 
+static int
+filter_extents (struct backend *b, struct connection *conn,
+                uint32_t count, uint64_t offset, uint32_t flags,
+                struct nbdkit_extents *extents, int *err)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  void *handle = connection_get_handle (conn, f->backend.i);
+  struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
+
+  assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
+
+  debug ("%s: extents count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
+         f->name, count, offset, flags);
+
+  if (f->filter.extents)
+    return f->filter.extents (&next_ops, &nxdata, handle,
+                              count, offset, flags,
+                              extents, err);
+  else
+    return f->backend.next->extents (f->backend.next, conn,
+                                     count, offset, flags,
+                                     extents, err);
+}
+
 static struct backend filter_functions = {
   .free = filter_free,
   .thread_model = filter_thread_model,
@@ -667,6 +724,7 @@ static struct backend filter_functions = {
   .is_rotational = filter_is_rotational,
   .can_trim = filter_can_trim,
   .can_zero = filter_can_zero,
+  .can_extents = filter_can_extents,
   .can_fua = filter_can_fua,
   .can_multi_conn = filter_can_multi_conn,
   .pread = filter_pread,
@@ -674,6 +732,7 @@ static struct backend filter_functions = {
   .flush = filter_flush,
   .trim = filter_trim,
   .zero = filter_zero,
+  .extents = filter_extents,
 };
 
 /* Register and load a filter. */

@@ -350,6 +350,8 @@ calls.
 
 =head2 C<.can_zero>
 
+=head2 C<.can_extents>
+
 =head2 C<.can_fua>
 
 =head2 C<.can_multi_conn>
@@ -365,6 +367,8 @@ calls.
                   void *handle);
  int (*can_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
                   void *handle);
+ int (*can_extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                     void *handle);
  int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,
                  void *handle);
  int (*can_multi_conn) (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -512,6 +516,85 @@ error message B<and> return -1 with C<err> set to the positive errno
 value to return to the client.  The filter should never fail with
 C<EOPNOTSUPP> (while plugins have automatic fallback to C<.pwrite>,
 filters do not).
+
+=head2 C<.extents>
+
+ int (*extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                 void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+                 struct nbdkit_extents *extents,
+                 int *err);
+
+This intercepts the plugin C<.extents> method and can be used to
+modify extent requests.
+
+This function will not be called if C<.can_extents> returned false; in
+turn, the filter should not call C<next_ops-E<gt>extents> if
+C<next_ops-E<gt>can_extents> did not return true.
+
+It is possible for filters to transform the extents list received back
+from the layer below.  Without error checking it would look like this:
+
+ myfilter_extents (..., uint32_t count, uint64_t offset, ...)
+ {
+   size_t i;
+   struct nbdkit_extents *extents2;
+   struct nbdkit_extent e;
+   int64_t size;
+
+   size = next_ops->get_size (nxdata);
+   extents2 = nbdkit_extents_new (offset + shift, size - shift);
+   next_ops->extents (nxdata, count, offset + shift, flags, extents2, err);
+   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
+     e = nbdkit_get_extent (extents2, i);
+     e.offset -= shift;
+     nbdkit_add_extent (extents, e.offset, e.length, e.type);
+   }
+   nbdkit_extents_free (extents2);
+ }
+
+If there is an error, C<.extents> should call C<nbdkit_error> with an
+error message B<and> return -1 with C<err> set to the positive errno
+value to return to the client.
+
+=head3 Allocating and freeing nbdkit_extents list
+
+Two functions are provided to filters only for allocating and freeing
+the map:
+
+ struct nbdkit_extents *nbdkit_extents_new (uint64_t start, uint64_t end);
+
+Allocates and returns a new, empty extents list.  The C<start>
+parameter is the start of the range described in the list, and the
+C<end> parameter is the offset of the byte beyond the end.  Normally
+you would pass in C<offset> as the start and the size of the plugin as
+the end, but for filters which adjust offsets, they should pass in the
+adjusted offset.
+
+On error this function can return C<NULL>.  In this case it calls
+C<nbdkit_error> and/or C<nbdkit_set_error> as required.
+
+ void nbdkit_extents_free (struct nbdkit_extents *);
+
+Frees an existing extents list.
+
+=head3 Iterating over nbdkit_extents list
+
+Two functions are provided to filters only to iterate over the extents
+in order:
+
+ size_t nbdkit_extents_count (const struct nbdkit_extents *);
+
+Returns the number of extents in the list.
+
+ struct nbdkit_extent {
+   uint64_t offset;
+   uint64_t length;
+   uint32_t type;
+ };
+ struct nbdkit_extent nbdkit_get_extent (const struct nbdkit_extents *,
+                                         size_t i);
+
+Returns a copy of the C<i>'th extent.
 
 =head1 ERROR HANDLING
 

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,10 +60,14 @@ extern "C" {
 
 #define NBDKIT_FLAG_MAY_TRIM (1<<0) /* Maps to !NBD_CMD_FLAG_NO_HOLE */
 #define NBDKIT_FLAG_FUA      (1<<1) /* Maps to NBD_CMD_FLAG_FUA */
+#define NBDKIT_FLAG_REQ_ONE  (1<<2) /* Maps to NBD_CMD_FLAG_REQ_ONE */
 
 #define NBDKIT_FUA_NONE       0
 #define NBDKIT_FUA_EMULATE    1
 #define NBDKIT_FUA_NATIVE     2
+
+#define NBDKIT_EXTENT_HOLE    (1<<0) /* Same as NBD_STATE_HOLE */
+#define NBDKIT_EXTENT_ZERO    (1<<1) /* Same as NBD_STATE_ZERO */
 
 extern void nbdkit_error (const char *msg, ...) ATTRIBUTE_FORMAT_PRINTF (1, 2);
 extern void nbdkit_verror (const char *msg, va_list args);
@@ -75,6 +79,10 @@ extern int64_t nbdkit_parse_size (const char *str);
 extern int nbdkit_parse_bool (const char *str);
 extern int nbdkit_read_password (const char *value, char **password);
 extern char *nbdkit_realpath (const char *path);
+
+struct nbdkit_extents;
+extern int nbdkit_add_extent (struct nbdkit_extents *,
+                              uint64_t offset, uint64_t length, uint32_t type);
 
 /* A static non-NULL pointer which can be used when you don't need a
  * per-connection handle.

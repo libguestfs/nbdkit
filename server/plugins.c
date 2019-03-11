@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -199,6 +199,8 @@ plugin_dump_fields (struct backend *b)
   HAS (trim);
   HAS (zero);
   HAS (can_multi_conn);
+  HAS (can_extents);
+  HAS (extents);
 #undef HAS
 
   /* Custom fields. */
@@ -390,6 +392,21 @@ plugin_can_zero (struct backend *b, struct connection *conn)
       p->plugin.can_zero (connection_get_handle (conn, 0)) == -1)
     return -1;
   return plugin_can_write (b, conn);
+}
+
+static int
+plugin_can_extents (struct backend *b, struct connection *conn)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
+  assert (connection_get_handle (conn, 0));
+
+  debug ("can_extents");
+
+  if (p->plugin.can_extents)
+    return p->plugin.can_extents (connection_get_handle (conn, 0));
+  else
+    return p->plugin.extents != NULL;
 }
 
 static int
@@ -651,6 +668,39 @@ plugin_zero (struct backend *b, struct connection *conn,
   return r;
 }
 
+static int
+plugin_extents (struct backend *b, struct connection *conn,
+                uint32_t count, uint64_t offset, uint32_t flags,
+                struct nbdkit_extents *extents, int *err)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
+  int r;
+
+  assert (connection_get_handle (conn, 0));
+  assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
+
+  /* This should be true because plugin_can_extents checks it. */
+  assert (p->plugin.extents);
+
+  debug ("extents count=%" PRIu32 " offset=%" PRIu64 " req_one=%d",
+         count, offset, req_one);
+
+  if (!count)
+    return 0;
+
+  r = p->plugin.extents (connection_get_handle (conn, 0), count, offset,
+                         flags, extents);
+  if (r >= 0 && nbdkit_extents_count (extents) < 1) {
+    nbdkit_error ("extents: plugin must return at least one extent");
+    nbdkit_set_error (EINVAL);
+    r = -1;
+  }
+  if (r == -1)
+    *err = get_error (p);
+  return r;
+}
+
 static struct backend plugin_functions = {
   .free = plugin_free,
   .thread_model = plugin_thread_model,
@@ -672,6 +722,7 @@ static struct backend plugin_functions = {
   .is_rotational = plugin_is_rotational,
   .can_trim = plugin_can_trim,
   .can_zero = plugin_can_zero,
+  .can_extents = plugin_can_extents,
   .can_fua = plugin_can_fua,
   .can_multi_conn = plugin_can_multi_conn,
   .pread = plugin_pread,
@@ -679,6 +730,7 @@ static struct backend plugin_functions = {
   .flush = plugin_flush,
   .trim = plugin_trim,
   .zero = plugin_zero,
+  .extents = plugin_extents,
 };
 
 /* Register and load a plugin. */

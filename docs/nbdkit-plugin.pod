@@ -555,6 +555,20 @@ This callback is not required.  If omitted, then nbdkit always tries
 C<.zero> first if it is present, and gracefully falls back to
 C<.pwrite> if C<.zero> was absent or failed with C<EOPNOTSUPP>.
 
+=head2 C<.can_extents>
+
+ int can_extents (void *handle);
+
+This is called during the option negotiation phase to find out if the
+plugin supports detecting allocated (non-sparse) regions of the disk
+with the C<.extents> callback.
+
+If there is an error, C<.can_extents> should call C<nbdkit_error> with
+an error message and return C<-1>.
+
+This callback is not required.  If omitted, then we return true iff a
+C<.extents> callback has been defined.
+
 =head2 C<.can_fua>
 
  int can_fua (void *handle);
@@ -716,6 +730,89 @@ callback should return C<0> to indicate there was I<no> error.
 If there is an error, C<.zero> should call C<nbdkit_error> with an
 error message, and C<nbdkit_set_error> to record an appropriate error
 (unless C<errno> is sufficient), then return C<-1>.
+
+=head2 C<.extents>
+
+ int extents (void *handle, uint32_t count, uint64_t offset,
+              uint32_t flags, struct nbdkit_extents *extents);
+
+During the data serving phase, this callback is used to detect
+allocated, sparse and zeroed regions of the disk.
+
+This function will not be called if C<.can_extents> returned false.
+nbdkit's default behaviour in this case is to treat the whole virtual
+disk as if it was allocated.
+
+The callback should detect and return the list of extents overlapping
+the range C<[offset...offset+count-1]>.  The C<extents> parameter
+points to an opaque object which the callback should fill in by
+calling C<nbdkit_add_extent>.  See L</Extents list> below.
+
+If there is an error, C<.extents> should call C<nbdkit_error> with an
+error message, and C<nbdkit_set_error> to record an appropriate error
+(unless C<errno> is sufficient), then return C<-1>.
+
+=head3 Extents list
+
+The plugin C<extents> callback is passed an opaque pointer C<struct
+nbdkit_extents *extents>.  This structure represents a list of
+L<filesystem extents|https://en.wikipedia.org/wiki/Extent_(file_systems)>
+describing which areas of the disk are allocated, which are sparse
+(“holes”), and, if supported, which are zeroes.
+
+The C<extents> callback should scan the disk starting at C<offset> and
+call C<nbdkit_add_extent> for each extent found.
+
+Extents overlapping the range C<[offset...offset+count-1]> should be
+returned if possible.  However nbdkit ignores extents E<lt> offset so
+the plugin may, if it is easier to implement, return all extent
+information for the whole disk.  The plugin may return extents beyond
+the end of the range.  It may also return extent information for less
+than the whole range, but it must return at least one extent
+overlapping C<offset>.
+
+The extents B<must> be added in ascending order, and B<must> be
+contiguous.
+
+The C<flags> parameter of the C<.extents> callback may contain the
+flag C<NBDKIT_FLAG_REQ_ONE>.  This means that the client is only
+requesting information about the extent overlapping C<offset>.  The
+plugin may ignore this flag, or as an optimization it may return just
+a single extent for C<offset>.
+
+ int nbdkit_add_extent (struct nbdkit_extents *extents,
+                        uint64_t offset, uint64_t length, uint32_t type);
+
+Add an extent covering C<[offset...offset+length-1]> of one of
+the following four types:
+
+=over 4
+
+=item C<type = 0>
+
+A normal, allocated data extent.
+
+=item C<type = NBDKIT_EXTENT_HOLE|NBDKIT_EXTENT_ZERO>
+
+An unallocated extent, a.k.a. a “hole”, which reads back as zeroes.
+This is the normal type of hole applicable to most disks.
+
+=item C<type = NBDKIT_EXTENT_ZERO>
+
+An allocated extent which is known to contain only zeroes.
+
+=item C<type = NBDKIT_EXTENT_HOLE>
+
+An unallocated extent (hole) which does not read back as zeroes.  Note
+this should only be used in specialized circumstances such as when
+writing a plugin for (or to emulate) certain SCSI drives which do not
+guarantee that trimmed blocks read back as zeroes.
+
+=back
+
+C<nbdkit_extent_add> returns C<0> on success or C<-1> on failure.  On
+failure C<nbdkit_error> and/or C<nbdkit_set_error> has already been
+called.
 
 =head1 THREADS
 

@@ -40,8 +40,13 @@
   # The functions we want plugins and filters to call.
   global:
     nbdkit_absolute_path;
+    nbdkit_add_extent;
     nbdkit_debug;
     nbdkit_error;
+    nbdkit_extents_count;
+    nbdkit_extents_free;
+    nbdkit_extents_new;
+    nbdkit_get_extent;
     nbdkit_parse_bool;
     nbdkit_parse_size;
     nbdkit_read_password;
