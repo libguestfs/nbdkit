@@ -13,36 +13,33 @@ devices over the network.  Block devices are hard disks and things
 that behave like hard disks such as disk images and virtual machines.
 
 nbdkit is both a toolkit for creating NBD servers from
-"unconventional" sources and the name of an NBD server.
+“unconventional” sources, and the name of an NBD server.  nbdkit ships
+with many plugins for performing common tasks like serving local
+files.
 
-nbdkit ships with many plugins and filters for performing common tasks
-like serving files.  See the L</EXAMPLES> and L</SEE ALSO> sections
-below, and look in the directory C<$libdir/nbdkit>.
+=head2 Plugins and filters
 
-To create a new Network Block Device source, all you need to do is
-write a few glue functions, possibly in C, or perhaps in a high level
-language like Perl or Python.  The liberal licensing of nbdkit is
-meant to allow you to link nbdkit with proprietary libraries or to
-include nbdkit in proprietary code.
+nbdkit is different from other NBD servers because you can easily
+create new Network Block Device sources by writing a few glue
+functions, possibly in C, or perhaps in a high level language like
+Perl or Python.  The liberal licensing of nbdkit is meant to allow you
+to link nbdkit with proprietary libraries or to include nbdkit in
+proprietary code.
 
-If you want to write an nbdkit plugin, you should read
+If you want to write your own nbdkit plugin you should read
 L<nbdkit-plugin(3)>.
 
-You can give the full path to the plugin, like this:
-
- nbdkit $libdir/nbdkit/plugins/nbdkit-file-plugin.so [...]
-
-but it is usually more convenient to use this equivalent syntax:
-
- nbdkit file [...]
-
-C<$libdir> is set at compile time.  To print it out, do:
-
- nbdkit --dump-config
+nbdkit also has a concept of filters which can be layered on top of
+plugins.  Several filters are provided with nbdkit and if you want to
+write your own you should read L<nbdkit-filter(3)>.
 
 =head1 EXAMPLES
 
 =head2 Basic file serving
+
+=over 4
+
+=item *
 
 Serve file F<disk.img> on port 10809 using L<nbdkit-file-plugin(1)>,
 and connect to it using L<guestfish(1)>:
@@ -50,12 +47,20 @@ and connect to it using L<guestfish(1)>:
  nbdkit file file=disk.img
  guestfish --rw --format=raw -a nbd://localhost
 
+=item *
+
 Serve file F<disk.img> on port 10809, requiring clients to use
 encrypted (TLS) connections:
 
  nbdkit --tls=require file file=disk.img
 
+=back
+
 =head2 Other nbdkit plugins
+
+=over 4
+
+=item *
 
 Create a 1MB disk with one empty partition entirely on the command
 line using L<nbdkit-data-plugin(1)>:
@@ -65,29 +70,39 @@ line using L<nbdkit-data-plugin(1)>:
                    @0x1fe 0x55 0xaa" \
                    size=1M
 
+=item *
+
 Forward an NBD connection over HTTP using L<nbdkit-curl-plugin(1)>:
 
  nbdkit -r curl http://example.com/disk.img
 
+=back
+
 =head2 Combining plugins and filters
 
-Serve only the first partition from compressed disk image
-F<disk.img.xz>, combining L<nbdkit-xz-plugin(1)> and
-L<nbdkit-partition-filter(1)>:
+=over 4
 
- nbdkit --filter=partition  xz disk.img.xz  partition=1
+=item *
+
+Serve only the first partition from compressed disk image
+F<disk.img.xz>, combining L<nbdkit-partition-filter(1)>,
+L<nbdkit-xz-filter(1)> and L<nbdkit-file-plugin(1)>.
+
+ nbdkit --filter=partition --filter=xz file disk.img.xz partition=1
 
 To understand this command line:
 
-                     plugin name and plugin parameter
-                                  │
-                            ┌─────┴────┐
-                            │          │
- nbdkit --filter=partition  xz disk.img.xz  partition=1
-                  │                               │
-                  └─────────────┬─────────────────┘
-                                │
-                filter name and filter parameter
+                             plugin name and plugin parameter
+                                               │
+                                       ┌───────┴──────┐
+                                       │              │
+ nbdkit --filter=partition --filter=xz file disk.img.xz partition=1
+                 │              │                          │
+                 └──────────────┴────┬─────────────────────┘
+                                     │
+                        filters and filter parameter
+
+=item *
 
 Create a scratch, empty nbdkit device and inject errors and delays,
 for testing clients, using L<nbdkit-memory-plugin(1)>,
@@ -95,6 +110,8 @@ L<nbdkit-error-filter(1)> and L<nbdkit-delay-filter(1)>:
 
  nbdkit --filter=error --filter=delay memory size=100M \
         error-rate=10% rdelay=1 wdelay=1
+
+=back
 
 =head2 Display information
 
@@ -386,6 +403,20 @@ Print the version number of nbdkit and exit.
 
 =back
 
+=head1 PLUGIN NAME
+
+You can give the full path to the plugin, like this:
+
+ nbdkit $libdir/nbdkit/plugins/nbdkit-file-plugin.so [...]
+
+but it is usually more convenient to use this equivalent syntax:
+
+ nbdkit file [...]
+
+C<$libdir> is set at compile time.  To print it out, do:
+
+ nbdkit --dump-config
+
 =head1 PLUGIN CONFIGURATION
 
 After specifying the plugin name you can (optionally, it depends
@@ -437,22 +468,6 @@ languages.  The file should be executable.  For example:
  }
 
 (see L<nbdkit-perl-plugin(3)> for a full example).
-
-=head1 FILTERS
-
-One or more filters can be placed in front of an nbdkit plugin to
-modify the behaviour of the plugin, using the I<--filter> parameter.
-Filters can be used for example to limit requests to an offset/limit,
-add copy-on-write support, or inject delays or errors (for testing).
-
-     NBD     ┌─────────┐    ┌─────────┐          ┌────────┐
-  client ───▶│ filter1 │───▶│ filter2 │── ─ ─ ──▶│ plugin │
- request     └─────────┘    └─────────┘          └────────┘
-
-Several existing filters are available in the C<$filterdir>.  Use
-C<nbdkit --dump-config> to find the directory name.
-
-How to write filters is described in L<nbdkit-filter(3)>.
 
 =head1 SIGNALS
 
