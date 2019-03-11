@@ -191,6 +191,7 @@ plugin_dump_fields (struct backend *b)
   HAS (_flush_old);
   HAS (_trim_old);
   HAS (_zero_old);
+  HAS (can_zero);
   HAS (can_fua);
   HAS (pread);
   HAS (pwrite);
