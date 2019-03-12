@@ -139,7 +139,7 @@ Select the filesystem type.  The default is C<ext2>.
 
 =head1 NOTES
 
-=head2 Users and groups.
+=head2 Users and groups
 
 The original file UIDs and GIDs are recreated as far as possible.
 Note that UIDs/GIDs will likely map to different users and groups when
