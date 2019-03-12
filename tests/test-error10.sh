@@ -54,9 +54,10 @@ for i in {1..100}; do
 done
 
 echo errors=$errors
-# Unfortunately there's no "right answer" here, and in some rare cases
-# the test will fail XXX.
-if [ $errors -lt 3 ] || [ $errors -gt 20 ]; then
+# Unfortunately there's no "right answer" here, so our policy is if we
+# see the error number in a real test run we will extend the
+# boundaries here.
+if [ $errors -lt 3 ] || [ $errors -gt 21 ]; then
     echo "$0: unexpected error rate"
     exit 1
 fi
