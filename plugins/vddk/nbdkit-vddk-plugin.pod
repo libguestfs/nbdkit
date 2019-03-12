@@ -8,7 +8,7 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
              [vm=moref=ID] [server=HOSTNAME] [user=USERNAME]
              [password=PASSWORD | password=- | password=+FILENAME]
              [cookie=COOKIE] [thumbprint=THUMBPRINT]
-             [port=PORT] [nfchostport=PORT]
+             [port=PORT] [nfchostport=PORT] [single-link=true]
              [snapshot=MOREF] [transports=MODE:MODE:...]
  nbdkit vddk --dump-plugin
 
@@ -150,6 +150,11 @@ The port on the VCenter/ESXi host.  Defaults to 443.
 =item B<server=>HOSTNAME
 
 The hostname or IP address of VCenter or ESXi host.
+
+=item B<single-link=true>
+
+Open the current link, not the entire chain.  This corresponds to the
+C<VIXDISKLIB_FLAG_OPEN_SINGLE_LINK> flag.
 
 =item B<snapshot=>MOREF
 

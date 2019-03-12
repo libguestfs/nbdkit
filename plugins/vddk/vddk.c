@@ -94,6 +94,7 @@ static int nfc_host_port = 0;              /* nfchostport */
 static char *password = NULL;              /* password */
 static int port = 0;                       /* port */
 static const char *server_name = NULL;     /* server */
+static bool single_link = false;           /* single-link */
 static const char *snapshot_moref = NULL;  /* snapshot */
 static const char *thumb_print = NULL;     /* thumbprint */
 static const char *transport_modes = NULL; /* transports */
@@ -290,6 +291,13 @@ vddk_config (const char *key, const char *value)
   }
   else if (strcmp (key, "server") == 0) {
     server_name = value;
+  }
+  else if (strcmp (key, "single-link") == 0) {
+    int r = nbdkit_parse_bool (value);
+
+    if (r == -1)
+      return -1;
+    single_link = r;
   }
   else if (strcmp (key, "snapshot") == 0) {
     snapshot_moref = value;
@@ -510,6 +518,8 @@ vddk_open (int readonly)
   flags = 0;
   if (readonly)
     flags |= VIXDISKLIB_FLAG_OPEN_READ_ONLY;
+  if (single_link)
+    flags |= VIXDISKLIB_FLAG_OPEN_SINGLE_LINK;
 
   DEBUG_CALL ("VixDiskLib_Open",
               "connection, %s, %d, &handle", filename, flags);
