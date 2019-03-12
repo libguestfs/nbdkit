@@ -166,6 +166,8 @@ For non-essential enhancements to the test suite:
 
  - socat
 
+ - ssh-keygen
+
 Building
 --------
 
