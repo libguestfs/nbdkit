@@ -334,9 +334,10 @@ check_DATA += disk
 CLEANFILES += disk
 
 disk:
-	rm -f $@ test1.img
-	guestfish -N fs:ext4:100M -m /dev/sda1 write /hello.txt "hello,world"
-	mv test1.img disk
+	rm -f $@ $@-t
+	guestfish -N $@-t=fs:ext4:100M -m /dev/sda1 \
+	    write /hello.txt "hello,world"
+	mv $@-t $@
 
 endif HAVE_GUESTFISH
 
