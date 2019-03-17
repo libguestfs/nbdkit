@@ -52,6 +52,10 @@ nbdkit_SOURCES = \
 	main.c \
 	options.h \
 	plugins.c \
+	protocol.c \
+	protocol-handshake.c \
+	protocol-handshake-oldstyle.c \
+	protocol-handshake-newstyle.c \
 	protocol.h \
 	protostrings.c \
 	quit.c \

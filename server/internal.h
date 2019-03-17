@@ -194,6 +194,28 @@ extern int connection_set_handle (struct connection *conn,
   __attribute__((__nonnull__ (1 /* not 3 */)));
 extern void *connection_get_handle (struct connection *conn, size_t i)
   __attribute__((__nonnull__ (1)));
+extern int connection_get_status (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
+extern int connection_set_status (struct connection *conn, int value)
+  __attribute__((__nonnull__ (1)));
+
+/* protocol-handshake.c */
+extern int protocol_handshake (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
+extern int protocol_compute_eflags (struct connection *conn, uint16_t *flags)
+  __attribute__((__nonnull__ (1, 2)));
+
+/* protocol-handshake-oldstyle.c */
+extern int protocol_handshake_oldstyle (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
+
+/* protocol-handshake-newstyle.c */
+extern int protocol_handshake_newstyle (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
+
+/* protocol.c */
+extern int protocol_recv_request_send_reply (struct connection *conn)
+  __attribute__((__nonnull__ (1)));
 
 /* crypto.c */
 #define root_tls_certificates_dir sysconfdir "/pki/" PACKAGE_NAME
