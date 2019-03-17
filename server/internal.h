@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -147,6 +147,7 @@ extern void cleanup_unlock (pthread_mutex_t **ptr);
 
 /* connections.c */
 struct connection;
+
 typedef int (*connection_recv_function) (struct connection *,
                                          void *buf, size_t len)
   __attribute__((__nonnull__ (1, 2)));
@@ -155,28 +156,44 @@ typedef int (*connection_send_function) (struct connection *,
   __attribute__((__nonnull__ (1, 2)));
 typedef void (*connection_close_function) (struct connection *)
   __attribute__((__nonnull__ (1)));
+
+struct connection {
+  pthread_mutex_t request_lock;
+  pthread_mutex_t read_lock;
+  pthread_mutex_t write_lock;
+  pthread_mutex_t status_lock;
+  int status; /* 1 for more I/O with client, 0 for shutdown, -1 on error */
+  void *crypto_session;
+  int nworkers;
+
+  void **handles;
+  size_t nr_handles;
+
+  uint32_t cflags;
+  uint64_t exportsize;
+  uint16_t eflags;
+  bool readonly;
+  bool can_flush;
+  bool is_rotational;
+  bool can_trim;
+  bool can_zero;
+  bool can_fua;
+  bool can_multi_conn;
+  bool using_tls;
+  bool structured_replies;
+
+  int sockin, sockout;
+  connection_recv_function recv;
+  connection_send_function send;
+  connection_close_function close;
+};
+
 extern int handle_single_connection (int sockin, int sockout);
 extern int connection_set_handle (struct connection *conn,
                                   size_t i, void *handle)
   __attribute__((__nonnull__ (1 /* not 3 */)));
 extern void *connection_get_handle (struct connection *conn, size_t i)
   __attribute__((__nonnull__ (1)));
-extern pthread_mutex_t *connection_get_request_lock (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
-extern void connection_set_crypto_session (struct connection *conn,
-                                           void *session)
-  __attribute__((__nonnull__ (1 /* not 2 */)));
-extern void *connection_get_crypto_session (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
-extern void connection_set_recv (struct connection *,
-                                 connection_recv_function)
-  __attribute__((__nonnull__ (1, 2)));
-extern void connection_set_send (struct connection *,
-                                 connection_send_function)
-  __attribute__((__nonnull__ (1, 2)));
-extern void connection_set_close (struct connection *,
-                                  connection_close_function)
-  __attribute__((__nonnull__ (1, 2)));
 
 /* crypto.c */
 #define root_tls_certificates_dir sysconfdir "/pki/" PACKAGE_NAME

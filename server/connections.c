@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,38 +62,6 @@
 /* Default number of parallel requests. */
 #define DEFAULT_PARALLEL_REQUESTS 16
 
-/* Connection structure. */
-struct connection {
-  pthread_mutex_t request_lock;
-  pthread_mutex_t read_lock;
-  pthread_mutex_t write_lock;
-  pthread_mutex_t status_lock;
-  int status; /* 1 for more I/O with client, 0 for shutdown, -1 on error */
-  void *crypto_session;
-  int nworkers;
-
-  void **handles;
-  size_t nr_handles;
-
-  uint32_t cflags;
-  uint64_t exportsize;
-  uint16_t eflags;
-  bool readonly;
-  bool can_flush;
-  bool is_rotational;
-  bool can_trim;
-  bool can_zero;
-  bool can_fua;
-  bool can_multi_conn;
-  bool using_tls;
-  bool structured_replies;
-
-  int sockin, sockout;
-  connection_recv_function recv;
-  connection_send_function send;
-  connection_close_function close;
-};
-
 static struct connection *new_connection (int sockin, int sockout,
                                           int nworkers);
 static void free_connection (struct connection *conn);
@@ -105,9 +73,6 @@ static int raw_recv (struct connection *, void *buf, size_t len);
 static int raw_send (struct connection *, const void *buf, size_t len);
 static void raw_close (struct connection *);
 
-/* Accessors for public fields in the connection structure.
- * Everything else is private to this file.
- */
 int
 connection_set_handle (struct connection *conn, size_t i, void *handle)
 {
@@ -139,46 +104,6 @@ connection_get_handle (struct connection *conn, size_t i)
     return conn->handles[i];
   else
     return NULL;
-}
-
-pthread_mutex_t *
-connection_get_request_lock (struct connection *conn)
-{
-  return &conn->request_lock;
-}
-
-void
-connection_set_crypto_session (struct connection *conn, void *session)
-{
-  conn->crypto_session = session;
-}
-
-void *
-connection_get_crypto_session (struct connection *conn)
-{
-  return conn->crypto_session;
-}
-
-/* The code in crypto.c uses these three functions to replace the
- * recv, send and close callbacks when a connection is upgraded to
- * TLS.
- */
-void
-connection_set_recv (struct connection *conn, connection_recv_function recv)
-{
-  conn->recv = recv;
-}
-
-void
-connection_set_send (struct connection *conn, connection_send_function send)
-{
-  conn->send = send;
-}
-
-void
-connection_set_close (struct connection *conn, connection_close_function close)
-{
-  conn->close = close;
 }
 
 static int

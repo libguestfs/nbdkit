@@ -74,7 +74,7 @@ lock_request (struct connection *conn)
     pthread_mutex_lock (&all_requests_lock);
 
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS)
-    pthread_mutex_lock (connection_get_request_lock (conn));
+    pthread_mutex_lock (&conn->request_lock);
 
   pthread_rwlock_rdlock (&unload_prevention_lock);
 }
@@ -85,7 +85,7 @@ unlock_request (struct connection *conn)
   pthread_rwlock_unlock (&unload_prevention_lock);
 
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS)
-    pthread_mutex_unlock (connection_get_request_lock (conn));
+    pthread_mutex_unlock (&conn->request_lock);
 
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS)
     pthread_mutex_unlock (&all_requests_lock);

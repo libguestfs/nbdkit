@@ -315,7 +315,7 @@ crypto_free (void)
 static int
 crypto_recv (struct connection *conn, void *vbuf, size_t len)
 {
-  gnutls_session_t *session = connection_get_crypto_session (conn);
+  gnutls_session_t *session = conn->crypto_session;
   char *buf = vbuf;
   ssize_t r;
   bool first_read = true;
@@ -352,7 +352,7 @@ crypto_recv (struct connection *conn, void *vbuf, size_t len)
 static int
 crypto_send (struct connection *conn, const void *vbuf, size_t len)
 {
-  gnutls_session_t *session = connection_get_crypto_session (conn);
+  gnutls_session_t *session = conn->crypto_session;
   const char *buf = vbuf;
   ssize_t r;
 
@@ -378,7 +378,7 @@ crypto_send (struct connection *conn, const void *vbuf, size_t len)
 static void
 crypto_close (struct connection *conn)
 {
-  gnutls_session_t *session = connection_get_crypto_session (conn);
+  gnutls_session_t *session = conn->crypto_session;
   int sockin, sockout;
 
   assert (session != NULL);
@@ -394,7 +394,7 @@ crypto_close (struct connection *conn)
 
   gnutls_deinit (*session);
   free (session);
-  connection_set_crypto_session (conn, NULL);
+  conn->crypto_session = NULL;
 }
 
 /* Upgrade an existing connection to TLS.  Also this should do access
@@ -501,10 +501,10 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
   /* Set up the connection recv/send/close functions so they call
    * GnuTLS wrappers instead.
    */
-  connection_set_crypto_session (conn, session);
-  connection_set_recv (conn, crypto_recv);
-  connection_set_send (conn, crypto_send);
-  connection_set_close (conn, crypto_close);
+  conn->crypto_session = session;
+  conn->recv = crypto_recv;
+  conn->send = crypto_send;
+  conn->close = crypto_close;
   return 0;
 
  error:
