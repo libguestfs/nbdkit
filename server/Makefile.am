@@ -125,7 +125,8 @@ check_PROGRAMS = test-utils
 test_utils_SOURCES = \
 	test-utils.c \
 	utils.c \
-	cleanup.c
+	cleanup.c \
+	extents.c
 test_utils_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include

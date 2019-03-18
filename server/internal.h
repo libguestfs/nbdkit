@@ -139,6 +139,8 @@ extern void change_user (void);
 /* cleanup.c */
 extern void cleanup_free (void *ptr);
 #define CLEANUP_FREE __attribute__((cleanup (cleanup_free)))
+extern void cleanup_extents_free (void *ptr);
+#define CLEANUP_EXTENTS_FREE __attribute__((cleanup (cleanup_extents_free)))
 extern void cleanup_unlock (pthread_mutex_t **ptr);
 #define CLEANUP_UNLOCK __attribute__((cleanup (cleanup_unlock)))
 #define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex) \

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,12 @@ void
 cleanup_free (void *ptr)
 {
   free (* (void **) ptr);
+}
+
+void
+cleanup_extents_free (void *ptr)
+{
+  nbdkit_extents_free (* (void **) ptr);
 }
 
 void
