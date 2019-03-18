@@ -64,6 +64,7 @@ EXTRA_DIST = \
 	test-error0.sh \
 	test-error10.sh \
 	test-error100.sh \
+	test-file-extents.sh \
 	test-floppy.sh \
 	test-foreground.sh \
 	test-fua.sh \
@@ -418,6 +419,10 @@ test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 test_file_block_SOURCES = test-file-block.c test.h
 test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_file_block_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+if HAVE_GUESTFISH
+TESTS += test-file-extents.sh
+endif HAVE_GUESTFISH
 
 # floppy plugin test.
 if HAVE_GUESTFISH

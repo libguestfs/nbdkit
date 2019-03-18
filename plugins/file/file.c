@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,12 +37,15 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <inttypes.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+
+#include <pthread.h>
 
 #if defined(__linux__) && !defined(FALLOC_FL_PUNCH_HOLE)
 #include <linux/falloc.h>   /* For FALLOC_FL_*, glibc < 2.18 */
@@ -68,7 +71,11 @@
 
 static char *filename = NULL;
 
-int file_debug_zero;            /* to enable: -D file.zero=1 */
+/* Any callbacks using lseek must be protected by this lock. */
+static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* to enable: -D file.zero=1 */
+int file_debug_zero;
 
 static void
 file_unload (void)
@@ -220,6 +227,23 @@ file_close (void *handle)
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
+/* For block devices, stat->st_size is not the true size.  The caller
+ * grabs the lseek_lock.
+ */
+static int64_t
+block_device_size (int fd)
+{
+  off_t size;
+
+  size = lseek (fd, 0, SEEK_END);
+  if (size == -1) {
+    nbdkit_error ("lseek (to find device size): %m");
+    return -1;
+  }
+
+  return size;
+}
+
 /* Get the file size. */
 static int64_t
 file_get_size (void *handle)
@@ -227,15 +251,11 @@ file_get_size (void *handle)
   struct handle *h = handle;
 
   if (h->is_block_device) {
-    /* Block device, so st_size will not be the true size. */
-    off_t size;
+    int64_t size;
 
-    size = lseek (h->fd, 0, SEEK_END);
-    if (size == -1) {
-      nbdkit_error ("lseek (to find device size): %m");
-      return -1;
-    }
-
+    pthread_mutex_lock (&lseek_lock);
+    size = block_device_size (h->fd);
+    pthread_mutex_unlock (&lseek_lock);
     return size;
   } else {
     /* Regular file. */
@@ -501,6 +521,103 @@ file_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   return 0;
 }
 
+#ifdef SEEK_HOLE
+/* Extents. */
+
+static int
+file_can_extents (void *handle)
+{
+  struct handle *h = handle;
+  off_t r;
+
+  /* A simple test to see whether SEEK_HOLE etc is likely to work on
+   * the current filesystem.
+   */
+  pthread_mutex_lock (&lseek_lock);
+  r = lseek (h->fd, 0, SEEK_HOLE);
+  pthread_mutex_unlock (&lseek_lock);
+  if (r == -1) {
+    nbdkit_debug ("extents disabled: lseek: SEEK_HOLE: %m");
+    return 0;
+  }
+  return 1;
+}
+
+static int
+do_extents (void *handle, uint32_t count, uint64_t offset,
+            uint32_t flags, struct nbdkit_extents *extents)
+{
+  struct handle *h = handle;
+  const bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
+  uint64_t end = offset + count;
+
+  do {
+    off_t pos;
+
+    pos = lseek (h->fd, offset, SEEK_DATA);
+    if (pos == -1) {
+      if (errno == ENXIO) {
+        /* The current man page does not describe this situation well,
+         * but a proposed change to POSIX adds these words for ENXIO:
+         * "or the whence argument is SEEK_DATA and the offset falls
+         * within the final hole of the file."
+         */
+        pos = end;
+      }
+      else {
+        nbdkit_error ("lseek: SEEK_DATA: %" PRIu64 ": %m", offset);
+        return -1;
+      }
+    }
+
+    /* We know there is a hole from offset to pos-1. */
+    if (pos > offset) {
+      if (nbdkit_add_extent (extents, offset, pos - offset,
+                             NBDKIT_EXTENT_HOLE | NBDKIT_EXTENT_ZERO) == -1)
+        return -1;
+      if (req_one)
+        break;
+    }
+
+    offset = pos;
+    if (offset >= end)
+      break;
+
+    pos = lseek (h->fd, offset, SEEK_HOLE);
+    if (pos == -1) {
+      nbdkit_error ("lseek: SEEK_HOLE: %" PRIu64 ": %m", offset);
+      return -1;
+    }
+
+    /* We know there is data from offset to pos-1. */
+    if (pos > offset) {
+      if (nbdkit_add_extent (extents, offset, pos - offset,
+                             0 /* allocated data */) == -1)
+        return -1;
+      if (req_one)
+        break;
+    }
+
+    offset = pos;
+  } while (offset < end);
+
+  return 0;
+}
+
+static int
+file_extents (void *handle, uint32_t count, uint64_t offset,
+              uint32_t flags, struct nbdkit_extents *extents)
+{
+  int r;
+
+  pthread_mutex_lock (&lseek_lock);
+  r = do_extents (handle, count, offset, flags, extents);
+  pthread_mutex_unlock (&lseek_lock);
+
+  return r;
+}
+#endif /* SEEK_HOLE */
+
 static struct nbdkit_plugin plugin = {
   .name              = "file",
   .longname          = "nbdkit file plugin",
@@ -522,6 +639,10 @@ static struct nbdkit_plugin plugin = {
   .flush             = file_flush,
   .trim              = file_trim,
   .zero              = file_zero,
+#ifdef SEEK_HOLE
+  .can_extents       = file_can_extents,
+  .extents           = file_extents,
+#endif
   .errno_is_preserved = 1,
 };
 
