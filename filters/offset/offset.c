@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 
 #include <nbdkit-filter.h>
 
@@ -132,6 +133,40 @@ offset_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->zero (nxdata, count, offs + offset, flags, err);
 }
 
+/* Extents. */
+static int
+offset_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+                void *handle, uint32_t count, uint64_t offs, uint32_t flags,
+                struct nbdkit_extents *extents, int *err)
+{
+  size_t i;
+  struct nbdkit_extents *extents2;
+  struct nbdkit_extent e;
+  int64_t real_size = next_ops->get_size (nxdata);
+
+  extents2 = nbdkit_extents_new (offs + offset, real_size - offset);
+  if (extents2 == NULL) {
+    *err = errno;
+    return -1;
+  }
+  if (next_ops->extents (nxdata, count, offs + offset,
+                         flags, extents2, err) == -1)
+    goto error;
+
+  for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
+    e = nbdkit_get_extent (extents2, i);
+    e.offset -= offset;
+    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1)
+      goto error;
+  }
+  nbdkit_extents_free (extents2);
+  return 0;
+
+ error:
+  nbdkit_extents_free (extents2);
+  return -1;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "offset",
   .longname          = "nbdkit offset filter",
@@ -144,6 +179,7 @@ static struct nbdkit_filter filter = {
   .pwrite            = offset_pwrite,
   .trim              = offset_trim,
   .zero              = offset_zero,
+  .extents           = offset_extents,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
