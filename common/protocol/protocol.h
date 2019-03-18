@@ -112,6 +112,7 @@ extern const char *name_of_nbd_rep (int);
 #define NBD_REP_ACK          1
 #define NBD_REP_SERVER       2
 #define NBD_REP_INFO         3
+#define NBD_REP_META_CONTEXT 4
 #define NBD_REP_ERR_UNSUP    0x80000001
 #define NBD_REP_ERR_POLICY   0x80000002
 #define NBD_REP_ERR_INVALID  0x80000003
@@ -126,6 +127,18 @@ struct fixed_new_option_reply_info_export {
   uint16_t info;                /* NBD_INFO_EXPORT */
   uint64_t exportsize;          /* size of export */
   uint16_t eflags;              /* per-export flags */
+} __attribute__((packed));
+
+/* NBD_REP_META_CONTEXT reply (follows fixed_new_option_reply). */
+struct fixed_new_option_reply_meta_context {
+  uint32_t context_id;          /* metadata context ID */
+  /* followed by a string */
+} __attribute__((packed));
+
+/* NBD_REPLY_TYPE_BLOCK_STATUS block descriptor. */
+struct block_descriptor {
+  uint32_t length;              /* length of block */
+  uint32_t status_flags;        /* block type (hole etc) */
 } __attribute__((packed));
 
 /* New-style handshake server reply when using NBD_OPT_EXPORT_NAME.
@@ -199,10 +212,12 @@ extern const char *name_of_nbd_cmd (int);
 #define NBD_CMD_FLUSH             3
 #define NBD_CMD_TRIM              4
 #define NBD_CMD_WRITE_ZEROES      6
+#define NBD_CMD_BLOCK_STATUS      7
 
 extern const char *name_of_nbd_cmd_flag (int);
 #define NBD_CMD_FLAG_FUA      (1<<0)
 #define NBD_CMD_FLAG_NO_HOLE  (1<<1)
+#define NBD_CMD_FLAG_REQ_ONE  (1<<3)
 
 /* Error codes (previously errno).
  * See http://git.qemu.org/?p=qemu.git;a=commitdiff;h=ca4414804114fd0095b317785bc0b51862e62ebb

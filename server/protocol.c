@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
@@ -44,6 +45,7 @@
 
 #include "internal.h"
 #include "byte-swapping.h"
+#include "minmax.h"
 #include "protocol.h"
 
 /* Maximum read or write request that we will handle. */
@@ -78,6 +80,7 @@ validate_request (struct connection *conn,
   case NBD_CMD_WRITE:
   case NBD_CMD_TRIM:
   case NBD_CMD_WRITE_ZEROES:
+  case NBD_CMD_BLOCK_STATUS:
     if (!valid_range (conn, offset, count)) {
       /* XXX Allow writes to extend the disk? */
       nbdkit_error ("invalid request: %s: offset and count are out of range: "
@@ -106,7 +109,8 @@ validate_request (struct connection *conn,
   }
 
   /* Validate flags */
-  if (flags & ~(NBD_CMD_FLAG_FUA | NBD_CMD_FLAG_NO_HOLE)) {
+  if (flags & ~(NBD_CMD_FLAG_FUA | NBD_CMD_FLAG_NO_HOLE |
+                NBD_CMD_FLAG_REQ_ONE)) {
     nbdkit_error ("invalid request: unknown flag (0x%x)", flags);
     *error = EINVAL;
     return false;
@@ -114,6 +118,12 @@ validate_request (struct connection *conn,
   if ((flags & NBD_CMD_FLAG_NO_HOLE) &&
       cmd != NBD_CMD_WRITE_ZEROES) {
     nbdkit_error ("invalid request: NO_HOLE flag needs WRITE_ZEROES request");
+    *error = EINVAL;
+    return false;
+  }
+  if ((flags & NBD_CMD_FLAG_REQ_ONE) &&
+      cmd != NBD_CMD_BLOCK_STATUS) {
+    nbdkit_error ("invalid request: REQ_ONE flag needs BLOCK_STATUS request");
     *error = EINVAL;
     return false;
   }
@@ -157,14 +167,37 @@ validate_request (struct connection *conn,
     return false;
   }
 
+  /* Block status allowed? */
+  if (cmd == NBD_CMD_BLOCK_STATUS) {
+    if (!conn->structured_replies) {
+      nbdkit_error ("invalid request: "
+                    "%s: structured replies was not negotiated",
+                    name_of_nbd_cmd (cmd));
+      *error = EINVAL;
+      return false;
+    }
+    if (!conn->meta_context_base_allocation) {
+      nbdkit_error ("invalid request: "
+                    "%s: base:allocation was not negotiated",
+                    name_of_nbd_cmd (cmd));
+      *error = EINVAL;
+      return false;
+    }
+  }
+
   return true;                     /* Command validates. */
 }
 
 /* This is called with the request lock held to actually execute the
  * request (by calling the plugin).  Note that the request fields have
  * been validated already in 'validate_request' so we don't have to
- * check them again.  'buf' is either the data to be written or the
- * data to be returned, and points to a buffer of size 'count' bytes.
+ * check them again.
+ *
+ * 'buf' is either the data to be written or the data to be returned,
+ * and points to a buffer of size 'count' bytes.
+ *
+ * 'extents' is an empty extents list used for block status requests
+ * only.
  *
  * In all cases, the return value is the system errno value that will
  * later be converted to the nbd error to send back to the client (0
@@ -173,7 +206,7 @@ validate_request (struct connection *conn,
 static uint32_t
 handle_request (struct connection *conn,
                 uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
-                void *buf)
+                void *buf, struct nbdkit_extents *extents)
 {
   uint32_t f = 0;
   bool fua = conn->can_fua && (flags & NBD_CMD_FLAG_FUA);
@@ -215,6 +248,33 @@ handle_request (struct connection *conn,
       f |= NBDKIT_FLAG_FUA;
     if (backend->zero (backend, conn, count, offset, f, &err) == -1)
       return err;
+    break;
+
+  case NBD_CMD_BLOCK_STATUS:
+    /* The other backend methods don't check can_*.  That is because
+     * those methods are implicitly suppressed by returning eflags to
+     * the client.  However there is no eflag for extents so we must
+     * check it here.
+     */
+    if (conn->can_extents) {
+      if (flags & NBD_CMD_FLAG_REQ_ONE)
+        f |= NBDKIT_FLAG_REQ_ONE;
+      if (backend->extents (backend, conn, count, offset, f,
+                            extents, &err) == -1)
+        return err;
+    }
+    else {
+      int r;
+
+      /* By default it is safe assume that everything in the range is
+       * allocated.
+       */
+      errno = 0;
+      r = nbdkit_add_extent (extents, offset, count, 0 /* allocated data */);
+      if (r == -1)
+        return errno ? errno : EINVAL;
+      return 0;
+    }
     break;
 
   default:
@@ -359,6 +419,143 @@ send_structured_reply_read (struct connection *conn,
   return 1;                     /* command processed ok */
 }
 
+/* Convert a list of extents into NBD_REPLY_TYPE_BLOCK_STATUS blocks.
+ * The rules here are very complicated.  Read the spec carefully!
+ */
+static struct block_descriptor *
+extents_to_block_descriptors (struct nbdkit_extents *extents,
+                              uint16_t flags,
+                              uint32_t count, uint64_t offset,
+                              size_t *nr_blocks)
+{
+  const bool req_one = flags & NBD_CMD_FLAG_REQ_ONE;
+  const size_t nr_extents = nbdkit_extents_count (extents);
+  size_t i;
+  struct block_descriptor *blocks;
+
+  /* This is checked in server/plugins.c. */
+  assert (nr_extents >= 1);
+
+  /* We may send fewer than nr_extents blocks, but never more. */
+  blocks = calloc (req_one ? 1 : nr_extents, sizeof (struct block_descriptor));
+  if (blocks == NULL) {
+    nbdkit_error ("malloc");
+    return NULL;
+  }
+
+  if (req_one) {
+    const struct nbdkit_extent e = nbdkit_get_extent (extents, 0);
+
+    /* Checked as a side effect of how the extent list is created. */
+    assert (e.length > 0);
+
+    *nr_blocks = 1;
+
+    /* Must not exceed count of the original request. */
+    blocks[0].length = MIN (e.length, (uint64_t) count);
+    blocks[0].status_flags = e.type & 3;
+  }
+  else {
+    uint64_t pos = offset;
+
+    for (i = 0; i < nr_extents; ++i) {
+      const struct nbdkit_extent e = nbdkit_get_extent (extents, i);
+      uint64_t length;
+
+      if (i == 0)
+        assert (e.offset == offset);
+
+      /* Must not exceed UINT32_MAX. */
+      length = MIN (e.length, UINT32_MAX);
+      blocks[i].status_flags = e.type & 3;
+
+      pos += length;
+      if (pos > offset + count) /* this must be the last block */
+        break;
+
+      /* If we reach here then we must have consumed this whole
+       * extent.  This is currently true because the server only sends
+       * 32 bit requests, but if we move to 64 bit requests we will
+       * need to revisit this code so it can split extents into
+       * multiple blocks.  XXX
+       */
+      assert (e.length <= length);
+    }
+
+    *nr_blocks = i;
+  }
+
+#if 0
+  for (i = 0; i < *nr_blocks; ++i)
+    nbdkit_debug ("block status: sending block %" PRIu32 " type %" PRIu32,
+                  blocks[i].length, blocks[i].status_flags);
+#endif
+
+  /* Convert to big endian for the protocol. */
+  for (i = 0; i < *nr_blocks; ++i) {
+    blocks[i].length = htobe32 (blocks[i].length);
+    blocks[i].status_flags = htobe32 (blocks[i].status_flags);
+  }
+
+  return blocks;
+}
+
+static int
+send_structured_reply_block_status (struct connection *conn,
+                                    uint64_t handle,
+                                    uint16_t cmd, uint16_t flags,
+                                    uint32_t count, uint64_t offset,
+                                    struct nbdkit_extents *extents)
+{
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
+  struct structured_reply reply;
+  CLEANUP_FREE struct block_descriptor *blocks = NULL;
+  size_t nr_blocks;
+  uint32_t context_id;
+  size_t i;
+  int r;
+
+  assert (conn->meta_context_base_allocation);
+  assert (cmd == NBD_CMD_BLOCK_STATUS);
+
+  blocks = extents_to_block_descriptors (extents, flags, count, offset,
+                                         &nr_blocks);
+  if (blocks == NULL)
+    return connection_set_status (conn, -1);
+
+  reply.magic = htobe32 (NBD_STRUCTURED_REPLY_MAGIC);
+  reply.handle = handle;
+  reply.flags = htobe16 (NBD_REPLY_FLAG_DONE);
+  reply.type = htobe16 (NBD_REPLY_TYPE_BLOCK_STATUS);
+  reply.length = htobe32 (sizeof context_id +
+                          nr_blocks * sizeof (struct block_descriptor));
+
+  r = conn->send (conn, &reply, sizeof reply);
+  if (r == -1) {
+    nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
+    return connection_set_status (conn, -1);
+  }
+
+  /* Send the base:allocation context ID. */
+  context_id = htobe32 (base_allocation_id);
+  r = conn->send (conn, &context_id, sizeof context_id);
+  if (r == -1) {
+    nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
+    return connection_set_status (conn, -1);
+  }
+
+  /* Send each block descriptor. */
+  for (i = 0; i < nr_blocks; ++i) {
+    r = conn->send (conn, &blocks[i], sizeof blocks[i]);
+    if (r == -1) {
+      nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
+      return connection_set_status (conn, -1);
+    }
+  }
+
+  return 1;                     /* command processed ok */
+}
+
 static int
 send_structured_reply_error (struct connection *conn,
                              uint64_t handle, uint16_t cmd, uint32_t error)
@@ -402,6 +599,7 @@ protocol_recv_request_send_reply (struct connection *conn)
   uint32_t magic, count, error = 0;
   uint64_t offset;
   CLEANUP_FREE char *buf = NULL;
+  CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents = NULL;
 
   /* Read the request packet. */
   {
@@ -449,6 +647,7 @@ protocol_recv_request_send_reply (struct connection *conn)
     if (cmd == NBD_CMD_READ || cmd == NBD_CMD_WRITE) {
       buf = malloc (count);
       if (buf == NULL) {
+      out_of_memory:
         perror ("malloc");
         error = ENOMEM;
         if (cmd == NBD_CMD_WRITE &&
@@ -456,6 +655,13 @@ protocol_recv_request_send_reply (struct connection *conn)
           return connection_set_status (conn, -1);
         goto send_reply;
       }
+    }
+
+    /* Allocate the extents list for block status only. */
+    if (cmd == NBD_CMD_BLOCK_STATUS) {
+      extents = nbdkit_extents_new (offset, conn->exportsize);
+      if (extents == NULL)
+        goto out_of_memory;
     }
 
     /* Receive the write data buffer. */
@@ -478,7 +684,7 @@ protocol_recv_request_send_reply (struct connection *conn)
   }
   else {
     lock_request (conn);
-    error = handle_request (conn, cmd, flags, offset, count, buf);
+    error = handle_request (conn, cmd, flags, offset, count, buf, extents);
     assert ((int) error >= 0);
     unlock_request (conn);
   }
@@ -498,15 +704,23 @@ protocol_recv_request_send_reply (struct connection *conn)
   }
 
   /* Currently we prefer to send simple replies for everything except
-   * where we have to (ie. NBD_CMD_READ when structured_replies have
-   * been negotiated).  However this prevents us from sending
-   * human-readable error messages to the client, so we should
-   * reconsider this in future.
+   * where we have to (ie. NBD_CMD_READ and NBD_CMD_BLOCK_STATUS when
+   * structured_replies have been negotiated).  However this prevents
+   * us from sending human-readable error messages to the client, so
+   * we should reconsider this in future.
    */
-  if (conn->structured_replies && cmd == NBD_CMD_READ) {
-    if (!error)
-      return send_structured_reply_read (conn, request.handle, cmd,
-                                         buf, count, offset);
+  if (conn->structured_replies &&
+      (cmd == NBD_CMD_READ || cmd == NBD_CMD_BLOCK_STATUS)) {
+    if (!error) {
+      if (cmd == NBD_CMD_READ)
+        return send_structured_reply_read (conn, request.handle, cmd,
+                                           buf, count, offset);
+      else /* NBD_CMD_BLOCK_STATUS */
+        return send_structured_reply_block_status (conn, request.handle,
+                                                   cmd, flags,
+                                                   count, offset,
+                                                   extents);
+    }
     else
       return send_structured_reply_error (conn, request.handle, cmd, error);
   }

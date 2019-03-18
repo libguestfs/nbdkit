@@ -181,8 +181,10 @@ struct connection {
   bool can_zero;
   bool can_fua;
   bool can_multi_conn;
+  bool can_extents;
   bool using_tls;
   bool structured_replies;
+  bool meta_context_base_allocation;
 
   int sockin, sockout;
   connection_recv_function recv;
@@ -218,6 +220,12 @@ extern int protocol_handshake_newstyle (struct connection *conn)
 /* protocol.c */
 extern int protocol_recv_request_send_reply (struct connection *conn)
   __attribute__((__nonnull__ (1)));
+
+/* The context ID of base:allocation.  As far as I can tell it doesn't
+ * matter what this is as long as nbdkit always returns the same
+ * number.
+ */
+#define base_allocation_id 1
 
 /* crypto.c */
 #define root_tls_certificates_dir sysconfdir "/pki/" PACKAGE_NAME

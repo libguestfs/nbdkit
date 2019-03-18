@@ -134,7 +134,10 @@ Supported in nbdkit E<ge> 1.11.8.
 
 =item Block Status
 
-I<Not supported>.
+Supported in nbdkit E<ge> 1.11.10.
+
+Only C<base:allocation> (ie. querying which parts of an image are
+sparse) is supported.
 
 =item Resize Extension
 

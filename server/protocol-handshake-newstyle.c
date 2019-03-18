@@ -133,6 +133,34 @@ send_newstyle_option_reply_info_export (struct connection *conn,
   return 0;
 }
 
+static int
+send_newstyle_option_reply_meta_context (struct connection *conn,
+                                         uint32_t option, uint32_t reply,
+                                         uint32_t context_id,
+                                         const char *name)
+{
+  struct fixed_new_option_reply fixed_new_option_reply;
+  struct fixed_new_option_reply_meta_context context;
+  const size_t namelen = strlen (name);
+
+  fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
+  fixed_new_option_reply.option = htobe32 (option);
+  fixed_new_option_reply.reply = htobe32 (reply);
+  fixed_new_option_reply.replylen = htobe32 (sizeof context + namelen);
+  context.context_id = htobe32 (context_id);
+
+  if (conn->send (conn,
+                  &fixed_new_option_reply,
+                  sizeof fixed_new_option_reply) == -1 ||
+      conn->send (conn, &context, sizeof context) == -1 ||
+      conn->send (conn, name, namelen) == -1) {
+    nbdkit_error ("write: %m");
+    return -1;
+  }
+
+  return 0;
+}
+
 /* Sub-function during negotiate_handshake_newstyle, to uniformly handle
  * a client hanging up on a message boundary.
  */
@@ -503,7 +531,15 @@ negotiate_handshake_newstyle_options (struct connection *conn)
          * for SET: nr_queries == 0 means reset all contexts
          */
         if (nr_queries == 0) {
-          /* Nothing is supported now. */
+          if (option == NBD_OPT_SET_META_CONTEXT)
+            conn->meta_context_base_allocation = false;
+          else /* LIST */ {
+            if (send_newstyle_option_reply_meta_context
+                (conn, option, NBD_REP_META_CONTEXT,
+                 0, "base:allocation") == -1)
+              return -1;
+          }
+
           if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
             return -1;
         }
@@ -525,7 +561,30 @@ negotiate_handshake_newstyle_options (struct connection *conn)
                    option == NBD_OPT_LIST_META_CONTEXT ? "query" : "set",
                    (int) querylen, &data[opt_index]);
 
-            /* Ignore query - nothing is supported. */
+            /* For LIST, "base:" returns all supported contexts in the
+             * base namespace.  We only support "base:allocation".
+             */
+            if (option == NBD_OPT_LIST_META_CONTEXT &&
+                querylen == 5 &&
+                strncmp (&data[opt_index], "base:", 5) == 0) {
+              if (send_newstyle_option_reply_meta_context
+                  (conn, option, NBD_REP_META_CONTEXT,
+                   0, "base:allocation") == -1)
+                return -1;
+            }
+            /* "base:allocation" requested by name. */
+            else if (querylen == 15 &&
+                     strncmp (&data[opt_index], "base:allocation", 15) == 0) {
+              if (send_newstyle_option_reply_meta_context
+                  (conn, option, NBD_REP_META_CONTEXT,
+                   option == NBD_OPT_SET_META_CONTEXT
+                   ? base_allocation_id : 0,
+                   "base:allocation") == -1)
+                return -1;
+              if (option == NBD_OPT_SET_META_CONTEXT)
+                conn->meta_context_base_allocation = true;
+            }
+            /* Every other query must be ignored. */
 
             opt_index += querylen;
             nr_queries--;

@@ -110,6 +110,17 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     conn->can_multi_conn = true;
   }
 
+  /* The result of this is not returned to callers here (or at any
+   * time during the handshake).  However it makes sense to do it once
+   * per connection and store the result in the handle anyway.  This
+   * protocol_compute_eflags function is a bit misnamed XXX.
+   */
+  fl = backend->can_extents (backend, conn);
+  if (fl == -1)
+    return -1;
+  if (fl)
+    conn->can_extents = true;
+
   *flags = eflags;
   return 0;
 }
