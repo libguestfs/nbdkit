@@ -48,7 +48,7 @@ cleanup_fn rm -f $files
 # control the output format of the time builtin.  For strange use of
 # { ; } here, see: https://stackoverflow.com/a/13356654
 set +x
-{ TIMEFORMAT="%0R" ; time nbdkit --filter=rate memory size=25M rate=10M --run 'qemu-img convert -p $nbd rate.img' 2>rate.err ; } 2>rate.time
+{ TIMEFORMAT="%0R" ; time nbdkit --filter=rate pattern size=25M rate=10M --run 'qemu-img convert -p $nbd rate.img' 2>rate.err ; } 2>rate.time
 set -x
 
 cat rate.err ||:
