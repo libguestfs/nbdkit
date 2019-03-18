@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -359,4 +359,39 @@ sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset)
     count -= n;
     offset += n;
   }
+}
+
+int
+sparse_array_extents (struct sparse_array *sa,
+                      uint32_t count, uint64_t offset,
+                      struct nbdkit_extents *extents)
+{
+  uint32_t n, type;
+  void *p;
+
+  while (count > 0) {
+    p = lookup (sa, offset, false, &n, NULL);
+    if (n > count)
+      n = count;
+
+    /* Work out the type of this extent. */
+    if (p == NULL)
+      /* No backing page, so it's a hole. */
+      type = NBDKIT_EXTENT_HOLE | NBDKIT_EXTENT_ZERO;
+    else {
+      if (is_zero (p, n))
+        /* A backing page and it's all zero, it's a zero extent. */
+        type = NBDKIT_EXTENT_ZERO;
+      else
+        /* Normal allocated data. */
+        type = 0;
+    }
+    if (nbdkit_add_extent (extents, offset, n, type) == -1)
+      return -1;
+
+    count -= n;
+    offset += n;
+  }
+
+  return 0;
 }

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -86,5 +86,10 @@ extern int sparse_array_write (struct sparse_array *sa, const void *buf,
 extern void sparse_array_zero (struct sparse_array *sa,
                                uint32_t count, uint64_t offset)
   __attribute__((__nonnull__ (1)));
+
+/* Return information about allocated pages and holes. */
+extern int sparse_array_extents (struct sparse_array *sa,
+                                 uint32_t count, uint64_t offset,
+                                 struct nbdkit_extents *extents);
 
 #endif /* NBDKIT_SPARSE_H */

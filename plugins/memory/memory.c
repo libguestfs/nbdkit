@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -170,6 +170,19 @@ memory_trim (void *handle, uint32_t count, uint64_t offset)
   return 0;
 }
 
+/* Extents. */
+static int
+memory_extents (void *handle, uint32_t count, uint64_t offset,
+                uint32_t flags, struct nbdkit_extents *extents)
+{
+  int r;
+
+  pthread_mutex_lock (&lock);
+  r = sparse_array_extents (sa, count, offset, extents);
+  pthread_mutex_unlock (&lock);
+  return r;
+}
+
 static struct nbdkit_plugin plugin = {
   .name              = "memory",
   .version           = PACKAGE_VERSION,
@@ -185,6 +198,7 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = memory_pwrite,
   .zero              = memory_zero,
   .trim              = memory_trim,
+  .extents           = memory_extents,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */

@@ -152,6 +152,8 @@ To test for memory leaks (‘make check-valgrind’):
 
 For non-essential enhancements to the test suite:
 
+ - jq
+
  - ip, ss (from iproute package)
 
  - losetup (from util-linux package)
