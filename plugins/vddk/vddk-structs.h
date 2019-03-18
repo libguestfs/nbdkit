@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,9 @@ typedef uint64_t VixError;
 
 #define VIXDISKLIB_FLAG_OPEN_READ_ONLY 4
 #define VIXDISKLIB_SECTOR_SIZE 512
+
+#define VIXDISKLIB_MIN_CHUNK_SIZE 128
+#define VIXDISKLIB_MAX_CHUNK_NUMBER (512*1024)
 
 typedef void *VixDiskLibConnection;
 typedef void *VixDiskLibHandle;
@@ -123,5 +126,15 @@ typedef struct VixDiskLibInfo {
   char *parentFileNameHint;
   char *uuid;
 } VixDiskLibInfo;
+
+typedef struct {
+  uint64_t offset;
+  uint64_t length;
+} VixDiskLibBlock;
+
+typedef struct {
+  uint32_t numBlocks;
+  VixDiskLibBlock blocks[1];
+} VixDiskLibBlockList;
 
 #endif /* NBDKIT_VDDK_STRUCTS_H */

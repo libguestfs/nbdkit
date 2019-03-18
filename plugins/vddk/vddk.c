@@ -45,11 +45,16 @@
 #include <nbdkit-plugin.h>
 
 #include "isaligned.h"
+#include "minmax.h"
+#include "rounding.h"
 
 #include "vddk-structs.h"
 
 /* Enable extra disk info debugging with: -D vddk.diskinfo=1 */
 int vddk_debug_diskinfo;
+
+/* Enable debugging of extents code with: -D vddk.extents=1 */
+int vddk_debug_extents;
 
 /* The VDDK APIs that we call.  These globals are initialized when the
  * plugin is loaded (by vddk_load).
@@ -67,6 +72,8 @@ static VixError (*VixDiskLib_GetInfo) (VixDiskLibHandle handle, VixDiskLibInfo *
 static void (*VixDiskLib_FreeInfo) (VixDiskLibInfo *info);
 static VixError (*VixDiskLib_Read) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, unsigned char *buf);
 static VixError (*VixDiskLib_Write) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, const unsigned char *buf);
+static VixError (*VixDiskLib_QueryAllocatedBlocks) (VixDiskLibHandle diskHandle, uint64_t start_sector, uint64_t nr_sectors, uint64_t chunk_size, VixDiskLibBlockList **block_list);
+static VixError (*VixDiskLib_FreeBlockList) (VixDiskLibBlockList *block_list);
 
 /* Parameters passed to InitEx. */
 #define VDDK_MAJOR 5
@@ -174,6 +181,11 @@ vddk_load (void)
   VixDiskLib_FreeInfo = dlsym (dl, "VixDiskLib_FreeInfo");
   VixDiskLib_Read = dlsym (dl, "VixDiskLib_Read");
   VixDiskLib_Write = dlsym (dl, "VixDiskLib_Write");
+
+  /* Added in VDDK 6.7, these will be NULL for earlier versions: */
+  VixDiskLib_QueryAllocatedBlocks =
+    dlsym (dl, "VixDiskLib_QueryAllocatedBlocks");
+  VixDiskLib_FreeBlockList = dlsym (dl, "VixDiskLib_FreeBlockList");
 }
 
 static void
@@ -570,6 +582,161 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   return 0;
 }
 
+static int
+vddk_can_extents (void *handle)
+{
+  struct vddk_handle *h = handle;
+  VixError err;
+  VixDiskLibBlockList *block_list;
+
+  /* This call was added in VDDK 6.7.  In earlier versions the
+   * function pointer will be NULL and we cannot query extents.
+   */
+  if (VixDiskLib_QueryAllocatedBlocks == NULL) {
+    nbdkit_debug ("can_extents: VixDiskLib_QueryAllocatedBlocks == NULL, "
+                  "probably this is VDDK < 6.7");
+    return 0;
+  }
+
+  /* However even when the call is available it rarely works well so
+   * the best thing we can do here is to try the call and if it's
+   * non-functional return false.
+   */
+  DEBUG_CALL ("VixDiskLib_QueryAllocatedBlocks",
+              "handle, 0, %d sectors, %d sectors",
+              VIXDISKLIB_MIN_CHUNK_SIZE, VIXDISKLIB_MIN_CHUNK_SIZE);
+  err = VixDiskLib_QueryAllocatedBlocks (h->handle,
+                                         0, VIXDISKLIB_MIN_CHUNK_SIZE,
+                                         VIXDISKLIB_MIN_CHUNK_SIZE,
+                                         &block_list);
+  if (err == VIX_OK) {
+    DEBUG_CALL ("VixDiskLib_FreeBlockList", "block_list");
+    VixDiskLib_FreeBlockList (block_list);
+  }
+  if (err != VIX_OK) {
+    char *errmsg = VixDiskLib_GetErrorText (err, NULL);
+    nbdkit_debug ("can_extents: VixDiskLib_QueryAllocatedBlocks test failed, "
+                  "extents support will be disabled: "
+                  "original error: %s",
+                  errmsg);
+    VixDiskLib_FreeErrorText (errmsg);
+    return 0;
+  }
+
+  return 1;
+}
+
+static int
+add_extent (struct nbdkit_extents *extents,
+            uint64_t *position, uint64_t next_position, bool is_hole)
+{
+  const uint32_t type = is_hole ? NBDKIT_EXTENT_HOLE|NBDKIT_EXTENT_ZERO : 0;
+  const uint64_t length = next_position - *position;
+
+  assert (*position <= next_position);
+  if (*position == next_position)
+    return 0;
+
+  if (vddk_debug_extents)
+    nbdkit_debug ("adding extent type %s at [%" PRIu64 "...%" PRIu64 "]",
+                  is_hole ? "hole" : "allocated data",
+                  *position, next_position-1);
+  if (nbdkit_add_extent (extents, *position, length, type) == -1)
+    return -1;
+
+  *position = next_position;
+  return 0;
+}
+
+static int
+vddk_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+              struct nbdkit_extents *extents)
+{
+  struct vddk_handle *h = handle;
+  bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
+  uint64_t position, end, start_sector;
+
+  position = offset;
+  end = offset + count;
+
+  /* We can only query whole chunks.  Therefore start with the first
+   * chunk before offset.
+   */
+  start_sector =
+    ROUND_DOWN (offset, VIXDISKLIB_MIN_CHUNK_SIZE * VIXDISKLIB_SECTOR_SIZE)
+    / VIXDISKLIB_SECTOR_SIZE;
+  while (start_sector * VIXDISKLIB_SECTOR_SIZE < end) {
+    VixError err;
+    uint32_t i;
+    uint64_t nr_chunks, nr_sectors;
+    VixDiskLibBlockList *block_list;
+
+    assert (IS_ALIGNED (start_sector, VIXDISKLIB_MIN_CHUNK_SIZE));
+
+    nr_chunks =
+      ROUND_UP (end - start_sector * VIXDISKLIB_SECTOR_SIZE,
+                VIXDISKLIB_MIN_CHUNK_SIZE * VIXDISKLIB_SECTOR_SIZE)
+      / (VIXDISKLIB_MIN_CHUNK_SIZE * VIXDISKLIB_SECTOR_SIZE);
+    nr_chunks = MIN (nr_chunks, VIXDISKLIB_MAX_CHUNK_NUMBER);
+    nr_sectors = nr_chunks * VIXDISKLIB_MIN_CHUNK_SIZE;
+
+    DEBUG_CALL ("VixDiskLib_QueryAllocatedBlocks",
+                "handle, %" PRIu64 " sectors, %" PRIu64 " sectors, "
+                "%d sectors",
+                start_sector, nr_sectors, VIXDISKLIB_MIN_CHUNK_SIZE);
+    err = VixDiskLib_QueryAllocatedBlocks (h->handle,
+                                           start_sector, nr_sectors,
+                                           VIXDISKLIB_MIN_CHUNK_SIZE,
+                                           &block_list);
+    if (err != VIX_OK) {
+      VDDK_ERROR (err, "VixDiskLib_QueryAllocatedBlocks");
+      return -1;
+    }
+
+    for (i = 0; i < block_list->numBlocks; ++i) {
+      uint64_t blk_offset, blk_length;
+
+      blk_offset = block_list->blocks[i].offset * VIXDISKLIB_SECTOR_SIZE;
+      blk_length = block_list->blocks[i].length * VIXDISKLIB_SECTOR_SIZE;
+
+      /* The query returns allocated blocks.  We must insert holes
+       * between the blocks as necessary.
+       */
+      if (position < blk_offset &&
+          add_extent (extents, &position, blk_offset, true) == -1)
+        goto error_in_add;
+      if (add_extent (extents,
+                      &position, blk_offset + blk_length, false) == -1) {
+      error_in_add:
+        DEBUG_CALL ("VixDiskLib_FreeBlockList", "block_list");
+        VixDiskLib_FreeBlockList (block_list);
+        return -1;
+      }
+    }
+    DEBUG_CALL ("VixDiskLib_FreeBlockList", "block_list");
+    VixDiskLib_FreeBlockList (block_list);
+
+    /* There's an implicit hole after the returned list of blocks, up
+     * to the end of the QueryAllocatedBlocks request.
+     */
+    if (add_extent (extents,
+                    &position,
+                    (start_sector + nr_sectors) * VIXDISKLIB_SECTOR_SIZE,
+                    true) == -1)
+      return -1;
+
+    start_sector += nr_sectors;
+
+    /* If one extent was requested, as long as we've added an extent
+     * overlapping the original offset we're done.
+     */
+    if (req_one && position > offset)
+      break;
+  }
+
+  return 0;
+}
+
 static struct nbdkit_plugin plugin = {
   .name              = "vddk",
   .longname          = "VMware VDDK plugin",
@@ -585,6 +752,8 @@ static struct nbdkit_plugin plugin = {
   .get_size          = vddk_get_size,
   .pread             = vddk_pread,
   .pwrite            = vddk_pwrite,
+  .can_extents       = vddk_can_extents,
+  .extents           = vddk_extents,
 };
 
 NBDKIT_REGISTER_PLUGIN(plugin)
