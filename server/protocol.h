@@ -187,7 +187,7 @@ extern const char *name_of_nbd_reply_type (int);
 #define NBD_REPLY_TYPE_NONE         0
 #define NBD_REPLY_TYPE_OFFSET_DATA  1
 #define NBD_REPLY_TYPE_OFFSET_HOLE  2
-#define NBD_REPLY_TYPE_BLOCK_STATUS 3
+#define NBD_REPLY_TYPE_BLOCK_STATUS 5
 #define NBD_REPLY_TYPE_ERROR        ((1<<15) + 1)
 #define NBD_REPLY_TYPE_ERROR_OFFSET ((1<<15) + 2)
 
