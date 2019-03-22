@@ -24,9 +24,8 @@ General ideas for improvements
   to inform nbdkit when the response is ready:
   https://www.redhat.com/archives/libguestfs/2018-January/msg00149.html
 
-* More NBD protocol features. Qemu has implemented Structured Replies,
-  which allows for more efficient serving of sparse files.  Also in
-  the upstream pipeline: proposals for block status and online resize.
+* More NBD protocol features. In the upstream pipeline: proposals for
+  block status and online resize.
 
 * Add a callback to let plugins request minimum alignment for the
   buffer to pread/pwrite; useful for a plugin utilizing O_DIRECT or
