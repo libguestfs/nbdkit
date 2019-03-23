@@ -40,7 +40,7 @@ requires qemu-img --version
 
 # Check that ssh to localhost will work without any passwords or phrases.
 requires ssh -V
-if ! ssh -o PreferredAuthentications=none,publickey localhost echo </dev/null
+if ! ssh -o PreferredAuthentications=none,publickey -o StrictHostKeyChecking=no localhost echo </dev/null
 then
     echo "$0: passwordless/phraseless authentication to localhost not possible"
     exit 77
