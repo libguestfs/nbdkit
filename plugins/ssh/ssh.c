@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -54,6 +55,7 @@ static const char *path = NULL;
 static const char *port = NULL;
 static const char *user = NULL;
 static char *password = NULL;
+static bool verify_remote_host = true;
 
 /* config can be:
  * NULL => parse options from default file
@@ -84,6 +86,8 @@ ssh_unload (void)
 static int
 ssh_config (const char *key, const char *value)
 {
+  int r;
+
   if (strcmp (key, "host") == 0)
     host = value;
 
@@ -104,6 +108,13 @@ ssh_config (const char *key, const char *value)
 
   else if (strcmp (key, "config") == 0)
     config = value;
+
+  else if (strcmp (key, "verify-remote-host") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    verify_remote_host = r;
+  }
 
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -147,7 +158,7 @@ struct ssh_handle {
  * See: http://api.libssh.org/master/libssh_tutor_guided_tour.html
  */
 static int
-verify_remote_host (struct ssh_handle *h)
+do_verify_remote_host (struct ssh_handle *h)
 {
   enum ssh_known_hosts_e state;
   unsigned char *hash = NULL;
@@ -339,7 +350,7 @@ ssh_open (int readonly)
   }
 
   /* Verify the remote host. */
-  if (verify_remote_host (h) == -1)
+  if (verify_remote_host && do_verify_remote_host (h) == -1)
     goto err;
 
   /* Authenticate. */

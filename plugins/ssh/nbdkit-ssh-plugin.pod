@@ -6,7 +6,7 @@ nbdkit-ssh-plugin - access disk images over the SSH protocol
 
  nbdkit ssh host=HOST path=PATH
             [port=PORT] [user=USER] [password=PASSWORD|-|+FILENAME]
-            [config=CONFIG_FILE]
+            [config=CONFIG_FILE] [verify-remote-host=false]
 
 =head1 DESCRIPTION
 
@@ -94,6 +94,18 @@ Specify the remote username.
 This parameter is optional.  If not given then the local username is
 used.
 
+=item B<verify-remote-host=true>
+
+=item B<verify-remote-host=false>
+
+Set whether or not we verify the remote host is one we have previously
+seen, using a local file such as F<~/.ssh/known_hosts>.  The default
+is C<true>, meaning that we verify the remote host’s identity has not
+changed.
+
+Setting this to C<false> is dangerous because it allows a
+Man-In-The-Middle (MITM) attack to be conducted against you.
+
 =back
 
 =head1 NOTES
@@ -102,10 +114,25 @@ used.
 
 The SSH server’s host key is checked at connection time, and must be
 present and correct in the local "known hosts" file (usually
-F<~/.ssh/known_hosts>).  If you have never connected to the SSH server
-before then the connection will usually fail.  You may have to connect
-to the server first using L<ssh(1)> so you can manually accept the
-host key.
+F<~/.ssh/known_hosts>).
+
+If you have never connected to the SSH server before then the
+connection will usually fail.  You can either:
+
+=over 4
+
+=item *
+
+to connect to the server first using L<ssh(1)> so you can manually
+accept the host key, or
+
+=item *
+
+set I<verify-remote-host=false> on the command line.  This latter
+option is dangerous because it allows a MITM attack to be conducted
+against you.
+
+=back
 
 =head2 Supported authentication methods
 
@@ -127,6 +154,10 @@ be done in conjunction with L<ssh-agent(1)>.
 
 This is the default local SSH config file which is read to get other
 options.  You can change this using the C<config> option.
+
+=item F<~/.ssh/known_hosts>
+
+This is the normal file used to verify known hosts for non-root users.
 
 =back
 
