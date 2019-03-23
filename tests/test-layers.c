@@ -61,7 +61,7 @@
 
 #include "byte-swapping.h"
 #include "exit-with-parent.h"
-#include "protocol.h"           /* From nbdkit core. */
+#include "protocol.h"
 
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1

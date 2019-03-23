@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2017 Red Hat Inc.
+# Copyright (C) 2018-2019 Red Hat Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,35 +32,26 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = nbdkit-nbd-plugin.pod
+EXTRA_DIST = \
+	protocol.h \
+	protostrings.c \
+	protostrings.sed
 
-plugin_LTLIBRARIES = nbdkit-nbd-plugin.la
+noinst_LTLIBRARIES = libprotocol.la
 
-nbdkit_nbd_plugin_la_SOURCES = \
-	nbd.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+libprotocol_la_SOURCES = \
+        protostrings.c \
+	protocol.h
+libprotocol_la_CFLAGS = \
+        $(WARNINGS_CFLAGS)
 
-nbdkit_nbd_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/protocol \
-	-I$(top_srcdir)/server
-nbdkit_nbd_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
-nbdkit_nbd_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
-nbdkit_nbd_plugin_la_LIBADD = \
-	$(top_builddir)/common/protocol/libprotocol.la
+# protostrings.c is generated from the protocol.h header file where it
+# is used to map NBD protocol flags to strings.
 
-if HAVE_POD
-
-man_MANS = nbdkit-nbd-plugin.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-nbd-plugin.1: nbdkit-nbd-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+BUILT_SOURCES = protostrings.c
+CLEANFILES += protostrings.c
+protostrings.c: protocol.h protostrings.sed Makefile
+	rm -f $@ $@-t
+	$(SED) -n -f $(srcdir)/protostrings.sed < $< > $@-t
+	mv $@-t $@
+	chmod 0444 $@

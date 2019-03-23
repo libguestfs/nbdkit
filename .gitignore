@@ -33,6 +33,7 @@ Makefile.in
 /common/include/test-minmax
 /common/include/test-nextnonzero
 /common/include/test-random
+/common/protocol/protostrings.c
 /compile
 /config.guess
 /config.h
@@ -61,7 +62,6 @@ Makefile.in
 /podwrapper.pl
 /server/nbdkit
 /server/nbdkit.pc
-/server/protostrings.c
 /server/synopsis.c
 /server/test-utils
 /stamp-h1

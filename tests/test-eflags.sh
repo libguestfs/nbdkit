@@ -58,7 +58,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # The export flags.
-# See also server/protocol.h
+# See also common/protocol/protocol.h
 HAS_FLAGS=$((         1 << 0 ))
 READ_ONLY=$((         1 << 1 ))
 SEND_FLUSH=$((        1 << 2 ))

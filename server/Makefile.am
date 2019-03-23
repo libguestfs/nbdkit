@@ -56,8 +56,6 @@ nbdkit_SOURCES = \
 	protocol-handshake.c \
 	protocol-handshake-oldstyle.c \
 	protocol-handshake-newstyle.c \
-	protocol.h \
-	protostrings.c \
 	quit.c \
 	signals.c \
 	socket-activation.c \
@@ -78,6 +76,7 @@ nbdkit_CPPFLAGS = \
 	-Dsysconfdir=\"$(sysconfdir)\" \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/protocol \
 	-I$(top_srcdir)/common/utils
 nbdkit_CFLAGS = \
 	$(PTHREAD_CFLAGS) \
@@ -89,6 +88,7 @@ nbdkit_LDADD = \
 	$(GNUTLS_LIBS) \
 	$(LIBSELINUX_LIBS) \
 	$(DL_LIBS) \
+	$(top_builddir)/common/protocol/libprotocol.la \
 	$(top_builddir)/common/utils/libutils.la
 nbdkit_LDFLAGS = \
 	$(PTHREAD_LIBS) \
@@ -97,22 +97,10 @@ if USE_LINKER_SCRIPT_FOR_SERVER
 nbdkit_LDFLAGS += -Wl,--version-script=$(srcdir)/nbdkit.syms
 endif
 
-# protostrings.c is generated from the protocol.h header file where it
-# is used to map NBD protocol flags to strings.
-
-BUILT_SOURCES = protostrings.c
-EXTRA_DIST += protostrings.c protostrings.sed
-CLEANFILES += protostrings.c
-protostrings.c: protocol.h protostrings.sed Makefile
-	rm -f $@ $@-t
-	$(SED) -n -f $(srcdir)/protostrings.sed < $< > $@-t
-	mv $@-t $@
-	chmod 0444 $@
-
 # synopsis.c is generated from docs/synopsis.txt where it is also
 # used to generate the man page.  It is included in main.c.
 
-BUILT_SOURCES += synopsis.c
+BUILT_SOURCES = synopsis.c
 EXTRA_DIST += synopsis.c
 nbdkit_DEPENDENCIES = synopsis.c
 CLEANFILES += synopsis.c

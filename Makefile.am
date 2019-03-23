@@ -66,6 +66,7 @@ SUBDIRS = \
 	valgrind \
 	include \
 	common/include \
+	common/protocol \
 	common/utils \
 	server
 
