@@ -4,7 +4,7 @@ nbdkit-ssh-plugin - access disk images over the SSH protocol
 
 =head1 SYNOPSIS
 
- nbdkit ssh host=HOST path=PATH
+ nbdkit ssh host=HOST [path=]PATH
             [port=PORT] [user=USER] [password=PASSWORD|-|+FILENAME]
             [config=CONFIG_FILE] [verify-remote-host=false]
 
@@ -19,7 +19,7 @@ plugin.
 
 =over 4
 
-=item nbdkit ssh host=ssh.example.com path=disk.img
+=item nbdkit ssh host=ssh.example.com disk.img
 
 Open a file called F<disk.img> on remote host C<ssh.example.com>.
 Because the pathname is relative, it is opened relative to the user’s
@@ -28,7 +28,7 @@ home directory on the remote server.
 The remote file can be read or written.  To force read-only access add
 the I<-r> flag.
 
-=item nbdkit ssh host=ssh.example.com path=disk.img user=bob
+=item nbdkit ssh host=ssh.example.com disk.img user=bob
 
 As above but log in using username C<bob> (instead of trying the local
 username).
@@ -73,12 +73,15 @@ Read the password from the named file.  This is the most secure method
 to supply a password, as long as you set the permissions on the file
 appropriately.
 
-=item B<path=>PATH
+=item [B<path=>]PATH
 
 Specify the path to the remote file.  This can be a relative path in
 which case it is relative to the remote home directory.
 
 This parameter is required.
+
+C<path=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
 
 =item B<port=>PORT
 

@@ -141,7 +141,7 @@ ssh_config_complete (void)
 
 #define ssh_config_help \
   "host=<HOST>     (required) SSH server hostname.\n" \
-  "path=<PATH>     (required) SSH remote path.\n" \
+  "[path=]<PATH>   (required) SSH remote path.\n" \
   "port=<PORT>                SSH protocol port number.\n" \
   "user=<USER>                SSH user name.\n" \
   "password=<PASSWORD>        SSH password.\n" \
@@ -527,6 +527,7 @@ static struct nbdkit_plugin plugin = {
   .config            = ssh_config,
   .config_complete   = ssh_config_complete,
   .config_help       = ssh_config_help,
+  .magic_config_key  = "path",
   .open              = ssh_open,
   .close             = ssh_close,
   .get_size          = ssh_get_size,
