@@ -43,6 +43,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "byte-swapping.h"
 #include "efi-crc32.h"
 #include "gpt.h"
 #include "isaligned.h"
