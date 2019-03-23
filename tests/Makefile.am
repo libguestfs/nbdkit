@@ -530,6 +530,7 @@ test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_split_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # ssh plugin test.
+if HAVE_SSH
 # Uses ‘disk’ so we have to make it conditional on guestfish.
 if HAVE_GUESTFISH
 TESTS += test-ssh.sh
@@ -576,6 +577,7 @@ stamp-ssh-user-key:
 	rm -f ssh/id_rsa.pub
 	ssh-keygen -t rsa -f ssh/id_rsa -N ''
 	touch $@
+endif HAVE_SSH
 
 # streaming plugin test.
 # Doesn't work:
