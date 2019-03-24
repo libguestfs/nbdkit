@@ -72,9 +72,25 @@ line using L<nbdkit-data-plugin(1)>:
 
 =item *
 
-Forward an NBD connection over HTTP using L<nbdkit-curl-plugin(1)>:
+Forward an NBD connection to a remote server over HTTPS or SSH using
+L<nbdkit-curl-plugin(1)> or L<nbdkit-ssh-plugin(1)>:
 
- nbdkit -r curl http://example.com/disk.img
+ nbdkit -r curl https://example.com/disk.img
+
+ nbdkit ssh host=example.com /var/tmp/disk.img
+
+=item *
+
+Create a RAM disk using L<nbdkit-memory-plugin(1)>:
+
+ nbdkit memory size=64M
+
+=item *
+
+Create a floppy disk image containing files from a local directory
+using L<nbdkit-floppy-plugin(1)>:
+
+ nbdkit floppy dir/
 
 =back
 
@@ -110,6 +126,25 @@ L<nbdkit-error-filter(1)> and L<nbdkit-delay-filter(1)>:
 
  nbdkit --filter=error --filter=delay memory size=100M \
         error-rate=10% rdelay=1 wdelay=1
+
+=back
+
+=head2 Writing plugins in scripting languages
+
+=over 4
+
+=item *
+
+Write a simple, custom plugin entirely on the command line in shell
+script using L<nbdkit-sh-plugin(3)>:
+
+ nbdkit sh - <<'EOF'
+   case "$1" in
+     get_size) echo 1M ;;
+     pread) dd if=/dev/zero count=$3 iflag=count_bytes ;;
+     *) exit 2 ;;
+   esac
+ EOF
 
 =back
 
