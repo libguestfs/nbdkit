@@ -164,6 +164,38 @@ This is the normal file used to verify known hosts for non-root users.
 
 =back
 
+=head1 DEBUG FLAGS
+
+=head2 -D ssh.log=[1..4]
+
+Set the libssh log level to increasing levels of verbosity.  Each
+level includes messages from the previous levels.  Currently
+the levels are:
+
+=over 4
+
+=item B<1>
+
+informational and warning messages
+
+=item B<2>
+
+SSH and SFTP protocol steps
+
+=item B<3>
+
+SSH and SFTP packets
+
+=item B<4>
+
+libssh functions
+
+=back
+
+Use level 2 to diagnose SSH protocol or server problems.  Levels 3 and
+4 are extremely verbose and probably only useful if you are debugging
+libssh itself.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

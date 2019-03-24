@@ -45,6 +45,7 @@
 
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
+#include <libssh/callbacks.h>
 
 #include <nbdkit-plugin.h>
 
@@ -64,17 +65,30 @@ static bool verify_remote_host = true;
  */
 static const char *config = NULL;
 
-/* Use '-D ssh.log=N' to set.
- *
- * The log levels (N) are:
- *
- *   SSH_LOG_NONE  -> 0
- *   SSH_LOG_WARN  -> 1
- *   SSH_LOG_INFO  -> 2
- *   SSH_LOG_DEBUG -> 3
- *   SSH_LOG_TRACE -> 4
- */
+/* Use '-D ssh.log=N' to set. */
 int ssh_debug_log = 0;
+
+/* If ssh_debug_log > 0 then the library will call this function with
+ * log messages.
+ */
+static void
+log_callback (int priority, const char *function, const char *message, void *vp)
+{
+  const char *levels[] =
+    { "none", "warning", "protocol", "packet", "function" };
+  const size_t nr_levels = sizeof levels / sizeof levels[0];
+  const char *level;
+
+  if (priority >= 0 && priority < nr_levels)
+    level = levels[priority];
+  else
+    level = "unknown";
+
+  /* NB We don't need to print the function parameter because it is
+   * always prefixed to the message.
+   */
+  nbdkit_debug ("libssh: %s: %s", level, message);
+}
 
 static void
 ssh_unload (void)
@@ -133,8 +147,6 @@ ssh_config_complete (void)
                   "after the plugin name on the command line");
     return -1;
   }
-
-  ssh_set_log_level (ssh_debug_log);
 
   return 0;
 }
@@ -300,6 +312,14 @@ ssh_open (int readonly)
   if (!h->session) {
     nbdkit_error ("failed to initialize libssh session");
     goto err;
+  }
+
+  if (ssh_debug_log > 0) {
+    ssh_options_set (h->session, SSH_OPTIONS_LOG_VERBOSITY, &ssh_debug_log);
+    /* Even though this is setting a "global", we must call it every
+     * time we set the session otherwise messages go to stderr.
+     */
+    ssh_set_log_callback (log_callback);
   }
 
   /* Disable Nagle's algorithm which is recommended by the libssh
