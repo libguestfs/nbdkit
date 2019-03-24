@@ -69,7 +69,7 @@ For the gzip plugin:
 
  - zlib
 
-For the xz plugin:
+For the xz filter:
 
  - liblzma
 
