@@ -126,8 +126,8 @@ connection will usually fail.  You can either:
 
 =item *
 
-to connect to the server first using L<ssh(1)> so you can manually
-accept the host key, or
+connect to the server first using L<ssh(1)> so you can manually accept
+the host key, or
 
 =item *
 
