@@ -47,6 +47,7 @@ static int delay_read_ms = 0;   /* read delay (milliseconds) */
 static int delay_write_ms = 0;  /* write delay (milliseconds) */
 static int delay_zero_ms = 0;   /* zero delay (milliseconds) */
 static int delay_trim_ms = 0;   /* trim delay (milliseconds) */
+static int delay_extents_ms = 0;/* extents delay (milliseconds) */
 
 static int
 parse_delay (const char *key, const char *value)
@@ -110,6 +111,12 @@ trim_delay (void)
   delay (delay_trim_ms);
 }
 
+static void
+extents_delay (void)
+{
+  delay (delay_extents_ms);
+}
+
 /* Called for each key=value passed on the command line. */
 static int
 delay_config (nbdkit_next_config *next, void *nxdata,
@@ -154,6 +161,13 @@ delay_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     return 0;
   }
+  else if (strcmp (key, "delay-extent") == 0 ||
+           strcmp (key, "delay-extents") == 0) {
+    delay_extents_ms = parse_delay (key, value);
+    if (delay_extents_ms == -1)
+      return -1;
+    return 0;
+  }
   else
     return next (nxdata, key, value);
 }
@@ -164,6 +178,7 @@ delay_config (nbdkit_next_config *next, void *nxdata,
   "delay-write=<NN>[ms]           Write delay in seconds/milliseconds.\n" \
   "delay-zero=<NN>[ms]            Zero delay in seconds/milliseconds.\n" \
   "delay-trim=<NN>[ms]            Trim delay in seconds/milliseconds.\n" \
+  "delay-extents=<NN>[ms]         Extents delay in seconds/milliseconds.\n" \
   "wdelay=<NN>[ms]                Write, zero and trim delay in secs/msecs."
 
 /* Read data. */
@@ -207,6 +222,16 @@ delay_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->trim (nxdata, count, offset, flags, err);
 }
 
+/* Extents. */
+static int
+delay_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+               void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+               struct nbdkit_extents *extents, int *err)
+{
+  extents_delay ();
+  return next_ops->extents (nxdata, count, offset, flags, extents, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "delay",
   .longname          = "nbdkit delay filter",
@@ -217,6 +242,7 @@ static struct nbdkit_filter filter = {
   .pwrite            = delay_pwrite,
   .zero              = delay_zero,
   .trim              = delay_trim,
+  .extents           = delay_extents,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
