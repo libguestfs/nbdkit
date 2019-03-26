@@ -211,3 +211,8 @@ using ‘#define NBDKIT_API_VERSION <version>’.
 * pread could be changed to allow it to support Structured Replies
   (SRs).  This could mean allowing it to return partial data, holes,
   zeroes, etc.
+
+* Parameters should be systematized so that they aren't just (key,
+  value) strings.  nbdkit should know the possible keys for the plugin
+  and filters, and the type of the values, and both check and parse
+  them for the plugin.
