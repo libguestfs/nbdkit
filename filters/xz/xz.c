@@ -185,6 +185,16 @@ xz_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Similar to above.  However xz files themselves do support
+ * sparseness so in future we should generate extents information. XXX
+ */
+static int
+xz_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+                void *handle)
+{
+  return 0;
+}
+
 /* Read data from the file. */
 static int
 xz_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -238,6 +248,7 @@ static struct nbdkit_filter filter = {
   .prepare           = xz_prepare,
   .get_size          = xz_get_size,
   .can_write         = xz_can_write,
+  .can_extents       = xz_can_extents,
   .pread             = xz_pread,
 };
 
