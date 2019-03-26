@@ -285,6 +285,60 @@ truncate_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Extents. */
+static int
+truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+                  void *handle, uint32_t count, uint64_t offset,
+                  uint32_t flags, struct nbdkit_extents *extents, int *err)
+{
+  uint32_t n;
+  uint64_t real_size_copy;
+  struct nbdkit_extents *extents2;
+  size_t i;
+
+  pthread_mutex_lock (&lock);
+  real_size_copy = real_size;
+  pthread_mutex_unlock (&lock);
+
+  /* If the entire request is beyond the end of the underlying plugin
+   * then this is the easy case: return a hole.
+   */
+  if (offset >= real_size_copy)
+    return nbdkit_add_extent (extents, offset, (uint64_t) count,
+                              NBDKIT_EXTENT_ZERO|NBDKIT_EXTENT_HOLE);
+
+  /* We're asked first for extents information about the plugin, then
+   * possibly (if truncating larger) for the hole after the plugin.
+   * Since we're not required to provide all of this information, the
+   * easiest thing is to only return data from the plugin.  We will be
+   * called later about the hole.  However we do need to make sure
+   * that the extents array is truncated to the real size, hence we
+   * have to create a new extents array, ask the plugin, then copy the
+   * returned data to the original array.
+   */
+  extents2 = nbdkit_extents_new (0, real_size_copy);
+  if (offset + count <= real_size_copy)
+    n = count;
+  else
+    n = real_size_copy - offset;
+  if (next_ops->extents (nxdata, n, offset, flags, extents2, err) == -1) {
+    nbdkit_extents_free (extents2);
+    return -1;
+  }
+
+  for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
+    struct nbdkit_extent e = nbdkit_get_extent (extents2, i);
+
+    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
+      nbdkit_extents_free (extents2);
+      return -1;
+    }
+  }
+  nbdkit_extents_free (extents2);
+
+  return 0;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "truncate",
   .longname          = "nbdkit truncate filter",
@@ -297,6 +351,7 @@ static struct nbdkit_filter filter = {
   .pwrite            = truncate_pwrite,
   .trim              = truncate_trim,
   .zero              = truncate_zero,
+  .extents           = truncate_extents,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
