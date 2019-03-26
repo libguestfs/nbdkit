@@ -46,9 +46,9 @@ the impact of the caching.
 This filter writes to the file specified by the C<logfile=FILE>
 parameter.  All lines include a timestamp, a connection counter, then
 details about the command.  The following actions are logged: Connect,
-Read, Write, Zero, Trim, Flush, and Disconnect.  Except for Connect
-and Disconnect, an event is logged across two lines for call and
-return value, to allow tracking duration and tracing any parallel
+Read, Write, Zero, Trim, Extents, Flush, and Disconnect.  Except for
+Connect and Disconnect, an event is logged across two lines for call
+and return value, to allow tracking duration and tracing any parallel
 execution, using id for correlation (incremented per action on the
 connection).
 

@@ -353,6 +353,50 @@ log_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return r;
 }
 
+/* Extents. */
+static int
+log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+             void *handle, uint32_t count, uint64_t offs, uint32_t flags,
+             struct nbdkit_extents *extents, int *err)
+{
+  struct handle *h = handle;
+  uint64_t id = get_id (h);
+  int r;
+
+  assert (!(flags & ~(NBDKIT_FLAG_REQ_ONE)));
+  output (h, "Extents", id,
+          "offset=0x%" PRIx64 " count=0x%x req_one=%d ...",
+          offs, count, !!(flags & NBDKIT_FLAG_REQ_ONE));
+  r = next_ops->extents (nxdata, count, offs, flags, extents, err);
+  if (r == -1)
+    output_return (h, "...Extents", id, r, err);
+  else {
+    FILE *fp;
+    char *extents_str = NULL;
+    size_t i, n, len = 0;
+
+    fp = open_memstream (&extents_str, &len);
+    if (fp != NULL) {
+      n = nbdkit_extents_count (extents);
+      for (i = 0; i < n; ++i) {
+        struct nbdkit_extent e = nbdkit_get_extent (extents, i);
+        if (i > 0)
+          fprintf (fp, ", ");
+        fprintf (fp, "{ offset=0x%" PRIx64 ", length=0x%" PRIx64 ", "
+                 "type=%" PRIu32 " }",
+                 e.offset, e.length, e.type);
+      }
+
+      fclose (fp);
+    }
+
+    output (h, "...Extents", id, "extents=[%s] return=0",
+            extents_str ? extents_str : "(null)");
+    free (extents_str);
+  }
+  return r;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "log",
   .longname          = "nbdkit log filter",
@@ -370,6 +414,7 @@ static struct nbdkit_filter filter = {
   .flush             = log_flush,
   .trim              = log_trim,
   .zero              = log_zero,
+  .extents           = log_extents,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
