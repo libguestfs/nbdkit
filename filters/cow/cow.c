@@ -114,7 +114,7 @@ cow_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 /* Whatever the underlying plugin can or can't do, we can write, we
- * cannot trim, and we can flush.
+ * cannot trim or detect extents, and we can flush.
  */
 static int
 cow_can_write (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
@@ -124,6 +124,12 @@ cow_can_write (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 
 static int
 cow_can_trim (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+{
+  return 0;
+}
+
+static int
+cow_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
   return 0;
 }
@@ -316,6 +322,7 @@ static struct nbdkit_filter filter = {
   .can_write         = cow_can_write,
   .can_flush         = cow_can_flush,
   .can_trim          = cow_can_trim,
+  .can_extents       = cow_can_extents,
   .can_fua           = cow_can_fua,
   .pread             = cow_pread,
   .pwrite            = cow_pwrite,
