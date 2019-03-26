@@ -45,6 +45,7 @@
 #include <nbdkit-filter.h>
 
 #include "minmax.h"
+#include "rounding.h"
 
 /* XXX See design comment in filters/cow/cow.c. */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
@@ -372,6 +373,23 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+static int
+blocksize_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+                   void *handle, uint32_t count, uint64_t offset,
+                   uint32_t flags, struct nbdkit_extents *extents, int *err)
+{
+  /* Ask the plugin for blocksize-aligned data.  Since the extents
+   * list start is set to the real offset, everything before the
+   * offset is ignored automatically.  Also we only need to ask for
+   * maxlen of data, because it's fine to return less than the full
+   * count as long as we're making progress.
+   */
+  return next_ops->extents (nxdata,
+                            MIN (count, maxlen),
+                            ROUND_DOWN (offset, minblock),
+                            flags, extents, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "blocksize",
   .longname          = "nbdkit blocksize filter",
@@ -386,6 +404,7 @@ static struct nbdkit_filter filter = {
   .pwrite            = blocksize_pwrite,
   .trim              = blocksize_trim,
   .zero              = blocksize_zero,
+  .extents           = blocksize_extents,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
