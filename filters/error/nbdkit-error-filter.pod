@@ -12,6 +12,7 @@ nbdkit-error-filter - inject errors for testing clients
      [error-pwrite=...] [error-pwrite-rate=...] [error-pwrite-file=...]
      [error-trim=...] [error-trim-rate=...] [error-trim-file=...]
      [error-zero=...] [error-zero-rate=...] [error-zero-file=...]
+     [error-extents=...] [error-extents-rate=...] [error-extents-file=...]
 
 =head1 DESCRIPTION
 
@@ -29,8 +30,9 @@ Inject a low rate of errors randomly into the connection:
 
  nbdkit --filter=error file disk.img error-rate=1%
 
-Reading and trimming requests will be successful, but all
-writes and zeroing will return "No space left on device":
+Reading, trimming and extents (block status) requests will be
+successful, but all writes and zeroing will return "No space left on
+device":
 
  nbdkit --filter=error file disk.img \
                             error=ENOSPC \
@@ -104,6 +106,11 @@ settings to NBD trim requests.
 
 Same as C<error>, C<error-rate> and C<error-file> but only apply the
 settings to NBD zero requests.
+
+=item B<error-extents>, B<error-extents-rate>, B<error-extents-file>.
+
+Same as C<error>, C<error-rate> and C<error-file> but only apply the
+settings to NBD block status requests to read extents.
 
 =back
 

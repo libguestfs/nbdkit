@@ -63,6 +63,7 @@ static struct error_settings pread_settings = ERROR_DEFAULT;
 static struct error_settings pwrite_settings = ERROR_DEFAULT;
 static struct error_settings trim_settings = ERROR_DEFAULT;
 static struct error_settings zero_settings = ERROR_DEFAULT;
+static struct error_settings extents_settings = ERROR_DEFAULT;
 
 /* Random state.
  * This must only be accessed when holding the lock (except for load).
@@ -83,6 +84,7 @@ error_unload (void)
   free (pwrite_settings.file);
   free (trim_settings.file);
   free (zero_settings.file);
+  free (extents_settings.file);
 }
 
 static const struct { const char *name; int error; } errors[] = {
@@ -162,7 +164,8 @@ error_config (nbdkit_next_config *next, void *nxdata,
     if (parse_error (key, value, &i) == -1)
       return -1;
     pread_settings.error = pwrite_settings.error =
-      trim_settings.error = zero_settings.error = i;
+      trim_settings.error = zero_settings.error =
+      extents_settings.error = i;
     return 0;
   }
   else if (strcmp (key, "error-pread") == 0)
@@ -173,12 +176,15 @@ error_config (nbdkit_next_config *next, void *nxdata,
     return parse_error (key, value, &trim_settings.error);
   else if (strcmp (key, "error-zero") == 0)
     return parse_error (key, value, &zero_settings.error);
+  else if (strcmp (key, "error-extents") == 0)
+    return parse_error (key, value, &extents_settings.error);
 
   else if (strcmp (key, "error-rate") == 0) {
     if (parse_error_rate (key, value, &d) == -1)
       return -1;
     pread_settings.rate = pwrite_settings.rate =
-      trim_settings.rate = zero_settings.rate = d;
+      trim_settings.rate = zero_settings.rate =
+      extents_settings.rate = d;
     return 0;
   }
   else if (strcmp (key, "error-pread-rate") == 0)
@@ -189,6 +195,8 @@ error_config (nbdkit_next_config *next, void *nxdata,
     return parse_error_rate (key, value, &trim_settings.rate);
   else if (strcmp (key, "error-zero-rate") == 0)
     return parse_error_rate (key, value, &zero_settings.rate);
+  else if (strcmp (key, "error-extents-rate") == 0)
+    return parse_error_rate (key, value, &extents_settings.rate);
 
   /* NB: We are using nbdkit_absolute_path here because the trigger
    * file probably doesn't exist yet.
@@ -202,6 +210,8 @@ error_config (nbdkit_next_config *next, void *nxdata,
     trim_settings.file = nbdkit_absolute_path (value);
     free (zero_settings.file);
     zero_settings.file = nbdkit_absolute_path (value);
+    free (extents_settings.file);
+    extents_settings.file = nbdkit_absolute_path (value);
     return 0;
   }
   else if (strcmp (key, "error-pread-rate") == 0) {
@@ -224,6 +234,11 @@ error_config (nbdkit_next_config *next, void *nxdata,
     zero_settings.file = nbdkit_absolute_path (value);
     return 0;
   }
+  else if (strcmp (key, "error-extents-rate") == 0) {
+    free (extents_settings.file);
+    extents_settings.file = nbdkit_absolute_path (value);
+    return 0;
+  }
 
   else
     return next (nxdata, key, value);
@@ -234,8 +249,8 @@ error_config (nbdkit_next_config *next, void *nxdata,
   "                               The error indication to return.\n" \
   "error-rate=0%..100%|0..1       Rate of errors to generate.\n" \
   "error-file=TRIGGER             Set trigger filename.\n" \
-  "error-pread*, error-pwrite*, error-trim*, error-zero*\n" \
-  "                               Apply settings only to read/write/trim/zero"
+  "error-pread*, error-pwrite*, error-trim*, error-zero*, error-extents*\n" \
+  "                               Apply settings only to read/write/etc"
 
 static void *
 error_open (nbdkit_next_open *next, void *nxdata, int readonly)
@@ -330,6 +345,18 @@ error_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
+/* Extents. */
+static int
+error_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+               void *handle, uint32_t count, uint64_t offset,
+               uint32_t flags, struct nbdkit_extents *extents, int *err)
+{
+  if (random_error (&extents_settings, "extents", err))
+    return -1;
+
+  return next_ops->extents (nxdata, count, offset, flags, extents, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "error",
   .longname          = "nbdkit error filter",
@@ -343,6 +370,7 @@ static struct nbdkit_filter filter = {
   .pwrite            = error_pwrite,
   .trim              = error_trim,
   .zero              = error_zero,
+  .extents           = error_extents,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
