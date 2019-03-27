@@ -92,8 +92,10 @@ callback_defined (const char *name, PyObject **obj_rtn)
   assert (module != NULL);
 
   obj = PyObject_GetAttrString (module, name);
-  if (!obj)
+  if (!obj) {
+    PyErr_Clear (); /* Clear the AttributeError from testing attr. */
     return 0;
+  }
   if (!PyCallable_Check (obj)) {
     nbdkit_debug ("object %s isn't callable", name);
     Py_DECREF (obj);
