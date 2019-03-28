@@ -177,6 +177,15 @@ test_layers_filter_can_multi_conn (struct nbdkit_next_ops *next_ops,
 }
 
 static int
+test_layers_filter_can_extents (struct nbdkit_next_ops *next_ops,
+                                void *nxdata,
+                                void *handle)
+{
+  DEBUG_FUNCTION;
+  return next_ops->can_extents (nxdata);
+}
+
+static int
 test_layers_filter_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
                            void *handle, void *buf,
                            uint32_t count, uint64_t offset,
@@ -223,6 +232,16 @@ test_layers_filter_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
+static int
+test_layers_filter_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+                            void *handle, uint32_t count, uint64_t offset,
+                            uint32_t flags, struct nbdkit_extents *extents,
+                            int *err)
+{
+  DEBUG_FUNCTION;
+  return next_ops->extents (nxdata, count, offset, flags, extents, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "testlayers" layer,
   .version           = PACKAGE_VERSION,
@@ -243,11 +262,13 @@ static struct nbdkit_filter filter = {
   .can_zero          = test_layers_filter_can_zero,
   .can_fua           = test_layers_filter_can_fua,
   .can_multi_conn    = test_layers_filter_can_multi_conn,
+  .can_extents       = test_layers_filter_can_extents,
   .pread             = test_layers_filter_pread,
   .pwrite            = test_layers_filter_pwrite,
   .flush             = test_layers_filter_flush,
   .trim              = test_layers_filter_trim,
   .zero              = test_layers_filter_zero,
+  .extents           = test_layers_filter_extents,
 };
 
 NBDKIT_REGISTER_FILTER(filter)

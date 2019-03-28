@@ -355,6 +355,12 @@ main (int argc, char *argv[])
      "filter1: test_layers_filter_can_multi_conn",
      "test_layers_plugin_can_multi_conn",
      NULL);
+  log_verify_seen_in_order
+    ("filter3: test_layers_filter_can_extents",
+     "filter2: test_layers_filter_can_extents",
+     "filter1: test_layers_filter_can_extents",
+     "test_layers_plugin_can_extents",
+     NULL);
 
   fprintf (stderr, "%s: protocol connected\n", program_name);
 
@@ -519,6 +525,12 @@ main (int argc, char *argv[])
      "testlayersplugin: debug: zero count=512 offset=0 may_trim=1 fua=0",
      "test_layers_plugin_zero",
      NULL);
+
+  /* XXX We should test NBD_CMD_BLOCK_STATUS here.  However it
+   * requires that we negotiate structured replies and base:allocation
+   * in the handshake, and the format of the reply is more complex
+   * than what we expect in this naive test.
+   */
 
   /* Close the connection. */
   fprintf (stderr, "%s: closing the connection\n", program_name);

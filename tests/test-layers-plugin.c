@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -145,6 +145,13 @@ test_layers_plugin_can_multi_conn (void *handle)
 }
 
 static int
+test_layers_plugin_can_extents (void *handle)
+{
+  DEBUG_FUNCTION;
+  return 1;
+}
+
+static int
 test_layers_plugin_pread (void *handle,
                           void *buf, uint32_t count, uint64_t offset,
                           uint32_t flags)
@@ -186,6 +193,15 @@ test_layers_plugin_zero (void *handle,
   return 0;
 }
 
+static int
+test_layers_plugin_extents (void *handle,
+                            uint32_t count, uint64_t offset, uint32_t flags,
+                            struct nbdkit_extents *extents)
+{
+  DEBUG_FUNCTION;
+  return 0;
+}
+
 static struct nbdkit_plugin plugin = {
   .name              = "testlayersplugin",
   .version           = PACKAGE_VERSION,
@@ -204,11 +220,13 @@ static struct nbdkit_plugin plugin = {
   .can_zero          = test_layers_plugin_can_zero,
   .can_fua           = test_layers_plugin_can_fua,
   .can_multi_conn    = test_layers_plugin_can_multi_conn,
+  .can_extents       = test_layers_plugin_can_extents,
   .pread             = test_layers_plugin_pread,
   .pwrite            = test_layers_plugin_pwrite,
   .flush             = test_layers_plugin_flush,
   .trim              = test_layers_plugin_trim,
   .zero              = test_layers_plugin_zero,
+  .extents           = test_layers_plugin_extents,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */
