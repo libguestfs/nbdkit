@@ -118,6 +118,7 @@ EXTRA_DIST = \
 	test-truncate1.sh \
 	test-truncate2.sh \
 	test-truncate3.sh \
+	test-truncate-extents.sh \
 	test-vddk.sh \
 	test-version.sh \
 	test-version-filter.sh \
@@ -881,7 +882,8 @@ TESTS += test-rate.sh
 TESTS += \
 	test-truncate1.sh \
 	test-truncate2.sh \
-	test-truncate3.sh
+	test-truncate3.sh \
+	test-truncate-extents.sh
 
 # xz filter test.
 if HAVE_LIBLZMA
