@@ -39,8 +39,14 @@ General ideas for improvements
   some: .can_write is only called once, but .can_fua is called on
   every request with the FUA flag set).
 
-* Test that zero-length read/write requests behave correctly
+* Test that zero-length read/write/extents requests behave sanely
   (NBD protocol says they are unspecified).
+
+* If a client negotiates structured replies, and issues a read/extents
+  call that exceeds EOF (qemu 3.1 is one such client, when nbdkit
+  serves non-sector-aligned images), return the valid answer for the
+  subset of the request in range and then NBD_REPLY_TYPE_ERROR_OFFSET
+  for the tail, rather than erroring the entire request.
 
 * Test and document how to run nbdkit from inetd and xinetd in
   nbdkit-service(1).
