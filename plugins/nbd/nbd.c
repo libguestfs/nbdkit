@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -434,6 +434,157 @@ nbd_reply (struct handle *h, int fd)
   return err ? -1 : 0;
 }
 
+/* Receive response to @option into @reply, and consume any
+   payload. If @payload is non-NULL, caller must free *payload. Return
+   0 on success, or -1 if communication to server is no longer
+   possible. */
+static int
+nbd_newstyle_recv_option_reply (struct handle *h, uint32_t option,
+                                struct fixed_new_option_reply *reply,
+                                void **payload)
+{
+  CLEANUP_FREE char *buffer = NULL;
+
+  if (payload)
+    *payload = NULL;
+  if (read_full (h->fd, reply, sizeof *reply)) {
+    nbdkit_error ("unable to read option reply: %m");
+    return -1;
+  }
+  reply->magic = be64toh (reply->magic);
+  reply->option = be32toh (reply->option);
+  reply->reply = be32toh (reply->reply);
+  reply->replylen = be32toh (reply->replylen);
+  if (reply->magic != NBD_REP_MAGIC || reply->option != option) {
+    nbdkit_error ("unexpected option reply");
+    return -1;
+  }
+  if (reply->replylen) {
+    if (reply->reply == NBD_REP_ACK) {
+      nbdkit_error ("NBD_REP_ACK should not have replylen %" PRId32,
+                    reply->replylen);
+      return -1;
+    }
+    if (reply->replylen > 16 * 1024 * 1024) {
+      nbdkit_error ("option reply length is suspiciously large: %" PRId32,
+                    reply->replylen);
+      return -1;
+    }
+    /* buffer is a string for NBD_REP_ERR_*; adding a NUL terminator
+       makes that string easier to use, without hurting other reply
+       types where buffer is not a string */
+    buffer = malloc (reply->replylen + 1);
+    if (!buffer) {
+      nbdkit_error ("malloc: %m");
+      return -1;
+    }
+    if (read_full (h->fd, buffer, reply->replylen)) {
+      nbdkit_error ("unable to read option reply payload: %m");
+      return -1;
+    }
+    buffer[reply->replylen] = '\0';
+    if (!payload)
+      nbdkit_debug ("ignoring option reply payload");
+    else {
+      *payload = buffer;
+      buffer = NULL;
+    }
+  }
+  return 0;
+}
+
+/* Attempt to negotiate structured reads, block status, and NBD_OPT_GO.
+   Return 1 if haggling completed, 0 if haggling failed but
+   NBD_OPT_EXPORT_NAME is still viable, or -1 on inability to connect. */
+static int
+nbd_newstyle_haggle (struct handle *h)
+{
+  struct new_option opt;
+  uint32_t exportnamelen = htobe32 (strlen (export));
+  /* For now, we make no NBD_INFO_* requests, relying on the server to
+     send its defaults. TODO: nbdkit should let plugins report block
+     sizes, at which point we should request NBD_INFO_BLOCK_SIZE and
+     obey any sizes set by server. */
+  uint16_t nrinfos = htobe16 (0);
+  struct fixed_new_option_reply reply;
+
+  /* TODO: structured reads, block status */
+
+  /* Try NBD_OPT_GO */
+  nbdkit_debug ("trying NBD_OPT_GO");
+  opt.version = htobe64 (NEW_VERSION);
+  opt.option = htobe32 (NBD_OPT_GO);
+  opt.optlen = htobe32 (sizeof exportnamelen + strlen (export) +
+                        sizeof nrinfos);
+  if (write_full (h->fd, &opt, sizeof opt) ||
+      write_full (h->fd, &exportnamelen, sizeof exportnamelen) ||
+      write_full (h->fd, export, strlen (export)) ||
+      write_full (h->fd, &nrinfos, sizeof nrinfos)) {
+    nbdkit_error ("unable to request NBD_OPT_GO: %m");
+    return -1;
+  }
+  while (1) {
+    CLEANUP_FREE void *buffer;
+    struct fixed_new_option_reply_info_export *reply_export;
+    uint16_t info;
+
+    if (nbd_newstyle_recv_option_reply (h, NBD_OPT_GO, &reply, &buffer) < 0)
+      return -1;
+    switch (reply.reply) {
+    case NBD_REP_INFO:
+      /* Parse payload, but ignore all except NBD_INFO_EXPORT */
+      if (reply.replylen < 2) {
+        nbdkit_error ("NBD_REP_INFO reply too short");
+        return -1;
+      }
+      memcpy (&info, buffer, sizeof info);
+      info = be16toh (info);
+      switch (info) {
+      case NBD_INFO_EXPORT:
+        if (reply.replylen != sizeof *reply_export) {
+          nbdkit_error ("NBD_INFO_EXPORT reply wrong size");
+          return -1;
+        }
+        reply_export = buffer;
+        h->size = be64toh (reply_export->exportsize);
+        h->flags = be16toh (reply_export->eflags);
+        break;
+      default:
+        nbdkit_debug ("ignoring server info %d", info);
+      }
+      break;
+    case NBD_REP_ACK:
+      /* End of replies, valid if server already sent NBD_INFO_EXPORT,
+         observable since h->flags must contain NBD_FLAG_HAS_FLAGS */
+      assert (!buffer);
+      if (!h->flags) {
+        nbdkit_error ("server omitted NBD_INFO_EXPORT reply to NBD_OPT_GO");
+        return -1;
+      }
+      nbdkit_debug ("NBD_OPT_GO complete");
+      return 1;
+    case NBD_REP_ERR_UNSUP:
+      /* Special case this failure to fall back to NBD_OPT_EXPORT_NAME */
+      nbdkit_debug ("server lacks NBD_OPT_GO support");
+      return 0;
+    default:
+      /* Unexpected. Either the server sent a legitimate error or an
+         unexpected reply, but either way, we can't connect. */
+      if (NBD_REP_IS_ERR (reply.reply))
+        if (reply.replylen)
+          nbdkit_error ("server rejected NBD_OPT_GO with %s: %s",
+                        name_of_nbd_rep (reply.reply), (char *) buffer);
+        else
+          nbdkit_error ("server rejected NBD_OPT_GO with %s",
+                        name_of_nbd_rep (reply.reply));
+      else
+        nbdkit_error ("server used unexpected reply %s to NBD_OPT_GO",
+                      name_of_nbd_rep (reply.reply));
+      return -1;
+    }
+  }
+}
+
 /* Create the per-connection handle. */
 static void *
 nbd_open (int readonly)
@@ -473,6 +624,7 @@ nbd_open (int readonly)
   }
   version = be64toh (old.version);
   if (version == OLD_VERSION) {
+    nbdkit_debug ("trying oldstyle connection");
     if (read_full (h->fd,
                    (char *) &old + offsetof (struct old_handshake, exportsize),
                    sizeof old - offsetof (struct old_handshake, exportsize))) {
@@ -489,6 +641,7 @@ nbd_open (int readonly)
     struct new_handshake_finish finish;
     size_t expect;
 
+    nbdkit_debug ("trying newstyle connection");
     if (read_full (h->fd, &gflags, sizeof gflags)) {
       nbdkit_error ("unable to read global flags: %m");
       goto err;
@@ -500,25 +653,36 @@ nbd_open (int readonly)
       goto err;
     }
 
-    /* For now, we don't do any option haggling, but go straight into
-       transmission phase */
-    opt.version = htobe64 (NEW_VERSION);
-    opt.option = htobe32 (NBD_OPT_EXPORT_NAME);
-    opt.optlen = htobe32 (strlen (export));
-    if (write_full (h->fd, &opt, sizeof opt) ||
-        write_full (h->fd, export, strlen (export))) {
-      nbdkit_error ("unable to request export '%s': %m", export);
-      goto err;
+    /* Prefer NBD_OPT_GO if possible */
+    if (gflags & NBD_FLAG_FIXED_NEWSTYLE) {
+      int rc = nbd_newstyle_haggle (h);
+      if (rc < 0)
+        goto err;
+      if (!rc)
+        goto export_name;
     }
-    expect = sizeof finish;
-    if (gflags & NBD_FLAG_NO_ZEROES)
-      expect -= sizeof finish.zeroes;
-    if (read_full (h->fd, &finish, expect)) {
-      nbdkit_error ("unable to read new handshake: %m");
-      goto err;
+    else {
+    export_name:
+      /* Option haggling untried or failed, use older NBD_OPT_EXPORT_NAME */
+      nbdkit_debug ("trying NBD_OPT_EXPORT_NAME");
+      opt.version = htobe64 (NEW_VERSION);
+      opt.option = htobe32 (NBD_OPT_EXPORT_NAME);
+      opt.optlen = htobe32 (strlen (export));
+      if (write_full (h->fd, &opt, sizeof opt) ||
+          write_full (h->fd, export, strlen (export))) {
+        nbdkit_error ("unable to request export '%s': %m", export);
+        goto err;
+      }
+      expect = sizeof finish;
+      if (gflags & NBD_FLAG_NO_ZEROES)
+        expect -= sizeof finish.zeroes;
+      if (read_full (h->fd, &finish, expect)) {
+        nbdkit_error ("unable to read new handshake: %m");
+        goto err;
+      }
+      h->size = be64toh (finish.exportsize);
+      h->flags = be16toh (finish.eflags);
     }
-    h->size = be64toh (finish.exportsize);
-    h->flags = be16toh (finish.eflags);
   }
   else {
     nbdkit_error ("unexpected version %#" PRIx64, version);
