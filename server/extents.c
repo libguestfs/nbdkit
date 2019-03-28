@@ -101,7 +101,7 @@ nbdkit_extents_count (const struct nbdkit_extents *exts)
   return exts->nr_extents;
 }
 
-const struct nbdkit_extent
+struct nbdkit_extent
 nbdkit_get_extent (const struct nbdkit_extents *exts, size_t i)
 {
   assert (i < exts->nr_extents);
