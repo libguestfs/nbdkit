@@ -69,10 +69,17 @@ static int fd = -1;
  * 10 = <unused>
  * 11 = block cached and dirty
  *
- * Idea for future enhancement: Use 10 (currently unused) to store
- * blocks which are known to be zero and are not allocated in the
- * cache layer.  You can set this when clients call cache_zero and
- * defer calling plugin->zero until flush.
+ * Future enhancement:
+ *
+ * We need to cache information about holes, ie. blocks which read as
+ * zeroes but are not explicitly stored in the cache.  This
+ * information could be set when clients call cache_zero (and defer
+ * calling plugin->zero until flush).  The information could also
+ * interact with extents, so when plugin->extents returns information
+ * that a hole exists we can record this information in the cache and
+ * not have to query the plugin a second time (especially useful for
+ * VDDK where querying extents is slow, and for qemu which [in 2019]
+ * repeatedly requests the same information with REQ_ONE set).
  */
 static struct bitmap bm;
 
