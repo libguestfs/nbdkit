@@ -49,7 +49,15 @@
 struct nbdkit_extents {
   struct nbdkit_extent *extents;
   size_t nr_extents, allocated;
+
   uint64_t start, end; /* end is one byte beyond the end of the range */
+
+  /* Where we expect the next extent to be added.  If
+   * nbdkit_add_extent has never been called this is -1.  Note this
+   * field is updated even if we don't actually add the extent because
+   * it's used to check for API violations.
+   */
+  int64_t next;
 };
 
 struct nbdkit_extents *
@@ -83,6 +91,7 @@ nbdkit_extents_new (uint64_t start, uint64_t end)
   r->nr_extents = r->allocated = 0;
   r->start = start;
   r->end = end;
+  r->next = -1;
   return r;
 }
 
@@ -141,13 +150,20 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
 {
   uint64_t overlap;
 
+  /* Extents must be added in strictly ascending, contiguous order. */
+  if (exts->next >= 0 && exts->next != offset) {
+    nbdkit_error ("nbdkit_add_extent: "
+                  "extents must be added in ascending order and "
+                  "must be contiguous");
+    return -1;
+  }
+  exts->next = offset + length;
+
+  /* Ignore zero-length extents. */
   if (length == 0)
     return 0;
 
-  /* Ignore extents beyond the end of the range.  Unfortunately we
-   * lost the information about whether this is contiguous with a
-   * previously added extent so we can't check for API usage errors.
-   */
+  /* Ignore extents beyond the end of the range. */
   if (offset >= exts->end)
     return 0;
 
@@ -157,19 +173,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
     length -= overlap;
   }
 
-  /* If there are existing extents, the new extent must be contiguous. */
-  if (exts->nr_extents > 0) {
-    const struct nbdkit_extent *ep;
-
-    ep = &exts->extents[exts->nr_extents-1];
-    if (offset != ep->offset + ep->length) {
-      nbdkit_error ("nbdkit_add_extent: "
-                    "extents must be added in ascending order and "
-                    "must be contiguous");
-      return -1;
-    }
-  }
-  else {
+  if (exts->nr_extents == 0) {
     /* If there are no existing extents, and the new extent is
      * entirely before start, ignore it.
      */
