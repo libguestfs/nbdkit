@@ -301,10 +301,12 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   pthread_mutex_unlock (&lock);
 
   /* If the entire request is beyond the end of the underlying plugin
-   * then this is the easy case: return a hole.
+   * then this is the easy case: return a hole up to the end of the
+   * file.
    */
   if (offset >= real_size_copy)
-    return nbdkit_add_extent (extents, offset, (uint64_t) count,
+    return nbdkit_add_extent (extents,
+                              real_size_copy, truncate_size - real_size_copy,
                               NBDKIT_EXTENT_ZERO|NBDKIT_EXTENT_HOLE);
 
   /* We're asked first for extents information about the plugin, then
@@ -316,7 +318,7 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
    * have to create a new extents array, ask the plugin, then copy the
    * returned data to the original array.
    */
-  extents2 = nbdkit_extents_new (0, real_size_copy);
+  extents2 = nbdkit_extents_new (offset, real_size_copy);
   if (offset + count <= real_size_copy)
     n = count;
   else
