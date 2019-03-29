@@ -93,6 +93,7 @@ extern const char *name_of_nbd_flag (int);
 #define NBD_FLAG_ROTATIONAL        (1 << 4)
 #define NBD_FLAG_SEND_TRIM         (1 << 5)
 #define NBD_FLAG_SEND_WRITE_ZEROES (1 << 6)
+#define NBD_FLAG_SEND_DF           (1 << 7)
 #define NBD_FLAG_CAN_MULTI_CONN    (1 << 8)
 
 /* NBD options (new style handshake only). */
@@ -216,6 +217,7 @@ extern const char *name_of_nbd_cmd (int);
 extern const char *name_of_nbd_cmd_flag (int);
 #define NBD_CMD_FLAG_FUA      (1<<0)
 #define NBD_CMD_FLAG_NO_HOLE  (1<<1)
+#define NBD_CMD_FLAG_DF       (1<<2)
 #define NBD_CMD_FLAG_REQ_ONE  (1<<3)
 
 /* Error codes (previously errno).

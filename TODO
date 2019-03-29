@@ -24,8 +24,8 @@ General ideas for improvements
   to inform nbdkit when the response is ready:
   https://www.redhat.com/archives/libguestfs/2018-January/msg00149.html
 
-* More NBD protocol features.  The only currently missing feature is
-  online resize.
+* More NBD protocol features.  The only currently missing features are
+  sparse reads and online resize.
 
 * Add a callback to let plugins request minimum alignment for the
   buffer to pread/pwrite; useful for a plugin utilizing O_DIRECT or
@@ -216,7 +216,11 @@ using ‘#define NBDKIT_API_VERSION <version>’.
 
 * pread could be changed to allow it to support Structured Replies
   (SRs).  This could mean allowing it to return partial data, holes,
-  zeroes, etc.
+  zeroes, etc.  For a client that negotiates SR coupled with a plugin
+  that supports .extents, the v2 protocol would allow us to at least
+  synthesize NBD_REPLY_TYPE_OFFSET_HOLE for less network traffic, even
+  though the plugin will still have to fully populate the .pread
+  buffer; the v3 protocol should make sparse reads more direct.
 
 * Parameters should be systematized so that they aren't just (key,
   value) strings.  nbdkit should know the possible keys for the plugin

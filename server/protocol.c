@@ -109,7 +109,7 @@ validate_request (struct connection *conn,
 
   /* Validate flags */
   if (flags & ~(NBD_CMD_FLAG_FUA | NBD_CMD_FLAG_NO_HOLE |
-                NBD_CMD_FLAG_REQ_ONE)) {
+                NBD_CMD_FLAG_DF | NBD_CMD_FLAG_REQ_ONE)) {
     nbdkit_error ("invalid request: unknown flag (0x%x)", flags);
     *error = EINVAL;
     return false;
@@ -119,6 +119,20 @@ validate_request (struct connection *conn,
     nbdkit_error ("invalid request: NO_HOLE flag needs WRITE_ZEROES request");
     *error = EINVAL;
     return false;
+  }
+  if (flags & NBD_CMD_FLAG_DF) {
+    if (cmd != NBD_CMD_READ) {
+      nbdkit_error ("invalid request: DF flag needs READ request");
+      *error = EINVAL;
+      return false;
+    }
+    if (!conn->structured_replies) {
+      nbdkit_error ("invalid request: "
+                    "%s: structured replies was not negotiated",
+                    name_of_nbd_cmd (cmd));
+      *error = EINVAL;
+      return false;
+    }
   }
   if ((flags & NBD_CMD_FLAG_REQ_ONE) &&
       cmd != NBD_CMD_BLOCK_STATUS) {

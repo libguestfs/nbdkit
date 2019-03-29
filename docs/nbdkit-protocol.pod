@@ -139,6 +139,19 @@ Supported in nbdkit E<ge> 1.11.10.
 Only C<base:allocation> (ie. querying which parts of an image are
 sparse) is supported.
 
+Sparse reads (using C<NBD_REPLY_TYPE_OFFSET_HOLE> are not directly
+supported, but a client can use block status to infer which portions
+of the export do not need to be read.
+
+=item C<NBD_FLAG_DF>
+
+Supported in nbdkit E<ge> 1.11.11.
+
+This protocol extension allows a client to force an all-or-none read
+when structured replies are in effect. However, the flag is a no-op
+until we extend the plugin API to allow a fragmented read in the first
+place.
+
 =item Resize Extension
 
 I<Not supported>.

@@ -120,6 +120,9 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   if (fl)
     conn->can_extents = true;
 
+  if (conn->structured_replies)
+    eflags |= NBD_FLAG_SEND_DF;
+
   *flags = eflags;
   return 0;
 }
