@@ -36,21 +36,19 @@
 # the -r flag, and check that nbdkit constructs the export flags
 # controlling READ_ONLY, ROTATIONAL, SEND_TRIM, etc. as expected.
 #
-# We use the oldstyle (-o) protocol here because it's simpler to read
-# out the eflags.  We use the shell plugin because it gives maximum
-# control over the can_* callbacks (at least, max without having to
-# write a C plugin).
+# We use the shell plugin because it gives maximum control over the
+# can_* callbacks (at least, max without having to write a C plugin).
 
 source ./functions.sh
 set -e
 
-requires socat -h
+requires qemu-nbd --version
 
-# Check 'od' command exists.
-#
-# Note that requires redirects stdin/stdout to /dev/null which
-# prevents od from hanging in this test.
-requires od
+# This test uses the ‘qemu-nbd --list’ option added in qemu 4.0.
+if ! qemu-nbd --help | grep -sq -- --list; then
+    echo "$0: skipping because qemu-nbd does not support the --list option"
+    exit 77
+fi
 
 files="eflags.out"
 rm -f $files
@@ -58,41 +56,31 @@ cleanup_fn rm -f $files
 
 # The export flags.
 # See also common/protocol/protocol.h
-HAS_FLAGS=$((         1 << 0 ))
-READ_ONLY=$((         1 << 1 ))
-SEND_FLUSH=$((        1 << 2 ))
-SEND_FUA=$((          1 << 3 ))
-ROTATIONAL=$((        1 << 4 ))
-SEND_TRIM=$((         1 << 5 ))
-SEND_WRITE_ZEROES=$(( 1 << 6 ))
-
-all_flags="HAS_FLAGS READ_ONLY SEND_FLUSH SEND_FUA ROTATIONAL SEND_TRIM SEND_WRITE_ZEROES"
+HAS_FLAGS=$((         1 <<  0 ))
+READ_ONLY=$((         1 <<  1 ))
+SEND_FLUSH=$((        1 <<  2 ))
+SEND_FUA=$((          1 <<  3 ))
+ROTATIONAL=$((        1 <<  4 ))
+SEND_TRIM=$((         1 <<  5 ))
+SEND_WRITE_ZEROES=$(( 1 <<  6 ))
+SEND_DF=$((           1 <<  7 ))
+CAN_MULTI_CONN=$((    1 <<  8 ))
+SEND_RESIZE=$((       1 <<  9 ))
+SEND_CACHE=$((        1 << 10 ))
 
 do_nbdkit ()
 {
-    nbdkit -v -U - -o "$@" sh - --run '
-        socat -b 28 unix-connect:$unixsocket \
-            exec:"dd bs=1 skip=26 count=2 of=eflags.out",cool-write
-    '
+    nbdkit -v -U - "$@" sh - --run 'qemu-nbd --list -k $unixsocket' |
+        grep -E "flags: 0x" | grep -Eoi '0x[a-f0-9]+' > eflags.out
+    echo -n eflags=; cat eflags.out
 
-    # Protocol is big endian, we want native endian.
-    # xargs trick to trim whitespace from
-    # https://stackoverflow.com/a/12973694
-    eflags_hi=$(od -An -N1     -tx1 eflags.out | xargs)
-    eflags_lo=$(od -An -N1 -j1 -tx1 eflags.out | xargs)
-    eflags=$(( 0x$eflags_hi << 8 | 0x$eflags_lo ))
-
-    # Print the eflags in hex and text.
-    printf "eflags 0x%04x" $eflags
-    for f in $all_flags; do
-        [ $(( eflags & ${!f} )) -ne 0 ] && echo -n " $f"
-    done
-    echo
+    # Convert hex flags to decimal and assign it to $eflags.
+    eflags=$(printf "%d" $(cat eflags.out))
 }
 
 fail ()
 {
-    echo "$@"
+    echo "error: $@ (actual flags were $eflags)"
     exit 1
 }
 
@@ -106,8 +94,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|READ_ONLY )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY"
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -120,8 +108,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|READ_ONLY )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY"
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -138,8 +126,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|SEND_WRITE_ZEROES )) ] ||
-    fail "expected HAS_FLAGS|SEND_WRITE_ZEROES"
+[ $eflags -eq $(( HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -156,8 +144,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|READ_ONLY )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY"
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=false
@@ -176,8 +164,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|READ_ONLY )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY"
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -197,8 +185,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|READ_ONLY )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY"
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -213,8 +201,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES )) ] ||
-    fail "expected HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES"
+[ $eflags -eq $(( HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -229,8 +217,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES )) ] ||
-    fail "expected HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES"
+[ $eflags -eq $(( HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -246,8 +234,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|ROTATIONAL )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|ROTATIONAL"
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|ROTATIONAL|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|ROTATIONAL|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -262,8 +250,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES )) ] ||
-    fail "expected HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES"
+[ $eflags -eq $(( HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -281,5 +269,5 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|READ_ONLY )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY"
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"

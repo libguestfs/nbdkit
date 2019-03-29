@@ -160,15 +160,15 @@ For non-essential enhancements to the test suite:
 
  - mke2fs (from e2fsprogs)
 
- - od, stat (from coreutils)
-
- - qemu-img, qemu-io (usually shipped with qemu)
+ - qemu-img, qemu-io, qemu-nbd (usually shipped with qemu)
 
  - sfdisk (from util-linux)
 
  - socat
 
  - ssh-keygen
+
+ - stat (from coreutils)
 
 Building
 --------
