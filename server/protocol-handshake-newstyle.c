@@ -64,7 +64,14 @@ send_newstyle_option_reply (struct connection *conn,
   if (conn->send (conn,
                   &fixed_new_option_reply,
                   sizeof fixed_new_option_reply) == -1) {
-    nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
+    /* The protocol document says that the client is allowed to simply
+     * drop the connection after sending NBD_OPT_ABORT, or may read
+     * the reply.
+     */
+    if (option == NBD_OPT_ABORT)
+      debug ("write: %s: %m", name_of_nbd_opt (option));
+    else
+      nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
 
