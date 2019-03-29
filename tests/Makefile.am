@@ -81,6 +81,7 @@ EXTRA_DIST = \
 	test-memory-largest.sh \
 	test-memory-largest-for-qemu.sh \
 	test-nozero.sh \
+	test-null-extents.sh \
 	test_ocaml_plugin.ml \
 	test-ocaml.c \
 	test-offset2.sh \
@@ -504,6 +505,7 @@ test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # null plugin test.
 LIBGUESTFS_TESTS += test-null
+TESTS += test-null-extents.sh
 
 test_null_SOURCES = test-null.c test.h
 test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)

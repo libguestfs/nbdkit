@@ -132,6 +132,15 @@ null_flush (void *handle, uint32_t flags)
   return 0;
 }
 
+/* Extents. */
+static int
+null_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+              struct nbdkit_extents *extents)
+{
+  return nbdkit_add_extent (extents, 0, size,
+                            NBDKIT_EXTENT_HOLE | NBDKIT_EXTENT_ZERO);
+}
+
 static struct nbdkit_plugin plugin = {
   .name              = "null",
   .version           = PACKAGE_VERSION,
@@ -145,6 +154,7 @@ static struct nbdkit_plugin plugin = {
   .trim              = null_trim,
   .can_fua           = null_can_fua,
   .flush             = null_flush,
+  .extents           = null_extents,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */
