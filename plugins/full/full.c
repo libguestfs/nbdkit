@@ -129,6 +129,15 @@ full_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   return -1;
 }
 
+/* Extents. */
+static int
+full_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+              struct nbdkit_extents *extents)
+{
+  return nbdkit_add_extent (extents, 0, size,
+                            NBDKIT_EXTENT_HOLE | NBDKIT_EXTENT_ZERO);
+}
+
 /* Note that we don't need to handle flush: If there has been previous
  * write then we have already returned an error.  If there have been
  * no previous writes then flush can be ignored.
@@ -146,6 +155,7 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = full_pwrite,
   .zero              = full_zero,
   .trim              = full_trim,
+  .extents           = full_extents,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */
