@@ -271,3 +271,18 @@ EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
     fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+
+#----------------------------------------------------------------------
+# -r
+# can_multi_conn=true
+
+do_nbdkit -r <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_multi_conn) echo 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF|CAN_MULTI_CONN )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF|CAN_MULTI_CONN"
