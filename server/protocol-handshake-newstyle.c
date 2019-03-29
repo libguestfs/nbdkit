@@ -151,6 +151,8 @@ send_newstyle_option_reply_meta_context (struct connection *conn,
   struct fixed_new_option_reply_meta_context context;
   const size_t namelen = strlen (name);
 
+  debug ("newstyle negotiation: %s: replying with %s id %d",
+         name_of_nbd_opt (option), name, context_id);
   fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
   fixed_new_option_reply.option = htobe32 (option);
   fixed_new_option_reply.reply = htobe32 (reply);
@@ -537,6 +539,9 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         /* for LIST: nr_queries == 0 means return all meta contexts
          * for SET: nr_queries == 0 means reset all contexts
          */
+        debug ("newstyle negotiation: %s: %s count: %d", optname,
+               option == NBD_OPT_LIST_META_CONTEXT ? "query" : "set",
+               nr_queries);
         if (nr_queries == 0) {
           if (option == NBD_OPT_SET_META_CONTEXT)
             conn->meta_context_base_allocation = false;
@@ -599,6 +604,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
           if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
             return -1;
         }
+        debug ("newstyle negotiation: %s: reply complete", optname);
       }
       break;
 
