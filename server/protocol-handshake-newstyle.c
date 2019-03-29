@@ -64,7 +64,7 @@ send_newstyle_option_reply (struct connection *conn,
   if (conn->send (conn,
                   &fixed_new_option_reply,
                   sizeof fixed_new_option_reply) == -1) {
-    nbdkit_error ("write: %m");
+    nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
 
@@ -88,17 +88,19 @@ send_newstyle_option_reply_exportname (struct connection *conn,
   if (conn->send (conn,
                   &fixed_new_option_reply,
                   sizeof fixed_new_option_reply) == -1) {
-    nbdkit_error ("write: %m");
+    nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
 
   len = htobe32 (name_len);
   if (conn->send (conn, &len, sizeof len) == -1) {
-    nbdkit_error ("write: %m");
+    nbdkit_error ("write: %s: %s: %m",
+                  name_of_nbd_opt (option), "sending length");
     return -1;
   }
   if (conn->send (conn, exportname, name_len) == -1) {
-    nbdkit_error ("write: %m");
+    nbdkit_error ("write: %s: %s: %m",
+                  name_of_nbd_opt (option), "sending export name");
     return -1;
   }
 
@@ -125,7 +127,7 @@ send_newstyle_option_reply_info_export (struct connection *conn,
                   &fixed_new_option_reply,
                   sizeof fixed_new_option_reply) == -1 ||
       conn->send (conn, &export, sizeof export) == -1) {
-    nbdkit_error ("write: %m");
+    nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
 
@@ -153,7 +155,7 @@ send_newstyle_option_reply_meta_context (struct connection *conn,
                   sizeof fixed_new_option_reply) == -1 ||
       conn->send (conn, &context, sizeof context) == -1 ||
       conn->send (conn, name, namelen) == -1) {
-    nbdkit_error ("write: %m");
+    nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
 
@@ -246,6 +248,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
     }
 
     option = be32toh (new_option.option);
+    optname = name_of_nbd_opt (option);
 
     /* In --tls=require / FORCEDTLS mode the only options allowed
      * before TLS negotiation are NBD_OPT_ABORT and NBD_OPT_STARTTLS.
@@ -281,7 +284,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
                       (conn->cflags & NBD_FLAG_NO_ZEROES)
                       ? offsetof (struct new_handshake_finish, zeroes)
                       : sizeof handshake_finish) == -1) {
-        nbdkit_error ("write: %m");
+        nbdkit_error ("write: %s: %m", optname);
         return -1;
       }
       break;
@@ -360,7 +363,6 @@ negotiate_handshake_newstyle_options (struct connection *conn)
 
     case NBD_OPT_INFO:
     case NBD_OPT_GO:
-      optname = name_of_nbd_opt (option);
       if (conn_recv_full (conn, data, optlen,
                           "read: %s: %m", optname) == -1)
         return -1;
@@ -485,7 +487,6 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         uint32_t querylen;
         const char *what;
 
-        optname = name_of_nbd_opt (option);
         if (conn_recv_full (conn, data, optlen, "read: %s: %m", optname) == -1)
           return -1;
 
@@ -643,7 +644,7 @@ protocol_handshake_newstyle (struct connection *conn)
   handshake.gflags = htobe16 (gflags);
 
   if (conn->send (conn, &handshake, sizeof handshake) == -1) {
-    nbdkit_error ("write: %m");
+    nbdkit_error ("write: %s: %m", "sending newstyle handshake");
     return -1;
   }
 
