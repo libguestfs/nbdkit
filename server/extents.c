@@ -57,9 +57,9 @@ nbdkit_extents_new (uint64_t start, uint64_t end)
 {
   struct nbdkit_extents *r;
 
-  if (start >= INT64_MAX || end >= INT64_MAX) {
+  if (start > INT64_MAX || end > INT64_MAX) {
     nbdkit_error ("nbdkit_extents_new: "
-                  "start (%" PRIu64 ") or end (%" PRIu64 ") >= INT64_MAX",
+                  "start (%" PRIu64 ") or end (%" PRIu64 ") > INT64_MAX",
                   start, end);
     errno = ERANGE;
     return NULL;
