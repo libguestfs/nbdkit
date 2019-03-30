@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -421,6 +421,9 @@ flags_string (uint32_t flags, char *buf, size_t len)
 
   if (flags & NBDKIT_FLAG_MAY_TRIM)
     flag_append ("may_trim", &comma, &buf, &len);
+
+  if (flags & NBDKIT_FLAG_REQ_ONE)
+    flag_append ("req_one", &comma, &buf, &len);
 }
 
 static void
@@ -525,6 +528,12 @@ static int
 sh_can_zero (void *handle)
 {
   return boolean_method (handle, "can_zero");
+}
+
+static int
+sh_can_extents (void *handle)
+{
+  return boolean_method (handle, "can_extents");
 }
 
 /* Not a boolean method, the method prints "none", "emulate" or "native". */
@@ -676,6 +685,123 @@ sh_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   }
 }
 
+static int
+parse_extents (const char *s, size_t slen, struct nbdkit_extents *extents)
+{
+  FILE *fp = NULL;
+  char *line = NULL;
+  size_t linelen = 0;
+  ssize_t len;
+  int ret = -1;
+
+  fp = fmemopen ((void *) s, slen, "r");
+  if (!fp) {
+    nbdkit_error ("%s: extents: fmemopen: %m", script);
+    goto out;
+  }
+
+  while ((len = getline (&line, &linelen, fp)) != -1) {
+    const char *delim = " \t";
+    char *sp, *p;
+    int64_t offset, length;
+    uint32_t type;
+
+    if (len > 0 && line[len-1] == '\n') {
+      line[len-1] = '\0';
+      len--;
+    }
+
+    if ((p = strtok_r (line, delim, &sp)) == NULL) {
+    parse_error:
+      nbdkit_error ("%s: extents: cannot parse %s", script, line);
+      goto out;
+    }
+    offset = nbdkit_parse_size (p);
+    if (offset == -1)
+      goto out;
+
+    if ((p = strtok_r (NULL, delim, &sp)) == NULL)
+      goto parse_error;
+    length = nbdkit_parse_size (p);
+    if (length == -1)
+      goto out;
+
+    if ((p = strtok_r (NULL, delim, &sp)) == NULL)
+      /* empty type field means allocated data (0) */
+      type = 0;
+    else if (sscanf (p, "%" SCNu32, &type) == 1)
+      ;
+    else {
+      type = 0;
+      if (strstr (p, "hole") != NULL)
+        type |= NBDKIT_EXTENT_HOLE;
+      if (strstr (p, "zero") != NULL)
+        type |= NBDKIT_EXTENT_ZERO;
+    }
+
+    nbdkit_debug ("%s: adding extent %" PRIi64 " %" PRIi64 " %" PRIu32,
+                  script, offset, length, type);
+    if (nbdkit_add_extent (extents, offset, length, type) == -1)
+      goto out;
+  }
+
+  ret = 0;
+
+ out:
+  free (line);
+  if (fp)
+    fclose (fp);
+  return ret;
+}
+
+static int
+sh_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+            struct nbdkit_extents *extents)
+{
+  char *h = handle;
+  char cbuf[32], obuf[32], fbuf[32];
+  const char *args[] = { script, "extents", h, cbuf, obuf, fbuf, NULL };
+  char *s = NULL;
+  size_t slen;
+  int r;
+
+  snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
+  snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
+  flags_string (flags, fbuf, sizeof fbuf);
+
+  switch (call_read (&s, &slen, args)) {
+  case OK:
+    r = parse_extents (s, slen, extents);
+    free (s);
+    return r;
+
+  case MISSING:
+    /* extents method should not have been called unless the script
+     * defined a can_extents method which returns true, so if this
+     * happens it's a script error.
+     */
+    free (s);
+    nbdkit_error ("%s: can_extents returned true, "
+                  "but extents method is not defined",
+                  script);
+    errno = EIO;
+    return -1;
+
+  case ERROR:
+    free (s);
+    return -1;
+
+  case RET_FALSE:
+    free (s);
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "can_fua");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
+  }
+}
+
 #define sh_config_help \
   "script=<FILENAME>     (required) The shell script to run.\n" \
   "[other arguments may be used by the plugin that you load]"
@@ -703,6 +829,7 @@ static struct nbdkit_plugin plugin = {
   .is_rotational     = sh_is_rotational,
   .can_trim          = sh_can_trim,
   .can_zero          = sh_can_zero,
+  .can_extents       = sh_can_extents,
   .can_fua           = sh_can_fua,
   .can_multi_conn    = sh_can_multi_conn,
 
@@ -711,6 +838,7 @@ static struct nbdkit_plugin plugin = {
   .flush             = sh_flush,
   .trim              = sh_trim,
   .zero              = sh_zero,
+  .extents           = sh_extents,
 
   .errno_is_preserved = 1,
 };

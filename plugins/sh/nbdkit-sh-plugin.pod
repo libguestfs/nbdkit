@@ -216,19 +216,22 @@ This method is required.
 
 =item C<can_zero>
 
+=item C<can_extents>
+
 Unlike in other languages, you B<must> provide the C<can_*> methods
 otherwise they are assumed to all return false and your C<pwrite>,
-C<flush>, C<trim> and C<zero> methods will never be called.  The
-reason for this is obscure: In other languages we can detect if (eg) a
-C<pwrite> method is defined and synthesize an appropriate response if
-no actual C<can_write> method is defined.  However detecting if
-methods are present without running them is not possible with this
-plugin.
+C<flush>, C<trim>, C<zero> and C<extents> methods will never be
+called.  The reason for this is obscure: In other languages we can
+detect if (eg) a C<pwrite> method is defined and synthesize an
+appropriate response if no actual C<can_write> method is defined.
+However detecting if methods are present without running them is not
+possible with this plugin.
 
  /path/to/script can_write <handle>
  /path/to/script can_flush <handle>
  /path/to/script can_trim <handle>
  /path/to/script can_zero <handle>
+ /path/to/script can_extents <handle>
 
 The script should exit with code C<0> for true or code C<3> for false.
 
@@ -304,6 +307,32 @@ C<"fua,may_trim"> are all possible values).
 
 Unlike in other languages, if you provide a C<zero> method you B<must>
 also provide a C<can_zero> method which exits with code C<0> (true).
+
+=item C<extents>
+
+ /path/to/script extents <handle> <count> <offset> <flags>
+
+The C<flags> parameter can be an empty string or C<"req_one">.
+
+This must print, one per line on stdout, a list of one or more extents
+in the format:
+
+ offset length type
+
+which correspond to the inputs of the C C<nbdkit_add_extent> function
+(see L<nbdkit-plugin(3)>).  The C<offset> and C<length> fields may use
+any format understood by C<nbdkit_parse_size>.  The optional C<type>
+field may be an integer, missing (same as 0), or a comma-separated
+list of the words C<hole> and C<zero>.  An example of a valid set of
+extents covering a C<10M> disk where the first megabyte only is
+allocated data:
+
+ 0  1M
+ 1M 9M  hole,zero
+
+Unlike in other languages, if you provide an C<extents> method you
+B<must> also provide a C<can_extents> method which exits with code
+C<0> (true).
 
 =back
 

@@ -109,6 +109,7 @@ EXTRA_DIST = \
 	test-shebang-python.sh \
 	test-shebang-ruby.sh \
 	test-shell.sh \
+	test-sh-extents.sh \
 	test-single.sh \
 	test-single-from-file.sh \
 	test-start.sh \
@@ -711,6 +712,8 @@ test_shell_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 test-shell.img:
 	truncate -s 1048576 $@
+
+TESTS += test-sh-extents.sh
 
 # Tcl plugin test.
 if HAVE_TCL
