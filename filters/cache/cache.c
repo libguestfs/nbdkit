@@ -248,6 +248,12 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
   }
 
+  /* XXX This breaks up large read requests into smaller ones, which
+   * is a problem for plugins which have a large, fixed per-request
+   * overhead (hello, curl).  We should try to keep large requests
+   * together as much as possible, but that requires us to be much
+   * smarter here.
+   */
   while (count > 0) {
     uint64_t blknum, blkoffs, n;
     int r;
