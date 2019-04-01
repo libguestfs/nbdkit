@@ -382,8 +382,10 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
         if (i > 0)
           fprintf (fp, ", ");
         fprintf (fp, "{ offset=0x%" PRIx64 ", length=0x%" PRIx64 ", "
-                 "type=%" PRIu32 " }",
-                 e.offset, e.length, e.type);
+                 "hole=%d, zero=%d }",
+                 e.offset, e.length,
+                 !!(e.type & NBDKIT_EXTENT_HOLE),
+                 !!(e.type & NBDKIT_EXTENT_ZERO));
       }
 
       fclose (fp);
