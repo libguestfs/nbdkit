@@ -157,6 +157,7 @@ L<libcurl(3)>,
 L<CURLOPT_COOKIE(3)>
 L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
+L<nbdkit-readahead-filter(1)>,
 L<nbdkit-ssh-plugin(1)>,
 L<nbdkit-plugin(3)>.
 

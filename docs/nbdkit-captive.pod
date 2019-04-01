@@ -79,6 +79,13 @@ an embedded disk image.  To copy it out:
 
  nbdkit -U - example1 --run 'qemu-img convert $nbd disk.img'
 
+If plugin requests have a high overhead (for example making HTTP
+requests to a remote server), adding L<nbdkit-readahead-filter(1)> may
+help performance:
+
+ nbdkit -U - --filter=readahead curl https://example.com/disk.img \
+        --run 'qemu-img convert $nbd disk.img'
+
 To overwrite a file inside an uncompressed tar file (the file being
 overwritten must be the same size), use L<nbdkit-tar-plugin(1)> like
 this:

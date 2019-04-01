@@ -1,0 +1,44 @@
+=head1 NAME
+
+nbdkit-readahead-filter - prefetch data when reading sequentially
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=readahead plugin
+
+=head1 DESCRIPTION
+
+C<nbdkit-readahead-filter> is a filter that prefetches data when the
+client is reading sequentially.
+
+A common use for this filter is to accelerate sequential copy
+operations (like S<C<qemu-img convert>>) when plugin requests have a
+high overhead (like L<nbdkit-curl-plugin(1)>).  For example:
+
+ nbdkit -U - --filter=readahead curl https://example.com/disk.img \
+        --run 'qemu-img convert $nbd disk.img'
+
+If you use this filter with clients that have a random access pattern
+it will slow everything down.
+
+=head1 PARAMETERS
+
+There are no parameters specific to nbdkit-readahead-filter.  Any
+parameters are passed through to and processed by the underlying
+plugin in the normal way.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-cache-filter(1)>,
+L<nbdkit-curl-plugin(1)>,
+L<nbdkit-filter(3)>,
+L<qemu-img(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

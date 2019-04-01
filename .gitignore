@@ -110,6 +110,7 @@ Makefile.in
 /tests/test-perl
 /tests/test-python
 /tests/test-random
+/tests/test-readahead
 /tests/test-ruby
 /tests/test-shell
 /tests/test-shell.img

@@ -135,6 +135,7 @@ environment variable before starting nbdkit.
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-readahead-filter(1)>,
 L<nbdkit-filter(3)>,
 L<qemu-img(1)>.
 

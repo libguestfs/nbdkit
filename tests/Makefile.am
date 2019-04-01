@@ -103,6 +103,7 @@ EXTRA_DIST = \
 	test.py \
 	test-rate.sh \
 	test.rb \
+	test-readahead-copy.sh \
 	test-ssh.sh \
 	test.tcl \
 	test-shebang-perl.sh \
@@ -881,6 +882,14 @@ endif HAVE_GUESTFISH
 
 # rate filter test.
 TESTS += test-rate.sh
+
+# readahead filter test.
+LIBGUESTFS_TESTS += test-readahead
+TESTS += test-readahead-copy.sh
+
+test_readahead_SOURCES = test-readahead.c test.h
+test_readahead_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_readahead_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # truncate filter tests.
 TESTS += \
