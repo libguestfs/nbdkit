@@ -67,7 +67,13 @@ int curl_debug_verbose = 0;
 static void
 curl_load (void)
 {
-  curl_global_init (CURL_GLOBAL_DEFAULT);
+  CURLcode r;
+
+  r = curl_global_init (CURL_GLOBAL_DEFAULT);
+  if (r != CURLE_OK) {
+    nbdkit_error ("libcurl initialization failed: %d", (int) r);
+    exit (EXIT_FAILURE);
+  }
 }
 
 static void
