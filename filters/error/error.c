@@ -204,22 +204,22 @@ error_config (nbdkit_next_config *next, void *nxdata,
     zero_settings.file = nbdkit_absolute_path (value);
     return 0;
   }
-  else if (strcmp (key, "error-pread-rate") == 0) {
+  else if (strcmp (key, "error-pread-file") == 0) {
     free (pread_settings.file);
     pread_settings.file = nbdkit_absolute_path (value);
     return 0;
   }
-  else if (strcmp (key, "error-pwrite-rate") == 0) {
+  else if (strcmp (key, "error-pwrite-file") == 0) {
     free (pwrite_settings.file);
     pwrite_settings.file = nbdkit_absolute_path (value);
     return 0;
   }
-  else if (strcmp (key, "error-trim-rate") == 0) {
+  else if (strcmp (key, "error-trim-file") == 0) {
     free (trim_settings.file);
     trim_settings.file = nbdkit_absolute_path (value);
     return 0;
   }
-  else if (strcmp (key, "error-zero-rate") == 0) {
+  else if (strcmp (key, "error-zero-file") == 0) {
     free (zero_settings.file);
     zero_settings.file = nbdkit_absolute_path (value);
     return 0;
