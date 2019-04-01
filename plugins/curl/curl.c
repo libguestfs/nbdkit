@@ -59,7 +59,7 @@ static const char *url = NULL;
 static const char *user = NULL;
 static char *password = NULL;
 static bool sslverify = true;
-static int timeout = 0;
+static long timeout = 0;
 static const char *unix_socket_path = NULL;
 
 /* Use '-D curl.verbose=1' to set. */
@@ -110,7 +110,7 @@ curl_config (const char *key, const char *value)
   }
 
   else if (strcmp (key, "timeout") == 0) {
-    if (sscanf (value, "%d", &timeout) != 1 || timeout < 0) {
+    if (sscanf (value, "%ld", &timeout) != 1 || timeout < 0) {
       nbdkit_error ("'timeout' must be 0 or a positive timeout in seconds");
       return -1;
     }
