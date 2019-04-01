@@ -71,7 +71,10 @@ main (int argc, char *argv[])
   n = strlen ("unix_socket_path") + 1 + strlen (sockpath) + 1;
   char usp_param[n];
   snprintf (usp_param, n, "%s=%s", "unix_socket_path", sockpath);
-  if (test_start_nbdkit ("curl", usp_param, "http://localhost/disk",
+  if (test_start_nbdkit ("curl",
+                         "cookie=foo=bar; baz=1;",
+                         usp_param, /* unix_socket_path=... */
+                         "http://localhost/disk",
                          NULL) == -1)
     exit (EXIT_FAILURE);
 

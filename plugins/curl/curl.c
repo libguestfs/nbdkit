@@ -58,6 +58,7 @@
 static const char *url = NULL;
 static const char *user = NULL;
 static char *password = NULL;
+static char *cookie = NULL;
 static bool sslverify = true;
 static long timeout = 0;
 static const char *unix_socket_path = NULL;
@@ -81,6 +82,7 @@ static void
 curl_unload (void)
 {
   free (password);
+  free (cookie);
   curl_global_cleanup ();
 }
 
@@ -95,6 +97,12 @@ curl_config (const char *key, const char *value)
 
   else if (strcmp (key, "user") == 0)
     user = value;
+
+  else if (strcmp (key, "cookie") == 0) {
+    free (cookie);
+    if (nbdkit_read_password (value, &cookie) == -1)
+      return -1;
+  }
 
   else if (strcmp (key, "password") == 0) {
     free (password);
@@ -141,8 +149,9 @@ curl_config_complete (void)
 }
 
 #define curl_config_help \
-  "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
+  "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
+  "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
   "sslverify=false            Do not verify SSL certificate of remote host.\n" \
   "unix_socket_path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
   "url=<URL>       (required) The disk image URL to serve.\n" \
@@ -238,6 +247,8 @@ CURLOPT_PROXY
     curl_easy_setopt (h->c, CURLOPT_USERNAME, user);
   if (password)
     curl_easy_setopt (h->c, CURLOPT_USERPWD, password);
+  if (cookie)
+    curl_easy_setopt (h->c, CURLOPT_COOKIE, cookie);
 
   /* Get the file size and also whether the remote HTTP server
    * supports byte ranges.
