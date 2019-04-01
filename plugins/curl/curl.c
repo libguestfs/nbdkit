@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
@@ -57,7 +58,7 @@
 static const char *url = NULL;
 static const char *user = NULL;
 static char *password = NULL;
-static int sslverify = 1;
+static bool sslverify = true;
 static int timeout = 0;
 static const char *unix_socket_path = NULL;
 
@@ -87,6 +88,8 @@ curl_unload (void)
 static int
 curl_config (const char *key, const char *value)
 {
+  int r;
+
   if (strcmp (key, "url") == 0)
     url = value;
 
@@ -100,10 +103,10 @@ curl_config (const char *key, const char *value)
   }
 
   else if (strcmp (key, "sslverify") == 0) {
-    if (sscanf (value, "%d", &sslverify) != 1) {
-      nbdkit_error ("'sslverify' must be 0 or 1");
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
       return -1;
-    }
+    sslverify = r;
   }
 
   else if (strcmp (key, "timeout") == 0) {
@@ -140,7 +143,7 @@ curl_config_complete (void)
 #define curl_config_help \
   "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
-  "sslverify=0                Do not verify SSL certificate of remote host.\n" \
+  "sslverify=false            Do not verify SSL certificate of remote host.\n" \
   "unix_socket_path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
   "url=<URL>       (required) The disk image URL to serve.\n" \
   "user=<USER>                The user to log in as."
@@ -227,7 +230,7 @@ CURLOPT_PROXY
   curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1);
   if (timeout > 0)
     curl_easy_setopt (h->c, CURLOPT_TIMEOUT, timeout);
-  if (sslverify == 0) {
+  if (!sslverify) {
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYHOST, 0L);
   }
