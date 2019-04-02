@@ -819,7 +819,6 @@ non_lang_plugins="\
         streaming \
         tar \
         vddk \
-        xz \
         zero \
         "
 plugins="$(echo $(printf %s\\n $lang_plugins $non_lang_plugins | sort -u))"
@@ -895,7 +894,6 @@ AC_CONFIG_FILES([Makefile
                  plugins/tar/Makefile
                  plugins/tcl/Makefile
                  plugins/vddk/Makefile
-                 plugins/xz/Makefile
                  plugins/zero/Makefile
                  filters/Makefile
                  filters/blocksize/Makefile
