@@ -42,13 +42,17 @@ username).
 =item B<config=>CONFIG_FILE
 
 Read local SSH configuration from an alternate configuration file.
+Libssh expands some C<%>-sequences in C<CONFIG_FILE>, see
+L</Path expansion> below.  C<CONFIG_FILE> must expand to an absolute
+path.
 
 =item B<config=>
 
 Do not read any local SSH configuration.
 
-The C<config> parameter is optional.  If not specified then
-F<~/.ssh/config> is read.
+The C<config> parameter is optional.  If it is I<not> specified at all
+then F<~/.ssh/config> and F</etc/ssh/ssh_config> are both read.
+Missing or unreadable files are ignored.
 
 =item B<host=>HOST
 
@@ -149,13 +153,49 @@ There is no means for nbdkit to ask for the public key passphrase when
 it is running as a server.  Therefore C<publickey> authentication must
 be done in conjunction with L<ssh-agent(1)>.
 
+=head2 Path expansion
+
+In the C<config> option, libssh expands some C<%>-sequences.
+Unfortunately there is no escape character for C<%> itself, so there
+is no way to specify that character in the path.
+
+=over 4
+
+=item C<%d>
+
+The user’s SSH directory, usually F<~/.ssh>
+
+=item C<%u>
+
+The local username.
+
+=item C<%l>
+
+The local hostname.
+
+=item C<%h>
+
+The remote hostname.
+
+=item C<%r>
+
+The remote username.
+
+=item C<%p>
+
+The SSH port number.
+
+=back
+
 =head1 FILES
 
 =over 4
 
 =item F<~/.ssh/config>
 
-This is the default local SSH config file which is read to get other
+=item F</etc/ssh/ssh_config>
+
+These are the default SSH config files which are read to get other
 options.  You can change this using the C<config> option.
 
 =item F<~/.ssh/known_hosts>

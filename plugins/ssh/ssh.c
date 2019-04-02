@@ -120,7 +120,7 @@ ssh_config (const char *key, const char *value)
   }
 
   else if (strcmp (key, "config") == 0)
-    config = value;
+    config = value; /* %-expanded, cannot use nbdkit_absolute_path */
 
   else if (strcmp (key, "verify-remote-host") == 0) {
     r = nbdkit_parse_bool (value);
@@ -351,12 +351,29 @@ ssh_open (int readonly)
     }
   }
 
-  /* Read ~/.ssh/config or alternative file. */
-  if (config == NULL || strcmp (config, "") != 0) {
-    r = ssh_options_parse_config (h->session, config);
+  /* Read SSH config or alternative file.  Must happen last so that
+   * the hostname has been set already.
+   */
+  if (config == NULL) {
+    /* NULL means parse the default files, which are ~/.ssh/config and
+     * /etc/ssh/ssh_config.  If either are missing then they are
+     * ignored.
+     */
+    r = ssh_options_parse_config (h->session, NULL);
     if (r != SSH_OK) {
       nbdkit_error ("failed to parse local SSH configuration: %s",
                     ssh_get_error (h->session));
+      goto err;
+    }
+  }
+  else if (strcmp (config, "") != 0) {
+    /* User has specified a single file.  This function ignores the
+     * case where the file is missing - should we check this? XXX
+     */
+    r = ssh_options_parse_config (h->session, config);
+    if (r != SSH_OK) {
+      nbdkit_error ("failed to parse SSH configuration: %s: %s",
+                    config, ssh_get_error (h->session));
       goto err;
     }
   }
