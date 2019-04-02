@@ -5,10 +5,10 @@ nbdkit-ssh-plugin - access disk images over the SSH protocol
 =head1 SYNOPSIS
 
  nbdkit ssh host=HOST [path=]PATH
-            [port=PORT] [user=USER] [password=PASSWORD|-|+FILENAME]
-            [config=CONFIG_FILE] [known-hosts=FILENAME]
-            [verify-remote-host=false] [identity=FILENAME]
-            [timeout=SECS]
+            [config=CONFIG_FILE] [identity=FILENAME]
+            [known-hosts=FILENAME] [password=PASSWORD|-|+FILENAME]
+            [port=PORT] [timeout=SECS] [user=USER]
+            [verify-remote-host=false]
 
 =head1 DESCRIPTION
 
@@ -17,7 +17,7 @@ images over Secure Shell (SSH).  Any server which hosts disk images
 and runs an SSH server can be turned into an NBD source using this
 plugin.
 
-=head2 EXAMPLES
+=head1 EXAMPLES
 
 =over 4
 
@@ -287,6 +287,7 @@ libssh itself.
 
 L<nbdkit(1)>,
 L<nbdkit-curl-plugin(1)>,
+L<nbdkit-readahead-filter(1)>,
 L<nbdkit-plugin(3)>,
 L<ssh(1)>,
 L<ssh-agent(1)>,
