@@ -6,7 +6,8 @@ nbdkit-ssh-plugin - access disk images over the SSH protocol
 
  nbdkit ssh host=HOST [path=]PATH
             [port=PORT] [user=USER] [password=PASSWORD|-|+FILENAME]
-            [config=CONFIG_FILE] [verify-remote-host=false]
+            [config=CONFIG_FILE] [known-hosts=FILENAME]
+            [verify-remote-host=false]
 
 =head1 DESCRIPTION
 
@@ -59,6 +60,16 @@ Missing or unreadable files are ignored.
 Specify the name or IP address of the remote host.
 
 This parameter is required.
+
+=item B<known-hosts=>FILENAME
+
+Set name of the file which records the identity of previously seen
+hosts.  Libssh expands some C<%>-sequences in C<FILENAME>, see
+L</Path expansion> below.  C<FILENAME> must expand to an absolute
+path.
+
+The default is to check F<~/.ssh/known_hosts> followed by
+F</etc/ssh/ssh_known_hosts>.
 
 =item B<password=>PASSWORD
 
@@ -120,11 +131,10 @@ Man-In-The-Middle (MITM) attack to be conducted against you.
 =head2 Known hosts
 
 The SSH server’s host key is checked at connection time, and must be
-present and correct in the local "known hosts" file (usually
-F<~/.ssh/known_hosts>).
+present and correct in the local "known hosts" file.
 
 If you have never connected to the SSH server before then the
-connection will usually fail.  You can either:
+connection will usually fail.  You can:
 
 =over 4
 
@@ -132,6 +142,11 @@ connection will usually fail.  You can either:
 
 connect to the server first using L<ssh(1)> so you can manually accept
 the host key, or
+
+=item *
+
+provide the host key in an alternate file which you specify using the
+C<known-hosts> option, or
 
 =item *
 
@@ -155,9 +170,9 @@ be done in conjunction with L<ssh-agent(1)>.
 
 =head2 Path expansion
 
-In the C<config> option, libssh expands some C<%>-sequences.
-Unfortunately there is no escape character for C<%> itself, so there
-is no way to specify that character in the path.
+In the C<config> and C<known-hosts> options, libssh expands some
+C<%>-sequences.  Unfortunately there is no escape character for C<%>
+itself, so there is no way to specify that character in the path.
 
 =over 4
 
@@ -200,7 +215,10 @@ options.  You can change this using the C<config> option.
 
 =item F<~/.ssh/known_hosts>
 
-This is the normal file used to verify known hosts for non-root users.
+=item F</etc/ssh/ssh_known_hosts>
+
+These are the default SSH files recording the identity of previously
+seen hosts.  You can change this using the C<known-hosts> option.
 
 =back
 

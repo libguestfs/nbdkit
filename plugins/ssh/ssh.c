@@ -56,6 +56,7 @@ static const char *port = NULL;
 static const char *user = NULL;
 static char *password = NULL;
 static bool verify_remote_host = true;
+static const char *known_hosts = NULL;
 
 /* config can be:
  * NULL => parse options from default file
@@ -122,6 +123,9 @@ ssh_config (const char *key, const char *value)
   else if (strcmp (key, "config") == 0)
     config = value; /* %-expanded, cannot use nbdkit_absolute_path */
 
+  else if (strcmp (key, "known-hosts") == 0)
+    known_hosts = value; /* %-expanded, cannot use nbdkit_absolute_path */
+
   else if (strcmp (key, "verify-remote-host") == 0) {
     r = nbdkit_parse_bool (value);
     if (r == -1)
@@ -157,6 +161,7 @@ ssh_config_complete (void)
   "user=<USER>                SSH user name.\n" \
   "password=<PASSWORD>        SSH password.\n" \
   "config=<CONFIG>            Alternate local SSH configuration file.\n" \
+  "known-hosts=<FILENAME>     Set location of known_hosts file.\n" \
   "verify-remote-host=false   Ignore known_hosts."
 
 /* The per-connection handle. */
@@ -349,6 +354,18 @@ ssh_open (int readonly)
                     user, ssh_get_error (h->session));
       goto err;
     }
+  }
+  if (known_hosts != NULL) {
+    r = ssh_options_set (h->session, SSH_OPTIONS_KNOWNHOSTS, known_hosts);
+    if (r != SSH_OK) {
+      nbdkit_error ("failed to set known_hosts in libssh session: %s: %s",
+                    known_hosts, ssh_get_error (h->session));
+      goto err;
+    }
+    /* XXX This is still going to read the global file, and there
+     * seems to be no way to disable that.  However it doesn't matter
+     * as this file is rarely present.
+     */
   }
 
   /* Read SSH config or alternative file.  Must happen last so that
