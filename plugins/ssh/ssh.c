@@ -156,7 +156,8 @@ ssh_config_complete (void)
   "port=<PORT>                SSH protocol port number.\n" \
   "user=<USER>                SSH user name.\n" \
   "password=<PASSWORD>        SSH password.\n" \
-  "config=<CONFIG>            Alternate local SSH configuration file." \
+  "config=<CONFIG>            Alternate local SSH configuration file.\n" \
+  "verify-remote-host=false   Ignore known_hosts."
 
 /* The per-connection handle. */
 struct ssh_handle {
