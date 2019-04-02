@@ -76,19 +76,36 @@
 int rate_debug_bucket;          /* -D rate.bucket=1 */
 
 void
-bucket_init (struct bucket *bucket, uint64_t rate, double capacity)
+bucket_init (struct bucket *bucket, uint64_t rate, double capacity_secs)
 {
   bucket->rate = rate;
+
+  /* Store the capacity passed to this function.  We will need this if
+   * we adjust the rate dynamically.
+   */
+  bucket->capacity_secs = capacity_secs;
 
   /* Capacity is expressed in seconds, but we want to know the
    * capacity in tokens, so multiply by the rate to get this.
    */
-  bucket->capacity = rate * capacity;
+  bucket->capacity = rate * capacity_secs;
 
   /* Buckets start off full. */
   bucket->level = bucket->capacity;
 
   gettimeofday (&bucket->tv, NULL);
+}
+
+uint64_t
+bucket_adjust_rate (struct bucket *bucket, uint64_t rate)
+{
+  uint64_t old_rate = bucket->rate;
+
+  bucket->rate = rate;
+  bucket->capacity = rate * bucket->capacity_secs;
+  if (bucket->level > bucket->capacity)
+    bucket->level = bucket->capacity;
+  return old_rate;
 }
 
 /* Return the number of microseconds in y - x. */

@@ -40,7 +40,8 @@
 /* A token bucket. */
 struct bucket {
   uint64_t rate;                /* Fill rate.  0 = no limit set. */
-  uint64_t capacity;            /* Maximum capacity of the bucket. */
+  double capacity_secs;         /* Capacity as supplied to bucket_init. */
+  uint64_t capacity;            /* Maximum capacity of the bucket in tokens. */
   uint64_t level;               /* How full is the bucket now? */
   struct timeval tv;            /* Last time we updated the level. */
 };
@@ -49,7 +50,10 @@ struct bucket {
  * rate-equivalent seconds.
  */
 extern void bucket_init (struct bucket *bucket,
-                         uint64_t rate, double capacity);
+                         uint64_t rate, double capacity_secs);
+
+/* Dynamically adjust the rate.  The old rate is returned. */
+extern uint64_t bucket_adjust_rate (struct bucket *bucket, uint64_t rate);
 
 /* Take up to N tokens from the bucket.  Returns the number
  * of tokens remaining (that could not be taken from the bucket),
