@@ -8,6 +8,7 @@ nbdkit-ssh-plugin - access disk images over the SSH protocol
             [port=PORT] [user=USER] [password=PASSWORD|-|+FILENAME]
             [config=CONFIG_FILE] [known-hosts=FILENAME]
             [verify-remote-host=false] [identity=FILENAME]
+            [timeout=SECS]
 
 =head1 DESCRIPTION
 
@@ -115,6 +116,10 @@ Specify the SSH protocol port name or number.
 
 This parameter is optional.  If not given then the default ssh port is
 used.
+
+=item B<timeout=>SECS
+
+Set the SSH connection timeout in seconds.
 
 =item B<user=>USER
 

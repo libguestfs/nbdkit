@@ -59,6 +59,7 @@ static bool verify_remote_host = true;
 static const char *known_hosts = NULL;
 static const char **identity = NULL;
 static size_t nr_identities = 0;
+static long timeout = 0;
 
 /* config can be:
  * NULL => parse options from default file
@@ -149,6 +150,13 @@ ssh_config (const char *key, const char *value)
     verify_remote_host = r;
   }
 
+  else if (strcmp (key, "timeout") == 0) {
+    if (sscanf (value, "%ld", &timeout) != 1) {
+      nbdkit_error ("cannot parse timeout: %s", value);
+      return -1;
+    }
+  }
+
   else {
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
@@ -179,6 +187,7 @@ ssh_config_complete (void)
   "config=<CONFIG>            Alternate local SSH configuration file.\n" \
   "known-hosts=<FILENAME>     Set location of known_hosts file.\n" \
   "identity=<FILENAME>        Prepend private key (identity) file.\n" \
+  "timeout=SECS               Set SSH connection timeout.\n" \
   "verify-remote-host=false   Ignore known_hosts."
 
 /* The per-connection handle. */
@@ -390,6 +399,14 @@ ssh_open (int readonly)
     if (r != SSH_OK) {
       nbdkit_error ("failed to add identity in libssh session: %s: %s",
                     identity[i], ssh_get_error (h->session));
+      goto err;
+    }
+  }
+  if (timeout > 0) {
+    r = ssh_options_set (h->session, SSH_OPTIONS_TIMEOUT, &timeout);
+    if (r != SSH_OK) {
+      nbdkit_error ("failed to set timeout in libssh session: %ld: %s",
+                    timeout, ssh_get_error (h->session));
       goto err;
     }
   }
