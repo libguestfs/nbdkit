@@ -42,6 +42,9 @@ cleanup_fn rm -f $files
 
 # This should take no less than 20 seconds to run:
 #   (8 * 25 * 1024 * 1024) / (10 * 1024 * 1024) = 20
+# but because the bucket is full at the start the filter will
+# burst for a couple of seconds to begin with, therefore the
+# expected minimum time is more like 18-19 seconds.
 
 # We are using the bash time builtin, so setting TIMEFORMAT will
 # control the output format of the time builtin.  For strange use of
@@ -53,7 +56,7 @@ set -x
 cat rate.err ||:
 
 seconds="$( cat rate.time )"
-if [ "$seconds" -lt 20 ]; then
-    echo "$0: rate filter failed: command took $seconds seconds, expected > 20"
+if [ "$seconds" -lt 18 ]; then
+    echo "$0: rate filter failed: command took $seconds seconds, expected about 20"
     exit 1
 fi

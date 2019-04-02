@@ -86,7 +86,7 @@ bucket_init (struct bucket *bucket, uint64_t rate, double capacity)
   bucket->capacity = rate * capacity;
 
   /* Buckets start off full. */
-  bucket->level = capacity;
+  bucket->level = bucket->capacity;
 
   gettimeofday (&bucket->tv, NULL);
 }
