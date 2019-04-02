@@ -102,6 +102,7 @@ EXTRA_DIST = \
 	test.pl \
 	test.py \
 	test-rate.sh \
+	test-rate-dynamic.sh \
 	test.rb \
 	test-readahead-copy.sh \
 	test-ssh.sh \
@@ -881,7 +882,9 @@ TESTS += test-partition2.sh
 endif HAVE_GUESTFISH
 
 # rate filter test.
-TESTS += test-rate.sh
+TESTS += \
+	test-rate.sh \
+	test-rate-dynamic.sh
 
 # readahead filter test.
 LIBGUESTFS_TESTS += test-readahead

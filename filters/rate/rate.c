@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
@@ -50,10 +51,16 @@
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 /* Per-connection and global limit, both in bits per second, with zero
- * meaning not set / not enforced.
+ * meaning not set / not enforced.  These are only used when reading
+ * the command line and initializing the buckets for the first time.
+ * They are not involved in dynamic rate adjustment.
  */
 static uint64_t connection_rate = 0;
 static uint64_t rate = 0;
+
+/* Files for dynamic rate adjustment. */
+static char *connection_rate_file = NULL;
+static char *rate_file = NULL;
 
 /* Bucket capacity controls the burst rate.  It is expressed as the
  * length of time in "rate-equivalent seconds" that the client can
@@ -76,6 +83,13 @@ struct rate_handle {
   struct bucket write_bucket;
   pthread_mutex_t write_bucket_lock;
 };
+
+static void
+rate_unload (void)
+{
+  free (connection_rate_file);
+  free (rate_file);
+}
 
 /* Called for each key=value passed on the command line. */
 static int
@@ -110,6 +124,20 @@ rate_config (nbdkit_next_config *next, void *nxdata,
     }
     return 0;
   }
+  else if (strcmp (key, "rate-file") == 0) {
+    free (rate_file);
+    rate_file = nbdkit_absolute_path (value);
+    if (rate_file == NULL)
+      return -1;
+    return 0;
+  }
+  else if (strcmp (key, "connection-rate-file") == 0) {
+    free (connection_rate_file);
+    connection_rate_file = nbdkit_absolute_path (value);
+    if (connection_rate_file == NULL)
+      return -1;
+    return 0;
+  }
   else
     return next (nxdata, key, value);
 }
@@ -126,7 +154,9 @@ rate_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 
 #define rate_config_help \
   "rate=BITSPERSEC                Limit total bandwidth.\n" \
-  "connection-rate=BITSPERSEC     Limit per-connection bandwidth."
+  "connection-rate=BITSPERSEC     Limit per-connection bandwidth.\n" \
+  "rate-file=FILENAME             Dynamically adjust total bandwidth.\n" \
+  "connection-rate-file=FILENAME  Dynamically adjust per-connection bandwidth."
 
 /* Create the per-connection handle. */
 static void *
@@ -162,6 +192,46 @@ rate_close (void *handle)
   free (h);
 }
 
+static void
+maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
+{
+  FILE *fp;
+  ssize_t r;
+  size_t len = 0;
+  char *line = NULL;
+  int64_t new_rate;
+  uint64_t old_rate;
+
+  if (!file) return;
+
+  fp = fopen (file, "r");
+  if (fp == NULL)
+    return; /* this is not an error */
+
+  r = getline (&line, &len, fp);
+  fclose (fp);
+  if (r == -1) {
+    nbdkit_debug ("could not read rate file: %s: %m", file);
+    goto err;
+  }
+
+  if (r > 0 && line[r-1] == '\n') line[r-1] = '\0';
+  new_rate = nbdkit_parse_size (line);
+  if (new_rate == -1)
+    goto err;
+
+  pthread_mutex_lock (lock);
+  old_rate = bucket_adjust_rate (bucket, new_rate);
+  pthread_mutex_unlock (lock);
+
+  if (old_rate != new_rate)
+    nbdkit_debug ("rate adjusted from %" PRIu64 " to %" PRIi64,
+                  old_rate, new_rate);
+
+ err:
+  free (line);
+}
+
 static inline void
 maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count)
 {
@@ -193,7 +263,9 @@ rate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   struct rate_handle *h = handle;
 
+  maybe_adjust (rate_file, &read_bucket, &read_bucket_lock);
   maybe_sleep (&read_bucket, &read_bucket_lock, count);
+  maybe_adjust (connection_rate_file, &h->read_bucket, &h->read_bucket_lock);
   maybe_sleep (&h->read_bucket, &h->read_bucket_lock, count);
 
   return next_ops->pread (nxdata, buf, count, offset, flags, err);
@@ -208,7 +280,9 @@ rate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   struct rate_handle *h = handle;
 
+  maybe_adjust (rate_file, &write_bucket, &write_bucket_lock);
   maybe_sleep (&write_bucket, &write_bucket_lock, count);
+  maybe_adjust (connection_rate_file, &h->write_bucket, &h->write_bucket_lock);
   maybe_sleep (&h->write_bucket, &h->write_bucket_lock, count);
 
   return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
@@ -218,6 +292,7 @@ static struct nbdkit_filter filter = {
   .name              = "rate",
   .longname          = "nbdkit rate filter",
   .version           = PACKAGE_VERSION,
+  .unload            = rate_unload,
   .config            = rate_config,
   .config_complete   = rate_config_complete,
   .config_help       = rate_config_help,

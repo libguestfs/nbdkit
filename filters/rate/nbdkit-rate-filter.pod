@@ -7,6 +7,7 @@ nbdkit-rate-filter - limit bandwidth by connection or server
  nbdkit --filter=rate PLUGIN [PLUGIN-ARGS...]
                       [rate=BITSPERSEC]
                       [connection-rate=BITSPERSEC]
+                      [rate-file=FILENAME] [connection-rate-file=FILENAME]
 
 =head1 DESCRIPTION
 
@@ -34,6 +35,12 @@ not limit overall server bandwidth.
 Limit each connection to S<50 Kbps>.  Additionally the total bandwidth
 across all connections to the server is limited to S<1 Mbps>.
 
+=item nbdkit --filter=rate memory size=64M rate=1M rate-file=/tmp/rate
+
+Initially limit bandwidth to S<1 Mbps>.  While the server is running
+the rate can be adjusted dynamically by writing a different rate into
+F</tmp/rate>.
+
 =back
 
 =head1 PARAMETERS
@@ -48,11 +55,35 @@ Limit each connection to C<BITSPERSEC>.
 
 Limit total bandwidth across all connections to C<BITSPERSEC>.
 
+=item B<connection-rate-file=>FILENAME
+
+=item B<rate-file=>FILENAME
+
+Adjust the per-connection or total bandwidth dynamically by writing
+C<BITSPERSEC> into C<FILENAME>.  See L</DYNAMIC ADJUSTMENT> below.
+
 =back
 
 C<BITSPERSEC> can be specified as a simple number, or you can use a
 number followed by C<K>, C<M> etc to mean kilobits, megabits and so
 on.
+
+=head1 DYNAMIC ADJUSTMENT
+
+Using the C<connection-rate-file> or C<rate-file> parameters you can
+dynamically adjust the bandwidth while the server is running.
+
+If the file is not present when the server starts up then the initial
+rate is taken from the associated C<connection-rate> or C<rate>
+parameter (or if that is not present, then it is unlimited).  If the
+file is deleted while the server is running then the last rate read
+from the file continues to be used.
+
+The file should be updated atomically (eg. create a new file, then
+rename or L<mv(1)> the new file over the old file).
+
+There will be a short delay between the file being updated and the new
+rate coming into effect.
 
 =head1 NOTES
 
