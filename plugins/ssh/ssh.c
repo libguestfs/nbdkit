@@ -57,6 +57,8 @@ static const char *user = NULL;
 static char *password = NULL;
 static bool verify_remote_host = true;
 static const char *known_hosts = NULL;
+static const char **identity = NULL;
+static size_t nr_identities = 0;
 
 /* config can be:
  * NULL => parse options from default file
@@ -93,6 +95,7 @@ log_callback (int priority, const char *function, const char *message, void *vp)
 static void
 ssh_unload (void)
 {
+  free (identity);
   free (password);
 }
 
@@ -125,6 +128,19 @@ ssh_config (const char *key, const char *value)
 
   else if (strcmp (key, "known-hosts") == 0)
     known_hosts = value; /* %-expanded, cannot use nbdkit_absolute_path */
+
+  else if (strcmp (key, "identity") == 0) {
+    const char **new_identity =
+      realloc (identity, (nr_identities+1) * sizeof (const char *));
+    if (new_identity == NULL) {
+      nbdkit_error ("realloc: %m");
+      return -1;
+    }
+    identity = new_identity;
+    /* %-expanded, cannot use nbdkit_absolute_path */
+    identity[nr_identities] = value;
+    nr_identities++;
+  }
 
   else if (strcmp (key, "verify-remote-host") == 0) {
     r = nbdkit_parse_bool (value);
@@ -162,6 +178,7 @@ ssh_config_complete (void)
   "password=<PASSWORD>        SSH password.\n" \
   "config=<CONFIG>            Alternate local SSH configuration file.\n" \
   "known-hosts=<FILENAME>     Set location of known_hosts file.\n" \
+  "identity=<FILENAME>        Prepend private key (identity) file.\n" \
   "verify-remote-host=false   Ignore known_hosts."
 
 /* The per-connection handle. */
@@ -303,6 +320,7 @@ ssh_open (int readonly)
 {
   struct ssh_handle *h;
   const int set = 1;
+  size_t i;
   int r;
   int access_type;
 
@@ -366,6 +384,14 @@ ssh_open (int readonly)
      * seems to be no way to disable that.  However it doesn't matter
      * as this file is rarely present.
      */
+  }
+  for (i = 0; i < nr_identities; ++i) {
+    r = ssh_options_set (h->session, SSH_OPTIONS_ADD_IDENTITY, identity[i]);
+    if (r != SSH_OK) {
+      nbdkit_error ("failed to add identity in libssh session: %s: %s",
+                    identity[i], ssh_get_error (h->session));
+      goto err;
+    }
   }
 
   /* Read SSH config or alternative file.  Must happen last so that

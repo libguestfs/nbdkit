@@ -7,7 +7,7 @@ nbdkit-ssh-plugin - access disk images over the SSH protocol
  nbdkit ssh host=HOST [path=]PATH
             [port=PORT] [user=USER] [password=PASSWORD|-|+FILENAME]
             [config=CONFIG_FILE] [known-hosts=FILENAME]
-            [verify-remote-host=false]
+            [verify-remote-host=false] [identity=FILENAME]
 
 =head1 DESCRIPTION
 
@@ -60,6 +60,17 @@ Missing or unreadable files are ignored.
 Specify the name or IP address of the remote host.
 
 This parameter is required.
+
+=item B<identity=>FILENAME
+
+Prepend the private key (identity) C<FILENAME> to the list of identity
+files used.  Libssh examines several identity files by default such as
+F<~/.ssh/id_ed25519>, F<~/.ssh/id_ecdsa>, F<~/.ssh/id_rsa> and
+F<~/.ssh/id_dsa>.  Libssh expands some C<%>-sequences in C<FILENAME>,
+see L</Path expansion> below.  C<FILENAME> must expand to an absolute
+path.
+
+You can give this parameter multiple times.
 
 =item B<known-hosts=>FILENAME
 
@@ -170,9 +181,10 @@ be done in conjunction with L<ssh-agent(1)>.
 
 =head2 Path expansion
 
-In the C<config> and C<known-hosts> options, libssh expands some
-C<%>-sequences.  Unfortunately there is no escape character for C<%>
-itself, so there is no way to specify that character in the path.
+In the C<config>, C<identity> and C<known-hosts> options, libssh
+expands some C<%>-sequences.  Unfortunately there is no escape
+character for C<%> itself, so there is no way to specify that
+character in the path.
 
 =over 4
 
@@ -212,6 +224,18 @@ The SSH port number.
 
 These are the default SSH config files which are read to get other
 options.  You can change this using the C<config> option.
+
+=item F<~/.ssh/id_dsa>
+
+=item F<~/.ssh/id_ecdsa>
+
+=item F<~/.ssh/id_ed25519>
+
+=item F<~/.ssh/id_rsa>
+
+These are some of the default private key (identify) files used by
+libssh.  You can prepend more to the list using the C<identity>
+option.
 
 =item F<~/.ssh/known_hosts>
 
