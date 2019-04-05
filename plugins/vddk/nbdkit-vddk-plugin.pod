@@ -163,16 +163,7 @@ The format is
 C<xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx>
 (20 hex digit pairs).
 
-To extract this, log in to the ESXi hypervisor shell and run this
-command:
-
- # openssl x509 -in /etc/vmware/ssl/rui.crt -fingerprint -sha1 -noout
-
-For VMware vCenter servers the thumbprint is printed on the text
-console of the server or is available by logging in to the server and
-using this command:
-
- # openssl x509 -in /etc/vmware-vpx/ssl/rui.crt -fingerprint -sha1 -noout
+See L</THUMBPRINTS> below for how to get this.
 
 =item B<transports=>MODEB<:>MODEB<:>...
 
@@ -247,7 +238,7 @@ to provide the password securely in a file.
 
 C<server> is the hostname of the ESXi server.  C<thumbprint> is the
 thumb print for validating the SSL certificate.  How to find the thumb
-print of a server is described in L</PARAMETERS> above.
+print of a server is described in L</THUMBPRINTS> below.
 
 C<vm> is the Managed Object Reference ("moref") of the virtual
 machine.  To find this using L<virsh(1)> or the C<moRefFinder.pl>
@@ -272,7 +263,7 @@ to provide the password securely in a file.
 
 C<server> is the hostname of the vCenter server.  C<thumbprint> is the
 thumb print for validating the SSL certificate.  How to find the thumb
-print of a server is described in L</PARAMETERS> above.
+print of a server is described in L</THUMBPRINTS> below.
 
 C<vm> is the Managed Object Reference ("moref") of the virtual
 machine.  To find this using L<virsh(1)> or the C<moRefFinder.pl>
@@ -282,6 +273,42 @@ moref used by ESXi, and always begins with the prefix C<"vm-">.
 C<file> is the actual file you want to open, usually in the form
 C<"[datastore] vmname/vmname.vmdk">.  You can find this from
 L<virsh(1)> as described in L</PARAMETERS> above.
+
+=head1 THUMBPRINTS
+
+The thumbprint is a 20 byte string containing the SSL (SHA1)
+fingerprint of the remote VMware server and it is required when making
+a remote connection.  There are two ways to obtain this.
+
+=head2 Extracting thumbprint from ESXi or vCenter server
+
+To extract the thumbprint, log in to the ESXi hypervisor shell and run
+this command:
+
+ # openssl x509 -in /etc/vmware/ssl/rui.crt -fingerprint -sha1 -noout
+
+For VMware vCenter servers the thumbprint is printed on the text
+console of the server or is available by logging in to the server and
+using this command:
+
+ # openssl x509 -in /etc/vmware-vpx/ssl/rui.crt -fingerprint -sha1 -noout
+
+=head2 Trick: Get VDDK to tell you the thumbprint
+
+Another (easier) way to get the thumbprint of a server is to connect
+to the server using a bogus thumbprint with debugging enabled:
+
+ nbdkit -f -v vddk server=esxi.example.com [...] thumbprint=12
+ qemu-img info nbd:localhost:10809
+
+The nbdkit process will try to connect (and fail because the
+thumbprint is wrong).  However in the debug output will be a message
+such as this:
+
+ nbdkit: debug: VixDiskLibVim: Failed to verify SSL certificate: actual thumbprint=B2:31:BD:DE:9F:DB:9D:E0:78:EF:30:42:8A:41:B0:28:92:93:C8:DD expected=12
+
+This gives you the server’s real thumbprint.  Of course this method is
+not secure since it allows a Man-in-the-Middle (MITM) attack.
 
 =head1 DUMP-PLUGIN OUTPUT
 
