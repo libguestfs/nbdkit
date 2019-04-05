@@ -62,6 +62,8 @@ static char *(*VixDiskLib_GetErrorText) (VixError err, const char *unused);
 static void (*VixDiskLib_FreeErrorText) (char *text);
 static VixError (*VixDiskLib_InitEx) (uint32_t major, uint32_t minor, VixDiskLibGenericLogFunc *log_function, VixDiskLibGenericLogFunc *warn_function, VixDiskLibGenericLogFunc *panic_function, const char *lib_dir, const char *config_file);
 static void (*VixDiskLib_Exit) (void);
+static VixDiskLibConnectParams *(*VixDiskLib_AllocateConnectParams) (void);
+static void (*VixDiskLib_FreeConnectParams) (VixDiskLibConnectParams *params);
 static VixError (*VixDiskLib_ConnectEx) (const VixDiskLibConnectParams *params, char read_only, const char *snapshot_ref, const char *transport_modes, VixDiskLibConnection *connection);
 static VixError (*VixDiskLib_Open) (const VixDiskLibConnection connection, const char *path, uint32_t flags, VixDiskLibHandle *handle);
 static const char *(*VixDiskLib_GetTransportMode) (VixDiskLibHandle handle);
@@ -185,6 +187,9 @@ vddk_load (void)
   VixDiskLib_QueryAllocatedBlocks =
     dlsym (dl, "VixDiskLib_QueryAllocatedBlocks");
   VixDiskLib_FreeBlockList = dlsym (dl, "VixDiskLib_FreeBlockList");
+  VixDiskLib_AllocateConnectParams =
+    dlsym (dl, "VixDiskLib_AllocateConnectParams");
+  VixDiskLib_FreeConnectParams = dlsym (dl, "VixDiskLib_FreeConnectParams");
 }
 
 static void
@@ -371,9 +376,25 @@ vddk_dump_plugin (void)
 
 /* The per-connection handle. */
 struct vddk_handle {
+  VixDiskLibConnectParams *params; /* connection parameters */
   VixDiskLibConnection connection; /* connection */
   VixDiskLibHandle handle;         /* disk handle */
 };
+
+static inline void
+free_connect_params (struct vddk_handle *h)
+{
+  /* Only use FreeConnectParams if AllocateConnectParams was
+   * originally called.  Otherwise use free.
+   */
+  if (VixDiskLib_AllocateConnectParams != NULL &&
+      VixDiskLib_FreeConnectParams != NULL) {
+    DEBUG_CALL ("VixDiskLib_FreeConnectParams", "h->params");
+    VixDiskLib_FreeConnectParams (h->params);
+  }
+  else
+    free (h->params);
+}
 
 /* Create the per-connection handle. */
 static void *
@@ -382,7 +403,6 @@ vddk_open (int readonly)
   struct vddk_handle *h;
   VixError err;
   uint32_t flags;
-  VixDiskLibConnectParams params;
 
   h = malloc (sizeof *h);
   if (h == NULL) {
@@ -390,24 +410,34 @@ vddk_open (int readonly)
     return NULL;
   }
 
-  memset (&params, 0, sizeof params);
+  if (VixDiskLib_AllocateConnectParams != NULL) {
+    DEBUG_CALL ("VixDiskLib_AllocateConnectParams", "");
+    h->params = VixDiskLib_AllocateConnectParams ();
+  }
+  else
+    h->params = calloc (1, sizeof (VixDiskLibConnectParams));
+  if (h->params == NULL) {
+    nbdkit_error ("allocate VixDiskLibConnectParams: %m");
+    goto err0;
+  }
+
   if (is_remote) {
-    params.vmxSpec = (char *) vmx_spec;
-    params.serverName = (char *) server_name;
+    h->params->vmxSpec = (char *) vmx_spec;
+    h->params->serverName = (char *) server_name;
     if (cookie == NULL) {
-      params.credType = VIXDISKLIB_CRED_UID;
-      params.creds.uid.userName = (char *) username;
-      params.creds.uid.password = password;
+      h->params->credType = VIXDISKLIB_CRED_UID;
+      h->params->creds.uid.userName = (char *) username;
+      h->params->creds.uid.password = password;
     }
     else {
-      params.credType = VIXDISKLIB_CRED_SESSIONID;
-      params.creds.sessionId.cookie = (char *) cookie;
-      params.creds.sessionId.userName = (char *) username;
-      params.creds.sessionId.key = password;
+      h->params->credType = VIXDISKLIB_CRED_SESSIONID;
+      h->params->creds.sessionId.cookie = (char *) cookie;
+      h->params->creds.sessionId.userName = (char *) username;
+      h->params->creds.sessionId.key = password;
     }
-    params.thumbPrint = (char *) thumb_print;
-    params.port = port;
-    params.nfcHostPort = nfc_host_port;
+    h->params->thumbPrint = (char *) thumb_print;
+    h->params->port = port;
+    h->params->nfcHostPort = nfc_host_port;
   }
 
   /* XXX Some documentation suggests we should call
@@ -417,11 +447,11 @@ vddk_open (int readonly)
    */
 
   DEBUG_CALL ("VixDiskLib_ConnectEx",
-              "&params, %d, %s, %s, &connection",
+              "h->params, %d, %s, %s, &connection",
               readonly,
               snapshot_moref ? : "NULL",
               transport_modes ? : "NULL");
-  err = VixDiskLib_ConnectEx (&params,
+  err = VixDiskLib_ConnectEx (h->params,
                               readonly,
                               snapshot_moref,
                               transport_modes,
@@ -452,6 +482,8 @@ vddk_open (int readonly)
   DEBUG_CALL ("VixDiskLib_Disconnect", "connection");
   VixDiskLib_Disconnect (h->connection);
  err1:
+  free_connect_params (h);
+ err0:
   free (h);
   return NULL;
 }
@@ -462,6 +494,7 @@ vddk_close (void *handle)
 {
   struct vddk_handle *h = handle;
 
+  free_connect_params (h);
   DEBUG_CALL ("VixDiskLib_Close", "handle");
   VixDiskLib_Close (h->handle);
   DEBUG_CALL ("VixDiskLib_Disconnect", "connection");
