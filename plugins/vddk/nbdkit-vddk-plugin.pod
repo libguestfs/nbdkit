@@ -52,19 +52,46 @@ parameter.
 
 =head1 PARAMETERS
 
+All parameters are optional except:
+
+=over 4
+
+=item C<file>
+
+is required for opening a local VMDK file.
+
+=item C<server>
+
+=item C<thumbprint>
+
+=item C<user>
+
+=item C<password>
+
+=item C<vm>
+
+=item C<file>
+
+When making a remote connection you must supply all 6 of these
+parameters.
+
+=back
+
+See the L</EXAMPLES> section below for local and remote command lines.
+
 =over 4
 
 =item B<config=>FILENAME
 
-Optional.  The name of the VDDK configuration file.
+The name of the VDDK configuration file.
 
 =item B<cookie=>COOKIE
 
-Optional.  Cookie from existing authenticated session on the host.
+Cookie from existing authenticated session on the host.
 
 =item B<file=>FILENAME
 
-Required.  Set the name of the VMDK file to serve.
+Set the name of the VMDK file to serve.
 
 For local files you B<must> supply an absolute path.
 
@@ -85,7 +112,7 @@ L</NOTES> below).
 
 =item B<libdir=>PATHNAME
 
-Optional.  This sets the path of the VMware VDDK distribution.
+This sets the path of the VMware VDDK distribution.
 
 VDDK uses this to load its own plugins, if this path is unspecified or
 wrong then VDDK will work with reduced functionality.
@@ -95,47 +122,42 @@ compile time is used, see L</DUMP-PLUGIN OUTPUT> below.
 
 =item B<nfchostport=>PORT
 
-Optional.  Port used to establish an NFC connection to ESXi.  Defaults
-to 902.
+Port used to establish an NFC connection to ESXi.  Defaults to 902.
 
 (Only supported in VDDK ≥ 5.5.5 and ≥ 6.0.1)
 
 =item B<password=>PASSWORD
 
-Optional (required for remote connections).  Set the password to use
-when connecting to the remote server.
+Set the password to use when connecting to the remote server.
 
 Note that passing this on the command line is not secure on shared
 machines.
 
 =item B<password=->
 
-Optional (required for remote connections).  Ask for the password
-(interactively) when nbdkit starts up.
+Ask for the password (interactively) when nbdkit starts up.
 
 =item B<password=+>FILENAME
 
-Optional (required for remote connections).  Read the password from
-the named file.  This is the most secure method to supply a password,
-as long as you set the permissions on the file appropriately.
+Read the password from the named file.  This is the most secure method
+to supply a password, as long as you set the permissions on the file
+appropriately.
 
 =item B<port=>PORT
 
-Optional.  The port on the VCenter/ESXi host.  Defaults to 443.
+The port on the VCenter/ESXi host.  Defaults to 443.
 
 =item B<server=>HOSTNAME
 
-Optional (required for remote connections).  The hostname or IP
-address of VCenter or ESXi host.
+The hostname or IP address of VCenter or ESXi host.
 
 =item B<snapshot=>MOREF
 
-Optional.  The Managed Object Reference of the snapshot.
+The Managed Object Reference of the snapshot.
 
 =item B<thumbprint=>THUMBPRINT
 
-Optional.  The SSL (SHA1) thumbprint for validating the SSL
-certificate.
+The SSL (SHA1) thumbprint for validating the SSL certificate.
 
 The format is
 C<xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx>
@@ -154,20 +176,17 @@ using this command:
 
 =item B<transports=>MODEB<:>MODEB<:>...
 
-Optional.  List of one or more transport modes to use.  Possible
-values include ‘nbd’, ‘nbdssl’, ‘san’, ‘hotadd’, ‘file’ (there may be
-others).  If not given, VDDK will try to choose the best transport
-mode.
+List of one or more transport modes to use.  Possible values include
+‘nbd’, ‘nbdssl’, ‘san’, ‘hotadd’, ‘file’ (there may be others).  If
+not given, VDDK will try to choose the best transport mode.
 
 =item B<user=>USERNAME
 
-Optional (required for remote connections).  The username to connect
-to the remote server as.
+The username to connect to the remote server as.
 
 =item B<vm=moref=>ID
 
-Optional (required for remote connections).  The Managed Object
-Reference ("moref") of the virtual machine.
+The Managed Object Reference ("moref") of the virtual machine.
 
 For VMware ESXi hypervisors, this is a number (eg. C<vm=moref=2>).
 For VMware VCenter, this is a string beginning with C<"vm-">)
