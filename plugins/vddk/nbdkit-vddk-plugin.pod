@@ -10,6 +10,7 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
              [cookie=COOKIE] [thumbprint=THUMBPRINT]
              [port=PORT] [nfchostport=PORT] [single-link=true]
              [snapshot=MOREF] [transports=MODE:MODE:...]
+             [unbuffered=true]
  nbdkit vddk --dump-plugin
 
 =head1 DESCRIPTION
@@ -175,6 +176,11 @@ See L</THUMBPRINTS> below for how to get this.
 List of one or more transport modes to use.  Possible values include
 ‘nbd’, ‘nbdssl’, ‘san’, ‘hotadd’, ‘file’ (there may be others).  If
 not given, VDDK will try to choose the best transport mode.
+
+=item B<unbuffered=true>
+
+Disable host caching.  This corresponds to the
+C<VIXDISKLIB_FLAG_OPEN_UNBUFFERED> flag.
 
 =item B<user=>USERNAME
 

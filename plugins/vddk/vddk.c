@@ -98,6 +98,7 @@ static bool single_link = false;           /* single-link */
 static const char *snapshot_moref = NULL;  /* snapshot */
 static const char *thumb_print = NULL;     /* thumbprint */
 static const char *transport_modes = NULL; /* transports */
+static bool unbuffered = false;            /* unbuffered */
 static const char *username = NULL;        /* user */
 static const char *vmx_spec = NULL;        /* vm */
 static bool is_remote = false;
@@ -307,6 +308,13 @@ vddk_config (const char *key, const char *value)
   }
   else if (strcmp (key, "transports") == 0) {
     transport_modes = value;
+  }
+  else if (strcmp (key, "unbuffered") == 0) {
+    int r = nbdkit_parse_bool (value);
+
+    if (r == -1)
+      return -1;
+    unbuffered = r;
   }
   else if (strcmp (key, "user") == 0) {
     username = value;
@@ -520,6 +528,8 @@ vddk_open (int readonly)
     flags |= VIXDISKLIB_FLAG_OPEN_READ_ONLY;
   if (single_link)
     flags |= VIXDISKLIB_FLAG_OPEN_SINGLE_LINK;
+  if (unbuffered)
+    flags |= VIXDISKLIB_FLAG_OPEN_UNBUFFERED;
 
   DEBUG_CALL ("VixDiskLib_Open",
               "connection, %s, %d, &handle", filename, flags);
