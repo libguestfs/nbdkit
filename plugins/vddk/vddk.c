@@ -185,6 +185,7 @@ vddk_load (void)
   VixDiskLib_FreeInfo = dlsym (dl, "VixDiskLib_FreeInfo");
   VixDiskLib_Read = dlsym (dl, "VixDiskLib_Read");
   VixDiskLib_Write = dlsym (dl, "VixDiskLib_Write");
+  VixDiskLib_FreeConnectParams = dlsym (dl, "VixDiskLib_FreeConnectParams");
 
   /* Added in VDDK 6.0, this will be NULL in earlier versions. */
   VixDiskLib_Flush = dlsym (dl, "VixDiskLib_Flush");
@@ -195,7 +196,6 @@ vddk_load (void)
   VixDiskLib_FreeBlockList = dlsym (dl, "VixDiskLib_FreeBlockList");
   VixDiskLib_AllocateConnectParams =
     dlsym (dl, "VixDiskLib_AllocateConnectParams");
-  VixDiskLib_FreeConnectParams = dlsym (dl, "VixDiskLib_FreeConnectParams");
 }
 
 static void
@@ -387,19 +387,33 @@ struct vddk_handle {
   VixDiskLibHandle handle;         /* disk handle */
 };
 
+static inline VixDiskLibConnectParams *
+allocate_connect_params (void)
+{
+  VixDiskLibConnectParams *ret;
+
+  if (VixDiskLib_AllocateConnectParams != NULL) {
+    DEBUG_CALL ("VixDiskLib_AllocateConnectParams", "");
+    ret = VixDiskLib_AllocateConnectParams ();
+  }
+  else
+    ret = calloc (1, sizeof (VixDiskLibConnectParams));
+
+  return ret;
+}
+
 static inline void
-free_connect_params (struct vddk_handle *h)
+free_connect_params (VixDiskLibConnectParams *params)
 {
   /* Only use FreeConnectParams if AllocateConnectParams was
    * originally called.  Otherwise use free.
    */
-  if (VixDiskLib_AllocateConnectParams != NULL &&
-      VixDiskLib_FreeConnectParams != NULL) {
-    DEBUG_CALL ("VixDiskLib_FreeConnectParams", "h->params");
-    VixDiskLib_FreeConnectParams (h->params);
+  if (VixDiskLib_AllocateConnectParams != NULL) {
+    DEBUG_CALL ("VixDiskLib_FreeConnectParams", "params");
+    VixDiskLib_FreeConnectParams (params);
   }
   else
-    free (h->params);
+    free (params);
 }
 
 /* Create the per-connection handle. */
@@ -416,12 +430,7 @@ vddk_open (int readonly)
     return NULL;
   }
 
-  if (VixDiskLib_AllocateConnectParams != NULL) {
-    DEBUG_CALL ("VixDiskLib_AllocateConnectParams", "");
-    h->params = VixDiskLib_AllocateConnectParams ();
-  }
-  else
-    h->params = calloc (1, sizeof (VixDiskLibConnectParams));
+  h->params = allocate_connect_params ();
   if (h->params == NULL) {
     nbdkit_error ("allocate VixDiskLibConnectParams: %m");
     goto err0;
@@ -488,7 +497,7 @@ vddk_open (int readonly)
   DEBUG_CALL ("VixDiskLib_Disconnect", "connection");
   VixDiskLib_Disconnect (h->connection);
  err1:
-  free_connect_params (h);
+  free_connect_params (h->params);
  err0:
   free (h);
   return NULL;
@@ -500,7 +509,7 @@ vddk_close (void *handle)
 {
   struct vddk_handle *h = handle;
 
-  free_connect_params (h);
+  free_connect_params (h->params);
   DEBUG_CALL ("VixDiskLib_Close", "handle");
   VixDiskLib_Close (h->handle);
   DEBUG_CALL ("VixDiskLib_Disconnect", "connection");
