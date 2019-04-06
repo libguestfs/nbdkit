@@ -32,6 +32,8 @@ plugin in the normal way.
 L<nbdkit(1)>,
 L<nbdkit-cache-filter(1)>,
 L<nbdkit-curl-plugin(1)>,
+L<nbdkit-ssh-plugin(1)>,
+L<nbdkit-vddk-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<qemu-img(1)>.
 
