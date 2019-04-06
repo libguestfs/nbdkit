@@ -6,8 +6,6 @@ nbdkit-curl-plugin - nbdkit curl plugin (HTTP, FTP and other protocols)
 
  nbdkit -r curl [url=]http://example.com/disk.img
 
- nbdkit -r curl [url=]sftp://you@example.com/~/disk.img
-
 =head1 DESCRIPTION
 
 C<nbdkit-curl-plugin> is a plugin for L<nbdkit(1)> which turns content
@@ -15,50 +13,22 @@ served over HTTP, FTP, and more, into a Network Block Device.  It uses
 a library called libcurl (also known as cURL) to read data from URLs.
 The exact list of protocols that libcurl can handle depends on how it
 was compiled, but most versions will handle HTTP, HTTPS, FTP, FTPS and
-SFTP (see: S<C<curl -V>>).  For more information about libcurl, see
-L<http://curl.haxx.se>.
+more (see: S<C<curl -V>>).
 
-B<Note:> This plugin supports writes.  However:
+B<Note:> This plugin supports writes.  However for HTTP, you may not
+want nbdkit to issue PUT requests to the remote server (which probably
+doesn't understand them).  To force nbdkit to use a readonly
+connection, pass the I<-r> flag.
 
-=over 4
+Although this plugin can access SFTP (ie. SSH) servers, it is much
+better to use L<nbdkit-ssh-plugin(1)>.
 
-=item *
-
-For HTTP, you may not want nbdkit to issue PUT requests to the remote server
-(which probably doesn't understand them).
-
-=item *
-
-SFTP helpfully truncates the target file when you open it for writing.
-Not useful!
-
-=back
-
-B<To force nbdkit to use a readonly connection, pass the I<-r> flag>.
-
-=head2 EXAMPLES
-
-=head3 Basic usage
+=head1 EXAMPLE
 
  nbdkit -r curl http://example.com/disk.img
 
-which serves the remote disk image as a NBD on TCP port 10809 (to
-control ports and protocols used to serve NBD see L<nbdkit(1)>).
-
-=head3 Accessing SSH servers
-
-You can also access SSH servers via this plugin, although it is
-usually better to use the L<nbdkit-ssh-plugin(1)> instead.
-
-This plugin uses the SFTP protocol which is built into most SSH
-servers:
-
- nbdkit -r curl sftp://example.com/~/disk.img
-
-You may need to specify a username and/or a password.  In this example
-the password is read from stdin:
-
- nbdkit -r curl sftp://example.com/~/disk.img username=fred password=-
+serves the remote disk image as NBD on TCP port 10809 (to control
+ports and protocols used to serve NBD see L<nbdkit(1)>).
 
 =head1 PARAMETERS
 
@@ -159,7 +129,8 @@ L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
 L<nbdkit-readahead-filter(1)>,
 L<nbdkit-ssh-plugin(1)>,
-L<nbdkit-plugin(3)>.
+L<nbdkit-plugin(3)>,
+L<http://curl.haxx.se>.
 
 =head1 AUTHORS
 
