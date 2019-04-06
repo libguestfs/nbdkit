@@ -159,18 +159,35 @@ error_function (const char *fs, va_list args)
 static void
 vddk_load (void)
 {
-  static const char soname[] = "libvixDiskLib.so.6";
+  static const char *sonames[] = {
+    /* Prefer the newest library in case multiple exist. */
+    "libvixDiskLib.so.6",
+    "libvixDiskLib.so.5",
+  };
+  size_t i;
+  char *orig_error = NULL;
 
-  /* Load the plugin and set the entry points. */
-  dl = dlopen (soname, RTLD_NOW);
+  /* Load the library. */
+  for (i = 0; i < sizeof sonames / sizeof sonames[0]; ++i) {
+    dl = dlopen (sonames[i], RTLD_NOW);
+    if (dl != NULL)
+      break;
+    if (i == 0) {
+      orig_error = dlerror ();
+      if (orig_error)
+        orig_error = strdup (orig_error);
+    }
+  }
   if (dl == NULL) {
     nbdkit_error ("%s\n\n"
                   "If '%s' is located on a non-standard path you may need to\n"
                   "set $LD_LIBRARY_PATH or edit /etc/ld.so.conf.\n\n"
                   "See the nbdkit-vddk-plugin(1) man page for details.",
-                  dlerror (), soname);
+                  orig_error ? : "(unknown error)", sonames[0]);
+    free (orig_error);
     exit (EXIT_FAILURE);
   }
+  free (orig_error);
 
 #define LOAD(sym) sym = dlsym (dl, #sym)
   LOAD (VixDiskLib_GetErrorText);

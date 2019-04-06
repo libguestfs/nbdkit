@@ -24,7 +24,7 @@ read/write.
 
 =head1 LIBRARY AND CONFIG FILE LOCATIONS
 
-If the VDDK library (F<libvixDiskLib.so.6>) is located on a
+If the VDDK library (F<libvixDiskLib.so.I<N>>) is located on a
 non-standard path, you may need to set C<LD_LIBRARY_PATH> or modify
 F</etc/ld.so.conf> before this plugin will work.  In addition you may
 want to set the C<libdir> parameter so that the VDDK library can load
@@ -404,6 +404,17 @@ and restarting the C<hostd> service:
  # /etc/init.d/hostd restart
 
 For more information see L<https://bugzilla.redhat.com/1614276>.
+
+=head1 SUPPORTED VERSIONS OF VDDK
+
+This plugin requires VDDK E<ge> 5.1.1.
+
+It has been tested with all versions up to 6.7 (but should work with
+future versions).
+
+VDDK E<ge> 6.0 should be used if possible.  This is the first version
+which added Flush support which is crucial for data integrity when
+writing.
 
 =head1 SEE ALSO
 
