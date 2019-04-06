@@ -189,7 +189,19 @@ vddk_load (void)
   }
   free (orig_error);
 
-#define LOAD(sym) sym = dlsym (dl, #sym)
+  /* Non-optional symbols.  I have checked that all these exist in at
+   * least VDDK 5.1.1 (2011) which is the earliest version of VDDK
+   * that we support.
+   */
+#define LOAD(sym)                                                 \
+  do {                                                            \
+    sym = dlsym (dl, #sym);                                       \
+    if (sym == NULL) {                                            \
+      nbdkit_error ("required VDDK symbol \"%s\" is missing: %s", \
+                    #sym, dlerror ());                            \
+      exit (EXIT_FAILURE);                                        \
+    }                                                             \
+  } while (0)
   LOAD (VixDiskLib_GetErrorText);
   LOAD (VixDiskLib_FreeErrorText);
   LOAD (VixDiskLib_InitEx);
@@ -204,15 +216,17 @@ vddk_load (void)
   LOAD (VixDiskLib_Read);
   LOAD (VixDiskLib_Write);
   LOAD (VixDiskLib_FreeConnectParams);
+#undef LOAD
 
+#define LOAD_OPTIONAL(sym) sym = dlsym (dl, #sym)
   /* Added in VDDK 6.0, this will be NULL in earlier versions. */
-  LOAD (VixDiskLib_Flush);
+  LOAD_OPTIONAL (VixDiskLib_Flush);
 
   /* Added in VDDK 6.7, these will be NULL for earlier versions: */
-  LOAD (VixDiskLib_QueryAllocatedBlocks);
-  LOAD (VixDiskLib_FreeBlockList);
-  LOAD (VixDiskLib_AllocateConnectParams);
-#undef LOAD
+  LOAD_OPTIONAL (VixDiskLib_QueryAllocatedBlocks);
+  LOAD_OPTIONAL (VixDiskLib_FreeBlockList);
+  LOAD_OPTIONAL (VixDiskLib_AllocateConnectParams);
+#undef LOAD_OPTIONAL
 }
 
 static void

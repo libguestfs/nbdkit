@@ -32,9 +32,8 @@
 
 /* This file pretends to be libvixDiskLib.so.6.
  *
- * In fact because we don't check the result from dlsym and because we
- * only call a few APIs in the --dump-plugin path there are only a few
- * stub functions needed.
+ * However it only implements --dump-plugin support so our stubs don't
+ * need to do anything.
  */
 
 #include <stdio.h>
@@ -59,3 +58,17 @@ VixDiskLib_Exit (void)
 {
   /* Do nothing. */
 }
+
+#define STUB(fn) void fn (void) { abort (); }
+STUB (VixDiskLib_GetErrorText)
+STUB (VixDiskLib_FreeErrorText)
+STUB (VixDiskLib_ConnectEx)
+STUB (VixDiskLib_Open)
+STUB (VixDiskLib_GetTransportMode)
+STUB (VixDiskLib_Close)
+STUB (VixDiskLib_Disconnect)
+STUB (VixDiskLib_GetInfo)
+STUB (VixDiskLib_FreeInfo)
+STUB (VixDiskLib_Read)
+STUB (VixDiskLib_Write)
+STUB (VixDiskLib_FreeConnectParams)
