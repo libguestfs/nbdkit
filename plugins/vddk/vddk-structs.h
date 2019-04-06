@@ -39,6 +39,7 @@
 #define NBDKIT_VDDK_STRUCTS_H
 
 #include <stdarg.h>
+#include <stdint.h>
 
 typedef uint64_t VixError;
 #define VIX_OK 0
