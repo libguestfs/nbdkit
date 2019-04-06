@@ -41,6 +41,8 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
+#define NBDKIT_API_VERSION 2
+
 #include <nbdkit-plugin.h>
 
 #include "isaligned.h"
@@ -73,6 +75,7 @@ static VixError (*VixDiskLib_GetInfo) (VixDiskLibHandle handle, VixDiskLibInfo *
 static void (*VixDiskLib_FreeInfo) (VixDiskLibInfo *info);
 static VixError (*VixDiskLib_Read) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, unsigned char *buf);
 static VixError (*VixDiskLib_Write) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, const unsigned char *buf);
+static VixError (*VixDiskLib_Flush) (VixDiskLibHandle handle);
 static VixError (*VixDiskLib_QueryAllocatedBlocks) (VixDiskLibHandle diskHandle, uint64_t start_sector, uint64_t nr_sectors, uint64_t chunk_size, VixDiskLibBlockList **block_list);
 static VixError (*VixDiskLib_FreeBlockList) (VixDiskLibBlockList *block_list);
 
@@ -182,6 +185,9 @@ vddk_load (void)
   VixDiskLib_FreeInfo = dlsym (dl, "VixDiskLib_FreeInfo");
   VixDiskLib_Read = dlsym (dl, "VixDiskLib_Read");
   VixDiskLib_Write = dlsym (dl, "VixDiskLib_Write");
+
+  /* Added in VDDK 6.0, this will be NULL in earlier versions. */
+  VixDiskLib_Flush = dlsym (dl, "VixDiskLib_Flush");
 
   /* Added in VDDK 6.7, these will be NULL for earlier versions: */
   VixDiskLib_QueryAllocatedBlocks =
@@ -551,7 +557,8 @@ vddk_get_size (void *handle)
  * Note that reads have to be aligned to sectors (XXX).
  */
 static int
-vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags)
 {
   struct vddk_handle *h = handle;
   VixError err;
@@ -580,13 +587,17 @@ vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   return 0;
 }
 
+static int vddk_flush (void *handle, uint32_t flags);
+
 /* Write data to the file.
  *
  * Note that writes have to be aligned to sectors (XXX).
  */
 static int
-vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
+vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags)
 {
+  const bool fua = flags & NBDKIT_FLAG_FUA;
   struct vddk_handle *h = handle;
   VixError err;
 
@@ -608,6 +619,32 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   err = VixDiskLib_Write (h->handle, offset, count, buf);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Write");
+    return -1;
+  }
+
+  if (fua && vddk_flush (handle, 0) == -1)
+    return -1;
+
+  return 0;
+}
+
+/* Flush data to the file. */
+static int
+vddk_flush (void *handle, uint32_t flags)
+{
+  struct vddk_handle *h = handle;
+  VixError err;
+
+  /* The Flush call was not available in VDDK < 6.0 so this is simply
+   * ignored on earlier versions.
+   */
+  if (VixDiskLib_Flush == NULL)
+    return 0;
+
+  DEBUG_CALL ("VixDiskLib_Flush", "handle");
+  err = VixDiskLib_Flush (h->handle);
+  if (err != VIX_OK) {
+    VDDK_ERROR (err, "VixDiskLib_Flush");
     return -1;
   }
 
@@ -784,6 +821,7 @@ static struct nbdkit_plugin plugin = {
   .get_size          = vddk_get_size,
   .pread             = vddk_pread,
   .pwrite            = vddk_pwrite,
+  .flush             = vddk_flush,
   .can_extents       = vddk_can_extents,
   .extents           = vddk_extents,
 };
