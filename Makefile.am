@@ -87,6 +87,9 @@ check-valgrind:
 check-root:
 	$(MAKE) -C tests check-root
 
+check-vddk:
+	$(MAKE) -C tests check-vddk
+
 #----------------------------------------------------------------------
 # Maintainers only!
 

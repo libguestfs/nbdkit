@@ -123,6 +123,7 @@ EXTRA_DIST = \
 	test-truncate3.sh \
 	test-truncate-extents.sh \
 	test-vddk.sh \
+	test-vddk-real.sh \
 	test-version.sh \
 	test-version-filter.sh \
 	test-version-plugin.sh \
@@ -136,6 +137,13 @@ check-valgrind:
 # To run only tests which require root, use:
 check-root:
 	$(MAKE) check TESTS="test-file-block"
+
+# Run a basic check against a real copy of VDDK.  You must set
+# vddkdir to point to the library location, eg:
+#
+#   make check-vddk vddkdir=vmware-vix-disklib-distrib
+check-vddk:
+	$(MAKE) check TESTS=test-vddk-real.sh
 
 #----------------------------------------------------------------------
 # Basic server command line and start-up tests.
@@ -608,7 +616,9 @@ test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
 noinst_LTLIBRARIES += libvixDiskLib.la
-TESTS += test-vddk.sh
+TESTS += \
+	test-vddk.sh \
+	test-vddk-real.sh
 
 libvixDiskLib_la_SOURCES = \
 	dummy-vddk.c

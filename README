@@ -219,6 +219,11 @@ run them you must do:
 
     sudo make check-root
 
+If you have the proprietary VDDK library, you can test
+nbdkit-vddk-plugin against the library like this:
+
+    make check-vddk vddkdir=vmware-vix-disklib-distrib
+
 DOWNLOAD TARBALLS
 =================
 
