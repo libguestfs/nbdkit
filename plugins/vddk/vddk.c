@@ -172,30 +172,30 @@ vddk_load (void)
     exit (EXIT_FAILURE);
   }
 
-  VixDiskLib_GetErrorText = dlsym (dl, "VixDiskLib_GetErrorText");
-  VixDiskLib_FreeErrorText = dlsym (dl, "VixDiskLib_FreeErrorText");
-  VixDiskLib_InitEx = dlsym (dl, "VixDiskLib_InitEx");
-  VixDiskLib_Exit = dlsym (dl, "VixDiskLib_Exit");
-  VixDiskLib_ConnectEx = dlsym (dl, "VixDiskLib_ConnectEx");
-  VixDiskLib_Open = dlsym (dl, "VixDiskLib_Open");
-  VixDiskLib_GetTransportMode = dlsym (dl, "VixDiskLib_GetTransportMode");
-  VixDiskLib_Close = dlsym (dl, "VixDiskLib_Close");
-  VixDiskLib_Disconnect = dlsym (dl, "VixDiskLib_Disconnect");
-  VixDiskLib_GetInfo = dlsym (dl, "VixDiskLib_GetInfo");
-  VixDiskLib_FreeInfo = dlsym (dl, "VixDiskLib_FreeInfo");
-  VixDiskLib_Read = dlsym (dl, "VixDiskLib_Read");
-  VixDiskLib_Write = dlsym (dl, "VixDiskLib_Write");
-  VixDiskLib_FreeConnectParams = dlsym (dl, "VixDiskLib_FreeConnectParams");
+#define LOAD(sym) sym = dlsym (dl, #sym)
+  LOAD (VixDiskLib_GetErrorText);
+  LOAD (VixDiskLib_FreeErrorText);
+  LOAD (VixDiskLib_InitEx);
+  LOAD (VixDiskLib_Exit);
+  LOAD (VixDiskLib_ConnectEx);
+  LOAD (VixDiskLib_Open);
+  LOAD (VixDiskLib_GetTransportMode);
+  LOAD (VixDiskLib_Close);
+  LOAD (VixDiskLib_Disconnect);
+  LOAD (VixDiskLib_GetInfo);
+  LOAD (VixDiskLib_FreeInfo);
+  LOAD (VixDiskLib_Read);
+  LOAD (VixDiskLib_Write);
+  LOAD (VixDiskLib_FreeConnectParams);
 
   /* Added in VDDK 6.0, this will be NULL in earlier versions. */
-  VixDiskLib_Flush = dlsym (dl, "VixDiskLib_Flush");
+  LOAD (VixDiskLib_Flush);
 
   /* Added in VDDK 6.7, these will be NULL for earlier versions: */
-  VixDiskLib_QueryAllocatedBlocks =
-    dlsym (dl, "VixDiskLib_QueryAllocatedBlocks");
-  VixDiskLib_FreeBlockList = dlsym (dl, "VixDiskLib_FreeBlockList");
-  VixDiskLib_AllocateConnectParams =
-    dlsym (dl, "VixDiskLib_AllocateConnectParams");
+  LOAD (VixDiskLib_QueryAllocatedBlocks);
+  LOAD (VixDiskLib_FreeBlockList);
+  LOAD (VixDiskLib_AllocateConnectParams);
+#undef LOAD
 }
 
 static void
