@@ -160,7 +160,7 @@ curl_config_complete (void)
 /* The per-connection handle. */
 struct curl_handle {
   CURL *c;
-  int accept_range;
+  bool accept_range;
   int64_t exportsize;
   char errbuf[CURL_ERROR_SIZE];
   char *write_buf;
@@ -253,7 +253,7 @@ CURLOPT_PROXY
   /* Get the file size and also whether the remote HTTP server
    * supports byte ranges.
    */
-  h->accept_range = 0;
+  h->accept_range = false;
   curl_easy_setopt (h->c, CURLOPT_NOBODY, 1); /* No Body, not nobody! */
   curl_easy_setopt (h->c, CURLOPT_HEADERFUNCTION, header_cb);
   curl_easy_setopt (h->c, CURLOPT_HEADERDATA, h);
@@ -322,7 +322,7 @@ header_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
 
   if (realsize >= strlen (accept_line) &&
       strncmp (line, accept_line, strlen (accept_line)) == 0)
-    h->accept_range = 1;
+    h->accept_range = true;
 
   /* Useful to print the server headers when debugging.  However we
    * must strip off trailing \r?\n from each line.
