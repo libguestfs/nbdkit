@@ -116,7 +116,7 @@ Set the timeout for requests.
 
 Use the default libcurl timeout for requests.
 
-=item B<unix_socket_path=>PATH
+=item B<unix-socket-path=>PATH
 
 Instead of using a TCP connection, connect to the server over the
 named Unix domain socket.  See

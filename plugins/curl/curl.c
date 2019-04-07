@@ -206,7 +206,8 @@ curl_config (const char *key, const char *value)
     }
   }
 
-  else if (strcmp (key, "unix_socket_path") == 0)
+  else if (strcmp (key, "unix-socket-path") == 0 ||
+           strcmp (key, "unix_socket_path") == 0)
     unix_socket_path = value;
 
   else if (strcmp (key, "protocols") == 0) {
@@ -243,7 +244,7 @@ curl_config_complete (void)
   "proxy-user=<USER>          The proxy user.\n" \
   "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
   "sslverify=false            Do not verify SSL certificate of remote host.\n" \
-  "unix_socket_path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
+  "unix-socket-path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
   "url=<URL>       (required) The disk image URL to serve.\n" \
   "user=<USER>                The user to log in as."
 
