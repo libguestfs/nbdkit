@@ -246,7 +246,7 @@ CURLOPT_PROXY
   if (user)
     curl_easy_setopt (h->c, CURLOPT_USERNAME, user);
   if (password)
-    curl_easy_setopt (h->c, CURLOPT_USERPWD, password);
+    curl_easy_setopt (h->c, CURLOPT_PASSWORD, password);
   if (cookie)
     curl_easy_setopt (h->c, CURLOPT_COOKIE, cookie);
 
