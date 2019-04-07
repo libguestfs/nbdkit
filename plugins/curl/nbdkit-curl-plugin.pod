@@ -35,6 +35,7 @@ ports and protocols used to serve NBD see L<nbdkit(1)>).
 =over 4
 
 =item B<cookie=>COOKIE
+
 =item B<cookie=+>FILENAME
 
 Set a cookie in the request header when connecting to the remote
