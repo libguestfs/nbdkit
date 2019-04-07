@@ -64,6 +64,7 @@ static char *cookie = NULL;
 static bool sslverify = true;
 static long timeout = 0;
 static const char *unix_socket_path = NULL;
+static long protocols = CURLPROTO_ALL;
 
 /* Use '-D curl.verbose=1' to set. */
 int curl_debug_verbose = 0;
@@ -87,6 +88,75 @@ curl_unload (void)
   free (proxy_password);
   free (cookie);
   curl_global_cleanup ();
+}
+
+/* See <curl/curl.h> */
+static struct { const char *name; long bitmask; } curl_protocols[] = {
+  { "http", CURLPROTO_HTTP },
+  { "https", CURLPROTO_HTTPS },
+  { "ftp", CURLPROTO_FTP },
+  { "ftps", CURLPROTO_FTPS },
+  { "scp", CURLPROTO_SCP },
+  { "sftp", CURLPROTO_SFTP },
+  { "telnet", CURLPROTO_TELNET },
+  { "ldap", CURLPROTO_LDAP },
+  { "ldaps", CURLPROTO_LDAPS },
+  { "dict", CURLPROTO_DICT },
+  { "file", CURLPROTO_FILE },
+  { "tftp", CURLPROTO_TFTP },
+  { "imap", CURLPROTO_IMAP },
+  { "imaps", CURLPROTO_IMAPS },
+  { "pop3", CURLPROTO_POP3 },
+  { "pop3s", CURLPROTO_POP3S },
+  { "smtp", CURLPROTO_SMTP },
+  { "smtps", CURLPROTO_SMTPS },
+  { "rtsp", CURLPROTO_RTSP },
+  { "rtmp", CURLPROTO_RTMP },
+  { "rtmpt", CURLPROTO_RTMPT },
+  { "rtmpe", CURLPROTO_RTMPE },
+  { "rtmpte", CURLPROTO_RTMPTE },
+  { "rtmps", CURLPROTO_RTMPS },
+  { "rtmpts", CURLPROTO_RTMPTS },
+  { "gopher", CURLPROTO_GOPHER },
+  { "smb", CURLPROTO_SMB },
+  { "smbs", CURLPROTO_SMBS },
+  { NULL }
+};
+
+/* Parse the protocols parameter. */
+static int
+parse_protocols (const char *value)
+{
+  size_t n, i;
+
+  protocols = 0;
+
+  while (*value) {
+    n = strcspn (value, ",");
+    for (i = 0; curl_protocols[i].name != NULL; ++i) {
+      if (strlen (curl_protocols[i].name) == n &&
+          strncmp (value, curl_protocols[i].name, n) == 0) {
+        protocols |= curl_protocols[i].bitmask;
+        goto found;
+      }
+    }
+    nbdkit_error ("protocols: protocol name not found: %.*s", (int) n, value);
+    return -1;
+
+  found:
+    value += n;
+    if (*value == ',')
+      value++;
+  }
+
+  if (protocols == 0) {
+    nbdkit_error ("protocols: empty list of protocols is not allowed");
+    return -1;
+  }
+
+  nbdkit_debug ("curl: protocols: %ld", protocols);
+
+  return 0;
 }
 
 /* Called for each key=value passed on the command line. */
@@ -139,6 +209,11 @@ curl_config (const char *key, const char *value)
   else if (strcmp (key, "unix_socket_path") == 0)
     unix_socket_path = value;
 
+  else if (strcmp (key, "protocols") == 0) {
+    if (parse_protocols (value) == -1)
+      return -1;
+  }
+
   else {
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
@@ -163,6 +238,7 @@ curl_config_complete (void)
 #define curl_config_help \
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
+  "protocols=PROTO,PROTO,..   Limit protocols allowed.\n" \
   "proxy-password=<PASSWORD>  The proxy password.\n" \
   "proxy-user=<USER>          The proxy user.\n" \
   "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
@@ -248,6 +324,10 @@ curl_open (int readonly)
   curl_easy_setopt (h->c, CURLOPT_AUTOREFERER, 1);
   curl_easy_setopt (h->c, CURLOPT_FOLLOWLOCATION, 1);
   curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1);
+  if (protocols != CURLPROTO_ALL) {
+    curl_easy_setopt (h->c, CURLOPT_PROTOCOLS, protocols);
+    curl_easy_setopt (h->c, CURLOPT_REDIR_PROTOCOLS, protocols);
+  }
   if (timeout > 0)
     curl_easy_setopt (h->c, CURLOPT_TIMEOUT, timeout);
   if (!sslverify) {

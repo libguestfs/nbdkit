@@ -74,6 +74,26 @@ Read the password from the named file.  This is the most secure method
 to supply a password, as long as you set the permissions on the file
 appropriately.
 
+=item B<protocols=>PROTO,PROTO,...
+
+Limit the protocols that are allowed in the URL.  Use this option for
+extra security if the URL comes from an untrusted source and you want
+to avoid security isues in the more obscure protocols that curl
+supports.  (See qemu CVE-2013-0249 for an example of a security bug
+introduced by allowing unrestricted protocols).
+
+For example if you only intend HTTP and HTTPS URLs to be used, then
+add this parameter: C<protocols=http,https>
+
+The value of this parameter is a comma-separated list of protocols.
+The following protocols are known: B<dict>, B<file>, B<ftp>, B<ftps>,
+B<gopher>, B<http>, B<https>, B<imap>, B<imaps>, B<ldap>, B<ldaps>,
+B<pop3>, B<pop3s>, B<rtmp>, B<rtmpe>, B<rtmps>, B<rtmpt>, B<rtmpte>,
+B<rtmpts>, B<rtsp>, B<scp>, B<sftp>, B<smb>, B<smbs>, B<smtp>,
+B<smtps>, B<telnet>, B<tftp>.
+
+The default is to allow any protocol.
+
 =item B<proxy-password=>PASSWORD
 
 =item B<proxy-password=->
