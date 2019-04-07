@@ -74,6 +74,16 @@ Read the password from the named file.  This is the most secure method
 to supply a password, as long as you set the permissions on the file
 appropriately.
 
+=item B<proxy-password=>PASSWORD
+
+=item B<proxy-password=->
+
+=item B<proxy-password=+>FILENAME
+
+=item B<proxy-user=>USERNAME
+
+Set the proxy username and password.
+
 =item B<sslverify=false>
 
 Don't verify the SSL certificate of the remote host.

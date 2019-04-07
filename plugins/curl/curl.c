@@ -58,6 +58,8 @@
 static const char *url = NULL;
 static const char *user = NULL;
 static char *password = NULL;
+static const char *proxy_user = NULL;
+static char *proxy_password = NULL;
 static char *cookie = NULL;
 static bool sslverify = true;
 static long timeout = 0;
@@ -82,6 +84,7 @@ static void
 curl_unload (void)
 {
   free (password);
+  free (proxy_password);
   free (cookie);
   curl_global_cleanup ();
 }
@@ -98,15 +101,24 @@ curl_config (const char *key, const char *value)
   else if (strcmp (key, "user") == 0)
     user = value;
 
-  else if (strcmp (key, "cookie") == 0) {
-    free (cookie);
-    if (nbdkit_read_password (value, &cookie) == -1)
-      return -1;
-  }
-
   else if (strcmp (key, "password") == 0) {
     free (password);
     if (nbdkit_read_password (value, &password) == -1)
+      return -1;
+  }
+
+  else if (strcmp (key, "proxy-user") == 0)
+    proxy_user = value;
+
+  else if (strcmp (key, "proxy-password") == 0) {
+    free (proxy_password);
+    if (nbdkit_read_password (value, &proxy_password) == -1)
+      return -1;
+  }
+
+  else if (strcmp (key, "cookie") == 0) {
+    free (cookie);
+    if (nbdkit_read_password (value, &cookie) == -1)
       return -1;
   }
 
@@ -151,6 +163,8 @@ curl_config_complete (void)
 #define curl_config_help \
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
+  "proxy-password=<PASSWORD>  The proxy password.\n" \
+  "proxy-user=<USER>          The proxy user.\n" \
   "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
   "sslverify=false            Do not verify SSL certificate of remote host.\n" \
   "unix_socket_path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
@@ -231,9 +245,6 @@ curl_open (int readonly)
 
   nbdkit_debug ("set libcurl URL: %s", url);
 
-  /* Other possible settings, which could be specified on the command line:
-CURLOPT_PROXY
-  */
   curl_easy_setopt (h->c, CURLOPT_AUTOREFERER, 1);
   curl_easy_setopt (h->c, CURLOPT_FOLLOWLOCATION, 1);
   curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1);
@@ -247,6 +258,10 @@ CURLOPT_PROXY
     curl_easy_setopt (h->c, CURLOPT_USERNAME, user);
   if (password)
     curl_easy_setopt (h->c, CURLOPT_PASSWORD, password);
+  if (proxy_user)
+    curl_easy_setopt (h->c, CURLOPT_PROXYUSERNAME, proxy_user);
+  if (proxy_password)
+    curl_easy_setopt (h->c, CURLOPT_PROXYPASSWORD, proxy_password);
   if (cookie)
     curl_easy_setopt (h->c, CURLOPT_COOKIE, cookie);
 
