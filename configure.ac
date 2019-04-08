@@ -814,8 +814,8 @@ non_lang_plugins="\
         partitioning \
         pattern \
         random \
-        ssh \
         split \
+        ssh \
         streaming \
         tar \
         vddk \
@@ -918,3 +918,92 @@ AC_CONFIG_FILES([Makefile
                  valgrind/Makefile])
 
 AC_OUTPUT
+
+dnl Summary.
+echo
+echo
+echo "----------------------------------------------------------------------"
+echo "Thank you for downloading $PACKAGE_STRING"
+echo
+echo "This is how we have configured the optional components for you today:"
+echo
+
+feature ()
+{
+    echo -n "    $1"
+    shift
+    if $@; then echo "yes"; else echo "no"; fi
+}
+
+echo "Optional server features:"
+echo
+feature "bash-completion ........................ " \
+        test "x$HAVE_BASH_COMPLETION_TRUE" = "x"
+feature "manual pages ........................... " \
+        test "x$HAVE_POD_TRUE" = "x"
+feature "SELinux ................................ " \
+        test "x$LIBSELINUX_LIBS" != "x"
+feature "TLS .................................... " \
+        test "x$GNUTLS_LIBS" != "x"
+
+echo
+echo "Optional plugins:"
+echo
+feature "curl ................................... " \
+        test "x$HAVE_CURL_TRUE" = "x"
+feature "example4 ............................... " \
+        test "x$HAVE_PERL_TRUE" = "x"
+feature "ext2 ................................... " \
+        test "x$HAVE_EXT2_TRUE" = "x"
+feature "floppy ................................. " \
+        test "x$HAVE_ICONV_TRUE" = "x"
+feature "guestfs ................................ " \
+        test "x$HAVE_LIBGUESTFS_TRUE" = "x"
+feature "gzip ................................... " \
+        test "x$HAVE_ZLIB_TRUE" = "x"
+feature "iso .................................... " \
+        test "x$HAVE_ISO_TRUE" = "x"
+feature "libvirt ................................ " \
+        test "x$HAVE_LIBVIRT_TRUE" = "x"
+feature "ssh .................................... " \
+        test "x$HAVE_SSH_TRUE" = "x"
+feature "tar .................................... " \
+        test "x$HAVE_PERL_TRUE" = "x"
+feature "vddk ................................... " \
+        test "x$HAVE_VDDK_TRUE" = "x"
+
+
+echo
+echo "Languages:"
+echo
+feature "lua .................................... " \
+        test "x$HAVE_LUA_TRUE" = "x"
+feature "ocaml .................................. " \
+        test "x$HAVE_OCAML_TRUE" = "x"
+feature "perl ................................... " \
+        test "x$HAVE_PERL_TRUE" = "x"
+feature "python ................................. " \
+        test "x$HAVE_PYTHON_TRUE" = "x"
+feature "ruby ................................... " \
+        test "x$HAVE_RUBY_TRUE" = "x"
+feature "rust ................................... " \
+        test "x$HAVE_RUST_TRUE" = "x"
+feature "tcl .................................... " \
+        test "x$HAVE_TCL_TRUE" = "x"
+
+
+echo
+echo "Optional filters:"
+echo
+feature "xz ..................................... " \
+        test "x$HAVE_LIBLZMA_TRUE" = "x"
+
+echo
+echo "If any optional component is configured ‘no’ when you expected ‘yes’"
+echo "then you should check the preceding messages and README."
+echo
+echo "Please report bugs back to the mailing list:"
+echo "http://www.redhat.com/mailman/listinfo/libguestfs"
+echo
+echo "Next you should type 'make' to build the package,"
+echo "then 'make check' to run the tests."
