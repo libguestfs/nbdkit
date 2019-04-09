@@ -46,7 +46,8 @@ the data to be written explicitly rather than punching any holes:
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
-L<nbdkit-filter(3)>.
+L<nbdkit-filter(3)>,
+L<nbdkit-noextents-filter(1)>.
 
 =head1 AUTHORS
 

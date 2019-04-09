@@ -1,0 +1,34 @@
+=head1 NAME
+
+nbdkit-noextents-filter - disable extents in the underlying plugin
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=noextents plugin
+
+=head1 DESCRIPTION
+
+“Extents” are a feature of the NBD protocol / nbdkit which allow the
+client to detect sparse regions of the underlying disk.
+C<nbdkit-noextents-filter> disables this so that the plugin appears to
+be fully allocated.
+
+=head1 PARAMETERS
+
+There are no parameters specific to nbdkit-noextents-filter.  Any
+parameters are passed through to and processed by the underlying
+plugin in the normal way.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-nozero-filter(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.
