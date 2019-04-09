@@ -35,6 +35,8 @@
 #ifndef NBDKIT_FILTER_H
 #define NBDKIT_FILTER_H
 
+#include <stdlib.h>
+
 #include <nbdkit-common.h>
 
 #ifdef __cplusplus
