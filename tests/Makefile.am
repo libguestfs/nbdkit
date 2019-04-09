@@ -190,6 +190,28 @@ test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 
 endif HAVE_PLUGINS
 
+# Test the header files can be included on their own.
+check_PROGRAMS += \
+	test-just-plugin-header \
+	test-just-filter-header
+TESTS += \
+	test-just-plugin-header \
+	test-just-filter-header
+
+test_just_plugin_header_SOURCES = \
+	test-just-plugin-header.c
+test_just_plugin_header_CPPFLAGS = \
+	-I$(top_srcdir)/include
+test_just_plugin_header_CFLAGS = \
+        $(WARNINGS_CFLAGS)
+
+test_just_filter_header_SOURCES = \
+	test-just-filter-header.c
+test_just_filter_header_CPPFLAGS = \
+	-I$(top_srcdir)/include
+test_just_filter_header_CFLAGS = \
+        $(WARNINGS_CFLAGS)
+
 if CAN_TEST_ANSI_C
 # This builds a plugin using an ANSI (ISO C90) compiler to ensure that
 # the header file is compatible.  The plugin does nothing very

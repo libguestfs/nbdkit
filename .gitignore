@@ -96,6 +96,8 @@ Makefile.in
 /tests/test-file
 /tests/test-file-block
 /tests/test-gzip
+/tests/test-just-filter-header
+/tests/test-just-plugin-header
 /tests/test-layers
 /tests/test-lua
 /tests/test-memory
