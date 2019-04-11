@@ -56,7 +56,8 @@ TESTS = \
 	test-iszero \
 	test-minmax \
 	test-nextnonzero \
-	test-random
+	test-random \
+	test-tvdiff
 check_PROGRAMS = $(TESTS)
 
 test_byte_swapping_SOURCES = test-byte-swapping.c byte-swapping.h
@@ -90,3 +91,7 @@ test_nextnonzero_CFLAGS = $(WARNINGS_CFLAGS)
 test_random_SOURCES = test-random.c random.h
 test_random_CPPFLAGS = -I$(srcdir)
 test_random_CFLAGS = $(WARNINGS_CFLAGS)
+
+test_tvdiff_SOURCES = test-tvdiff.c tvdiff.h
+test_tvdiff_CPPFLAGS = -I$(srcdir)
+test_tvdiff_CFLAGS = $(WARNINGS_CFLAGS)

@@ -33,6 +33,7 @@ Makefile.in
 /common/include/test-minmax
 /common/include/test-nextnonzero
 /common/include/test-random
+/common/include/test-tvdiff
 /common/protocol/protostrings.c
 /compile
 /config.guess
