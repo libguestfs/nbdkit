@@ -70,6 +70,7 @@
 #include <nbdkit-filter.h>
 
 #include "minmax.h"
+#include "tvdiff.h"
 
 #include "bucket.h"
 
@@ -108,17 +109,6 @@ bucket_adjust_rate (struct bucket *bucket, uint64_t rate)
   return old_rate;
 }
 
-/* Return the number of microseconds in y - x. */
-static int64_t
-tvdiff (const struct timeval *x, const struct timeval *y)
-{
-  int64_t usec;
-
-  usec = (y->tv_sec - x->tv_sec) * 1000000;
-  usec += y->tv_usec - x->tv_usec;
-  return usec;
-}
-
 uint64_t
 bucket_run (struct bucket *bucket, uint64_t n, struct timespec *ts)
 {
@@ -137,7 +127,7 @@ bucket_run (struct bucket *bucket, uint64_t n, struct timespec *ts)
   /* Work out how much time has elapsed since we last added tokens to
    * the bucket, and add the correct number of tokens.
    */
-  usec = tvdiff (&bucket->tv, &now);
+  usec = tvdiff_usec (&bucket->tv, &now);
   if (usec < 0)      /* Maybe happens if system time not monotonic? */
     usec = 0;
 

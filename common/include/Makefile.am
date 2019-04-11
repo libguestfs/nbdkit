@@ -43,7 +43,8 @@ EXTRA_DIST = \
 	minmax.h \
 	nextnonzero.h \
 	random.h \
-	rounding.h
+	rounding.h \
+	tvdiff.h
 
 # Unit tests.
 
