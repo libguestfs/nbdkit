@@ -65,7 +65,8 @@ successful read is:
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-cow-filter(1)>,
-L<nbdkit-filter(3)>.
+L<nbdkit-filter(3)>,
+L<nbdkit-stats-filter(1)>.
 
 =head1 AUTHORS
 

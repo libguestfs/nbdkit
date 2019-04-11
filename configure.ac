@@ -844,6 +844,7 @@ filters="\
         partition \
         rate \
         readahead \
+        stats \
         truncate \
         xz \
         "
@@ -918,6 +919,7 @@ AC_CONFIG_FILES([Makefile
                  filters/partition/Makefile
                  filters/rate/Makefile
                  filters/readahead/Makefile
+                 filters/stats/Makefile
                  filters/truncate/Makefile
                  filters/xz/Makefile
                  fuzzing/Makefile

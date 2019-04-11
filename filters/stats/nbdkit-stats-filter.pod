@@ -1,0 +1,61 @@
+=head1 NAME
+
+nbdkit-stats-filter - display statistics about operations
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=stats PLUGIN statsfile=FILE [statsappend=true]
+
+=head1 DESCRIPTION
+
+C<nbdkit-stats-filter> is a filter that displays statistics about NBD
+operations, such as the number of bytes read and written.  Statistics
+are written to a file once when nbdkit exits.
+
+=head1 EXAMPLE
+
+In this example we run L<guestfish(1)> over nbdkit to create an ext4
+filesystem on a RAM disk, and use the stats filter to display the
+number of read, write and trim operations involved:
+
+ $ nbdkit -U - --filter=stats memory size=1G statsfile=/dev/stderr \
+          --run '
+       guestfish add-drive "" protocol:nbd server:unix:$unixsocket \
+                              discard:enable format:raw : \
+                 run : \
+                 mkfs ext4 /dev/sda
+ '
+ elapsed time: 1.1248 s
+ read: 219 ops, 4964864 bytes, 3.53119e+07 bits/s
+ write: 78 ops, 34230272 bytes, 2.43458e+08 bits/s
+ trim: 33 ops, 1073741824 bytes, 7.63683e+09 bits/s
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<statsfile=>FILE
+
+The file where we write the stats.
+
+This parameter is required.
+
+=item B<statsappend=true>
+
+If set then we append to the file instead of replacing it.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-log-filter(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.
