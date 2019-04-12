@@ -30,9 +30,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
 set -e
 set -x
-source ./functions.sh
 
 # Test nbdkit --run (captive nbdkit) option.
 

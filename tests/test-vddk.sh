@@ -30,8 +30,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-set -x
+source ./functions.sh
 set -e
+set -x
 
 rm -f test-vddk.out
 
