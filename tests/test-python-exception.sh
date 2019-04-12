@@ -46,8 +46,8 @@ if [ "$NBDKIT_VALGRIND" = "1" ]; then
 fi
 
 output=test-python-exception.out
-
 rm -f $output
+cleanup_fn rm -f $output
 
 nbdkit -f -v python $SRCDIR/python-exception.py test=simple > $output 2>&1 ||:
 cat $output
@@ -60,5 +60,3 @@ cat $output
 grep 'raise_error1' $output
 grep 'raise_error2' $output
 grep 'this is the test string' $output
-
-rm $output

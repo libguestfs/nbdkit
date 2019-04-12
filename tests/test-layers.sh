@@ -36,6 +36,7 @@ set -x
 
 files="test-layers.out"
 rm -f $files
+cleanup_fn rm -f $files
 
 cmd="nbdkit --filter=.libs/test-layers-filter3.so --filter=.libs/test-layers-filter2.so --filter=.libs/test-layers-filter1.so .libs/test-layers-plugin.so"
 
@@ -51,5 +52,3 @@ cat test-layers.out ||:
 grep name=testlayersplugin test-layers.out
 grep has_load=1 test-layers.out
 grep has_zero=1 test-layers.out
-
-rm $files

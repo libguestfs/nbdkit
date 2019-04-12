@@ -36,7 +36,9 @@ set -x
 
 # Test nbdkit --run (captive nbdkit) option.
 
-rm -f captive.sock captive.out
+files="captive.sock captive.out"
+rm -f $files
+cleanup_fn rm -f $files
 
 nbdkit -U captive.sock example1 --run '
     sleep 5; echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
@@ -50,5 +52,3 @@ socket=$PWD/captive.sock" ]; then
     cat captive.out
     exit 1
 fi
-
-rm captive.sock captive.out

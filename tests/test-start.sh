@@ -38,6 +38,7 @@ set -x
 # and can be killed.
 
 rm -f start.pid start.sock
+cleanup_fn rm -f start.pid start.sock
 
 start_nbdkit -P start.pid -U start.sock example1
 pid="$(cat start.pid)"
@@ -62,5 +63,3 @@ if kill -s 0 $pid; then
     echo "$0: process did not exit after sending a signal"
     exit 1
 fi
-
-rm start.pid start.sock

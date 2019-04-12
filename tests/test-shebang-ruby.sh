@@ -37,6 +37,7 @@ sockfile=shebang-ruby.sock
 script=./shebang.rb
 
 rm -f $pidfile $sockfile
+cleanup_fn rm -f $pidfile $sockfile
 
 $script -P $pidfile -U $sockfile -f -v &
 
@@ -53,6 +54,7 @@ if ! test -f $pidfile; then
 fi
 
 pid="$(cat $pidfile)"
+cleanup_fn kill $pid
 
 # Check the process exists.
 kill -s 0 $pid
@@ -74,5 +76,3 @@ if kill -s 0 $pid; then
     echo "$0: process did not exit after sending a signal"
     exit 1
 fi
-
-rm $pidfile $sockfile
