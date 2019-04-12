@@ -37,17 +37,18 @@ set -x
 # Test nbdkit starts up, forks in the background, writes a PID file,
 # and can be killed.
 
-rm -f start.pid start.sock
-cleanup_fn rm -f start.pid start.sock
+sock=`mktemp -u`
+rm -f start.pid $sock
+cleanup_fn rm -f start.pid $sock
 
-start_nbdkit -P start.pid -U start.sock example1
+start_nbdkit -P start.pid -U $sock example1
 pid="$(cat start.pid)"
 
 # Check the process exists.
 kill -s 0 $pid
 
 # Check the socket was created (and is a socket).
-test -S start.sock
+test -S $sock
 
 # Kill the process.
 kill $pid

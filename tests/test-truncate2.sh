@@ -38,17 +38,18 @@ set -x
 
 requires qemu-io --version
 
-files="truncate2.out truncate2.pid truncate2.sock"
+sock=`mktemp -u`
+files="truncate2.out truncate2.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with pattern plugin and truncate filter in front.
-start_nbdkit -P truncate2.pid -U truncate2.sock \
+start_nbdkit -P truncate2.pid -U $sock \
        --filter=truncate \
        pattern size=503 \
        round-up=512
 
-qemu-io -r -f raw 'nbd+unix://?socket=truncate2.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > truncate2.out
 if [ "$(cat truncate2.out)" != "00000000:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 08  ................
 00000010:  00 00 00 00 00 00 00 10 00 00 00 00 00 00 00 18  ................

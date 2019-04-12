@@ -38,22 +38,23 @@ set -e
 
 requires qemu-io --version
 
-files="memory-largest-for-qemu.out memory-largest-for-qemu.pid memory-largest-for-qemu.sock"
+sock=`mktemp -u`
+files="memory-largest-for-qemu.out memory-largest-for-qemu.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with memory plugin.
 # size = (2^63-1) & ~511 which is the largest supported by qemu.
-start_nbdkit -P memory-largest-for-qemu.pid -U memory-largest-for-qemu.sock \
+start_nbdkit -P memory-largest-for-qemu.pid -U $sock \
        memory size=9223372036854775296
 
 # Write some stuff to the beginning, middle and end.
-qemu-io -f raw 'nbd+unix://?socket=memory-largest-for-qemu.sock' \
+qemu-io -f raw "nbd+unix://?socket=$sock" \
         -c 'w -P 1 0 512' \
         -c 'w -P 2 1000000001 65536' \
         -c 'w -P 3 9223372036854774784 512'
 
-qemu-io -r -f raw 'nbd+unix://?socket=memory-largest-for-qemu.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > memory-largest-for-qemu.out
 if [ "$(cat memory-largest-for-qemu.out)" != "00000000:  01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01  ................
 00000010:  01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01  ................
@@ -93,7 +94,7 @@ then
     exit 1
 fi
 
-qemu-io -r -f raw 'nbd+unix://?socket=memory-largest-for-qemu.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 1000000001 512' | grep -E '^[[:xdigit:]]+:' > memory-largest-for-qemu.out
 if [ "$(cat memory-largest-for-qemu.out)" != "3b9aca01:  02 02 02 02 02 02 02 02 02 02 02 02 02 02 02 02  ................
 3b9aca11:  02 02 02 02 02 02 02 02 02 02 02 02 02 02 02 02  ................
@@ -134,7 +135,7 @@ then
 fi
 
 # This block of memory was not set, so it should read back as zeroes.
-qemu-io -r -f raw 'nbd+unix://?socket=memory-largest-for-qemu.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 2000000000 512' | grep -E '^[[:xdigit:]]+:' > memory-largest-for-qemu.out
 if [ "$(cat memory-largest-for-qemu.out)" != "77359400:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
 77359410:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
@@ -174,7 +175,7 @@ then
     exit 1
 fi
 
-qemu-io -r -f raw 'nbd+unix://?socket=memory-largest-for-qemu.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 9223372036854774784 512' | grep -E '^[[:xdigit:]]+:' > memory-largest-for-qemu.out
 if [ "$(cat memory-largest-for-qemu.out)" != "7ffffffffffffc00:  03 03 03 03 03 03 03 03 03 03 03 03 03 03 03 03  ................
 7ffffffffffffc10:  03 03 03 03 03 03 03 03 03 03 03 03 03 03 03 03  ................

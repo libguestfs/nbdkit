@@ -37,12 +37,13 @@ set -x
 requires socat -h
 requires qemu-img --version
 
-files="single.sock single.disk"
+sock=`mktemp -u`
+files="$sock single.disk"
 rm -f $files
 
 truncate -s 1G single.disk
 
-socat unix-listen:single.sock,reuseaddr,fork \
+socat unix-listen:$sock,reuseaddr,fork \
     exec:'nbdkit -r -s file single.disk' &
 pid=$!
 
@@ -55,14 +56,14 @@ cleanup_fn cleanup
 
 # Wait for socat to start up and create the socket.
 for i in {1..10}; do
-    if test -S single.sock; then
+    if test -S $sock; then
         break
     fi
     sleep 1
 done
-if ! test -S single.sock; then
+if ! test -S $sock; then
     echo "$0: socket was not created"
     exit 1
 fi
 
-qemu-img info nbd:unix:single.sock
+qemu-img info nbd:unix:$sock

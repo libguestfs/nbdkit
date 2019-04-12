@@ -41,7 +41,8 @@ set -x
 
 requires mke2fs -V
 
-files="partitioning2.pid partitioning2.sock partitioning2.fs partitioning2.p1 partitioning2.p3"
+sock=`mktemp -u`
+files="partitioning2.pid $sock partitioning2.fs partitioning2.p1 partitioning2.p3"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -54,12 +55,12 @@ truncate -s 20M partitioning2.fs
 mke2fs -F -t ext2 partitioning2.fs
 
 # Run nbdkit.
-start_nbdkit -P partitioning2.pid -U partitioning2.sock \
+start_nbdkit -P partitioning2.pid -U $sock \
              partitioning partitioning2.p1 partitioning2.fs partitioning2.p3 \
              partition-type=gpt
 
 # Connect with guestfish and read/write stuff to partition 2.
-guestfish --format=raw -a "nbd://?socket=$PWD/partitioning2.sock" <<'EOF'
+guestfish --format=raw -a "nbd://?socket=$sock" <<'EOF'
   run
   mount /dev/sda2 /
   touch /hello

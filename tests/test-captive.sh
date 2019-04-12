@@ -36,18 +36,19 @@ set -x
 
 # Test nbdkit --run (captive nbdkit) option.
 
-files="captive.sock captive.out"
+sock=`mktemp -u`
+files="$sock captive.out"
 rm -f $files
 cleanup_fn rm -f $files
 
-nbdkit -U captive.sock example1 --run '
+nbdkit -U $sock example1 --run '
     sleep 5; echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
   ' > captive.out
 
 # Check the output.
-if [ "$(cat captive.out)" != "nbd=nbd:unix:$PWD/captive.sock
+if [ "$(cat captive.out)" != "nbd=nbd:unix:$sock
 port=
-socket=$PWD/captive.sock" ]; then
+socket=$sock" ]; then
     echo "$0: unexpected output"
     cat captive.out
     exit 1

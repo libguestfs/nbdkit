@@ -33,7 +33,8 @@
 source ./functions.sh
 set -e
 
-files="log.img log.log log.sock log.pid"
+sock=`mktemp -u`
+files="log.img log.log $sock log.pid"
 rm -f $files
 
 # Test that qemu-io works
@@ -45,7 +46,7 @@ fi
 
 # Run nbdkit with logging enabled to file.
 echo '# My log' > log.log
-start_nbdkit -P log.pid -U log.sock --filter=log file log.img \
+start_nbdkit -P log.pid -U $sock --filter=log file log.img \
 	     logfile=log.log logappend=1
 
 # For easier debugging, dump the final log files before removing them
@@ -59,8 +60,8 @@ cleanup ()
 cleanup_fn cleanup
 
 # Write, then read some data in the file.
-qemu-io -f raw -c 'w -P 11 1M 2M' 'nbd+unix://?socket=log.sock'
-qemu-io -r -f raw -c 'r -P 11 2M 1M' 'nbd+unix://?socket=log.sock'
+qemu-io -f raw -c 'w -P 11 1M 2M' "nbd+unix://?socket=$sock"
+qemu-io -r -f raw -c 'r -P 11 2M 1M' "nbd+unix://?socket=$sock"
 
 # The log should have been appended, preserving our marker.
 grep '# My log' log.log

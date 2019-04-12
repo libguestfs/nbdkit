@@ -38,21 +38,22 @@ set -e
 
 requires qemu-io --version
 
-files="full.pid full.sock full.out"
+sock=`mktemp -u`
+files="full.pid $sock full.out"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with the full plugin.
-start_nbdkit -P full.pid -U full.sock full size=1M
+start_nbdkit -P full.pid -U $sock full size=1M
 
 # All reads should succeed.
-qemu-io -f raw 'nbd+unix://?socket=full.sock' \
+qemu-io -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 512' \
         -c 'r -v 512 512' \
         -c 'r -v 1048064 512'
 
 # All writes should fail with the ENOSPC error.
-! LANG=C qemu-io -f raw 'nbd+unix://?socket=full.sock' \
+! LANG=C qemu-io -f raw "nbd+unix://?socket=$sock" \
         -c 'w -P 1 0 512' \
         -c 'w -P 2 1048064 512' >& full.out
 grep "No space left on device" full.out

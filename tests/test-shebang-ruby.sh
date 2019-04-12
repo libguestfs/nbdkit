@@ -33,13 +33,13 @@
 source ./functions.sh
 
 pidfile=shebang-ruby.pid
-sockfile=shebang-ruby.sock
+sock=`mktemp -u`
 script=./shebang.rb
 
-rm -f $pidfile $sockfile
-cleanup_fn rm -f $pidfile $sockfile
+rm -f $pidfile $sock
+cleanup_fn rm -f $pidfile $sock
 
-$script -P $pidfile -U $sockfile -f -v &
+$script -P $pidfile -U $sock -f -v &
 
 # We may have to wait a short time for the pid file to appear.
 for i in {1..60}; do
@@ -60,7 +60,7 @@ cleanup_fn kill $pid
 kill -s 0 $pid
 
 # Check the socket was created (and is a socket).
-test -S $sockfile
+test -S $sock
 
 # Kill the process.
 kill $pid

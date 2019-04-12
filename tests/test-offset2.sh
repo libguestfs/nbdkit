@@ -38,18 +38,19 @@ set -x
 
 requires qemu-io --version
 
-files="offset2.out offset2.pid offset2.sock"
+sock=`mktemp -u`
+files="offset2.out offset2.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with pattern plugin and offset filter in front.
 # 8070450532247927809 = 7E - 1023
-start_nbdkit -P offset2.pid -U offset2.sock \
+start_nbdkit -P offset2.pid -U $sock \
        --filter=offset \
        pattern size=7E \
        offset=8070450532247927809 range=512
 
-qemu-io -r -f raw 'nbd+unix://?socket=offset2.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > offset2.out
 if [ "$(cat offset2.out)" != "00000000:  ff ff ff ff ff fc 00 6f ff ff ff ff ff fc 08 6f  .......o.......o
 00000010:  ff ff ff ff ff fc 10 6f ff ff ff ff ff fc 18 6f  .......o.......o

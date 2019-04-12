@@ -33,7 +33,7 @@
 source ./functions.sh
 
 pidfile=shebang-perl.pid
-sockfile=shebang-perl.sock
+sock=`mktemp -u`
 script=$SRCDIR/shebang.pl
 
 if test ! -d "$SRCDIR"; then
@@ -41,10 +41,10 @@ if test ! -d "$SRCDIR"; then
     exit 1
 fi
 
-rm -f $pidfile $sockfile
-cleanup_fn rm -f $pidfile $sockfile
+rm -f $pidfile $sock
+cleanup_fn rm -f $pidfile $sock
 
-$script -P $pidfile -U $sockfile -f -v &
+$script -P $pidfile -U $sock -f -v &
 
 # We may have to wait a short time for the pid file to appear.
 for i in {1..60}; do
@@ -65,7 +65,7 @@ cleanup_fn kill $pid
 kill -s 0 $pid
 
 # Check the socket was created (and is a socket).
-test -S $sockfile
+test -S $sock
 
 # Kill the process.
 kill $pid

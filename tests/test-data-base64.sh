@@ -44,15 +44,16 @@ if ! nbdkit data --dump-plugin | grep -sq "data_base64=yes"; then
     exit 77
 fi
 
-files="data-base64.out data-base64.pid data-base64.sock"
+sock=`mktemp -u`
+files="data-base64.out data-base64.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-base64.pid -U data-base64.sock \
+start_nbdkit -P data-base64.pid -U $sock \
        data base64=MTIz size=512
 
-qemu-io -r -f raw 'nbd+unix://?socket=data-base64.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > data-base64.out
 if [ "$(cat data-base64.out)" != "00000000:  31 32 33 00 00 00 00 00 00 00 00 00 00 00 00 00  123.............
 00000010:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................

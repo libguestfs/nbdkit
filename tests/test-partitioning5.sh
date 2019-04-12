@@ -42,7 +42,8 @@ set -x
 
 requires mke2fs -V
 
-files="partitioning5.pid partitioning5.sock
+sock=`mktemp -u`
+files="partitioning5.pid $sock
        partitioning5.fs
        partitioning5.p1 partitioning5.p2 partitioning5.p3 partitioning5.p5 partitioning5.p6 partitioning5.p7 partitioning5.p8 partitioning5.p9 partitioning5.p10 partitioning5.p11 partitioning5.p13"
 rm -f $files
@@ -68,7 +69,7 @@ truncate -s 20M partitioning5.fs
 mke2fs -F -t ext2 partitioning5.fs
 
 # Run nbdkit.
-start_nbdkit -P partitioning5.pid -U partitioning5.sock \
+start_nbdkit -P partitioning5.pid -U $sock \
              partitioning \
              partitioning5.p1 partitioning5.p2 \
              partitioning5.p3 \
@@ -80,7 +81,7 @@ start_nbdkit -P partitioning5.pid -U partitioning5.sock \
              partition-type=mbr
 
 # Connect with guestfish and read/write stuff to partition 12.
-guestfish --format=raw -a "nbd://?socket=$PWD/partitioning5.sock" <<'EOF'
+guestfish --format=raw -a "nbd://?socket=$sock" <<'EOF'
   run
   mount /dev/sda12 /
   touch /hello

@@ -38,9 +38,11 @@ set -x
 
 requires mkfifo --version
 
+sock=`mktemp -u`
 d=linuxdisk.d
 rm -rf $d
 cleanup_fn rm -rf $d
+cleanup_fn rm -f $sock
 
 # Create a test directory with some regular files, subdirectories and
 # special files.
@@ -55,11 +57,11 @@ ln -s $d/sub/Makefile.am $d/sub/symlink
 # socket gets created, but in fact that won't work because this socket
 # isn't created until after the plugin creates the virtual disk.
 start_nbdkit -P $d/linuxdisk.pid \
-             -U $d/linuxdisk.sock \
+             -U $sock \
              linuxdisk $d
 
 # Check the disk content.
-guestfish --ro --format=raw -a "nbd://?socket=$PWD/$d/linuxdisk.sock" -m /dev/sda1 <<EOF
+guestfish --ro --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
   ll /
   ll /sub
 

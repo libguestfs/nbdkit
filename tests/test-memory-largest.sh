@@ -38,18 +38,19 @@ set -e
 
 requires qemu-io --version
 
-files="memory-largest.out memory-largest.pid memory-largest.sock"
+sock=`mktemp -u`
+files="memory-largest.out memory-largest.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with memory plugin.
 # size = 2^63-1
-start_nbdkit -P memory-largest.pid -U memory-largest.sock \
+start_nbdkit -P memory-largest.pid -U $sock \
        memory size=9223372036854775807
 
 # qemu cannot open this image!
 #
-#   can't open device nbd+unix://?socket=memory-largest.sock: Could not get image size: File too large
+#   can't open device nbd+unix://?socket=$sock: Could not get image size: File too large
 #
 # Therefore we skip the remainder of this test (in effect, testing
 # only that nbdkit can create the file).

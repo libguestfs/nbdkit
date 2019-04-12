@@ -38,15 +38,16 @@ set -x
 
 requires qemu-io --version
 
-files="data-raw.out data-raw.pid data-raw.sock"
+sock=`mktemp -u`
+files="data-raw.out data-raw.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-raw.pid -U data-raw.sock --export "" \
+start_nbdkit -P data-raw.pid -U $sock --export "" \
        data raw=123 size=512
 
-qemu-io -r -f raw 'nbd+unix://?socket=data-raw.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > data-raw.out
 if [ "$(cat data-raw.out)" != "00000000:  31 32 33 00 00 00 00 00 00 00 00 00 00 00 00 00  123.............
 00000010:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................

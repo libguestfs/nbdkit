@@ -38,7 +38,8 @@ source ./functions.sh
 set -e
 set -x
 
-files="partitioning3.pid partitioning3.sock partitioning3.p1 partitioning3.p2 partitioning3.p3 partitioning3.out"
+sock=`mktemp -u`
+files="partitioning3.pid $sock partitioning3.p1 partitioning3.p2 partitioning3.p3 partitioning3.out"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -48,7 +49,7 @@ truncate -s 10M partitioning3.p2
 truncate -s 100M partitioning3.p3
 
 # Run nbdkit.
-start_nbdkit -P partitioning3.pid -U partitioning3.sock \
+start_nbdkit -P partitioning3.pid -U $sock \
              partitioning \
              partitioning3.p1 \
              type-guid=0FC63DAF-8483-4772-8E79-3D69D8477DE4 \
@@ -58,7 +59,7 @@ start_nbdkit -P partitioning3.pid -U partitioning3.sock \
              partition-type=gpt
 
 # Connect with guestfish and read partition types.
-guestfish --ro --format=raw -a "nbd://?socket=$PWD/partitioning3.sock" > partitioning3.out <<'EOF'
+guestfish --ro --format=raw -a "nbd://?socket=$sock" > partitioning3.out <<'EOF'
   run
   part-get-gpt-type /dev/sda 1
   part-get-gpt-type /dev/sda 2

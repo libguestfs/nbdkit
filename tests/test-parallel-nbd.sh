@@ -40,7 +40,8 @@ requires qemu-io --version
 ( nbdkit --exit-with-parent --help ) >/dev/null 2>&1 ||
   { echo "Missing --exit-with-parent support"; exit 77; }
 
-files="test-parallel-nbd.out test-parallel-nbd.sock test-parallel-nbd.data test-parallel-nbd.pid"
+sock=`mktemp -u`
+files="test-parallel-nbd.out $sock test-parallel-nbd.data test-parallel-nbd.pid"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -57,12 +58,12 @@ qemu-io -f raw -c "aio_write -P 1 0 512" -c "aio_write -P 2 512 512" \
 # tuning the delays may help.
 
 start_nbdkit -P test-parallel-nbd.pid \
-             -U test-parallel-nbd.sock \
+             -U $sock \
              --filter=delay \
              file test-parallel-nbd.data wdelay=2 rdelay=1
 
 # With --threads=1, the write should complete first because it was issued first
-nbdkit -v -t 1 -U - nbd socket=test-parallel-nbd.sock --run '
+nbdkit -v -t 1 -U - nbd socket=$sock --run '
   qemu-io -f raw -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" \
   -c aio_flush $nbd' | tee test-parallel-nbd.out
 if test "$(grep '512/512' test-parallel-nbd.out)" != \
@@ -72,7 +73,7 @@ read 512/512 bytes at offset 0"; then
 fi
 
 # With default --threads, the faster read should complete first
-nbdkit -v -U - nbd socket=test-parallel-nbd.sock --run '
+nbdkit -v -U - nbd socket=$sock --run '
   qemu-io -f raw -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" \
   -c aio_flush $nbd' | tee test-parallel-nbd.out
 if test "$(grep '512/512' test-parallel-nbd.out)" != \

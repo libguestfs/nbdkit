@@ -33,11 +33,17 @@
 source ./functions.sh
 set -e
 
-files="nozero1.img nozero1.log nozero1.sock nozero1.pid
-       nozero2.img nozero2.log nozero2.sock nozero2.pid
-       nozero3.img nozero3.log nozero3.sock nozero3.pid
-       nozero4.img nozero4.log nozero4.sock nozero4.pid
-       nozero5.img nozero5a.log nozero5b.log nozero5a.sock nozero5b.sock
+sock1=`mktemp -u`
+sock2=`mktemp -u`
+sock3=`mktemp -u`
+sock4=`mktemp -u`
+sock5a=`mktemp -u`
+sock5b=`mktemp -u`
+files="nozero1.img nozero1.log $sock1 nozero1.pid
+       nozero2.img nozero2.log $sock2 nozero2.pid
+       nozero3.img nozero3.log $sock3 nozero3.pid
+       nozero4.img nozero4.log $sock4 nozero4.pid
+       nozero5.img nozero5a.log nozero5b.log $sock5a $sock5b
        nozero5a.pid nozero5b.pid"
 rm -f $files
 
@@ -87,25 +93,25 @@ cleanup_fn cleanup
 # 4: log after filter with zeromode=emulate, to ensure no ZERO to plugin
 # 5a/b: both sides of nbd plugin: even though server side does not advertise
 # ZERO, the client side still exposes it, and just skips calling nbd's .zero
-start_nbdkit -P nozero1.pid -U nozero1.sock --filter=log \
+start_nbdkit -P nozero1.pid -U $sock1 --filter=log \
        file logfile=nozero1.log nozero1.img
-start_nbdkit -P nozero2.pid -U nozero2.sock --filter=log --filter=nozero \
+start_nbdkit -P nozero2.pid -U $sock2 --filter=log --filter=nozero \
        file logfile=nozero2.log nozero2.img
-start_nbdkit -P nozero3.pid -U nozero3.sock --filter=log --filter=nozero \
+start_nbdkit -P nozero3.pid -U $sock3 --filter=log --filter=nozero \
        file logfile=nozero3.log nozero3.img zeromode=emulate
-start_nbdkit -P nozero4.pid -U nozero4.sock --filter=nozero --filter=log \
+start_nbdkit -P nozero4.pid -U $sock4 --filter=nozero --filter=log \
        file logfile=nozero4.log nozero4.img zeromode=emulate
-start_nbdkit -P nozero5a.pid -U nozero5a.sock --filter=log --filter=nozero \
+start_nbdkit -P nozero5a.pid -U $sock5a --filter=log --filter=nozero \
        file logfile=nozero5a.log nozero5.img
-start_nbdkit -P nozero5b.pid -U nozero5b.sock --filter=log \
-       nbd logfile=nozero5b.log socket=nozero5a.sock
+start_nbdkit -P nozero5b.pid -U $sock5b --filter=log \
+       nbd logfile=nozero5b.log socket=$sock5a
 
 # Perform the zero write.
-qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero1.sock'
-qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero2.sock'
-qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero3.sock'
-qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero4.sock'
-qemu-io -f raw -c 'w -z -u 0 1M' 'nbd+unix://?socket=nozero5b.sock'
+qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock1"
+qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock2"
+qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock3"
+qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock4"
+qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock5b"
 
 # Check for expected ZERO vs. WRITE results
 grep 'connection=1 Zero' nozero1.log
