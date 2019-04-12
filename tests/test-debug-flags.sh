@@ -37,7 +37,9 @@ export LANG=C
 
 # Test nbdkit -D option.
 
-rm -f debug-flags.out
+files=debug-flags.out
+rm -f $files
+cleanup_fn rm -f $files
 
 expected_failure ()
 {
@@ -84,5 +86,3 @@ nbdkit -f -D example2.=1 example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
 nbdkit -f -D example2.extra= example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
-
-rm debug-flags.out

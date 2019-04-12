@@ -36,7 +36,9 @@ source ./functions.sh
 
 # Test nbdkit -f option.
 
-rm -f foreground.pid foreground.sock
+files="foreground.pid foreground.sock"
+rm -f $files
+cleanup_fn rm -f $files
 
 nbdkit -f -P foreground.pid -U foreground.sock example1 &
 bg_pid=$!
@@ -54,6 +56,7 @@ if ! test -f foreground.pid; then
 fi
 
 pid="$(cat foreground.pid)"
+cleanup_fn kill $pid
 
 test "$bg_pid" -eq "$pid"
 
@@ -74,5 +77,3 @@ if kill -s 0 $pid; then
     echo "$0: process did not exit after sending a signal"
     exit 1
 fi
-
-rm foreground.pid foreground.sock
