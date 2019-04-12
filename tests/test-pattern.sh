@@ -40,7 +40,8 @@
 source ./functions.sh
 set -e
 
-files="pattern.out pattern.pid pattern.sock"
+sock=`mktemp -u`
+files="pattern.out pattern.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -51,9 +52,9 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit with pattern plugin.
-start_nbdkit -P pattern.pid -U pattern.sock pattern size=1G
+start_nbdkit -P pattern.pid -U $sock pattern size=1G
 
-qemu-io -r -f raw 'nbd+unix://?socket=pattern.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > pattern.out
 if [ "$(cat pattern.out)" != "00000000:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 08  ................
 00000010:  00 00 00 00 00 00 00 10 00 00 00 00 00 00 00 18  ................

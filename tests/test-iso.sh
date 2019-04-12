@@ -35,14 +35,15 @@
 source ./functions.sh
 set -e
 
-files="iso.pid iso.sock"
+sock=`mktemp -u`
+files="iso.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
-start_nbdkit -P iso.pid -U iso.sock iso $srcdir/../docs params="-JrT"
+start_nbdkit -P iso.pid -U $sock iso $srcdir/../docs params="-JrT"
 
 # Check the ISO content.
-guestfish --ro --format=raw -a "nbd://?socket=$PWD/iso.sock" -m /dev/sda <<'EOF'
+guestfish --ro --format=raw -a "nbd://?socket=$sock" -m /dev/sda <<'EOF'
   ll /
   is-file /Makefile.am
   is-file /nbdkit.pod

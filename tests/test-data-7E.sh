@@ -39,12 +39,13 @@ set -x
 
 requires qemu-io --version
 
-files="data-7E.out data-7E.pid data-7E.sock"
+sock=`mktemp -u`
+files="data-7E.out data-7E.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-7E.pid -U data-7E.sock --export= \
+start_nbdkit -P data-7E.pid -U $sock --export= \
        --filter=partition \
        data size=7E partition=1 \
        data="
@@ -85,7 +86,7 @@ start_nbdkit -P data-7E.pid -U data-7E.sock --export= \
    "
 
 # Since we're reading the empty first partition, any read returns zeroes.
-qemu-io -r -f raw 'nbd+unix://?socket=data-7E.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 498 16' | grep -E '^[[:xdigit:]]+:' > data-7E.out
 if [ "$(cat data-7E.out)" != "000001f2:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................" ]
 then

@@ -38,16 +38,17 @@ set -e
 
 requires qemu-io --version
 
-files="pattern-largest-for-qemu.out pattern-largest-for-qemu.pid pattern-largest-for-qemu.sock"
+sock=`mktemp -u`
+files="pattern-largest-for-qemu.out pattern-largest-for-qemu.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with pattern plugin.
 # size = (2^63-1) & ~511 which is the largest supported by qemu.
-start_nbdkit -P pattern-largest-for-qemu.pid -U pattern-largest-for-qemu.sock \
+start_nbdkit -P pattern-largest-for-qemu.pid -U $sock \
        pattern size=9223372036854775296
 
-qemu-io -r -f raw 'nbd+unix://?socket=pattern-largest-for-qemu.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 9223372036854774784 512' | grep -E '^[[:xdigit:]]+:' > pattern-largest-for-qemu.out
 if [ "$(cat pattern-largest-for-qemu.out)" != "7ffffffffffffc00:  7f ff ff ff ff ff fc 00 7f ff ff ff ff ff fc 08  ................
 7ffffffffffffc10:  7f ff ff ff ff ff fc 10 7f ff ff ff ff ff fc 18  ................

@@ -36,19 +36,20 @@ set -x
 
 requires qemu-io --version
 
-files="error10.sock error10.pid"
+sock=`mktemp -u`
+files="$sock error10.pid"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with the error filter.
-start_nbdkit -P error10.pid -U error10.sock \
+start_nbdkit -P error10.pid -U $sock \
              --filter=error \
              pattern size=1G error-rate=10%
 
 # The error rate is 10% so about every 1 in 10 operations should fail.
 errors=0
 for i in {1..100}; do
-    qemu-io -r -f raw 'nbd+unix://?socket=error10.sock' \
+    qemu-io -r -f raw "nbd+unix://?socket=$sock" \
             -c "r 0 512" || ((++errors))
 done
 

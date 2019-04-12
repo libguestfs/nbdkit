@@ -34,7 +34,8 @@ source ./functions.sh
 set -e
 set -x
 
-files="cow-base.img cow-diff.qcow2 cow.sock cow.pid"
+sock=`mktemp -u`
+files="cow-base.img cow-diff.qcow2 $sock cow.pid"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -43,10 +44,10 @@ guestfish -N cow-base.img=fs exit
 lastmod="$(stat -c "%y" cow-base.img)"
 
 # Run nbdkit with a COW overlay.
-start_nbdkit -P cow.pid -U cow.sock --filter=cow file cow-base.img
+start_nbdkit -P cow.pid -U $sock --filter=cow file cow-base.img
 
 # Write some data into the overlay.
-guestfish --format=raw -a "nbd://?socket=$PWD/cow.sock" -m /dev/sda1 <<EOF
+guestfish --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
   fill-dir / 10000
   fill-pattern "abcde" 5M /large
   write /hello "hello, world"
@@ -63,7 +64,7 @@ fi
 # If we have qemu-img, try the hairy rebase operation documented
 # in the nbdkit-cow-filter manual.
 if qemu-img --version >/dev/null 2>&1; then
-    qemu-img create -f qcow2 -b nbd:unix:cow.sock cow-diff.qcow2
+    qemu-img create -f qcow2 -b nbd:unix:$sock cow-diff.qcow2
     time qemu-img rebase -b cow-base.img cow-diff.qcow2
     qemu-img info cow-diff.qcow2
 

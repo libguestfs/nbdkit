@@ -33,8 +33,10 @@
 source ./functions.sh
 set -e
 
-files="blocksize1.img blocksize1.log blocksize1.sock blocksize1.pid
-       blocksize2.img blocksize2.log blocksize2.sock blocksize2.pid"
+sock1=`mktemp -u`
+sock2=`mktemp -u`
+files="blocksize1.img blocksize1.log $sock1 blocksize1.pid
+       blocksize2.img blocksize2.log $sock2 blocksize2.pid"
 rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on doing.
@@ -63,17 +65,17 @@ cleanup ()
 cleanup_fn cleanup
 
 # Run two parallel nbdkit; to compare the logs and see what changes.
-start_nbdkit -P blocksize1.pid -U blocksize1.sock \
+start_nbdkit -P blocksize1.pid -U $sock1 \
        --filter=log file logfile=blocksize1.log blocksize1.img
-start_nbdkit -P blocksize2.pid -U blocksize2.sock --filter=blocksize \
+start_nbdkit -P blocksize2.pid -U $sock2 --filter=blocksize \
        --filter=log file logfile=blocksize2.log blocksize2.img \
        minblock=1024 maxdata=512k maxlen=1M
 
 # Test behavior on short accesses.
 qemu-io -f raw -c 'r 1 1' -c 'w 10001 1' -c 'w -z 20001 1' \
-         -c 'discard 30001 1' 'nbd+unix://?socket=blocksize1.sock'
+         -c 'discard 30001 1' "nbd+unix://?socket=$sock1"
 qemu-io -f raw -c 'r 1 1' -c 'w 10001 1' -c 'w -z 20001 1' \
-         -c 'discard 30001 1' 'nbd+unix://?socket=blocksize2.sock'
+         -c 'discard 30001 1' "nbd+unix://?socket=$sock2"
 
 # Read should round up (qemu-io may round to 512, but we must round to 1024
 grep 'connection=1 Read .* count=0x\(1\|200\) ' blocksize1.log ||
@@ -100,10 +102,10 @@ fi
 # Test behavior on overlarge accesses.
 qemu-io -f raw -c 'w -P 11 1048575 4094305' -c 'w -z 1050000 1100000' \
          -c 'r -P 0 1050000 1100000' -c 'r -P 11 3000000 1048577' \
-         -c 'discard 7340031 2097153' 'nbd+unix://?socket=blocksize1.sock'
+         -c 'discard 7340031 2097153' "nbd+unix://?socket=$sock1"
 qemu-io -f raw -c 'w -P 11 1048575 4094305' -c 'w -z 1050000 1100000' \
          -c 'r -P 0 1050000 1100000' -c 'r -P 11 3000000 1048577' \
-         -c 'discard 7340031 2097153' 'nbd+unix://?socket=blocksize2.sock'
+         -c 'discard 7340031 2097153' "nbd+unix://?socket=$sock2"
 
 # Reads and writes should have been split.
 test "$(grep -c '\(Read\|Write\) .*count=0x80000 ' blocksize2.log)" -ge 10

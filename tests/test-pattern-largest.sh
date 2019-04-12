@@ -38,18 +38,19 @@ set -e
 
 requires qemu-io --version
 
-files="pattern-largest.out pattern-largest.pid pattern-largest.sock"
+sock=`mktemp -u`
+files="pattern-largest.out pattern-largest.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with pattern plugin.
 # size = 2^63-1
-start_nbdkit -P pattern-largest.pid -U pattern-largest.sock \
+start_nbdkit -P pattern-largest.pid -U $sock \
        pattern size=9223372036854775807
 
 # qemu cannot open this image!
 #
-#   can't open device nbd+unix://?socket=pattern-largest.sock: Could not get image size: File too large
+#   can't open device nbd+unix://?socket=$sock: Could not get image size: File too large
 #
 # Therefore we skip the remainder of this test (in effect, testing
 # only that nbdkit can create the file).
@@ -58,7 +59,7 @@ exit 77
 # XXX Unfortunately qemu-io can only issue 512-byte aligned requests,
 # and the final block is only 511 bytes, so we have to request the 512
 # bytes before that block.
-qemu-io -r -f raw 'nbd+unix://?socket=pattern-largest.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 9223372036854774784 512' | grep -E '^[[:xdigit:]]+:' > pattern-largest.out
 if [ "$(cat pattern-largest.out)" != "XXX EXPECTED PATTERN HERE" ]
 then

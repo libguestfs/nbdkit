@@ -38,7 +38,8 @@ source ./functions.sh
 set -e
 set -x
 
-files="cache-on-read.img cache-on-read.sock cache-on-read.pid"
+sock=`mktemp -u`
+files="cache-on-read.img $sock cache-on-read.pid"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -46,13 +47,13 @@ cleanup_fn rm -f $files
 truncate -s 1G cache-on-read.img
 
 # Run nbdkit with the caching filter and cache-on-read set.
-start_nbdkit -P cache-on-read.pid -U cache-on-read.sock \
+start_nbdkit -P cache-on-read.pid -U $sock \
              --filter=cache \
              file cache-on-read.img \
              cache-on-read=true
 
 # Open the overlay and perform some operations.
-guestfish --format=raw -a "nbd://?socket=$PWD/cache-on-read.sock" <<'EOF'
+guestfish --format=raw -a "nbd://?socket=$sock" <<'EOF'
   run
   part-disk /dev/sda gpt
   mkfs ext4 /dev/sda1

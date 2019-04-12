@@ -36,11 +36,12 @@ source ./functions.sh
 
 # Test nbdkit -f option.
 
-files="foreground.pid foreground.sock"
+sock=`mktemp -u`
+files="foreground.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
-nbdkit -f -P foreground.pid -U foreground.sock example1 &
+nbdkit -f -P foreground.pid -U $sock example1 &
 bg_pid=$!
 
 # We may have to wait a short time for the pid file to appear.
@@ -61,7 +62,7 @@ cleanup_fn kill $pid
 test "$bg_pid" -eq "$pid"
 
 # Check the socket was created (and is a socket).
-test -S foreground.sock
+test -S $sock
 
 # Kill the process.
 kill $pid

@@ -38,7 +38,8 @@ set -x
 
 requires qemu-io --version
 
-files="data-file.out data-file.pid data-file.sock data-hello.txt"
+sock=`mktemp -u`
+files="data-file.out data-file.pid $sock data-hello.txt"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -48,7 +49,7 @@ for i in {0..1000}; do
 done
 
 # Run nbdkit.
-start_nbdkit -P data-file.pid -U data-file.sock \
+start_nbdkit -P data-file.pid -U $sock \
        --filter=partition \
        data partition=1 \
        size=1M \
@@ -59,7 +60,7 @@ start_nbdkit -P data-file.pid -U data-file.sock \
    "
 
 # Since we're reading the empty first partition, any read returns zeroes.
-qemu-io -r -f raw 'nbd+unix://?socket=data-file.sock' \
+qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 900' | grep -E '^[[:xdigit:]]+:' > data-file.out
 if [ "$(cat data-file.out)" != "00000000:  68 65 6c 6c 6f 20 68 65 6c 6c 6f 20 68 65 6c 6c  hello.hello.hell
 00000010:  6f 20 68 65 6c 6c 6f 20 68 65 6c 6c 6f 20 68 65  o.hello.hello.he

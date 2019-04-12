@@ -34,7 +34,8 @@ source ./functions.sh
 set -e
 set -x
 
-files="cache.img cache.sock cache.pid"
+sock=`mktemp -u`
+files="cache.img $sock cache.pid"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -42,10 +43,10 @@ cleanup_fn rm -f $files
 truncate -s 1G cache.img
 
 # Run nbdkit with the caching filter.
-start_nbdkit -P cache.pid -U cache.sock --filter=cache file cache.img
+start_nbdkit -P cache.pid -U $sock --filter=cache file cache.img
 
 # Open the overlay and perform some operations.
-guestfish --format=raw -a "nbd://?socket=$PWD/cache.sock" <<'EOF'
+guestfish --format=raw -a "nbd://?socket=$sock" <<'EOF'
   run
   part-disk /dev/sda gpt
   mkfs ext4 /dev/sda1

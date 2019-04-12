@@ -35,16 +35,17 @@
 source ./functions.sh
 set -e
 
-files="floppy.pid floppy.sock floppy.test1 floppy.test2"
+sock=`mktemp -u`
+files="floppy.pid $sock floppy.test1 floppy.test2"
 rm -f $files
 cleanup_fn rm -f $files
 
 # When testing this we need to use a directory which won't change
 # during the test (so not the current directory).
-start_nbdkit -P floppy.pid -U floppy.sock floppy $srcdir/../plugins
+start_nbdkit -P floppy.pid -U $sock floppy $srcdir/../plugins
 
 # Check the floppy content.
-guestfish --ro --format=raw -a "nbd://?socket=$PWD/floppy.sock" -m /dev/sda1 <<'EOF'
+guestfish --ro --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<'EOF'
   ll /
   ll /floppy/
   ll /iso/

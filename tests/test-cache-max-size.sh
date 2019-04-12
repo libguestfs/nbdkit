@@ -40,10 +40,12 @@ requires qemu-io --version
 # Need the stat command from coreutils.
 requires stat --version
 
+sock=`mktemp -u`
 d=cache-max-size.d
 rm -rf $d
 mkdir -p $d
 cleanup_fn rm -rf $d
+cleanup_fn rm -f $sock
 
 # Create a cache directory.
 mkdir $d/cache
@@ -55,13 +57,13 @@ truncate -s 1G $d/cache-max-size.img
 
 # Run nbdkit with the caching filter and a low size limit to ensure
 # that the reclaim code is exercised.
-start_nbdkit -P $d/cache-max-size.pid -U $d/cache-max-size.sock \
+start_nbdkit -P $d/cache-max-size.pid -U $sock \
              --filter=cache \
              file $d/cache-max-size.img \
              cache-max-size=10M cache-on-read=true
 
 # Write > 10M to the plugin.
-qemu-io -f raw "nbd+unix://?socket=$d/cache-max-size.sock" \
+qemu-io -f raw "nbd+unix://?socket=$sock" \
         -c "w -P 0 0 10M" \
         -c "w -P 0 20M 10M" \
         -c "r 20M 10M" \

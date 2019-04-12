@@ -39,17 +39,18 @@ set -x
 
 requires qemu-img --version
 
-files="truncate3.out truncate3.pid truncate3.sock"
+sock=`mktemp -u`
+files="truncate3.out truncate3.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with pattern plugin and truncate filter in front.
-start_nbdkit -P truncate3.pid -U truncate3.sock \
+start_nbdkit -P truncate3.pid -U $sock \
        --filter=truncate \
        pattern size=5G \
        round-up=512
 
-LANG=C qemu-img info nbd:unix:truncate3.sock > truncate3.out
+LANG=C qemu-img info nbd:unix:$sock > truncate3.out
 if ! grep "virtual size: 5.0G" truncate3.out; then
     echo "$0: unexpected output from truncate3 regression test:"
     cat truncate3.out

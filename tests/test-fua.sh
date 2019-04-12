@@ -34,11 +34,12 @@ source ./functions.sh
 set -e
 set -x
 
+sockdir=`mktemp -d`
 files="fua.img
-       fua1.log fua1.sock fua1.pid
-       fua2.log fua2.sock fua2.pid
-       fua3.log fua3.sock fua3.pid
-       fua4.log fua4.sock fua4.pid"
+       fua1.log fua1.pid
+       fua2.log fua2.pid
+       fua3.log fua3.pid
+       fua4.log fua4.pid"
 rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on
@@ -63,6 +64,7 @@ cleanup ()
     echo "Log 4 file contents:"
     cat fua4.log || :
     rm -f $files
+    rm -rf $sockdir
 }
 cleanup_fn cleanup
 
@@ -71,16 +73,16 @@ cleanup_fn cleanup
 # 2: fuamode=emulate: log shows that blocksize optimizes fua to flush
 # 3: fuamode=native: log shows that blocksize preserves fua
 # 4: fuamode=force: log shows that fua is always enabled
-start_nbdkit -P fua1.pid -U fua1.sock \
+start_nbdkit -P fua1.pid -U $sockdir/fua1.sock \
              --filter=log --filter=fua \
              file logfile=fua1.log fua.img
-start_nbdkit -P fua2.pid -U fua2.sock \
+start_nbdkit -P fua2.pid -U $sockdir/fua2.sock \
              --filter=blocksize --filter=log --filter=fua \
              file logfile=fua2.log fua.img fuamode=emulate maxdata=4k maxlen=4k
-start_nbdkit -P fua3.pid -U fua3.sock \
+start_nbdkit -P fua3.pid -U $sockdir/fua3.sock \
              --filter=blocksize --filter=log --filter=fua \
              file logfile=fua3.log fua.img fuamode=native maxdata=4k maxlen=4k
-start_nbdkit -P fua4.pid -U fua4.sock \
+start_nbdkit -P fua4.pid -U $sockdir/fua4.sock \
              --filter=fua --filter=log \
              file logfile=fua4.log fua.img fuamode=force
 
@@ -88,7 +90,7 @@ start_nbdkit -P fua4.pid -U fua4.sock \
 for f in '' -f; do
     for i in {1..4}; do
 	qemu-io -f raw -t none -c flush -c "w $f 0 64k" -c "w -z $f 64k 64k" \
-		 "nbd+unix://?socket=fua$i.sock"
+		 "nbd+unix://?socket=$sockdir/fua$i.sock"
     done
 done
 
