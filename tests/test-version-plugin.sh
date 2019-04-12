@@ -30,8 +30,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-set -e
 source ./functions.sh
+set -e
 
 output="$(nbdkit file --version)"
 if [[ ! ( "$output" =~ file\ 1\. ) ]]; then

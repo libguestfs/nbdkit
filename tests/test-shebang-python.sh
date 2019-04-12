@@ -30,6 +30,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
+
 pidfile=shebang-python.pid
 sockfile=shebang-python.sock
 script=$SRCDIR/shebang.py

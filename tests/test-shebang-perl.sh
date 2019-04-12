@@ -30,6 +30,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+source ./functions.sh
+
 pidfile=shebang-perl.pid
 sockfile=shebang-perl.sock
 script=$SRCDIR/shebang.pl
