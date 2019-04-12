@@ -98,8 +98,8 @@ bind_unix_socket (size_t *nr_socks)
 
   len = strlen (unixsocket);
   if (len >= UNIX_PATH_MAX) {
-    fprintf (stderr, "%s: -U option: path too long (max is %d) bytes",
-             program_name, UNIX_PATH_MAX-1);
+    fprintf (stderr, "%s: -U: path too long: length %zu > max %d bytes\n",
+             program_name, len, UNIX_PATH_MAX-1);
     exit (EXIT_FAILURE);
   }
 
