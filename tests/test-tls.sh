@@ -34,7 +34,6 @@ source ./functions.sh
 set -e
 set -x
 
-requires ss --version
 requires qemu-img --version
 
 if ! qemu-img --help | grep -- --object; then
@@ -59,10 +58,7 @@ fi
 # Unfortunately qemu cannot do TLS over a Unix domain socket (nbdkit
 # probably can, although it is not tested).  Find an unused port to
 # listen on.
-for port in {50000..65535}; do
-    if ! ss -ltn | grep -sqE ":$port\b"; then break; fi
-done
-echo picked unused port $port
+pick_unused_port
 
 cleanup_fn rm -f tls.pid tls.out
 start_nbdkit -P tls.pid -p $port -n --tls=require \
