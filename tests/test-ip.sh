@@ -36,7 +36,6 @@
 source ./functions.sh
 set -e
 
-requires ss --version
 requires ip -V
 requires qemu-img --version
 requires qemu-img info --image-opts driver=file,filename=functions.sh
@@ -45,10 +44,7 @@ rm -f ip.pid ipv4.out ipv6.out
 cleanup_fn rm -f ip.pid ipv4.out ipv6.out
 
 # Find an unused port to listen on.
-for port in {49152..65535}; do
-    if ! ss -ltn | grep -sqE ":$port\b"; then break; fi
-done
-echo picked unused port $port
+pick_unused_port
 
 # By default nbdkit will listen on all available interfaces, ie.
 # IPv4 and IPv6.
