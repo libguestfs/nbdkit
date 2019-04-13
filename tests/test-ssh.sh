@@ -57,7 +57,7 @@ cleanup_fn kill $sshd_pid
 port="$(grep ^Port ssh/sshd_config | awk '{print $2}')"
 
 # Run nbdkit with the ssh plugin to copy a file.
-nbdkit -v -D ssh.log=2 \
+nbdkit -v -D ssh.log=2 -U - \
        ssh host=localhost $PWD/disk \
        --run 'qemu-img convert $nbd ssh.img'
 
