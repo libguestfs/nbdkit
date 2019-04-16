@@ -175,10 +175,6 @@ use.
 Build-related
 -------------
 
-* Move servers/proto* into common/ via a convenience library, so that
-  the nbd plugin doesn't trigger Automake warnings about using an
-  object in a subdirectory.
-
 * Figure out how to get 'make distcheck' working. VPATH builds are
   working, but various pkg-config results that try to stick
   bash-completion and ocaml add-ons into their system-wide home do
