@@ -5,16 +5,16 @@ A guide to benchmarking nbdkit
 General comments
 ----------------
 
-* The plugin matters!  Different plugins have completely difference
+* The plugin matters!  Different plugins have completely different
   uses, implementations and threading models.  There is little point
   in talking about "the performance of nbdkit" without mentioning what
   plugin you are testing.
 
 * The client matters!  Does the client support multi-conn?  Does the
-  client use the old or newstyle protocol?  Has the client been
+  client use the oldstyle or newstyle protocol?  Has the client been
   written with performance in mind?  The currently best clients are
-  (a) the Linux kernel (nbd.ko) (b) qemu.  Also make sure you are
-  using recent versions.
+  (a) the Linux kernel (nbd.ko) (b) qemu.  Make sure you are using
+  recent versions and have multi-conn enabled.
 
 * Filters affect performance.  When benchmarking you should never use
   filters unless filters are what you are trying to benchmark.
@@ -82,4 +82,8 @@ Variations
 * Use other plugins.  nbdkit-file-plugin is an important one to test.
   It might also be worth devising a test using a readonly plugin.
 
-* Someone needs to write an NBD I/O engine for fio.
+
+Future work
+-----------
+
+* Write an NBD I/O engine for fio.
