@@ -19,23 +19,23 @@ for the server as a whole.
 
 =over 4
 
-=item nbdkit --filter=rate memory size=64M rate=1M
+=item nbdkit --filter=rate memory 64M rate=1M
 
 Create a 64M RAM disk and limit server bandwidth as a whole to a
 maximum of S<1 Mbps> (megabit per second).
 
-=item nbdkit --filter=rate memory size=64M connection-rate=50K
+=item nbdkit --filter=rate memory 64M connection-rate=50K
 
 Limit each connection to S<50 Kbps> (kilobits per second).  However as
 there is no limit to the number of simultaneous connections this does
 not limit overall server bandwidth.
 
-=item nbdkit --filter=rate memory size=64M connection-rate=50K rate=1M
+=item nbdkit --filter=rate memory 64M connection-rate=50K rate=1M
 
 Limit each connection to S<50 Kbps>.  Additionally the total bandwidth
 across all connections to the server is limited to S<1 Mbps>.
 
-=item nbdkit --filter=rate memory size=64M rate=1M rate-file=/tmp/rate
+=item nbdkit --filter=rate memory 64M rate=1M rate-file=/tmp/rate
 
 Initially limit bandwidth to S<1 Mbps>.  While the server is running
 the rate can be adjusted dynamically by writing a different rate into

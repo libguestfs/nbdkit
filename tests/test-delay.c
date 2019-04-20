@@ -52,7 +52,7 @@ main (int argc, char *argv[])
   time_t start_t, end_t;
 
   if (test_start_nbdkit ("--filter", "delay",
-                         "memory", "size=1M",
+                         "memory", "1M",
                          "wdelay=10", NULL) == -1)
     exit (EXIT_FAILURE);
 

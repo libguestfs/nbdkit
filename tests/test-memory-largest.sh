@@ -45,8 +45,7 @@ cleanup_fn rm -f $files
 
 # Run nbdkit with memory plugin.
 # size = 2^63-1
-start_nbdkit -P memory-largest.pid -U $sock \
-       memory size=9223372036854775807
+start_nbdkit -P memory-largest.pid -U $sock memory 9223372036854775807
 
 # qemu cannot open this image!
 #

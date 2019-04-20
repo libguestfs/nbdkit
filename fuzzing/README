@@ -21,13 +21,13 @@ Master:
 
   mkdir -p fuzzing/sync_dir
   afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -M fuzz01 \
-      ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1M
+      ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so 1M
 
 Slaves:
 
   # replace fuzzNN with fuzz02, fuzz03, etc.
   afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -S fuzzNN \
-      ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1M
+      ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so 1M
 
 Test Coverage
 -------------
@@ -49,7 +49,7 @@ command below.  You can run this even while afl-fuzz is running.
 
   afl-cov -d ../nbdkit-afl/fuzzing/sync_dir \
       --code-dir . \
-      --coverage-cmd "cat AFL_FILE | ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1M"
+      --coverage-cmd "cat AFL_FILE | ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so 1M"
 
 This will create an HTML test coverage report in
 ../nbdkit-afl/fuzzing/sync_dir/cov/web/

@@ -83,7 +83,7 @@ L<nbdkit-curl-plugin(1)> or L<nbdkit-ssh-plugin(1)>:
 
 Create a RAM disk using L<nbdkit-memory-plugin(1)>:
 
- nbdkit memory size=64M
+ nbdkit memory 64M
 
 =item *
 
@@ -124,7 +124,7 @@ Create a scratch, empty nbdkit device and inject errors and delays,
 for testing clients, using L<nbdkit-memory-plugin(1)>,
 L<nbdkit-error-filter(1)> and L<nbdkit-delay-filter(1)>:
 
- nbdkit --filter=error --filter=delay memory size=100M \
+ nbdkit --filter=error --filter=delay memory 100M \
         error-rate=10% rdelay=1 wdelay=1
 
 =back

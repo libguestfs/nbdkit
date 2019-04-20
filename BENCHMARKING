@@ -50,7 +50,7 @@ runtime=120
 From the nbdkit source directory:
 
 rm /tmp/sock
-./nbdkit -f -U /tmp/sock memory size=1G
+./nbdkit -f -U /tmp/sock memory 1G
 
 (4) Loop mount the NBD server:
 
@@ -77,7 +77,7 @@ Variations
 
   perf record -a -g --call-graph=dwarf -- \
       server/nbdkit  -f -U /tmp/sock \
-          ./plugins/memory/.libs/nbdkit-memory-plugin.so size=1G
+          ./plugins/memory/.libs/nbdkit-memory-plugin.so 1G
 
 * Use other plugins.  nbdkit-file-plugin is an important one to test.
   It might also be worth devising a test using a readonly plugin.

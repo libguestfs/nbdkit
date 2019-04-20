@@ -50,8 +50,7 @@ main (int argc, char *argv[])
   int r;
   char *data;
 
-  if (test_start_nbdkit ("-D", "memory.dir=1",
-                         "memory", "size=100M", NULL) == -1)
+  if (test_start_nbdkit ("-D", "memory.dir=1", "memory", "100M", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

@@ -68,7 +68,7 @@ main (int argc, char *argv[])
   memcpy (&error_file_param[11], tmpdir, strlen (tmpdir));
 
   if (test_start_nbdkit ("--filter", "error",
-                         "memory", "size=1M",
+                         "memory", "1M",
                          "error=EIO",
                          "error-rate=100%",
                          error_file_param,
