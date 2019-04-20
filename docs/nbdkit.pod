@@ -44,7 +44,7 @@ write your own you should read L<nbdkit-filter(3)>.
 Serve file F<disk.img> on port 10809 using L<nbdkit-file-plugin(1)>,
 and connect to it using L<guestfish(1)>:
 
- nbdkit file file=disk.img
+ nbdkit file disk.img
  guestfish --rw --format=raw -a nbd://localhost
 
 =item *
@@ -52,7 +52,7 @@ and connect to it using L<guestfish(1)>:
 Serve file F<disk.img> on port 10809, requiring clients to use
 encrypted (TLS) connections:
 
- nbdkit --tls=require file file=disk.img
+ nbdkit --tls=require file disk.img
 
 =back
 
