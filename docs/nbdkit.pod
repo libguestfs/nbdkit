@@ -65,10 +65,10 @@ encrypted (TLS) connections:
 Create a 1MB disk with one empty partition entirely on the command
 line using L<nbdkit-data-plugin(1)>:
 
- nbdkit data data="@0x1b8 0xf8 0x21 0xdc 0xeb 0 0 0 0
+ nbdkit data size=1M \
+             data="@0x1b8 0xf8 0x21 0xdc 0xeb 0 0 0 0
                    2 0 0x83 0x20 0x20 0 1 0  0 0 0xff 0x7
-                   @0x1fe 0x55 0xaa" \
-                   size=1M
+                   @0x1fe 0x55 0xaa"
 
 =item *
 
