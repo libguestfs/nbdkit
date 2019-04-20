@@ -27,6 +27,35 @@ maximum supported by nbdkit (S<2⁶³-1 bytes>).  This limit is tested
 when nbdkit is compiled, and it should work on all platforms and
 architectures supported by nbdkit.
 
+=head1 EXAMPLES
+
+Create a one gigabyte sparse RAM disk:
+
+ nbdkit memory 1G
+
+If you want to loop mount the above disk, see L<nbdkit-loop(1)>.
+
+Create the largest possible RAM disk:
+
+ nbdkit memory $(( 2**63 - 1 ))
+
+=head1 PARAMETERS
+
+=over 4
+
+=item [B<size=>]SIZE
+
+Specify the virtual size of the disk image.
+
+This parameter is required.
+
+C<size=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
+
+=back
+
+=head1 NOTES
+
 =head2 Preloading small amounts of data
 
 If you want an in-memory disk image preinitialized with a small amount
@@ -51,25 +80,11 @@ the memory plugin, use L<qemu-img(1)>:
  $ virt-builder fedora-28 --size=10G
  $ qemu-img convert -p -n fedora-28.img nbd:localhost:10809
 
-=head1 PARAMETERS
-
-=over 4
-
-=item [B<size=>]SIZE
-
-Specify the virtual size of the disk image.
-
-This parameter is required.
-
-C<size=> is a magic config key and may be omitted in most cases.
-See L<nbdkit(1)/Magic parameters>.
-
-=back
-
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
+L<nbdkit-loop(1)>,
 L<nbdkit-data-plugin(1)>,
 L<nbdkit-file-plugin(1)>.
 
