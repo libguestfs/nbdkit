@@ -46,7 +46,7 @@ cleanup_fn rm -f $files
 # Run nbdkit with memory plugin.
 # size = (2^63-1) & ~511 which is the largest supported by qemu.
 start_nbdkit -P memory-largest-for-qemu.pid -U $sock \
-       memory size=9223372036854775296
+       memory 9223372036854775296
 
 # Write some stuff to the beginning, middle and end.
 qemu-io -f raw "nbd+unix://?socket=$sock" \

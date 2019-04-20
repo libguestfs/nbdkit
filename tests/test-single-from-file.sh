@@ -40,4 +40,4 @@ set -x
 
 testcase=$srcdir/../fuzzing/testcase_dir/newstyle-cflags-go
 
-nbdkit -f -v -s memory size=1M <$testcase >/dev/null
+nbdkit -f -v -s memory 1M <$testcase >/dev/null

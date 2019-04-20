@@ -18,7 +18,7 @@ In this example we run L<guestfish(1)> over nbdkit to create an ext4
 filesystem on a RAM disk, and use the stats filter to display the
 number of read, write and trim operations involved:
 
- $ nbdkit -U - --filter=stats memory size=1G statsfile=/dev/stderr \
+ $ nbdkit -U - --filter=stats memory 1G statsfile=/dev/stderr \
           --run '
        guestfish add-drive "" protocol:nbd server:unix:$unixsocket \
                               discard:enable format:raw : \

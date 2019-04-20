@@ -57,7 +57,7 @@ main (int argc, char *argv[])
    * operations (although it will slow things down a lot).
    */
   if (test_start_nbdkit ("--filter", "readahead",
-                         "memory", "size=1G", NULL) == -1)
+                         "memory", "1G", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

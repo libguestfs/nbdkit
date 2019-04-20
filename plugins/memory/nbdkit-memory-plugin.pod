@@ -4,7 +4,7 @@ nbdkit-memory-plugin - nbdkit virtual memory (RAM disk) plugin
 
 =head1 SYNOPSIS
 
- nbdkit memory size=SIZE
+ nbdkit memory [size=]SIZE
 
 =head1 DESCRIPTION
 
@@ -42,7 +42,7 @@ If you want to preload a large amount of data (eg. a disk image) into
 the memory plugin, use L<qemu-img(1)>:
 
  $ rm -f pid
- $ nbdkit -P pid memory size=10G
+ $ nbdkit -P pid memory 10G
  
  # wait for nbdkit to become ready to accept connections:
  $ while [ ! -f pid ]; do sleep 1; done
@@ -55,11 +55,14 @@ the memory plugin, use L<qemu-img(1)>:
 
 =over 4
 
-=item B<size=>SIZE
+=item [B<size=>]SIZE
 
 Specify the virtual size of the disk image.
 
 This parameter is required.
+
+C<size=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
 
 =back
 

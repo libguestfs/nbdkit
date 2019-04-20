@@ -190,6 +190,7 @@ static struct nbdkit_plugin plugin = {
   .config            = memory_config,
   .config_complete   = memory_config_complete,
   .config_help       = memory_config_help,
+  .magic_config_key  = "size",
   .open              = memory_open,
   .get_size          = memory_get_size,
   .can_multi_conn    = memory_can_multi_conn,
