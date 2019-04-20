@@ -13,7 +13,7 @@ nbdkit [-D|--debug PLUGIN|FILTER.FLAG=N]
        [--tls-psk /path/to/pskfile] [--tls-verify-peer]
        [-U|--unix SOCKET] [-u|--user USER]
        [-v|--verbose] [-V|--version]
-       PLUGIN [KEY=VALUE [KEY=VALUE [...]]]
+       PLUGIN [[KEY=]VALUE [KEY=VALUE [...]]]
 
 nbdkit --dump-config
 
