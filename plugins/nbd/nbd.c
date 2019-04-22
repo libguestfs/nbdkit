@@ -510,6 +510,7 @@ nbd_open (int readonly)
       nbdkit_error ("unable to read global flags: %m");
       goto err;
     }
+    gflags = be16toh (gflags);
     cflags = htobe32(gflags & (NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES));
     if (write_full (h->fd, &cflags, sizeof cflags)) {
       nbdkit_error ("unable to return global flags: %m");
