@@ -108,16 +108,19 @@ extern const char *name_of_nbd_opt (int);
 #define NBD_OPT_LIST_META_CONTEXT  9
 #define NBD_OPT_SET_META_CONTEXT   10
 
+#define NBD_REP_ERR(val) (0x80000000 | (val))
+#define NBD_REP_IS_ERR(val) (!!((val) & 0x80000000))
+
 extern const char *name_of_nbd_rep (int);
 #define NBD_REP_ACK          1
 #define NBD_REP_SERVER       2
 #define NBD_REP_INFO         3
 #define NBD_REP_META_CONTEXT 4
-#define NBD_REP_ERR_UNSUP    0x80000001
-#define NBD_REP_ERR_POLICY   0x80000002
-#define NBD_REP_ERR_INVALID  0x80000003
-#define NBD_REP_ERR_PLATFORM 0x80000004
-#define NBD_REP_ERR_TLS_REQD 0x80000005
+#define NBD_REP_ERR_UNSUP    NBD_REP_ERR (1)
+#define NBD_REP_ERR_POLICY   NBD_REP_ERR (2)
+#define NBD_REP_ERR_INVALID  NBD_REP_ERR (3)
+#define NBD_REP_ERR_PLATFORM NBD_REP_ERR (4)
+#define NBD_REP_ERR_TLS_REQD NBD_REP_ERR (5)
 
 extern const char *name_of_nbd_info (int);
 #define NBD_INFO_EXPORT      0
@@ -195,14 +198,17 @@ struct structured_reply_error {
 extern const char *name_of_nbd_reply_flag (int);
 #define NBD_REPLY_FLAG_DONE         (1<<0)
 
+#define NBD_REPLY_TYPE_ERR(val) ((1<<15) | (val))
+#define NBD_REPLY_TYPE_IS_ERR(val) (!!((val) & (1<<15)))
+
 /* Structured reply types. */
 extern const char *name_of_nbd_reply_type (int);
 #define NBD_REPLY_TYPE_NONE         0
 #define NBD_REPLY_TYPE_OFFSET_DATA  1
 #define NBD_REPLY_TYPE_OFFSET_HOLE  2
 #define NBD_REPLY_TYPE_BLOCK_STATUS 5
-#define NBD_REPLY_TYPE_ERROR        ((1<<15) + 1)
-#define NBD_REPLY_TYPE_ERROR_OFFSET ((1<<15) + 2)
+#define NBD_REPLY_TYPE_ERROR        NBD_REPLY_TYPE_ERR (1)
+#define NBD_REPLY_TYPE_ERROR_OFFSET NBD_REPLY_TYPE_ERR (2)
 
 /* NBD commands. */
 extern const char *name_of_nbd_cmd (int);
