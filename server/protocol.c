@@ -591,7 +591,7 @@ send_structured_reply_error (struct connection *conn,
   }
 
   /* Send the error. */
-  error_data.error = htobe32 (error);
+  error_data.error = htobe32 (nbd_errno (error));
   error_data.len = htobe16 (0);
   r = conn->send (conn, &error_data, sizeof error_data);
   if (r == -1) {
