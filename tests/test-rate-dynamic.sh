@@ -54,7 +54,7 @@ echo 10M > rate-dynamic.txt
 # control the output format of the time builtin.  For strange use of
 # { ; } here, see: https://stackoverflow.com/a/13356654
 set +x
-{ TIMEFORMAT="%0R" ; time nbdkit -U - --filter=rate pattern size=25M rate=1M rate-file=rate-dynamic.txt --run 'qemu-img convert -p $nbd rate-dynamic.img' 2>rate-dynamic.err ; } 2>rate-dynamic.time
+{ TIMEFORMAT="%0R" ; time nbdkit -U - --filter=rate pattern 25M rate=1M rate-file=rate-dynamic.txt --run 'qemu-img convert -p $nbd rate-dynamic.img' 2>rate-dynamic.err ; } 2>rate-dynamic.time
 set -x
 
 cat rate-dynamic.err ||:

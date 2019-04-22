@@ -152,6 +152,7 @@ static struct nbdkit_plugin plugin = {
   .load              = random_load,
   .config            = random_config,
   .config_help       = random_config_help,
+  .magic_config_key  = "size",
   .open              = random_open,
   .get_size          = random_get_size,
   .can_multi_conn    = random_can_multi_conn,

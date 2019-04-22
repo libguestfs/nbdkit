@@ -68,7 +68,7 @@ main (int argc, char *argv[])
   char *rdata;
   size_t rsize;
 
-  snprintf (sizearg, sizeof sizearg, "size=%d", SIZE);
+  snprintf (sizearg, sizeof sizearg, "%d", SIZE);
 
   if (test_start_nbdkit ("random", sizearg, NULL) == -1)
     exit (EXIT_FAILURE);

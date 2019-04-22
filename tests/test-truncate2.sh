@@ -46,7 +46,7 @@ cleanup_fn rm -f $files
 # Run nbdkit with pattern plugin and truncate filter in front.
 start_nbdkit -P truncate2.pid -U $sock \
        --filter=truncate \
-       pattern size=503 \
+       pattern 503 \
        round-up=512
 
 qemu-io -r -f raw "nbd+unix://?socket=$sock" \

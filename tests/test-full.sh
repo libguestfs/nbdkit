@@ -44,7 +44,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit with the full plugin.
-start_nbdkit -P full.pid -U $sock full size=1M
+start_nbdkit -P full.pid -U $sock full 1M
 
 # All reads should succeed.
 qemu-io -f raw "nbd+unix://?socket=$sock" \

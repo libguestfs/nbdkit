@@ -4,7 +4,7 @@ nbdkit-random-plugin - plugin to serve random data
 
 =head1 SYNOPSIS
 
- nbdkit random size=SIZE [seed=SEED]
+ nbdkit random [size=]SIZE [seed=SEED]
 
 =head1 DESCRIPTION
 
@@ -22,11 +22,14 @@ is mainly good for testing NBD clients.
 
 =over 4
 
-=item B<size=>SIZE
+=item [B<size=>]SIZE
 
 Specify the virtual size of the disk image.
 
 This parameter is required.
+
+C<size=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
 
 =item B<seed=>SEED
 

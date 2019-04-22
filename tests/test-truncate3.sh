@@ -47,7 +47,7 @@ cleanup_fn rm -f $files
 # Run nbdkit with pattern plugin and truncate filter in front.
 start_nbdkit -P truncate3.pid -U $sock \
        --filter=truncate \
-       pattern size=5G \
+       pattern 5G \
        round-up=512
 
 qemu-img info --output=json nbd:unix:$sock > truncate3.out

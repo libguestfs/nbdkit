@@ -4,7 +4,7 @@ nbdkit-full-plugin - nbdkit plugin which is always full
 
 =head1 SYNOPSIS
 
- nbdkit full size=SIZE
+ nbdkit full [size=]SIZE
 
 =head1 DESCRIPTION
 
@@ -20,7 +20,7 @@ disk which has run out of space on the host.
 Although this is a standalone plugin, it is equivalent to using
 L<nbdkit-error-filter(1)>:
 
- nbdkit --filter=error null size=SIZE \
+ nbdkit --filter=error null SIZE \
                        error-pwrite=ENOSPC error-pwrite-rate=100% \
                        error-trim=ENOSPC error-trim-rate=100% \
                        error-zero=ENOSPC error-zero-rate=100%
@@ -32,11 +32,14 @@ top of other plugins and you can control when to inject errors.
 
 =over 4
 
-=item B<size=>SIZE
+=item [B<size=>]SIZE
 
 Specify the virtual size of the disk image.
 
 This parameter is required.
+
+C<size=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
 
 =back
 
