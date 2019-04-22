@@ -600,6 +600,8 @@ nbd_reply_raw (struct handle *h, int *fd)
     return EINVAL;
   case NBD_ENOSPC:
     return ENOSPC;
+  case NBD_EOVERFLOW:
+    return EOVERFLOW;
   case NBD_ESHUTDOWN:
     return ESHUTDOWN;
   }

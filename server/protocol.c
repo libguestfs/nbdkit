@@ -326,7 +326,7 @@ skip_over_write_buffer (int sock, size_t count)
 
 /* Convert a system errno to an NBD_E* error code. */
 static int
-nbd_errno (int error)
+nbd_errno (int error, bool flag_df)
 {
   switch (error) {
   case 0:
@@ -348,6 +348,10 @@ nbd_errno (int error)
   case ESHUTDOWN:
     return NBD_ESHUTDOWN;
 #endif
+  case EOVERFLOW:
+    if (flag_df)
+      return NBD_EOVERFLOW;
+    /* fallthrough */
   case EINVAL:
   default:
     return NBD_EINVAL;
@@ -366,7 +370,7 @@ send_simple_reply (struct connection *conn,
 
   reply.magic = htobe32 (NBD_SIMPLE_REPLY_MAGIC);
   reply.handle = handle;
-  reply.error = htobe32 (nbd_errno (error));
+  reply.error = htobe32 (nbd_errno (error, false));
 
   r = conn->send (conn, &reply, sizeof reply);
   if (r == -1) {
@@ -571,7 +575,8 @@ send_structured_reply_block_status (struct connection *conn,
 
 static int
 send_structured_reply_error (struct connection *conn,
-                             uint64_t handle, uint16_t cmd, uint32_t error)
+                             uint64_t handle, uint16_t cmd, uint16_t flags,
+                             uint32_t error)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
   struct structured_reply reply;
@@ -591,7 +596,7 @@ send_structured_reply_error (struct connection *conn,
   }
 
   /* Send the error. */
-  error_data.error = htobe32 (nbd_errno (error));
+  error_data.error = htobe32 (nbd_errno (error, flags & NBD_CMD_FLAG_DF));
   error_data.len = htobe16 (0);
   r = conn->send (conn, &error_data, sizeof error_data);
   if (r == -1) {
@@ -737,7 +742,8 @@ protocol_recv_request_send_reply (struct connection *conn)
                                                    extents);
     }
     else
-      return send_structured_reply_error (conn, request.handle, cmd, error);
+      return send_structured_reply_error (conn, request.handle, cmd, flags,
+                                          error);
   }
   else
     return send_simple_reply (conn, request.handle, cmd, buf, count, error);

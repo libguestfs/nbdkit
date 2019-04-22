@@ -236,6 +236,7 @@ extern const char *name_of_nbd_error (int);
 #define NBD_ENOMEM     12
 #define NBD_EINVAL     22
 #define NBD_ENOSPC     28
+#define NBD_EOVERFLOW  75
 #define NBD_ESHUTDOWN 108
 
 #endif /* NBDKIT_PROTOCOL_H */
