@@ -122,6 +122,7 @@ static struct nbdkit_plugin plugin = {
   .version           = PACKAGE_VERSION,
   .config            = pattern_config,
   .config_help       = pattern_config_help,
+  .magic_config_key  = "size",
   .open              = pattern_open,
   .get_size          = pattern_get_size,
   .can_multi_conn    = pattern_can_multi_conn,

@@ -145,6 +145,7 @@ static struct nbdkit_plugin plugin = {
   .version           = PACKAGE_VERSION,
   .config            = null_config,
   .config_help       = null_config_help,
+  .magic_config_key  = "size",
   .open              = null_open,
   .get_size          = null_get_size,
   .pread             = null_pread,

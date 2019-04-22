@@ -47,7 +47,7 @@ cleanup_fn rm -f $files
 # 8070450532247927809 = 7E - 1023
 start_nbdkit -P offset2.pid -U $sock \
        --filter=offset \
-       pattern size=7E \
+       pattern 7E \
        offset=8070450532247927809 range=512
 
 qemu-io -r -f raw "nbd+unix://?socket=$sock" \

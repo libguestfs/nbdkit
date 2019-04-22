@@ -52,7 +52,7 @@ if ! qemu-io --help >/dev/null; then
 fi
 
 # Run nbdkit with pattern plugin.
-start_nbdkit -P pattern.pid -U $sock pattern size=1G
+start_nbdkit -P pattern.pid -U $sock pattern 1G
 
 qemu-io -r -f raw "nbd+unix://?socket=$sock" \
         -c 'r -v 0 512' | grep -E '^[[:xdigit:]]+:' > pattern.out

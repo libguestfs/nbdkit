@@ -58,7 +58,7 @@ main (int argc, char *argv[])
   size_t rsize;
   size_t i;
 
-  if (test_start_nbdkit ("null", "size=100M", NULL) == -1)
+  if (test_start_nbdkit ("null", "100M", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

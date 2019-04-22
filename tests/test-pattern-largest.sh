@@ -46,7 +46,7 @@ cleanup_fn rm -f $files
 # Run nbdkit with pattern plugin.
 # size = 2^63-1
 start_nbdkit -P pattern-largest.pid -U $sock \
-       pattern size=9223372036854775807
+       pattern 9223372036854775807
 
 # qemu cannot open this image!
 #

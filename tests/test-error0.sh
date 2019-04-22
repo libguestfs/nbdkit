@@ -44,7 +44,7 @@ cleanup_fn rm -f $files
 # Run nbdkit with the error filter.
 start_nbdkit -P error0.pid -U $sock \
              --filter=error \
-             pattern size=1G error-rate=0%
+             pattern 1G error-rate=0%
 
 # Because error rate is 0%, reads should never fail.
 qemu-io -r -f raw "nbd+unix://?socket=$sock" \

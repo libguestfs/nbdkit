@@ -4,7 +4,7 @@ nbdkit-pattern-plugin - plugin to serve a fixed pattern of data for testing
 
 =head1 SYNOPSIS
 
- nbdkit pattern size=SIZE
+ nbdkit pattern [size=]SIZE
 
 =head1 DESCRIPTION
 
@@ -38,7 +38,7 @@ S<hexadecimal: 0x7fff_ffff_ffff_ffff>).
 To test if NBD clients are free of bugs (not to mention nbdkit itself)
 you can use:
 
- nbdkit pattern size=9223372036854775807
+ nbdkit pattern 9223372036854775807
 
 Note this is too large for qemu to open.
 
@@ -46,11 +46,14 @@ Note this is too large for qemu to open.
 
 =over 4
 
-=item B<size=>SIZE
+=item [B<size=>]SIZE
 
 Specify the virtual size of the disk image.
 
 This parameter is required.
+
+C<size=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
 
 =back
 

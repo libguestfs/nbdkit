@@ -44,7 +44,7 @@ cleanup_fn rm -f $files
 # Run nbdkit with the error filter.
 start_nbdkit -P error100.pid -U $sock \
              --filter=error \
-             pattern size=1G error-rate=100%
+             pattern 1G error-rate=100%
 
 # The error rate is 100% so every operation must fail.
 for i in {1..100}; do
