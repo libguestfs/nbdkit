@@ -65,7 +65,7 @@ type 'a plugin = {
   can_zero : ('a -> bool) option;
   can_fua : ('a -> fua_flag) option;
 
-  pread : ('a -> bytes -> int64 -> flags -> unit) option;
+  pread : ('a -> int32 -> int64 -> flags -> string) option;
   pwrite : ('a -> string -> int64 -> flags -> unit) option;
   flush : ('a -> flags -> unit) option;
   trim : ('a -> int32 -> int64 -> flags -> unit) option;
@@ -146,7 +146,7 @@ external set_dump_plugin : (unit -> unit) -> unit = "ocaml_nbdkit_set_dump_plugi
 external set_can_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_zero"
 external set_can_fua : ('a -> fua_flag) -> unit = "ocaml_nbdkit_set_can_fua"
 
-external set_pread : ('a -> bytes -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_pread"
+external set_pread : ('a -> int32 -> int64 -> flags -> string) -> unit = "ocaml_nbdkit_set_pread"
 external set_pwrite : ('a -> string -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_pwrite"
 external set_flush : ('a -> flags -> unit) -> unit = "ocaml_nbdkit_set_flush"
 external set_trim : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_trim"

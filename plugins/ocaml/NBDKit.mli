@@ -67,7 +67,7 @@ type 'a plugin = {
   can_zero : ('a -> bool) option;
   can_fua : ('a -> fua_flag) option;
 
-  pread : ('a -> bytes -> int64 -> flags -> unit) option;  (* required *)
+  pread : ('a -> int32 -> int64 -> flags -> string) option;  (* required *)
   pwrite : ('a -> string -> int64 -> flags -> unit) option;
   flush : ('a -> flags -> unit) option;
   trim : ('a -> int32 -> int64 -> flags -> unit) option;

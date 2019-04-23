@@ -439,15 +439,16 @@ pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset,
                uint32_t flags)
 {
   CAMLparam0 ();
-  CAMLlocal4 (rv, strv, offsetv, flagsv);
+  CAMLlocal4 (rv, countv, offsetv, flagsv);
+  mlsize_t len;
 
   caml_leave_blocking_section ();
 
-  strv = caml_alloc_string (count);
+  countv = caml_copy_int32 (count);
   offsetv = caml_copy_int64 (offset);
   flagsv = Val_flags (flags);
 
-  value args[] = { *(value *) h, strv, offsetv, flagsv };
+  value args[] = { *(value *) h, countv, offsetv, flagsv };
   rv = caml_callbackN_exn (pread_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
@@ -455,7 +456,14 @@ pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset,
     CAMLreturnT (int, -1);
   }
 
-  memcpy (buf, String_val (strv), count);
+  len = caml_string_length (rv);
+  if (len < count) {
+    nbdkit_error ("buffer returned from pread is too small");
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  memcpy (buf, String_val (rv), count);
 
   caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
