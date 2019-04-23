@@ -128,7 +128,9 @@ struct transaction {
     int fds[2];
   } u;
   void *buf;
+  uint64_t offset;
   uint32_t count;
+  uint32_t err;
   struct transaction *next;
 };
 
@@ -138,6 +140,7 @@ struct handle {
   int fd;
   int flags;
   int64_t size;
+  bool structured;
   pthread_t reader;
 
   /* Prevents concurrent threads from interleaving writes to server */
@@ -216,9 +219,10 @@ nbd_mark_dead (struct handle *h)
   return -1;
 }
 
-/* Find and remove the transaction corresponding to cookie from the list. */
+/* Find and possibly remove the transaction corresponding to cookie
+   from the list. */
 static struct transaction *
-find_trans_by_cookie (struct handle *h, uint64_t cookie)
+find_trans_by_cookie (struct handle *h, uint64_t cookie, bool remove)
 {
   struct transaction **ptr;
   struct transaction *trans;
@@ -230,7 +234,7 @@ find_trans_by_cookie (struct handle *h, uint64_t cookie)
       break;
     ptr = &trans->next;
   }
-  if (trans)
+  if (trans && remove)
     *ptr = trans->next;
   return trans;
 }
@@ -287,6 +291,7 @@ nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
   }
   trans->buf = rep_buf;
   trans->count = rep_buf ? count : 0;
+  trans->offset = offset;
   {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
     if (h->dead)
@@ -298,7 +303,7 @@ nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
   }
   if (nbd_request_raw (h, flags, type, offset, count, cookie, req_buf) == 0)
     return fd;
-  trans = find_trans_by_cookie (h, cookie);
+  trans = find_trans_by_cookie (h, cookie, true);
 
  err:
   err = errno;
@@ -323,35 +328,77 @@ nbd_request (struct handle *h, uint16_t flags, uint16_t type, uint64_t offset,
 
 /* Read a reply, and look up the fd corresponding to the transaction.
    Return the server's non-negative answer (converted to local errno
-   value) on success, or -1 on read failure. */
+   value) on success, or -1 on read failure. If structured replies
+   were negotiated, fd is set to -1 if there are still more replies
+   expected. */
 static int
 nbd_reply_raw (struct handle *h, int *fd)
 {
-  struct simple_reply rep;
+  union {
+    struct simple_reply simple;
+    struct structured_reply structured;
+  } rep;
   struct transaction *trans;
-  void *buf;
+  void *buf = NULL;
   uint32_t count;
+  int error = NBD_SUCCESS;
+  bool more = false;
 
   *fd = -1;
-  if (read_full (h->fd, &rep, sizeof rep) < 0)
+  /* magic and handle overlap between simple and structured replies */
+  if (read_full (h->fd, &rep, sizeof rep.simple))
     return nbd_mark_dead (h);
-  if (be32toh (rep.magic) != NBD_SIMPLE_REPLY_MAGIC)
-    return nbd_mark_dead (h);
-  nbdkit_debug ("received reply for cookie %#" PRIx64 ", status %s",
-                rep.handle, name_of_nbd_error(be32toh (rep.error)));
-  trans = find_trans_by_cookie (h, rep.handle);
-  if (!trans) {
-    nbdkit_error ("reply with unexpected cookie %#" PRIx64, rep.handle);
+  rep.simple.magic = be32toh (rep.simple.magic);
+  switch (rep.simple.magic) {
+  case NBD_SIMPLE_REPLY_MAGIC:
+    nbdkit_debug ("received simple reply for cookie %#" PRIx64 ", status %s",
+                  rep.simple.handle,
+                  name_of_nbd_error(be32toh (rep.simple.error)));
+    error = be32toh (rep.simple.error);
+    break;
+  case NBD_STRUCTURED_REPLY_MAGIC:
+    if (!h->structured) {
+      nbdkit_error ("structured response without negotiation");
+      return nbd_mark_dead (h);
+    }
+    /* TODO - set 'more' based on NBD_REPLY_FLAG_DONE, parse the
+       various reply types, etc. */
+    abort ();
+
+  default:
+    nbdkit_error ("received unexpected magic in reply: %#" PRIx32,
+                  rep.simple.magic);
     return nbd_mark_dead (h);
   }
 
-  *fd = trans->u.fds[1];
+  trans = find_trans_by_cookie (h, rep.simple.handle, !more);
+  if (!trans) {
+    nbdkit_error ("reply with unexpected cookie %#" PRIx64, rep.simple.handle);
+    return nbd_mark_dead (h);
+  }
+
   buf = trans->buf;
   count = trans->count;
-  free (trans);
-  switch (be32toh (rep.error)) {
+  if (buf && h->structured && rep.simple.magic == NBD_SIMPLE_REPLY_MAGIC) {
+    nbdkit_error ("simple read reply when structured was expected");
+    return nbd_mark_dead (h);
+  }
+
+  /* Thanks to structured replies, we must preserve an error in any
+     earlier chunk for replay during the final chunk. */
+  if (!more) {
+    *fd = trans->u.fds[1];
+    if (!error)
+      error = trans->err;
+    free (trans);
+  }
+  else if (error && !trans->err)
+    trans->err = error;
+
+  /* Convert from wire value to local errno, and perform any final read */
+  switch (error) {
   case NBD_SUCCESS:
-    if (buf && read_full (h->fd, buf, count) < 0)
+    if (buf && read_full (h->fd, buf, count))
       return nbd_mark_dead (h);
     return 0;
   case NBD_EPERM:
@@ -361,8 +408,7 @@ nbd_reply_raw (struct handle *h, int *fd)
   case NBD_ENOMEM:
     return ENOMEM;
   default:
-    nbdkit_debug ("unexpected error %d, squashing to EINVAL",
-                  be32toh (rep.error));
+    nbdkit_debug ("unexpected error %d, squashing to EINVAL", error);
     /* fallthrough */
   case NBD_EINVAL:
     return EINVAL;
@@ -386,7 +432,9 @@ nbd_reader (void *handle)
 
     r = nbd_reply_raw (h, &fd);
     if (r >= 0) {
-      if (write (fd, &r, sizeof r) != sizeof r) {
+      if (fd < 0)
+        nbdkit_debug ("partial reply handled, waiting for final reply");
+      else if (write (fd, &r, sizeof r) != sizeof r) {
         nbdkit_error ("failed to write pipe: %m");
         abort ();
       }
