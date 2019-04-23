@@ -341,15 +341,15 @@ extern void threadlocal_init (void);
 extern void threadlocal_new_server_thread (void);
 extern void threadlocal_set_name (const char *name)
   __attribute__((__nonnull__ (1)));
+extern const char *threadlocal_get_name (void);
 extern void threadlocal_set_instance_num (size_t instance_num);
+extern size_t threadlocal_get_instance_num (void);
 extern void threadlocal_set_sockaddr (const struct sockaddr *addr,
                                       socklen_t addrlen)
   __attribute__((__nonnull__ (1)));
-extern const char *threadlocal_get_name (void);
-extern size_t threadlocal_get_instance_num (void);
+/*extern void threadlocal_get_sockaddr ();*/
 extern void threadlocal_set_error (int err);
 extern int threadlocal_get_error (void);
-/*extern void threadlocal_get_sockaddr ();*/
 
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
