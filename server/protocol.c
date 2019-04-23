@@ -452,7 +452,7 @@ extents_to_block_descriptors (struct nbdkit_extents *extents,
   /* We may send fewer than nr_extents blocks, but never more. */
   blocks = calloc (req_one ? 1 : nr_extents, sizeof (struct block_descriptor));
   if (blocks == NULL) {
-    nbdkit_error ("malloc");
+    nbdkit_error ("calloc");
     return NULL;
   }
 
