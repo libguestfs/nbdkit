@@ -58,6 +58,8 @@ struct threadlocal {
   struct sockaddr *addr;
   socklen_t addrlen;
   int err;
+  void *buffer;
+  size_t buffer_size;
 };
 
 static pthread_key_t threadlocal_key;
@@ -69,6 +71,7 @@ free_threadlocal (void *threadlocalv)
 
   free (threadlocal->name);
   free (threadlocal->addr);
+  free (threadlocal->buffer);
   free (threadlocal);
 }
 
@@ -188,4 +191,38 @@ threadlocal_get_error (void)
 
   errno = err;
   return threadlocal ? threadlocal->err : 0;
+}
+
+/* Return the single pread/pwrite buffer for this thread.  The buffer
+ * size is increased to ‘size’ bytes if required.
+ *
+ * The buffer starts out as zeroes but after use may contain data from
+ * previous requests.  This is fine because: (a) Correctly written
+ * plugins should overwrite the whole buffer on each request so no
+ * leak should occur.  (b) The aim of this buffer is to avoid leaking
+ * random heap data from the core server; previous request data from
+ * the plugin is not considered sensitive.
+ */
+extern void *
+threadlocal_buffer (size_t size)
+{
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
+
+  if (!threadlocal)
+    abort ();
+
+  if (threadlocal->buffer_size < size) {
+    void *ptr;
+
+    ptr = realloc (threadlocal->buffer, size);
+    if (ptr == NULL) {
+      nbdkit_error ("threadlocal_buffer: realloc: %m");
+      return NULL;
+    }
+    memset (ptr, 0, size);
+    threadlocal->buffer = ptr;
+    threadlocal->buffer_size = size;
+  }
+
+  return threadlocal->buffer;
 }
