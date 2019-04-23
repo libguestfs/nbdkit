@@ -89,13 +89,19 @@ void
 threadlocal_new_server_thread (void)
 {
   struct threadlocal *threadlocal;
+  int err;
 
   threadlocal = calloc (1, sizeof *threadlocal);
   if (threadlocal == NULL) {
     perror ("malloc");
     exit (EXIT_FAILURE);
   }
-  pthread_setspecific (threadlocal_key, threadlocal);
+  err = pthread_setspecific (threadlocal_key, threadlocal);
+  if (err) {
+    errno = err;
+    perror ("pthread_setspecific");
+    exit (EXIT_FAILURE);
+  }
 }
 
 void
