@@ -45,6 +45,8 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
+
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 static uint64_t connections;
@@ -114,12 +116,8 @@ struct handle {
 static uint64_t
 get_id (struct handle *h)
 {
-  uint64_t r;
-
-  pthread_mutex_lock (&lock);
-  r = ++h->id;
-  pthread_mutex_unlock (&lock);
-  return r;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE(&lock);
+  return ++h->id;
 }
 
 /* Output a timestamp and the log message. */

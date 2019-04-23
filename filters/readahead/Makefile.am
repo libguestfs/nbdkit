@@ -41,12 +41,15 @@ nbdkit_readahead_filter_la_SOURCES = \
 
 nbdkit_readahead_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
+	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils
 nbdkit_readahead_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_readahead_filter_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+nbdkit_readahead_filter_la_LIBADD = \
+	$(top_builddir)/common/utils/libutils.la
 
 if HAVE_POD
 

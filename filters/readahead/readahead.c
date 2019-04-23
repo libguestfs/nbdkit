@@ -42,6 +42,7 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
 #include "minmax.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
@@ -150,7 +151,7 @@ readahead_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
                  void *handle, void *buf, uint32_t count, uint64_t offset,
                  uint32_t flags, int *err)
 {
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
 
   while (count > 0) {
     if (length == 0) {
@@ -159,7 +160,7 @@ readahead_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
        */
       window = READAHEAD_MIN;
       if (fill_readahead (next_ops, nxdata, count, offset, flags, err) == -1)
-        goto err;
+        return -1;
     }
 
     /* Can we satisfy this request partly or entirely from the prefetch
@@ -179,7 +180,7 @@ readahead_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     else if (offset == position + length) {
       window = MIN (window * 2, READAHEAD_MAX);
       if (fill_readahead (next_ops, nxdata, count, offset, flags, err) == -1)
-        goto err;
+        return -1;
     }
 
     /* Else it's a “miss”.  Reset everything and start again. */
@@ -187,12 +188,7 @@ readahead_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
       length = 0;
   }
 
-  pthread_mutex_unlock (&lock);
   return 0;
-
- err:
-  pthread_mutex_unlock (&lock);
-  return -1;
 }
 
 /* Any writes or write-like operations kill the prefetch buffer.
@@ -204,10 +200,9 @@ readahead_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 static void
 kill_readahead (void)
 {
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   window = READAHEAD_MIN;
   length = 0;
-  pthread_mutex_unlock (&lock);
 }
 
 static int
