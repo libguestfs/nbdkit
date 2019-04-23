@@ -191,20 +191,6 @@ write_full (int fd, const void *buf, size_t len)
   return 0;
 }
 
-static void
-nbd_lock (struct handle *h)
-{
-  int r = pthread_mutex_lock (&h->trans_lock);
-  assert (!r);
-}
-
-static void
-nbd_unlock (struct handle *h)
-{
-  int r = pthread_mutex_unlock (&h->trans_lock);
-  assert (!r);
-}
-
 /* Called during transmission phases when there is no hope of
  * resynchronizing with the server, and all further requests from the
  * client will fail.  Returns -1 for convenience. */
@@ -213,7 +199,7 @@ nbd_mark_dead (struct handle *h)
 {
   int err = errno;
 
-  nbd_lock (h);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
   if (!h->dead) {
     nbdkit_debug ("permanent failure while talking to server %s: %m",
                   sockname);
@@ -221,7 +207,6 @@ nbd_mark_dead (struct handle *h)
   }
   else if (!err)
     errno = ESHUTDOWN;
-  nbd_unlock (h);
   /* NBD only accepts a limited set of errno values over the wire, and
      nbdkit converts all other values to EINVAL. If we died due to an
      errno value that cannot transmit over the wire, translate it to
@@ -238,7 +223,7 @@ find_trans_by_cookie (struct handle *h, uint64_t cookie)
   struct transaction **ptr;
   struct transaction *trans;
 
-  nbd_lock (h);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
   ptr = &h->trans;
   while ((trans = *ptr) != NULL) {
     if (cookie == trans->u.cookie)
@@ -247,7 +232,6 @@ find_trans_by_cookie (struct handle *h, uint64_t cookie)
   }
   if (trans)
     *ptr = trans->next;
-  nbd_unlock (h);
   return trans;
 }
 
@@ -303,16 +287,15 @@ nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
   }
   trans->buf = rep_buf;
   trans->count = rep_buf ? count : 0;
-  nbd_lock (h);
-  if (h->dead) {
-    nbd_unlock (h);
-    goto err;
+  {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
+    if (h->dead)
+      goto err;
+    trans->next = h->trans;
+    h->trans = trans;
+    fd = trans->u.fds[0];
+    cookie = trans->u.cookie;
   }
-  trans->next = h->trans;
-  h->trans = trans;
-  fd = trans->u.fds[0];
-  cookie = trans->u.cookie;
-  nbd_unlock (h);
   if (nbd_request_raw (h, flags, type, offset, count, cookie, req_buf) == 0)
     return fd;
   trans = find_trans_by_cookie (h, cookie);
@@ -410,9 +393,8 @@ nbd_reader (void *handle)
     }
     if (fd >= 0)
       close (fd);
-    nbd_lock (h);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
     done = h->dead;
-    nbd_unlock (h);
   }
 
   /* Clean up any stranded in-flight requests */
@@ -420,10 +402,11 @@ nbd_reader (void *handle)
   while (1) {
     struct transaction *trans;
 
-    nbd_lock (h);
-    trans = h->trans;
-    h->trans = trans ? trans->next : NULL;
-    nbd_unlock (h);
+    {
+      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
+      trans = h->trans;
+      h->trans = trans ? trans->next : NULL;
+    }
     if (!trans)
       break;
     if (write (trans->u.fds[1], &r, sizeof r) != sizeof r) {
