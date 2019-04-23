@@ -43,6 +43,7 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
 #include "ispowerof2.h"
 #include "iszero.h"
 #include "rounding.h"
@@ -292,7 +293,7 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   uint32_t n;
   uint64_t real_size_copy;
-  struct nbdkit_extents *extents2;
+  CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 = NULL;
   size_t i;
 
   pthread_mutex_lock (&lock);
@@ -322,20 +323,15 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     n = count;
   else
     n = real_size_copy - offset;
-  if (next_ops->extents (nxdata, n, offset, flags, extents2, err) == -1) {
-    nbdkit_extents_free (extents2);
+  if (next_ops->extents (nxdata, n, offset, flags, extents2, err) == -1)
     return -1;
-  }
 
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
     struct nbdkit_extent e = nbdkit_get_extent (extents2, i);
 
-    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
-      nbdkit_extents_free (extents2);
+    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1)
       return -1;
-    }
   }
-  nbdkit_extents_free (extents2);
 
   return 0;
 }
