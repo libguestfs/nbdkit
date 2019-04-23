@@ -38,7 +38,6 @@ sbin_PROGRAMS = nbdkit
 nbdkit_SOURCES = \
 	background.c \
 	captive.c \
-	cleanup.c \
 	connections.c \
 	crypto.c \
 	debug.c \
@@ -124,9 +123,11 @@ check_PROGRAMS = test-utils
 test_utils_SOURCES = \
 	test-utils.c \
 	utils.c \
-	cleanup.c \
 	extents.c
 test_utils_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
+	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils
 test_utils_CFLAGS = $(WARNINGS_CFLAGS) $(VALGRIND_CFLAGS)
+test_utils_LDADD = \
+	$(top_builddir)/common/utils/libutils.la

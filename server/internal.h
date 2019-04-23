@@ -42,6 +42,7 @@
 #define NBDKIT_API_VERSION 2
 #include "nbdkit-plugin.h"
 #include "nbdkit-filter.h"
+#include "cleanup.h"
 
 #ifdef __APPLE__
 #define UNIX_PATH_MAX 104
@@ -134,17 +135,6 @@ extern unsigned int get_socket_activation (void);
 
 /* usergroup.c */
 extern void change_user (void);
-
-/* cleanup.c */
-extern void cleanup_free (void *ptr);
-#define CLEANUP_FREE __attribute__((cleanup (cleanup_free)))
-extern void cleanup_extents_free (void *ptr);
-#define CLEANUP_EXTENTS_FREE __attribute__((cleanup (cleanup_extents_free)))
-extern void cleanup_unlock (pthread_mutex_t **ptr);
-#define CLEANUP_UNLOCK __attribute__((cleanup (cleanup_unlock)))
-#define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex) \
-  CLEANUP_UNLOCK pthread_mutex_t *_lock = mutex; \
-  pthread_mutex_lock (_lock)
 
 /* connections.c */
 struct connection;

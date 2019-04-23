@@ -34,10 +34,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
 
-#include "internal.h"
+#include "cleanup.h"
+#include "nbdkit-filter.h"
 
 void
 cleanup_free (void *ptr)

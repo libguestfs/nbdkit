@@ -34,7 +34,9 @@ include $(top_srcdir)/common-rules.mk
 noinst_LTLIBRARIES = libutils.la
 
 libutils_la_SOURCES = \
-        utils.c \
+	cleanup.c \
+	cleanup.h \
+	utils.c \
 	utils.h
 libutils_la_CPPFLAGS = \
 	-I$(top_srcdir)/include
