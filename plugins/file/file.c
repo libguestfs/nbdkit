@@ -58,6 +58,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
 #include "isaligned.h"
 
 #ifndef O_CLOEXEC
@@ -250,12 +251,8 @@ file_get_size (void *handle)
   struct handle *h = handle;
 
   if (h->is_block_device) {
-    int64_t size;
-
-    pthread_mutex_lock (&lseek_lock);
-    size = block_device_size (h->fd);
-    pthread_mutex_unlock (&lseek_lock);
-    return size;
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lseek_lock);
+    return block_device_size (h->fd);
   } else {
     /* Regular file. */
     struct stat statbuf;
@@ -607,13 +604,8 @@ static int
 file_extents (void *handle, uint32_t count, uint64_t offset,
               uint32_t flags, struct nbdkit_extents *extents)
 {
-  int r;
-
-  pthread_mutex_lock (&lseek_lock);
-  r = do_extents (handle, count, offset, flags, extents);
-  pthread_mutex_unlock (&lseek_lock);
-
-  return r;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lseek_lock);
+  return do_extents (handle, count, offset, flags, extents);
 }
 #endif /* SEEK_HOLE */
 

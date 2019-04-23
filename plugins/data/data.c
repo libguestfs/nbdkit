@@ -46,6 +46,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
 #include "sparse.h"
 
 /* If raw|base64|data parameter seen. */
@@ -339,9 +340,8 @@ data_can_multi_conn (void *handle)
 static int
 data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_read (sa, buf, count, offset);
-  pthread_mutex_unlock (&lock);
   return 0;
 }
 
@@ -349,21 +349,16 @@ data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 static int
 data_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 {
-  int r;
-
-  pthread_mutex_lock (&lock);
-  r = sparse_array_write (sa, buf, count, offset);
-  pthread_mutex_unlock (&lock);
-  return r;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+  return sparse_array_write (sa, buf, count, offset);
 }
 
 /* Zero. */
 static int
 data_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_zero (sa, count, offset);
-  pthread_mutex_unlock (&lock);
   return 0;
 }
 
@@ -371,9 +366,8 @@ data_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 static int
 data_trim (void *handle, uint32_t count, uint64_t offset)
 {
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_zero (sa, count, offset);
-  pthread_mutex_unlock (&lock);
   return 0;
 }
 
@@ -382,12 +376,8 @@ static int
 data_extents (void *handle, uint32_t count, uint64_t offset,
               uint32_t flags, struct nbdkit_extents *extents)
 {
-  int r;
-
-  pthread_mutex_lock (&lock);
-  r = sparse_array_extents (sa, count, offset, extents);
-  pthread_mutex_unlock (&lock);
-  return r;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+  return sparse_array_extents (sa, count, offset, extents);
 }
 
 static struct nbdkit_plugin plugin = {

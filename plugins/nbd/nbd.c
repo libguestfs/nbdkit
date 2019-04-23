@@ -50,6 +50,7 @@
 #include <nbdkit-plugin.h>
 #include "protocol.h"
 #include "byte-swapping.h"
+#include "cleanup.h"
 
 static char *sockname = NULL;
 static char *export = NULL;
@@ -266,14 +267,13 @@ nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
   };
   int r;
 
-  pthread_mutex_lock (&h->write_lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->write_lock);
   nbdkit_debug ("sending request type %d (%s), flags %#x, offset %#" PRIx64
                 ", count %#x, cookie %#" PRIx64, type, name_of_nbd_cmd(type),
                 flags, offset, count, cookie);
   r = write_full (h->fd, &req, sizeof req);
   if (buf && !r)
     r = write_full (h->fd, buf, count);
-  pthread_mutex_unlock (&h->write_lock);
   return r;
 }
 
