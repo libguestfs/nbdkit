@@ -444,6 +444,10 @@ pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset,
   caml_leave_blocking_section ();
 
   strv = caml_alloc_string (count);
+  /* Initialize the buffer with zeroes in case the plugin does not
+   * fill it completely.
+   */
+  memset (String_val (strv), 0, count);
   offsetv = caml_copy_int64 (offset);
   flagsv = Val_flags (flags);
 
