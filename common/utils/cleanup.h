@@ -34,6 +34,7 @@
 #define NBDKIT_CLEANUP_H
 
 #include <pthread.h>
+#include <assert.h>
 
 extern void cleanup_free (void *ptr);
 #define CLEANUP_FREE __attribute__((cleanup (cleanup_free)))
@@ -43,6 +44,9 @@ extern void cleanup_unlock (pthread_mutex_t **ptr);
 #define CLEANUP_UNLOCK __attribute__((cleanup (cleanup_unlock)))
 #define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex) \
   CLEANUP_UNLOCK pthread_mutex_t *_lock = mutex; \
-  pthread_mutex_lock (_lock)
+  do { \
+    int _r = pthread_mutex_lock (_lock); \
+    assert (!_r); \
+  } while (0)
 
 #endif /* NBDKIT_CLEANUP_H */

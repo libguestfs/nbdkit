@@ -34,6 +34,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "cleanup.h"
 #include "nbdkit-filter.h"
@@ -53,5 +54,6 @@ cleanup_extents_free (void *ptr)
 void
 cleanup_unlock (pthread_mutex_t **ptr)
 {
-  pthread_mutex_unlock (*ptr);
+  int r = pthread_mutex_unlock (*ptr);
+  assert (!r);
 }
