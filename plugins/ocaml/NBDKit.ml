@@ -33,9 +33,16 @@
 open Printf
 
 type flags = flag list
-and flag = May_trim | FUA
+and flag = May_trim | FUA | Req_one
 
 type fua_flag = FuaNone | FuaEmulate | FuaNative
+
+type extent = {
+  offset : int64;
+  length : int64;
+  is_hole : bool;
+  is_zero : bool;
+}
 
 type 'a plugin = {
   name : string;
@@ -72,6 +79,9 @@ type 'a plugin = {
   zero : ('a -> int32 -> int64 -> flags -> unit) option;
 
   can_multi_conn : ('a -> bool) option;
+
+  can_extents : ('a -> bool) option;
+  extents : ('a -> int32 -> int64 -> flags -> extent list) option;
 }
 
 let default_callbacks = {
@@ -109,6 +119,9 @@ let default_callbacks = {
   zero = None;
 
   can_multi_conn = None;
+
+  can_extents = None;
+  extents = None;
 }
 
 type thread_model =
@@ -153,6 +166,9 @@ external set_trim : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbd
 external set_zero : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_zero"
 
 external set_can_multi_conn : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_multi_conn"
+
+external set_can_extents : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_extents"
+external set_extents : ('a -> int32 -> int64 -> flags -> extent list) -> unit = "ocaml_nbdkit_set_extents"
 
 let may f = function None -> () | Some a -> f a
 
@@ -210,7 +226,10 @@ let register_plugin thread_model plugin =
   may set_trim plugin.trim;
   may set_zero plugin.zero;
 
-  may set_can_multi_conn plugin.can_multi_conn
+  may set_can_multi_conn plugin.can_multi_conn;
+
+  may set_can_extents plugin.can_extents;
+  may set_extents plugin.extents
 
 external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
 

@@ -35,9 +35,16 @@
     Reading [nbdkit-ocaml-plugin(3)] is advised. *)
 
 type flags = flag list
-and flag = May_trim | FUA
+and flag = May_trim | FUA | Req_one
 
 type fua_flag = FuaNone | FuaEmulate | FuaNative
+
+type extent = {
+  offset : int64;
+  length : int64;
+  is_hole : bool;
+  is_zero : bool;
+}
 
 type 'a plugin = {
   name : string;                                  (* required *)
@@ -74,6 +81,9 @@ type 'a plugin = {
   zero : ('a -> int32 -> int64 -> flags -> unit) option;
 
   can_multi_conn : ('a -> bool) option;
+
+  can_extents : ('a -> bool) option;
+  extents : ('a -> int32 -> int64 -> flags -> extent list) option;
 }
 (** The plugin fields and callbacks.  ['a] is the handle type. *)
 

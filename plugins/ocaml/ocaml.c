@@ -112,6 +112,9 @@ static value zero_fn;
 
 static value can_multi_conn_fn;
 
+static value can_extents_fn;
+static value extents_fn;
+
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
 
 static void
@@ -170,6 +173,9 @@ unload_wrapper (void)
   REMOVE (zero);
 
   REMOVE (can_multi_conn);
+
+  REMOVE (can_extents);
+  REMOVE (extents);
 }
 
 static int
@@ -430,6 +436,12 @@ Val_flags (uint32_t flags)
     Store_field (consv, 1, rv);
     rv = consv;
   }
+  if (flags & NBDKIT_FLAG_REQ_ONE) {
+    consv = caml_alloc (2, 0);
+    Store_field (consv, 0, 2); /* 2 = Req_one */
+    Store_field (consv, 1, rv);
+    rv = consv;
+  }
 
   CAMLreturn (rv);
 }
@@ -580,6 +592,70 @@ can_multi_conn_wrapper (void *h)
   CAMLreturnT (int, Bool_val (rv));
 }
 
+static int
+can_extents_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_extents_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Bool_val (rv));
+}
+
+static int
+extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
+                 struct nbdkit_extents *extents)
+{
+  CAMLparam0 ();
+  CAMLlocal5 (rv, countv, offsetv, flagsv, v);
+
+  caml_leave_blocking_section ();
+
+  countv = caml_copy_int32 (count);
+  offsetv = caml_copy_int32 (offset);
+  flagsv = Val_flags (flags);
+
+  value args[] = { *(value *) h, countv, offsetv, flagsv };
+  rv = caml_callbackN_exn (extents_fn, sizeof args / sizeof args[0], args);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  /* Convert extents list into calls to nbdkit_add_extent. */
+  while (rv != Val_int (0)) {
+    uint64_t offset, length;
+    uint32_t type = 0;
+
+    v = Field (rv, 0);          /* extent struct */
+    offset = Int64_val (Field (v, 0));
+    length = Int64_val (Field (v, 1));
+    if (Bool_val (Field (v, 2)))
+      type |= NBDKIT_EXTENT_HOLE;
+    if (Bool_val (Field (v, 3)))
+      type |= NBDKIT_EXTENT_ZERO;
+    if (nbdkit_add_extent (extents, offset, length, type) == -1) {
+      caml_enter_blocking_section ();
+      CAMLreturnT (int, -1);
+    }
+
+    rv = Field (rv, 1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, 0);
+}
+
 value
 ocaml_nbdkit_set_thread_model (value modelv)
 {
@@ -660,6 +736,9 @@ SET(trim)
 SET(zero)
 
 SET(can_multi_conn)
+
+SET(can_extents)
+SET(extents)
 
 /* NB: noalloc function. */
 value
