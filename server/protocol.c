@@ -660,7 +660,6 @@ protocol_recv_request_send_reply (struct connection *conn)
     if (cmd == NBD_CMD_READ || cmd == NBD_CMD_WRITE) {
       buf = malloc (count);
       if (buf == NULL) {
-      out_of_memory:
         perror ("malloc");
         error = ENOMEM;
         if (cmd == NBD_CMD_WRITE &&
@@ -673,8 +672,10 @@ protocol_recv_request_send_reply (struct connection *conn)
     /* Allocate the extents list for block status only. */
     if (cmd == NBD_CMD_BLOCK_STATUS) {
       extents = nbdkit_extents_new (offset, conn->exportsize);
-      if (extents == NULL)
-        goto out_of_memory;
+      if (extents == NULL) {
+        error = ENOMEM;
+        goto send_reply;
+      }
     }
 
     /* Receive the write data buffer. */
