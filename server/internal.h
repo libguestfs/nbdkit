@@ -350,6 +350,7 @@ extern void threadlocal_set_sockaddr (const struct sockaddr *addr,
 /*extern void threadlocal_get_sockaddr ();*/
 extern void threadlocal_set_error (int err);
 extern int threadlocal_get_error (void);
+extern void *threadlocal_buffer (size_t size);
 
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1

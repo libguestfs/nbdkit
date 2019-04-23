@@ -611,7 +611,7 @@ protocol_recv_request_send_reply (struct connection *conn)
   uint16_t cmd, flags;
   uint32_t magic, count, error = 0;
   uint64_t offset;
-  CLEANUP_FREE char *buf = NULL;
+  char *buf;
   CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents = NULL;
 
   /* Read the request packet. */
@@ -656,11 +656,12 @@ protocol_recv_request_send_reply (struct connection *conn)
       goto send_reply;
     }
 
-    /* Allocate the data buffer used for either read or write requests. */
+    /* Get the data buffer used for either read or write requests.
+     * This is a common per-thread data buffer, it must not be freed.
+     */
     if (cmd == NBD_CMD_READ || cmd == NBD_CMD_WRITE) {
-      buf = malloc (count);
+      buf = threadlocal_buffer ((size_t) count);
       if (buf == NULL) {
-        perror ("malloc");
         error = ENOMEM;
         if (cmd == NBD_CMD_WRITE &&
             skip_over_write_buffer (conn->sockin, count) < 0)
