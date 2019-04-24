@@ -222,9 +222,8 @@ maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
   if (new_rate == -1)
     return;
 
-  pthread_mutex_lock (lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (lock);
   old_rate = bucket_adjust_rate (bucket, new_rate);
-  pthread_mutex_unlock (lock);
 
   if (old_rate != new_rate)
     nbdkit_debug ("rate adjusted from %" PRIu64 " to %" PRIi64,
@@ -245,9 +244,10 @@ maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count)
 
   while (bits > 0) {
     /* Run the token bucket algorithm. */
-    pthread_mutex_lock (lock);
-    bits = bucket_run (bucket, bits, &ts);
-    pthread_mutex_unlock (lock);
+    {
+      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (lock);
+      bits = bucket_run (bucket, bits, &ts);
+    }
 
     if (bits > 0)
       nanosleep (&ts, NULL);

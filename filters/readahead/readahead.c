@@ -103,9 +103,8 @@ readahead_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (r == -1)
     return -1;
 
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   size = r;
-  pthread_mutex_unlock (&lock);
 
   return r;
 }

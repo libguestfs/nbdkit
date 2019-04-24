@@ -209,9 +209,8 @@ cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   nbdkit_debug ("cache: underlying file size: %" PRIi64, size);
 
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   r = blk_set_size (size);
-  pthread_mutex_unlock (&lock);
   if (r == -1)
     return -1;
 
@@ -266,9 +265,10 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    pthread_mutex_lock (&lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
-    pthread_mutex_unlock (&lock);
+    {
+      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+      r = blk_read (next_ops, nxdata, blknum, block, err);
+    }
     if (r == -1)
       return -1;
 
@@ -316,13 +316,12 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     /* Do a read-modify-write operation on the current block.
      * Hold the lock over the whole operation.
      */
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memcpy (&block[blkoffs], buf, n);
       r = blk_write (next_ops, nxdata, blknum, block, flags, err);
     }
-    pthread_mutex_unlock (&lock);
     if (r == -1)
       return -1;
 
@@ -371,13 +370,12 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     /* Do a read-modify-write operation on the current block.
      * Hold the lock over the whole operation.
      */
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
       r = blk_write (next_ops, nxdata, blknum, block, flags, err);
     }
-    pthread_mutex_unlock (&lock);
     if (r == -1)
       return -1;
 
@@ -429,9 +427,10 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
    * to be sure.  Also we still need to issue the flush to the
    * underlying storage.
    */
-  pthread_mutex_lock (&lock);
-  for_each_dirty_block (flush_dirty_block, &data);
-  pthread_mutex_unlock (&lock);
+  {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    for_each_dirty_block (flush_dirty_block, &data);
+  }
 
   /* Now issue a flush request to the underlying storage. */
   if (next_ops->flush (nxdata, 0,

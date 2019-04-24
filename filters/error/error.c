@@ -45,6 +45,7 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
 #include "random.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
@@ -283,9 +284,10 @@ random_error (const struct error_settings *error_settings,
    * representable in a 64 bit integer, and because we don't need all
    * this precision anyway, let's work in 32 bits.
    */
-  pthread_mutex_lock (&lock);
-  rand = xrandom (&random_state) & UINT32_MAX;
-  pthread_mutex_unlock (&lock);
+  {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    rand = xrandom (&random_state) & UINT32_MAX;
+  }
   if (rand >= error_settings->rate * UINT32_MAX)
     return false;
 

@@ -217,9 +217,8 @@ log_open (nbdkit_next_open *next, void *nxdata, int readonly)
     return NULL;
   }
 
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   h->connection = ++connections;
-  pthread_mutex_unlock (&lock);
   h->id = 0;
   return h;
 }

@@ -92,9 +92,8 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   nbdkit_debug ("cow: underlying file size: %" PRIi64, size);
 
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   r = blk_set_size (size);
-  pthread_mutex_unlock (&lock);
   if (r == -1)
     return -1;
 
@@ -174,9 +173,10 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (n > count)
       n = count;
 
-    pthread_mutex_lock (&lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
-    pthread_mutex_unlock (&lock);
+    {
+      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+      r = blk_read (next_ops, nxdata, blknum, block, err);
+    }
     if (r == -1)
       return -1;
 
@@ -218,13 +218,12 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     /* Do a read-modify-write operation on the current block.
      * Hold the lock over the whole operation.
      */
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memcpy (&block[blkoffs], buf, n);
       r = blk_write (blknum, block, err);
     }
-    pthread_mutex_unlock (&lock);
     if (r == -1)
       return -1;
 
@@ -269,13 +268,12 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
      * XXX There is the possibility of optimizing this: ONLY if we are
      * writing a whole, aligned block, then use FALLOC_FL_ZERO_RANGE.
      */
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
       r = blk_write (blknum, block, err);
     }
-    pthread_mutex_unlock (&lock);
     if (r == -1)
       return -1;
 
@@ -294,11 +292,10 @@ cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 {
   int r;
 
-  pthread_mutex_lock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   r = blk_flush ();
   if (r == -1)
     *err = errno;
-  pthread_mutex_unlock (&lock);
   return r;
 }
 

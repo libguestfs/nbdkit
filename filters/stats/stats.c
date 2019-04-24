@@ -44,6 +44,7 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
 #include "tvdiff.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
@@ -100,9 +101,8 @@ stats_unload (void)
   gettimeofday (&now, NULL);
   usecs = tvdiff_usec (&start_t, &now);
   if (fp && usecs > 0) {
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     print_stats (usecs);
-    pthread_mutex_unlock (&lock);
   }
 
   if (fp)
@@ -163,10 +163,9 @@ stats_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   r = next_ops->pread (nxdata, buf, count, offset, flags, err);
   if (r == 0) {
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     pread_ops++;
     pread_bytes += count;
-    pthread_mutex_unlock (&lock);
   }
   return r;
 }
@@ -182,10 +181,9 @@ stats_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
   if (r == 0) {
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     pwrite_ops++;
     pwrite_bytes += count;
-    pthread_mutex_unlock (&lock);
   }
   return r;
 }
@@ -201,10 +199,9 @@ stats_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   r = next_ops->trim (nxdata, count, offset, flags, err);
   if (r == 0) {
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     trim_ops++;
     trim_bytes += count;
-    pthread_mutex_unlock (&lock);
   }
   return r;
 }
@@ -220,10 +217,9 @@ stats_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   r = next_ops->zero (nxdata, count, offset, flags, err);
   if (r == 0) {
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     zero_ops++;
     zero_bytes += count;
-    pthread_mutex_unlock (&lock);
   }
   return r;
 }
@@ -239,14 +235,13 @@ stats_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   r = next_ops->extents (nxdata, count, offset, flags, extents, err);
   if (r == 0) {
-    pthread_mutex_lock (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     extents_ops++;
     /* XXX There's a case for trying to determine how long the extents
      * will be that are returned to the client, given the flags and
      * the complex rules in the protocol.
      */
     extents_bytes += count;
-    pthread_mutex_unlock (&lock);
   }
   return r;
 }
