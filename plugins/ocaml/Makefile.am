@@ -74,7 +74,7 @@ nbdkit-ocamlexample-plugin.so: example.cmx libnbdkitocaml.la NBDKit.cmi NBDKit.c
 	  -output-obj -runtime-variant _pic -o $@ \
 	  NBDKit.cmx $< \
 	  -cclib -L.libs -cclib -lnbdkitocaml
-example.cmx: example.ml NBDKit.cmi
+example.cmx: example.ml NBDKit.cmi NBDKit.cmx
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $< -o $@
 
 if HAVE_POD
