@@ -370,8 +370,6 @@ sparse_array_extents (struct sparse_array *sa,
 
   while (count > 0) {
     p = lookup (sa, offset, false, &n, NULL);
-    if (n > count)
-      n = count;
 
     /* Work out the type of this extent. */
     if (p == NULL)
@@ -387,6 +385,9 @@ sparse_array_extents (struct sparse_array *sa,
     }
     if (nbdkit_add_extent (extents, offset, n, type) == -1)
       return -1;
+
+    if (n > count)
+      n = count;
 
     count -= n;
     offset += n;
