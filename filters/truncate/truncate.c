@@ -319,6 +319,10 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
    * returned data to the original array.
    */
   extents2 = nbdkit_extents_new (offset, real_size_copy);
+  if (extents2 == NULL) {
+    *err = errno;
+    return -1;
+  }
   if (offset + count <= real_size_copy)
     n = count;
   else
@@ -329,8 +333,10 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
     struct nbdkit_extent e = nbdkit_get_extent (extents2, i);
 
-    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1)
+    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
+      *err = errno;
       return -1;
+    }
   }
 
   return 0;

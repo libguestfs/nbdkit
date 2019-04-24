@@ -246,8 +246,10 @@ partition_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
     e = nbdkit_get_extent (extents2, i);
     e.offset -= h->offset;
-    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1)
+    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
+      *err = errno;
       return -1;
+    }
   }
   return 0;
 }
