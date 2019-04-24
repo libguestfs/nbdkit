@@ -611,7 +611,7 @@ protocol_recv_request_send_reply (struct connection *conn)
   uint16_t cmd, flags;
   uint32_t magic, count, error = 0;
   uint64_t offset;
-  char *buf;
+  char *buf = NULL;
   CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents = NULL;
 
   /* Read the request packet. */
