@@ -812,7 +812,7 @@ guarantee that trimmed blocks read back as zeroes.
 
 C<nbdkit_extent_add> returns C<0> on success or C<-1> on failure.  On
 failure C<nbdkit_error> and/or C<nbdkit_set_error> has already been
-called.
+called.  C<errno> will be set to a suitable value.
 
 =head1 THREADS
 
