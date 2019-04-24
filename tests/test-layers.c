@@ -59,6 +59,7 @@
 #include <pthread.h>
 
 #include "byte-swapping.h"
+#include "cleanup.h"
 #include "exit-with-parent.h"
 #include "protocol.h"
 
@@ -588,16 +589,17 @@ start_log_capture (void *arg)
   ssize_t r;
 
   for (;;) {
-    pthread_mutex_lock (&log_lock);
-    if (allocated <= log_len) {
-      allocated += 4096;
-      log = realloc (log, allocated);
-      if (log == NULL) {
-        perror ("log: realloc");
-        exit (EXIT_FAILURE);
+    {
+      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
+      if (allocated <= log_len) {
+        allocated += 4096;
+        log = realloc (log, allocated);
+        if (log == NULL) {
+          perror ("log: realloc");
+          exit (EXIT_FAILURE);
+        }
       }
     }
-    pthread_mutex_unlock (&log_lock);
 
     r = read (fd, &log[log_len], allocated-log_len);
     if (r == -1) {
@@ -611,9 +613,8 @@ start_log_capture (void *arg)
     if (write (2, &log[log_len], r) == -1)
       perror ("log: write");
 
-    pthread_mutex_lock (&log_lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
     log_len += r;
-    pthread_mutex_unlock (&log_lock);
   }
 
   /* nbdkit closed the connection. */
@@ -639,10 +640,9 @@ no_message_error (const char *msg)
 static void
 log_verify_seen (const char *msg)
 {
-  pthread_mutex_lock (&log_lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
   if (memmem (log, log_len, msg, strlen (msg)) == NULL)
     no_message_error (msg);
-  pthread_mutex_unlock (&log_lock);
 }
 
 static void messages_out_of_order (const char *msg1, const char *msg2)
@@ -663,7 +663,7 @@ log_verify_seen_in_order (const char *msg, ...)
   void *prev, *curr;
   const char *prev_msg, *curr_msg;
 
-  pthread_mutex_lock (&log_lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
 
   prev = memmem (log, log_len, msg, strlen (msg));
   if (prev == NULL) no_message_error (msg);
@@ -678,16 +678,13 @@ log_verify_seen_in_order (const char *msg, ...)
     prev = curr;
   }
   va_end (args);
-
-  pthread_mutex_unlock (&log_lock);
 }
 
 static void
 log_free (void)
 {
-  pthread_mutex_lock (&log_lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
   free (log);
   log = NULL;
   log_len = 0;
-  pthread_mutex_unlock (&log_lock);
 }

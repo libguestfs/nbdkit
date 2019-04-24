@@ -787,12 +787,15 @@ test_layers_SOURCES = \
 test_layers_CPPFLAGS = \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/protocol \
+	-I$(top_srcdir)/common/utils \
 	-I$(top_srcdir)/server
 test_layers_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(PTHREAD_CFLAGS)
 test_layers_LDFLAGS = \
 	$(PTHREAD_LIBS)
+test_layers_LDADD = \
+	$(top_builddir)/common/utils/libutils.la
 test_layers_DEPENDENCIES = \
 	test-layers-plugin.la \
 	test-layers-filter1.la \
