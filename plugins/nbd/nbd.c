@@ -131,6 +131,7 @@ struct transaction {
   uint64_t offset;
   uint32_t count;
   uint32_t err;
+  struct nbdkit_extents *extents;
   struct transaction *next;
 };
 
@@ -141,6 +142,7 @@ struct handle {
   int flags;
   int64_t size;
   bool structured;
+  bool extents;
   pthread_t reader;
 
   /* Prevents concurrent threads from interleaving writes to server */
@@ -270,7 +272,7 @@ nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
 static int
 nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
                   uint64_t offset, uint32_t count, const void *req_buf,
-                  void *rep_buf)
+                  void *rep_buf, struct nbdkit_extents *extents)
 {
   int err;
   struct transaction *trans;
@@ -292,6 +294,7 @@ nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
   trans->buf = rep_buf;
   trans->count = rep_buf ? count : 0;
   trans->offset = offset;
+  trans->extents = extents;
   {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
     if (h->dead)
@@ -323,7 +326,7 @@ static int
 nbd_request (struct handle *h, uint16_t flags, uint16_t type, uint64_t offset,
              uint32_t count)
 {
-  return nbd_request_full (h, flags, type, offset, count, NULL, NULL);
+  return nbd_request_full (h, flags, type, offset, count, NULL, NULL, NULL);
 }
 
 /* Read a reply, and look up the fd corresponding to the transaction.
@@ -342,6 +345,9 @@ nbd_reply_raw (struct handle *h, int *fd)
   void *buf = NULL;
   CLEANUP_FREE char *payload = NULL;
   uint32_t count;
+  uint32_t id;
+  struct block_descriptor *extents = NULL;
+  size_t nextents = 0;
   int error = NBD_SUCCESS;
   bool more = false;
   uint32_t len = 0; /* 0 except for structured reads */
@@ -432,6 +438,23 @@ nbd_reply_raw (struct handle *h, int *fd)
       }
       zero = true;
       break;
+    case NBD_REPLY_TYPE_BLOCK_STATUS:
+      if (!h->extents) {
+        nbdkit_error ("block status response without negotiation");
+        return nbd_mark_dead (h);
+      }
+      if (rep.structured.length < sizeof *extents ||
+          rep.structured.length % sizeof *extents != sizeof id) {
+        nbdkit_error ("structured reply OFFSET_HOLE size incorrect");
+        return nbd_mark_dead (h);
+      }
+      nextents = rep.structured.length / sizeof *extents;
+      extents = (struct block_descriptor *) &payload[sizeof id];
+      memcpy (&id, payload, sizeof id);
+      id = be32toh (id);
+      nbdkit_debug ("parsing %zu extents for context id %" PRId32,
+                    nextents, id);
+      break;
     default:
       if (!NBD_REPLY_TYPE_IS_ERR (rep.structured.type)) {
         nbdkit_error ("received unexpected structured reply %s",
@@ -475,6 +498,23 @@ nbd_reply_raw (struct handle *h, int *fd)
 
   buf = trans->buf;
   count = trans->count;
+  if (nextents) {
+    if (!trans->extents) {
+      nbdkit_error ("block status response to a non-status command");
+      return nbd_mark_dead (h);
+    }
+    offset = trans->offset;
+    for (size_t i = 0; i < nextents; i++) {
+      /* We rely on the fact that NBDKIT_EXTENT_* match NBD_STATE_* */
+      if (nbdkit_add_extent (trans->extents, offset,
+                             be32toh (extents[i].length),
+                             be32toh (extents[i].status_flags)) == -1) {
+        error = errno;
+        break;
+      }
+      offset += be32toh (extents[i].length);
+    }
+  }
   if (buf && h->structured && rep.simple.magic == NBD_SIMPLE_REPLY_MAGIC) {
     nbdkit_error ("simple read reply when structured was expected");
     return nbd_mark_dead (h);
@@ -661,8 +701,11 @@ nbd_newstyle_recv_option_reply (struct handle *h, uint32_t option,
 static int
 nbd_newstyle_haggle (struct handle *h)
 {
+  const char *const query = "base:allocation";
   struct new_option opt;
   uint32_t exportnamelen = htobe32 (strlen (export));
+  uint32_t nrqueries = htobe32 (1);
+  uint32_t querylen = htobe32 (strlen (query));
   /* For now, we make no NBD_INFO_* requests, relying on the server to
      send its defaults. TODO: nbdkit should let plugins report block
      sizes, at which point we should request NBD_INFO_BLOCK_SIZE and
@@ -682,9 +725,47 @@ nbd_newstyle_haggle (struct handle *h)
                                       NULL) < 0)
     return -1;
   if (reply.reply == NBD_REP_ACK) {
-    nbdkit_debug ("structured replies enabled");
+    nbdkit_debug ("structured replies enabled, trying NBD_OPT_SET_META_CONTEXT");
     h->structured = true;
-    /* TODO: block status */
+
+    opt.version = htobe64 (NEW_VERSION);
+    opt.option = htobe32 (NBD_OPT_SET_META_CONTEXT);
+    opt.optlen = htobe32 (sizeof exportnamelen + strlen (export) +
+                          sizeof nrqueries + sizeof querylen + strlen (query));
+    if (write_full (h->fd, &opt, sizeof opt) ||
+        write_full (h->fd, &exportnamelen, sizeof exportnamelen) ||
+        write_full (h->fd, export, strlen (export)) ||
+        write_full (h->fd, &nrqueries, sizeof nrqueries) ||
+        write_full (h->fd, &querylen, sizeof querylen) ||
+        write_full (h->fd, query, strlen (query))) {
+      nbdkit_error ("unable to request NBD_OPT_SET_META_CONTEXT: %m");
+      return -1;
+    }
+    if (nbd_newstyle_recv_option_reply (h, NBD_OPT_SET_META_CONTEXT, &reply,
+                                        NULL) < 0)
+      return -1;
+    if (reply.reply == NBD_REP_META_CONTEXT) {
+      /* Cheat: we asked for exactly one context. We could double
+         check that the server is replying with exactly the
+         "base:allocation" context, and then remember the id it tells
+         us to later confirm that responses to NBD_CMD_BLOCK_STATUS
+         match up; but in the absence of multiple contexts, it's
+         easier to just assume the server is compliant, and will reuse
+         the same id, without bothering to check further. */
+      nbdkit_debug ("extents enabled");
+      h->extents = true;
+      if (nbd_newstyle_recv_option_reply (h, NBD_OPT_SET_META_CONTEXT, &reply,
+                                          NULL) < 0)
+        return -1;
+    }
+    if (reply.reply != NBD_REP_ACK) {
+      if (h->extents) {
+        nbdkit_error ("unexpected response to set meta context");
+        return -1;
+      }
+      nbdkit_debug ("ignoring meta context response %s",
+                    name_of_nbd_rep (reply.reply));
+    }
   }
   else {
     nbdkit_debug ("structured replies disabled");
@@ -979,6 +1060,14 @@ nbd_can_multi_conn (void *handle)
   return h->flags & NBD_FLAG_CAN_MULTI_CONN;
 }
 
+static int
+nbd_can_extents (void *handle)
+{
+  struct handle *h = handle;
+
+  return h->extents;
+}
+
 /* Read data from the file. */
 static int
 nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -988,7 +1077,7 @@ nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
   int c;
 
   assert (!flags);
-  c = nbd_request_full (h, 0, NBD_CMD_READ, offset, count, NULL, buf);
+  c = nbd_request_full (h, 0, NBD_CMD_READ, offset, count, NULL, buf, NULL);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
@@ -1002,7 +1091,7 @@ nbd_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   c = nbd_request_full (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
-                        NBD_CMD_WRITE, offset, count, buf, NULL);
+                        NBD_CMD_WRITE, offset, count, buf, NULL, NULL);
   return c < 0 ? c : nbd_reply (h, c);
 }
 
@@ -1050,6 +1139,21 @@ nbd_flush (void *handle, uint32_t flags)
   return c < 0 ? c : nbd_reply (h, c);
 }
 
+/* Read extents of the file. */
+static int
+nbd_extents (void *handle, uint32_t count, uint64_t offset,
+             uint32_t flags, struct nbdkit_extents *extents)
+{
+  struct handle *h = handle;
+  int c;
+
+  assert (!(flags & ~NBDKIT_FLAG_REQ_ONE) && h->extents);
+  c = nbd_request_full (h, flags & NBDKIT_FLAG_REQ_ONE ? NBD_CMD_FLAG_REQ_ONE : 0,
+                        NBD_CMD_BLOCK_STATUS, offset, count, NULL, NULL,
+                        extents);
+  return c < 0 ? c : nbd_reply (h, c);
+}
+
 static struct nbdkit_plugin plugin = {
   .name               = "nbd",
   .longname           = "nbdkit nbd plugin",
@@ -1068,11 +1172,13 @@ static struct nbdkit_plugin plugin = {
   .can_zero           = nbd_can_zero,
   .can_fua            = nbd_can_fua,
   .can_multi_conn     = nbd_can_multi_conn,
+  .can_extents        = nbd_can_extents,
   .pread              = nbd_pread,
   .pwrite             = nbd_pwrite,
   .zero               = nbd_zero,
   .flush              = nbd_flush,
   .trim               = nbd_trim,
+  .extents            = nbd_extents,
   .errno_is_preserved = 1,
 };
 
