@@ -571,7 +571,8 @@ the end, but for filters which adjust offsets, they should pass in the
 adjusted offset.
 
 On error this function can return C<NULL>.  In this case it calls
-C<nbdkit_error> and/or C<nbdkit_set_error> as required.
+C<nbdkit_error> and/or C<nbdkit_set_error> as required.  C<errno> will
+be set to a suitable value.
 
  void nbdkit_extents_free (struct nbdkit_extents *);
 

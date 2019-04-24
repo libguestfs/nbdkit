@@ -154,6 +154,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
     nbdkit_error ("nbdkit_add_extent: "
                   "extents must be added in ascending order and "
                   "must be contiguous");
+    errno = ERANGE;
     return -1;
   }
   exts->next = offset + length;
@@ -186,6 +187,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
       nbdkit_error ("nbdkit_add_extent: "
                     "first extent must not be > start (%" PRIu64 ")",
                     exts->start);
+      errno = ERANGE;
       return -1;
     }
 
