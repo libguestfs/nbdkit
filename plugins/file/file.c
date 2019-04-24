@@ -529,9 +529,8 @@ file_can_extents (void *handle)
   /* A simple test to see whether SEEK_HOLE etc is likely to work on
    * the current filesystem.
    */
-  pthread_mutex_lock (&lseek_lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lseek_lock);
   r = lseek (h->fd, 0, SEEK_HOLE);
-  pthread_mutex_unlock (&lseek_lock);
   if (r == -1) {
     nbdkit_debug ("extents disabled: lseek: SEEK_HOLE: %m");
     return 0;
