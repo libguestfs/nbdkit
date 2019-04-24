@@ -30,27 +30,16 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NBDKIT_CLEANUP_H
-#define NBDKIT_CLEANUP_H
+#include <config.h>
 
-#include <pthread.h>
-#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-/* cleanup.c */
-extern void cleanup_free (void *ptr);
-#define CLEANUP_FREE __attribute__((cleanup (cleanup_free)))
-extern void cleanup_unlock (pthread_mutex_t **ptr);
-#define CLEANUP_UNLOCK __attribute__((cleanup (cleanup_unlock)))
-#define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex) \
-  CLEANUP_UNLOCK pthread_mutex_t *_lock = mutex; \
-  do { \
-    int _r = pthread_mutex_lock (_lock); \
-    assert (!_r); \
-  } while (0)
+#include "cleanup.h"
+#include "nbdkit-filter.h"
 
-/* cleanup-nbdkit.c */
-struct nbdkit_extents;
-extern void cleanup_extents_free (struct nbdkit_extents **ptr);
-#define CLEANUP_EXTENTS_FREE __attribute__((cleanup (cleanup_extents_free)))
-
-#endif /* NBDKIT_CLEANUP_H */
+void
+cleanup_extents_free (struct nbdkit_extents **ptr)
+{
+  nbdkit_extents_free (*ptr);
+}

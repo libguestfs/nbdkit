@@ -35,6 +35,7 @@ noinst_LTLIBRARIES = libutils.la
 
 libutils_la_SOURCES = \
 	cleanup.c \
+	cleanup-nbdkit.c \
 	cleanup.h \
 	utils.c \
 	utils.h

@@ -37,18 +37,11 @@
 #include <assert.h>
 
 #include "cleanup.h"
-#include "nbdkit-filter.h"
 
 void
 cleanup_free (void *ptr)
 {
   free (* (void **) ptr);
-}
-
-void
-cleanup_extents_free (void *ptr)
-{
-  nbdkit_extents_free (* (void **) ptr);
 }
 
 void
