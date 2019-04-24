@@ -34,7 +34,8 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = \
 	NBDKit.mli \
 	NBDKit.ml \
-	nbdkit-ocaml-plugin.pod
+	nbdkit-ocaml-plugin.pod \
+	example.ml
 
 if HAVE_OCAML
 
