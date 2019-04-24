@@ -48,7 +48,7 @@ NBDKit.cmx: NBDKit.ml NBDKit.cmi
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $< -o $@
 NBDKit.o: NBDKit.cmx
 
-# NB: libnbdkitocaml is not plugin.  It's a library that you have to
+# NB: libnbdkitocaml is not a plugin.  It's a library that you have to
 # link in to the OCaml plugins that you write.  nbdkit-ocaml-plugin(3)
 # for more details.
 
@@ -65,6 +65,16 @@ libnbdkitocaml_la_CPPFLAGS = \
 libnbdkitocaml_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	-fPIC
+
+# The example plugin.
+noinst_SCRIPTS = nbdkit-ocamlexample-plugin.so
+nbdkit-ocamlexample-plugin.so: example.cmx libnbdkitocaml.la NBDKit.cmi NBDKit.cmx
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) \
+	  -output-obj -runtime-variant _pic -o $@ \
+	  NBDKit.cmx $< \
+	  -cclib -L.libs -cclib -lnbdkitocaml
+example.cmx: example.ml NBDKit.cmi
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $< -o $@
 
 if HAVE_POD
 
