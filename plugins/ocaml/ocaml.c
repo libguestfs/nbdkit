@@ -39,6 +39,7 @@
 
 #include <caml/alloc.h>
 #include <caml/callback.h>
+#include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
 #include <caml/printexc.h>
@@ -790,6 +791,53 @@ ocaml_nbdkit_set_error (value nv)
   nbdkit_set_error (err);
 
   return Val_unit;
+}
+
+value
+ocaml_nbdkit_parse_size (value strv)
+{
+  CAMLparam1 (strv);
+  CAMLlocal1 (rv);
+  int64_t r;
+
+  r = nbdkit_parse_size (String_val (strv));
+  if (r == -1)
+    caml_invalid_argument ("nbdkit_parse_size");
+  rv = caml_copy_int64 (r);
+
+  CAMLreturn (rv);
+}
+
+value
+ocaml_nbdkit_parse_bool (value strv)
+{
+  CAMLparam1 (strv);
+  CAMLlocal1 (rv);
+  int r;
+
+  r = nbdkit_parse_bool (String_val (strv));
+  if (r == -1)
+    caml_invalid_argument ("nbdkit_parse_bool");
+  rv = Val_bool (r);
+
+  CAMLreturn (rv);
+}
+
+value
+ocaml_nbdkit_read_password (value strv)
+{
+  CAMLparam1 (strv);
+  CAMLlocal1 (rv);
+  char *password;
+  int r;
+
+  r = nbdkit_read_password (String_val (strv), &password);
+  if (r == -1)
+    caml_invalid_argument ("nbdkit_read_password");
+  rv = caml_copy_string (password);
+  free (password);
+
+  CAMLreturn (rv);
 }
 
 /* NB: noalloc function. */

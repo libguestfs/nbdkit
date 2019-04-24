@@ -251,6 +251,10 @@ let set_error unix_error =
 
   _set_error nbd_error
 
+external parse_size : string -> int64 = "ocaml_nbdkit_parse_size"
+external parse_bool : string -> bool = "ocaml_nbdkit_parse_bool"
+external read_password : string -> string = "ocaml_nbdkit_read_password"
+
 external _debug : string -> unit = "ocaml_nbdkit_debug" "noalloc"
 
 let debug fs =

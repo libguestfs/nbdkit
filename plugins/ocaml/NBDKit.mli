@@ -110,5 +110,17 @@ val set_error : Unix.error -> unit
     handful of errno values.  Any other errno will be translated
     into [EINVAL]. *)
 
+val parse_size : string -> int64
+val parse_bool : string -> bool
+val read_password : string -> string
+(** Bindings for [nbdkit_parse_size], [nbdkit_parse_bool] and
+    [nbdkit_read_password].  See nbdkit-plugin(3) for information
+    about these functions.
+
+    On error these functions all raise [Invalid_argument].  The
+    actual error is sent to the nbdkit error log and is not
+    available from the OCaml code.  It is usually best to let
+    the exception escape. *)
+
 val debug : ('a, unit, string, unit) format4 -> 'a
 (** Print a debug message when nbdkit is in verbose mode. *)
