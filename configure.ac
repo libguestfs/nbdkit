@@ -224,11 +224,11 @@ AS_IF([test "x$nbdkit_cv_func_printf_percent_m" = xyes],
     [Define to 1 if vfprintf supports %m.])])
 
 old_LIBS="$LIBS"
-AC_SEARCH_LIBS([dlopen], [dl dld], [
-        AS_IF([test "x$ac_cv_search_dlopen" != "xnone required"],
-	    [DL_LIBS="$ac_cv_search_dlopen"], [DL_LIBS=])
+AC_SEARCH_LIBS([dlsym], [dl dld], [
+        AS_IF([test "x$ac_cv_search_dlsym" != "xnone required"],
+	    [DL_LIBS="$ac_cv_search_dlsym"], [DL_LIBS=])
         AC_SUBST([DL_LIBS])
-    ], [AC_MSG_ERROR([unable to find the dlopen() function])
+    ], [AC_MSG_ERROR([unable to find the dlsym() function])
 ])
 LIBS="$old_LIBS"
 
