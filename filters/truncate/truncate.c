@@ -303,10 +303,14 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
    * then this is the easy case: return a hole up to the end of the
    * file.
    */
-  if (offset >= real_size_copy)
-    return nbdkit_add_extent (extents,
-                              real_size_copy, truncate_size - real_size_copy,
-                              NBDKIT_EXTENT_ZERO|NBDKIT_EXTENT_HOLE);
+  if (offset >= real_size_copy) {
+    int r = nbdkit_add_extent (extents,
+                               real_size_copy, truncate_size - real_size_copy,
+                               NBDKIT_EXTENT_ZERO|NBDKIT_EXTENT_HOLE);
+    if (r == -1)
+      *err = errno;
+    return r;
+  }
 
   /* We're asked first for extents information about the plugin, then
    * possibly (if truncating larger) for the hole after the plugin.
