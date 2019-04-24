@@ -48,6 +48,8 @@
 
 #include <lzma.h>
 
+#include "cleanup.h"
+
 #include "xzfile.h"
 
 #ifndef O_CLOEXEC
@@ -360,7 +362,7 @@ xzfile_read_block (xzfile *xz,
   lzma_ret r;
   lzma_stream strm = LZMA_STREAM_INIT;
   const size_t bufsize = 1024 * 1024;
-  unsigned char *buf = NULL;
+  CLEANUP_FREE unsigned char *buf = NULL;
   char *data = NULL;
   size_t i;
 
@@ -486,8 +488,6 @@ xzfile_read_block (xzfile *xz,
   for (i = 0; filters[i].id != LZMA_VLI_UNKNOWN; ++i)
     free (filters[i].options);
 
-  free (buf);
-
   return data;
 
  err2:
@@ -497,7 +497,6 @@ xzfile_read_block (xzfile *xz,
     free (filters[i].options);
 
   free (data);
-  free (buf);
 
   return NULL;
 }

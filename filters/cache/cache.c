@@ -53,6 +53,8 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
+
 #include "cache.h"
 #include "blk.h"
 #include "reclaim.h"
@@ -238,7 +240,7 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
-  uint8_t *block;
+  CLEANUP_FREE uint8_t *block = NULL;
 
   assert (!flags);
   block = malloc (blksize);
@@ -267,10 +269,8 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     pthread_mutex_lock (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     pthread_mutex_unlock (&lock);
-    if (r == -1) {
-      free (block);
+    if (r == -1)
       return -1;
-    }
 
     memcpy (buf, &block[blkoffs], n);
 
@@ -279,7 +279,6 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     offset += n;
   }
 
-  free (block);
   return 0;
 }
 
@@ -289,7 +288,7 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
               void *handle, const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
-  uint8_t *block;
+  CLEANUP_FREE uint8_t *block = NULL;
   bool need_flush = false;
 
   block = malloc (blksize);
@@ -324,17 +323,14 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
       r = blk_write (next_ops, nxdata, blknum, block, flags, err);
     }
     pthread_mutex_unlock (&lock);
-    if (r == -1) {
-      free (block);
+    if (r == -1)
       return -1;
-    }
 
     buf += n;
     count -= n;
     offset += n;
   }
 
-  free (block);
   if (need_flush)
     return cache_flush (next_ops, nxdata, handle, 0, err);
   return 0;
@@ -346,7 +342,7 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
-  uint8_t *block;
+  CLEANUP_FREE uint8_t *block = NULL;
   bool need_flush = false;
 
   block = malloc (blksize);
@@ -382,16 +378,13 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
       r = blk_write (next_ops, nxdata, blknum, block, flags, err);
     }
     pthread_mutex_unlock (&lock);
-    if (r == -1) {
-      free (block);
+    if (r == -1)
       return -1;
-    }
 
     count -= n;
     offset += n;
   }
 
-  free (block);
   if (need_flush)
     return cache_flush (next_ops, nxdata, handle, 0, err);
   return 0;
@@ -412,6 +405,7 @@ static int
 cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
              uint32_t flags, int *err)
 {
+  CLEANUP_FREE uint8_t *block = NULL;
   struct flush_data data =
     { .errors = 0, .first_errno = 0, .next_ops = next_ops, .nxdata = nxdata };
   int tmp;
@@ -422,12 +416,13 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   assert (!flags);
 
   /* Allocate the bounce buffer. */
-  data.block = malloc (blksize);
-  if (data.block == NULL) {
+  block = malloc (blksize);
+  if (block == NULL) {
     *err = errno;
     nbdkit_error ("malloc: %m");
     return -1;
   }
+  data.block = block;
 
   /* In theory if cache_mode == CACHE_MODE_WRITETHROUGH then there
    * should be no dirty blocks.  However we go through the cache here
@@ -437,7 +432,6 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   pthread_mutex_lock (&lock);
   for_each_dirty_block (flush_dirty_block, &data);
   pthread_mutex_unlock (&lock);
-  free (data.block);
 
   /* Now issue a flush request to the underlying storage. */
   if (next_ops->flush (nxdata, 0,

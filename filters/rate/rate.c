@@ -46,6 +46,8 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
+
 #include "bucket.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
@@ -198,7 +200,7 @@ maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
   FILE *fp;
   ssize_t r;
   size_t len = 0;
-  char *line = NULL;
+  CLEANUP_FREE char *line = NULL;
   int64_t new_rate;
   uint64_t old_rate;
 
@@ -212,13 +214,13 @@ maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
   fclose (fp);
   if (r == -1) {
     nbdkit_debug ("could not read rate file: %s: %m", file);
-    goto err;
+    return;
   }
 
   if (r > 0 && line[r-1] == '\n') line[r-1] = '\0';
   new_rate = nbdkit_parse_size (line);
   if (new_rate == -1)
-    goto err;
+    return;
 
   pthread_mutex_lock (lock);
   old_rate = bucket_adjust_rate (bucket, new_rate);
@@ -227,9 +229,6 @@ maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
   if (old_rate != new_rate)
     nbdkit_debug ("rate adjusted from %" PRIu64 " to %" PRIi64,
                   old_rate, new_rate);
-
- err:
-  free (line);
 }
 
 static inline void

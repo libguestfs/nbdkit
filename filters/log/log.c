@@ -369,7 +369,7 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     output_return (h, "...Extents", id, r, err);
   else {
     FILE *fp;
-    char *extents_str = NULL;
+    CLEANUP_FREE char *extents_str = NULL;
     size_t i, n, len = 0;
 
     fp = open_memstream (&extents_str, &len);
@@ -391,7 +391,6 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
     output (h, "...Extents", id, "extents=[%s] return=0",
             extents_str ? extents_str : "(null)");
-    free (extents_str);
   }
   return r;
 }

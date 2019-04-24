@@ -46,12 +46,14 @@ nbdkit_xz_filter_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-filter.h
 
 nbdkit_xz_filter_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/utils
 nbdkit_xz_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBLZMA_CFLAGS)
 nbdkit_xz_filter_la_LIBADD = \
-	$(LIBLZMA_LIBS)
+	$(LIBLZMA_LIBS) \
+	$(top_builddir)/common/utils/libutils.la
 nbdkit_xz_filter_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms

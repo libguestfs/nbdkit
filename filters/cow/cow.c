@@ -44,6 +44,8 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
+
 #include "blk.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
@@ -153,7 +155,7 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
            void *handle, void *buf, uint32_t count, uint64_t offset,
            uint32_t flags, int *err)
 {
-  uint8_t *block;
+  CLEANUP_FREE uint8_t *block = NULL;
 
   block = malloc (BLKSIZE);
   if (block == NULL) {
@@ -175,10 +177,8 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     pthread_mutex_lock (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     pthread_mutex_unlock (&lock);
-    if (r == -1) {
-      free (block);
+    if (r == -1)
       return -1;
-    }
 
     memcpy (buf, &block[blkoffs], n);
 
@@ -187,7 +187,6 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     offset += n;
   }
 
-  free (block);
   return 0;
 }
 
@@ -197,7 +196,7 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, const void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
-  uint8_t *block;
+  CLEANUP_FREE uint8_t *block = NULL;
 
   block = malloc (BLKSIZE);
   if (block == NULL) {
@@ -226,17 +225,14 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
       r = blk_write (blknum, block, err);
     }
     pthread_mutex_unlock (&lock);
-    if (r == -1) {
-      free (block);
+    if (r == -1)
       return -1;
-    }
 
     buf += n;
     count -= n;
     offset += n;
   }
 
-  free (block);
   if (flags & NBDKIT_FLAG_FUA)
     return cow_flush (next_ops, nxdata, handle, 0, err);
   return 0;
@@ -248,7 +244,7 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
           void *handle, uint32_t count, uint64_t offset, uint32_t flags,
           int *err)
 {
-  uint8_t *block;
+  CLEANUP_FREE uint8_t *block = NULL;
 
   block = malloc (BLKSIZE);
   if (block == NULL) {
@@ -280,16 +276,13 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
       r = blk_write (blknum, block, err);
     }
     pthread_mutex_unlock (&lock);
-    if (r == -1) {
-      free (block);
+    if (r == -1)
       return -1;
-    }
 
     count -= n;
     offset += n;
   }
 
-  free (block);
   if (flags & NBDKIT_FLAG_FUA)
     return cow_flush (next_ops, nxdata, handle, 0, err);
   return 0;
