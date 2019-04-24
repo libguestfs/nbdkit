@@ -40,7 +40,8 @@ Your OCaml code should call C<NBDKit.register_plugin> like this:
  
  let () = NBDKit.register_plugin thread_model plugin
 
-Your plugin can only call C<register_plugin> once.
+Your plugin must call C<register_plugin> exactly once when the plugin
+is loaded.
 
 =head2 Compiling an OCaml nbdkit plugin
 

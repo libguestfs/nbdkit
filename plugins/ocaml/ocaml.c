@@ -62,9 +62,11 @@ constructor (void)
 }
 
 /* Instead of using the NBDKIT_REGISTER_PLUGIN macro, we construct the
- * nbdkit_plugin struct and return it.
+ * nbdkit_plugin struct and return it from our own plugin_init
+ * function.
  */
 static void unload_wrapper (void);
+static void remove_roots (void);
 
 static struct nbdkit_plugin plugin = {
   ._struct_size = sizeof (plugin),
@@ -79,6 +81,16 @@ static struct nbdkit_plugin plugin = {
 
   .unload = unload_wrapper,
 };
+
+struct nbdkit_plugin *
+plugin_init (void)
+{
+  if (plugin.name == NULL) {
+    fprintf (stderr, "error: OCaml code did not call NBDKit.register_plugin\n");
+    exit (EXIT_FAILURE);
+  }
+  return &plugin;
+}
 
 /* These globals store the OCaml functions that we actually call.
  * Also the assigned ones are roots to ensure the GC doesn't free them.
@@ -115,6 +127,7 @@ static value can_multi_conn_fn;
 static value can_extents_fn;
 static value extents_fn;
 
+/*----------------------------------------------------------------------*/
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
 
 static void
@@ -143,39 +156,7 @@ unload_wrapper (void)
   free ((char *) plugin.description);
   free ((char *) plugin.config_help);
 
-#define REMOVE(fn) \
-  if (fn##_fn) caml_remove_generational_global_root (&fn##_fn)
-  REMOVE (load);
-  REMOVE (unload);
-
-  REMOVE (config);
-  REMOVE (config_complete);
-
-  REMOVE (open);
-  REMOVE (close);
-
-  REMOVE (get_size);
-
-  REMOVE (can_write);
-  REMOVE (can_flush);
-  REMOVE (is_rotational);
-  REMOVE (can_trim);
-
-  REMOVE (dump_plugin);
-
-  REMOVE (can_zero);
-  REMOVE (can_fua);
-
-  REMOVE (pread);
-  REMOVE (pwrite);
-  REMOVE (flush);
-  REMOVE (trim);
-  REMOVE (zero);
-
-  REMOVE (can_multi_conn);
-
-  REMOVE (can_extents);
-  REMOVE (extents);
+  remove_roots ();
 }
 
 static int
@@ -656,6 +637,11 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
   CAMLreturnT (int, 0);
 }
 
+/*----------------------------------------------------------------------*/
+/* set_* functions called from OCaml code at load time to initialize
+ * fields in the plugin struct.
+ */
+
 value
 ocaml_nbdkit_set_thread_model (value modelv)
 {
@@ -740,6 +726,51 @@ SET(can_multi_conn)
 SET(can_extents)
 SET(extents)
 
+#undef SET
+
+static void
+remove_roots (void)
+{
+#define REMOVE(fn) \
+  if (fn##_fn) caml_remove_generational_global_root (&fn##_fn)
+  REMOVE (load);
+  REMOVE (unload);
+
+  REMOVE (config);
+  REMOVE (config_complete);
+
+  REMOVE (open);
+  REMOVE (close);
+
+  REMOVE (get_size);
+
+  REMOVE (can_write);
+  REMOVE (can_flush);
+  REMOVE (is_rotational);
+  REMOVE (can_trim);
+
+  REMOVE (dump_plugin);
+
+  REMOVE (can_zero);
+  REMOVE (can_fua);
+
+  REMOVE (pread);
+  REMOVE (pwrite);
+  REMOVE (flush);
+  REMOVE (trim);
+  REMOVE (zero);
+
+  REMOVE (can_multi_conn);
+
+  REMOVE (can_extents);
+  REMOVE (extents);
+
+#undef REMOVE
+}
+
+/*----------------------------------------------------------------------*/
+/* Bindings for miscellaneous nbdkit_* utility functions. */
+
 /* NB: noalloc function. */
 value
 ocaml_nbdkit_set_error (value nv)
@@ -768,15 +799,4 @@ ocaml_nbdkit_debug (value strv)
   nbdkit_debug ("%s", String_val (strv));
 
   return Val_unit;
-}
-
-/* We can't directly use NBDKIT_REGISTER_PLUGIN(). */
-struct nbdkit_plugin *
-plugin_init (void)
-{
-  if (plugin.name == NULL) {
-    fprintf (stderr, "error: OCaml code did not call NBDKit.register_plugin\n");
-    exit (EXIT_FAILURE);
-  }
-  return &plugin;
 }

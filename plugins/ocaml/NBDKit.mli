@@ -36,6 +36,7 @@
 
 type flags = flag list
 and flag = May_trim | FUA | Req_one
+(** Flags passed from the server to various callbacks. *)
 
 type fua_flag = FuaNone | FuaEmulate | FuaNative
 
@@ -45,6 +46,7 @@ type extent = {
   is_hole : bool;
   is_zero : bool;
 }
+(** The type of the extent list returned by [.extents]. *)
 
 type 'a plugin = {
   name : string;                                  (* required *)
@@ -88,14 +90,18 @@ type 'a plugin = {
 (** The plugin fields and callbacks.  ['a] is the handle type. *)
 
 val default_callbacks : 'a plugin
+(** The plugin with all fields set to [None], so you can write
+    [{ defaults_callbacks with field1 = Some foo1; field2 = Some foo2 }] *)
 
 type thread_model =
 | THREAD_MODEL_SERIALIZE_CONNECTIONS
 | THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 | THREAD_MODEL_SERIALIZE_REQUESTS
 | THREAD_MODEL_PARALLEL
+(** The thread model. *)
 
 val register_plugin : thread_model -> 'a plugin -> unit
+(** Register the plugin with nbdkit. *)
 
 val set_error : Unix.error -> unit
 (** Set the errno returned over the NBD protocol to the client.

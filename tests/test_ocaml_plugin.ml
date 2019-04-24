@@ -23,28 +23,28 @@ let test_open readonly =
   NBDKit.debug "test ocaml plugin handle opened readonly=%b" readonly;
   ()
 
-let test_close h =
+let test_close () =
   ()
 
-let test_get_size h =
+let test_get_size () =
   Int64.of_int (Bytes.length disk)
 
-let test_pread h count offset _ =
+let test_pread () count offset _ =
   let count = Int32.to_int count in
   let buf = Bytes.create count in
   Bytes.blit disk (Int64.to_int offset) buf 0 count;
   Bytes.unsafe_to_string buf
 
-let set_non_sparse h offset len =
+let set_non_sparse offset len =
   Bytes.fill sparse (offset/sector_size) ((len-1)/sector_size) '\001'
 
-let test_pwrite h buf offset _ =
+let test_pwrite () buf offset _ =
   let len = String.length buf in
   let offset = Int64.to_int offset in
   String.blit buf 0 disk offset len;
-  set_non_sparse h offset len
+  set_non_sparse offset len
 
-let test_extents h count offset _ =
+let test_extents () count offset _ =
   let extents = Array.init nr_sectors (
     fun sector ->
       { NBDKit.offset = Int64.of_int (sector*sector_size);
