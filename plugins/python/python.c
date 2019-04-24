@@ -50,6 +50,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
+
 /* XXX Apparently global state is technically wrong in Python 3, see:
  *
  * https://www.python.org/dev/peps/pep-3121/
@@ -135,7 +137,7 @@ static void
 print_python_error (const char *callback, PyObject *error)
 {
   PyObject *error_str;
-  char *error_cstr = NULL;
+  CLEANUP_FREE char *error_cstr = NULL;
 
   error_str = PyObject_Str (error);
   error_cstr = python_to_string (error_str);
@@ -143,7 +145,6 @@ print_python_error (const char *callback, PyObject *error)
                 script, callback,
                 error_cstr ? error_cstr : "<unknown>");
   Py_DECREF (error_str);
-  free (error_cstr);
 }
 
 /* Convert the Python traceback to a string and call nbdkit_error.
@@ -155,7 +156,7 @@ print_python_traceback (const char *callback,
 {
   PyObject *module_name, *traceback_module, *format_exception_fn, *rv,
     *traceback_str;
-  char *traceback_cstr;
+  CLEANUP_FREE char *traceback_cstr = NULL;
 
 #ifdef HAVE_PYSTRING_FROMSTRING
   module_name = PyString_FromString ("traceback");
@@ -190,7 +191,6 @@ print_python_traceback (const char *callback,
                 script, callback,
                 traceback_cstr);
   Py_DECREF (traceback_str);
-  free (traceback_cstr);
 
   /* This means we succeeded in calling nbdkit_error. */
   return 0;

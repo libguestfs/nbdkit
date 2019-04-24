@@ -47,10 +47,12 @@ nbdkit_vddk_plugin_la_SOURCES = \
 nbdkit_vddk_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils \
 	-DVDDK_LIBDIR=\"$(libdir)/vmware-vix-disklib\"
 nbdkit_vddk_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
 nbdkit_vddk_plugin_la_LIBADD = \
+	$(top_builddir)/common/utils/libutils.la \
 	$(DL_LIBS)
 nbdkit_vddk_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \

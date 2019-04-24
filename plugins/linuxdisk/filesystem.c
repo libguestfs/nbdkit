@@ -44,6 +44,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
 #include "minmax.h"
 #include "rounding.h"
 #include "utils.h"
@@ -57,7 +58,7 @@ int
 create_filesystem (struct virtual_disk *disk)
 {
   const char *tmpdir;
-  char *filename = NULL;
+  CLEANUP_FREE char *filename = NULL;
   int fd = -1;
 
   /* Estimate the filesystem size and compute the final virtual size
@@ -120,7 +121,6 @@ create_filesystem (struct virtual_disk *disk)
     goto error;
 
   unlink (filename);
-  free (filename);
   disk->filesystem_size = size;
   disk->fd = fd;
   return 0;
@@ -128,10 +128,8 @@ create_filesystem (struct virtual_disk *disk)
  error:
   if (fd >= 0)
     close (fd);
-  if (filename) {
+  if (filename)
     unlink (filename);
-    free (filename);
-  }
   return -1;
 }
 
@@ -150,7 +148,7 @@ create_filesystem (struct virtual_disk *disk)
 static int64_t
 estimate_size (void)
 {
-  char *command = NULL, *line = NULL;
+  CLEANUP_FREE char *command = NULL, *line = NULL;
   size_t len = 0;
   FILE *fp;
   int64_t ret;
@@ -172,7 +170,6 @@ estimate_size (void)
   /* Run the command. */
   nbdkit_debug ("%s", command);
   fp = popen (command, "r");
-  free (command);
   if (fp == NULL) {
     nbdkit_error ("du command failed: %m");
     return -1;
@@ -184,7 +181,6 @@ estimate_size (void)
     /* empty */;
   if (ferror (fp)) {
     nbdkit_error ("getline failed: %m");
-    free (line);
     pclose (fp);
     return -1;
   }
@@ -192,7 +188,6 @@ estimate_size (void)
   r = pclose (fp);
   if (r == -1) {
     nbdkit_error ("pclose: %m");
-    free (line);
     return -1;
   }
   if (exit_status_to_nbd_error (r, "pclose: du") == -1)
@@ -201,10 +196,8 @@ estimate_size (void)
   /* Parse the last line. */
   if (sscanf (line, "%" SCNi64, &ret) != 1 || ret < 0) {
     nbdkit_error ("could not parse last line of output: %s", line);
-    free (line);
     return -1;
   }
-  free (line);
 
   /* Result is in 1K blocks, convert it to bytes. */
   ret *= 1024;
@@ -214,7 +207,7 @@ estimate_size (void)
 static int
 mke2fs (const char *filename)
 {
-  char *command = NULL;
+  CLEANUP_FREE char *command = NULL;
   size_t len = 0;
   FILE *fp;
   int r;
@@ -245,7 +238,6 @@ mke2fs (const char *filename)
   /* Run the command. */
   nbdkit_debug ("%s", command);
   r = system (command);
-  free (command);
   if (exit_status_to_nbd_error (r, "mke2fs") == -1)
     return -1;
 

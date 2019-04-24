@@ -45,6 +45,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
+
 #include "call.h"
 
 /* Ensure there is at least 1 byte of space in the buffer. */
@@ -329,9 +331,9 @@ exit_code
 call (const char **argv)
 {
   int r;
-  char *rbuf;
+  CLEANUP_FREE char *rbuf = NULL;
   size_t rbuflen;
-  char *ebuf;
+  CLEANUP_FREE char *ebuf = NULL;
   size_t ebuflen;
 
   r = call3 (NULL, 0, &rbuf, &rbuflen, &ebuf, &ebuflen, argv);
@@ -340,16 +342,12 @@ call (const char **argv)
   case MISSING:
   case RET_FALSE:
     /* Script successful. */
-    free (rbuf);
-    free (ebuf);
     return r;
 
   case ERROR:
   default:
     /* Error case. */
-    free (rbuf);
     handle_script_error (ebuf, ebuflen);
-    free (ebuf);
     return ERROR;
   }
 }
@@ -361,7 +359,7 @@ exit_code
 call_read (char **rbuf, size_t *rbuflen, const char **argv)
 {
   int r;
-  char *ebuf;
+  CLEANUP_FREE char *ebuf = NULL;
   size_t ebuflen;
 
   r = call3 (NULL, 0, rbuf, rbuflen, &ebuf, &ebuflen, argv);
@@ -370,7 +368,6 @@ call_read (char **rbuf, size_t *rbuflen, const char **argv)
   case MISSING:
   case RET_FALSE:
     /* Script successful. */
-    free (ebuf);
     return r;
 
   case ERROR:
@@ -379,7 +376,6 @@ call_read (char **rbuf, size_t *rbuflen, const char **argv)
     free (*rbuf);
     *rbuf = NULL;
     handle_script_error (ebuf, ebuflen);
-    free (ebuf);
     return ERROR;
   }
 }
@@ -391,9 +387,9 @@ exit_code
 call_write (const char *wbuf, size_t wbuflen, const char **argv)
 {
   int r;
-  char *rbuf;
+  CLEANUP_FREE char *rbuf = NULL;
   size_t rbuflen;
-  char *ebuf;
+  CLEANUP_FREE char *ebuf = NULL;
   size_t ebuflen;
 
   r = call3 (wbuf, wbuflen, &rbuf, &rbuflen, &ebuf, &ebuflen, argv);
@@ -402,16 +398,12 @@ call_write (const char *wbuf, size_t wbuflen, const char **argv)
   case MISSING:
   case RET_FALSE:
     /* Script successful. */
-    free (rbuf);
-    free (ebuf);
     return r;
 
   case ERROR:
   default:
     /* Error case. */
-    free (rbuf);
     handle_script_error (ebuf, ebuflen);
-    free (ebuf);
     return ERROR;
   }
 }

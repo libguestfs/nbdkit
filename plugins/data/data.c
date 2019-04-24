@@ -174,7 +174,7 @@ read_data (const char *value)
      * if nothing is matched, not only if the '<' is matched.
      */
     else if (sscanf (&value[i], " <%1s%n", cc, &n) == 1) {
-      char *filename;
+      CLEANUP_FREE char *filename = NULL;
       size_t flen;
 
       i += n-1;
@@ -192,11 +192,8 @@ read_data (const char *value)
       }
       i += len;
 
-      if (store_file (filename, &offset) == -1) {
-        free (filename);
+      if (store_file (filename, &offset) == -1)
         return -1;
-      }
-      free (filename);
 
       if (data_size < offset)
         data_size = offset;

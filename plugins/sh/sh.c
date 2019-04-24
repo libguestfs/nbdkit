@@ -45,6 +45,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
+
 #include "call.h"
 
 char tmpdir[] = "/tmp/nbdkitshXXXXXX";
@@ -88,7 +90,7 @@ static void
 sh_dump_plugin (void)
 {
   const char *args[] = { script, "dump_plugin", NULL };
-  char *o;
+  CLEANUP_FREE char *o = NULL;
   size_t olen;
 
   if (script) {
@@ -96,7 +98,6 @@ sh_dump_plugin (void)
     switch (call_read (&o, &olen, args)) {
     case OK:
       printf ("%s", o);
-      free (o);
       break;
 
     case MISSING:
@@ -104,7 +105,6 @@ sh_dump_plugin (void)
       break;
 
     case ERROR:
-      free (o);
       break;
 
     case RET_FALSE:
@@ -128,7 +128,7 @@ inline_script (void)
 {
   const char scriptname[] = "inline-script.sh";
   char *filename = NULL;
-  char *cmd = NULL;
+  CLEANUP_FREE char *cmd = NULL;
 
   if (asprintf (&filename, "%s/%s", tmpdir, scriptname) == -1) {
     nbdkit_error ("asprintf: %m");
@@ -153,12 +153,10 @@ inline_script (void)
     goto err;
   }
 
-  free (cmd);
   return filename;
 
  err:
   free (filename);
-  free (cmd);
   return NULL;
 }
 
@@ -326,7 +324,7 @@ sh_get_size (void *handle)
 {
   char *h = handle;
   const char *args[] = { script, "get_size", h, NULL };
-  char *s = NULL;
+  CLEANUP_FREE char *s = NULL;
   size_t slen;
   int64_t r;
 
@@ -338,20 +336,16 @@ sh_get_size (void *handle)
     if (r == -1)
       nbdkit_error ("%s: could not parse output from get_size method: %s",
                     script, s);
-    free (s);
     return r;
 
   case MISSING:
-    free (s);
     nbdkit_error ("%s: the get_size method is required", script);
     return -1;
 
   case ERROR:
-    free (s);
     return -1;
 
   case RET_FALSE:
-    free (s);
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, "get_size");
     errno = EIO;
@@ -368,7 +362,7 @@ sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
   char *h = handle;
   char cbuf[32], obuf[32];
   const char *args[] = { script, "pread", h, cbuf, obuf, NULL };
-  char *data = NULL;
+  CLEANUP_FREE char *data = NULL;
   size_t len;
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
@@ -381,24 +375,19 @@ sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
                     "expecting %" PRIu32 " bytes but "
                     "received %zu bytes from the script",
                     script, count, len);
-      free (data);
       return -1;
     }
     memcpy (buf, data, count);
-    free (data);
     return 0;
 
   case MISSING:
-    free (data);
     nbdkit_error ("%s: the pread method is required", script);
     return -1;
 
   case ERROR:
-    free (data);
     return -1;
 
   case RET_FALSE:
-    free (data);
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, "pread");
     errno = EIO;
@@ -542,7 +531,7 @@ sh_can_fua (void *handle)
 {
   char *h = handle;
   const char *args[] = { script, "can_fua", h, NULL };
-  char *s = NULL;
+  CLEANUP_FREE char *s = NULL;
   size_t slen;
   int r;
 
@@ -561,11 +550,9 @@ sh_can_fua (void *handle)
                     script, s);
       r = -1;
     }
-    free (s);
     return r;
 
   case MISSING:
-    free (s);
     /* NBDKIT_FUA_EMULATE means that nbdkit will call .flush.  However
      * we cannot know if that callback exists, so the safest default
      * is to return NBDKIT_FUA_NONE.
@@ -573,11 +560,9 @@ sh_can_fua (void *handle)
     return NBDKIT_FUA_NONE;
 
   case ERROR:
-    free (s);
     return -1;
 
   case RET_FALSE:
-    free (s);
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, "can_fua");
     errno = EIO;
@@ -689,7 +674,7 @@ static int
 parse_extents (const char *s, size_t slen, struct nbdkit_extents *extents)
 {
   FILE *fp = NULL;
-  char *line = NULL;
+  CLEANUP_FREE char *line = NULL;
   size_t linelen = 0;
   ssize_t len;
   int ret = -1;
@@ -748,7 +733,6 @@ parse_extents (const char *s, size_t slen, struct nbdkit_extents *extents)
   ret = 0;
 
  out:
-  free (line);
   if (fp)
     fclose (fp);
   return ret;
@@ -761,7 +745,7 @@ sh_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
   char *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
   const char *args[] = { script, "extents", h, cbuf, obuf, fbuf, NULL };
-  char *s = NULL;
+  CLEANUP_FREE char *s = NULL;
   size_t slen;
   int r;
 
@@ -772,7 +756,6 @@ sh_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
   switch (call_read (&s, &slen, args)) {
   case OK:
     r = parse_extents (s, slen, extents);
-    free (s);
     return r;
 
   case MISSING:
@@ -780,7 +763,6 @@ sh_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
      * defined a can_extents method which returns true, so if this
      * happens it's a script error.
      */
-    free (s);
     nbdkit_error ("%s: can_extents returned true, "
                   "but extents method is not defined",
                   script);
@@ -788,11 +770,9 @@ sh_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
     return -1;
 
   case ERROR:
-    free (s);
     return -1;
 
   case RET_FALSE:
-    free (s);
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, "can_fua");
     errno = EIO;

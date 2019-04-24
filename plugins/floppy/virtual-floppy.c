@@ -47,9 +47,9 @@
 
 #include <nbdkit-plugin.h>
 
-#include "get-current-dir-name.h"
-
 #include "byte-swapping.h"
+#include "cleanup.h"
+#include "get-current-dir-name.h"
 #include "regions.h"
 #include "rounding.h"
 
@@ -237,7 +237,7 @@ visit (const char *dir, struct virtual_floppy *floppy)
 {
   void *np;
   size_t di;
-  char *origdir;
+  CLEANUP_FREE char *origdir = NULL;
   DIR *DIR;
   struct dirent *d;
   int err;
@@ -315,7 +315,6 @@ visit (const char *dir, struct virtual_floppy *floppy)
     nbdkit_error ("chdir: %s: %m", origdir);
     goto error1;
   }
-  free (origdir);
   return di;
 
  error2:
@@ -327,7 +326,6 @@ visit (const char *dir, struct virtual_floppy *floppy)
   chdir (origdir);
 #pragma GCC diagnostic pop
   errno = err;
-  free (origdir);
  error0:
   return -1;
 }
@@ -342,7 +340,7 @@ visit_subdirectory (const char *dir, const char *name,
                     struct virtual_floppy *floppy)
 {
   void *np;
-  char *subdir;
+  CLEANUP_FREE char *subdir = NULL;
   ssize_t sdi;                  /* subdirectory index */
   size_t i;
 
@@ -355,11 +353,8 @@ visit_subdirectory (const char *dir, const char *name,
    * the index in that list (sdi).
    */
   sdi = visit (subdir, floppy);
-  if (sdi == -1) {
-    free (subdir);
+  if (sdi == -1)
     return -1;
-  }
-  free (subdir);
 
   /* We must set sdi->name because visit() cannot set it. */
   floppy->dirs[sdi].name = strdup (name);

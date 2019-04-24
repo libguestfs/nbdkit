@@ -44,12 +44,14 @@ nbdkit_python_plugin_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
 nbdkit_python_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/utils
 nbdkit_python_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(PYTHON_CFLAGS)
 nbdkit_python_plugin_la_LIBADD = \
-	$(PYTHON_LIBS)
+	$(PYTHON_LIBS) \
+	$(top_builddir)/common/utils/libutils.la
 nbdkit_python_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \

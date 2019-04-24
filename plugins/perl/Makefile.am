@@ -44,11 +44,14 @@ nbdkit_perl_plugin_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
 nbdkit_perl_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/utils
 nbdkit_perl_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(PERL_CFLAGS) \
 	-I$(PERL_ARCHLIB)/CORE
+nbdkit_perl_plugin_la_LIBADD = \
+	$(top_builddir)/common/utils/libutils.la
 nbdkit_perl_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \

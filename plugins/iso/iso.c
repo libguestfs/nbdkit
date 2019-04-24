@@ -41,6 +41,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
 #include "utils.h"
 
 /* List of directories parsed from the command line. */
@@ -63,8 +64,8 @@ static int
 make_iso (void)
 {
   const char *tmpdir;
-  char *template;
-  char *command = NULL;
+  CLEANUP_FREE char *template = NULL;
+  CLEANUP_FREE char *command = NULL;
   size_t command_len = 0;
   FILE *fp;
   size_t i;
@@ -82,11 +83,9 @@ make_iso (void)
   fd = mkstemp (template);
   if (fd == -1) {
     nbdkit_error ("mkstemp: %s: %m", template);
-    free (template);
     return -1;
   }
   unlink (template);
-  free (template);
 
   /* Construct the isoprog command. */
   fp = open_memstream (&command, &command_len);
@@ -113,7 +112,6 @@ make_iso (void)
   /* Run the command. */
   nbdkit_debug ("%s", command);
   r = system (command);
-  free (command);
   if (exit_status_to_nbd_error (r, isoprog) == -1)
     return -1;
 

@@ -48,6 +48,7 @@ nbdkit_floppy_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/regions \
+	-I$(top_srcdir)/common/utils \
 	-I.
 nbdkit_floppy_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS)
@@ -55,7 +56,8 @@ nbdkit_floppy_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
 nbdkit_floppy_plugin_la_LIBADD = \
-	$(top_builddir)/common/regions/libregions.la
+	$(top_builddir)/common/regions/libregions.la \
+	$(top_builddir)/common/utils/libutils.la
 
 if HAVE_POD
 

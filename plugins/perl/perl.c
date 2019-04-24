@@ -48,6 +48,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
+
 static PerlInterpreter *my_perl;
 static const char *script;
 
@@ -86,7 +88,7 @@ static int
 callback_defined (const char *perl_func_name)
 {
   SV *ret;
-  char *cmd;
+  CLEANUP_FREE char *cmd = NULL;
 
   if (asprintf (&cmd, "defined &%s", perl_func_name) == -1) {
     perror ("asprintf");
@@ -94,7 +96,6 @@ callback_defined (const char *perl_func_name)
   }
 
   ret = eval_pv (cmd, FALSE);
-  free (cmd);
 
   return SvTRUE (ret);
 }
@@ -108,7 +109,7 @@ check_perl_failure (void)
   if (SvTRUE (errsv)) {
     const char *err;
     STRLEN n;
-    char *err_copy;
+    CLEANUP_FREE char *err_copy = NULL;
 
     err = SvPV (errsv, n);
 
@@ -124,7 +125,6 @@ check_perl_failure (void)
       err_copy[n-1] = '\0';
 
     nbdkit_error ("%s", err_copy);
-    free (err_copy);
 
     return -1;
   }

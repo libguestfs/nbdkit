@@ -45,6 +45,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
+
 /* Configuration. */
 static const char *connect = NULL; /* libvirt URI */
 static const char *export = NULL;  /* export device or file */
@@ -307,14 +309,12 @@ log_to_nbdkit (guestfs_h *g,
                const char *buf, size_t buf_len,
                const uint64_t *array, size_t array_len)
 {
-  char *sbuf;
+  CLEANUP_FREE char *sbuf = NULL;
 
   /* Note the buffer may not be \0 terminated.  Hence this. */
   sbuf = strndup (buf, buf_len);
-  if (sbuf) {
+  if (sbuf)
     nbdkit_debug ("%s", sbuf);
-    free (sbuf);
-  }
 }
 
 static int
@@ -509,7 +509,6 @@ plugin_guestfs_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
   struct handle *h = handle;
   char *(*pr) (guestfs_h *, const char *, int, int64_t, size_t *);
-  char *data;
   size_t size;
 
   if (h->is_device)
@@ -518,7 +517,7 @@ plugin_guestfs_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
     pr = guestfs_pread;
 
   while (count > 0) {
-    data = pr (h->g, export, count, offset, &size);
+    CLEANUP_FREE char *data = pr (h->g, export, count, offset, &size);
     if (!data) {
       GERROR (h->g, "%s: pread", export);
       errno = guestfs_last_errno (h->g) ? : EIO;
@@ -526,7 +525,6 @@ plugin_guestfs_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
     }
 
     memcpy (buf, data, size);
-    free (data);
 
     buf += size;
     offset += size;

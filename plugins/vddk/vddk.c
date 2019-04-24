@@ -45,6 +45,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
 #include "isaligned.h"
 #include "minmax.h"
 #include "rounding.h"
@@ -127,7 +128,7 @@ trim (char *str)
 static void
 debug_function (const char *fs, va_list args)
 {
-  char *str;
+  CLEANUP_FREE char *str = NULL;
 
   if (vasprintf (&str, fs, args) == -1) {
     nbdkit_debug ("lost debug message: %s", fs);
@@ -137,14 +138,13 @@ debug_function (const char *fs, va_list args)
   trim (str);
 
   nbdkit_debug ("%s", str);
-  free (str);
 }
 
 /* Turn error messages from the library into nbdkit_error. */
 static void
 error_function (const char *fs, va_list args)
 {
-  char *str;
+  CLEANUP_FREE char *str = NULL;
 
   if (vasprintf (&str, fs, args) == -1) {
     nbdkit_error ("lost error message: %s", fs);
@@ -154,7 +154,6 @@ error_function (const char *fs, va_list args)
   trim (str);
 
   nbdkit_error ("%s", str);
-  free (str);
 }
 
 /* Load and unload the plugin. */
@@ -167,7 +166,7 @@ vddk_load (void)
     "libvixDiskLib.so.5",
   };
   size_t i;
-  char *orig_error = NULL;
+  CLEANUP_FREE char *orig_error = NULL;
 
   /* Load the library. */
   for (i = 0; i < sizeof sonames / sizeof sonames[0]; ++i) {
@@ -186,10 +185,8 @@ vddk_load (void)
                   "set $LD_LIBRARY_PATH or edit /etc/ld.so.conf.\n\n"
                   "See the nbdkit-vddk-plugin(1) man page for details.",
                   orig_error ? : "(unknown error)", sonames[0]);
-    free (orig_error);
     exit (EXIT_FAILURE);
   }
-  free (orig_error);
 
   /* Non-optional symbols.  I have checked that all these exist in at
    * least VDDK 5.1.1 (2011) which is the earliest version of VDDK
@@ -411,12 +408,11 @@ vddk_dump_plugin (void)
    * contain the version number.
    */
   Dl_info info;
-  char *p;
+  CLEANUP_FREE char *p = NULL;
   if (dladdr (VixDiskLib_InitEx, &info) != 0 &&
       info.dli_fname != NULL &&
       (p = nbdkit_realpath (info.dli_fname)) != NULL) {
     printf ("vddk_dll=%s\n", p);
-    free (p);
   }
 #endif
 }
