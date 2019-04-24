@@ -91,11 +91,13 @@ connection_get_status (struct connection *conn)
 {
   int r;
 
-  if (conn->nworkers)
-    pthread_mutex_lock (&conn->status_lock);
+  if (conn->nworkers &&
+      pthread_mutex_lock (&conn->status_lock))
+    abort ();
   r = conn->status;
-  if (conn->nworkers)
-    pthread_mutex_unlock (&conn->status_lock);
+  if (conn->nworkers &&
+      pthread_mutex_unlock (&conn->status_lock))
+    abort ();
   return r;
 }
 
@@ -105,12 +107,14 @@ connection_get_status (struct connection *conn)
 int
 connection_set_status (struct connection *conn, int value)
 {
-  if (conn->nworkers)
-    pthread_mutex_lock (&conn->status_lock);
+  if (conn->nworkers &&
+      pthread_mutex_lock (&conn->status_lock))
+    abort ();
   if (value < conn->status)
     conn->status = value;
-  if (conn->nworkers)
-    pthread_mutex_unlock (&conn->status_lock);
+  if (conn->nworkers &&
+      pthread_mutex_unlock (&conn->status_lock))
+    abort ();
   return value;
 }
 

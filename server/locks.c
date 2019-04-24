@@ -55,49 +55,59 @@ lock_init_thread_model (void)
 void
 lock_connection (void)
 {
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS)
-    pthread_mutex_lock (&connection_lock);
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS &&
+      pthread_mutex_lock (&connection_lock))
+    abort ();
 }
 
 void
 unlock_connection (void)
 {
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS)
-    pthread_mutex_unlock (&connection_lock);
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS &&
+      pthread_mutex_unlock (&connection_lock))
+    abort ();
 }
 
 void
 lock_request (struct connection *conn)
 {
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS)
-    pthread_mutex_lock (&all_requests_lock);
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS &&
+      pthread_mutex_lock (&all_requests_lock))
+    abort ();
 
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS)
-    pthread_mutex_lock (&conn->request_lock);
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS &&
+      pthread_mutex_lock (&conn->request_lock))
+    abort ();
 
-  pthread_rwlock_rdlock (&unload_prevention_lock);
+  if (pthread_rwlock_rdlock (&unload_prevention_lock))
+    abort ();
 }
 
 void
 unlock_request (struct connection *conn)
 {
-  pthread_rwlock_unlock (&unload_prevention_lock);
+  if (pthread_rwlock_unlock (&unload_prevention_lock))
+    abort ();
 
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS)
-    pthread_mutex_unlock (&conn->request_lock);
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS &&
+      pthread_mutex_unlock (&conn->request_lock))
+    abort ();
 
-  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS)
-    pthread_mutex_unlock (&all_requests_lock);
+  if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS &&
+      pthread_mutex_unlock (&all_requests_lock))
+    abort ();
 }
 
 void
 lock_unload (void)
 {
-  pthread_rwlock_wrlock (&unload_prevention_lock);
+  if (pthread_rwlock_wrlock (&unload_prevention_lock))
+    abort ();
 }
 
 void
 unlock_unload (void)
 {
-  pthread_rwlock_unlock (&unload_prevention_lock);
+  if (pthread_rwlock_unlock (&unload_prevention_lock))
+    abort ();
 }
