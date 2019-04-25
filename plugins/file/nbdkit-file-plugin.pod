@@ -15,6 +15,12 @@ It serves the named C<FILENAME> over NBD.  Local block devices
 
 To concatenate multiple files, use L<nbdkit-split-plugin(1)>.
 
+If you want to expose a file that resides on a file system known to
+have poor C<lseek(2)> performance when searching for holes (C<tmpfs>
+is known to be one such file system), you can use
+L<nbdkit-noextents-filter(1)> to avoid the penalty of probing for
+holes.
+
 =head1 PARAMETERS
 
 =over 4
@@ -88,7 +94,8 @@ or block device efficiently or not.
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-split-plugin(1)>,
-L<nbdkit-partitioning-plugin(1)>.
+L<nbdkit-partitioning-plugin(1)>,
+L<nbdkit-noextents-filter(1)>.
 
 =head1 AUTHORS
 
