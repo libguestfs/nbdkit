@@ -13,6 +13,10 @@ client to detect sparse regions of the underlying disk.
 C<nbdkit-noextents-filter> disables this so that the plugin appears to
 be fully allocated.
 
+This filter can be useful when combined with L<nbdkit-file-plugin(1)>
+serving a file from a file system known to have poor C<lseek(2)>
+performance (C<tmpfs> is known to be one such system).
+
 =head1 PARAMETERS
 
 There are no parameters specific to nbdkit-noextents-filter.  Any
@@ -23,7 +27,8 @@ plugin in the normal way.
 
 L<nbdkit(1)>,
 L<nbdkit-filter(3)>,
-L<nbdkit-nozero-filter(1)>.
+L<nbdkit-nozero-filter(1)>,
+L<nbdkit-file-plugin(1)>.
 
 =head1 AUTHORS
 
