@@ -79,6 +79,7 @@ EXTRA_DIST = \
 	test.lua \
 	test-memory-largest.sh \
 	test-memory-largest-for-qemu.sh \
+	test-nbd-extents.sh \
 	test-nozero.sh \
 	test-null-extents.sh \
 	test_ocaml_plugin.ml \
@@ -530,6 +531,8 @@ TESTS += \
 
 # nbd plugin test.
 LIBGUESTFS_TESTS += test-nbd
+TESTS += \
+	test-nbd-extents.sh
 
 test_nbd_SOURCES = test-nbd.c test.h
 test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
