@@ -122,6 +122,7 @@ EXTRA_DIST = \
 	test-truncate1.sh \
 	test-truncate2.sh \
 	test-truncate3.sh \
+	test-truncate4.sh \
 	test-truncate-extents.sh \
 	test-vddk.sh \
 	test-vddk-real.sh \
@@ -937,6 +938,7 @@ TESTS += \
 	test-truncate1.sh \
 	test-truncate2.sh \
 	test-truncate3.sh \
+	test-truncate4.sh \
 	test-truncate-extents.sh
 
 # xz filter test.
