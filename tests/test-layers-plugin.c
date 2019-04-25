@@ -198,7 +198,7 @@ test_layers_plugin_extents (void *handle,
                             struct nbdkit_extents *extents)
 {
   DEBUG_FUNCTION;
-  return 0;
+  return nbdkit_add_extent (extents, offset, count, 0);
 }
 
 static struct nbdkit_plugin plugin = {
