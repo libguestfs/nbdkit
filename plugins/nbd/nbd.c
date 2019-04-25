@@ -340,9 +340,14 @@ nbd_reply_raw (struct handle *h, int *fd)
   } rep;
   struct transaction *trans;
   void *buf = NULL;
+  CLEANUP_FREE char *payload = NULL;
   uint32_t count;
   int error = NBD_SUCCESS;
   bool more = false;
+  uint32_t len = 0; /* 0 except for structured reads */
+  uint64_t offset = 0; /* if len, absolute offset of structured read chunk */
+  bool zero = false; /* if len, whether to read or memset */
+  uint16_t errlen;
 
   *fd = -1;
   /* magic and handle overlap between simple and structured replies */
@@ -361,9 +366,100 @@ nbd_reply_raw (struct handle *h, int *fd)
       nbdkit_error ("structured response without negotiation");
       return nbd_mark_dead (h);
     }
-    /* TODO - set 'more' based on NBD_REPLY_FLAG_DONE, parse the
-       various reply types, etc. */
-    abort ();
+    if (read_full (h->fd, sizeof rep.simple + (char *) &rep,
+                   sizeof rep - sizeof rep.simple))
+      return nbd_mark_dead (h);
+    rep.structured.flags = be16toh (rep.structured.flags);
+    rep.structured.type = be16toh (rep.structured.type);
+    rep.structured.length = be32toh (rep.structured.length);
+    nbdkit_debug ("received structured reply %s for cookie %#" PRIx64
+                  ", payload length %" PRId32,
+                  name_of_nbd_reply_type(rep.structured.type),
+                  rep.structured.handle, rep.structured.length);
+    if (rep.structured.length > 64 * 1024 * 1024) {
+      nbdkit_error ("structured reply length is suspiciously large: %" PRId32,
+                    rep.structured.length);
+      return nbd_mark_dead (h);
+    }
+    if (rep.structured.length) {
+      /* Special case for OFFSET_DATA in order to read tail of chunk
+         directly into final buffer later on */
+      len = (rep.structured.type == NBD_REPLY_TYPE_OFFSET_DATA &&
+             rep.structured.length > sizeof offset) ? sizeof offset :
+        rep.structured.length;
+      payload = malloc (len);
+      if (!payload) {
+        nbdkit_error ("reading structured reply payload: %m");
+        return nbd_mark_dead (h);
+      }
+      if (read_full (h->fd, payload, len))
+        return nbd_mark_dead (h);
+      len = 0;
+    }
+    more = !(rep.structured.flags & NBD_REPLY_FLAG_DONE);
+    switch (rep.structured.type) {
+    case NBD_REPLY_TYPE_NONE:
+      if (rep.structured.length) {
+        nbdkit_error ("NBD_REPLY_TYPE_NONE with invalid payload");
+        return nbd_mark_dead (h);
+      }
+      if (more) {
+        nbdkit_error ("NBD_REPLY_TYPE_NONE without done flag");
+        return nbd_mark_dead (h);
+      }
+      break;
+    case NBD_REPLY_TYPE_OFFSET_DATA:
+      if (rep.structured.length <= sizeof offset) {
+        nbdkit_error ("structured reply OFFSET_DATA too small");
+        return nbd_mark_dead (h);
+      }
+      memcpy (&offset, payload, sizeof offset);
+      offset = be64toh (offset);
+      len = rep.structured.length - sizeof offset;
+      break;
+    case NBD_REPLY_TYPE_OFFSET_HOLE:
+      if (rep.structured.length != sizeof offset + sizeof len) {
+        nbdkit_error ("structured reply OFFSET_HOLE size incorrect");
+        return nbd_mark_dead (h);
+      }
+      memcpy (&offset, payload, sizeof offset);
+      offset = be64toh (offset);
+      memcpy (&len, payload, sizeof len);
+      len = be32toh (len);
+      if (!len) {
+        nbdkit_error ("structured reply OFFSET_HOLE length incorrect");
+        return nbd_mark_dead (h);
+      }
+      zero = true;
+      break;
+    default:
+      if (!NBD_REPLY_TYPE_IS_ERR (rep.structured.type)) {
+        nbdkit_error ("received unexpected structured reply %s",
+                      name_of_nbd_reply_type(rep.structured.type));
+        return nbd_mark_dead (h);
+      }
+
+      if (rep.structured.length < sizeof error + sizeof errlen) {
+        nbdkit_error ("structured reply error size incorrect");
+        return nbd_mark_dead (h);
+      }
+      memcpy (&errlen, payload + sizeof error, sizeof errlen);
+      errlen = be16toh (errlen);
+      if (errlen > rep.structured.length - sizeof error - sizeof errlen) {
+        nbdkit_error ("structured reply error message size incorrect");
+        return nbd_mark_dead (h);
+      }
+      memcpy (&error, payload, sizeof error);
+      error = be32toh (error);
+      if (errlen)
+        nbdkit_debug ("received structured error %s with message: %.*s",
+                      name_of_nbd_error (error), (int) errlen,
+                      payload + sizeof error + sizeof errlen);
+      else
+        nbdkit_debug ("received structured error %s without message",
+                      name_of_nbd_error (error));
+    }
+    break;
 
   default:
     nbdkit_error ("received unexpected magic in reply: %#" PRIx32,
@@ -382,6 +478,24 @@ nbd_reply_raw (struct handle *h, int *fd)
   if (buf && h->structured && rep.simple.magic == NBD_SIMPLE_REPLY_MAGIC) {
     nbdkit_error ("simple read reply when structured was expected");
     return nbd_mark_dead (h);
+  }
+  if (len) {
+    if (!buf) {
+      nbdkit_error ("structured read response to a non-read command");
+      return nbd_mark_dead (h);
+    }
+    if (offset < trans->offset || offset > INT64_MAX ||
+        offset + len > trans->offset + count) {
+      nbdkit_error ("structured read reply with unexpected offset/length");
+      return nbd_mark_dead (h);
+    }
+    buf = (char *) buf + offset - trans->offset;
+    if (zero) {
+      memset (buf, 0, len);
+      buf = NULL;
+    }
+    else
+      count = len;
   }
 
   /* Thanks to structured replies, we must preserve an error in any
@@ -556,7 +670,25 @@ nbd_newstyle_haggle (struct handle *h)
   uint16_t nrinfos = htobe16 (0);
   struct fixed_new_option_reply reply;
 
-  /* TODO: structured reads, block status */
+  nbdkit_debug ("trying NBD_OPT_STRUCTURED_REPLY");
+  opt.version = htobe64 (NEW_VERSION);
+  opt.option = htobe32 (NBD_OPT_STRUCTURED_REPLY);
+  opt.optlen = htobe32 (0);
+  if (write_full (h->fd, &opt, sizeof opt)) {
+    nbdkit_error ("unable to request NBD_OPT_STRUCTURED_REPLY: %m");
+    return -1;
+  }
+  if (nbd_newstyle_recv_option_reply (h, NBD_OPT_STRUCTURED_REPLY, &reply,
+                                      NULL) < 0)
+    return -1;
+  if (reply.reply == NBD_REP_ACK) {
+    nbdkit_debug ("structured replies enabled");
+    h->structured = true;
+    /* TODO: block status */
+  }
+  else {
+    nbdkit_debug ("structured replies disabled");
+  }
 
   /* Try NBD_OPT_GO */
   nbdkit_debug ("trying NBD_OPT_GO");
