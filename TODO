@@ -92,10 +92,6 @@ qemu-nbd for these use cases.
 
 nbdkit-nbd-plugin could use enhancements:
 
-* FUA passthrough, rather than extra FLUSH calls.  For this, .can_fua
-  must be exposed to plugins (not just filters), and needs to be
-  tri-state rather than just bool.
-
 * Enable client-side TLS (right now, the nbd plugin allows us to
   support an encrypted client connecting to a plain server; but we
   would need TLS to support a plain client connecting to an encrypted
