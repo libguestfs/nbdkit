@@ -186,15 +186,6 @@ cache_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   return next (nxdata);
 }
 
-static void *
-cache_open (nbdkit_next_open *next, void *nxdata, int readonly)
-{
-  if (next (nxdata, readonly) == -1)
-    return NULL;
-
-  return NBDKIT_HANDLE_NOT_NEEDED;
-}
-
 /* Get the file size and ensure the cache is the correct size. */
 static int64_t
 cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -476,7 +467,6 @@ static struct nbdkit_filter filter = {
   .unload            = cache_unload,
   .config            = cache_config,
   .config_complete   = cache_config_complete,
-  .open              = cache_open,
   .prepare           = cache_prepare,
   .get_size          = cache_get_size,
   .pread             = cache_pread,

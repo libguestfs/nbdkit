@@ -252,15 +252,6 @@ error_config (nbdkit_next_config *next, void *nxdata,
   "error-pread*, error-pwrite*, error-trim*, error-zero*, error-extents*\n" \
   "                               Apply settings only to read/write/etc"
 
-static void *
-error_open (nbdkit_next_open *next, void *nxdata, int readonly)
-{
-  if (next (nxdata, readonly) == -1)
-    return NULL;
-
-  return NBDKIT_HANDLE_NOT_NEEDED;
-}
-
 /* This function injects a random error. */
 static bool
 random_error (const struct error_settings *error_settings,
@@ -366,7 +357,6 @@ static struct nbdkit_filter filter = {
   .unload            = error_unload,
   .config            = error_config,
   .config_help       = error_config_help,
-  .open              = error_open,
   .pread             = error_pread,
   .pwrite            = error_pwrite,
   .trim              = error_trim,
