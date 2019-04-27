@@ -7,27 +7,72 @@ General comments
 
 * The plugin matters!  Different plugins have completely different
   uses, implementations and threading models.  There is little point
-  in talking about "the performance of nbdkit" without mentioning what
-  plugin you are testing.
+  in talking generically about “the performance of nbdkit” without
+  mentioning what plugin you are testing.
 
 * The client matters!  Does the client support multi-conn?  Does the
   client use the oldstyle or newstyle protocol?  Has the client been
   written with performance in mind?  The currently best clients are
-  (a) the Linux kernel (nbd.ko) (b) qemu.  Make sure you are using
-  recent versions and have multi-conn enabled.
+  (a) the Linux kernel (nbd.ko), (b) qemu, and (c) fio.  Make sure you
+  are using recent versions and have multi-conn enabled.
 
 * Filters affect performance.  When benchmarking you should never use
   filters unless filters are what you are trying to benchmark.
 
 
-Testing using Linux kernel client and fio
------------------------------------------
+Testing using fio
+-----------------
 
-(1) Install Jens Axboe's fio (Flexible I/O tester)
+FIO is a Flexible I/O tester written by Jens Axboe, and it is the
+primary tool used for generating the load to test filesystems and
+block devices.
 
-https://github.com/axboe/fio
+(1) Clone and compile fio:
 
-(2) Create the fio configuation file:
+    https://github.com/axboe/fio
+
+(2) Add the NBD engine patch.  The current version is linked below,
+although we are hoping it will eventually get upstream:
+
+    https://www.spinics.net/lists/fio/msg07832.html
+
+(3) Edit the test file in examples/nbd.fio, if required.
+
+(4) Run nbdkit and fio together.  From the fio source directory:
+
+    rm -f /tmp/socket
+    nbdkit -f -U /tmp/socket null 1G --run './fio examples/nbd.fio'
+
+If you want to use nbdkit from the source directory too, change
+‘nbdkit’ to the path of the wrapper, eg:
+
+    rm -f /tmp/socket
+    ../nbdkit/nbdkit -f -U /tmp/socket null 1G --run './fio examples/nbd.fio'
+
+
+Variations
+----------
+
+* Try adjusting the number of fio jobs (threads).
+
+* Try adjusting the number of nbdkit threads (nbdkit -t option).
+
+* Use other plugins.  Both nbdkit-memory-plugin and nbdkit-file-plugin
+  are important ones to test.
+
+* Run nbdkit under perf:
+
+  perf record -a -g --call-graph=dwarf -- \
+      server/nbdkit  -f -U /tmp/socket \
+          ./plugins/null/.libs/nbdkit-null-plugin.so 1G
+
+
+Testing using the Linux kernel client
+-------------------------------------
+
+Step (1) is the same as above - obtain or compile fio.
+
+(2) Create the fio configuation file.
 
 Create /var/tmp/test.fio containing:
 
@@ -49,13 +94,13 @@ runtime=120
 
 From the nbdkit source directory:
 
-rm /tmp/sock
-./nbdkit -f -U /tmp/sock memory 1G
+rm -f /tmp/socket
+./nbdkit -f -U /tmp/socket memory 1G
 
 (4) Loop mount the NBD server:
 
 modprobe nbd
-nbd-client -C 8 -b 512 -unix /tmp/sock /dev/nbd0
+nbd-client -C 8 -b 512 -unix /tmp/socket /dev/nbd0
 mkfs.xfs -f /dev/nbd0
 mkdir /var/tmp/nbd
 mount /dev/nbd0 /var/tmp/nbd
@@ -63,27 +108,3 @@ mount /dev/nbd0 /var/tmp/nbd
 (5) Run the fio test:
 
 fio /var/tmp/test.fio
-
-
-Variations
-----------
-
-* Try turning multi-conn on or off or adjusting the number of
-  connections.  See the nbd-client -C option.
-
-* Try adjusting the number of fio threads.
-
-* Run nbdkit under perf:
-
-  perf record -a -g --call-graph=dwarf -- \
-      server/nbdkit  -f -U /tmp/sock \
-          ./plugins/memory/.libs/nbdkit-memory-plugin.so 1G
-
-* Use other plugins.  nbdkit-file-plugin is an important one to test.
-  It might also be worth devising a test using a readonly plugin.
-
-
-Future work
------------
-
-* Write an NBD I/O engine for fio.
