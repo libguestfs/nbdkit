@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -39,8 +39,6 @@
 #include <limits.h>
 #include <errno.h>
 
-#include <pthread.h>
-
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
@@ -53,15 +51,6 @@
 /* These are the parameters. */
 static int64_t truncate_size = -1;
 static unsigned round_up = 0, round_down = 0;
-
-/* The real size of the underlying plugin. */
-static uint64_t real_size;
-
-/* The calculated size after applying the parameters. */
-static uint64_t size;
-
-/* This lock protects the real_size and size fields. */
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int
 parse_round_param (const char *key, const char *value, unsigned *ret)
@@ -121,51 +110,90 @@ truncate_config (nbdkit_next_config *next, void *nxdata,
   "round-up=<N>                   Round up to next multiple of N.\n" \
   "round-down=<N>                 Round down to multiple of N."
 
-static int64_t truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle);
+/* Per-connection state. Until the NBD protocol gains dynamic resize
+ * support, each connection remembers the size of the underlying
+ * plugin at open (even if that size differs between connections
+ * because the plugin tracks external resize effects).
+ */
+struct handle {
+  /* The real size of the underlying plugin. */
+  uint64_t real_size;
 
-/* In prepare, force a call to get_size which sets the real_size & size
- * globals.
+  /* The calculated size after applying the parameters. */
+  uint64_t size;
+};
+
+/* Open a connection. */
+static void *
+truncate_open (nbdkit_next_open *next, void *nxdata, int readonly)
+{
+  struct handle *h;
+
+  if (next (nxdata, readonly) == -1)
+    return NULL;
+
+  h = malloc (sizeof *h); /* h is populated during .prepare */
+  if (h == NULL) {
+    nbdkit_error ("malloc: %m");
+    return NULL;
+  }
+
+  return h;
+}
+
+static void
+truncate_close (void *handle)
+{
+  struct handle *h = handle;
+
+  free (h);
+}
+
+/* In prepare, force a call to next_ops->get_size in order to set
+ * per-connection real_size & size; these values are not changed
+ * during the life of the connection.
  */
 static int
 truncate_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
                   void *handle)
 {
   int64_t r;
-
-  r = truncate_get_size (next_ops, nxdata, handle);
-  return r >= 0 ? 0 : -1;
-}
-
-/* Get the size.  As a side effect, calculate the size to serve. */
-static int64_t
-truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
-                   void *handle)
-{
-  int64_t r, ret;
+  struct handle *h = handle;
 
   r = next_ops->get_size (nxdata);
   if (r == -1)
     return -1;
 
-  pthread_mutex_lock (&lock);
-
-  real_size = size = r;
+  h->real_size = h->size = r;
 
   /* The truncate, round-up and round-down parameters are treated as
    * separate operations.  It's possible to specify more than one,
    * although perhaps not very useful.
    */
   if (truncate_size >= 0)
-    size = truncate_size;
+    h->size = truncate_size;
   if (round_up > 0)
-    size = ROUND_UP (size, round_up);
+    h->size = ROUND_UP (h->size, round_up);
   if (round_down > 0)
-    size = ROUND_DOWN (size, round_down);
-  ret = size;
+    h->size = ROUND_DOWN (h->size, round_down);
 
-  pthread_mutex_unlock (&lock);
+  return r >= 0 ? 0 : -1;
+}
 
-  return ret;
+/* Get the size. */
+static int64_t
+truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+                   void *handle)
+{
+  struct handle *h = handle;
+
+  /* If the NBD protocol and nbdkit adds dynamic resize, we'll need a
+   * rwlock where get_size holds write lock and all other ops hold
+   * read lock. Until then, NBD sizes are unchanging (even if the
+   * underlying plugin can react to external size changes), so just
+   * returned what we cached at connection open.
+   */
+  return h->size;
 }
 
 /* Read data. */
@@ -176,17 +204,13 @@ truncate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   int r;
   uint32_t n;
-  uint64_t real_size_copy;
+  struct handle *h = handle;
 
-  pthread_mutex_lock (&lock);
-  real_size_copy = real_size;
-  pthread_mutex_unlock (&lock);
-
-  if (offset < real_size_copy) {
-    if (offset + count <= real_size_copy)
+  if (offset < h->real_size) {
+    if (offset + count <= h->real_size)
       n = count;
     else
-      n = real_size_copy - offset;
+      n = h->real_size - offset;
     r = next_ops->pread (nxdata, buf, n, offset, flags, err);
     if (r == -1)
       return -1;
@@ -209,17 +233,13 @@ truncate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   int r;
   uint32_t n;
-  uint64_t real_size_copy;
+  struct handle *h = handle;
 
-  pthread_mutex_lock (&lock);
-  real_size_copy = real_size;
-  pthread_mutex_unlock (&lock);
-
-  if (offset < real_size_copy) {
-    if (offset + count <= real_size_copy)
+  if (offset < h->real_size) {
+    if (offset + count <= h->real_size)
       n = count;
     else
-      n = real_size_copy - offset;
+      n = h->real_size - offset;
     r = next_ops->pwrite (nxdata, buf, n, offset, flags, err);
     if (r == -1)
       return -1;
@@ -246,17 +266,13 @@ truncate_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
                uint32_t flags, int *err)
 {
   uint32_t n;
-  uint64_t real_size_copy;
+  struct handle *h = handle;
 
-  pthread_mutex_lock (&lock);
-  real_size_copy = real_size;
-  pthread_mutex_unlock (&lock);
-
-  if (offset < real_size_copy) {
-    if (offset + count <= real_size_copy)
+  if (offset < h->real_size) {
+    if (offset + count <= h->real_size)
       n = count;
     else
-      n = real_size_copy - offset;
+      n = h->real_size - offset;
     return next_ops->trim (nxdata, n, offset, flags, err);
   }
   return 0;
@@ -269,17 +285,13 @@ truncate_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
                uint32_t flags, int *err)
 {
   uint32_t n;
-  uint64_t real_size_copy;
+  struct handle *h = handle;
 
-  pthread_mutex_lock (&lock);
-  real_size_copy = real_size;
-  pthread_mutex_unlock (&lock);
-
-  if (offset < real_size_copy) {
-    if (offset + count <= real_size_copy)
+  if (offset < h->real_size) {
+    if (offset + count <= h->real_size)
       n = count;
     else
-      n = real_size_copy - offset;
+      n = h->real_size - offset;
     return next_ops->zero (nxdata, n, offset, flags, err);
   }
   return 0;
@@ -292,21 +304,17 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
                   uint32_t flags, struct nbdkit_extents *extents, int *err)
 {
   uint32_t n;
-  uint64_t real_size_copy;
+  struct handle *h = handle;
   CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 = NULL;
   size_t i;
-
-  pthread_mutex_lock (&lock);
-  real_size_copy = real_size;
-  pthread_mutex_unlock (&lock);
 
   /* If the entire request is beyond the end of the underlying plugin
    * then this is the easy case: return a hole up to the end of the
    * file.
    */
-  if (offset >= real_size_copy) {
+  if (offset >= h->real_size) {
     int r = nbdkit_add_extent (extents,
-                               real_size_copy, truncate_size - real_size_copy,
+                               h->real_size, truncate_size - h->real_size,
                                NBDKIT_EXTENT_ZERO|NBDKIT_EXTENT_HOLE);
     if (r == -1)
       *err = errno;
@@ -322,15 +330,15 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
    * have to create a new extents array, ask the plugin, then copy the
    * returned data to the original array.
    */
-  extents2 = nbdkit_extents_new (offset, real_size_copy);
+  extents2 = nbdkit_extents_new (offset, h->real_size);
   if (extents2 == NULL) {
     *err = errno;
     return -1;
   }
-  if (offset + count <= real_size_copy)
+  if (offset + count <= h->real_size)
     n = count;
   else
-    n = real_size_copy - offset;
+    n = h->real_size - offset;
   if (next_ops->extents (nxdata, n, offset, flags, extents2, err) == -1)
     return -1;
 
@@ -352,6 +360,8 @@ static struct nbdkit_filter filter = {
   .version           = PACKAGE_VERSION,
   .config            = truncate_config,
   .config_help       = truncate_config_help,
+  .open              = truncate_open,
+  .close             = truncate_close,
   .prepare           = truncate_prepare,
   .get_size          = truncate_get_size,
   .pread             = truncate_pread,
