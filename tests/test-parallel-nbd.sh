@@ -36,10 +36,6 @@ source ./functions.sh
 requires test -f file-data
 requires qemu-io --version
 
-# We require --exit-with-parent to work
-( nbdkit --exit-with-parent --help ) >/dev/null 2>&1 ||
-  { echo "Missing --exit-with-parent support"; exit 77; }
-
 sock=`mktemp -u`
 files="test-parallel-nbd.out $sock test-parallel-nbd.data test-parallel-nbd.pid"
 rm -f $files
