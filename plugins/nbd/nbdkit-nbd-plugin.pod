@@ -14,8 +14,10 @@ It provides an NBD server that forwards all traffic as a client to
 another existing NBD server.  A primary usage of this setup is to
 alter the set of features available to the ultimate end client,
 without having to change the original server (for example, to convert
-between oldstyle and newstyle, or to add TLS support where the original
-server lacks it).
+between oldstyle and newstyle, or to add TLS support where the
+original server lacks it).  Use of this plugin along with nbdkit
+filters (adding I<--filter> to the nbdkit command line) makes it
+possible to apply any nbdkit filter to any other NBD server.
 
 For now, this is limited to connecting to another NBD server over a
 named Unix socket without TLS, although it is feasible that future
@@ -40,10 +42,38 @@ empty string).
 
 =back
 
+=head1 EXAMPLES
+
+Expose the contents of an export served by an old style server over a
+Unix socket to TCP network clients that only want to consume encrypted
+data. Use I<--exit-with-parent> to clean up nbdkit at the same time
+that the old server exits.
+
+ ( sock=`mktemp -u` &&
+   nbdkit --exit-with-parent --tls=require nbd socket=$sock &
+   exec /path/to/oldserver --socket=$sock )
+
+ ┌────────────┐          ┌────────┐          ┌────────────┐
+ │ new client │ ────────▶│ nbdkit │ ────────▶│ old server │
+ └────────────┘   TCP    └────────┘   Unix   └────────────┘
+
+Combine nbdkit's partition filter with qemu-nbd's ability to visit
+qcow2 files (nbdkit does not have a native qcow2 plugin), performing
+the same task as the deprecated C<qemu-nbd -P 1 -f qcow2
+/path/to/image.qcow2> command:
+
+ ( sock=`mktemp -u` &&
+   nbdkit --exit-with-parent --filter=partition nbd socket=$sock partition=1 &
+   exec qemu-nbd -k $sock -f qcow2 /path/to/image.qcow2 )
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
-L<nbdkit-plugin(3)>.
+L<nbdkit-captive(1)>,
+L<nbdkit-filter(1)>,
+L<nbdkit-tls(1)>,
+L<nbdkit-plugin(3)>,
+L<qemu-nbd(1)>.
 
 =head1 AUTHORS
 
@@ -51,4 +81,4 @@ Eric Blake
 
 =head1 COPYRIGHT
 
-Copyright (C) 2017 Red Hat Inc.
+Copyright (C) 2017, 2019 Red Hat Inc.
