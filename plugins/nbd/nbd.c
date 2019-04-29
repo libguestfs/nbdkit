@@ -52,14 +52,16 @@
 #include "byte-swapping.h"
 #include "cleanup.h"
 
-static char *sockname = NULL;
-static char *export = NULL;
+/* Connect to server via absolute name of Unix socket */
+static char *sockname;
+
+/* Name of export on remote server, default '', ignored for oldstyle */
+static const char *export;
 
 static void
 nbd_unload (void)
 {
   free (sockname);
-  free (export);
 }
 
 /* Called for each key=value passed on the command line.  This plugin
@@ -75,14 +77,8 @@ nbd_config (const char *key, const char *value)
     if (!sockname)
       return -1;
   }
-  else if (strcmp (key, "export") == 0) {
-    free (export);
-    export = strdup (value);
-    if (!export) {
-      nbdkit_error ("memory failure: %m");
-      return -1;
-    }
-  }
+  else if (strcmp (key, "export") == 0)
+    export = value;
   else {
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
@@ -107,11 +103,7 @@ nbd_config_complete (void)
     return -1;
   }
   if (!export)
-    export = strdup ("");
-  if (!export) {
-    nbdkit_error ("memory failure: %m");
-    return -1;
-  }
+    export = "";
   return 0;
 }
 
@@ -846,12 +838,34 @@ nbd_newstyle_haggle (struct handle *h)
   }
 }
 
+/* Connect to a Unix socket */
+static int
+nbd_connect_unix(struct handle *h)
+{
+  struct sockaddr_un sock = { .sun_family = AF_UNIX };
+
+  nbdkit_debug ("connecting to Unix socket name=%s", sockname);
+  h->fd = socket (AF_UNIX, SOCK_STREAM, 0);
+  if (h->fd < 0) {
+    nbdkit_error ("socket: %m");
+    return -1;
+  }
+
+  /* We already validated length during nbd_config_complete */
+  assert (strlen (sockname) <= sizeof sock.sun_path);
+  memcpy (sock.sun_path, sockname, strlen (sockname));
+  if (connect (h->fd, (const struct sockaddr *) &sock, sizeof sock) < 0) {
+    nbdkit_error ("connect: %m");
+    return -1;
+  }
+  return 0;
+}
+
 /* Create the per-connection handle. */
 static void *
 nbd_open (int readonly)
 {
   struct handle *h;
-  struct sockaddr_un sock = { .sun_family = AF_UNIX };
   struct old_handshake old;
   uint64_t version;
 
@@ -860,19 +874,10 @@ nbd_open (int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
-  h->fd = socket (AF_UNIX, SOCK_STREAM, 0);
-  if (h->fd < 0) {
-    nbdkit_error ("socket: %m");
-    free (h);
-    return NULL;
-  }
-  /* We already validated length during nbd_config_complete */
-  assert (strlen (sockname) <= sizeof sock.sun_path);
-  memcpy (sock.sun_path, sockname, strlen (sockname));
-  if (connect (h->fd, (const struct sockaddr *) &sock, sizeof sock) < 0) {
-    nbdkit_error ("connect: %m");
+  h->fd = -1;
+
+  if (nbd_connect_unix (h) == -1)
     goto err;
-  }
 
   /* old and new handshake share same meaning of first 16 bytes */
   if (read_full (h->fd, &old, offsetof (struct old_handshake, exportsize))) {
@@ -972,7 +977,8 @@ nbd_open (int readonly)
   return h;
 
  err:
-  close (h->fd);
+  if (h->fd >= 0)
+    close (h->fd);
   free (h);
   return NULL;
 }
