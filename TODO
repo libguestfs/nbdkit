@@ -97,9 +97,6 @@ nbdkit-nbd-plugin could use enhancements:
   would need TLS to support a plain client connecting to an encrypted
   server).
 
-* Support for connecting to a server over IP rather than just Unix
-  sockets.
-
 nbdkit-floppy-plugin:
 
 * Add boot sector support.  In theory this is easy (eg. using

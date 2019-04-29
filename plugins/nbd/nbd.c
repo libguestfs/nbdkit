@@ -35,11 +35,15 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <assert.h>
@@ -55,6 +59,13 @@
 /* Connect to server via absolute name of Unix socket */
 static char *sockname;
 
+/* Connect to server via TCP socket */
+static const char *hostname;
+static const char *port;
+
+/* Human-readable server description */
+static char *servname;
+
 /* Name of export on remote server, default '', ignored for oldstyle */
 static const char *export;
 
@@ -62,10 +73,12 @@ static void
 nbd_unload (void)
 {
   free (sockname);
+  free (servname);
 }
 
 /* Called for each key=value passed on the command line.  This plugin
- * accepts socket=<sockname> (required for now) and export=<name> (optional).
+ * accepts socket=<sockname> or hostname=<hostname>/port=<port>
+ * (exactly one connection required) and export=<name> (optional).
  */
 static int
 nbd_config (const char *key, const char *value)
@@ -77,6 +90,10 @@ nbd_config (const char *key, const char *value)
     if (!sockname)
       return -1;
   }
+  else if (strcmp (key, "hostname") == 0)
+    hostname = value;
+  else if (strcmp (key, "port") == 0)
+    port = value;
   else if (strcmp (key, "export") == 0)
     export = value;
   else {
@@ -87,29 +104,52 @@ nbd_config (const char *key, const char *value)
   return 0;
 }
 
-/* Check the user did pass a socket=<SOCKNAME> parameter. */
+/* Check the user passed exactly one socket description. */
 static int
 nbd_config_complete (void)
 {
-  struct sockaddr_un sock;
+  int r;
 
-  if (sockname == NULL) {
-    nbdkit_error ("you must supply the socket=<SOCKNAME> parameter "
-                  "after the plugin name on the command line");
-    return -1;
+  if (sockname) {
+    struct sockaddr_un sock;
+
+    if (hostname || port) {
+      nbdkit_error ("cannot mix Unix socket and TCP hostname/port parameters");
+      return -1;
+    }
+    if (strlen (sockname) > sizeof sock.sun_path) {
+      nbdkit_error ("socket file name too large");
+      return -1;
+    }
+    servname = strdup (sockname);
   }
-  if (strlen (sockname) > sizeof sock.sun_path) {
-    nbdkit_error ("socket file name too large");
-    return -1;
+  else {
+    if (!hostname) {
+      nbdkit_error ("must supply socket= or hostname= of external NBD server");
+      return -1;
+    }
+    if (!port)
+      port = "10809";
+    if (strchr (hostname, ':'))
+      r = asprintf (&servname, "[%s]:%s", hostname, port);
+    else
+      r = asprintf (&servname, "%s:%s", hostname, port);
+    if (r < 0) {
+      nbdkit_error ("asprintf: %m");
+      return -1;
+    }
   }
+
   if (!export)
     export = "";
   return 0;
 }
 
 #define nbd_config_help \
-  "socket=<SOCKNAME>   (required) The Unix socket to connect to.\n" \
-  "export=<NAME>                  Export name to connect to (default \"\").\n" \
+  "socket=<SOCKNAME>      The Unix socket to connect to.\n" \
+  "hostname=<HOST>        The hostname for the TCP socket to connect to.\n" \
+  "port=<PORT>            TCP port or service name to use (default 10809).\n" \
+  "export=<NAME>          Export name to connect to (default \"\").\n" \
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
@@ -199,7 +239,7 @@ nbd_mark_dead (struct handle *h)
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
   if (!h->dead) {
     nbdkit_debug ("permanent failure while talking to server %s: %m",
-                  sockname);
+                  servname);
     h->dead = true;
   }
   else if (!err)
@@ -861,6 +901,45 @@ nbd_connect_unix(struct handle *h)
   return 0;
 }
 
+/* Connect to a TCP socket */
+static int
+nbd_connect_tcp(struct handle *h)
+{
+  struct addrinfo hints = { .ai_family = AF_UNSPEC,
+                            .ai_socktype = SOCK_STREAM, };
+  struct addrinfo *result, *rp;
+  int r;
+  const int optval = 1;
+
+  nbdkit_debug ("connecting to TCP socket host=%s port=%s", hostname, port);
+  r = getaddrinfo (hostname, port, &hints, &result);
+  if (r != 0) {
+    nbdkit_error ("getaddrinfo: %s", gai_strerror(r));
+    return -1;
+  }
+
+  for (rp = result; rp; rp = rp->ai_next) {
+    h->fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+    if (h->fd == -1)
+      continue;
+    if (connect (h->fd, rp->ai_addr, rp->ai_addrlen) != -1)
+      break;
+    close (h->fd);
+  }
+  freeaddrinfo (result);
+  if (rp == NULL) {
+    nbdkit_error ("connect: %m");
+    return -1;
+  }
+
+  if (setsockopt (h->fd, IPPROTO_TCP, TCP_NODELAY, &optval,
+                  sizeof(int)) == -1) {
+    nbdkit_error ("cannot set TCP_NODELAY option: %m");
+    return -1;
+  }
+  return 0;
+}
+
 /* Create the per-connection handle. */
 static void *
 nbd_open (int readonly)
@@ -876,7 +955,11 @@ nbd_open (int readonly)
   }
   h->fd = -1;
 
-  if (nbd_connect_unix (h) == -1)
+  if (sockname) {
+    if (nbd_connect_unix (h) == -1)
+      goto err;
+  }
+  else if (nbd_connect_tcp (h) == -1)
     goto err;
 
   /* old and new handshake share same meaning of first 16 bytes */
@@ -885,7 +968,7 @@ nbd_open (int readonly)
     goto err;
   }
   if (strncmp(old.nbdmagic, "NBDMAGIC", sizeof old.nbdmagic)) {
-    nbdkit_error ("wrong magic, %s is not an NBD server", sockname);
+    nbdkit_error ("wrong magic, %s is not an NBD server", servname);
     goto err;
   }
   version = be64toh (old.version);

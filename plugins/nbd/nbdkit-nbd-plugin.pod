@@ -4,7 +4,7 @@ nbdkit-nbd-plugin - nbdkit nbd plugin
 
 =head1 SYNOPSIS
 
- nbdkit nbd socket=SOCKNAME [export=NAME]
+ nbdkit nbd { socket=SOCKNAME | hostname=HOST [port=PORT] } [export=NAME]
 
 =head1 DESCRIPTION
 
@@ -19,9 +19,10 @@ original server lacks it).  Use of this plugin along with nbdkit
 filters (adding I<--filter> to the nbdkit command line) makes it
 possible to apply any nbdkit filter to any other NBD server.
 
-For now, this is limited to connecting to another NBD server over a
-named Unix socket without TLS, although it is feasible that future
-additions will support network sockets and encryption.
+For now, this is limited to connecting to another NBD server over an
+unencrypted connection; if the data is sensitive, it is better to
+stick to a Unix socket rather than transmitting plaintext over TCP. It
+is feasible that future additions will support encryption.
 
 =head1 PARAMETERS
 
@@ -29,10 +30,19 @@ additions will support network sockets and encryption.
 
 =item B<socket=>SOCKNAME
 
-Connect to the NBD server located at the Unix socket C<SOCKNAME>.  The
-server can speak either new or old style protocol.
+Connect to the NBD server located at the Unix socket C<SOCKNAME>.
 
-This parameter is required.
+=item B<hostname=>HOST
+
+Connect to the NBD server at the given remote C<HOST> using a TCP socket.
+
+=item B<port=>PORT
+
+When B<hostname> is supplied, use B<PORT> instead of the default port
+10809.
+
+Either B<socket> or B<hostname> must be provided. The server can speak
+either new or old style protocol.
 
 =item B<export=>NAME
 
@@ -65,6 +75,18 @@ the same task as the deprecated C<qemu-nbd -P 1 -f qcow2
  ( sock=`mktemp -u` &&
    nbdkit --exit-with-parent --filter=partition nbd socket=$sock partition=1 &
    exec qemu-nbd -k $sock -f qcow2 /path/to/image.qcow2 )
+
+Conversely, expose the contents of export I<foo> from a new style
+server with unencrypted data to a client that can only consume
+unencrypted old style. Use I<--run> to clean up nbdkit at the time the
+client exits.
+
+ nbdkit -U - -o nbd hostname=example.com export=foo \
+  --run '/path/to/oldclient --socket=$unixsocket'
+
+ ┌────────────┐          ┌────────┐          ┌────────────┐
+ │ old client │ ────────▶│ nbdkit │ ────────▶│ new server │
+ └────────────┘   Unix   └────────┘   TCP    └────────────┘
 
 =head1 SEE ALSO
 
