@@ -755,8 +755,16 @@ static int
 add_extent (struct nbdkit_extents *extents,
             uint64_t *position, uint64_t next_position, bool is_hole)
 {
-  const uint32_t type = is_hole ? NBDKIT_EXTENT_HOLE|NBDKIT_EXTENT_ZERO : 0;
+  uint32_t type = 0;
   const uint64_t length = next_position - *position;
+
+  if (is_hole) {
+    type = NBDKIT_EXTENT_HOLE;
+    /* Images opened as single link might be backed by another file in the
+       chain, so the holes are not guaranteed to be zeros. */
+    if (!single_link)
+      type |= NBDKIT_EXTENT_ZERO;
+  }
 
   assert (*position <= next_position);
   if (*position == next_position)
