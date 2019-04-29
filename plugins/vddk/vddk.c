@@ -839,12 +839,10 @@ vddk_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
       /* The query returns allocated blocks.  We must insert holes
        * between the blocks as necessary.
        */
-      if (position < blk_offset &&
-          add_extent (extents, &position, blk_offset, true) == -1)
-        goto error_in_add;
-      if (add_extent (extents,
-                      &position, blk_offset + blk_length, false) == -1) {
-      error_in_add:
+      if ((position < blk_offset &&
+           add_extent (extents, &position, blk_offset, true) == -1) ||
+          (add_extent (extents,
+                       &position, blk_offset + blk_length, false) == -1)) {
         DEBUG_CALL ("VixDiskLib_FreeBlockList", "block_list");
         VixDiskLib_FreeBlockList (block_list);
         return -1;
