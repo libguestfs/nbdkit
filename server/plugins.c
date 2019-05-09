@@ -43,6 +43,7 @@
 #include <dlfcn.h>
 
 #include "internal.h"
+#include "minmax.h"
 
 /* Maximum read or write request that we will handle. */
 #define MAX_REQUEST_SIZE (64 * 1024 * 1024)
@@ -594,8 +595,6 @@ plugin_zero (struct backend *b, struct connection *conn,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-  char *buf;
-  uint32_t limit;
   int r = -1;
   bool may_trim = flags & NBDKIT_FLAG_MAY_TRIM;
   bool fua = flags & NBDKIT_FLAG_FUA;
@@ -639,24 +638,18 @@ plugin_zero (struct backend *b, struct connection *conn,
   assert (p->plugin.pwrite || p->plugin._pwrite_old);
   flags &= ~NBDKIT_FLAG_MAY_TRIM;
   threadlocal_set_error (0);
-  limit = count < MAX_REQUEST_SIZE ? count : MAX_REQUEST_SIZE;
-  buf = calloc (limit, 1);
-  if (!buf) {
-    *err = ENOMEM;
-    return -1;
-  }
 
   while (count) {
+    static const char buf[MAX_REQUEST_SIZE]; /* Always contains zeroes */
+    uint32_t limit = MIN (count, sizeof buf);
+
     r = plugin_pwrite (b, conn, buf, limit, offset, flags, err);
     if (r == -1)
       break;
     count -= limit;
-    if (count < limit)
-      limit = count;
   }
 
   *err = errno;
-  free (buf);
   errno = *err;
 
  done:
