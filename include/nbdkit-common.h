@@ -65,6 +65,10 @@ extern "C" {
 #define NBDKIT_FUA_EMULATE    1
 #define NBDKIT_FUA_NATIVE     2
 
+#define NBDKIT_CACHE_NONE     0
+#define NBDKIT_CACHE_EMULATE  1
+#define NBDKIT_CACHE_NATIVE   2
+
 #define NBDKIT_EXTENT_HOLE    (1<<0) /* Same as NBD_STATE_HOLE */
 #define NBDKIT_EXTENT_ZERO    (1<<1) /* Same as NBD_STATE_ZERO */
 

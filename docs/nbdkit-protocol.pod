@@ -152,6 +152,14 @@ when structured replies are in effect. However, the flag is a no-op
 until we extend the plugin API to allow a fragmented read in the first
 place.
 
+=item C<NBD_CMD_CACHE>
+
+Supported in nbdkit E<ge> 1.13.4.
+
+This protocol extension allows a client to inform the server about
+intent to access a portion of the export, to allow the server an
+opportunity to cache things appropriately.
+
 =item Resize Extension
 
 I<Not supported>.

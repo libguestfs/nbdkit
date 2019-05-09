@@ -448,6 +448,17 @@ plugin_can_multi_conn (struct backend *b, struct connection *conn)
     return 0; /* assume false */
 }
 
+static int
+plugin_can_cache (struct backend *b, struct connection *conn)
+{
+  assert (connection_get_handle (conn, 0));
+
+  debug ("can_cache");
+
+  /* FIXME: return default based on plugin->cache */
+  return NBDKIT_CACHE_NONE;
+}
+
 /* Plugins and filters can call this to set the true errno, in cases
  * where !errno_is_preserved.
  */
@@ -693,6 +704,27 @@ plugin_extents (struct backend *b, struct connection *conn,
   return r;
 }
 
+static int
+plugin_cache (struct backend *b, struct connection *conn,
+              uint32_t count, uint64_t offset, uint32_t flags,
+              int *err)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  int r = -1;
+
+  assert (connection_get_handle (conn, 0));
+  assert (!flags);
+
+  debug ("cache count=%" PRIu32 " offset=%" PRIu64, count, offset);
+
+  /* FIXME: assert plugin->cache and call it */
+  assert (false);
+
+  if (r == -1)
+    *err = get_error (p);
+  return r;
+}
+
 static struct backend plugin_functions = {
   .free = plugin_free,
   .thread_model = plugin_thread_model,
@@ -717,12 +749,14 @@ static struct backend plugin_functions = {
   .can_extents = plugin_can_extents,
   .can_fua = plugin_can_fua,
   .can_multi_conn = plugin_can_multi_conn,
+  .can_cache = plugin_can_cache,
   .pread = plugin_pread,
   .pwrite = plugin_pwrite,
   .flush = plugin_flush,
   .trim = plugin_trim,
   .zero = plugin_zero,
   .extents = plugin_extents,
+  .cache = plugin_cache,
 };
 
 /* Register and load a plugin. */

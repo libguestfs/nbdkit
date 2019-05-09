@@ -76,6 +76,7 @@ validate_request (struct connection *conn,
   /* Validate cmd, offset, count. */
   switch (cmd) {
   case NBD_CMD_READ:
+  case NBD_CMD_CACHE:
   case NBD_CMD_WRITE:
   case NBD_CMD_TRIM:
   case NBD_CMD_WRITE_ZEROES:
@@ -180,6 +181,14 @@ validate_request (struct connection *conn,
     return false;
   }
 
+  /* Cache allowed? */
+  if (!conn->can_cache && cmd == NBD_CMD_CACHE) {
+    nbdkit_error ("invalid request: %s: cache operation not supported",
+                  name_of_nbd_cmd (cmd));
+    *error = EINVAL;
+    return false;
+  }
+
   /* Block status allowed? */
   if (cmd == NBD_CMD_BLOCK_STATUS) {
     if (!conn->structured_replies) {
@@ -251,6 +260,23 @@ handle_request (struct connection *conn,
     if (fua)
       f |= NBDKIT_FLAG_FUA;
     if (backend->trim (backend, conn, count, offset, f, &err) == -1)
+      return err;
+    break;
+
+  case NBD_CMD_CACHE:
+    if (conn->emulate_cache) {
+      static char buf[MAX_REQUEST_SIZE]; /* data sink, never read */
+      uint32_t limit;
+
+      while (count) {
+        limit = MIN (count, sizeof buf);
+        if (backend->pread (backend, conn, buf, limit, offset, flags,
+                            &err) == -1)
+          return err;
+        count -= limit;
+      }
+    }
+    else if (backend->cache (backend, conn, count, offset, 0, &err) == -1)
       return err;
     break;
 

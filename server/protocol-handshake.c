@@ -113,6 +113,15 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     }
   }
 
+  fl = backend->can_cache (backend, conn);
+  if (fl == -1)
+    return -1;
+  if (fl) {
+    eflags |= NBD_FLAG_SEND_CACHE;
+    conn->can_cache = true;
+    conn->emulate_cache = fl == NBDKIT_CACHE_EMULATE;
+  }
+
   /* The result of this is not returned to callers here (or at any
    * time during the handshake).  However it makes sense to do it once
    * per connection and store the result in the handle anyway.  This

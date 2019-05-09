@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -574,6 +574,18 @@ filter_can_multi_conn (struct backend *b, struct connection *conn)
 }
 
 static int
+filter_can_cache (struct backend *b, struct connection *conn)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  debug ("%s: can_cache", f->name);
+
+  /* FIXME: Default to f->backend.next->can_cache, once all filters
+     have been audited */
+  return NBDKIT_CACHE_NONE;
+}
+
+static int
 filter_pread (struct backend *b, struct connection *conn,
               void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
@@ -702,6 +714,23 @@ filter_extents (struct backend *b, struct connection *conn,
                                      extents, err);
 }
 
+static int
+filter_cache (struct backend *b, struct connection *conn,
+              uint32_t count, uint64_t offset,
+              uint32_t flags, int *err)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  assert (flags == 0);
+
+  debug ("%s: cache count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
+         f->name, count, offset, flags);
+
+  /* FIXME: Allow filter to rewrite request */
+  return f->backend.next->cache (f->backend.next, conn,
+                                 count, offset, flags, err);
+}
+
 static struct backend filter_functions = {
   .free = filter_free,
   .thread_model = filter_thread_model,
@@ -726,12 +755,14 @@ static struct backend filter_functions = {
   .can_extents = filter_can_extents,
   .can_fua = filter_can_fua,
   .can_multi_conn = filter_can_multi_conn,
+  .can_cache = filter_can_cache,
   .pread = filter_pread,
   .pwrite = filter_pwrite,
   .flush = filter_flush,
   .trim = filter_trim,
   .zero = filter_zero,
   .extents = filter_extents,
+  .cache = filter_cache,
 };
 
 /* Register and load a filter. */

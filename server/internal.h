@@ -170,6 +170,8 @@ struct connection {
   bool can_zero;
   bool can_fua;
   bool can_multi_conn;
+  bool can_cache;
+  bool emulate_cache;
   bool can_extents;
   bool using_tls;
   bool structured_replies;
@@ -276,6 +278,7 @@ struct backend {
   int (*can_extents) (struct backend *, struct connection *conn);
   int (*can_fua) (struct backend *, struct connection *conn);
   int (*can_multi_conn) (struct backend *, struct connection *conn);
+  int (*can_cache) (struct backend *, struct connection *conn);
 
   int (*pread) (struct backend *, struct connection *conn, void *buf,
                 uint32_t count, uint64_t offset, uint32_t flags, int *err);
@@ -290,6 +293,8 @@ struct backend {
   int (*extents) (struct backend *, struct connection *conn, uint32_t count,
                   uint64_t offset, uint32_t flags,
                   struct nbdkit_extents *extents, int *err);
+  int (*cache) (struct backend *, struct connection *conn, uint32_t count,
+                uint64_t offset, uint32_t flags, int *err);
 };
 
 /* plugins.c */
