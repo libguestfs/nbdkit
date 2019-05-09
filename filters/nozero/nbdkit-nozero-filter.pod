@@ -25,7 +25,7 @@ Optional, controls which mode the filter will use.  Mode B<none>
 mode B<emulate> means that zero support is emulated by the filter
 using the plugin's C<pwrite> callback, regardless of whether the
 plugin itself implemented the C<zero> callback with a more efficient
-way to write zeros.
+way to write zeroes.
 
 =back
 

@@ -381,9 +381,9 @@ partitioning_pwrite (void *handle,
       break;
 
     case region_zero:
-      /* You can only write zeros. */
+      /* You can only write zeroes. */
       if (!is_zero (buf, len)) {
-        nbdkit_error ("write non-zeros to padding region");
+        nbdkit_error ("write non-zeroes to padding region");
         errno = EIO;
         return -1;
       }

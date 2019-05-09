@@ -60,7 +60,7 @@ if ! qemu-io -f raw -d unmap -c 'w -z -u 0 1M' nozero1.img; then
     exit 77
 fi
 if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
-    echo "$0: can't trim file by writing zeros"
+    echo "$0: can't trim file by writing zeroes"
     rm nozero?.img
     exit 77
 fi
