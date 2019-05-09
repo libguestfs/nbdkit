@@ -765,7 +765,7 @@ add_extent (struct nbdkit_extents *extents,
   if (is_hole) {
     type = NBDKIT_EXTENT_HOLE;
     /* Images opened as single link might be backed by another file in the
-       chain, so the holes are not guaranteed to be zeros. */
+       chain, so the holes are not guaranteed to be zeroes. */
     if (!single_link)
       type |= NBDKIT_EXTENT_ZERO;
   }

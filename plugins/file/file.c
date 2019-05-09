@@ -423,7 +423,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 #ifdef FALLOC_FL_PUNCH_HOLE
   /* If we can punch hole but may not trim, we can combine punching hole and
    * fallocate to zero a range. This is expected to be more efficient than
-   * writing zeros manually. */
+   * writing zeroes manually. */
   if (h->can_punch_hole && h->can_fallocate) {
     r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
                       offset, count);

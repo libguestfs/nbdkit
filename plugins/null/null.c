@@ -101,7 +101,7 @@ null_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   return 0;
 }
 
-/* Write zeros. */
+/* Write zeroes. */
 static int
 null_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {

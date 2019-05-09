@@ -112,7 +112,7 @@ full_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   return -1;
 }
 
-/* Write zeros. */
+/* Write zeroes. */
 static int
 full_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {

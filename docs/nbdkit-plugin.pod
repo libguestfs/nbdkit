@@ -542,7 +542,7 @@ C<.trim> callback has been defined.
 
 This is called during the option negotiation phase to find out if the
 plugin wants the C<.zero> callback to be utilized.  Support for
-writing zeros is still advertised to the client (unless the nbdkit
+writing zeroes is still advertised to the client (unless the nbdkit
 filter nozero is also used), so returning false merely serves as a way
 to avoid complicating the C<.zero> callback to have to fail with
 C<EOPNOTSUPP> on the connections where it will never be more efficient
