@@ -47,8 +47,12 @@
 
 #define MAX_WRITE (64 * 1024 * 1024)
 
-static char buffer[MAX_WRITE];
-static bool emulate;
+static const char buffer[MAX_WRITE];
+static enum ZeroMode {
+  NONE,
+  EMULATE,
+  NOTRIM,
+} zeromode;
 
 static int
 nozero_config (nbdkit_next_config *next, void *nxdata,
@@ -56,7 +60,9 @@ nozero_config (nbdkit_next_config *next, void *nxdata,
 {
   if (strcmp (key, "zeromode") == 0) {
     if (strcmp (value, "emulate") == 0)
-      emulate = true;
+      zeromode = EMULATE;
+    else if (strcmp (value, "notrim") == 0)
+      zeromode = NOTRIM;
     else if (strcmp (value, "none") != 0) {
       nbdkit_error ("unknown zeromode '%s'", value);
       return -1;
@@ -67,13 +73,31 @@ nozero_config (nbdkit_next_config *next, void *nxdata,
 }
 
 #define nozero_config_help \
-  "zeromode=<MODE>      Either 'none' (default) or 'emulate'.\n" \
+  "zeromode=<MODE>      Either 'none' (default), 'emulate', or 'notrim'.\n" \
+
+/* Check that desired mode is supported by plugin. */
+static int
+nozero_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+{
+  int r;
+
+  if (zeromode == NOTRIM) {
+    r = next_ops->can_zero (nxdata);
+    if (r == -1)
+      return -1;
+    if (!r) {
+      nbdkit_error ("zeromode 'notrim' requires plugin zero support");
+      return -1;
+    }
+  }
+  return 0;
+}
 
 /* Advertise desired WRITE_ZEROES mode. */
 static int
 nozero_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
-  return emulate;
+  return zeromode != NONE;
 }
 
 static int
@@ -81,11 +105,15 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
              int *err)
 {
-  assert (emulate);
+  assert (zeromode != NONE);
+  flags &= ~NBDKIT_FLAG_MAY_TRIM;
+
+  if (zeromode == NOTRIM)
+    return next_ops->zero (nxdata, count, offs, flags, err);
+
   while (count) {
     uint32_t size = MIN (count, MAX_WRITE);
-    if (next_ops->pwrite (nxdata, buffer, size, offs,
-                          flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
+    if (next_ops->pwrite (nxdata, buffer, size, offs, flags, err) == -1)
       return -1;
     offs += size;
     count -= size;
@@ -99,6 +127,7 @@ static struct nbdkit_filter filter = {
   .version           = PACKAGE_VERSION,
   .config            = nozero_config,
   .config_help       = nozero_config_help,
+  .prepare           = nozero_prepare,
   .can_zero          = nozero_can_zero,
   .zero              = nozero_zero,
 };

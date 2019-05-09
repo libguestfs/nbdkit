@@ -18,14 +18,19 @@ testing client or server fallbacks.
 
 =over 4
 
-=item B<zeromode=none|emulate>
+=item B<zeromode=none|emulate|notrim>
 
 Optional, controls which mode the filter will use.  Mode B<none>
-(default) means that zero support is not advertised to the client;
-mode B<emulate> means that zero support is emulated by the filter
-using the plugin's C<pwrite> callback, regardless of whether the
-plugin itself implemented the C<zero> callback with a more efficient
-way to write zeroes.
+(default) means that zero support is not advertised to the
+client. Mode B<emulate> means that zero support is emulated by the
+filter using the plugin's C<pwrite> callback, regardless of whether
+the plugin itself implemented the C<zero> callback with a more
+efficient way to write zeros. Since nbdkit E<ge> 1.13.4, mode
+B<notrim> means that zero requests are forwarded on to the plugin,
+except that the plugin will never see the NBDKIT_MAY_TRIM flag, to
+determine if the client permitting trimming during zero operations
+makes a difference (it is an error to request this mode if the plugin
+does not support the C<zero> callback).
 
 =back
 
@@ -55,4 +60,4 @@ Eric Blake
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018 Red Hat Inc.
+Copyright (C) 2018-2019 Red Hat Inc.

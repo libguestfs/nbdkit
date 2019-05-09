@@ -39,12 +39,14 @@ sock3=`mktemp -u`
 sock4=`mktemp -u`
 sock5a=`mktemp -u`
 sock5b=`mktemp -u`
+sock6=`mktemp -u`
 files="nozero1.img nozero1.log $sock1 nozero1.pid
        nozero2.img nozero2.log $sock2 nozero2.pid
        nozero3.img nozero3.log $sock3 nozero3.pid
        nozero4.img nozero4.log $sock4 nozero4.pid
        nozero5.img nozero5a.log nozero5b.log $sock5a $sock5b
-       nozero5a.pid nozero5b.pid"
+       nozero5a.pid nozero5b.pid
+       nozero6.img nozero6.log $sock6 nozero6.pid"
 rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on
@@ -54,6 +56,7 @@ cp nozero1.img nozero2.img
 cp nozero1.img nozero3.img
 cp nozero1.img nozero4.img
 cp nozero1.img nozero5.img
+cp nozero1.img nozero6.img
 if ! qemu-io -f raw -d unmap -c 'w -z -u 0 1M' nozero1.img; then
     echo "$0: missing or broken qemu-io"
     rm nozero?.img
@@ -82,17 +85,20 @@ cleanup ()
     cat nozero5a.log || :
     echo "Log 5b file contents:"
     cat nozero5b.log || :
+    echo "Log 6 file contents:"
+    cat nozero6.log || :
     rm -f $files
 }
 cleanup_fn cleanup
 
-# Run four parallel nbdkit; to compare the logs and see what changes.
+# Run several parallel nbdkit; to compare the logs and see what changes.
 # 1: unfiltered, to check that qemu-io sends ZERO request and plugin trims
 # 2: log before filter with zeromode=none (default), to ensure no ZERO request
 # 3: log before filter with zeromode=emulate, to ensure ZERO from client
 # 4: log after filter with zeromode=emulate, to ensure no ZERO to plugin
 # 5a/b: both sides of nbd plugin: even though server side does not advertise
 # ZERO, the client side still exposes it, and just skips calling nbd's .zero
+# 6: log after filter with zeromode=notrim, to ensure plugin does not trim
 start_nbdkit -P nozero1.pid -U $sock1 --filter=log \
        file logfile=nozero1.log nozero1.img
 start_nbdkit -P nozero2.pid -U $sock2 --filter=log --filter=nozero \
@@ -105,6 +111,8 @@ start_nbdkit -P nozero5a.pid -U $sock5a --filter=log --filter=nozero \
        file logfile=nozero5a.log nozero5.img
 start_nbdkit -P nozero5b.pid -U $sock5b --filter=log \
        nbd logfile=nozero5b.log socket=$sock5a
+start_nbdkit -P nozero6.pid -U $sock6 --filter=nozero --filter=log \
+       file logfile=nozero6.log nozero6.img zeromode=notrim
 
 # Perform the zero write.
 qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock1"
@@ -112,6 +120,7 @@ qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock2"
 qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock3"
 qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock4"
 qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock5b"
+qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock6"
 
 # Check for expected ZERO vs. WRITE results
 grep 'connection=1 Zero' nozero1.log
@@ -129,9 +138,23 @@ if grep 'connection=1 Zero' nozero5a.log; then
     echo "nbdkit should have converted zero into write before nbd plugin"
     exit 1
 fi
+grep 'connection=1 Zero' nozero6.log
 
 # Sanity check on contents - all 5 files should read identically
 cmp nozero1.img nozero2.img
 cmp nozero2.img nozero3.img
 cmp nozero3.img nozero4.img
 cmp nozero4.img nozero5.img
+cmp nozero5.img nozero6.img
+
+# Sanity check on sparseness; only image 1 should be sparse
+if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
+    echo "nozero1.img was not trimmed"
+    exit 1
+fi
+for i in 3 4 5 6; do
+    if test "$(stat -c %b nozero2.img)" != "$(stat -c %b nozero$i.img)"; then
+	echo "nozero$i.img was trimmed by mistake"
+	exit 1
+    fi
+done
