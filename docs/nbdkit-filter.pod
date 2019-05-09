@@ -356,6 +356,8 @@ calls.
 
 =head2 C<.can_multi_conn>
 
+=head2 C<.can_cache>
+
  int (*can_write) (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle);
  int (*can_flush) (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -373,6 +375,8 @@ calls.
                  void *handle);
  int (*can_multi_conn) (struct nbdkit_next_ops *next_ops, void *nxdata,
                         void *handle);
+ int (*can_cache) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                   void *handle);
 
 These intercept the corresponding plugin methods, and control feature
 bits advertised to the client.
@@ -385,12 +389,14 @@ the plugin's own C<.can_zero> callback returned false, because nbdkit
 implements a fallback to C<.pwrite> at the plugin layer.
 
 Remember that most of the feature check functions return merely a
-boolean success value, while C<.can_fua> has three success values.
-The difference between values may affect choices made in the filter:
-when splitting a write request that requested FUA from the client, if
-C<next_ops-E<gt>can_fua> returns C<NBDKIT_FUA_NATIVE>, then the filter
-should pass the FUA flag on to each sub-request; while if it is known
-that FUA is emulated by a flush because of a return of
+boolean success value, while C<.can_fua> and C<.can_cache> have three
+success values.
+
+The difference between C<.can_fua> values may affect choices made in
+the filter: when splitting a write request that requested FUA from the
+client, if C<next_ops-E<gt>can_fua> returns C<NBDKIT_FUA_NATIVE>, then
+the filter should pass the FUA flag on to each sub-request; while if
+it is known that FUA is emulated by a flush because of a return of
 C<NBDKIT_FUA_EMULATE>, it is more efficient to only flush once after
 all sub-requests have completed (often by passing C<NBDKIT_FLAG_FUA>
 on to only the final sub-request, or by dropping the flag and ending
@@ -597,6 +603,28 @@ Returns the number of extents in the list.
 
 Returns a copy of the C<i>'th extent.
 
+=head2 C<.cache>
+
+ int (*cache) (struct nbdkit_next_ops *next_ops, void *nxdata,
+               void *handle, uint32_t count, uint64_t offset,
+               uint32_t flags, int *err);
+
+This intercepts the plugin C<.cache> method and can be used to modify
+cache requests.
+
+This function will not be called if C<.can_cache> returned
+C<NBDKIT_CACHE_NONE> or C<NBDKIT_CACHE_EMULATE>; in turn, the filter
+should not call C<next_ops-E<gt>cache> unless
+C<next_ops-E<gt>can_cache> returned C<NBDKIT_CACHE_NATIVE>.
+
+The parameter C<flags> exists in case of future NBD protocol
+extensions; at this time, it will be 0 on input, and the filter should
+not pass any flags to C<next_ops-E<gt>cache>.
+
+If there is an error, C<.cache> should call C<nbdkit_error> with an
+error message B<and> return -1 with C<err> set to the positive errno
+value to return to the client.
+
 =head1 ERROR HANDLING
 
 If there is an error in the filter itself, the filter should call
@@ -708,4 +736,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2018 Red Hat Inc.
+Copyright (C) 2013-2019 Red Hat Inc.

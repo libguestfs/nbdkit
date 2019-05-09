@@ -330,6 +330,13 @@ next_can_multi_conn (void *nxdata)
 }
 
 static int
+next_can_cache (void *nxdata)
+{
+  struct b_conn *b_conn = nxdata;
+  return b_conn->b->can_cache (b_conn->b, b_conn->conn);
+}
+
+static int
 next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
@@ -379,6 +386,15 @@ next_extents (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
                              extents, err);
 }
 
+static int
+next_cache (void *nxdata, uint32_t count, uint64_t offset,
+            uint32_t flags, int *err)
+{
+  struct b_conn *b_conn = nxdata;
+  return b_conn->b->cache (b_conn->b, b_conn->conn, count, offset, flags,
+                           err);
+}
+
 static struct nbdkit_next_ops next_ops = {
   .get_size = next_get_size,
   .can_write = next_can_write,
@@ -389,12 +405,14 @@ static struct nbdkit_next_ops next_ops = {
   .can_extents = next_can_extents,
   .can_fua = next_can_fua,
   .can_multi_conn = next_can_multi_conn,
+  .can_cache = next_can_cache,
   .pread = next_pread,
   .pwrite = next_pwrite,
   .flush = next_flush,
   .trim = next_trim,
   .zero = next_zero,
   .extents = next_extents,
+  .cache = next_cache,
 };
 
 static int
@@ -577,12 +595,18 @@ static int
 filter_can_cache (struct backend *b, struct connection *conn)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  void *handle = connection_get_handle (conn, f->backend.i);
+  struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
 
   debug ("%s: can_cache", f->name);
 
+  if (f->filter.can_cache)
+    return f->filter.can_cache (&next_ops, &nxdata, handle);
   /* FIXME: Default to f->backend.next->can_cache, once all filters
      have been audited */
-  return NBDKIT_CACHE_NONE;
+  else
+    return NBDKIT_CACHE_NONE;
+  return f->backend.next->can_cache (f->backend.next, conn);
 }
 
 static int
@@ -720,15 +744,20 @@ filter_cache (struct backend *b, struct connection *conn,
               uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  void *handle = connection_get_handle (conn, f->backend.i);
+  struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
 
   assert (flags == 0);
 
   debug ("%s: cache count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
          f->name, count, offset, flags);
 
-  /* FIXME: Allow filter to rewrite request */
-  return f->backend.next->cache (f->backend.next, conn,
-                                 count, offset, flags, err);
+  if (f->filter.cache)
+    return f->filter.cache (&next_ops, &nxdata, handle,
+                            count, offset, flags, err);
+  else
+    return f->backend.next->cache (f->backend.next, conn,
+                                   count, offset, flags, err);
 }
 
 static struct backend filter_functions = {

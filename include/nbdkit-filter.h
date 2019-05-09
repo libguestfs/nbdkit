@@ -74,6 +74,7 @@ struct nbdkit_next_ops {
   int (*can_extents) (void *nxdata);
   int (*can_fua) (void *nxdata);
   int (*can_multi_conn) (void *nxdata);
+  int (*can_cache) (void *nxdata);
 
   int (*pread) (void *nxdata, void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err);
@@ -87,6 +88,8 @@ struct nbdkit_next_ops {
                int *err);
   int (*extents) (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
                   struct nbdkit_extents *extents, int *err);
+  int (*cache) (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
+                int *err);
 };
 
 struct nbdkit_filter {
@@ -142,6 +145,8 @@ struct nbdkit_filter {
                   void *handle);
   int (*can_multi_conn) (struct nbdkit_next_ops *next_ops, void *nxdata,
                          void *handle);
+  int (*can_cache) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                    void *handle);
 
   int (*pread) (struct nbdkit_next_ops *next_ops, void *nxdata,
                 void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -161,6 +166,9 @@ struct nbdkit_filter {
   int (*extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
                   void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                   struct nbdkit_extents *extents, int *err);
+  int (*cache) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+                int *err);
 };
 
 #define NBDKIT_REGISTER_FILTER(filter)                                  \
