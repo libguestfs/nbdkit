@@ -43,7 +43,7 @@
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
-enum FuaMode {
+static enum FuaMode {
   NONE,
   EMULATE,
   NATIVE,
