@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -58,6 +58,20 @@ extern int blk_set_size (uint64_t new_size);
 extern int blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
                      uint64_t blknum, uint8_t *block, int *err)
   __attribute__((__nonnull__ (1, 4, 5)));
+
+/* Cache mode for blocks not already in overlay */
+enum cache_mode {
+  BLK_CACHE_IGNORE,      /* Do nothing */
+  BLK_CACHE_PASSTHROUGH, /* Make cache request to plugin */
+  BLK_CACHE_READ,        /* Make ignored read request to plugin */
+  BLK_CACHE_COW,         /* Make read request to plugin, and write to overlay */
+};
+
+/* Cache a single block from the plugin. */
+extern int blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+                      uint64_t blknum, uint8_t *block, enum cache_mode,
+                      int *err)
+  __attribute__((__nonnull__ (1, 4, 6)));
 
 /* Write a single block. */
 extern int blk_write (uint64_t blknum, const uint8_t *block, int *err)

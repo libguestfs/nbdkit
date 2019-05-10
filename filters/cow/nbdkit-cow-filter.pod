@@ -58,9 +58,18 @@ serve the same data to each client.
 
 =head1 PARAMETERS
 
-There are no parameters specific to nbdkit-cow-filter.  Any parameters
-are passed through to and processed by the underlying plugin in the
-normal way.
+=over 4
+
+=item B<cow-on-cache=true>
+
+Treat a client cache request as a shortcut for copying unmodified data
+from the plugin to the overlay, rather than the default of passing
+cache requests on to the plugin. This parameter defaults to false
+(which leaves the overlay as small as possible), but setting it can be
+useful for converting cache commands into a form of copy-on-read
+behavior, in addition to the filter's normal copy-on-write semantics.
+
+=back
 
 =head1 EXAMPLES
 

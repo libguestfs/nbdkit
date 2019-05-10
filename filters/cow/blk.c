@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -188,6 +188,45 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
     }
     return 0;
   }
+}
+
+int
+blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+           uint64_t blknum, uint8_t *block, enum cache_mode mode, int *err)
+{
+  off_t offset = blknum * BLKSIZE;
+  bool allocated = blk_is_allocated (blknum);
+
+  nbdkit_debug ("cow: blk_cache block %" PRIu64 " (offset %" PRIu64 ") is %s",
+                blknum, (uint64_t) offset,
+                !allocated ? "a hole" : "allocated");
+
+  if (allocated) {
+#if HAVE_POSIX_FADVISE
+    int r = posix_fadvise (fd, offset, BLKSIZE, POSIX_FADV_WILLNEED);
+    if (r) {
+      errno = r;
+      nbdkit_error ("posix_fadvise: %m");
+      return -1;
+    }
+#endif
+    return 0;
+  }
+  if (mode == BLK_CACHE_IGNORE)
+    return 0;
+  if (mode == BLK_CACHE_PASSTHROUGH)
+    return next_ops->cache (nxdata, BLKSIZE, offset, 0, err);
+  if (next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err) == -1)
+    return -1;
+  if (mode == BLK_CACHE_COW) {
+    if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+      *err = errno;
+      nbdkit_error ("pwrite: %m");
+      return -1;
+    }
+    blk_set_allocated (blknum);
+  }
+  return 0;
 }
 
 int

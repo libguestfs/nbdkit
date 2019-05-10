@@ -58,6 +58,8 @@
  */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
+bool cow_on_cache;
+
 static void
 cow_load (void)
 {
@@ -69,6 +71,24 @@ static void
 cow_unload (void)
 {
   blk_free ();
+}
+
+static int
+cow_config (nbdkit_next_config *next, void *nxdata,
+            const char *key, const char *value)
+{
+  if (strcmp (key, "cow-on-cache") == 0) {
+    int r;
+
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    cow_on_cache = r;
+    return 0;
+  }
+  else {
+    return next (nxdata, key, value);
+  }
 }
 
 static void *
@@ -150,6 +170,12 @@ static int
 cow_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
   return NBDKIT_FUA_EMULATE;
+}
+
+static int
+cow_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+{
+  return NBDKIT_FUA_NATIVE;
 }
 
 static int cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
@@ -391,6 +417,67 @@ cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   return r;
 }
 
+static int
+cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+           void *handle, uint32_t count, uint64_t offset,
+           uint32_t flags, int *err)
+{
+  CLEANUP_FREE uint8_t *block = NULL;
+  uint64_t blknum, blkoffs;
+  int r;
+  uint64_t remaining = count; /* Rounding out could exceed 32 bits */
+  enum cache_mode mode; /* XXX Cache this per connection? */
+
+  switch (next_ops->can_cache (nxdata)) {
+  case NBDKIT_CACHE_NONE:
+    mode = BLK_CACHE_IGNORE;
+    break;
+  case NBDKIT_CACHE_EMULATE:
+    mode = BLK_CACHE_READ;
+    break;
+  case NBDKIT_CACHE_NATIVE:
+    mode = BLK_CACHE_PASSTHROUGH;
+    break;
+  default:
+    *err = EINVAL;
+    return -1;
+  }
+  if (cow_on_cache)
+    mode = BLK_CACHE_COW;
+
+  assert (!flags);
+  block = malloc (BLKSIZE);
+  if (block == NULL) {
+    *err = errno;
+    nbdkit_error ("malloc: %m");
+    return -1;
+  }
+
+  blknum = offset / BLKSIZE;  /* block number */
+  blkoffs = offset % BLKSIZE; /* offset within the block */
+
+  /* Unaligned head */
+  remaining += blkoffs;
+  offset -= blkoffs;
+
+  /* Unaligned tail */
+  remaining = ROUND_UP (remaining, BLKSIZE);
+
+  /* Aligned body */
+  while (remaining) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_cache (next_ops, nxdata, blknum, block, mode, err);
+    if (r == -1)
+      return -1;
+
+    remaining -= BLKSIZE;
+    offset += BLKSIZE;
+    blknum++;
+  }
+
+  return 0;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "cow",
   .longname          = "nbdkit copy-on-write (COW) filter",
@@ -398,6 +485,7 @@ static struct nbdkit_filter filter = {
   .load              = cow_load,
   .unload            = cow_unload,
   .open              = cow_open,
+  .config            = cow_config,
   .prepare           = cow_prepare,
   .get_size          = cow_get_size,
   .can_write         = cow_can_write,
@@ -405,10 +493,12 @@ static struct nbdkit_filter filter = {
   .can_trim          = cow_can_trim,
   .can_extents       = cow_can_extents,
   .can_fua           = cow_can_fua,
+  .can_cache         = cow_can_cache,
   .pread             = cow_pread,
   .pwrite            = cow_pwrite,
   .zero              = cow_zero,
   .flush             = cow_flush,
+  .cache             = cow_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
