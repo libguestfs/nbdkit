@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -215,6 +215,13 @@ iso_can_multi_conn (void *handle)
   return 1;
 }
 
+static int
+iso_can_cache (void *handle)
+{
+  /* Let nbdkit call pread to populate the file system cache. */
+  return NBDKIT_CACHE_EMULATE;
+}
+
 /* Read data from the file. */
 static int
 iso_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
@@ -249,6 +256,7 @@ static struct nbdkit_plugin plugin = {
   .open              = iso_open,
   .get_size          = iso_get_size,
   .can_multi_conn    = iso_can_multi_conn,
+  .can_cache         = iso_can_cache,
   .pread             = iso_pread,
   .errno_is_preserved = 1,
 };

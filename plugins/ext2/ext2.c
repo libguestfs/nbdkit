@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -212,6 +212,13 @@ ext2_can_fua (void *handle)
   return NBDKIT_FUA_NATIVE;
 }
 
+static int
+ext2_can_cache (void *handle)
+{
+  /* Let nbdkit call pread to populate the file system cache. */
+  return NBDKIT_CACHE_EMULATE;
+}
+
 /* It might be possible to relax this, but it's complicated.
  *
  * It's desirable for ‘nbdkit -r’ to behave the same way as
@@ -345,6 +352,7 @@ static struct nbdkit_plugin plugin = {
   .open              = ext2_open,
   .close             = ext2_close,
   .can_fua           = ext2_can_fua,
+  .can_cache         = ext2_can_cache,
   .get_size          = ext2_get_size,
   .pread             = ext2_pread,
   .pwrite            = ext2_pwrite,

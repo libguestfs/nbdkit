@@ -159,6 +159,14 @@ linuxdisk_can_multi_conn (void *handle)
   return 1;
 }
 
+/* Cache. */
+static int
+linuxdisk_can_cache (void *handle)
+{
+  /* Let nbdkit call pread to populate the file system cache. */
+  return NBDKIT_CACHE_EMULATE;
+}
+
 /* Read data from the virtual disk. */
 static int
 linuxdisk_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -221,6 +229,7 @@ static struct nbdkit_plugin plugin = {
   .open              = linuxdisk_open,
   .get_size          = linuxdisk_get_size,
   .can_multi_conn    = linuxdisk_can_multi_conn,
+  .can_cache         = linuxdisk_can_cache,
   .pread             = linuxdisk_pread,
   .errno_is_preserved = 1,
 };

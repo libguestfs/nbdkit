@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -128,6 +128,14 @@ floppy_can_multi_conn (void *handle)
   return 1;
 }
 
+/* Cache. */
+static int
+floppy_can_cache (void *handle)
+{
+  /* Let nbdkit call pread to populate the file system cache. */
+  return NBDKIT_CACHE_EMULATE;
+}
+
 /* Read data from the file. */
 static int
 floppy_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
@@ -199,6 +207,7 @@ static struct nbdkit_plugin plugin = {
   .open              = floppy_open,
   .get_size          = floppy_get_size,
   .can_multi_conn    = floppy_can_multi_conn,
+  .can_cache         = floppy_can_cache,
   .pread             = floppy_pread,
   .errno_is_preserved = 1,
 };

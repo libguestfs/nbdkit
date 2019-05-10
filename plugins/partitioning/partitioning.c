@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -297,6 +297,14 @@ partitioning_can_multi_conn (void *handle)
   return 1;
 }
 
+/* Cache. */
+static int
+partitioning_can_cache (void *handle)
+{
+  /* Let nbdkit call pread to populate the file system cache. */
+  return NBDKIT_CACHE_EMULATE;
+}
+
 /* Read data. */
 static int
 partitioning_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
@@ -426,6 +434,7 @@ static struct nbdkit_plugin plugin = {
   .open              = partitioning_open,
   .get_size          = partitioning_get_size,
   .can_multi_conn    = partitioning_can_multi_conn,
+  .can_cache         = partitioning_can_cache,
   .pread             = partitioning_pread,
   .pwrite            = partitioning_pwrite,
   .flush             = partitioning_flush,
