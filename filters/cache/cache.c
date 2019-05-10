@@ -230,6 +230,13 @@ cache_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Override the plugin's .can_cache, because we are caching here instead */
+static int
+cache_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+{
+  return NBDKIT_CACHE_NATIVE;
+}
+
 /* Read data. */
 static int
 cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -548,6 +555,50 @@ flush_dirty_block (uint64_t blknum, void *datav)
   return 0; /* continue scanning and flushing. */
 }
 
+/* Cache data. */
+static int
+cache_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+             void *handle, uint32_t count, uint64_t offset,
+             uint32_t flags, int *err)
+{
+  CLEANUP_FREE uint8_t *block = NULL;
+  uint64_t blknum, blkoffs;
+  int r;
+  uint64_t remaining = count; /* Rounding out could exceed 32 bits */
+
+  assert (!flags);
+  block = malloc (blksize);
+  if (block == NULL) {
+    *err = errno;
+    nbdkit_error ("malloc: %m");
+    return -1;
+  }
+
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
+
+  /* Unaligned head */
+  remaining += blkoffs;
+  offset -= blkoffs;
+
+  /* Unaligned tail */
+  remaining = ROUND_UP (remaining, blksize);
+
+  /* Aligned body */
+  while (remaining) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_cache (next_ops, nxdata, blknum, block, err);
+    if (r == -1)
+      return -1;
+
+    remaining -= blksize;
+    offset += blksize;
+    blknum++;
+  }
+
+  return 0;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "cache",
   .longname          = "nbdkit caching filter",
@@ -558,10 +609,12 @@ static struct nbdkit_filter filter = {
   .config_complete   = cache_config_complete,
   .prepare           = cache_prepare,
   .get_size          = cache_get_size,
+  .can_cache         = cache_can_cache,
   .pread             = cache_pread,
   .pwrite            = cache_pwrite,
   .zero              = cache_zero,
   .flush             = cache_flush,
+  .cache             = cache_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)

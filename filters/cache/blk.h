@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -49,9 +49,15 @@ extern void blk_free (void);
 /* Allocate or resize the cache file and bitmap. */
 extern int blk_set_size (uint64_t new_size);
 
-/* Read a single block from the cache or plugin. */
+/* Read a single block from the cache or plugin. If cache_on_read is set,
+ * also ensure it is cached. */
 extern int blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
                      uint64_t blknum, uint8_t *block, int *err)
+  __attribute__((__nonnull__ (1, 4, 5)));
+
+/* If a single block is not cached, copy it from the plugin. */
+extern int blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+                      uint64_t blknum, uint8_t *block, int *err)
   __attribute__((__nonnull__ (1, 4, 5)));
 
 /* Write to the cache and the plugin. */

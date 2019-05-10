@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -215,6 +215,54 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
     lru_set_recently_accessed (blknum);
     return 0;
   }
+}
+
+int
+blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+           uint64_t blknum, uint8_t *block, int *err)
+{
+  off_t offset = blknum * blksize;
+  enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_CACHED);
+
+  reclaim (fd, &bm);
+
+  nbdkit_debug ("cache: blk_cache block %" PRIu64 " (offset %" PRIu64 ") is %s",
+                blknum, (uint64_t) offset,
+                state == BLOCK_NOT_CACHED ? "not cached" :
+                state == BLOCK_CLEAN ? "clean" :
+                state == BLOCK_DIRTY ? "dirty" :
+                "unknown");
+
+  if (state == BLOCK_NOT_CACHED) {
+    off_t offset = blknum * blksize;
+
+    /* Read underlying plugin, copy to cache regardless of cache-on-read. */
+    if (next_ops->pread (nxdata, block, blksize, offset, 0, err) == -1)
+      return -1;
+
+    nbdkit_debug ("cache: cache block %" PRIu64 " (offset %" PRIu64 ")",
+                  blknum, (uint64_t) offset);
+
+    if (pwrite (fd, block, blksize, offset) == -1) {
+      *err = errno;
+      nbdkit_error ("pwrite: %m");
+      return -1;
+    }
+    bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
+    lru_set_recently_accessed (blknum);
+  }
+  else {
+#if HAVE_POSIX_FADVISE
+    int r = posix_fadvise (fd, offset, blksize, POSIX_FADV_WILLNEED);
+    if (r) {
+      errno = r;
+      nbdkit_error ("posix_fadvise: %m");
+      return -1;
+    }
+#endif
+    lru_set_recently_accessed (blknum);
+  }
+  return 0;
 }
 
 int
