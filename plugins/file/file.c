@@ -294,6 +294,20 @@ file_can_fua (void *handle)
   return NBDKIT_FUA_NATIVE;
 }
 
+static int
+file_can_cache (void *handle)
+{
+  /* Prefer posix_fadvise(), but letting nbdkit call .pread on our
+   * behalf also tends to work well for the local file system
+   * cache.
+   */
+#if HAVE_POSIX_FADVISE
+  return NBDKIT_FUA_NATIVE;
+#else
+  return NBDKIT_FUA_EMULATE;
+#endif
+}
+
 /* Flush the file to disk. */
 static int
 file_flush (void *handle, uint32_t flags)
@@ -608,6 +622,25 @@ file_extents (void *handle, uint32_t count, uint64_t offset,
 }
 #endif /* SEEK_HOLE */
 
+#if HAVE_POSIX_FADVISE
+/* Caching. */
+static int
+file_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
+{
+  struct handle *h = handle;
+  int r;
+
+  /* Cache is advisory, we don't care if this fails */
+  r = posix_fadvise (h->fd, offset, count, POSIX_FADV_WILLNEED);
+  if (r) {
+    errno = r;
+    nbdkit_error ("posix_fadvise: %m");
+    return -1;
+  }
+  return 0;
+}
+#endif /* HAVE_POSIX_FADVISE */
+
 static struct nbdkit_plugin plugin = {
   .name              = "file",
   .longname          = "nbdkit file plugin",
@@ -624,6 +657,7 @@ static struct nbdkit_plugin plugin = {
   .can_multi_conn    = file_can_multi_conn,
   .can_trim          = file_can_trim,
   .can_fua           = file_can_fua,
+  .can_cache         = file_can_cache,
   .pread             = file_pread,
   .pwrite            = file_pwrite,
   .flush             = file_flush,
@@ -632,6 +666,9 @@ static struct nbdkit_plugin plugin = {
 #ifdef SEEK_HOLE
   .can_extents       = file_can_extents,
   .extents           = file_extents,
+#endif
+#if HAVE_POSIX_FADVISE
+  .cache             = file_cache,
 #endif
   .errno_is_preserved = 1,
 };

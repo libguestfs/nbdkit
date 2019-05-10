@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -195,6 +195,20 @@ split_get_size (void *handle)
   return (int64_t) h->size;
 }
 
+static int
+split_can_cache (void *handle)
+{
+  /* Prefer posix_fadvise(), but letting nbdkit call .pread on our
+   * behalf also tends to work well for the local file system
+   * cache.
+   */
+#if HAVE_POSIX_FADVISE
+  return NBDKIT_FUA_NATIVE;
+#else
+  return NBDKIT_FUA_EMULATE;
+#endif
+}
+
 /* Helper function to map the offset to the correct file. */
 static int
 compare_offset (const void *offsetp, const void *filep)
@@ -277,6 +291,38 @@ split_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   return 0;
 }
 
+#if HAVE_POSIX_FADVISE
+/* Caching. */
+static int
+split_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
+{
+  struct handle *h = handle;
+
+  /* Cache is advisory, we don't care if this fails */
+  while (count > 0) {
+    struct file *file = get_file (h, offset);
+    uint64_t foffs = offset - file->offset;
+    uint64_t max;
+    int r;
+
+    max = file->size - foffs;
+    if (max > count)
+      max = count;
+
+    r = posix_fadvise (file->fd, offset, max, POSIX_FADV_WILLNEED);
+    if (r) {
+      errno = r;
+      nbdkit_error ("posix_fadvise: %m");
+      return -1;
+    }
+    count -= r;
+    offset += r;
+  }
+
+  return 0;
+}
+#endif /* HAVE_POSIX_FADVISE */
+
 static struct nbdkit_plugin plugin = {
   .name              = "split",
   .version           = PACKAGE_VERSION,
@@ -287,8 +333,12 @@ static struct nbdkit_plugin plugin = {
   .open              = split_open,
   .close             = split_close,
   .get_size          = split_get_size,
+  .can_cache         = split_can_cache,
   .pread             = split_pread,
   .pwrite            = split_pwrite,
+#if HAVE_POSIX_FADVISE
+  .cache             = split_cache,
+#endif
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */

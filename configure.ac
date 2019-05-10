@@ -195,7 +195,8 @@ dnl Check for functions in libc, all optional.
 AC_CHECK_FUNCS([\
 	fdatasync \
 	get_current_dir_name \
-	mkostemp])
+	mkostemp \
+	posix_fadvise])
 
 dnl Check whether printf("%m") works
 AC_CACHE_CHECK([whether the printf family supports %m],
