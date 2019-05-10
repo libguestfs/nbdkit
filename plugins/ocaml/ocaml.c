@@ -128,6 +128,9 @@ static value can_multi_conn_fn;
 static value can_extents_fn;
 static value extents_fn;
 
+static value can_cache_fn;
+static value cache_fn;
+
 /*----------------------------------------------------------------------*/
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
 
@@ -638,6 +641,48 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
   CAMLreturnT (int, 0);
 }
 
+static int
+can_cache_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_cache_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Int_val (rv));
+}
+
+static int
+cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
+{
+  CAMLparam0 ();
+  CAMLlocal4 (rv, countv, offsetv, flagsv);
+
+  caml_leave_blocking_section ();
+
+  countv = caml_copy_int32 (count);
+  offsetv = caml_copy_int32 (offset);
+  flagsv = Val_flags (flags);
+
+  value args[] = { *(value *) h, countv, offsetv, flagsv };
+  rv = caml_callbackN_exn (cache_fn, sizeof args / sizeof args[0], args);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, 0);
+}
+
 /*----------------------------------------------------------------------*/
 /* set_* functions called from OCaml code at load time to initialize
  * fields in the plugin struct.
@@ -727,6 +772,9 @@ SET(can_multi_conn)
 SET(can_extents)
 SET(extents)
 
+SET(can_cache)
+SET(cache)
+
 #undef SET
 
 static void
@@ -765,6 +813,9 @@ remove_roots (void)
 
   REMOVE (can_extents);
   REMOVE (extents);
+
+  REMOVE (can_cache);
+  REMOVE (cache);
 
 #undef REMOVE
 }

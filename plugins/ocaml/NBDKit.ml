@@ -37,6 +37,8 @@ and flag = May_trim | FUA | Req_one
 
 type fua_flag = FuaNone | FuaEmulate | FuaNative
 
+type cache_flag = CacheNone | CacheEmulate | CacheNop
+
 type extent = {
   offset : int64;
   length : int64;
@@ -82,6 +84,9 @@ type 'a plugin = {
 
   can_extents : ('a -> bool) option;
   extents : ('a -> int32 -> int64 -> flags -> extent list) option;
+
+  can_cache : ('a -> cache_flag) option;
+  cache : ('a -> int32 -> int64 -> flags -> unit) option;
 }
 
 let default_callbacks = {
@@ -122,6 +127,9 @@ let default_callbacks = {
 
   can_extents = None;
   extents = None;
+
+  can_cache = None;
+  cache = None;
 }
 
 type thread_model =
@@ -169,6 +177,9 @@ external set_can_multi_conn : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_multi
 
 external set_can_extents : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_extents"
 external set_extents : ('a -> int32 -> int64 -> flags -> extent list) -> unit = "ocaml_nbdkit_set_extents"
+
+external set_can_cache : ('a -> cache_flag) -> unit = "ocaml_nbdkit_set_can_cache"
+external set_cache : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_cache"
 
 let may f = function None -> () | Some a -> f a
 
@@ -229,7 +240,10 @@ let register_plugin thread_model plugin =
   may set_can_multi_conn plugin.can_multi_conn;
 
   may set_can_extents plugin.can_extents;
-  may set_extents plugin.extents
+  may set_extents plugin.extents;
+
+  may set_can_cache plugin.can_cache;
+  may set_cache plugin.cache
 
 external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
 

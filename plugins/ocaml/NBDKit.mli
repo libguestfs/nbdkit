@@ -40,6 +40,8 @@ and flag = May_trim | FUA | Req_one
 
 type fua_flag = FuaNone | FuaEmulate | FuaNative
 
+type cache_flag = CacheNone | CacheEmulate | CacheNop
+
 type extent = {
   offset : int64;
   length : int64;
@@ -86,6 +88,9 @@ type 'a plugin = {
 
   can_extents : ('a -> bool) option;
   extents : ('a -> int32 -> int64 -> flags -> extent list) option;
+
+  can_cache : ('a -> cache_flag) option;
+  cache : ('a -> int32 -> int64 -> flags -> unit) option;
 }
 (** The plugin fields and callbacks.  ['a] is the handle type. *)
 
