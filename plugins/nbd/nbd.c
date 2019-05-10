@@ -1152,6 +1152,16 @@ nbd_can_multi_conn (void *handle)
 }
 
 static int
+nbd_can_cache (void *handle)
+{
+  struct handle *h = handle;
+
+  if (h->flags & NBD_FLAG_SEND_CACHE)
+    return NBDKIT_CACHE_NATIVE;
+  return NBDKIT_CACHE_NONE;
+}
+
+static int
 nbd_can_extents (void *handle)
 {
   struct handle *h = handle;
@@ -1245,6 +1255,18 @@ nbd_extents (void *handle, uint32_t count, uint64_t offset,
   return c < 0 ? c : nbd_reply (h, c);
 }
 
+/* Cache a portion of the file. */
+static int
+nbd_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
+{
+  struct handle *h = handle;
+  int c;
+
+  assert (!flags);
+  c = nbd_request (h, 0, NBD_CMD_CACHE, offset, count);
+  return c < 0 ? c : nbd_reply (h, c);
+}
+
 static struct nbdkit_plugin plugin = {
   .name               = "nbd",
   .longname           = "nbdkit nbd plugin",
@@ -1264,12 +1286,14 @@ static struct nbdkit_plugin plugin = {
   .can_fua            = nbd_can_fua,
   .can_multi_conn     = nbd_can_multi_conn,
   .can_extents        = nbd_can_extents,
+  .can_cache          = nbd_can_cache,
   .pread              = nbd_pread,
   .pwrite             = nbd_pwrite,
   .zero               = nbd_zero,
   .flush              = nbd_flush,
   .trim               = nbd_trim,
   .extents            = nbd_extents,
+  .cache              = nbd_cache,
   .errno_is_preserved = 1,
 };
 
