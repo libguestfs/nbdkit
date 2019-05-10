@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -94,6 +94,16 @@ full_get_size (void *handle)
   return size;
 }
 
+/* Cache. */
+static int
+full_can_cache (void *handle)
+{
+  /* Everything is already in memory, returning this without
+   * implementing .cache lets nbdkit do the correct no-op.
+   */
+  return NBDKIT_CACHE_NATIVE;
+}
+
 /* Read data. */
 static int
 full_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -151,6 +161,7 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key  = "size",
   .open              = full_open,
   .get_size          = full_get_size,
+  .can_cache         = full_can_cache,
   .pread             = full_pread,
   .pwrite            = full_pwrite,
   .zero              = full_zero,

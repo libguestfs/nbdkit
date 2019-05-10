@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -94,6 +94,16 @@ pattern_can_multi_conn (void *handle)
   return 1;
 }
 
+/* Cache. */
+static int
+pattern_can_cache (void *handle)
+{
+  /* Everything is already in memory, returning this without
+   * implementing .cache lets nbdkit do the correct no-op.
+   */
+  return NBDKIT_CACHE_NATIVE;
+}
+
 /* Read data. */
 static int
 pattern_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -126,6 +136,7 @@ static struct nbdkit_plugin plugin = {
   .open              = pattern_open,
   .get_size          = pattern_get_size,
   .can_multi_conn    = pattern_can_multi_conn,
+  .can_cache         = pattern_can_cache,
   .pread             = pattern_pread,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.

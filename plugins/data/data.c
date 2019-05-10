@@ -333,6 +333,16 @@ data_can_multi_conn (void *handle)
   return 1;
 }
 
+/* Cache. */
+static int
+data_can_cache (void *handle)
+{
+  /* Everything is already in memory, returning this without
+   * implementing .cache lets nbdkit do the correct no-op.
+   */
+  return NBDKIT_CACHE_NATIVE;
+}
+
 /* Read data. */
 static int
 data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
@@ -389,6 +399,7 @@ static struct nbdkit_plugin plugin = {
   .open              = data_open,
   .get_size          = data_get_size,
   .can_multi_conn    = data_can_multi_conn,
+  .can_cache         = data_can_cache,
   .pread             = data_pread,
   .pwrite            = data_pwrite,
   .zero              = data_zero,
