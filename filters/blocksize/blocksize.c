@@ -368,6 +368,34 @@ blocksize_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
                             flags, extents, err);
 }
 
+static int
+blocksize_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
+                 int *err)
+{
+  uint32_t limit;
+  uint64_t remaining = count; /* Rounding out could exceed 32 bits */
+
+  /* Unaligned head */
+  limit = offs & (minblock - 1);
+  remaining += limit;
+  offs -= limit;
+
+  /* Unaligned tail */
+  remaining = ROUND_UP (remaining, minblock);
+
+  /* Aligned body */
+  while (remaining) {
+    limit = MIN (maxdata, remaining);
+    if (next_ops->cache (nxdata, limit, offs, flags, err) == -1)
+      return -1;
+    offs += limit;
+    remaining -= limit;
+  }
+
+  return 0;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "blocksize",
   .longname          = "nbdkit blocksize filter",
@@ -382,6 +410,7 @@ static struct nbdkit_filter filter = {
   .trim              = blocksize_trim,
   .zero              = blocksize_zero,
   .extents           = blocksize_extents,
+  .cache             = blocksize_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
