@@ -361,6 +361,12 @@ main (int argc, char *argv[])
      "filter1: test_layers_filter_can_extents",
      "test_layers_plugin_can_extents",
      NULL);
+  log_verify_seen_in_order
+    ("filter3: test_layers_filter_can_cache",
+     "filter2: test_layers_filter_can_cache",
+     "filter1: test_layers_filter_can_cache",
+     "test_layers_plugin_can_cache",
+     NULL);
 
   fprintf (stderr, "%s: protocol connected\n", program_name);
 
@@ -524,6 +530,36 @@ main (int argc, char *argv[])
      "filter1: test_layers_filter_zero",
      "testlayersplugin: debug: zero count=512 offset=0 may_trim=1 fua=0",
      "test_layers_plugin_zero",
+     NULL);
+
+  request.type = htobe16 (NBD_CMD_CACHE);
+  request.offset = htobe64 (0);
+  request.count = htobe32 (512);
+  request.flags = htobe16 (0);
+  if (send (sock, &request, sizeof request, 0) != sizeof request) {
+    perror ("send: NBD_CMD_CACHE");
+    exit (EXIT_FAILURE);
+  }
+  if (recv (sock, &reply, sizeof reply, MSG_WAITALL) != sizeof reply) {
+    perror ("recv: NBD_CMD_CACHE");
+    exit (EXIT_FAILURE);
+  }
+  if (reply.error != NBD_SUCCESS) {
+    fprintf (stderr, "%s: NBD_CMD_CACHE failed with %d\n",
+             program_name, reply.error);
+    exit (EXIT_FAILURE);
+  }
+
+  sleep (1);
+  log_verify_seen_in_order
+    ("testlayersfilter3: cache count=512 offset=0 flags=0x0",
+     "filter3: test_layers_filter_cache",
+     "testlayersfilter2: cache count=512 offset=0 flags=0x0",
+     "filter2: test_layers_filter_cache",
+     "testlayersfilter1: cache count=512 offset=0 flags=0x0",
+     "filter1: test_layers_filter_cache",
+     "testlayersplugin: debug: cache count=512 offset=0",
+     "test_layers_plugin_cache",
      NULL);
 
   /* XXX We should test NBD_CMD_BLOCK_STATUS here.  However it

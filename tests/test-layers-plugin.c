@@ -144,6 +144,13 @@ test_layers_plugin_can_multi_conn (void *handle)
 }
 
 static int
+test_layers_plugin_can_cache (void *handle)
+{
+  DEBUG_FUNCTION;
+  return NBDKIT_CACHE_NATIVE;
+}
+
+static int
 test_layers_plugin_can_extents (void *handle)
 {
   DEBUG_FUNCTION;
@@ -201,6 +208,14 @@ test_layers_plugin_extents (void *handle,
   return nbdkit_add_extent (extents, offset, count, 0);
 }
 
+static int
+test_layers_plugin_cache (void *handle,
+                         uint32_t count, uint64_t offset, uint32_t flags)
+{
+  DEBUG_FUNCTION;
+  return 0;
+}
+
 static struct nbdkit_plugin plugin = {
   .name              = "testlayersplugin",
   .version           = PACKAGE_VERSION,
@@ -220,12 +235,14 @@ static struct nbdkit_plugin plugin = {
   .can_fua           = test_layers_plugin_can_fua,
   .can_multi_conn    = test_layers_plugin_can_multi_conn,
   .can_extents       = test_layers_plugin_can_extents,
+  .can_cache         = test_layers_plugin_can_cache,
   .pread             = test_layers_plugin_pread,
   .pwrite            = test_layers_plugin_pwrite,
   .flush             = test_layers_plugin_flush,
   .trim              = test_layers_plugin_trim,
   .zero              = test_layers_plugin_zero,
   .extents           = test_layers_plugin_extents,
+  .cache             = test_layers_plugin_cache,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */

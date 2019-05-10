@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -185,6 +185,15 @@ test_layers_filter_can_extents (struct nbdkit_next_ops *next_ops,
 }
 
 static int
+test_layers_filter_can_cache (struct nbdkit_next_ops *next_ops,
+                              void *nxdata,
+                              void *handle)
+{
+  DEBUG_FUNCTION;
+  return next_ops->can_cache (nxdata);
+}
+
+static int
 test_layers_filter_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
                            void *handle, void *buf,
                            uint32_t count, uint64_t offset,
@@ -241,6 +250,15 @@ test_layers_filter_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->extents (nxdata, count, offset, flags, extents, err);
 }
 
+static int
+test_layers_filter_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+                          void *handle, uint32_t count, uint64_t offset,
+                          uint32_t flags, int *err)
+{
+  DEBUG_FUNCTION;
+  return next_ops->cache (nxdata, count, offset, flags, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "testlayers" layer,
   .version           = PACKAGE_VERSION,
@@ -262,12 +280,14 @@ static struct nbdkit_filter filter = {
   .can_fua           = test_layers_filter_can_fua,
   .can_multi_conn    = test_layers_filter_can_multi_conn,
   .can_extents       = test_layers_filter_can_extents,
+  .can_cache         = test_layers_filter_can_cache,
   .pread             = test_layers_filter_pread,
   .pwrite            = test_layers_filter_pwrite,
   .flush             = test_layers_filter_flush,
   .trim              = test_layers_filter_trim,
   .zero              = test_layers_filter_zero,
   .extents           = test_layers_filter_extents,
+  .cache             = test_layers_filter_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
