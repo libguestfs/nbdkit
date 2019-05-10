@@ -578,6 +578,53 @@ sh_can_multi_conn (void *handle)
   return boolean_method (handle, "can_multi_conn");
 }
 
+/* Not a boolean method, the method prints "none", "emulate" or "native". */
+static int
+sh_can_cache (void *handle)
+{
+  char *h = handle;
+  const char *args[] = { script, "can_cache", h, NULL };
+  CLEANUP_FREE char *s = NULL;
+  size_t slen;
+  int r;
+
+  switch (call_read (&s, &slen, args)) {
+  case OK:
+    if (slen > 0 && s[slen-1] == '\n')
+      s[slen-1] = '\0';
+    if (strcasecmp (s, "none") == 0)
+      r = NBDKIT_CACHE_NONE;
+    else if (strcasecmp (s, "emulate") == 0)
+      r = NBDKIT_CACHE_EMULATE;
+    else if (strcasecmp (s, "native") == 0)
+      r = NBDKIT_CACHE_NATIVE;
+    else {
+      nbdkit_error ("%s: could not parse output from can_cache method: %s",
+                    script, s);
+      r = -1;
+    }
+    return r;
+
+  case MISSING:
+    /* NBDKIT_CACHE_EMULATE means that nbdkit will call .pread.  However
+     * we cannot know if that fallback would be efficient, so the safest
+     * default is to return NBDKIT_CACHE_NONE.
+     */
+    return NBDKIT_CACHE_NONE;
+
+  case ERROR:
+    return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "can_cache");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
+  }
+}
+
 static int
 sh_flush (void *handle, uint32_t flags)
 {
@@ -782,6 +829,38 @@ sh_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
   }
 }
 
+static int
+sh_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
+{
+  char *h = handle;
+  char cbuf[32], obuf[32];
+  const char *args[] = { script, "cache", h, cbuf, obuf, NULL };
+
+  snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
+  snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
+  assert (!flags);
+
+  switch (call (args)) {
+  case OK:
+    return 0;
+
+  case MISSING:
+    /* Ignore lack of cache callback. */
+    return 0;
+
+  case ERROR:
+    return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "cache");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
+  }
+}
+
 #define sh_config_help \
   "script=<FILENAME>     (required) The shell script to run.\n" \
   "[other arguments may be used by the plugin that you load]"
@@ -812,6 +891,7 @@ static struct nbdkit_plugin plugin = {
   .can_extents       = sh_can_extents,
   .can_fua           = sh_can_fua,
   .can_multi_conn    = sh_can_multi_conn,
+  .can_cache         = sh_can_cache,
 
   .pread             = sh_pread,
   .pwrite            = sh_pwrite,
@@ -819,6 +899,7 @@ static struct nbdkit_plugin plugin = {
   .trim              = sh_trim,
   .zero              = sh_zero,
   .extents           = sh_extents,
+  .cache             = sh_cache,
 
   .errno_is_preserved = 1,
 };

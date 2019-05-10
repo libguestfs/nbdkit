@@ -133,6 +133,13 @@ case "$1" in
         fallocate --help >/dev/null 2>&1 || exit 3
         ;;
 
+    can_cache)
+        # Caching is not advertised to the client unless can_cache prints
+        # a tri-state value.  Here, we choose for caching to be a no-op,
+        # by omitting counterpart handling for 'cache'.
+        echo native
+        ;;
+
     *)
         # Unknown methods must exit with code 2.
         exit 2

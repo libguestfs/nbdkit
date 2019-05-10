@@ -243,13 +243,20 @@ The script should exit with code C<0> for true or code C<3> for false.
 
 =item C<can_fua>
 
+=item C<can_cache>
+
  /path/to/script can_fua <handle>
+ /path/to/script can_cache <handle>
 
-This controls Forced Unit Access (FUA) behaviour of the core server.
+These control Forced Unit Access (FUA) and caching behaviour of the
+core server.
 
-Unlike the other C<can_*> callbacks, this one is I<not> a boolean.  It
-must print either "none", "emulate" or "native" to stdout.  The
-meaning of these is described in L<nbdkit-plugin(3)>.
+Unlike the other C<can_*> callbacks, these two are I<not> a boolean.
+They must print either "none", "emulate" or "native" to stdout.  The
+meaning of these is described in L<nbdkit-plugin(3)>.  Furthermore,
+you B<must> provide a C<can_cache> method if you desire the C<cache>
+callback to be utilized, similar to the reasoning behind requiring
+C<can_write> to utilize C<pwrite>.
 
 =item C<can_multi_conn>
 
@@ -334,6 +341,14 @@ Unlike in other languages, if you provide an C<extents> method you
 B<must> also provide a C<can_extents> method which exits with code
 C<0> (true).
 
+=item C<cache>
+
+ /path/to/script cache <handle> <count> <offset>
+
+Unlike in other languages, if you provide a C<cache> method you
+B<must> also provide a C<can_cache> method which prints "native" and
+exits with code C<0> (true).
+
 =back
 
 =head2 Missing callbacks
@@ -365,4 +380,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018 Red Hat Inc.
+Copyright (C) 2018-2019 Red Hat Inc.
