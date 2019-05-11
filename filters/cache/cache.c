@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -58,6 +58,8 @@
 #include "cache.h"
 #include "blk.h"
 #include "reclaim.h"
+#include "isaligned.h"
+#include "minmax.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
@@ -231,35 +233,29 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
              uint32_t flags, int *err)
 {
   CLEANUP_FREE uint8_t *block = NULL;
+  uint64_t blknum, blkoffs;
+  int r;
 
   assert (!flags);
-  block = malloc (blksize);
-  if (block == NULL) {
-    *err = errno;
-    nbdkit_error ("malloc: %m");
-    return -1;
+  if (!IS_ALIGNED (count | offset, blksize)) {
+    block = malloc (blksize);
+    if (block == NULL) {
+      *err = errno;
+      nbdkit_error ("malloc: %m");
+      return -1;
+    }
   }
 
-  /* XXX This breaks up large read requests into smaller ones, which
-   * is a problem for plugins which have a large, fixed per-request
-   * overhead (hello, curl).  We should try to keep large requests
-   * together as much as possible, but that requires us to be much
-   * smarter here.
-   */
-  while (count > 0) {
-    uint64_t blknum, blkoffs, n;
-    int r;
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
 
-    blknum = offset / blksize;  /* block number */
-    blkoffs = offset % blksize; /* offset within the block */
-    n = blksize - blkoffs;      /* max bytes we can read from this block */
-    if (n > count)
-      n = count;
+  /* Unaligned head */
+  if (blkoffs) {
+    uint64_t n = MIN (blksize - blkoffs, count);
 
-    {
-      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-      r = blk_read (next_ops, nxdata, blknum, block, err);
-    }
+    assert (block);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r == -1)
       return -1;
 
@@ -268,6 +264,37 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     buf += n;
     count -= n;
     offset += n;
+    blknum++;
+  }
+
+  /* Aligned body */
+  /* XXX This breaks up large read requests into smaller ones, which
+   * is a problem for plugins which have a large, fixed per-request
+   * overhead (hello, curl).  We should try to keep large requests
+   * together as much as possible, but that requires us to be much
+   * smarter here.
+   */
+  while (count >= blksize) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_read (next_ops, nxdata, blknum, buf, err);
+    if (r == -1)
+      return -1;
+
+    buf += blksize;
+    count -= blksize;
+    offset += blksize;
+    blknum++;
+  }
+
+  /* Unaligned tail */
+  if (count) {
+    assert (block);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r == -1)
+      return -1;
+
+    memcpy (buf, block, count);
   }
 
   return 0;
@@ -280,13 +307,17 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
               uint32_t flags, int *err)
 {
   CLEANUP_FREE uint8_t *block = NULL;
+  uint64_t blknum, blkoffs;
+  int r;
   bool need_flush = false;
 
-  block = malloc (blksize);
-  if (block == NULL) {
-    *err = errno;
-    nbdkit_error ("malloc: %m");
-    return -1;
+  if (!IS_ALIGNED (count | offset, blksize)) {
+    block = malloc (blksize);
+    if (block == NULL) {
+      *err = errno;
+      nbdkit_error ("malloc: %m");
+      return -1;
+    }
   }
 
   if ((flags & NBDKIT_FLAG_FUA) &&
@@ -294,19 +325,18 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
-  while (count > 0) {
-    uint64_t blknum, blkoffs, n;
-    int r;
 
-    blknum = offset / blksize;  /* block number */
-    blkoffs = offset % blksize; /* offset within the block */
-    n = blksize - blkoffs;      /* max bytes we can read from this block */
-    if (n > count)
-      n = count;
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
+
+  /* Unaligned head */
+  if (blkoffs) {
+    uint64_t n = MIN (blksize - blkoffs, count);
 
     /* Do a read-modify-write operation on the current block.
      * Hold the lock over the whole operation.
      */
+    assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
@@ -319,6 +349,33 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     buf += n;
     count -= n;
     offset += n;
+    blknum++;
+  }
+
+  /* Aligned body */
+  while (count >= blksize) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_write (next_ops, nxdata, blknum, buf, flags, err);
+    if (r == -1)
+      return -1;
+
+    buf += blksize;
+    count -= blksize;
+    offset += blksize;
+    blknum++;
+  }
+
+  /* Unaligned tail */
+  if (count) {
+    assert (block);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r != -1) {
+      memcpy (block, buf, count);
+      r = blk_write (next_ops, nxdata, blknum, block, flags, err);
+    }
+    if (r == -1)
+      return -1;
   }
 
   if (need_flush)
@@ -333,6 +390,8 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
             int *err)
 {
   CLEANUP_FREE uint8_t *block = NULL;
+  uint64_t blknum, blkoffs;
+  int r;
   bool need_flush = false;
 
   block = malloc (blksize);
@@ -348,15 +407,13 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
-  while (count > 0) {
-    uint64_t blknum, blkoffs, n;
-    int r;
 
-    blknum = offset / blksize;  /* block number */
-    blkoffs = offset % blksize; /* offset within the block */
-    n = blksize - blkoffs;      /* max bytes we can read from this block */
-    if (n > count)
-      n = count;
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
+
+  /* Unaligned head */
+  if (blkoffs) {
+    uint64_t n = MIN (blksize - blkoffs, count);
 
     /* Do a read-modify-write operation on the current block.
      * Hold the lock over the whole operation.
@@ -372,6 +429,34 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
     count -= n;
     offset += n;
+    blknum++;
+  }
+
+  /* Aligned body */
+  if (count >= blksize)
+    memset (block, 0, blksize);
+  while (count >=blksize) {
+    /* Intentional that we do not use next_ops->zero */
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_write (next_ops, nxdata, blknum, block, flags, err);
+    if (r == -1)
+      return -1;
+
+    count -= blksize;
+    offset += blksize;
+    blknum++;
+  }
+
+  /* Unaligned tail */
+  if (count) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r != -1) {
+      memset (&block[count], 0, blksize - count);
+      r = blk_write (next_ops, nxdata, blknum, block, flags, err);
+    }
+    if (r == -1)
+      return -1;
   }
 
   if (need_flush)
