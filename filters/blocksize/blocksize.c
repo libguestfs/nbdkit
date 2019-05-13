@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -197,24 +197,21 @@ blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     count -= keep;
   }
 
-  /* Unaligned tail */
-  if (count & (minblock - 1)) {
-    keep = count & (minblock - 1);
-    count -= keep;
-    if (next_ops->pread (nxdata, bounce, minblock, offs + count, flags,
-                         err) == -1)
-      return -1;
-    memcpy (buf + count, bounce, keep);
-  }
-
   /* Aligned body */
-  while (count) {
-    keep = MIN (maxdata, count);
+  while (count >= minblock) {
+    keep = MIN (maxdata, ROUND_DOWN (count, minblock));
     if (next_ops->pread (nxdata, buf, keep, offs, flags, err) == -1)
       return -1;
     buf += keep;
     offs += keep;
     count -= keep;
+  }
+
+  /* Unaligned tail */
+  if (count) {
+    if (next_ops->pread (nxdata, bounce, minblock, offs, flags, err) == -1)
+      return -1;
+    memcpy (buf, bounce, count);
   }
 
   return 0;
@@ -251,26 +248,23 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     count -= keep;
   }
 
-  /* Unaligned tail */
-  if (count & (minblock - 1)) {
-    keep = count & (minblock - 1);
-    count -= keep;
-    if (next_ops->pread (nxdata, bounce, minblock, offs + count, 0, err) == -1)
-      return -1;
-    memcpy (bounce, buf + count, keep);
-    if (next_ops->pwrite (nxdata, bounce, minblock, offs + count, flags,
-                          err) == -1)
-      return -1;
-  }
-
   /* Aligned body */
-  while (count) {
-    keep = MIN (maxdata, count);
+  while (count >= minblock) {
+    keep = MIN (maxdata, ROUND_DOWN (count, minblock));
     if (next_ops->pwrite (nxdata, buf, keep, offs, flags, err) == -1)
       return -1;
     buf += keep;
     offs += keep;
     count -= keep;
+  }
+
+  /* Unaligned tail */
+  if (count) {
+    if (next_ops->pread (nxdata, bounce, minblock, offs, 0, err) == -1)
+      return -1;
+    memcpy (bounce, buf, count);
+    if (next_ops->pwrite (nxdata, bounce, minblock, offs, flags, err) == -1)
+      return -1;
   }
 
   if (need_flush)
@@ -292,16 +286,15 @@ blocksize_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
     need_flush = true;
   }
 
-  /* Unaligned head */
+  /* Ignore unaligned head */
   if (offs & (minblock - 1)) {
     keep = MIN (minblock - (offs & (minblock - 1)), count);
     offs += keep;
     count -= keep;
   }
 
-  /* Unaligned tail */
-  if (count & (minblock - 1))
-    count -= count & (minblock - 1);
+  /* Ignore unaligned tail */
+  count = ROUND_DOWN (count, minblock);
 
   /* Aligned body */
   while (count) {
@@ -346,25 +339,23 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     count -= keep;
   }
 
-  /* Unaligned tail */
-  if (count & (minblock - 1)) {
-    keep = count & (minblock - 1);
-    count -= keep;
-    if (next_ops->pread (nxdata, bounce, minblock, offs + count, 0, err) == -1)
-      return -1;
-    memset (bounce, 0, keep);
-    if (next_ops->pwrite (nxdata, bounce, minblock, offs + count,
-                          flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
-      return -1;
-  }
-
   /* Aligned body */
-  while (count) {
-    keep = MIN (maxlen, count);
+  while (count >= minblock) {
+    keep = MIN (maxlen, ROUND_DOWN (count, minblock));
     if (next_ops->zero (nxdata, keep, offs, flags, err) == -1)
       return -1;
     offs += keep;
     count -= keep;
+  }
+
+  /* Unaligned tail */
+  if (count) {
+    if (next_ops->pread (nxdata, bounce, minblock, offs, 0, err) == -1)
+      return -1;
+    memset (bounce, 0, count);
+    if (next_ops->pwrite (nxdata, bounce, minblock, offs,
+                          flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
+      return -1;
   }
 
   if (need_flush)
