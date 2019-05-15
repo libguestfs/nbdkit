@@ -254,6 +254,17 @@ partition_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Cache data. */
+static int
+partition_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
+                 int *err)
+{
+  struct handle *h = handle;
+
+  return next_ops->cache (nxdata, count, offs + h->offset, flags, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "partition",
   .longname          = "nbdkit partition filter",
@@ -270,6 +281,7 @@ static struct nbdkit_filter filter = {
   .trim              = partition_trim,
   .zero              = partition_zero,
   .extents           = partition_extents,
+  .cache             = partition_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)

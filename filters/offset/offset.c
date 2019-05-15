@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -164,6 +164,15 @@ offset_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Cache data. */
+static int
+offset_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
+              int *err)
+{
+  return next_ops->cache (nxdata, count, offs + offset, flags, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "offset",
   .longname          = "nbdkit offset filter",
@@ -177,6 +186,7 @@ static struct nbdkit_filter filter = {
   .trim              = offset_trim,
   .zero              = offset_zero,
   .extents           = offset_extents,
+  .cache             = offset_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
