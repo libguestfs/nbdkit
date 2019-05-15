@@ -361,6 +361,29 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Cache. */
+static int
+truncate_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+                void *handle, uint32_t count, uint64_t offset,
+                uint32_t flags, int *err)
+{
+  int r;
+  uint32_t n;
+  struct handle *h = handle;
+
+  if (offset < h->real_size) {
+    if (offset + count <= h->real_size)
+      n = count;
+    else
+      n = h->real_size - offset;
+    r = next_ops->cache (nxdata, n, offset, flags, err);
+    if (r == -1)
+      return -1;
+  }
+
+  return 0;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "truncate",
   .longname          = "nbdkit truncate filter",
@@ -376,6 +399,7 @@ static struct nbdkit_filter filter = {
   .trim              = truncate_trim,
   .zero              = truncate_zero,
   .extents           = truncate_extents,
+  .cache             = truncate_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
