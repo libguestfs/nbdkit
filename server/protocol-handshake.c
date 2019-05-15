@@ -101,12 +101,16 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     conn->is_rotational = true;
   }
 
-  fl = backend->can_multi_conn (backend, conn);
-  if (fl == -1)
-    return -1;
-  if (fl) {
-    eflags |= NBD_FLAG_CAN_MULTI_CONN;
-    conn->can_multi_conn = true;
+  /* multi-conn is useless if parallel connections are not allowed */
+  if (backend->thread_model (backend) >
+      NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
+    fl = backend->can_multi_conn (backend, conn);
+    if (fl == -1)
+      return -1;
+    if (fl) {
+      eflags |= NBD_FLAG_CAN_MULTI_CONN;
+      conn->can_multi_conn = true;
+    }
   }
 
   /* The result of this is not returned to callers here (or at any
