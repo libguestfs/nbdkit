@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -64,6 +64,7 @@ static struct error_settings pwrite_settings = ERROR_DEFAULT;
 static struct error_settings trim_settings = ERROR_DEFAULT;
 static struct error_settings zero_settings = ERROR_DEFAULT;
 static struct error_settings extents_settings = ERROR_DEFAULT;
+static struct error_settings cache_settings = ERROR_DEFAULT;
 
 /* Random state.
  * This must only be accessed when holding the lock (except for load).
@@ -85,6 +86,7 @@ error_unload (void)
   free (trim_settings.file);
   free (zero_settings.file);
   free (extents_settings.file);
+  free (cache_settings.file);
 }
 
 static const struct { const char *name; int error; } errors[] = {
@@ -165,7 +167,7 @@ error_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     pread_settings.error = pwrite_settings.error =
       trim_settings.error = zero_settings.error =
-      extents_settings.error = i;
+      extents_settings.error = cache_settings.error = i;
     return 0;
   }
   else if (strcmp (key, "error-pread") == 0)
@@ -178,13 +180,15 @@ error_config (nbdkit_next_config *next, void *nxdata,
     return parse_error (key, value, &zero_settings.error);
   else if (strcmp (key, "error-extents") == 0)
     return parse_error (key, value, &extents_settings.error);
+  else if (strcmp (key, "error-cache") == 0)
+    return parse_error (key, value, &cache_settings.error);
 
   else if (strcmp (key, "error-rate") == 0) {
     if (parse_error_rate (key, value, &d) == -1)
       return -1;
     pread_settings.rate = pwrite_settings.rate =
       trim_settings.rate = zero_settings.rate =
-      extents_settings.rate = d;
+      extents_settings.rate = cache_settings.rate = d;
     return 0;
   }
   else if (strcmp (key, "error-pread-rate") == 0)
@@ -197,6 +201,8 @@ error_config (nbdkit_next_config *next, void *nxdata,
     return parse_error_rate (key, value, &zero_settings.rate);
   else if (strcmp (key, "error-extents-rate") == 0)
     return parse_error_rate (key, value, &extents_settings.rate);
+  else if (strcmp (key, "error-cache-rate") == 0)
+    return parse_error_rate (key, value, &cache_settings.rate);
 
   /* NB: We are using nbdkit_absolute_path here because the trigger
    * file probably doesn't exist yet.
@@ -212,6 +218,8 @@ error_config (nbdkit_next_config *next, void *nxdata,
     zero_settings.file = nbdkit_absolute_path (value);
     free (extents_settings.file);
     extents_settings.file = nbdkit_absolute_path (value);
+    free (cache_settings.file);
+    cache_settings.file = nbdkit_absolute_path (value);
     return 0;
   }
   else if (strcmp (key, "error-pread-file") == 0) {
@@ -237,6 +245,11 @@ error_config (nbdkit_next_config *next, void *nxdata,
   else if (strcmp (key, "error-extents-file") == 0) {
     free (extents_settings.file);
     extents_settings.file = nbdkit_absolute_path (value);
+    return 0;
+  }
+  else if (strcmp (key, "error-cache-file") == 0) {
+    free (cache_settings.file);
+    cache_settings.file = nbdkit_absolute_path (value);
     return 0;
   }
 
@@ -349,6 +362,18 @@ error_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->extents (nxdata, count, offset, flags, extents, err);
 }
 
+/* Extents. */
+static int
+error_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+             void *handle, uint32_t count, uint64_t offset,
+             uint32_t flags, int *err)
+{
+  if (random_error (&cache_settings, "cache", err))
+    return -1;
+
+  return next_ops->cache (nxdata, count, offset, flags, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "error",
   .longname          = "nbdkit error filter",
@@ -362,6 +387,7 @@ static struct nbdkit_filter filter = {
   .trim              = error_trim,
   .zero              = error_zero,
   .extents           = error_extents,
+  .cache             = error_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
