@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -243,13 +243,15 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   int z = next_ops->can_zero (nxdata);
   int F = next_ops->can_fua (nxdata);
   int e = next_ops->can_extents (nxdata);
+  int c = next_ops->can_cache (nxdata);
 
-  if (size < 0 || w < 0 || f < 0 || r < 0 || t < 0 || z < 0 || F < 0 || e < 0)
+  if (size < 0 || w < 0 || f < 0 || r < 0 || t < 0 || z < 0 || F < 0 ||
+      e < 0 || c < 0)
     return -1;
 
   output (h, "Connect", 0, "size=0x%" PRIx64 " write=%d flush=%d "
-          "rotational=%d trim=%d zero=%d fua=%d extents=%d",
-          size, w, f, r, t, z, F, e);
+          "rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d",
+          size, w, f, r, t, z, F, e, c);
   return 0;
 }
 
@@ -396,6 +398,24 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return r;
 }
 
+/* Cache data. */
+static int
+log_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+           void *handle, uint32_t count, uint64_t offs, uint32_t flags,
+           int *err)
+{
+  struct handle *h = handle;
+  uint64_t id = get_id (h);
+  int r;
+
+  assert (!flags);
+  output (h, "Cache", id, "offset=0x%" PRIx64 " count=0x%x ...",
+          offs, count);
+  r = next_ops->cache (nxdata, count, offs, flags, err);
+  output_return (h, "...Cache", id, r, err);
+  return r;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "log",
   .longname          = "nbdkit log filter",
@@ -414,6 +434,7 @@ static struct nbdkit_filter filter = {
   .trim              = log_trim,
   .zero              = log_zero,
   .extents           = log_extents,
+  .cache             = log_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
