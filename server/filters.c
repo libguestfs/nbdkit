@@ -602,11 +602,8 @@ filter_can_cache (struct backend *b, struct connection *conn)
 
   if (f->filter.can_cache)
     return f->filter.can_cache (&next_ops, &nxdata, handle);
-  /* FIXME: Default to f->backend.next->can_cache, once all filters
-     have been audited */
   else
-    return NBDKIT_CACHE_NONE;
-  return f->backend.next->can_cache (f->backend.next, conn);
+    return f->backend.next->can_cache (f->backend.next, conn);
 }
 
 static int
