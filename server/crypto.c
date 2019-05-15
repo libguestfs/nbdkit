@@ -492,7 +492,16 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
     err = gnutls_handshake (*session);
   } while (err < 0 && gnutls_error_is_fatal (err) == 0);
   if (err < 0) {
-    nbdkit_error ("gnutls_handshake: %s", gnutls_strerror (err));
+    gnutls_handshake_description_t in, out;
+
+    /* Get some additional debug information about where in the
+     * handshake protocol it failed.  You have to look up these codes in
+     * <gnutls/gnutls.h>.
+     */
+    in = gnutls_handshake_get_last_in (*session);
+    out = gnutls_handshake_get_last_out (*session);
+    nbdkit_error ("gnutls_handshake: %s (%d/%d)",
+                  gnutls_strerror (err), (int) in, (int) out);
     goto error;
   }
   debug ("TLS handshake completed");
