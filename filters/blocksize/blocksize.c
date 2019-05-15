@@ -138,30 +138,18 @@ blocksize_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   "maxdata=<SIZE>       Maximum size for read/write (default 64M).\n" \
   "maxlen=<SIZE>        Maximum size for trim/zero (default 4G-minblock)."
 
-static int
-blocksize_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
-                   void *handle)
-{
-  /* Early call to get_size to ensure it doesn't truncate to 0. */
-  int64_t size = next_ops->get_size (nxdata);
+/* TODO: Should we have a .prepare to cache per-connection FUA mode? */
 
-  if (size == -1)
-    return -1;
-  if (size < minblock) {
-    nbdkit_error ("disk is too small for minblock size %u", minblock);
-    return -1;
-  }
-  /* TODO: cache per-connection FUA mode? */
-  return 0;
-}
-
+/* Round size down to avoid issues at end of file. */
 static int64_t
 blocksize_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
                     void *handle)
 {
   int64_t size = next_ops->get_size (nxdata);
 
-  return size == -1 ? size : size & ~(minblock - 1);
+  if (size == -1)
+    return -1;
+  return ROUND_DOWN (size, minblock);
 }
 
 static int
@@ -387,7 +375,6 @@ static struct nbdkit_filter filter = {
   .config            = blocksize_config,
   .config_complete   = blocksize_config_complete,
   .config_help       = blocksize_config_help,
-  .prepare           = blocksize_prepare,
   .get_size          = blocksize_get_size,
   .can_multi_conn    = blocksize_can_multi_conn,
   .pread             = blocksize_pread,
