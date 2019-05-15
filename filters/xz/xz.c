@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -194,6 +194,18 @@ xz_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Cache */
+static int
+xz_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+              void *handle)
+{
+  /* We are already operating as a cache regardless of the plugin's
+   * underlying .can_cache, but it's easiest to just rely on nbdkit's
+   * behavior of calling .pread for caching.
+   */
+  return NBDKIT_CACHE_EMULATE;
+}
+
 /* Read data from the file. */
 static int
 xz_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -248,6 +260,7 @@ static struct nbdkit_filter filter = {
   .get_size          = xz_get_size,
   .can_write         = xz_can_write,
   .can_extents       = xz_can_extents,
+  .can_cache         = xz_can_cache,
   .pread             = xz_pread,
 };
 

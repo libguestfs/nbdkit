@@ -109,6 +109,18 @@ readahead_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   return r;
 }
 
+/* Cache */
+static int
+readahead_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+                     void *handle)
+{
+  /* We are already operating as a cache regardless of the plugin's
+   * underlying .can_cache, but it's easiest to just rely on nbdkit's
+   * behavior of calling .pread for caching.
+   */
+  return NBDKIT_CACHE_EMULATE;
+}
+
 /* Read data. */
 
 static int
@@ -241,6 +253,7 @@ static struct nbdkit_filter filter = {
   .unload            = readahead_unload,
   .prepare           = readahead_prepare,
   .get_size          = readahead_get_size,
+  .can_cache         = readahead_can_cache,
   .pread             = readahead_pread,
   .pwrite            = readahead_pwrite,
   .trim              = readahead_trim,
