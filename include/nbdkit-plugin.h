@@ -128,6 +128,8 @@ struct nbdkit_plugin {
   int (*can_extents) (void *handle);
   int (*extents) (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                   struct nbdkit_extents *extents);
+  int (*can_cache) (void *handle);
+  int (*cache) (void *handle, uint32_t count, uint64_t offset, uint32_t flags);
 };
 
 extern void nbdkit_set_error (int err);

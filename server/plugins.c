@@ -201,6 +201,8 @@ plugin_dump_fields (struct backend *b)
   HAS (can_multi_conn);
   HAS (can_extents);
   HAS (extents);
+  HAS (can_cache);
+  HAS (cache);
 #undef HAS
 
   /* Custom fields. */
@@ -451,11 +453,16 @@ plugin_can_multi_conn (struct backend *b, struct connection *conn)
 static int
 plugin_can_cache (struct backend *b, struct connection *conn)
 {
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
   assert (connection_get_handle (conn, 0));
 
   debug ("can_cache");
 
-  /* FIXME: return default based on plugin->cache */
+  if (p->plugin.can_cache)
+    return p->plugin.can_cache (connection_get_handle (conn, 0));
+  if (p->plugin.cache)
+    return NBDKIT_CACHE_NATIVE;
   return NBDKIT_CACHE_NONE;
 }
 
@@ -710,16 +717,19 @@ plugin_cache (struct backend *b, struct connection *conn,
               int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-  int r = -1;
+  int r;
 
   assert (connection_get_handle (conn, 0));
   assert (!flags);
 
   debug ("cache count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
-  /* FIXME: assert plugin->cache and call it */
-  assert (false);
+  /* A plugin may advertise caching but not provide .cache; in that
+   * case, caching is explicitly a no-op. */
+  if (!p->plugin.cache)
+    return 0;
 
+  r = p->plugin.cache (connection_get_handle (conn, 0), count, offset, flags);
   if (r == -1)
     *err = get_error (p);
   return r;
