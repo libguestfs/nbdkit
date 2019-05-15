@@ -38,7 +38,9 @@ read requests to alignment boundaries, performs read-modify-write
 cycles for any unaligned head or tail of a write or zero request, and
 silently ignores any unaligned head or tail of a trim request.  The
 filter also truncates the plugin size down to an aligned value (as it
-cannot safely operate on the unaligned tail).
+cannot safely operate on the unaligned tail).  If you need to round
+the image size up instead to access the last few bytes, combine this
+filter with L<nbdkit-truncate-filter(1)>.
 
 This parameter understands the suffix 'k' for 1024.
 
@@ -82,12 +84,20 @@ nbd plugin:
 
  nbdkit --filter=blocksize nbd maxdata=32M socket=/path/to/socket
 
+Serve a file as if it were a block device that insists on 4k
+alignment, while still allowing access to any unaligned bytes at the
+end of the file:
+
+ nbdkit --filter=blocksize --filter=truncate file /path/to/file \
+ minblock=4k round-up=4k
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
 L<nbdkit-nbd-plugin(1)>,
 L<nbdkit-vddk-plugin(1)>,
-L<nbdkit-filter(3)>.
+L<nbdkit-filter(3)>,
+L<nbdkit-truncate-filter(1)>.
 
 =head1 AUTHORS
 

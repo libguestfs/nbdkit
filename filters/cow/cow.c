@@ -45,6 +45,7 @@
 #include <nbdkit-filter.h>
 
 #include "blk.h"
+#include "rounding.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
@@ -76,7 +77,9 @@ cow_open (nbdkit_next_open *next, void *nxdata, int readonly)
   return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
-/* Get the file size and ensure the overlay is the correct size. */
+/* Get the file size; round it down to overlay granularity before
+ * setting overlay size.
+ */
 static int64_t
 cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
               void *handle)
@@ -89,6 +92,7 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
 
   nbdkit_debug ("cow: underlying file size: %" PRIi64, size);
+  size = ROUND_DOWN (size, BLKSIZE);
 
   pthread_mutex_lock (&lock);
   r = blk_set_size (size);

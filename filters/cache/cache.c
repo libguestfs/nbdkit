@@ -56,6 +56,7 @@
 #include "cache.h"
 #include "blk.h"
 #include "reclaim.h"
+#include "rounding.h"
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
@@ -197,10 +198,12 @@ cache_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   return next (nxdata);
 }
 
-/* Get the file size and ensure the cache is the correct size. */
+/* Get the file size; round it down to cache granularity before
+ * setting cache size.
+ */
 static int64_t
 cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
-              void *handle)
+                void *handle)
 {
   int64_t size;
   int r;
@@ -210,6 +213,7 @@ cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
 
   nbdkit_debug ("cache: underlying file size: %" PRIi64, size);
+  size = ROUND_DOWN (size, blksize);
 
   pthread_mutex_lock (&lock);
   r = blk_set_size (size);
