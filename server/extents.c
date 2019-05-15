@@ -168,7 +168,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
     return 0;
 
   /* Shorten extents that overlap the end of the range. */
-  if (offset + length >= exts->end) {
+  if (offset + length > exts->end) {
     overlap = offset + length - exts->end;
     length -= overlap;
   }
