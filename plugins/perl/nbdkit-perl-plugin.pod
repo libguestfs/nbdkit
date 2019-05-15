@@ -338,7 +338,7 @@ These are not needed because you can just use regular Perl C<BEGIN>
 and C<END> constructs.
 
 =item Missing: C<name>, C<version>, C<longname>, C<description>,
-C<config_help>
+C<config_help>, C<can_fua>, C<can_cache>, C<cache>
 
 These are not yet supported.
 
