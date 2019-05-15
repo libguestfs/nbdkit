@@ -61,6 +61,7 @@ static uint64_t pwrite_ops, pwrite_bytes;
 static uint64_t trim_ops, trim_bytes;
 static uint64_t zero_ops, zero_bytes;
 static uint64_t extents_ops, extents_bytes;
+static uint64_t cache_ops, cache_bytes;
 
 static inline double
 calc_bps (uint64_t bytes, int64_t usecs)
@@ -88,6 +89,9 @@ print_stats (int64_t usecs)
   if (extents_ops > 0)
     fprintf (fp, "extents: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
              extents_ops, extents_bytes, calc_bps (extents_bytes, usecs));
+  if (cache_ops > 0)
+    fprintf (fp, "cache: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
+             cache_ops, cache_bytes, calc_bps (cache_bytes, usecs));
 
   fflush (fp);
 }
@@ -246,6 +250,24 @@ stats_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return r;
 }
 
+/* Cache. */
+static int
+stats_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+             void *handle,
+             uint32_t count, uint64_t offset, uint32_t flags,
+             int *err)
+{
+  int r;
+
+  r = next_ops->cache (nxdata, count, offset, flags, err);
+  if (r == 0) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    cache_ops++;
+    cache_bytes += count;
+  }
+  return r;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "stats",
   .longname          = "nbdkit stats filter",
@@ -258,6 +280,7 @@ static struct nbdkit_filter filter = {
   .trim              = stats_trim,
   .zero              = stats_zero,
   .extents           = stats_extents,
+  .cache             = stats_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
