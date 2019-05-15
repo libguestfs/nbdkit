@@ -314,7 +314,7 @@ crypto_free (void)
 static int
 crypto_recv (struct connection *conn, void *vbuf, size_t len)
 {
-  gnutls_session_t *session = conn->crypto_session;
+  gnutls_session_t session = conn->crypto_session;
   char *buf = vbuf;
   ssize_t r;
   bool first_read = true;
@@ -322,7 +322,7 @@ crypto_recv (struct connection *conn, void *vbuf, size_t len)
   assert (session != NULL);
 
   while (len > 0) {
-    r = gnutls_record_recv (*session, buf, len);
+    r = gnutls_record_recv (session, buf, len);
     if (r < 0) {
       if (r == GNUTLS_E_INTERRUPTED || r == GNUTLS_E_AGAIN)
         continue;
@@ -351,14 +351,14 @@ crypto_recv (struct connection *conn, void *vbuf, size_t len)
 static int
 crypto_send (struct connection *conn, const void *vbuf, size_t len)
 {
-  gnutls_session_t *session = conn->crypto_session;
+  gnutls_session_t session = conn->crypto_session;
   const char *buf = vbuf;
   ssize_t r;
 
   assert (session != NULL);
 
   while (len > 0) {
-    r = gnutls_record_send (*session, buf, len);
+    r = gnutls_record_send (session, buf, len);
     if (r < 0) {
       if (r == GNUTLS_E_INTERRUPTED || r == GNUTLS_E_AGAIN)
         continue;
@@ -377,22 +377,21 @@ crypto_send (struct connection *conn, const void *vbuf, size_t len)
 static void
 crypto_close (struct connection *conn)
 {
-  gnutls_session_t *session = conn->crypto_session;
+  gnutls_session_t session = conn->crypto_session;
   int sockin, sockout;
 
   assert (session != NULL);
 
-  gnutls_transport_get_int2 (*session, &sockin, &sockout);
+  gnutls_transport_get_int2 (session, &sockin, &sockout);
 
-  gnutls_bye (*session, GNUTLS_SHUT_RDWR);
+  gnutls_bye (session, GNUTLS_SHUT_RDWR);
 
   if (sockin >= 0)
     close (sockin);
   if (sockout >= 0 && sockin != sockout)
     close (sockout);
 
-  gnutls_deinit (*session);
-  free (session);
+  gnutls_deinit (session);
   conn->crypto_session = NULL;
 }
 
@@ -403,18 +402,12 @@ crypto_close (struct connection *conn)
 int
 crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
 {
-  gnutls_session_t *session;
+  gnutls_session_t session;
   CLEANUP_FREE char *priority = NULL;
   int err;
 
   /* Create the GnuTLS session. */
-  session = malloc (sizeof *session);
-  if (session == NULL) {
-    nbdkit_error ("malloc: %m");
-    return -1;
-  }
-
-  err = gnutls_init (session, GNUTLS_SERVER);
+  err = gnutls_init (&session, GNUTLS_SERVER);
   if (err < 0) {
     nbdkit_error ("gnutls_init: %s", gnutls_strerror (err));
     free (session);
@@ -424,7 +417,7 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
   switch (crypto_auth) {
   case CRYPTO_AUTH_CERTIFICATES:
     /* Associate the session with the server credentials (key, cert). */
-    err = gnutls_credentials_set (*session, GNUTLS_CRD_CERTIFICATE,
+    err = gnutls_credentials_set (session, GNUTLS_CRD_CERTIFICATE,
                                   x509_creds);
     if (err < 0) {
       nbdkit_error ("gnutls_credentials_set: %s", gnutls_strerror (err));
@@ -437,8 +430,8 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
      */
     if (tls_verify_peer) {
 #ifdef HAVE_GNUTLS_SESSION_SET_VERIFY_CERT
-      gnutls_certificate_server_set_request (*session, GNUTLS_CERT_REQUEST);
-      gnutls_session_set_verify_cert (*session, NULL, 0);
+      gnutls_certificate_server_set_request (session, GNUTLS_CERT_REQUEST);
+      gnutls_session_set_verify_cert (session, NULL, 0);
 #else
       nbdkit_error ("--tls-verify-peer: "
                     "GnuTLS >= 3.4.6 is required for this feature");
@@ -455,7 +448,7 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
 
   case CRYPTO_AUTH_PSK:
     /* Associate the session with the server PSK credentials. */
-    err = gnutls_credentials_set (*session, GNUTLS_CRD_PSK, psk_creds);
+    err = gnutls_credentials_set (session, GNUTLS_CRD_PSK, psk_creds);
     if (err < 0) {
       nbdkit_error ("gnutls_credentials_set: %s", gnutls_strerror (err));
       goto error;
@@ -473,7 +466,7 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
   }
 
   assert (priority != NULL);
-  err = gnutls_priority_set_direct (*session, priority, NULL);
+  err = gnutls_priority_set_direct (session, priority, NULL);
   if (err < 0) {
     nbdkit_error ("failed to set TLS session priority to %s: %s",
                   priority, gnutls_strerror (err));
@@ -481,15 +474,15 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
   }
 
   /* Set up GnuTLS so it reads and writes on the raw sockets. */
-  gnutls_transport_set_int2 (*session, sockin, sockout);
+  gnutls_transport_set_int2 (session, sockin, sockout);
 
   /* Perform the handshake. */
   debug ("starting TLS handshake");
-  gnutls_handshake_set_timeout (*session,
+  gnutls_handshake_set_timeout (session,
                                 GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
 
   do {
-    err = gnutls_handshake (*session);
+    err = gnutls_handshake (session);
   } while (err < 0 && gnutls_error_is_fatal (err) == 0);
   if (err < 0) {
     gnutls_handshake_description_t in, out;
@@ -498,8 +491,8 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
      * handshake protocol it failed.  You have to look up these codes in
      * <gnutls/gnutls.h>.
      */
-    in = gnutls_handshake_get_last_in (*session);
-    out = gnutls_handshake_get_last_out (*session);
+    in = gnutls_handshake_get_last_in (session);
+    out = gnutls_handshake_get_last_out (session);
     nbdkit_error ("gnutls_handshake: %s (%d/%d)",
                   gnutls_strerror (err), (int) in, (int) out);
     goto error;
@@ -516,8 +509,7 @@ crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
   return 0;
 
  error:
-  gnutls_deinit (*session);
-  free (session);
+  gnutls_deinit (session);
   return -1;
 }
 
