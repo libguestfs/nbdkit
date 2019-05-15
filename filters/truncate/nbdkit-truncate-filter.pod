@@ -59,6 +59,12 @@ Round the size up to the next multiple of C<N> bytes.  If the size of
 the underlying plugin is already a multiple of C<N> bytes, this has no
 effect.
 
+This option is useful when combined with other filters (such as
+L<nbdkit-blocksize-filter(1)>, L<nbdkit-cache-filter(1)>, or
+L<nbdkit-cow-filter(1)>) that normally round down due to a larger
+granularity, in order to access the last few bytes of a file that
+would otherwise be rendered inaccessible.
+
 This parameter is optional.
 
 =item B<round-down=>N
@@ -71,11 +77,23 @@ This parameter is optional.
 
 =back
 
+=head1 EXAMPLES
+
+Serve a file as if it were a block device that insists on 4k
+alignment, while still allowing access to any unaligned bytes at the
+end of the file:
+
+ nbdkit --filter=blocksize --filter=truncate file /path/to/file \
+ minblock=4k round-up=4k
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
+L<nbdkit-blocksize-filter(1)>,
+L<nbdkit-cache-filter(1)>,
+L<nbdkit-cow-filter(1)>,
 L<nbdkit-offset-filter(1)>,
 L<nbdkit-partition-filter(1)>.
 

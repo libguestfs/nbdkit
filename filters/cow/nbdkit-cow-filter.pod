@@ -31,6 +31,14 @@ that away.  It also allows us to create diffs, see below.
 The plugin is opened read-only (as if the I<-r> flag was passed), but
 you should B<not> pass the I<-r> flag to nbdkit.
 
+=item *
+
+Note that the use of this filter rounds the image size down to a
+multiple of the caching granularity (4096), to ease the
+implementation. If you need to round the image size up instead to
+access the last few bytes, combine this filter with
+L<nbdkit-truncate-filter(1)>.
+
 =back
 
 Limitations of the filter include:
@@ -108,6 +116,7 @@ C<TMPDIR> environment variable before starting nbdkit.
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-xz-plugin(1)>,
+L<nbdkit-truncate-filter(1)>,
 L<nbdkit-filter(3)>,
 L<qemu-img(1)>.
 
