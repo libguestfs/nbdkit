@@ -11,7 +11,7 @@ nbdkit-delay-filter - nbdkit delay filter
  nbdkit --filter=delay plugin [plugin-args ...]
           delay-read=(SECS|NNms) delay-write=(SECS|NNms)
           delay-zero=(SECS|NNms) delay-trim=(SECS|NNms)
-          delay-extents=(SECS|NNms)
+          delay-extents=(SECS|NNms) delay-cache=(SECS|NNms)
 
 =head1 DESCRIPTION
 
@@ -69,6 +69,13 @@ Delay trim/discard operations by C<SECS> seconds or C<NN> milliseconds.
 =item B<delay-extents=>NNB<ms>
 
 Delay block status (extents) operations by C<SECS> seconds or C<NN>
+milliseconds.
+
+=item B<delay-cache=>SECS
+
+=item B<delay-cache=>NNB<ms>
+
+Delay advisory cache operations by C<SECS> seconds or C<NN>
 milliseconds.
 
 =item B<wdelay=>SECS

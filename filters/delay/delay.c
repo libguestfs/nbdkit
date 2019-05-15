@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -47,6 +47,7 @@ static int delay_write_ms = 0;  /* write delay (milliseconds) */
 static int delay_zero_ms = 0;   /* zero delay (milliseconds) */
 static int delay_trim_ms = 0;   /* trim delay (milliseconds) */
 static int delay_extents_ms = 0;/* extents delay (milliseconds) */
+static int delay_cache_ms = 0;  /* cache delay (milliseconds) */
 
 static int
 parse_delay (const char *key, const char *value)
@@ -116,6 +117,12 @@ extents_delay (void)
   delay (delay_extents_ms);
 }
 
+static void
+cache_delay (void)
+{
+  delay (delay_cache_ms);
+}
+
 /* Called for each key=value passed on the command line. */
 static int
 delay_config (nbdkit_next_config *next, void *nxdata,
@@ -167,6 +174,12 @@ delay_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     return 0;
   }
+  else if (strcmp (key, "delay-cache") == 0) {
+    delay_cache_ms = parse_delay (key, value);
+    if (delay_cache_ms == -1)
+      return -1;
+    return 0;
+  }
   else
     return next (nxdata, key, value);
 }
@@ -178,6 +191,7 @@ delay_config (nbdkit_next_config *next, void *nxdata,
   "delay-zero=<NN>[ms]            Zero delay in seconds/milliseconds.\n" \
   "delay-trim=<NN>[ms]            Trim delay in seconds/milliseconds.\n" \
   "delay-extents=<NN>[ms]         Extents delay in seconds/milliseconds.\n" \
+  "delay-cache=<NN>[ms]           Cache delay in seconds/milliseconds.\n" \
   "wdelay=<NN>[ms]                Write, zero and trim delay in secs/msecs."
 
 /* Read data. */
@@ -231,6 +245,16 @@ delay_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->extents (nxdata, count, offset, flags, extents, err);
 }
 
+/* Cache. */
+static int
+delay_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+             int *err)
+{
+  cache_delay ();
+  return next_ops->cache (nxdata, count, offset, flags, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "delay",
   .longname          = "nbdkit delay filter",
@@ -242,6 +266,7 @@ static struct nbdkit_filter filter = {
   .zero              = delay_zero,
   .trim              = delay_trim,
   .extents           = delay_extents,
+  .cache             = delay_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
