@@ -65,8 +65,8 @@ always requested FUA:
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
-L<nbdkit-blocksize-filter(3)>,
-L<nbdkit-log-filter(3)>.
+L<nbdkit-blocksize-filter(1)>,
+L<nbdkit-log-filter(1)>.
 
 =head1 AUTHORS
 
