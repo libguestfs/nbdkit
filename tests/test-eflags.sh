@@ -279,7 +279,7 @@ EOF
 do_nbdkit -r <<'EOF'
 case "$1" in
      get_size) echo 1M ;;
-     can_multi_conn) echo 0 ;;
+     can_multi_conn) exit 0 ;;
      *) exit 2 ;;
 esac
 EOF
