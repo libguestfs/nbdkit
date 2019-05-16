@@ -92,7 +92,7 @@ client exits.
 
 L<nbdkit(1)>,
 L<nbdkit-captive(1)>,
-L<nbdkit-filter(1)>,
+L<nbdkit-filter(3)>,
 L<nbdkit-tls(1)>,
 L<nbdkit-plugin(3)>,
 L<qemu-nbd(1)>.
