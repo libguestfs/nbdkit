@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -286,3 +286,18 @@ EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF|CAN_MULTI_CONN )) ] ||
     fail "expected HAS_FLAGS|READ_ONLY|SEND_DF|CAN_MULTI_CONN"
+
+#----------------------------------------------------------------------
+# -r
+# can_cache=true
+
+do_nbdkit -r <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_cache) echo "emulate" ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF|SEND_CACHE )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF|SEND_CACHE"
