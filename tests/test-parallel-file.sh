@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2017-2018 Red Hat Inc.
+# Copyright (C) 2017-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -69,6 +69,17 @@ nbdkit -v -U - --filter=delay file test-parallel-file.data \
 if test "$(grep '512/512' test-parallel-file.out)" != \
 "read 512/512 bytes at offset 0
 wrote 512/512 bytes at offset 512"; then
+  exit 1
+fi
+
+# With --filter=noparallel, the write should complete first because it was issued first
+nbdkit -v -U - --filter=noparallel --filter=delay file test-parallel-file.data \
+  wdelay=2 rdelay=1 --run 'qemu-io -f raw -c "aio_write -P 2 512 512" \
+                           -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
+    tee test-parallel-file.out
+if test "$(grep '512/512' test-parallel-file.out)" != \
+"wrote 512/512 bytes at offset 512
+read 512/512 bytes at offset 0"; then
   exit 1
 fi
 

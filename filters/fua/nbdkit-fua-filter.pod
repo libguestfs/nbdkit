@@ -69,6 +69,7 @@ L<nbdkit-blocksize-filter(1)>,
 L<nbdkit-log-filter(1)>,
 L<nbdkit-nocache-filter(1)>,
 L<nbdkit-noextents-filter(1)>,
+L<nbdkit-noparallel-filter(1)>,
 L<nbdkit-nozero-filter(1)>.
 
 =head1 AUTHORS

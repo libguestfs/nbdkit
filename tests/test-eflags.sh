@@ -277,6 +277,22 @@ EOF
 # -r
 # can_multi_conn=true
 
+late_args="serialize=connections" do_nbdkit -r --filter=noparallel <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_multi_conn) exit 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+
+#----------------------------------------------------------------------
+# -r
+# --filter=noparallel serialize=connections
+# can_multi_conn=true
+
 do_nbdkit -r <<'EOF'
 case "$1" in
      get_size) echo 1M ;;

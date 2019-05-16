@@ -1,0 +1,66 @@
+=head1 NAME
+
+nbdkit-noparallel-filter - nbdkit noparallel filter
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=noparallel plugin [serialize=MODE] [plugin-args...]
+
+=head1 DESCRIPTION
+
+C<nbdkit-noparallel-filter> is a filter that intentionally disables
+parallelism in handling requests from clients. It is mainly useful for
+evaluating timing differences between various levels of
+parallelism. It can also be used as a way to work around any bugs in a
+plugin's claimed level of parallel support, without recompiling the
+plugin, or to ease efforts when connecting with a client that can
+batch up several requests but is not prepared to handle out-of-order
+replies.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<serialize=requests|all-requests|connections>
+
+Optional, controls how much serialization the filter will
+enforce. Mode B<requests> (default) prevents a single client from
+having more than one in-flight request, but does not prevent parallel
+requests from a second connection (if the plugin supports that). Mode
+B<all-requests> is stricter, enforcing that at most one request
+(regardless of connection) will be active, but does not prevent
+parallel connections (if the plugin supports that). Mode
+B<connections> is strictest, where there can be at most one client at
+a time, and where the server will no longer advertise
+C<NBD_FLAG_MULTI_CONN> to clients.
+
+=back
+
+=head1 EXAMPLES
+
+Serve the file F<disk.img>, but disallow out-of-order transaction
+completion to a given client:
+
+ nbdkit --filter=noparallel file disk.img
+
+Serve the file F<disk.img>, but allowing only one client at a time:
+
+ nbdkit --filter=noparallel file serialize=connections disk.img
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-fua-filter(1)>,
+L<nbdkit-nocache-filter(1)>,
+L<nbdkit-noextents-filter(1)>,
+L<nbdkit-nozero-filter(1)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018-2019 Red Hat Inc.
