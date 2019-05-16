@@ -1,0 +1,69 @@
+=head1 NAME
+
+nbdkit-nocache-filter - nbdkit nocache filter
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=nocache plugin [cachemode=MODE] [plugin-args...]
+
+=head1 DESCRIPTION
+
+C<nbdkit-nocache-filter> is a filter that intentionally disables
+efficient handling of advisory client cache requests across the NBD
+protocol.  It is mainly useful for evaluating timing differences to
+determine the impact of caching requests.
+
+Note that the effects of this filter (in crippling handling of client
+cache requests) is somewhat orthogonal from that of the
+L<nbdkit-cache-filter(1)> (adding local caching of client read/write
+requests); the two filters can be run together to experiment with
+timings.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<cachemode=none|emulate|nop>
+
+Optional, controls which mode the filter will use.  Mode B<none>
+(default) means that cache support is not advertised to the
+client. Mode B<emulate> means that cache support is emulated by the
+filter using the plugin's C<pread> callback, regardless of whether the
+plugin itself implemented the C<cache> callback. Mode B<nop> means
+that cache requests are always accepted and immediately ignored,
+rather than having any actual impact.
+
+=back
+
+=head1 EXAMPLES
+
+Serve the file F<disk.img>, but prevent C<NBD_CMD_CACHE> requests
+altogether, to get a baseline timing of behavior when the client is
+unable to make cache requests:
+
+ nbdkit --filter=nocache file disk.img
+
+Serve the file F<disk.img>, but with cache requests silently ignored,
+rather than being forwarded on to the file plugin (which attempts to
+use L<posix_fadvise(3)>), to compare against the timings without the
+filter and determine whether the file plugin caching was worthwhile:
+
+ nbdkit --filter=nocache file disk.img cachemode=nop
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-cache-filter(1)>,
+L<nbdkit-fua-filter(1)>,
+L<nbdkit-noextents-filter(1)>,
+L<nbdkit-nozero-filter(1)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

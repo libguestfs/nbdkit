@@ -51,6 +51,7 @@ if ! qemu-nbd --help | grep -sq -- --list; then
 fi
 
 files="eflags.out"
+late_args=
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -70,7 +71,7 @@ SEND_CACHE=$((        1 << 10 ))
 
 do_nbdkit ()
 {
-    nbdkit -v -U - "$@" sh - --run 'qemu-nbd --list -k $unixsocket' |
+    nbdkit -v -U - "$@" sh - $late_args --run 'qemu-nbd --list -k $unixsocket' |
         grep -E "flags: 0x" | grep -Eoi '0x[a-f0-9]+' > eflags.out
     echo -n eflags=; cat eflags.out
 
@@ -289,7 +290,7 @@ EOF
 
 #----------------------------------------------------------------------
 # -r
-# can_cache=true
+# can_cache=native
 
 do_nbdkit -r <<'EOF'
 case "$1" in
@@ -301,3 +302,19 @@ EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF|SEND_CACHE )) ] ||
     fail "expected HAS_FLAGS|READ_ONLY|SEND_DF|SEND_CACHE"
+
+#----------------------------------------------------------------------
+# -r
+# --filter=nocache cachemode=none
+# can_cache=native
+
+late_args="cachemode=none" do_nbdkit -r --filter=nocache <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_cache) echo "emulate" ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"

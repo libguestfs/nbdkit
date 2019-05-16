@@ -66,7 +66,10 @@ L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-blocksize-filter(1)>,
-L<nbdkit-log-filter(1)>.
+L<nbdkit-log-filter(1)>,
+L<nbdkit-nocache-filter(1)>,
+L<nbdkit-noextents-filter(1)>,
+L<nbdkit-nozero-filter(1)>.
 
 =head1 AUTHORS
 

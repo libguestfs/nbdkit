@@ -831,6 +831,7 @@ filters="\
         error \
         fua \
         log \
+        nocache \
         noextents \
         nozero \
         offset \
@@ -906,6 +907,7 @@ AC_CONFIG_FILES([Makefile
                  filters/error/Makefile
                  filters/fua/Makefile
                  filters/log/Makefile
+                 filters/nocache/Makefile
                  filters/noextents/Makefile
                  filters/nozero/Makefile
                  filters/offset/Makefile
