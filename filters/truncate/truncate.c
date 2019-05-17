@@ -38,6 +38,7 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include <nbdkit-filter.h>
 
@@ -172,8 +173,14 @@ truncate_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
    */
   if (truncate_size >= 0)
     h->size = truncate_size;
-  if (round_up > 0)
+  if (round_up > 0) {
+    if (ROUND_UP (h->size, round_up) > INT64_MAX) {
+      nbdkit_error ("cannot round size %" PRId64 " up to next boundary of %u",
+                    h->size, round_up);
+      return -1;
+    }
     h->size = ROUND_UP (h->size, round_up);
+  }
   if (round_down > 0)
     h->size = ROUND_DOWN (h->size, round_down);
 
