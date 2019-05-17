@@ -43,8 +43,6 @@
 
 #include "minmax.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 static enum CacheMode {
   NONE,
   EMULATE,

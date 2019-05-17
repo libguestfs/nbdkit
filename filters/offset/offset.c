@@ -41,8 +41,6 @@
 
 #include "cleanup.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 static int64_t offset = 0, range = -1;
 
 /* Called for each key=value passed on the command line. */

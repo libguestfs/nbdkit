@@ -6,8 +6,6 @@ nbdkit-filter - how to write nbdkit filters
 
  #include <nbdkit-filter.h>
  
- #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
- 
  static int
  myfilter_config (nbdkit_next_config *next, void *nxdata,
                   const char *key, const char *value)
@@ -106,20 +104,6 @@ should not expect to distribute filters separately from nbdkit.
 =head1 C<#include E<lt>nbdkit-filter.hE<gt>>
 
 All filters should start by including this header file.
-
-=head1 C<#define THREAD_MODEL>
-
-All filters must define a thread model.  See
-L<nbdkit-plugin(3)/THREADS> for a discussion of thread models.
-
-The final thread model is the smallest (ie. most serialized) out of
-all the filters and the plugin.  Filters cannot alter the thread model
-to make it larger (more parallel).
-
-If possible filters should be be written to handle fully parallel
-requests (C<NBDKIT_THREAD_MODEL_PARALLEL>, even multiple requests
-issued in parallel on the same connection).  This ensures that they
-don't slow down other filters or plugins.
 
 =head1 C<struct nbdkit_filter>
 
@@ -266,6 +250,33 @@ what already appears in C<.description>.
 
 If the filter doesn't take any config parameters you should probably
 omit this.
+
+=head2 C<.thread_model>
+
+ int (*thread_model) (void);
+
+Filters may tighten (but not relax) the thread model of the plugin, by
+defining this callback.  Note that while plugins use a compile-time
+definition of C<THREAD_MODEL>, filters do not need to declare a model
+at compile time; instead, this callback is called after
+C<.config_complete> and before any connections are created.  See
+L<nbdkit-plugin(3)/THREADS> for a discussion of thread models.
+
+The final thread model used by nbdkit is the smallest (ie. most
+serialized) out of all the filters and the plugin, and applies for all
+connections.  Requests for a model larger than permitted by the plugin
+are silently ignored. It is acceptable for decisions made during
+C<.config> and C<.config_complete> to determine which model to
+request.
+
+This callback is optional; if it is not present, the filter must be
+written to handle fully parallel requests, including when multiple
+requests are issued in parallel on the same connection, similar to a
+plugin requesting C<NBDKIT_THREAD_MODEL_PARALLEL>.  This ensures the
+filter doesn't slow down other filters or plugins.
+
+If there is an error, C<.thread_model> should call C<nbdkit_error>
+with an error message and return C<-1>.
 
 =head2 C<.open>
 

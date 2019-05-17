@@ -34,8 +34,6 @@
 
 #include <nbdkit-filter.h>
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 static int
 noextents_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
                        void *handle)

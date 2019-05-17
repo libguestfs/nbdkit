@@ -47,8 +47,6 @@
 
 #include "cleanup.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 static uint64_t connections;
 static char *logfilename;
 static FILE *logfile;

@@ -246,7 +246,10 @@ xz_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
+static int xz_thread_model (void)
+{
+  return NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS;
+}
 
 static struct nbdkit_filter filter = {
   .name              = "xz",
@@ -254,6 +257,7 @@ static struct nbdkit_filter filter = {
   .version           = PACKAGE_VERSION,
   .config            = xz_config,
   .config_help       = xz_config_help,
+  .thread_model      = xz_thread_model,
   .open              = xz_open,
   .close             = xz_close,
   .prepare           = xz_prepare,

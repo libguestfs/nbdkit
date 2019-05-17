@@ -50,8 +50,6 @@
 
 #include "bucket.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 /* Per-connection and global limit, both in bits per second, with zero
  * meaning not set / not enforced.  These are only used when reading
  * the command line and initializing the buckets for the first time.

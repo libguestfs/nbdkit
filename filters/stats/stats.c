@@ -47,8 +47,6 @@
 #include "cleanup.h"
 #include "tvdiff.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 static char *filename;
 static bool append;
 static FILE *fp;

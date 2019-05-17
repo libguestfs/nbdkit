@@ -45,8 +45,6 @@
 #include "cleanup.h"
 #include "minmax.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 /* Copied from server/plugins.c. */
 #define MAX_REQUEST_SIZE (64 * 1024 * 1024)
 

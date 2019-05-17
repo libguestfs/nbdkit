@@ -43,8 +43,6 @@
 
 #include "minmax.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 #define MAX_WRITE (64 * 1024 * 1024)
 
 static const char buffer[MAX_WRITE];

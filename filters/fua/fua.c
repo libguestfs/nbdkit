@@ -41,8 +41,6 @@
 
 #include <nbdkit-filter.h>
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 static enum FuaMode {
   NONE,
   EMULATE,

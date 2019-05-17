@@ -48,8 +48,6 @@
 #include "cleanup.h"
 #include "random.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 struct error_settings {
   int error;                   /* errno, eg. EIO */
   double rate;                 /* rate, 0.0 = never, 1.0 = always */

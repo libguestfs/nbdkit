@@ -47,8 +47,6 @@
 #include "iszero.h"
 #include "rounding.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 /* These are the parameters. */
 static int64_t truncate_size = -1;
 static unsigned round_up = 0, round_down = 0;

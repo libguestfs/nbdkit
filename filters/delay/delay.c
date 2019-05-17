@@ -40,8 +40,6 @@
 
 #include <nbdkit-filter.h>
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 static int delay_read_ms = 0;   /* read delay (milliseconds) */
 static int delay_write_ms = 0;  /* write delay (milliseconds) */
 static int delay_zero_ms = 0;   /* zero delay (milliseconds) */

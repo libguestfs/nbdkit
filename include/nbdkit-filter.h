@@ -93,13 +93,12 @@ struct nbdkit_next_ops {
 };
 
 struct nbdkit_filter {
-  /* Do not set these fields directly; use NBDKIT_REGISTER_FILTER.
-   * They exist so that we can diagnose filters compiled against
+  /* Do not set this field directly; use NBDKIT_REGISTER_FILTER.
+   * It exists so that we can diagnose filters compiled against
    * one version of the header with a runtime compiled against a
    * different version.
    */
   int _api_version;
-  int _thread_model;
 
   /* Because there is no ABI guarantee, new fields may be added
    * where logically appropriate.  */
@@ -115,6 +114,7 @@ struct nbdkit_filter {
                  const char *key, const char *value);
   int (*config_complete) (nbdkit_next_config_complete *next, void *nxdata);
   const char *config_help;
+  int (*thread_model) (void);
 
   void * (*open) (nbdkit_next_open *next, void *nxdata,
                   int readonly);
@@ -177,7 +177,6 @@ struct nbdkit_filter {
   filter_init (void)                                                    \
   {                                                                     \
     (filter)._api_version = NBDKIT_FILTER_API_VERSION;                  \
-    (filter)._thread_model = THREAD_MODEL;                              \
     return &(filter);                                                   \
   }
 

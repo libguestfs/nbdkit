@@ -45,8 +45,6 @@
 
 #include "partition.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 int partnum = -1;
 
 /* Called for each key=value passed on the command line. */

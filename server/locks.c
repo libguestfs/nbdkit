@@ -72,6 +72,7 @@ unlock_connection (void)
 void
 lock_request (struct connection *conn)
 {
+  assert (thread_model >= 0);
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS &&
       pthread_mutex_lock (&all_requests_lock))
     abort ();
