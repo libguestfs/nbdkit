@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -568,9 +568,6 @@ main (int argc, char *argv[])
     debug_flags = next;
   }
 
-  /* Select a thread model. */
-  lock_init_thread_model ();
-
   if (help) {
     struct backend *b;
 
@@ -642,6 +639,9 @@ main (int argc, char *argv[])
   }
 
   backend->config_complete (backend);
+
+  /* Select the correct thread model based on config. */
+  lock_init_thread_model ();
 
   start_serving ();
 
