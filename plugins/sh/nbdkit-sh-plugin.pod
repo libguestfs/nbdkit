@@ -180,6 +180,21 @@ ignored.
 
  /path/to/script config_complete
 
+=item C<thread_model>
+
+ /path/to/script thread_model
+
+On success this should print the desired thread model of the script,
+one of C<"serialize_connections">, C<"serialize_all_requests">,
+C<"serialize_requests">, or C<"parallel">.
+
+This method is I<not> required; if omitted, then the plugin will be
+executed under the default sh thread model (currently
+C<"serialize_all_requests">, which implies this callback only makes a
+difference with an output of C<"serialize_connections">).  If an error
+occurs, the script should output an error message and exit with status
+C<1>; unrecognized output is ignored.
+
 =item C<open>
 
  /path/to/script open <readonly>

@@ -257,6 +257,54 @@ sh_config_complete (void)
   }
 }
 
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+
+static int
+sh_thread_model (void)
+{
+  const char *args[] = { script, "thread_model", NULL };
+  CLEANUP_FREE char *s = NULL;
+  size_t slen;
+  int r;
+
+  switch (call_read (&s, &slen, args)) {
+  case OK:
+    if (slen > 0 && s[slen-1] == '\n')
+      s[slen-1] = '\0';
+    if (strcasecmp (s, "parallel") == 0)
+      r = NBDKIT_THREAD_MODEL_PARALLEL;
+    else if (strcasecmp (s, "serialize_requests") == 0 ||
+             strcasecmp (s, "serialize-requests") == 0)
+      r = NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS;
+    else if (strcasecmp (s, "serialize_all_requests") == 0 ||
+             strcasecmp (s, "serialize-all-requests") == 0)
+      r = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
+    else if (strcasecmp (s, "serialize_connections") == 0 ||
+             strcasecmp (s, "serialize-connections") == 0)
+      r = NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS;
+    else {
+      nbdkit_debug ("%s: ignoring unrecognized thread model: %s",
+                    script, s);
+      r = THREAD_MODEL;
+    }
+    return r;
+
+  case MISSING:
+    return THREAD_MODEL;
+
+  case ERROR:
+    return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, "thread_model");
+    errno = EIO;
+    return -1;
+
+  default: abort ();
+  }
+}
+
 static void *
 sh_open (int readonly)
 {
@@ -865,8 +913,6 @@ sh_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   "script=<FILENAME>     (required) The shell script to run.\n" \
   "[other arguments may be used by the plugin that you load]"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
-
 static struct nbdkit_plugin plugin = {
   .name              = "sh",
   .version           = PACKAGE_VERSION,
@@ -878,6 +924,7 @@ static struct nbdkit_plugin plugin = {
   .config            = sh_config,
   .config_complete   = sh_config_complete,
   .config_help       = sh_config_help,
+  .thread_model      = sh_thread_model,
 
   .open              = sh_open,
   .close             = sh_close,
