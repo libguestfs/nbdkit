@@ -133,6 +133,12 @@ has been passed to the plugin.
 Both are called after loading the plugin but before any connections
 are accepted.
 
+=item C<.thread_model>
+
+C<.thread_model> is called once after all configuration information
+has been passed to the plugin, and before any connections are
+accepted.
+
 =item C<.open>
 
 A new client has connected.
@@ -465,6 +471,19 @@ what already appears in C<.description>.
 
 If the plugin doesn't take any config parameters you should probably
 omit this.
+
+=head2 C<.thread_model>
+
+ int thread_model (void)
+
+This optional callback is called after all the configuration has been
+passed to the plugin.  It can be used to force a stricter thread model
+based on configuration, compared to C<THREAD_MODEL>.  See L</THREADS>
+below for details.  Attempts to request a looser (more parallel) model
+are silently ignored.
+
+If there is an error, C<.thread_model> should call C<nbdkit_error>
+with an error message and return C<-1>.
 
 =head2 C<.open>
 
@@ -898,9 +917,14 @@ error message, and C<nbdkit_set_error> to record an appropriate error
 
 =head1 THREADS
 
-Each nbdkit plugin must declare its thread safety model by defining
-the C<THREAD_MODEL> macro.  (This macro is used by
-C<NBDKIT_REGISTER_PLUGIN>).
+Each nbdkit plugin must declare its maximum thread safety model by
+defining the C<THREAD_MODEL> macro.  (This macro is used by
+C<NBDKIT_REGISTER_PLUGIN>).  Additionally, a plugin may implement the
+C<.thread_model> callback, called right after C<.config_complete> to
+make a runtime decision on which thread model to use.  The nbdkit
+server chooses the most restrictive model between the plugin's
+C<THREAD_MODEL>, the C<.thread_model> if present, and any restrictions
+requested by filters.
 
 The possible settings for C<THREAD_MODEL> are defined below.
 
@@ -935,7 +959,8 @@ parallel.  However only one request will happen per handle at a time
 =item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL>
 
 Multiple handles can be open and multiple data requests can happen in
-parallel (even on the same handle).
+parallel (even on the same handle).  The server may reorder replies,
+answering a later request before an earlier one.
 
 All the libraries you use must be thread-safe and reentrant.  You may
 also need to provide mutexes for fields in your connection handle.

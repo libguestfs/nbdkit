@@ -87,8 +87,18 @@ static int
 plugin_thread_model (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  int thread_model = p->plugin._thread_model;
+  int r;
 
-  return p->plugin._thread_model;
+  if (p->plugin.thread_model) {
+    r = p->plugin.thread_model ();
+    if (r == -1)
+      exit (EXIT_FAILURE);
+    if (r < thread_model)
+      thread_model = r;
+  }
+
+  return thread_model;
 }
 
 static const char *
