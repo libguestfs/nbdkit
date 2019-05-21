@@ -475,6 +475,7 @@ extents_to_block_descriptors (struct nbdkit_extents *extents,
   else {
     uint64_t pos = offset;
 
+    *nr_blocks = 0;
     for (i = 0; i < nr_extents; ++i) {
       const struct nbdkit_extent e = nbdkit_get_extent (extents, i);
       uint64_t length;
@@ -483,8 +484,9 @@ extents_to_block_descriptors (struct nbdkit_extents *extents,
         assert (e.offset == offset);
 
       /* Must not exceed UINT32_MAX. */
-      length = MIN (e.length, UINT32_MAX);
+      blocks[i].length = length = MIN (e.length, UINT32_MAX);
       blocks[i].status_flags = e.type & 3;
+      (*nr_blocks)++;
 
       pos += length;
       if (pos > offset + count) /* this must be the last block */
@@ -498,8 +500,6 @@ extents_to_block_descriptors (struct nbdkit_extents *extents,
        */
       assert (e.length <= length);
     }
-
-    *nr_blocks = i;
   }
 
 #if 0
