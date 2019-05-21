@@ -576,7 +576,7 @@ C<.extents> callback has been defined.
 This is called during the option negotiation phase to find out if the
 plugin supports the Forced Unit Access (FUA) flag on write, zero, and
 trim requests.  If this returns C<NBDKIT_FUA_NONE>, FUA support is not
-advertised to the guest; if this returns C<NBDKIT_FUA_EMULATE>, the
+advertised to the client; if this returns C<NBDKIT_FUA_EMULATE>, the
 C<.flush> callback must work (even if C<.can_flush> returns false),
 and FUA support is emulated by calling C<.flush> after any write
 operation; if this returns C<NBDKIT_FUA_NATIVE>, then the C<.pwrite>,
