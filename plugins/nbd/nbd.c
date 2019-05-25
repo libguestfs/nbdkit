@@ -108,14 +108,14 @@ static unsigned long retry;
 static bool shared;
 static struct handle *shared_handle;
 
-static struct handle *nbd_open_handle (int readonly);
-static void nbd_close_handle (struct handle *h);
+static struct handle *nbdplug_open_handle (int readonly);
+static void nbdplug_close_handle (struct handle *h);
 
 static void
-nbd_unload (void)
+nbdplug_unload (void)
 {
   if (shared)
-    nbd_close_handle (shared_handle);
+    nbdplug_close_handle (shared_handle);
   free (sockname);
   free (servname);
 }
@@ -126,7 +126,7 @@ nbd_unload (void)
  * export=<name>, retry=<n> and shared=<bool>.
  */
 static int
-nbd_config (const char *key, const char *value)
+nbdplug_config (const char *key, const char *value)
 {
   char *end;
   int r;
@@ -168,7 +168,7 @@ nbd_config (const char *key, const char *value)
 
 /* Check the user passed exactly one socket description. */
 static int
-nbd_config_complete (void)
+nbdplug_config_complete (void)
 {
   int r;
 
@@ -205,12 +205,12 @@ nbd_config_complete (void)
   if (!export)
     export = "";
 
-  if (shared && (shared_handle = nbd_open_handle (false)) == NULL)
+  if (shared && (shared_handle = nbdplug_open_handle (false)) == NULL)
     return -1;
   return 0;
 }
 
-#define nbd_config_help \
+#define nbdplug_config_help \
   "socket=<SOCKNAME>      The Unix socket to connect to.\n" \
   "hostname=<HOST>        The hostname for the TCP socket to connect to.\n" \
   "port=<PORT>            TCP port or service name to use (default 10809).\n" \
@@ -268,7 +268,7 @@ write_full (int fd, const void *buf, size_t len)
  * resynchronizing with the server, and all further requests from the
  * client will fail.  Returns -1 for convenience. */
 static int
-nbd_mark_dead (struct handle *h)
+nbdplug_mark_dead (struct handle *h)
 {
   int err = errno;
 
@@ -311,9 +311,9 @@ find_trans_by_cookie (struct handle *h, uint64_t cookie, bool remove)
 
 /* Send a request, return 0 on success or -1 on write failure. */
 static int
-nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
-                 uint64_t offset, uint32_t count, uint64_t cookie,
-                 const void *buf)
+nbdplug_request_raw (struct handle *h, uint16_t flags, uint16_t type,
+                     uint64_t offset, uint32_t count, uint64_t cookie,
+                     const void *buf)
 {
   struct request req = {
     .magic = htobe32 (NBD_REQUEST_MAGIC),
@@ -338,9 +338,9 @@ nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
 /* Perform the request half of a transaction. On success, return the
    transaction; on error return NULL. */
 static struct transaction *
-nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
-                  uint64_t offset, uint32_t count, const void *req_buf,
-                  void *rep_buf, struct nbdkit_extents *extents)
+nbdplug_request_full (struct handle *h, uint16_t flags, uint16_t type,
+                      uint64_t offset, uint32_t count, const void *req_buf,
+                      void *rep_buf, struct nbdkit_extents *extents)
 {
   int err;
   struct transaction *trans;
@@ -370,7 +370,7 @@ nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
     trans->next = h->trans;
     h->trans = trans;
   }
-  if (nbd_request_raw (h, flags, type, offset, count, cookie, req_buf) == 0)
+  if (nbdplug_request_raw (h, flags, type, offset, count, cookie, req_buf) == 0)
     return trans;
   trans = find_trans_by_cookie (h, cookie, true);
 
@@ -379,17 +379,17 @@ nbd_request_full (struct handle *h, uint16_t flags, uint16_t type,
   if (sem_destroy (&trans->sem))
     abort ();
   free (trans);
-  nbd_mark_dead (h);
+  nbdplug_mark_dead (h);
   errno = err;
   return NULL;
 }
 
-/* Shorthand for nbd_request_full when no extra buffers are involved. */
+/* Shorthand for nbdplug_request_full when no extra buffers are involved. */
 static struct transaction *
-nbd_request (struct handle *h, uint16_t flags, uint16_t type, uint64_t offset,
-             uint32_t count)
+nbdplug_request (struct handle *h, uint16_t flags, uint16_t type,
+                 uint64_t offset, uint32_t count)
 {
-  return nbd_request_full (h, flags, type, offset, count, NULL, NULL, NULL);
+  return nbdplug_request_full (h, flags, type, offset, count, NULL, NULL, NULL);
 }
 
 /* Read a reply, and look up the corresponding transaction.
@@ -398,7 +398,7 @@ nbd_request (struct handle *h, uint16_t flags, uint16_t type, uint64_t offset,
    were negotiated, trans_out is set to NULL if there are still more replies
    expected. */
 static int
-nbd_reply_raw (struct handle *h, struct transaction **trans_out)
+nbdplug_reply_raw (struct handle *h, struct transaction **trans_out)
 {
   union {
     struct simple_reply simple;
@@ -421,7 +421,7 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
   *trans_out = NULL;
   /* magic and handle overlap between simple and structured replies */
   if (read_full (h->fd, &rep, sizeof rep.simple))
-    return nbd_mark_dead (h);
+    return nbdplug_mark_dead (h);
   rep.simple.magic = be32toh (rep.simple.magic);
   switch (rep.simple.magic) {
   case NBD_SIMPLE_REPLY_MAGIC:
@@ -433,11 +433,11 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
   case NBD_STRUCTURED_REPLY_MAGIC:
     if (!h->structured) {
       nbdkit_error ("structured response without negotiation");
-      return nbd_mark_dead (h);
+      return nbdplug_mark_dead (h);
     }
     if (read_full (h->fd, sizeof rep.simple + (char *) &rep,
                    sizeof rep - sizeof rep.simple))
-      return nbd_mark_dead (h);
+      return nbdplug_mark_dead (h);
     rep.structured.flags = be16toh (rep.structured.flags);
     rep.structured.type = be16toh (rep.structured.type);
     rep.structured.length = be32toh (rep.structured.length);
@@ -448,7 +448,7 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
     if (rep.structured.length > 64 * 1024 * 1024) {
       nbdkit_error ("structured reply length is suspiciously large: %" PRId32,
                     rep.structured.length);
-      return nbd_mark_dead (h);
+      return nbdplug_mark_dead (h);
     }
     if (rep.structured.length) {
       /* Special case for OFFSET_DATA in order to read tail of chunk
@@ -459,10 +459,10 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
       payload = malloc (len);
       if (!payload) {
         nbdkit_error ("reading structured reply payload: %m");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       if (read_full (h->fd, payload, len))
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       len = 0;
     }
     more = !(rep.structured.flags & NBD_REPLY_FLAG_DONE);
@@ -470,17 +470,17 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
     case NBD_REPLY_TYPE_NONE:
       if (rep.structured.length) {
         nbdkit_error ("NBD_REPLY_TYPE_NONE with invalid payload");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       if (more) {
         nbdkit_error ("NBD_REPLY_TYPE_NONE without done flag");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       break;
     case NBD_REPLY_TYPE_OFFSET_DATA:
       if (rep.structured.length <= sizeof offset) {
         nbdkit_error ("structured reply OFFSET_DATA too small");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       memcpy (&offset, payload, sizeof offset);
       offset = be64toh (offset);
@@ -489,7 +489,7 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
     case NBD_REPLY_TYPE_OFFSET_HOLE:
       if (rep.structured.length != sizeof offset + sizeof len) {
         nbdkit_error ("structured reply OFFSET_HOLE size incorrect");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       memcpy (&offset, payload, sizeof offset);
       offset = be64toh (offset);
@@ -497,19 +497,19 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
       len = be32toh (len);
       if (!len) {
         nbdkit_error ("structured reply OFFSET_HOLE length incorrect");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       zero = true;
       break;
     case NBD_REPLY_TYPE_BLOCK_STATUS:
       if (!h->extents) {
         nbdkit_error ("block status response without negotiation");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       if (rep.structured.length < sizeof *extents ||
           rep.structured.length % sizeof *extents != sizeof id) {
         nbdkit_error ("structured reply OFFSET_HOLE size incorrect");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       nextents = rep.structured.length / sizeof *extents;
       extents = (struct block_descriptor *) &payload[sizeof id];
@@ -522,18 +522,18 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
       if (!NBD_REPLY_TYPE_IS_ERR (rep.structured.type)) {
         nbdkit_error ("received unexpected structured reply %s",
                       name_of_nbd_reply_type (rep.structured.type));
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
 
       if (rep.structured.length < sizeof error + sizeof errlen) {
         nbdkit_error ("structured reply error size incorrect");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       memcpy (&errlen, payload + sizeof error, sizeof errlen);
       errlen = be16toh (errlen);
       if (errlen > rep.structured.length - sizeof error - sizeof errlen) {
         nbdkit_error ("structured reply error message size incorrect");
-        return nbd_mark_dead (h);
+        return nbdplug_mark_dead (h);
       }
       memcpy (&error, payload, sizeof error);
       error = be32toh (error);
@@ -550,13 +550,13 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
   default:
     nbdkit_error ("received unexpected magic in reply: %#" PRIx32,
                   rep.simple.magic);
-    return nbd_mark_dead (h);
+    return nbdplug_mark_dead (h);
   }
 
   trans = find_trans_by_cookie (h, rep.simple.handle, !more);
   if (!trans) {
     nbdkit_error ("reply with unexpected cookie %#" PRIx64, rep.simple.handle);
-    return nbd_mark_dead (h);
+    return nbdplug_mark_dead (h);
   }
 
   buf = trans->buf;
@@ -564,7 +564,7 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
   if (nextents) {
     if (!trans->extents) {
       nbdkit_error ("block status response to a non-status command");
-      return nbd_mark_dead (h);
+      return nbdplug_mark_dead (h);
     }
     offset = trans->offset;
     for (size_t i = 0; i < nextents; i++) {
@@ -580,17 +580,17 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
   }
   if (buf && h->structured && rep.simple.magic == NBD_SIMPLE_REPLY_MAGIC) {
     nbdkit_error ("simple read reply when structured was expected");
-    return nbd_mark_dead (h);
+    return nbdplug_mark_dead (h);
   }
   if (len) {
     if (!buf) {
       nbdkit_error ("structured read response to a non-read command");
-      return nbd_mark_dead (h);
+      return nbdplug_mark_dead (h);
     }
     if (offset < trans->offset || offset > INT64_MAX ||
         offset + len > trans->offset + count) {
       nbdkit_error ("structured read reply with unexpected offset/length");
-      return nbd_mark_dead (h);
+      return nbdplug_mark_dead (h);
     }
     buf = (char *) buf + offset - trans->offset;
     if (zero) {
@@ -615,7 +615,7 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
   switch (error) {
   case NBD_SUCCESS:
     if (buf && read_full (h->fd, buf, count))
-      return nbd_mark_dead (h);
+      return nbdplug_mark_dead (h);
     return 0;
   case NBD_EPERM:
     return EPERM;
@@ -639,7 +639,7 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
 
 /* Reader loop. */
 void *
-nbd_reader (void *handle)
+nbdplug_reader (void *handle)
 {
   struct handle *h = handle;
   bool done = false;
@@ -648,7 +648,7 @@ nbd_reader (void *handle)
   while (!done) {
     struct transaction *trans;
 
-    r = nbd_reply_raw (h, &trans);
+    r = nbdplug_reply_raw (h, &trans);
     if (r >= 0) {
       if (!trans)
         nbdkit_debug ("partial reply handled, waiting for final reply");
@@ -687,7 +687,7 @@ nbd_reader (void *handle)
 
 /* Perform the reply half of a transaction. */
 static int
-nbd_reply (struct handle *h, struct transaction *trans)
+nbdplug_reply (struct handle *h, struct transaction *trans)
 {
   int err;
 
@@ -716,9 +716,9 @@ nbd_reply (struct handle *h, struct transaction *trans)
    0 on success, or -1 if communication to server is no longer
    possible. */
 static int
-nbd_newstyle_recv_option_reply (struct handle *h, uint32_t option,
-                                struct fixed_new_option_reply *reply,
-                                void **payload)
+nbdplug_newstyle_recv_option_reply (struct handle *h, uint32_t option,
+                                    struct fixed_new_option_reply *reply,
+                                    void **payload)
 {
   CLEANUP_FREE char *buffer = NULL;
 
@@ -774,7 +774,7 @@ nbd_newstyle_recv_option_reply (struct handle *h, uint32_t option,
    Return 1 if haggling completed, 0 if haggling failed but
    NBD_OPT_EXPORT_NAME is still viable, or -1 on inability to connect. */
 static int
-nbd_newstyle_haggle (struct handle *h)
+nbdplug_newstyle_haggle (struct handle *h)
 {
   const char *const query = "base:allocation";
   struct new_option opt;
@@ -796,8 +796,8 @@ nbd_newstyle_haggle (struct handle *h)
     nbdkit_error ("unable to request NBD_OPT_STRUCTURED_REPLY: %m");
     return -1;
   }
-  if (nbd_newstyle_recv_option_reply (h, NBD_OPT_STRUCTURED_REPLY, &reply,
-                                      NULL) < 0)
+  if (nbdplug_newstyle_recv_option_reply (h, NBD_OPT_STRUCTURED_REPLY, &reply,
+                                          NULL) < 0)
     return -1;
   if (reply.reply == NBD_REP_ACK) {
     nbdkit_debug ("structured replies enabled, trying NBD_OPT_SET_META_CONTEXT");
@@ -816,8 +816,8 @@ nbd_newstyle_haggle (struct handle *h)
       nbdkit_error ("unable to request NBD_OPT_SET_META_CONTEXT: %m");
       return -1;
     }
-    if (nbd_newstyle_recv_option_reply (h, NBD_OPT_SET_META_CONTEXT, &reply,
-                                        NULL) < 0)
+    if (nbdplug_newstyle_recv_option_reply (h, NBD_OPT_SET_META_CONTEXT, &reply,
+                                            NULL) < 0)
       return -1;
     if (reply.reply == NBD_REP_META_CONTEXT) {
       /* Cheat: we asked for exactly one context. We could double
@@ -829,8 +829,8 @@ nbd_newstyle_haggle (struct handle *h)
          the same id, without bothering to check further. */
       nbdkit_debug ("extents enabled");
       h->extents = true;
-      if (nbd_newstyle_recv_option_reply (h, NBD_OPT_SET_META_CONTEXT, &reply,
-                                          NULL) < 0)
+      if (nbdplug_newstyle_recv_option_reply (h, NBD_OPT_SET_META_CONTEXT,
+                                              &reply, NULL) < 0)
         return -1;
     }
     if (reply.reply != NBD_REP_ACK) {
@@ -864,7 +864,7 @@ nbd_newstyle_haggle (struct handle *h)
     struct fixed_new_option_reply_info_export *reply_export;
     uint16_t info;
 
-    if (nbd_newstyle_recv_option_reply (h, NBD_OPT_GO, &reply, &buffer) < 0)
+    if (nbdplug_newstyle_recv_option_reply (h, NBD_OPT_GO, &reply, &buffer) < 0)
       return -1;
     switch (reply.reply) {
     case NBD_REP_INFO:
@@ -923,7 +923,7 @@ nbd_newstyle_haggle (struct handle *h)
 
 /* Connect to a Unix socket, returning the fd on success */
 static int
-nbd_connect_unix (void)
+nbdplug_connect_unix (void)
 {
   struct sockaddr_un sock = { .sun_family = AF_UNIX };
   int fd;
@@ -935,7 +935,7 @@ nbd_connect_unix (void)
     return -1;
   }
 
-  /* We already validated length during nbd_config_complete */
+  /* We already validated length during nbdplug_config_complete */
   assert (strlen (sockname) <= sizeof sock.sun_path);
   memcpy (sock.sun_path, sockname, strlen (sockname));
   if (connect (fd, (const struct sockaddr *) &sock, sizeof sock) < 0) {
@@ -947,7 +947,7 @@ nbd_connect_unix (void)
 
 /* Connect to a TCP socket, returning the fd on success */
 static int
-nbd_connect_tcp (void)
+nbdplug_connect_tcp (void)
 {
   struct addrinfo hints = { .ai_family = AF_UNSPEC,
                             .ai_socktype = SOCK_STREAM, };
@@ -991,7 +991,7 @@ nbd_connect_tcp (void)
 
 /* Create the shared or per-connection handle. */
 static struct handle *
-nbd_open_handle (int readonly)
+nbdplug_open_handle (int readonly)
 {
   struct handle *h;
   struct old_handshake old;
@@ -1005,9 +1005,9 @@ nbd_open_handle (int readonly)
 
  retry:
   if (sockname)
-    h->fd = nbd_connect_unix ();
+    h->fd = nbdplug_connect_unix ();
   else
-    h->fd = nbd_connect_tcp ();
+    h->fd = nbdplug_connect_tcp ();
   if (h->fd == -1) {
     if (retry--) {
       sleep (1);
@@ -1058,7 +1058,7 @@ nbd_open_handle (int readonly)
 
     /* Prefer NBD_OPT_GO if possible */
     if (gflags & NBD_FLAG_FIXED_NEWSTYLE) {
-      int rc = nbd_newstyle_haggle (h);
+      int rc = nbdplug_newstyle_haggle (h);
       if (rc < 0)
         goto err;
       if (!rc)
@@ -1104,7 +1104,7 @@ nbd_open_handle (int readonly)
     pthread_mutex_destroy (&h->write_lock);
     goto err;
   }
-  if ((errno = pthread_create (&h->reader, NULL, nbd_reader, h))) {
+  if ((errno = pthread_create (&h->reader, NULL, nbdplug_reader, h))) {
     nbdkit_error ("failed to initialize reader thread: %m");
     pthread_mutex_destroy (&h->write_lock);
     pthread_mutex_destroy (&h->trans_lock);
@@ -1122,19 +1122,19 @@ nbd_open_handle (int readonly)
 
 /* Create the per-connection handle. */
 static void *
-nbd_open (int readonly)
+nbdplug_open (int readonly)
 {
   if (shared)
     return shared_handle;
-  return nbd_open_handle (readonly);
+  return nbdplug_open_handle (readonly);
 }
 
 /* Free up the shared or per-connection handle. */
 static void
-nbd_close_handle (struct handle *h)
+nbdplug_close_handle (struct handle *h)
 {
   if (!h->dead) {
-    nbd_request_raw (h, 0, NBD_CMD_DISC, 0, 0, 0, NULL);
+    nbdplug_request_raw (h, 0, NBD_CMD_DISC, 0, 0, 0, NULL);
     shutdown (h->fd, SHUT_WR);
   }
   if ((errno = pthread_join (h->reader, NULL)))
@@ -1147,17 +1147,17 @@ nbd_close_handle (struct handle *h)
 
 /* Free up the per-connection handle. */
 static void
-nbd_close (void *handle)
+nbdplug_close (void *handle)
 {
   struct handle *h = handle;
 
   if (!shared)
-    nbd_close_handle (h);
+    nbdplug_close_handle (h);
 }
 
 /* Get the file size. */
 static int64_t
-nbd_get_size (void *handle)
+nbdplug_get_size (void *handle)
 {
   struct handle *h = handle;
 
@@ -1165,7 +1165,7 @@ nbd_get_size (void *handle)
 }
 
 static int
-nbd_can_write (void *handle)
+nbdplug_can_write (void *handle)
 {
   struct handle *h = handle;
 
@@ -1173,7 +1173,7 @@ nbd_can_write (void *handle)
 }
 
 static int
-nbd_can_flush (void *handle)
+nbdplug_can_flush (void *handle)
 {
   struct handle *h = handle;
 
@@ -1181,7 +1181,7 @@ nbd_can_flush (void *handle)
 }
 
 static int
-nbd_is_rotational (void *handle)
+nbdplug_is_rotational (void *handle)
 {
   struct handle *h = handle;
 
@@ -1189,7 +1189,7 @@ nbd_is_rotational (void *handle)
 }
 
 static int
-nbd_can_trim (void *handle)
+nbdplug_can_trim (void *handle)
 {
   struct handle *h = handle;
 
@@ -1197,7 +1197,7 @@ nbd_can_trim (void *handle)
 }
 
 static int
-nbd_can_zero (void *handle)
+nbdplug_can_zero (void *handle)
 {
   struct handle *h = handle;
 
@@ -1205,7 +1205,7 @@ nbd_can_zero (void *handle)
 }
 
 static int
-nbd_can_fua (void *handle)
+nbdplug_can_fua (void *handle)
 {
   struct handle *h = handle;
 
@@ -1213,7 +1213,7 @@ nbd_can_fua (void *handle)
 }
 
 static int
-nbd_can_multi_conn (void *handle)
+nbdplug_can_multi_conn (void *handle)
 {
   struct handle *h = handle;
 
@@ -1221,7 +1221,7 @@ nbd_can_multi_conn (void *handle)
 }
 
 static int
-nbd_can_cache (void *handle)
+nbdplug_can_cache (void *handle)
 {
   struct handle *h = handle;
 
@@ -1231,7 +1231,7 @@ nbd_can_cache (void *handle)
 }
 
 static int
-nbd_can_extents (void *handle)
+nbdplug_can_extents (void *handle)
 {
   struct handle *h = handle;
 
@@ -1240,38 +1240,38 @@ nbd_can_extents (void *handle)
 
 /* Read data from the file. */
 static int
-nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
-           uint32_t flags)
+nbdplug_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+               uint32_t flags)
 {
   struct handle *h = handle;
   struct transaction *s;
 
   assert (!flags);
-  s = nbd_request_full (h, 0, NBD_CMD_READ, offset, count, NULL, buf, NULL);
-  return nbd_reply (h, s);
+  s = nbdplug_request_full (h, 0, NBD_CMD_READ, offset, count, NULL, buf, NULL);
+  return nbdplug_reply (h, s);
 }
 
 /* Write data to the file. */
 static int
-nbd_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
-            uint32_t flags)
+nbdplug_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags)
 {
   struct handle *h = handle;
   struct transaction *s;
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
-  s = nbd_request_full (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
-                        NBD_CMD_WRITE, offset, count, buf, NULL, NULL);
-  return nbd_reply (h, s);
+  s = nbdplug_request_full (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
+                            NBD_CMD_WRITE, offset, count, buf, NULL, NULL);
+  return nbdplug_reply (h, s);
 }
 
 /* Write zeroes to the file. */
 static int
-nbd_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
+nbdplug_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
   struct transaction *s;
-  int f = 0;
+  uint32_t f = 0;
 
   assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)));
   assert (h->flags & NBD_FLAG_SEND_WRITE_ZEROES);
@@ -1280,89 +1280,89 @@ nbd_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
     f |= NBD_CMD_FLAG_NO_HOLE;
   if (flags & NBDKIT_FLAG_FUA)
     f |= NBD_CMD_FLAG_FUA;
-  s = nbd_request (h, f, NBD_CMD_WRITE_ZEROES, offset, count);
-  return nbd_reply (h, s);
+  s = nbdplug_request (h, f, NBD_CMD_WRITE_ZEROES, offset, count);
+  return nbdplug_reply (h, s);
 }
 
 /* Trim a portion of the file. */
 static int
-nbd_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
+nbdplug_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
   struct transaction *s;
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
-  s = nbd_request (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
-                   NBD_CMD_TRIM, offset, count);
-  return nbd_reply (h, s);
+  s = nbdplug_request (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
+                       NBD_CMD_TRIM, offset, count);
+  return nbdplug_reply (h, s);
 }
 
 /* Flush the file to disk. */
 static int
-nbd_flush (void *handle, uint32_t flags)
+nbdplug_flush (void *handle, uint32_t flags)
 {
   struct handle *h = handle;
   struct transaction *s;
 
   assert (!flags);
-  s = nbd_request (h, 0, NBD_CMD_FLUSH, 0, 0);
-  return nbd_reply (h, s);
+  s = nbdplug_request (h, 0, NBD_CMD_FLUSH, 0, 0);
+  return nbdplug_reply (h, s);
 }
 
 /* Read extents of the file. */
 static int
-nbd_extents (void *handle, uint32_t count, uint64_t offset,
-             uint32_t flags, struct nbdkit_extents *extents)
+nbdplug_extents (void *handle, uint32_t count, uint64_t offset,
+                 uint32_t flags, struct nbdkit_extents *extents)
 {
   struct handle *h = handle;
   struct transaction *s;
+  uint32_t f = flags & NBDKIT_FLAG_REQ_ONE ? NBD_CMD_FLAG_REQ_ONE : 0;
 
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE) && h->extents);
-  s = nbd_request_full (h, flags & NBDKIT_FLAG_REQ_ONE ? NBD_CMD_FLAG_REQ_ONE : 0,
-                        NBD_CMD_BLOCK_STATUS, offset, count, NULL, NULL,
-                        extents);
-  return nbd_reply (h, s);
+  s = nbdplug_request_full (h, f, NBD_CMD_BLOCK_STATUS, offset, count, NULL,
+                            NULL, extents);
+  return nbdplug_reply (h, s);
 }
 
 /* Cache a portion of the file. */
 static int
-nbd_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
+nbdplug_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
   struct transaction *s;
 
   assert (!flags);
-  s = nbd_request (h, 0, NBD_CMD_CACHE, offset, count);
-  return nbd_reply (h, s);
+  s = nbdplug_request (h, 0, NBD_CMD_CACHE, offset, count);
+  return nbdplug_reply (h, s);
 }
 
 static struct nbdkit_plugin plugin = {
   .name               = "nbd",
   .longname           = "nbdkit nbd plugin",
   .version            = PACKAGE_VERSION,
-  .unload             = nbd_unload,
-  .config             = nbd_config,
-  .config_complete    = nbd_config_complete,
-  .config_help        = nbd_config_help,
-  .open               = nbd_open,
-  .close              = nbd_close,
-  .get_size           = nbd_get_size,
-  .can_write          = nbd_can_write,
-  .can_flush          = nbd_can_flush,
-  .is_rotational      = nbd_is_rotational,
-  .can_trim           = nbd_can_trim,
-  .can_zero           = nbd_can_zero,
-  .can_fua            = nbd_can_fua,
-  .can_multi_conn     = nbd_can_multi_conn,
-  .can_extents        = nbd_can_extents,
-  .can_cache          = nbd_can_cache,
-  .pread              = nbd_pread,
-  .pwrite             = nbd_pwrite,
-  .zero               = nbd_zero,
-  .flush              = nbd_flush,
-  .trim               = nbd_trim,
-  .extents            = nbd_extents,
-  .cache              = nbd_cache,
+  .unload             = nbdplug_unload,
+  .config             = nbdplug_config,
+  .config_complete    = nbdplug_config_complete,
+  .config_help        = nbdplug_config_help,
+  .open               = nbdplug_open,
+  .close              = nbdplug_close,
+  .get_size           = nbdplug_get_size,
+  .can_write          = nbdplug_can_write,
+  .can_flush          = nbdplug_can_flush,
+  .is_rotational      = nbdplug_is_rotational,
+  .can_trim           = nbdplug_can_trim,
+  .can_zero           = nbdplug_can_zero,
+  .can_fua            = nbdplug_can_fua,
+  .can_multi_conn     = nbdplug_can_multi_conn,
+  .can_extents        = nbdplug_can_extents,
+  .can_cache          = nbdplug_can_cache,
+  .pread              = nbdplug_pread,
+  .pwrite             = nbdplug_pwrite,
+  .zero               = nbdplug_zero,
+  .flush              = nbdplug_flush,
+  .trim               = nbdplug_trim,
+  .extents            = nbdplug_extents,
+  .cache              = nbdplug_cache,
   .errno_is_preserved = 1,
 };
 

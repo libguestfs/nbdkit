@@ -725,8 +725,7 @@ AS_IF([test "$with_libnbd" != "no"],[
     ],
     [AC_MSG_WARN([libnbd >= 0.1.3 not found, nbd plugin will be crippled])])
 ])
-#test "x$LIBNBD_LIBS" != "x"
-AM_CONDITIONAL([HAVE_LIBNBD], [false])
+AM_CONDITIONAL([HAVE_LIBNBD], [test "x$LIBNBD_LIBS" != "x"])
 
 dnl Check for liblzma (only if you want to compile the xz filter).
 AC_ARG_WITH([liblzma],
