@@ -125,7 +125,7 @@ stats_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     return 0;
   }
-  else if (strcmp (value, "statsappend") == 0) {
+  else if (strcmp (key, "statsappend") == 0) {
     r = nbdkit_parse_bool (value);
     if (r == -1)
       return -1;
