@@ -59,7 +59,7 @@ Unix socket to TCP network clients that only want to consume encrypted
 data. Use I<--exit-with-parent> to clean up nbdkit at the same time
 that the old server exits.
 
- ( sock=`mktemp -u` &&
+ ( sock=`mktemp -u`
    nbdkit --exit-with-parent --tls=require nbd socket=$sock &
    exec /path/to/oldserver --socket=$sock )
 
@@ -72,7 +72,7 @@ qcow2 files (nbdkit does not have a native qcow2 plugin), performing
 the same task as the deprecated C<qemu-nbd -P 1 -f qcow2
 /path/to/image.qcow2> command:
 
- ( sock=`mktemp -u` &&
+ ( sock=`mktemp -u`
    nbdkit --exit-with-parent --filter=partition nbd socket=$sock partition=1 &
    exec qemu-nbd -k $sock -f qcow2 /path/to/image.qcow2 )
 
