@@ -880,15 +880,16 @@ nbd_newstyle_haggle (struct handle *h)
   }
 }
 
-/* Connect to a Unix socket */
+/* Connect to a Unix socket, returning the fd on success */
 static int
-nbd_connect_unix (struct handle *h)
+nbd_connect_unix (void)
 {
   struct sockaddr_un sock = { .sun_family = AF_UNIX };
+  int fd;
 
   nbdkit_debug ("connecting to Unix socket name=%s", sockname);
-  h->fd = socket (AF_UNIX, SOCK_STREAM, 0);
-  if (h->fd < 0) {
+  fd = socket (AF_UNIX, SOCK_STREAM, 0);
+  if (fd < 0) {
     nbdkit_error ("socket: %m");
     return -1;
   }
@@ -896,22 +897,23 @@ nbd_connect_unix (struct handle *h)
   /* We already validated length during nbd_config_complete */
   assert (strlen (sockname) <= sizeof sock.sun_path);
   memcpy (sock.sun_path, sockname, strlen (sockname));
-  if (connect (h->fd, (const struct sockaddr *) &sock, sizeof sock) < 0) {
+  if (connect (fd, (const struct sockaddr *) &sock, sizeof sock) < 0) {
     nbdkit_error ("connect: %m");
     return -1;
   }
-  return 0;
+  return fd;
 }
 
-/* Connect to a TCP socket */
+/* Connect to a TCP socket, returning the fd on success */
 static int
-nbd_connect_tcp (struct handle *h)
+nbd_connect_tcp (void)
 {
   struct addrinfo hints = { .ai_family = AF_UNSPEC,
                             .ai_socktype = SOCK_STREAM, };
   struct addrinfo *result, *rp;
   int r;
   const int optval = 1;
+  int fd;
 
   nbdkit_debug ("connecting to TCP socket host=%s port=%s", hostname, port);
   r = getaddrinfo (hostname, port, &hints, &result);
@@ -921,25 +923,27 @@ nbd_connect_tcp (struct handle *h)
   }
 
   for (rp = result; rp; rp = rp->ai_next) {
-    h->fd = socket (rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-    if (h->fd == -1)
+    fd = socket (rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+    if (fd == -1)
       continue;
-    if (connect (h->fd, rp->ai_addr, rp->ai_addrlen) != -1)
+    if (connect (fd, rp->ai_addr, rp->ai_addrlen) != -1)
       break;
-    close (h->fd);
+    close (fd);
   }
   freeaddrinfo (result);
   if (rp == NULL) {
     nbdkit_error ("connect: %m");
+    close (fd);
     return -1;
   }
 
-  if (setsockopt (h->fd, IPPROTO_TCP, TCP_NODELAY, &optval,
+  if (setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &optval,
                   sizeof (int)) == -1) {
     nbdkit_error ("cannot set TCP_NODELAY option: %m");
+    close (fd);
     return -1;
   }
-  return 0;
+  return fd;
 }
 
 /* Create the per-connection handle. */
@@ -955,13 +959,12 @@ nbd_open (int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
-  h->fd = -1;
 
-  if (sockname) {
-    if (nbd_connect_unix (h) == -1)
-      goto err;
-  }
-  else if (nbd_connect_tcp (h) == -1)
+  if (sockname)
+    h->fd = nbd_connect_unix ();
+  else
+    h->fd = nbd_connect_tcp ();
+  if (h->fd == -1)
     goto err;
 
   /* old and new handshake share same meaning of first 16 bytes */
