@@ -217,7 +217,7 @@ do_verify_remote_host (struct ssh_handle *h)
   rc = ssh_get_publickey_hash (srv_pubkey,
                                SSH_PUBLICKEY_HASH_SHA1,
                                &hash, &hlen);
-  ssh_key_free(srv_pubkey);
+  ssh_key_free (srv_pubkey);
   if (rc < 0) {
     nbdkit_error ("could not get server public key SHA1 hash");
     return -1;

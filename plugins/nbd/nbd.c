@@ -268,7 +268,7 @@ nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
 
   pthread_mutex_lock (&h->write_lock);
   nbdkit_debug ("sending request type %d (%s), flags %#x, offset %#" PRIx64
-                ", count %#x, cookie %#" PRIx64, type, name_of_nbd_cmd(type),
+                ", count %#x, cookie %#" PRIx64, type, name_of_nbd_cmd (type),
                 flags, offset, count, cookie);
   r = write_full (h->fd, &req, sizeof req);
   if (buf && !r)
@@ -486,7 +486,7 @@ nbd_open (int readonly)
     nbdkit_error ("unable to read magic: %m");
     goto err;
   }
-  if (strncmp(old.nbdmagic, "NBDMAGIC", sizeof old.nbdmagic)) {
+  if (strncmp (old.nbdmagic, "NBDMAGIC", sizeof old.nbdmagic)) {
     nbdkit_error ("wrong magic, %s is not an NBD server", sockname);
     goto err;
   }
@@ -513,7 +513,7 @@ nbd_open (int readonly)
       goto err;
     }
     gflags = be16toh (gflags);
-    cflags = htobe32(gflags & (NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES));
+    cflags = htobe32 (gflags & (NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES));
     if (write_full (h->fd, &cflags, sizeof cflags)) {
       nbdkit_error ("unable to return global flags: %m");
       goto err;
@@ -751,4 +751,4 @@ static struct nbdkit_plugin plugin = {
   .errno_is_preserved = 1,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)
