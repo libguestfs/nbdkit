@@ -70,6 +70,9 @@ static char *servname;
 /* Name of export on remote server, default '', ignored for oldstyle */
 static const char *export;
 
+/* Number of retries */
+static unsigned long retry;
+
 static void
 nbd_unload (void)
 {
@@ -79,11 +82,14 @@ nbd_unload (void)
 
 /* Called for each key=value passed on the command line.  This plugin
  * accepts socket=<sockname> or hostname=<hostname>/port=<port>
- * (exactly one connection required) and export=<name> (optional).
+ * (exactly one connection required), and optional parameters
+ * export=<name>, retry=<n>.
  */
 static int
 nbd_config (const char *key, const char *value)
 {
+  char *end;
+
   if (strcmp (key, "socket") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3) */
     free (sockname);
@@ -97,6 +103,14 @@ nbd_config (const char *key, const char *value)
     port = value;
   else if (strcmp (key, "export") == 0)
     export = value;
+  else if (strcmp (key, "retry") == 0) {
+    errno = 0;
+    retry = strtoul (value, &end, 0);
+    if (value == end || errno) {
+      nbdkit_error ("could not parse retry as integer (%s)", value);
+      return -1;
+    }
+  }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
@@ -960,12 +974,18 @@ nbd_open (int readonly)
     return NULL;
   }
 
+ retry:
   if (sockname)
     h->fd = nbd_connect_unix ();
   else
     h->fd = nbd_connect_tcp ();
-  if (h->fd == -1)
+  if (h->fd == -1) {
+    if (retry--) {
+      sleep (1);
+      goto retry;
+    }
     goto err;
+  }
 
   /* old and new handshake share same meaning of first 16 bytes */
   if (read_full (h->fd, &old, offsetof (struct old_handshake, exportsize))) {

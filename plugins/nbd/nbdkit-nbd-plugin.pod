@@ -5,6 +5,7 @@ nbdkit-nbd-plugin - nbdkit nbd plugin
 =head1 SYNOPSIS
 
  nbdkit nbd { socket=SOCKNAME | hostname=HOST [port=PORT] } [export=NAME]
+    [retry=N]
 
 =head1 DESCRIPTION
 
@@ -49,6 +50,11 @@ either new or old style protocol.
 If this parameter is given, and the server speaks new style protocol,
 then connect to the named export instead of the default export (the
 empty string).
+
+=item B<retry=>N
+
+If the initial connection attempt to the server fails, retry up to
+B<N> times more after a one-second delay between tries (default 0).
 
 =back
 
