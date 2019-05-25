@@ -57,6 +57,37 @@
 #include "byte-swapping.h"
 #include "cleanup.h"
 
+/* The per-transaction details */
+struct transaction {
+  uint64_t cookie;
+  sem_t sem;
+  void *buf;
+  uint64_t offset;
+  uint32_t count;
+  uint32_t err;
+  struct nbdkit_extents *extents;
+  struct transaction *next;
+};
+
+/* The per-connection handle */
+struct handle {
+  /* These fields are read-only once initialized */
+  int fd;
+  int flags;
+  int64_t size;
+  bool structured;
+  bool extents;
+  pthread_t reader;
+
+  /* Prevents concurrent threads from interleaving writes to server */
+  pthread_mutex_t write_lock;
+
+  pthread_mutex_t trans_lock; /* Covers access to all fields below */
+  struct transaction *trans;
+  uint64_t unique;
+  bool dead;
+};
+
 /* Connect to server via absolute name of Unix socket */
 static char *sockname;
 
@@ -73,9 +104,18 @@ static const char *export;
 /* Number of retries */
 static unsigned long retry;
 
+/* True to share single server connection among all clients */
+static bool shared;
+static struct handle *shared_handle;
+
+static struct handle *nbd_open_handle (int readonly);
+static void nbd_close_handle (struct handle *h);
+
 static void
 nbd_unload (void)
 {
+  if (shared)
+    nbd_close_handle (shared_handle);
   free (sockname);
   free (servname);
 }
@@ -89,6 +129,7 @@ static int
 nbd_config (const char *key, const char *value)
 {
   char *end;
+  int r;
 
   if (strcmp (key, "socket") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3) */
@@ -110,6 +151,12 @@ nbd_config (const char *key, const char *value)
       nbdkit_error ("could not parse retry as integer (%s)", value);
       return -1;
     }
+  }
+  else if (strcmp (key, "shared") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    shared = r;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -157,6 +204,9 @@ nbd_config_complete (void)
 
   if (!export)
     export = "";
+
+  if (shared && (shared_handle = nbd_open_handle (false)) == NULL)
+    return -1;
   return 0;
 }
 
@@ -167,37 +217,6 @@ nbd_config_complete (void)
   "export=<NAME>          Export name to connect to (default \"\").\n" \
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
-/* The per-transaction details */
-struct transaction {
-  uint64_t cookie;
-  sem_t sem;
-  void *buf;
-  uint64_t offset;
-  uint32_t count;
-  uint32_t err;
-  struct nbdkit_extents *extents;
-  struct transaction *next;
-};
-
-/* The per-connection handle */
-struct handle {
-  /* These fields are read-only once initialized */
-  int fd;
-  int flags;
-  int64_t size;
-  bool structured;
-  bool extents;
-  pthread_t reader;
-
-  /* Prevents concurrent threads from interleaving writes to server */
-  pthread_mutex_t write_lock;
-
-  pthread_mutex_t trans_lock; /* Covers access to all fields below */
-  struct transaction *trans;
-  uint64_t unique;
-  bool dead;
-};
 
 /* Read an entire buffer, returning 0 on success or -1 with errno set. */
 static int
@@ -960,9 +979,9 @@ nbd_connect_tcp (void)
   return fd;
 }
 
-/* Create the per-connection handle. */
-static void *
-nbd_open (int readonly)
+/* Create the shared or per-connection handle. */
+static struct handle *
+nbd_open_handle (int readonly)
 {
   struct handle *h;
   struct old_handshake old;
@@ -1091,12 +1110,19 @@ nbd_open (int readonly)
   return NULL;
 }
 
-/* Free up the per-connection handle. */
-static void
-nbd_close (void *handle)
+/* Create the per-connection handle. */
+static void *
+nbd_open (int readonly)
 {
-  struct handle *h = handle;
+  if (shared)
+    return shared_handle;
+  return nbd_open_handle (readonly);
+}
 
+/* Free up the shared or per-connection handle. */
+static void
+nbd_close_handle (struct handle *h)
+{
   if (!h->dead) {
     nbd_request_raw (h, 0, NBD_CMD_DISC, 0, 0, 0, NULL);
     shutdown (h->fd, SHUT_WR);
@@ -1107,6 +1133,16 @@ nbd_close (void *handle)
   pthread_mutex_destroy (&h->write_lock);
   pthread_mutex_destroy (&h->trans_lock);
   free (h);
+}
+
+/* Free up the per-connection handle. */
+static void
+nbd_close (void *handle)
+{
+  struct handle *h = handle;
+
+  if (!shared)
+    nbd_close_handle (h);
 }
 
 /* Get the file size. */

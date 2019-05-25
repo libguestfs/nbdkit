@@ -5,7 +5,7 @@ nbdkit-nbd-plugin - nbdkit nbd plugin
 =head1 SYNOPSIS
 
  nbdkit nbd { socket=SOCKNAME | hostname=HOST [port=PORT] } [export=NAME]
-    [retry=N]
+    [retry=N] [shared=BOOL]
 
 =head1 DESCRIPTION
 
@@ -56,6 +56,17 @@ empty string).
 If the initial connection attempt to the server fails, retry up to
 B<N> times more after a one-second delay between tries (default 0).
 
+=item B<shared=>BOOL
+
+If this parameter is false (default), the plugin will open a distinct
+connection to the server for each client making a connection to
+nbdkit, and the remote server does not have to be started until
+immediately before the first nbdkit client.  If this parameter is set
+to true, the plugin will open a single connection to the server when
+nbdkit is first started (the C<delay> parameter may be necessary to
+coordinate timing of the remote server startup), and all clients to
+nbdkit will share that single connection.
+
 =back
 
 =head1 EXAMPLES
@@ -76,10 +87,13 @@ that the old server exits.
 Combine nbdkit's partition filter with qemu-nbd's ability to visit
 qcow2 files (nbdkit does not have a native qcow2 plugin), performing
 the same task as the deprecated C<qemu-nbd -P 1 -f qcow2
-/path/to/image.qcow2> command:
+/path/to/image.qcow2> command. Allow multiple clients, even though
+C<qemu-nbd> without B<-t> normally quits after the first client, and
+utilize a 5-second retry to give qemu-nbd time to create the socket:
 
  ( sock=`mktemp -u`
-   nbdkit --exit-with-parent --filter=partition nbd socket=$sock partition=1 &
+   nbdkit --exit-with-parent --filter=partition nbd socket=$sock \
+     shared=1 retry=5 partition=1 &
    exec qemu-nbd -k $sock -f qcow2 /path/to/image.qcow2 )
 
 Conversely, expose the contents of export I<foo> from a new style
