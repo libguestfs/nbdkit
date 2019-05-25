@@ -148,11 +148,11 @@ XS(set_error)
 EXTERN_C void boot_DynaLoader (pTHX_ CV *cv);
 
 static void
-xs_init(pTHX)
+xs_init (pTHX)
 {
   char *file = __FILE__;
-  newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
-  newXS("Nbdkit::set_error", set_error, file);
+  newXS ("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
+  newXS ("Nbdkit::set_error", set_error, file);
 }
 
 static void

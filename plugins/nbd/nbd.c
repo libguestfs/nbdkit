@@ -291,7 +291,7 @@ nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->write_lock);
   nbdkit_debug ("sending request type %d (%s), flags %#x, offset %#" PRIx64
-                ", count %#x, cookie %#" PRIx64, type, name_of_nbd_cmd(type),
+                ", count %#x, cookie %#" PRIx64, type, name_of_nbd_cmd (type),
                 flags, offset, count, cookie);
   r = write_full (h->fd, &req, sizeof req);
   if (buf && !r)
@@ -396,7 +396,7 @@ nbd_reply_raw (struct handle *h, int *fd)
   case NBD_SIMPLE_REPLY_MAGIC:
     nbdkit_debug ("received simple reply for cookie %#" PRIx64 ", status %s",
                   rep.simple.handle,
-                  name_of_nbd_error(be32toh (rep.simple.error)));
+                  name_of_nbd_error (be32toh (rep.simple.error)));
     error = be32toh (rep.simple.error);
     break;
   case NBD_STRUCTURED_REPLY_MAGIC:
@@ -412,7 +412,7 @@ nbd_reply_raw (struct handle *h, int *fd)
     rep.structured.length = be32toh (rep.structured.length);
     nbdkit_debug ("received structured reply %s for cookie %#" PRIx64
                   ", payload length %" PRId32,
-                  name_of_nbd_reply_type(rep.structured.type),
+                  name_of_nbd_reply_type (rep.structured.type),
                   rep.structured.handle, rep.structured.length);
     if (rep.structured.length > 64 * 1024 * 1024) {
       nbdkit_error ("structured reply length is suspiciously large: %" PRId32,
@@ -490,7 +490,7 @@ nbd_reply_raw (struct handle *h, int *fd)
     default:
       if (!NBD_REPLY_TYPE_IS_ERR (rep.structured.type)) {
         nbdkit_error ("received unexpected structured reply %s",
-                      name_of_nbd_reply_type(rep.structured.type));
+                      name_of_nbd_reply_type (rep.structured.type));
         return nbd_mark_dead (h);
       }
 
@@ -882,7 +882,7 @@ nbd_newstyle_haggle (struct handle *h)
 
 /* Connect to a Unix socket */
 static int
-nbd_connect_unix(struct handle *h)
+nbd_connect_unix (struct handle *h)
 {
   struct sockaddr_un sock = { .sun_family = AF_UNIX };
 
@@ -905,7 +905,7 @@ nbd_connect_unix(struct handle *h)
 
 /* Connect to a TCP socket */
 static int
-nbd_connect_tcp(struct handle *h)
+nbd_connect_tcp (struct handle *h)
 {
   struct addrinfo hints = { .ai_family = AF_UNSPEC,
                             .ai_socktype = SOCK_STREAM, };
@@ -916,12 +916,12 @@ nbd_connect_tcp(struct handle *h)
   nbdkit_debug ("connecting to TCP socket host=%s port=%s", hostname, port);
   r = getaddrinfo (hostname, port, &hints, &result);
   if (r != 0) {
-    nbdkit_error ("getaddrinfo: %s", gai_strerror(r));
+    nbdkit_error ("getaddrinfo: %s", gai_strerror (r));
     return -1;
   }
 
   for (rp = result; rp; rp = rp->ai_next) {
-    h->fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+    h->fd = socket (rp->ai_family, rp->ai_socktype, rp->ai_protocol);
     if (h->fd == -1)
       continue;
     if (connect (h->fd, rp->ai_addr, rp->ai_addrlen) != -1)
@@ -935,7 +935,7 @@ nbd_connect_tcp(struct handle *h)
   }
 
   if (setsockopt (h->fd, IPPROTO_TCP, TCP_NODELAY, &optval,
-                  sizeof(int)) == -1) {
+                  sizeof (int)) == -1) {
     nbdkit_error ("cannot set TCP_NODELAY option: %m");
     return -1;
   }
@@ -969,7 +969,7 @@ nbd_open (int readonly)
     nbdkit_error ("unable to read magic: %m");
     goto err;
   }
-  if (strncmp(old.nbdmagic, "NBDMAGIC", sizeof old.nbdmagic)) {
+  if (strncmp (old.nbdmagic, "NBDMAGIC", sizeof old.nbdmagic)) {
     nbdkit_error ("wrong magic, %s is not an NBD server", servname);
     goto err;
   }
@@ -998,7 +998,7 @@ nbd_open (int readonly)
       goto err;
     }
     gflags = be16toh (gflags);
-    cflags = htobe32(gflags & (NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES));
+    cflags = htobe32 (gflags & (NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES));
     if (write_full (h->fd, &cflags, sizeof cflags)) {
       nbdkit_error ("unable to return global flags: %m");
       goto err;
@@ -1297,4 +1297,4 @@ static struct nbdkit_plugin plugin = {
   .errno_is_preserved = 1,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

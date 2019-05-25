@@ -46,11 +46,11 @@
 
 #include <pthread.h>
 
-#if defined(__linux__) && !defined(FALLOC_FL_PUNCH_HOLE)
+#if defined (__linux__) && !defined (FALLOC_FL_PUNCH_HOLE)
 #include <linux/falloc.h>   /* For FALLOC_FL_*, glibc < 2.18 */
 #endif
 
-#if defined(__linux__)
+#if defined (__linux__)
 #include <linux/fs.h>       /* For BLKZEROOUT */
 #endif
 
@@ -187,7 +187,7 @@ file_open (int readonly)
     return NULL;
   }
 
-  h->is_block_device = S_ISBLK(statbuf.st_mode);
+  h->is_block_device = S_ISBLK (statbuf.st_mode);
   h->sector_size = 4096;  /* Start with safe guess */
 
 #ifdef BLKSSZGET
@@ -371,9 +371,9 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   return 0;
 }
 
-#if defined(FALLOC_FL_PUNCH_HOLE) || defined(FALLOC_FL_ZERO_RANGE)
+#if defined (FALLOC_FL_PUNCH_HOLE) || defined (FALLOC_FL_ZERO_RANGE)
 static int
-do_fallocate(int fd, int mode, off_t offset, off_t len)
+do_fallocate (int fd, int mode, off_t offset, off_t len)
 {
   int r = fallocate (fd, mode, offset, len);
   if (r == -1 && errno == ENODEV) {
