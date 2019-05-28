@@ -43,6 +43,8 @@
 
 #include <pthread.h>
 
+#define NBDKIT_API_VERSION 2
+
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
@@ -121,6 +123,13 @@ memory_get_size (void *handle)
   return (int64_t) size;
 }
 
+/* Flush is a no-op, so advertise native FUA support */
+static int
+memory_can_fua (void *handle)
+{
+  return NBDKIT_FUA_NATIVE;
+}
+
 /* Serves the same data over multiple connections. */
 static int
 memory_can_multi_conn (void *handle)
@@ -140,8 +149,10 @@ memory_can_cache (void *handle)
 
 /* Read data. */
 static int
-memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+              uint32_t flags)
 {
+  assert (!flags);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_read (sa, buf, count, offset);
   return 0;
@@ -149,16 +160,21 @@ memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 
 /* Write data. */
 static int
-memory_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
+memory_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+               uint32_t flags)
 {
+  /* Flushing, and thus FUA flag, is a no-op */
+  assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   return sparse_array_write (sa, buf, count, offset);
 }
 
 /* Zero. */
 static int
-memory_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+memory_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
+  /* Flushing, and thus FUA flag, is a no-op */
+  assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)) == 0);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_zero (sa, count, offset);
   return 0;
@@ -166,10 +182,19 @@ memory_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
 /* Trim (same as zero). */
 static int
-memory_trim (void *handle, uint32_t count, uint64_t offset)
+memory_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
+  /* Flushing, and thus FUA flag, is a no-op */
+  assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_zero (sa, count, offset);
+  return 0;
+}
+
+/* Nothing is persistent, so flush is trivially supported */
+static int
+memory_flush (void *handle, uint32_t flags)
+{
   return 0;
 }
 
@@ -193,12 +218,14 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key  = "size",
   .open              = memory_open,
   .get_size          = memory_get_size,
+  .can_fua           = memory_can_fua,
   .can_multi_conn    = memory_can_multi_conn,
   .can_cache         = memory_can_cache,
   .pread             = memory_pread,
   .pwrite            = memory_pwrite,
   .zero              = memory_zero,
   .trim              = memory_trim,
+  .flush             = memory_flush,
   .extents           = memory_extents,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.

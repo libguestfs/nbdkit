@@ -44,6 +44,8 @@
 #include <gnutls/gnutls.h>
 #endif
 
+#define NBDKIT_API_VERSION 2
+
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
@@ -326,6 +328,13 @@ data_get_size (void *handle)
   return size;
 }
 
+/* Flush is a no-op, so advertise native FUA support */
+static int
+data_can_fua (void *handle)
+{
+  return NBDKIT_FUA_NATIVE;
+}
+
 /* Serves the same data over multiple connections. */
 static int
 data_can_multi_conn (void *handle)
@@ -345,8 +354,10 @@ data_can_cache (void *handle)
 
 /* Read data. */
 static int
-data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+data_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags)
 {
+  assert (!flags);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_read (sa, buf, count, offset);
   return 0;
@@ -354,16 +365,21 @@ data_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 
 /* Write data. */
 static int
-data_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
+data_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags)
 {
+  /* Flushing, and thus FUA flag, is a no-op */
+  assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   return sparse_array_write (sa, buf, count, offset);
 }
 
 /* Zero. */
 static int
-data_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+data_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
+  /* Flushing, and thus FUA flag, is a no-op */
+  assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)) == 0);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_zero (sa, count, offset);
   return 0;
@@ -371,10 +387,19 @@ data_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 
 /* Trim (same as zero). */
 static int
-data_trim (void *handle, uint32_t count, uint64_t offset)
+data_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
+  /* Flushing, and thus FUA flag, is a no-op */
+  assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_zero (sa, count, offset);
+  return 0;
+}
+
+/* Nothing is persistent, so flush is trivially supported */
+static int
+data_flush (void *handle, uint32_t flags)
+{
   return 0;
 }
 
@@ -399,11 +424,13 @@ static struct nbdkit_plugin plugin = {
   .open              = data_open,
   .get_size          = data_get_size,
   .can_multi_conn    = data_can_multi_conn,
+  .can_fua           = data_can_fua,
   .can_cache         = data_can_cache,
   .pread             = data_pread,
   .pwrite            = data_pwrite,
   .zero              = data_zero,
   .trim              = data_trim,
+  .flush             = data_flush,
   .extents           = data_extents,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
