@@ -688,6 +688,11 @@ nbd_reply (struct handle *h, struct transaction *trans)
 {
   int err;
 
+  if (!trans) {
+    assert (errno);
+    return -1;
+  }
+
   while ((err = sem_wait (&trans->sem)) == -1 && errno == EINTR)
     /* try again */;
   if (err) {
@@ -1238,7 +1243,7 @@ nbd_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 
   assert (!flags);
   s = nbd_request_full (h, 0, NBD_CMD_READ, offset, count, NULL, buf, NULL);
-  return s ? nbd_reply (h, s) : -1;
+  return nbd_reply (h, s);
 }
 
 /* Write data to the file. */
@@ -1252,7 +1257,7 @@ nbd_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   s = nbd_request_full (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
                         NBD_CMD_WRITE, offset, count, buf, NULL, NULL);
-  return s ? nbd_reply (h, s) : -1;
+  return nbd_reply (h, s);
 }
 
 /* Write zeroes to the file. */
@@ -1271,7 +1276,7 @@ nbd_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   if (flags & NBDKIT_FLAG_FUA)
     f |= NBD_CMD_FLAG_FUA;
   s = nbd_request (h, f, NBD_CMD_WRITE_ZEROES, offset, count);
-  return s ? nbd_reply (h, s) : -1;
+  return nbd_reply (h, s);
 }
 
 /* Trim a portion of the file. */
@@ -1284,7 +1289,7 @@ nbd_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   s = nbd_request (h, flags & NBDKIT_FLAG_FUA ? NBD_CMD_FLAG_FUA : 0,
                    NBD_CMD_TRIM, offset, count);
-  return s ? nbd_reply (h, s) : -1;
+  return nbd_reply (h, s);
 }
 
 /* Flush the file to disk. */
@@ -1296,7 +1301,7 @@ nbd_flush (void *handle, uint32_t flags)
 
   assert (!flags);
   s = nbd_request (h, 0, NBD_CMD_FLUSH, 0, 0);
-  return s ? nbd_reply (h, s) : -1;
+  return nbd_reply (h, s);
 }
 
 /* Read extents of the file. */
@@ -1311,7 +1316,7 @@ nbd_extents (void *handle, uint32_t count, uint64_t offset,
   s = nbd_request_full (h, flags & NBDKIT_FLAG_REQ_ONE ? NBD_CMD_FLAG_REQ_ONE : 0,
                         NBD_CMD_BLOCK_STATUS, offset, count, NULL, NULL,
                         extents);
-  return s ? nbd_reply (h, s) : -1;
+  return nbd_reply (h, s);
 }
 
 /* Cache a portion of the file. */
@@ -1323,7 +1328,7 @@ nbd_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 
   assert (!flags);
   s = nbd_request (h, 0, NBD_CMD_CACHE, offset, count);
-  return s ? nbd_reply (h, s) : -1;
+  return nbd_reply (h, s);
 }
 
 static struct nbdkit_plugin plugin = {
