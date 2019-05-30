@@ -37,13 +37,15 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <netdb.h>
 #include <poll.h>
 #include <errno.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
 
 #ifdef HAVE_LIBSELINUX
 #include <selinux/selinux.h>
@@ -273,6 +275,7 @@ accept_connection (int listen_sock)
   pthread_t thread;
   struct thread_data *thread_data;
   static size_t instance_num = 1;
+  const int flag = 1;
 
   thread_data = malloc (sizeof *thread_data);
   if (!thread_data) {
@@ -292,6 +295,11 @@ accept_connection (int listen_sock)
     free (thread_data);
     return;
   }
+
+  /* Disable Nagle's algorithm on this socket.  However we don't want
+   * to fail if this doesn't work.
+   */
+  setsockopt (thread_data->sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof flag);
 
   /* Start a thread to handle this connection.  Note we always do this
    * even for non-threaded plugins.  There are mutexes in plugins.c
