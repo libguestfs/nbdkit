@@ -960,6 +960,8 @@ nbd_connect_tcp (void)
     return -1;
   }
 
+  assert (result != NULL);
+
   for (rp = result; rp; rp = rp->ai_next) {
     fd = socket (rp->ai_family, rp->ai_socktype, rp->ai_protocol);
     if (fd == -1)
