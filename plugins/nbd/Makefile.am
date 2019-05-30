@@ -41,7 +41,6 @@ nbdkit_nbd_plugin_la_SOURCES = \
 nbdkit_nbd_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/protocol \
 	-I$(top_srcdir)/common/utils \
 	-I$(top_srcdir)/server
 nbdkit_nbd_plugin_la_CFLAGS = \
@@ -50,7 +49,6 @@ nbdkit_nbd_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
 nbdkit_nbd_plugin_la_LIBADD = \
-	$(top_builddir)/common/protocol/libprotocol.la \
 	$(top_builddir)/common/utils/libutils.la
 
 # TODO: drop standalone version, which is locked at nbdkit 1.13.4 behavior,
@@ -62,9 +60,15 @@ nbdkit_nbd_plugin_la_CFLAGS += \
 	$(LIBNBD_CFLAGS)
 nbdkit_nbd_plugin_la_LIBADD += \
 	$(LIBNBD_LIBS)
+
 else !HAVE_LIBNBD
 nbdkit_nbd_plugin_la_SOURCES += \
 	nbd-standalone.c
+nbdkit_nbd_plugin_la_CPPFLAGS += \
+	-I$(top_srcdir)/common/protocol \
+nbdkit_nbd_plugin_la_LIBADD += \
+	$(top_builddir)/common/protocol/libprotocol.la
+
 endif !HAVE_LIBNBD
 
 if HAVE_POD
