@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2017 Red Hat Inc.
+# Copyright (C) 2017-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -36,7 +36,6 @@ EXTRA_DIST = nbdkit-nbd-plugin.pod
 plugin_LTLIBRARIES = nbdkit-nbd-plugin.la
 
 nbdkit_nbd_plugin_la_SOURCES = \
-	nbd.c \
 	$(top_srcdir)/include/nbdkit-plugin.h
 
 nbdkit_nbd_plugin_la_CPPFLAGS = \
@@ -53,6 +52,20 @@ nbdkit_nbd_plugin_la_LDFLAGS = \
 nbdkit_nbd_plugin_la_LIBADD = \
 	$(top_builddir)/common/protocol/libprotocol.la \
 	$(top_builddir)/common/utils/libutils.la
+
+# TODO: drop standalone version, which is locked at nbdkit 1.13.4 behavior,
+# once libnbd is more commonly available with stable API.
+if HAVE_LIBNBD
+nbdkit_nbd_plugin_la_SOURCES += \
+	nbd.c
+nbdkit_nbd_plugin_la_CFLAGS += \
+	$(LIBNBD_CFLAGS)
+nbdkit_nbd_plugin_la_LIBADD += \
+	$(LIBNBD_LIBS)
+else !HAVE_LIBNBD
+nbdkit_nbd_plugin_la_SOURCES += \
+	nbd-standalone.c
+endif !HAVE_LIBNBD
 
 if HAVE_POD
 
