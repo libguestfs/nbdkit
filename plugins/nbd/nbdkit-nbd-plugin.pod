@@ -4,8 +4,8 @@ nbdkit-nbd-plugin - nbdkit nbd plugin
 
 =head1 SYNOPSIS
 
- nbdkit nbd { socket=SOCKNAME | hostname=HOST [port=PORT] } [export=NAME]
-    [retry=N] [shared=BOOL]
+ nbdkit nbd { socket=SOCKNAME | hostname=HOST [port=PORT] | [uri=]URI }
+    [export=NAME] [retry=N] [shared=BOOL]
 
 =head1 DESCRIPTION
 
@@ -27,6 +27,14 @@ is feasible that future additions will support encryption.
 
 =head1 PARAMETERS
 
+One of B<socket>, B<hostname> or B<uri> must be provided to designate
+the server. The server can speak either new or old style
+protocol. C<uri=> is a magic config key and may be omitted in most
+cases.  See L<nbdkit(1)/Magic parameters>.
+
+The following parameters are available whether or not the plugin was
+compiled against libnbd:
+
 =over 4
 
 =item B<socket=>SOCKNAME
@@ -42,14 +50,12 @@ Connect to the NBD server at the given remote C<HOST> using a TCP socket.
 When B<hostname> is supplied, use B<PORT> instead of the default port
 10809.
 
-Either B<socket> or B<hostname> must be provided. The server can speak
-either new or old style protocol.
-
 =item B<export=>NAME
 
 If this parameter is given, and the server speaks new style protocol,
 then connect to the named export instead of the default export (the
-empty string).
+empty string). If C<uri> is supplied, the export name should be
+embedded in the URI instead.
 
 =item B<retry=>N
 
@@ -66,6 +72,24 @@ to true, the plugin will open a single connection to the server when
 nbdkit is first started (the C<delay> parameter may be necessary to
 coordinate timing of the remote server startup), and all clients to
 nbdkit will share that single connection.
+
+=back
+
+The following parameters are only available if the plugin was compiled
+against libnbd:
+
+=over 4
+
+=item B<uri=>URI
+
+When B<uri> is supplied, decode B<URI> to determine the address to
+connect to. A URI can specify a TCP connection (such as
+C<nbd://localhost:10809/export>) or a Unix socket (such as
+C<nbd+unix:///export?socket=/path/to/sock>).  Remember to use proper
+shell quoting to prevent B<URI> from accidentally being handled as a
+shell glob. The B<uri> parameter is only available when the plugin was
+compiled against libnbd with URI support; C<nbdkit --dump-plugin nbd>
+will contain C<libnbd_uri=1> if this is the case.
 
 =back
 
@@ -92,8 +116,8 @@ C<qemu-nbd> without B<-t> normally quits after the first client, and
 utilize a 5-second retry to give qemu-nbd time to create the socket:
 
  ( sock=`mktemp -u`
-   nbdkit --exit-with-parent --filter=partition nbd socket=$sock \
-     shared=1 retry=5 partition=1 &
+   nbdkit --exit-with-parent --filter=partition nbd \
+     nbd+unix:///\?socket=$sock shared=1 retry=5 partition=1 &
    exec qemu-nbd -k $sock -f qcow2 /path/to/image.qcow2 )
 
 Conversely, expose the contents of export I<foo> from a new style
@@ -108,6 +132,11 @@ client exits.
  │ old client │ ────────▶│ nbdkit │ ────────▶│ new server │
  └────────────┘   Unix   └────────┘   TCP    └────────────┘
 
+Learn which features are provided by libnbd by inspecting the
+C<libnbd_*> lines:
+
+ nbdkit --dump-plugin nbd
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
@@ -115,6 +144,7 @@ L<nbdkit-captive(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-tls(1)>,
 L<nbdkit-plugin(3)>,
+L<libnbd(3)>,
 L<qemu-nbd(1)>.
 
 =head1 AUTHORS

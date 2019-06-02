@@ -87,6 +87,9 @@ static char *sockname;
 static const char *hostname;
 static const char *port;
 
+/* Connect to server via URI */
+static const char *uri;
+
 /* Name of export on remote server, default '', ignored for oldstyle */
 static const char *export;
 
@@ -109,9 +112,9 @@ nbdplug_unload (void)
 }
 
 /* Called for each key=value passed on the command line.  This plugin
- * accepts socket=<sockname> or hostname=<hostname>/port=<port>
- * (exactly one connection required), and optional parameters
- * export=<name>, retry=<n> and shared=<bool>.
+ * accepts socket=<sockname>, hostname=<hostname>/port=<port>, or
+ * [uri=]<uri> (exactly one connection required), and optional
+ * parameters export=<name>, retry=<n> and shared=<bool>.
  */
 static int
 nbdplug_config (const char *key, const char *value)
@@ -130,6 +133,8 @@ nbdplug_config (const char *key, const char *value)
     hostname = value;
   else if (strcmp (key, "port") == 0)
     port = value;
+  else if (strcmp (key, "uri") == 0)
+    uri = value;
   else if (strcmp (key, "export") == 0)
     export = value;
   else if (strcmp (key, "retry") == 0) {
@@ -165,18 +170,39 @@ nbdplug_config_complete (void)
       nbdkit_error ("cannot mix Unix socket and TCP hostname/port parameters");
       return -1;
     }
+    else if (uri) {
+      nbdkit_error ("cannot mix Unix socket and URI parameters");
+      return -1;
+    }
     if (strlen (sockname) > sizeof sock.sun_path) {
       nbdkit_error ("socket file name too large");
       return -1;
     }
   }
-  else {
-    if (!hostname) {
-      nbdkit_error ("must supply socket= or hostname= of external NBD server");
+  else if (hostname) {
+    if (uri) {
+      nbdkit_error ("cannot mix TCP hostname/port and URI parameters");
       return -1;
     }
     if (!port)
       port = "10809";
+  }
+  else if (uri) {
+    struct nbd_handle *nbd = nbd_create ();
+
+    if (!nbd) {
+      nbdkit_error ("unable to query libnbd details: %s", nbd_get_error ());
+      return -1;
+    }
+    if (!nbd_supports_uri (nbd)) {
+      nbdkit_error ("libnbd was compiled without uri support");
+      nbd_close (nbd);
+      return -1;
+    }
+    nbd_close (nbd);
+  } else {
+    nbdkit_error ("must supply socket=, hostname= or uri= of external NBD server");
+    return -1;
   }
 
   if (!export)
@@ -188,6 +214,7 @@ nbdplug_config_complete (void)
 }
 
 #define nbdplug_config_help \
+  "[uri=]<URI>            URI of an NBD socket to connect to (if supported).\n" \
   "socket=<SOCKNAME>      The Unix socket to connect to.\n" \
   "hostname=<HOST>        The hostname for the TCP socket to connect to.\n" \
   "port=<PORT>            TCP port or service name to use (default 10809).\n" \
@@ -195,6 +222,20 @@ nbdplug_config_complete (void)
   "retry=<N>              Retry connection up to N seconds (default 0).\n" \
   "shared=<BOOL>          True to share one server connection among all clients,\n" \
   "                       rather than a connection per client (default false).\n" \
+
+static void
+nbdplug_dump_plugin (void)
+{
+  struct nbd_handle *nbd = nbd_create ();
+
+  if (!nbd) {
+    nbdkit_error ("unable to query libnbd details: %s", nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
+  printf ("libnbd_version=%s\n", nbd_get_version (nbd));
+  printf ("libnbd_uri=%d\n", nbd_supports_uri (nbd));
+  nbd_close (nbd);
+}
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
@@ -386,7 +427,9 @@ nbdplug_open_handle (int readonly)
     goto err;
   if (nbd_add_meta_context (h->nbd, "base:allocation") == -1)
     goto err;
-  if (sockname)
+  if (uri)
+    r = nbd_connect_uri (h->nbd, uri);
+  else if (sockname)
     r = nbd_connect_unix (h->nbd, sockname);
   else
     r = nbd_connect_tcp (h->nbd, hostname, port);
@@ -720,6 +763,8 @@ static struct nbdkit_plugin plugin = {
   .config             = nbdplug_config,
   .config_complete    = nbdplug_config_complete,
   .config_help        = nbdplug_config_help,
+  .magic_config_key   = "uri",
+  .dump_plugin        = nbdplug_dump_plugin,
   .open               = nbdplug_open,
   .close              = nbdplug_close,
   .get_size           = nbdplug_get_size,
