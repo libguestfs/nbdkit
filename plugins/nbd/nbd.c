@@ -123,7 +123,7 @@ nbd_unload (void)
 /* Called for each key=value passed on the command line.  This plugin
  * accepts socket=<sockname> or hostname=<hostname>/port=<port>
  * (exactly one connection required), and optional parameters
- * export=<name>, retry=<n>.
+ * export=<name>, retry=<n> and shared=<bool>.
  */
 static int
 nbd_config (const char *key, const char *value)
@@ -215,6 +215,9 @@ nbd_config_complete (void)
   "hostname=<HOST>        The hostname for the TCP socket to connect to.\n" \
   "port=<PORT>            TCP port or service name to use (default 10809).\n" \
   "export=<NAME>          Export name to connect to (default \"\").\n" \
+  "retry=<N>              Retry connection up to N seconds (default 0).\n" \
+  "shared=<BOOL>          True to share one server connection among all clients,\n" \
+  "                       rather than a connection per client (default false).\n" \
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
