@@ -346,10 +346,10 @@ crypto_recv (struct connection *conn, void *vbuf, size_t len)
 }
 
 /* Write buffer to GnuTLS and either succeed completely
- * (returns 0) or fail (returns -1).
+ * (returns 0) or fail (returns -1). flags is ignored for now.
  */
 static int
-crypto_send (struct connection *conn, const void *vbuf, size_t len)
+crypto_send (struct connection *conn, const void *vbuf, size_t len, int flags)
 {
   gnutls_session_t session = conn->crypto_session;
   const char *buf = vbuf;

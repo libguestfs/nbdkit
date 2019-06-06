@@ -143,7 +143,8 @@ typedef int (*connection_recv_function) (struct connection *,
                                          void *buf, size_t len)
   __attribute__((__nonnull__ (1, 2)));
 typedef int (*connection_send_function) (struct connection *,
-                                         const void *buf, size_t len)
+                                         const void *buf, size_t len,
+                                         int flags)
   __attribute__((__nonnull__ (1, 2)));
 typedef void (*connection_close_function) (struct connection *)
   __attribute__((__nonnull__ (1)));

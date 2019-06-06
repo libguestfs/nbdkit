@@ -84,7 +84,7 @@ protocol_handshake_oldstyle (struct connection *conn)
   handshake.gflags = htobe16 (gflags);
   handshake.eflags = htobe16 (eflags);
 
-  if (conn->send (conn, &handshake, sizeof handshake) == -1) {
+  if (conn->send (conn, &handshake, sizeof handshake, 0) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }

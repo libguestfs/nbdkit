@@ -63,7 +63,7 @@ send_newstyle_option_reply (struct connection *conn,
 
   if (conn->send (conn,
                   &fixed_new_option_reply,
-                  sizeof fixed_new_option_reply) == -1) {
+                  sizeof fixed_new_option_reply, 0) == -1) {
     /* The protocol document says that the client is allowed to simply
      * drop the connection after sending NBD_OPT_ABORT, or may read
      * the reply.
@@ -94,18 +94,18 @@ send_newstyle_option_reply_exportname (struct connection *conn,
 
   if (conn->send (conn,
                   &fixed_new_option_reply,
-                  sizeof fixed_new_option_reply) == -1) {
+                  sizeof fixed_new_option_reply, 0) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
 
   len = htobe32 (name_len);
-  if (conn->send (conn, &len, sizeof len) == -1) {
+  if (conn->send (conn, &len, sizeof len, 0) == -1) {
     nbdkit_error ("write: %s: %s: %m",
                   name_of_nbd_opt (option), "sending length");
     return -1;
   }
-  if (conn->send (conn, exportname, name_len) == -1) {
+  if (conn->send (conn, exportname, name_len, 0) == -1) {
     nbdkit_error ("write: %s: %s: %m",
                   name_of_nbd_opt (option), "sending export name");
     return -1;
@@ -132,8 +132,8 @@ send_newstyle_option_reply_info_export (struct connection *conn,
 
   if (conn->send (conn,
                   &fixed_new_option_reply,
-                  sizeof fixed_new_option_reply) == -1 ||
-      conn->send (conn, &export, sizeof export) == -1) {
+                  sizeof fixed_new_option_reply, 0) == -1 ||
+      conn->send (conn, &export, sizeof export, 0) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
@@ -161,9 +161,9 @@ send_newstyle_option_reply_meta_context (struct connection *conn,
 
   if (conn->send (conn,
                   &fixed_new_option_reply,
-                  sizeof fixed_new_option_reply) == -1 ||
-      conn->send (conn, &context, sizeof context) == -1 ||
-      conn->send (conn, name, namelen) == -1) {
+                  sizeof fixed_new_option_reply, 0) == -1 ||
+      conn->send (conn, &context, sizeof context, 0) == -1 ||
+      conn->send (conn, name, namelen, 0) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
@@ -292,7 +292,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
                       &handshake_finish,
                       (conn->cflags & NBD_FLAG_NO_ZEROES)
                       ? offsetof (struct new_handshake_finish, zeroes)
-                      : sizeof handshake_finish) == -1) {
+                      : sizeof handshake_finish, 0) == -1) {
         nbdkit_error ("write: %s: %m", optname);
         return -1;
       }
@@ -656,7 +656,7 @@ protocol_handshake_newstyle (struct connection *conn)
   handshake.version = htobe64 (NEW_VERSION);
   handshake.gflags = htobe16 (gflags);
 
-  if (conn->send (conn, &handshake, sizeof handshake) == -1) {
+  if (conn->send (conn, &handshake, sizeof handshake, 0) == -1) {
     nbdkit_error ("write: %s: %m", "sending newstyle handshake");
     return -1;
   }

@@ -38,6 +38,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/socket.h>
 
 #include "internal.h"
 
@@ -50,7 +51,10 @@ static void free_connection (struct connection *conn);
 
 /* Don't call these raw socket functions directly.  Use conn->recv etc. */
 static int raw_recv (struct connection *, void *buf, size_t len);
-static int raw_send (struct connection *, const void *buf, size_t len);
+static int raw_send_socket (struct connection *, const void *buf, size_t len,
+                            int flags);
+static int raw_send_other (struct connection *, const void *buf, size_t len,
+                           int flags);
 static void raw_close (struct connection *);
 
 int
@@ -268,6 +272,8 @@ static struct connection *
 new_connection (int sockin, int sockout, int nworkers)
 {
   struct connection *conn;
+  int opt;
+  socklen_t optlen = sizeof opt;
 
   conn = calloc (1, sizeof *conn);
   if (conn == NULL) {
@@ -285,7 +291,10 @@ new_connection (int sockin, int sockout, int nworkers)
   pthread_mutex_init (&conn->status_lock, NULL);
 
   conn->recv = raw_recv;
-  conn->send = raw_send;
+  if (getsockopt (sockout, SOL_SOCKET, SO_TYPE, &opt, &optlen) == 0)
+    conn->send = raw_send_socket;
+  else
+    conn->send = raw_send_other;
   conn->close = raw_close;
 
   return conn;
@@ -320,11 +329,37 @@ free_connection (struct connection *conn)
   free (conn);
 }
 
-/* Write buffer to conn->sockout and either succeed completely
- * (returns 0) or fail (returns -1).
+/* Write buffer to conn->sockout with send() and either succeed completely
+ * (returns 0) or fail (returns -1). flags is ignored for now.
  */
 static int
-raw_send (struct connection *conn, const void *vbuf, size_t len)
+raw_send_socket (struct connection *conn, const void *vbuf, size_t len,
+                 int flags)
+{
+  int sock = conn->sockout;
+  const char *buf = vbuf;
+  ssize_t r;
+
+  while (len > 0) {
+    r = send (sock, buf, len, 0);
+    if (r == -1) {
+      if (errno == EINTR || errno == EAGAIN)
+        continue;
+      return -1;
+    }
+    buf += r;
+    len -= r;
+  }
+
+  return 0;
+}
+
+/* Write buffer to conn->sockout with write() and either succeed completely
+ * (returns 0) or fail (returns -1). flags is ignored.
+ */
+static int
+raw_send_other (struct connection *conn, const void *vbuf, size_t len,
+                int flags)
 {
   int sock = conn->sockout;
   const char *buf = vbuf;
