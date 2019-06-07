@@ -139,6 +139,11 @@ extern void change_user (void);
 /* connections.c */
 struct connection;
 
+/* Flags for connection_send_function */
+enum {
+  SEND_MORE = 1, /* Hint to use MSG_MORE/corking to group send()s */
+};
+
 typedef int (*connection_recv_function) (struct connection *,
                                          void *buf, size_t len)
   __attribute__((__nonnull__ (1, 2)));

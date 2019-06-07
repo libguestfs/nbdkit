@@ -357,6 +357,9 @@ crypto_send (struct connection *conn, const void *vbuf, size_t len, int flags)
 
   assert (session != NULL);
 
+  if (flags & SEND_MORE)
+    gnutls_record_cork (session);
+
   while (len > 0) {
     r = gnutls_record_send (session, buf, len);
     if (r < 0) {
@@ -367,6 +370,10 @@ crypto_send (struct connection *conn, const void *vbuf, size_t len, int flags)
     buf += r;
     len -= r;
   }
+
+  if (!(flags & SEND_MORE) &&
+      gnutls_record_uncork (session, GNUTLS_RECORD_WAIT) < 0)
+    return -1;
 
   return 0;
 }

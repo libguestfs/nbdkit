@@ -94,13 +94,13 @@ send_newstyle_option_reply_exportname (struct connection *conn,
 
   if (conn->send (conn,
                   &fixed_new_option_reply,
-                  sizeof fixed_new_option_reply, 0) == -1) {
+                  sizeof fixed_new_option_reply, SEND_MORE) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
 
   len = htobe32 (name_len);
-  if (conn->send (conn, &len, sizeof len, 0) == -1) {
+  if (conn->send (conn, &len, sizeof len, SEND_MORE) == -1) {
     nbdkit_error ("write: %s: %s: %m",
                   name_of_nbd_opt (option), "sending length");
     return -1;
@@ -132,7 +132,7 @@ send_newstyle_option_reply_info_export (struct connection *conn,
 
   if (conn->send (conn,
                   &fixed_new_option_reply,
-                  sizeof fixed_new_option_reply, 0) == -1 ||
+                  sizeof fixed_new_option_reply, SEND_MORE) == -1 ||
       conn->send (conn, &export, sizeof export, 0) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
@@ -161,8 +161,8 @@ send_newstyle_option_reply_meta_context (struct connection *conn,
 
   if (conn->send (conn,
                   &fixed_new_option_reply,
-                  sizeof fixed_new_option_reply, 0) == -1 ||
-      conn->send (conn, &context, sizeof context, 0) == -1 ||
+                  sizeof fixed_new_option_reply, SEND_MORE) == -1 ||
+      conn->send (conn, &context, sizeof context, SEND_MORE) == -1 ||
       conn->send (conn, name, namelen, 0) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;

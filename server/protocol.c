@@ -393,12 +393,13 @@ send_simple_reply (struct connection *conn,
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
   struct simple_reply reply;
   int r;
+  int f = (cmd == NBD_CMD_READ && !error) ? SEND_MORE : 0;
 
   reply.magic = htobe32 (NBD_SIMPLE_REPLY_MAGIC);
   reply.handle = handle;
   reply.error = htobe32 (nbd_errno (error, false));
 
-  r = conn->send (conn, &reply, sizeof reply, 0);
+  r = conn->send (conn, &reply, sizeof reply, f);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
     return connection_set_status (conn, -1);
@@ -439,7 +440,7 @@ send_structured_reply_read (struct connection *conn,
   reply.type = htobe16 (NBD_REPLY_TYPE_OFFSET_DATA);
   reply.length = htobe32 (count + sizeof offset_data);
 
-  r = conn->send (conn, &reply, sizeof reply, 0);
+  r = conn->send (conn, &reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
     return connection_set_status (conn, -1);
@@ -447,7 +448,7 @@ send_structured_reply_read (struct connection *conn,
 
   /* Send the offset + read data buffer. */
   offset_data.offset = htobe64 (offset);
-  r = conn->send (conn, &offset_data, sizeof offset_data, 0);
+  r = conn->send (conn, &offset_data, sizeof offset_data, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
     return connection_set_status (conn, -1);
@@ -573,7 +574,7 @@ send_structured_reply_block_status (struct connection *conn,
   reply.length = htobe32 (sizeof context_id +
                           nr_blocks * sizeof (struct block_descriptor));
 
-  r = conn->send (conn, &reply, sizeof reply, 0);
+  r = conn->send (conn, &reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
     return connection_set_status (conn, -1);
@@ -581,7 +582,7 @@ send_structured_reply_block_status (struct connection *conn,
 
   /* Send the base:allocation context ID. */
   context_id = htobe32 (base_allocation_id);
-  r = conn->send (conn, &context_id, sizeof context_id, 0);
+  r = conn->send (conn, &context_id, sizeof context_id, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
     return connection_set_status (conn, -1);
@@ -589,7 +590,8 @@ send_structured_reply_block_status (struct connection *conn,
 
   /* Send each block descriptor. */
   for (i = 0; i < nr_blocks; ++i) {
-    r = conn->send (conn, &blocks[i], sizeof blocks[i], 0);
+    r = conn->send (conn, &blocks[i], sizeof blocks[i],
+                    i == nr_blocks - 1 ? 0 : SEND_MORE);
     if (r == -1) {
       nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
       return connection_set_status (conn, -1);
@@ -615,7 +617,7 @@ send_structured_reply_error (struct connection *conn,
   reply.type = htobe16 (NBD_REPLY_TYPE_ERROR);
   reply.length = htobe32 (0 /* no human readable error */ + sizeof error_data);
 
-  r = conn->send (conn, &reply, sizeof reply, 0);
+  r = conn->send (conn, &reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write error reply: %m");
     return connection_set_status (conn, -1);

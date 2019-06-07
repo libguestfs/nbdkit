@@ -330,7 +330,8 @@ free_connection (struct connection *conn)
 }
 
 /* Write buffer to conn->sockout with send() and either succeed completely
- * (returns 0) or fail (returns -1). flags is ignored for now.
+ * (returns 0) or fail (returns -1). flags may include SEND_MORE as a hint
+ * that this send will be followed by related data.
  */
 static int
 raw_send_socket (struct connection *conn, const void *vbuf, size_t len,
@@ -339,9 +340,14 @@ raw_send_socket (struct connection *conn, const void *vbuf, size_t len,
   int sock = conn->sockout;
   const char *buf = vbuf;
   ssize_t r;
+  int f = 0;
 
+#ifdef MSG_MORE
+  if (flags & SEND_MORE)
+    f |= MSG_MORE;
+#endif
   while (len > 0) {
-    r = send (sock, buf, len, 0);
+    r = send (sock, buf, len, f);
     if (r == -1) {
       if (errno == EINTR || errno == EAGAIN)
         continue;
