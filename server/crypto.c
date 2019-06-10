@@ -345,6 +345,12 @@ crypto_recv (struct connection *conn, void *vbuf, size_t len)
   return 1;
 }
 
+/* If this send()'s length is so large that it is going to require
+ * multiple TCP segments anyway, there's no need to try and merge it
+ * with any corked data from a previous send that used SEND_MORE.
+ */
+#define MAX_SEND_MORE_LEN (64 * 1024)
+
 /* Write buffer to GnuTLS and either succeed completely
  * (returns 0) or fail (returns -1). flags is ignored for now.
  */
@@ -357,7 +363,11 @@ crypto_send (struct connection *conn, const void *vbuf, size_t len, int flags)
 
   assert (session != NULL);
 
-  if (flags & SEND_MORE)
+  if (len + gnutls_record_check_corked (session) > MAX_SEND_MORE_LEN) {
+    if (gnutls_record_uncork (session, GNUTLS_RECORD_WAIT) < 0)
+      return -1;
+  }
+  else if (flags & SEND_MORE)
     gnutls_record_cork (session);
 
   while (len > 0) {
