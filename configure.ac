@@ -474,18 +474,12 @@ AS_IF([test "x$PYTHON" != "xno" && test "x$enable_python" != "xno"],[
     ])
 
     dnl Check for Python CFLAGS, libraries.
-    dnl For Python >= 3.8 we have to use python-embed.pc, see:
+    dnl For Python >= 3.8 we have to use python-<VERSION>-embed.pc, see:
     dnl https://docs.python.org/3.8/whatsnew/3.8.html#debug-build-uses-the-same-abi-as-release-build
     dnl The python.pc is called python-<VERSION>.pc on Debian and
     dnl later versions of Fedora, and python.pc on older versions
     dnl of Fedora.
-    PKG_CHECK_MODULES([PYTHON], [python-embed-"$PYTHON_VERSION"], [
-        AC_SUBST([PYTHON_CFLAGS])
-        AC_SUBST([PYTHON_LIBS])
-        AC_SUBST([PYTHON_VERSION])
-        AC_DEFINE([HAVE_PYTHON],[1],[Python library found at compile time])
-    ],[
-    PKG_CHECK_MODULES([PYTHON], [python-embed], [
+    PKG_CHECK_MODULES([PYTHON], [python-"$PYTHON_VERSION"-embed], [
         AC_SUBST([PYTHON_CFLAGS])
         AC_SUBST([PYTHON_LIBS])
         AC_SUBST([PYTHON_VERSION])
@@ -505,7 +499,7 @@ AS_IF([test "x$PYTHON" != "xno" && test "x$enable_python" != "xno"],[
     ],[
         AC_MSG_WARN([python $PYTHON_VERSION not found])
         enable_python=no
-    ])])])])
+    ])])])
 
     dnl Check for various functions needed by the bindings.
     old_LIBS="$LIBS"
