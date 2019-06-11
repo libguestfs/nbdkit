@@ -25,6 +25,10 @@ does not have effective caching, or (with C<cache=unsafe>) to defeat
 flush requests from the client (which is unsafe and can cause data
 loss, as the name suggests).
 
+This filter only caches image contents; to also cache image metadata,
+place L<nbdkit-cacheextents-filter(1)> between this filter and the
+plugin.
+
 =head1 PARAMETERS
 
 =over 4
@@ -135,6 +139,7 @@ environment variable before starting nbdkit.
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-cacheextents-filter(1)>,
 L<nbdkit-readahead-filter(1)>,
 L<nbdkit-filter(3)>,
 L<qemu-img(1)>.
