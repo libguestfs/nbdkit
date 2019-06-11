@@ -65,12 +65,12 @@ extern fn ramdisk_close (h: *mut c_void) {
     drop (h);
 }
 
-extern fn ramdisk_get_size (_h: *mut c_void) -> int64_t {
-    return DISK.lock().unwrap().capacity() as int64_t;
+extern fn ramdisk_get_size (_h: *mut c_void) -> i64 {
+    return DISK.lock().unwrap().capacity() as i64;
 }
 
-extern fn ramdisk_pread (_h: *mut c_void, buf: *mut c_char, count: uint32_t,
-                         offset: uint64_t, _flags: uint32_t) -> c_int {
+extern fn ramdisk_pread (_h: *mut c_void, buf: *mut c_char, count: u32,
+                         offset: u64, _flags: u32) -> c_int {
     let offset = offset as usize;
     let count = count as usize;
     let disk = DISK.lock().unwrap();
@@ -80,8 +80,8 @@ extern fn ramdisk_pread (_h: *mut c_void, buf: *mut c_char, count: uint32_t,
     return 0;
 }
 
-extern fn ramdisk_pwrite (_h: *mut c_void, buf: *const c_char, count: uint32_t,
-                          offset: uint64_t, _flags: uint32_t) -> c_int {
+extern fn ramdisk_pwrite (_h: *mut c_void, buf: *const c_char, count: u32,
+                          offset: u64, _flags: u32) -> c_int {
     let offset = offset as usize;
     let count = count as usize;
     let mut disk = DISK.lock().unwrap();
