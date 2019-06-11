@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -36,22 +36,15 @@ set -x
 
 requires qemu-img --version
 
-if ! qemu-img --help | grep -- --object; then
-    echo "$0: 'qemu-img' command does not have the --object option"
-    exit 77
-fi
-
-# Does the qemu-img binary support PSK?
-if LANG=C qemu-img info --object tls-creds-psk,id=id disk |&
-        grep -sq "invalid object type: tls-creds-psk"
-then
-    echo "$0: 'qemu-img' command does not support TLS-PSK"
-    exit 77
-fi
-
 # Does the nbdkit binary support TLS?
 if ! nbdkit --dump-config | grep -sq tls=yes; then
     echo "$0: nbdkit built without TLS support"
+    exit 77
+fi
+
+# Does the nbd plugin support TLS?
+if ! nbdkit --dump-plugin nbd | grep -sq libnbd_tls=1; then
+    echo "$0: nbd plugin built without TLS support"
     exit 77
 fi
 
@@ -62,22 +55,27 @@ if [ ! -s keys.psk ]; then
     exit 77
 fi
 
-# Unfortunately qemu cannot do TLS over a Unix domain socket (nbdkit
-# can, but that is tested in tests-nbd-tls-psk.sh).  Find an unused port to
-# listen on.
-pick_unused_port
+sock1=`mktemp -u`
+sock2=`mktemp -u`
+pid1="test-nbd-tls-psk.pid1"
+pid2="test-nbd-tls-psk.pid2"
 
-cleanup_fn rm -f tls-psk.pid tls-psk.out
-start_nbdkit -P tls-psk.pid -p $port -n \
-             --tls=require --tls-psk=keys.psk example1
+files="$sock1 $sock2 $pid1 $pid2 nbd-tls-psk.out"
+rm -f $files
+cleanup_fn rm -f $files
 
-# Run qemu-img against the server.
-LANG=C \
-qemu-img info \
-         --object "tls-creds-psk,id=tls0,endpoint=client,dir=$PWD" \
-         --image-opts "file.driver=nbd,file.host=localhost,file.port=$port,file.tls-creds=tls0" > tls-psk.out
+# Run encrypted server
+start_nbdkit -P "$pid1" -U "$sock1" \
+    --tls=require --tls-psk=keys.psk example1
 
-cat tls-psk.out
+# Run nbd plugin as intermediary
+LIBNBD_DEBUG=1 start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
+    nbd tls=require tls-psk=keys.psk tls-username=qemu socket="$sock1"
 
-grep -sq "^file format: raw" tls-psk.out
-grep -sq "^virtual size: 100M" tls-psk.out
+# Run unencrypted client
+LANG=C qemu-img info -f raw "nbd+unix:///?socket=$sock2" > nbd-tls-psk.out
+
+cat nbd-tls-psk.out
+
+grep -sq "^file format: raw" nbd-tls-psk.out
+grep -sq "^virtual size: 100M" nbd-tls-psk.out

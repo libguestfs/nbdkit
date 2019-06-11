@@ -100,6 +100,13 @@ static unsigned long retry;
 static bool shared;
 static struct handle *shared_handle;
 
+/* Control TLS settings */
+static int tls = -1;
+static char *tls_certificates;
+static int tls_verify = -1;
+static const char *tls_username;
+static char *tls_psk;
+
 static struct handle *nbdplug_open_handle (int readonly);
 static void nbdplug_close_handle (struct handle *h);
 
@@ -109,12 +116,15 @@ nbdplug_unload (void)
   if (shared)
     nbdplug_close_handle (shared_handle);
   free (sockname);
+  free (tls_certificates);
+  free (tls_psk);
 }
 
 /* Called for each key=value passed on the command line.  This plugin
  * accepts socket=<sockname>, hostname=<hostname>/port=<port>, or
  * [uri=]<uri> (exactly one connection required), and optional
- * parameters export=<name>, retry=<n> and shared=<bool>.
+ * parameters export=<name>, retry=<n>, shared=<bool> and various
+ * tls settings.
  */
 static int
 nbdplug_config (const char *key, const char *value)
@@ -150,6 +160,37 @@ nbdplug_config (const char *key, const char *value)
     if (r == -1)
       return -1;
     shared = r;
+  }
+  else if (strcmp (key, "tls") == 0) {
+    if (strcasecmp (value, "require") == 0 ||
+        strcasecmp (value, "required") == 0 ||
+        strcasecmp (value, "force") == 0)
+      tls = 2;
+    else {
+      tls = nbdkit_parse_bool (value);
+      if (tls == -1)
+        exit (EXIT_FAILURE);
+    }
+  }
+  else if (strcmp (key, "tls-certificates") == 0) {
+    free (tls_certificates);
+    tls_certificates = nbdkit_absolute_path (value);
+    if (!tls_certificates)
+      return -1;
+  }
+  else if (strcmp (key, "tls-verify") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    tls_verify = r;
+  }
+  else if (strcmp (key, "tls-username") == 0)
+    tls_username = value;
+  else if (strcmp (key, "tls-psk") == 0) {
+    free (tls_psk);
+    tls_psk = nbdkit_absolute_path (value);
+    if (!tls_psk)
+      return -1;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -208,6 +249,23 @@ nbdplug_config_complete (void)
   if (!export)
     export = "";
 
+  if (tls == -1)
+    tls = tls_certificates || tls_verify >= 0 || tls_username || tls_psk;
+  if (tls > 0) {
+    struct nbd_handle *nbd = nbd_create ();
+
+    if (!nbd) {
+      nbdkit_error ("unable to query libnbd details: %s", nbd_get_error ());
+      return -1;
+    }
+    if (!nbd_supports_tls (nbd)) {
+      nbdkit_error ("libnbd was compiled without tls support");
+      nbd_close (nbd);
+      return -1;
+    }
+    nbd_close (nbd);
+  }
+
   if (shared && (shared_handle = nbdplug_open_handle (false)) == NULL)
     return -1;
   return 0;
@@ -222,6 +280,11 @@ nbdplug_config_complete (void)
   "retry=<N>              Retry connection up to N seconds (default 0).\n" \
   "shared=<BOOL>          True to share one server connection among all clients,\n" \
   "                       rather than a connection per client (default false).\n" \
+  "tls=<MODE>             How to use TLS; one of 'off', 'on', or 'require'.\n" \
+  "tls-certificates=<DIR> Directory containing files for X.509 certificates.\n" \
+  "tls-verify=<BOOL>      True (default for X.509) to validate server.\n" \
+  "tls-username=<NAME>    Override username presented in X.509 TLS.\n" \
+  "tls-psk=<FILE>         File containing Pre-Shared Key for TLS.\n" \
 
 static void
 nbdplug_dump_plugin (void)
@@ -233,6 +296,7 @@ nbdplug_dump_plugin (void)
     exit (EXIT_FAILURE);
   }
   printf ("libnbd_version=%s\n", nbd_get_version (nbd));
+  printf ("libnbd_tls=%d\n", nbd_supports_tls (nbd));
   printf ("libnbd_uri=%d\n", nbd_supports_uri (nbd));
   nbd_close (nbd);
 }
@@ -426,6 +490,17 @@ nbdplug_open_handle (int readonly)
   if (nbd_set_export_name (h->nbd, export) == -1)
     goto err;
   if (nbd_add_meta_context (h->nbd, "base:allocation") == -1)
+    goto err;
+  if (nbd_set_tls (h->nbd, tls) == -1)
+    goto err;
+  if (tls_certificates &&
+      nbd_set_tls_certificates (h->nbd, tls_certificates) == -1)
+    goto err;
+  if (tls_verify >= 0 && nbd_set_tls_verify_peer (h->nbd, tls_verify) == -1)
+    goto err;
+  if (tls_username && nbd_set_tls_username (h->nbd, tls_username) == -1)
+    goto err;
+  if (tls_psk && nbd_set_tls_psk_file (h->nbd, tls_psk) == -1)
     goto err;
   if (uri)
     r = nbd_connect_uri (h->nbd, uri);

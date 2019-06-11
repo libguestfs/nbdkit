@@ -5,7 +5,8 @@ nbdkit-nbd-plugin - nbdkit nbd plugin
 =head1 SYNOPSIS
 
  nbdkit nbd { socket=SOCKNAME | hostname=HOST [port=PORT] | [uri=]URI }
-    [export=NAME] [retry=N] [shared=BOOL]
+    [export=NAME] [retry=N] [shared=BOOL] [tls=MODE] [tls-certificates=DIR]
+    [tls-verify=BOOL] [tls-username=NAME] [tls-psk=FILE]
 
 =head1 DESCRIPTION
 
@@ -20,10 +21,9 @@ original server lacks it).  Use of this plugin along with nbdkit
 filters (adding I<--filter> to the nbdkit command line) makes it
 possible to apply any nbdkit filter to any other NBD server.
 
-For now, this is limited to connecting to another NBD server over an
-unencrypted connection; if the data is sensitive, it is better to
-stick to a Unix socket rather than transmitting plaintext over TCP. It
-is feasible that future additions will support encryption.
+Remember that when using this plugin as a bridge between an encrypted
+and a non-encrypted endpoint, it is best to preserve encryption over
+TCP and use plaintext only on a Unix socket.
 
 =head1 PARAMETERS
 
@@ -91,6 +91,46 @@ shell glob. The B<uri> parameter is only available when the plugin was
 compiled against libnbd with URI support; C<nbdkit --dump-plugin nbd>
 will contain C<libnbd_uri=1> if this is the case.
 
+=item B<tls=>MODE
+
+Selects which TLS mode to use with the server. If no other tls option
+is present, this defaults to C<off>, where the client does not attempt
+encryption (and may be rejected by a server that requires it). If
+omitted but another tls option is present, this defaults to C<on>,
+where the client opportunistically attempts a TLS handshake, but will
+continue running unencrypted if the server does not support
+encryption. If set to C<require> or if the C<uri> parameter is used
+with a scheme that requires encryption (such as C<nbds://host>), then
+this requires an encrypted connection to the server.
+
+The B<tls> parameter is only available when the plugin was compiled
+against libnbd with TLS support; C<nbdkit --dump-plugin nbd> will
+contain C<libnbd_tls=1> if this is the case.  Note the difference
+between C<--tls=...> controlling what nbdkit serves, and C<tls=...>
+controlling what the nbd plugin connects to as a client.
+
+=item B<tls-certificates=>DIR
+
+This specifies the directory containing X.509 client certificates to
+present to the server.
+
+=item B<tls-verify=>BOOL
+
+This defaults to true; setting it to false disables server name
+verification, which opens you to potential Man-in-the-Middle (MITM)
+attacks, but allows for a simpler setup for distributing certificates.
+
+=item B<tls-username=>NAME
+
+If provided, this overrides the user name to present to the server
+alongside the certificate.
+
+=item B<tls-psk=>FILE
+
+If provided, this is the filename containing the Pre-Shared Keys (PSK)
+to present to the server. While this is easier to set up than X.509,
+it requires that the PSK file be transmitted over a secure channel.
+
 =back
 
 =head1 EXAMPLES
@@ -104,9 +144,9 @@ that the old server exits.
    nbdkit --exit-with-parent --tls=require nbd socket=$sock &
    exec /path/to/oldserver --socket=$sock )
 
- ┌────────────┐          ┌────────┐          ┌────────────┐
- │ new client │ ────────▶│ nbdkit │ ────────▶│ old server │
- └────────────┘   TCP    └────────┘   Unix   └────────────┘
+ ┌────────────┐   TLS    ┌────────┐  plaintext  ┌────────────┐
+ │ new client │ ────────▶│ nbdkit │ ───────────▶│ old server │
+ └────────────┘   TCP    └────────┘    Unix     └────────────┘
 
 Combine nbdkit's partition filter with qemu-nbd's ability to visit
 qcow2 files (nbdkit does not have a native qcow2 plugin), performing
@@ -121,16 +161,17 @@ utilize a 5-second retry to give qemu-nbd time to create the socket:
    exec qemu-nbd -k $sock -f qcow2 /path/to/image.qcow2 )
 
 Conversely, expose the contents of export I<foo> from a new style
-server with unencrypted data to a client that can only consume
+server with encrypted data to a client that can only consume
 unencrypted old style. Use I<--run> to clean up nbdkit at the time the
-client exits.
+client exits.  In general, note that it is best to keep the plaintext
+connection limited to a Unix socket on the local machine.
 
- nbdkit -U - -o nbd hostname=example.com export=foo \
+ nbdkit -U - -o --tls=off nbd hostname=example.com export=foo tls=require \
   --run '/path/to/oldclient --socket=$unixsocket'
 
- ┌────────────┐          ┌────────┐          ┌────────────┐
- │ old client │ ────────▶│ nbdkit │ ────────▶│ new server │
- └────────────┘   Unix   └────────┘   TCP    └────────────┘
+ ┌────────────┐  plaintext  ┌────────┐   TLS    ┌────────────┐
+ │ old client │ ───────────▶│ nbdkit │ ────────▶│ new server │
+ └────────────┘    Unix     └────────┘   TCP    └────────────┘
 
 Learn which features are provided by libnbd by inspecting the
 C<libnbd_*> lines:

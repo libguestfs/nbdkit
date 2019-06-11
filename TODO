@@ -90,13 +90,6 @@ qemu-nbd for these use cases.
   https://lists.gnu.org/archive/html/qemu-devel/2017-11/msg02971.html
   is a partial solution but it needs cleaning up.
 
-nbdkit-nbd-plugin could use enhancements:
-
-* Enable client-side TLS (right now, the nbd plugin allows us to
-  support an encrypted client connecting to a plain server; but we
-  would need TLS to support a plain client connecting to an encrypted
-  server).
-
 nbdkit-floppy-plugin:
 
 * Add boot sector support.  In theory this is easy (eg. using
@@ -159,11 +152,7 @@ Filters allow certain types of composition, but others would not be
 possible, for example RAIDing over multiple nbd sources.  Because the
 plugin API limits us to loading a single plugin to the server, the
 best way to do this (and the most robust) is to compose multiple
-nbdkit processes.
-
-The nbd plugin (plugins/nbd) already contains an NBD client, so we
-could factor this client out and make it available to other plugins to
-use.
+nbdkit processes.  Perhaps libnbd will prove useful for this purpose.
 
 Build-related
 -------------

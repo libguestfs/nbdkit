@@ -55,8 +55,8 @@ if [ ! -f "$pkidir/ca-cert.pem" ]; then
     exit 77
 fi
 
-# Unfortunately qemu cannot do TLS over a Unix domain socket (nbdkit
-# probably can, although it is not tested).  Find an unused port to
+# Unfortunately qemu 4.0 cannot do TLS over a Unix domain socket (nbdkit
+# can, but that is tested in tests-nbd-tls.sh).  Find an unused port to
 # listen on.
 pick_unused_port
 
