@@ -39,7 +39,7 @@ use std::mem;
 // function must return.
 #[repr(C)]
 pub struct Plugin {
-    _struct_size: uint64_t,
+    _struct_size: u64,
     _api_version: c_int,
     _thread_model: c_int,
 
@@ -58,7 +58,7 @@ pub struct Plugin {
     pub open: extern fn (c_int) -> *mut c_void,
     pub close: Option<extern fn (*mut c_void)>,
 
-    pub get_size: extern fn (*mut c_void) -> int64_t,
+    pub get_size: extern fn (*mut c_void) -> i64,
 
     pub can_write: Option<extern fn (*mut c_void) -> c_int>,
     pub can_flush: Option<extern fn (*mut c_void) -> c_int>,
@@ -79,19 +79,19 @@ pub struct Plugin {
     pub can_zero: Option<extern fn (*mut c_void) -> c_int>,
     pub can_fua: Option<extern fn (*mut c_void) -> c_int>,
 
-    pub pread: extern fn (h: *mut c_void, buf: *mut c_char, count: uint32_t,
-                          offset: uint64_t,
-                          flags: uint32_t) -> c_int,
+    pub pread: extern fn (h: *mut c_void, buf: *mut c_char, count: u32,
+                          offset: u64,
+                          flags: u32) -> c_int,
     pub pwrite: Option<extern fn (h: *mut c_void, buf: *const c_char,
-                                  count: uint32_t, offset: uint64_t,
-                                  flags: uint32_t) -> c_int>,
-    pub flush: Option<extern fn (h: *mut c_void, flags: uint32_t) -> c_int>,
+                                  count: u32, offset: u64,
+                                  flags: u32) -> c_int>,
+    pub flush: Option<extern fn (h: *mut c_void, flags: u32) -> c_int>,
     pub trim: Option<extern fn (h: *mut c_void,
-                                count: uint32_t, offset: uint64_t,
-                                flags: uint32_t) -> c_int>,
+                                count: u32, offset: u64,
+                                flags: u32) -> c_int>,
     pub zero: Option<extern fn (h: *mut c_void,
-                                count: uint32_t, offset: uint64_t,
-                                flags: uint32_t) -> c_int>,
+                                count: u32, offset: u64,
+                                flags: u32) -> c_int>,
 
     pub magic_config_key: *const c_char,
 
@@ -109,12 +109,12 @@ impl Plugin {
     pub fn new (thread_model: ThreadModel,
                 name: *const c_char,
                 open: extern fn (c_int) -> *mut c_void,
-                get_size: extern fn (*mut c_void) -> int64_t,
+                get_size: extern fn (*mut c_void) -> i64,
                 pread: extern fn (h: *mut c_void, buf: *mut c_char,
-                                  count: uint32_t, offset: uint64_t,
-                                  flags: uint32_t) -> c_int) -> Plugin {
+                                  count: u32, offset: u64,
+                                  flags: u32) -> c_int) -> Plugin {
         Plugin {
-            _struct_size: mem::size_of::<Plugin>() as uint64_t,
+            _struct_size: mem::size_of::<Plugin>() as u64,
             _api_version: 2,
             _thread_model: thread_model as c_int,
             name: name,
