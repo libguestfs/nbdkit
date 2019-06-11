@@ -29,11 +29,8 @@
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-extern crate libc;
-
-use libc::*;
-use std::os::raw::c_int;
 use std::mem;
+use std::os::raw::{c_char, c_int, c_void};
 
 // This struct describes the plugin ABI which your plugin_init()
 // function must return.

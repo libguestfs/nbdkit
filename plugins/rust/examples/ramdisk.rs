@@ -34,9 +34,8 @@ extern crate nbdkit;
 #[macro_use]
 extern crate lazy_static;
 
-use libc::*;
 use std::ptr;
-use std::os::raw::c_int;
+use std::os::raw::{c_char, c_int, c_void};
 use std::sync::Mutex;
 
 use nbdkit::*;
