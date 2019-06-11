@@ -47,6 +47,7 @@ EXTRA_DIST = \
 	test-cache.sh \
 	test-cache-max-size.sh \
 	test-cache-on-read.sh \
+	test-cacheextents.sh \
 	test-captive.sh \
 	test-cow.sh \
 	test-cxx.sh \
@@ -864,6 +865,9 @@ TESTS += \
 	test-cache-on-read.sh
 endif HAVE_GUESTFISH
 TESTS += test-cache-max-size.sh
+
+# cacheextents filter test.
+TESTS += test-cacheextents.sh
 
 # cow filter test.
 if HAVE_GUESTFISH

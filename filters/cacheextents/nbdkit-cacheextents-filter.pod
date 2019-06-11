@@ -1,0 +1,50 @@
+=head1 NAME
+
+nbdkit-cacheextents-filter - cache extents
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=cacheextents plugin
+
+=head1 DESCRIPTION
+
+C<nbdkit-cacheextents-filter> is a filter that caches the result of last
+extents() call.
+
+A common use for this filter is to improve performance when using a
+client performing a linear pass over the entire image while asking for
+only one extent at a time (such as S<C<qemu-img convert>>), but where
+the plugin can provide multiple extents for the same high latency as a
+single extent (such as L<nbdkit-vddk-plugin(1)>).  For example:
+
+ nbdkit -U - --filter=cacheextents --run 'qemu-img map $nbd' vddk ...
+
+For files with big extents (when it is unlikely for one extents() call
+to return multiple different extents) this does not slow down the
+access.
+
+This filter only caches image metadata; to also cache image contents,
+place this filter between L<nbdkit-cache-filter(1)> and the plugin.
+
+=head1 PARAMETERS
+
+There are no parameters specific to nbdkit-cacheextents-filter.  Any
+parameters are passed through to and processed by the underlying
+plugin in the normal way.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-cache-filter(1)>,
+L<nbdkit-readahead-filter(1)>,
+L<nbdkit-vddk-plugin(1)>,
+L<nbdkit-filter(3)>,
+L<qemu-img(1)>.
+
+=head1 AUTHORS
+
+Martin Kletzander
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

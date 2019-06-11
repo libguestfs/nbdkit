@@ -31,6 +31,10 @@ C<f_bsize> field of L<fstatvfs(3)>), to ease the implementation. If
 you need to round the image size up instead to access the last few
 bytes, combine this filter with L<nbdkit-truncate-filter(1)>.
 
+This filter only caches image contents; to also cache image metadata,
+place L<nbdkit-cacheextents-filter(1)> between this filter and the
+plugin.
+
 =head1 PARAMETERS
 
 =over 4
@@ -141,6 +145,7 @@ environment variable before starting nbdkit.
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-cacheextents-filter(1)>,
 L<nbdkit-readahead-filter(1)>,
 L<nbdkit-truncate-filter(1)>,
 L<nbdkit-filter(3)>,

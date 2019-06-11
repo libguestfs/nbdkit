@@ -834,6 +834,7 @@ plugins="$(echo $(printf %s\\n $lang_plugins $non_lang_plugins | sort -u))"
 filters="\
         blocksize \
         cache \
+        cacheextents \
         cow \
         delay \
         error \
@@ -911,6 +912,7 @@ AC_CONFIG_FILES([Makefile
                  filters/Makefile
                  filters/blocksize/Makefile
                  filters/cache/Makefile
+                 filters/cacheextents/Makefile
                  filters/cow/Makefile
                  filters/delay/Makefile
                  filters/error/Makefile
