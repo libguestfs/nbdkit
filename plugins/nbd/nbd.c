@@ -40,11 +40,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <limits.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <sys/socket.h>
 #include <sys/un.h>
 #include <assert.h>
 #include <pthread.h>
@@ -581,8 +576,6 @@ nbdplug_close (void *handle)
   if (!shared)
     nbdplug_close_handle (h);
 }
-
-
 
 /* Get the file size. */
 static int64_t
