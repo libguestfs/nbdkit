@@ -470,6 +470,7 @@ nbdplug_open_handle (int readonly)
 {
   struct handle *h;
   int r;
+  unsigned long retries = retry;
 
   h = calloc (1, sizeof *h);
   if (h == NULL) {
@@ -509,7 +510,7 @@ nbdplug_open_handle (int readonly)
   else
     r = nbd_connect_tcp (h->nbd, hostname, port);
   if (r == -1) {
-    if (retry--) {
+    if (retries--) {
       nbdkit_debug ("connect failed; will try again: %s", nbd_get_error ());
       nbd_close (h->nbd);
       sleep (1);

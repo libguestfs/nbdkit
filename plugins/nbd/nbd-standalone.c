@@ -996,6 +996,7 @@ nbd_open_handle (int readonly)
   struct handle *h;
   struct old_handshake old;
   uint64_t version;
+  unsigned long retries = retry;
 
   h = calloc (1, sizeof *h);
   if (h == NULL) {
@@ -1009,7 +1010,7 @@ nbd_open_handle (int readonly)
   else
     h->fd = nbd_connect_tcp ();
   if (h->fd == -1) {
-    if (retry--) {
+    if (retries--) {
       sleep (1);
       goto retry;
     }
