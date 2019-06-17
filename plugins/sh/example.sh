@@ -133,11 +133,32 @@ case "$1" in
         fallocate --help >/dev/null 2>&1 || exit 3
         ;;
 
+    # cache)
+        # Implement an efficient prefetch, if desired.
+        # It is intentionally omitted from this example.
+        # dd iflag=skip_bytes,count_bytes skip=$4 count=$3 \
+        #    if=$f of=/dev/null || exit 1
+        # ;;
+
     can_cache)
         # Caching is not advertised to the client unless can_cache prints
         # a tri-state value.  Here, we choose for caching to be a no-op,
         # by omitting counterpart handling for 'cache'.
         echo native
+        ;;
+
+    extents)
+        # Report extent (block status) information as 'offset length [type]'.
+        # This example could omit the handler, since it just matches
+        # the default behavior of treating everything as data; but if
+        # your code can detect holes, this demonstrates the usage.
+        echo "$4           $(($3/2)) 0"
+        echo "$(($4+$3/2)) $(($3/2))"
+        # echo "$4 $3 hole,zero"
+        ;;
+
+    can_extents)
+        # Similar to can_write
         ;;
 
     *)
