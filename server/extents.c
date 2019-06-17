@@ -45,6 +45,12 @@
 
 #include "internal.h"
 
+/* Cap nr_extents to avoid sending over-large replies to the client,
+ * and to avoid a plugin with frequent alternations consuming too much
+ * memory.
+ */
+#define MAX_EXTENTS (1 * 1024 * 1024)
+
 struct nbdkit_extents {
   struct nbdkit_extent *extents;
   size_t nr_extents, allocated;
@@ -163,8 +169,8 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
   if (length == 0)
     return 0;
 
-  /* Ignore extents beyond the end of the range. */
-  if (offset >= exts->end)
+  /* Ignore extents beyond the end of the range, or if list is full. */
+  if (offset >= exts->end || exts->nr_extents >= MAX_EXTENTS)
     return 0;
 
   /* Shorten extents that overlap the end of the range. */
