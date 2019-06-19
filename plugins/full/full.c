@@ -94,6 +94,13 @@ full_get_size (void *handle)
   return size;
 }
 
+/* Serves the same data over multiple connections. */
+static int
+full_can_multi_conn (void *handle)
+{
+  return 1;
+}
+
 /* Cache. */
 static int
 full_can_cache (void *handle)
@@ -161,6 +168,7 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key  = "size",
   .open              = full_open,
   .get_size          = full_get_size,
+  .can_multi_conn    = full_can_multi_conn,
   .can_cache         = full_can_cache,
   .pread             = full_pread,
   .pwrite            = full_pwrite,

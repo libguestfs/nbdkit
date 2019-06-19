@@ -67,6 +67,13 @@ zero_get_size (void *handle)
   return 0;
 }
 
+/* Serves the same data over multiple connections. */
+static int
+zero_can_multi_conn (void *handle)
+{
+  return 1;
+}
+
 /* Cache. */
 static int
 zero_can_cache (void *handle)
@@ -92,6 +99,7 @@ static struct nbdkit_plugin plugin = {
   .config            = zero_config,
   .open              = zero_open,
   .get_size          = zero_get_size,
+  .can_multi_conn    = zero_can_multi_conn,
   .can_cache         = zero_can_cache,
   .pread             = zero_pread,
   /* In this plugin, errno is preserved properly along error return
