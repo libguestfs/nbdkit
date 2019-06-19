@@ -65,7 +65,7 @@ else !HAVE_LIBNBD
 nbdkit_nbd_plugin_la_SOURCES += \
 	nbd-standalone.c
 nbdkit_nbd_plugin_la_CPPFLAGS += \
-	-I$(top_srcdir)/common/protocol \
+	-I$(top_srcdir)/common/protocol
 nbdkit_nbd_plugin_la_LIBADD += \
 	$(top_builddir)/common/protocol/libprotocol.la
 
