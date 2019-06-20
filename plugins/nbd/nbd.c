@@ -45,6 +45,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <poll.h>
+#include <fcntl.h>
 
 #include <libnbd.h>
 
@@ -332,9 +333,13 @@ nbdplug_reader (void *handle)
       nbd_aio_notify_write (h->nbd);
 
     /* Check if we were kicked because a command was started */
-    if (fds[1].revents & POLLIN && read (h->fds[0], &c, 1) != 1) {
-      nbdkit_error ("failed to read pipe: %m");
-      break;
+    if (fds[1].revents & POLLIN) {
+      while (read (h->fds[0], &c, 1) == 1)
+        /* Drain any backlog */;
+      if (errno != EAGAIN) {
+        nbdkit_error ("failed to read pipe: %m");
+        break;
+      }
     }
 
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
@@ -417,7 +422,7 @@ nbdplug_register (struct handle *h, int64_t cookie)
 
   /* While locked, kick the reader thread and add our transaction */
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
-  if (write (h->fds[1], &c, 1) != 1) {
+  if (write (h->fds[1], &c, 1) != 1 && errno != EAGAIN) {
     nbdkit_error ("write to pipe: %m");
     free (trans);
     return NULL;
@@ -472,7 +477,7 @@ nbdplug_open_handle (int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
-  if (pipe (h->fds)) {
+  if (pipe2 (h->fds, O_NONBLOCK)) {
     nbdkit_error ("pipe: %m");
     free (h);
     return NULL;
