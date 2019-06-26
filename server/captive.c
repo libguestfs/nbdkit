@@ -66,7 +66,19 @@ run_command (void)
     exit (EXIT_FAILURE);
   }
 
-  /* Construct $nbd "URL".  Unfortunately guestfish and qemu take
+  /* Construct $uri. */
+  fprintf (fp, "uri=");
+  if (port) {
+    fprintf (fp, "nbd://localhost:");
+    shell_quote (port, fp);
+  }
+  else if (unixsocket) {
+    fprintf (fp, "nbd+unix://\\?socket=");
+    uri_quote (unixsocket, fp);
+  }
+  fprintf (fp, "\n");
+
+  /* Construct older $nbd "URL".  Unfortunately guestfish and qemu take
    * different syntax, so try to guess which one we need.
    */
   fprintf (fp, "nbd=");

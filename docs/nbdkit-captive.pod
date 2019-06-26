@@ -42,9 +42,15 @@ The following shell variables are available in the I<--run> argument:
 
 =over 4
 
+=item C<$uri>
+
+A URI that refers to the nbdkit port or socket in the preferred form
+documented by the NBD project.
+
 =item C<$nbd>
 
-A URL that refers to the nbdkit port or socket.
+An older URL that refers to the nbdkit port or socket in a manner
+specific to certain tools.
 
 Note there is some magic here, since qemu and guestfish URLs have a
 different format, so nbdkit tries to guess which you are running.  If
