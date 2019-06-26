@@ -62,7 +62,9 @@ For example:
 would specify Joliet (I<-J>), Rock Ridge (I<-r>) and TRANS.TBL (I<-T>)
 extensions, and specify the volume ID (I<-V>) as C<My Disk Image>.
 
-Take care when quoting this parameter.
+Take care when quoting this parameter; nbdkit passes the resulting
+string through another layer of shell interpretation without any
+sanity checks for unquoted shell metacharacters.
 
 =item B<prog=>mkisofs
 
