@@ -56,7 +56,7 @@ shell_quote (const char *str, FILE *fp)
 
   /* If the string consists only of safe characters, output it as-is. */
   len = strlen (str);
-  if (len == strspn (str, safe_chars)) {
+  if (len > 0 && len == strspn (str, safe_chars)) {
     fputs (str, fp);
     return;
   }
