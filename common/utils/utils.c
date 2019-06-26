@@ -75,6 +75,33 @@ shell_quote (const char *str, FILE *fp)
   fputc ('"', fp);
 }
 
+/* Print str to fp, URI quoting if necessary.
+ * The resulting string is safe for use in a URI path or query component,
+ * and can be passed through the shell without further quoting.
+ */
+void
+uri_quote (const char *str, FILE *fp)
+{
+  /* safe_chars contains the RFC 3986 unreserved characters plus '/'. */
+  const char *safe_chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_~/";
+  size_t i, len;
+
+  /* If the string consists only of safe characters, output it as-is. */
+  len = strlen (str);
+  if (len == strspn (str, safe_chars)) {
+    fputs (str, fp);
+    return;
+  }
+
+  for (i = 0; i < len; ++i) {
+    if (strchr (safe_chars, str[i]))
+      fputc (str[i], fp);
+    else
+      fprintf (fp, "%%%02X", str[i] & 0xff);
+  }
+}
+
 /* Convert exit status to nbd_error.  If the exit status was nonzero
  * or another failure then -1 is returned.
  */
