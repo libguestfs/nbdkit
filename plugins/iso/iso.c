@@ -95,7 +95,8 @@ make_iso (void)
     return -1;
   }
 
-  fprintf (fp, "%s -quiet", isoprog);
+  shell_quote (isoprog, fp);
+  fprintf (fp, " -quiet");
   if (params)
     fprintf (fp, " %s", params);
   for (i = 0; i < nr_dirs; ++i) {
