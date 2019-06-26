@@ -35,6 +35,7 @@ Makefile.in
 /common/include/test-random
 /common/include/test-tvdiff
 /common/protocol/protostrings.c
+/common/utils/test-quotes
 /compile
 /config.guess
 /config.h
