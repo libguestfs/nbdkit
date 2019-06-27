@@ -34,4 +34,5 @@ include $(top_srcdir)/common-rules.mk
 include_HEADERS = \
 	nbdkit-common.h \
 	nbdkit-plugin.h \
-	nbdkit-filter.h
+	nbdkit-filter.h \
+	$(NULL)

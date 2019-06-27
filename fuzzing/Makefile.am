@@ -39,4 +39,5 @@ EXTRA_DIST = \
 	testcase_dir/newstyle-cflags-go \
 	testcase_dir/newstyle-cflags-go-read \
 	testcase_dir/newstyle-cflags-go-read4 \
-	testcase_dir/newstyle-cflags-go-write
+	testcase_dir/newstyle-cflags-go-write \
+	$(NULL)

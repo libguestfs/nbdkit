@@ -33,7 +33,8 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	nbdkit-ruby-plugin.pod \
-	example.rb
+	example.rb \
+	$(NULL)
 
 if HAVE_RUBY
 
@@ -41,19 +42,24 @@ plugin_LTLIBRARIES = nbdkit-ruby-plugin.la
 
 nbdkit_ruby_plugin_la_SOURCES = \
 	ruby.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_ruby_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	$(NULL)
 nbdkit_ruby_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(RUBY_CFLAGS)
+	$(RUBY_CFLAGS) \
+	$(NULL)
 nbdkit_ruby_plugin_la_LIBADD = \
-	$(RUBY_LIBS)
+	$(RUBY_LIBS) \
+	$(NULL)
 nbdkit_ruby_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(RUBY_LDFLAGS)
+	$(RUBY_LDFLAGS) \
+	$(NULL)
 
 if HAVE_POD
 

@@ -33,7 +33,8 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	nbdkit-tcl-plugin.pod \
-	example.tcl
+	example.tcl \
+	$(NULL)
 
 if HAVE_TCL
 
@@ -41,17 +42,21 @@ plugin_LTLIBRARIES = nbdkit-tcl-plugin.la
 
 nbdkit_tcl_plugin_la_SOURCES = \
 	tcl.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_tcl_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	$(NULL)
 nbdkit_tcl_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(TCL_CFLAGS)
+	$(TCL_CFLAGS) \
+	$(NULL)
 nbdkit_tcl_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(TCL_LIBS)
+	$(TCL_LIBS) \
+	$(NULL)
 
 if HAVE_POD
 

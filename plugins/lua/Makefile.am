@@ -33,7 +33,8 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	nbdkit-lua-plugin.pod \
-	example.lua
+	example.lua \
+	$(NULL)
 
 if HAVE_LUA
 
@@ -41,17 +42,21 @@ plugin_LTLIBRARIES = nbdkit-lua-plugin.la
 
 nbdkit_lua_plugin_la_SOURCES = \
 	lua.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_lua_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	$(NULL)
 nbdkit_lua_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(LUA_CFLAGS)
+	$(LUA_CFLAGS) \
+	$(NULL)
 nbdkit_lua_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(LUA_LIBS)
+	$(LUA_LIBS) \
+	$(NULL)
 
 if HAVE_POD
 

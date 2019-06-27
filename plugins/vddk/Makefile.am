@@ -33,7 +33,8 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	nbdkit-vddk-plugin.pod \
-	README.VDDK
+	README.VDDK \
+	$(NULL)
 
 if HAVE_VDDK
 
@@ -42,21 +43,24 @@ plugin_LTLIBRARIES = nbdkit-vddk-plugin.la
 nbdkit_vddk_plugin_la_SOURCES = \
 	vddk.c \
 	vddk-structs.h \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_vddk_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
-	-DVDDK_LIBDIR=\"$(libdir)/vmware-vix-disklib\"
-nbdkit_vddk_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-DVDDK_LIBDIR=\"$(libdir)/vmware-vix-disklib\" \
+	$(NULL)
+nbdkit_vddk_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_vddk_plugin_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
-	$(DL_LIBS)
+	$(DL_LIBS) \
+	$(NULL)
 nbdkit_vddk_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 

@@ -35,9 +35,10 @@ noinst_LTLIBRARIES = libregions.la
 
 libregions_la_SOURCES = \
         regions.c \
-        regions.h
+        regions.h \
+	$(NULL)
 libregions_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-libregions_la_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/include \
+	$(NULL)
+libregions_la_CFLAGS = $(WARNINGS_CFLAGS)

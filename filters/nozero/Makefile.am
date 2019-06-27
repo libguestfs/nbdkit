@@ -37,16 +37,18 @@ filter_LTLIBRARIES = nbdkit-nozero-filter.la
 
 nbdkit_nozero_filter_la_SOURCES = \
 	nozero.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 
 nbdkit_nozero_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-nbdkit_nozero_filter_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/include \
+	$(NULL)
+nbdkit_nozero_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_nozero_filter_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
+	$(NULL)
 
 if HAVE_POD
 

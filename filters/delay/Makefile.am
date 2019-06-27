@@ -37,15 +37,17 @@ filter_LTLIBRARIES = nbdkit-delay-filter.la
 
 nbdkit_delay_filter_la_SOURCES = \
 	delay.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 
 nbdkit_delay_filter_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
-nbdkit_delay_filter_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/include \
+	$(NULL)
+nbdkit_delay_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_delay_filter_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
+	$(NULL)
 
 if HAVE_POD
 

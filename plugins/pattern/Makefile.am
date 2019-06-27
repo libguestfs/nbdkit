@@ -37,16 +37,18 @@ plugin_LTLIBRARIES = nbdkit-pattern-plugin.la
 
 nbdkit_pattern_plugin_la_SOURCES = \
 	pattern.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_pattern_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-nbdkit_pattern_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/include \
+	$(NULL)
+nbdkit_pattern_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_pattern_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 

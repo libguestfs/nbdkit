@@ -35,12 +35,13 @@ noinst_LTLIBRARIES = libbitmap.la
 
 libbitmap_la_SOURCES = \
         bitmap.c \
-        bitmap.h
+        bitmap.h \
+	$(NULL)
 libbitmap_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-libbitmap_la_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/include \
+	$(NULL)
+libbitmap_la_CFLAGS = $(WARNINGS_CFLAGS)
 
 # Unit tests.
 
@@ -50,6 +51,6 @@ check_PROGRAMS = test-bitmap
 test_bitmap_SOURCES = test-bitmap.c bitmap.c bitmap.h
 test_bitmap_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-test_bitmap_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/include \
+	$(NULL)
+test_bitmap_CFLAGS = $(WARNINGS_CFLAGS)

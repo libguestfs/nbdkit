@@ -39,18 +39,23 @@ plugin_LTLIBRARIES = nbdkit-curl-plugin.la
 
 nbdkit_curl_plugin_la_SOURCES = \
 	curl.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_curl_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	$(NULL)
 nbdkit_curl_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(CURL_CFLAGS)
+	$(CURL_CFLAGS) \
+	$(NULL)
 nbdkit_curl_plugin_la_LIBADD = \
-	$(CURL_LIBS)
+	$(CURL_LIBS) \
+	$(NULL)
 nbdkit_curl_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 

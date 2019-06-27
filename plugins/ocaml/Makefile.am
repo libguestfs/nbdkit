@@ -35,7 +35,8 @@ EXTRA_DIST = \
 	NBDKit.mli \
 	NBDKit.ml \
 	nbdkit-ocaml-plugin.pod \
-	example.ml
+	example.ml \
+	$(NULL)
 
 if HAVE_OCAML
 
@@ -57,15 +58,18 @@ lib_LTLIBRARIES = libnbdkitocaml.la
 
 libnbdkitocaml_la_SOURCES = \
 	ocaml.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 libnbdkitocaml_la_CPPFLAGS = \
 	-I$(OCAMLLIB) \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	$(NULL)
 
 libnbdkitocaml_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	-fPIC
+	-fPIC \
+	$(NULL)
 
 # The example plugin.
 noinst_SCRIPTS = nbdkit-ocamlexample-plugin.so

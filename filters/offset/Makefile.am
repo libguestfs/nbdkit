@@ -37,18 +37,21 @@ filter_LTLIBRARIES = nbdkit-offset-filter.la
 
 nbdkit_offset_filter_la_SOURCES = \
 	offset.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 
 nbdkit_offset_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/utils
-nbdkit_offset_filter_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
+nbdkit_offset_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_offset_filter_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
+	$(NULL)
 nbdkit_offset_filter_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
 
 if HAVE_POD
 

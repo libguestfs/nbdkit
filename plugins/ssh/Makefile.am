@@ -39,19 +39,24 @@ plugin_LTLIBRARIES = nbdkit-ssh-plugin.la
 
 nbdkit_ssh_plugin_la_SOURCES = \
 	ssh.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_ssh_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
+	-I$(top_srcdir)/common/include \
+	$(NULL)
 nbdkit_ssh_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(SSH_CFLAGS)
+	$(SSH_CFLAGS) \
+	$(NULL)
 nbdkit_ssh_plugin_la_LIBADD = \
-	$(SSH_LIBS)
+	$(SSH_LIBS) \
+	$(NULL)
 nbdkit_ssh_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 

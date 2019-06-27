@@ -36,6 +36,6 @@ noinst_LTLIBRARIES = libgpt.la
 libgpt_la_SOURCES = \
         efi-crc32.c \
         efi-crc32.h \
-        gpt.h
-libgpt_la_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+        gpt.h \
+	$(NULL)
+libgpt_la_CFLAGS = $(WARNINGS_CFLAGS)

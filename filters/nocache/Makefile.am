@@ -37,16 +37,18 @@ filter_LTLIBRARIES = nbdkit-nocache-filter.la
 
 nbdkit_nocache_filter_la_SOURCES = \
 	nocache.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 
 nbdkit_nocache_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-nbdkit_nocache_filter_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/include \
+	$(NULL)
+nbdkit_nocache_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_nocache_filter_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
+	$(NULL)
 
 if HAVE_POD
 

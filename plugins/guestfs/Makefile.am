@@ -39,20 +39,25 @@ plugin_LTLIBRARIES = nbdkit-guestfs-plugin.la
 
 nbdkit_guestfs_plugin_la_SOURCES = \
 	guestfs-plugin.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_guestfs_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
 nbdkit_guestfs_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(LIBGUESTFS_CFLAGS)
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 nbdkit_guestfs_plugin_la_LIBADD = \
 	$(LIBGUESTFS_LIBS) \
-	$(top_builddir)/common/utils/libutils.la
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
 nbdkit_guestfs_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 

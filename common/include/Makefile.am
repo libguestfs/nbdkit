@@ -44,7 +44,8 @@ EXTRA_DIST = \
 	nextnonzero.h \
 	random.h \
 	rounding.h \
-	tvdiff.h
+	tvdiff.h \
+	$(NULL)
 
 # Unit tests.
 
@@ -57,7 +58,8 @@ TESTS = \
 	test-minmax \
 	test-nextnonzero \
 	test-random \
-	test-tvdiff
+	test-tvdiff \
+	$(NULL)
 check_PROGRAMS = $(TESTS)
 
 test_byte_swapping_SOURCES = test-byte-swapping.c byte-swapping.h

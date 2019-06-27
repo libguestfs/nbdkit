@@ -35,13 +35,15 @@ EXTRA_DIST = \
 	Cargo.toml.in \
 	examples/ramdisk.rs \
 	nbdkit-rust-plugin.pod \
-	src/lib.rs
+	src/lib.rs \
+	$(NULL)
 
 if HAVE_RUST
 
 noinst_SCRIPTS = \
 	target/release/libnbdkit.rlib \
-	target/release/examples/libramdisk.so
+	target/release/examples/libramdisk.so \
+	$(NULL)
 
 target/release/libnbdkit.rlib: Cargo.toml src/lib.rs
 	cargo build --release

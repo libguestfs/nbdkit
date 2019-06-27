@@ -39,18 +39,23 @@ plugin_LTLIBRARIES = nbdkit-libvirt-plugin.la
 
 nbdkit_libvirt_plugin_la_SOURCES = \
 	libvirt-plugin.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_libvirt_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	$(NULL)
 nbdkit_libvirt_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(LIBVIRT_CFLAGS)
+	$(LIBVIRT_CFLAGS) \
+	$(NULL)
 nbdkit_libvirt_plugin_la_LIBADD = \
-	$(LIBVIRT_LIBS)
+	$(LIBVIRT_LIBS) \
+	$(NULL)
 nbdkit_libvirt_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 

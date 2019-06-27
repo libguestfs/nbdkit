@@ -39,18 +39,23 @@ plugin_LTLIBRARIES = nbdkit-gzip-plugin.la
 
 nbdkit_gzip_plugin_la_SOURCES = \
 	gzip.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_gzip_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	$(NULL)
 nbdkit_gzip_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(ZLIB_CFLAGS)
+	$(ZLIB_CFLAGS) \
+	$(NULL)
 nbdkit_gzip_plugin_la_LIBADD = \
-	$(ZLIB_LIBS)
+	$(ZLIB_LIBS) \
+	$(NULL)
 nbdkit_gzip_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 

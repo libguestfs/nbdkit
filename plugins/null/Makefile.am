@@ -37,14 +37,16 @@ plugin_LTLIBRARIES = nbdkit-null-plugin.la
 
 nbdkit_null_plugin_la_SOURCES = \
 	null.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_null_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
-nbdkit_null_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/include \
+	$(NULL)
+nbdkit_null_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_null_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared
+	-module -avoid-version -shared \
+	$(NULL)
 
 if HAVE_POD
 

@@ -34,15 +34,16 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = \
 	protocol.h \
 	protostrings.c \
-	protostrings.sed
+	protostrings.sed \
+	$(NULL)
 
 noinst_LTLIBRARIES = libprotocol.la
 
 libprotocol_la_SOURCES = \
         protostrings.c \
-	protocol.h
-libprotocol_la_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	protocol.h \
+	$(NULL)
+libprotocol_la_CFLAGS = $(WARNINGS_CFLAGS)
 
 # protostrings.c is generated from the protocol.h header file where it
 # is used to map NBD protocol flags to strings.

@@ -42,7 +42,8 @@ EXTRA_DIST = \
 	m4/.gitignore \
 	OTHER_PLUGINS \
 	scripts/git.orderfile \
-	SECURITY
+	SECURITY \
+	$(NULL)
 
 CLEANFILES += html/*.html
 
@@ -54,7 +55,8 @@ nbdkit_CPPFLAGS = \
 	-I$(top_srcdir)/server \
 	-Dbuilddir=\"$(abs_top_builddir)\" \
 	-Dsrcdir=\"$(abs_top_srcdir)\" \
-	-DVALGRIND=\"$(VALGRIND)\"
+	-DVALGRIND=\"$(VALGRIND)\" \
+	$(NULL)
 nbdkit_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_DEPENDENCIES = config.status
 
@@ -67,7 +69,8 @@ SUBDIRS = \
 	common/include \
 	common/protocol \
 	common/utils \
-	server
+	server \
+	$(NULL)
 
 if HAVE_PLUGINS
 SUBDIRS += \
@@ -76,7 +79,8 @@ SUBDIRS += \
 	common/regions \
 	common/sparse \
 	plugins \
-	filters
+	filters \
+	$(NULL)
 endif
 
 SUBDIRS += tests

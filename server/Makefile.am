@@ -63,7 +63,8 @@ nbdkit_SOURCES = \
 	usergroup.c \
 	utils.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 
 nbdkit_CPPFLAGS = \
 	-Dbindir=\"$(bindir)\" \
@@ -76,22 +77,26 @@ nbdkit_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/protocol \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
 nbdkit_CFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	$(WARNINGS_CFLAGS) \
 	$(GNUTLS_CFLAGS) \
 	$(LIBSELINUX_CFLAGS) \
-	$(VALGRIND_CFLAGS)
+	$(VALGRIND_CFLAGS) \
+	$(NULL)
 nbdkit_LDADD = \
 	$(GNUTLS_LIBS) \
 	$(LIBSELINUX_LIBS) \
 	$(DL_LIBS) \
 	$(top_builddir)/common/protocol/libprotocol.la \
-	$(top_builddir)/common/utils/libutils.la
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
 nbdkit_LDFLAGS = \
 	$(PTHREAD_LIBS) \
-	$(DL_LDFLAGS)
+	$(DL_LDFLAGS) \
+	$(NULL)
 if USE_LINKER_SCRIPT_FOR_SERVER
 nbdkit_LDFLAGS += -Wl,--version-script=$(srcdir)/nbdkit.syms
 endif
@@ -123,11 +128,14 @@ check_PROGRAMS = test-utils
 test_utils_SOURCES = \
 	test-utils.c \
 	utils.c \
-	extents.c
+	extents.c \
+	$(NULL)
 test_utils_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
 test_utils_CFLAGS = $(WARNINGS_CFLAGS) $(VALGRIND_CFLAGS)
 test_utils_LDADD = \
-	$(top_builddir)/common/utils/libutils.la
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)

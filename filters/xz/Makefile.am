@@ -43,20 +43,25 @@ nbdkit_xz_filter_la_SOURCES = \
 	xz.c \
 	xzfile.c \
 	xzfile.h \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 
 nbdkit_xz_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
 nbdkit_xz_filter_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(LIBLZMA_CFLAGS)
+	$(LIBLZMA_CFLAGS) \
+	$(NULL)
 nbdkit_xz_filter_la_LIBADD = \
 	$(LIBLZMA_LIBS) \
-	$(top_builddir)/common/utils/libutils.la
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
 nbdkit_xz_filter_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
+	$(NULL)
 
 if HAVE_POD
 

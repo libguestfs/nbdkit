@@ -41,22 +41,25 @@ nbdkit_partitioning_plugin_la_SOURCES = \
 	partition-mbr.c \
 	virtual-disk.c \
 	virtual-disk.h \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_partitioning_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/gpt \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/regions \
-	-I.
-nbdkit_partitioning_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I. \
+	$(NULL)
+nbdkit_partitioning_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_partitioning_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 nbdkit_partitioning_plugin_la_LIBADD = \
 	$(top_builddir)/common/gpt/libgpt.la \
-	$(top_builddir)/common/regions/libregions.la
+	$(top_builddir)/common/regions/libregions.la \
+	$(NULL)
 
 if HAVE_POD
 

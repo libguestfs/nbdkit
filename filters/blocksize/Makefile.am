@@ -37,16 +37,18 @@ filter_LTLIBRARIES = nbdkit-blocksize-filter.la
 
 nbdkit_blocksize_filter_la_SOURCES = \
 	blocksize.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 
 nbdkit_blocksize_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-nbdkit_blocksize_filter_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/include \
+	$(NULL)
+nbdkit_blocksize_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_blocksize_filter_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
+	$(NULL)
 
 if HAVE_POD
 

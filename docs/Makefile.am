@@ -42,7 +42,8 @@ EXTRA_DIST = \
 	nbdkit-tls.pod \
 	nbdkit-plugin.pod \
 	nbdkit-filter.pod \
-	synopsis.txt
+	synopsis.txt \
+	$(NULL)
 
 if HAVE_POD
 
@@ -55,7 +56,8 @@ man_MANS = \
 	nbdkit-service.1 \
 	nbdkit-tls.1 \
 	nbdkit-plugin.3 \
-	nbdkit-filter.3
+	nbdkit-filter.3 \
+	$(NULL)
 CLEANFILES += $(man_MANS)
 
 nbdkit.1: nbdkit.pod plugin-links.pod lang-plugin-links.pod filter-links.pod \

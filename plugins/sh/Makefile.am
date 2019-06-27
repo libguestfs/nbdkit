@@ -33,7 +33,8 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	nbdkit-sh-plugin.pod \
-	example.sh
+	example.sh \
+	$(NULL)
 
 plugin_LTLIBRARIES = nbdkit-sh-plugin.la
 
@@ -41,18 +42,21 @@ nbdkit_sh_plugin_la_SOURCES = \
 	call.c \
 	call.h \
 	sh.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_sh_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/utils
-nbdkit_sh_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
+nbdkit_sh_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_sh_plugin_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
 nbdkit_sh_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 

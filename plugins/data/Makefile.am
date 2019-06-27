@@ -33,29 +33,35 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	disk2data.pl \
-	nbdkit-data-plugin.pod
+	nbdkit-data-plugin.pod \
+	$(NULL)
 
 plugin_LTLIBRARIES = nbdkit-data-plugin.la
 
 nbdkit_data_plugin_la_SOURCES = \
 	data.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_data_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/sparse \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
 nbdkit_data_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(GNUTLS_CFLAGS)
+	$(GNUTLS_CFLAGS) \
+	$(NULL)
 nbdkit_data_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 nbdkit_data_plugin_la_LIBADD = \
 	$(top_builddir)/common/sparse/libsparse.la \
 	$(top_builddir)/common/utils/libutils.la \
-	$(GNUTLS_LIBS)
+	$(GNUTLS_LIBS) \
+	$(NULL)
 
 if HAVE_POD
 

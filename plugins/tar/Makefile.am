@@ -34,7 +34,8 @@ include $(top_srcdir)/common-rules.mk
 source = tar.pl
 
 EXTRA_DIST = \
-	$(source)
+	$(source) \
+	$(NULL)
 
 if HAVE_PERL
 

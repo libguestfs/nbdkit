@@ -37,20 +37,23 @@ plugin_LTLIBRARIES = nbdkit-memory-plugin.la
 
 nbdkit_memory_plugin_la_SOURCES = \
 	memory.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_memory_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/sparse \
-	-I$(top_srcdir)/common/utils
-nbdkit_memory_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
+nbdkit_memory_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_memory_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 nbdkit_memory_plugin_la_LIBADD = \
 	$(top_builddir)/common/sparse/libsparse.la \
-	$(top_builddir)/common/utils/libutils.la
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
 
 if HAVE_POD
 

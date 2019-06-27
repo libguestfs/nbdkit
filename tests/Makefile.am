@@ -132,7 +132,8 @@ EXTRA_DIST = \
 	test-version.sh \
 	test-version-filter.sh \
 	test-version-plugin.sh \
-	test-zero.sh
+	test-zero.sh \
+	$(NULL)
 
 # Use 'make check' to run the ordinary tests.  To run all the tests
 # under valgrind, use the following rule:
@@ -166,7 +167,8 @@ TESTS_ENVIRONMENT = PATH=$(abs_top_builddir):$(PATH) SRCDIR=$(srcdir)
 TESTS = \
 	test-help.sh \
 	test-version.sh \
-	test-dump-config.sh
+	test-dump-config.sh \
+	$(NULL)
 
 if HAVE_PLUGINS
 
@@ -185,10 +187,12 @@ TESTS += \
 	test-ip.sh \
 	test-socket-activation \
 	test-foreground.sh \
-	test-debug-flags.sh
+	test-debug-flags.sh \
+	$(NULL)
 
 check_PROGRAMS += \
-	test-socket-activation
+	test-socket-activation \
+	$(NULL)
 
 test_socket_activation_SOURCES = test-socket-activation.c
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
@@ -199,30 +203,35 @@ endif HAVE_PLUGINS
 check_PROGRAMS += \
 	test-just-plugin-header \
 	test-just-filter-header
+	$(NULL)
 TESTS += \
 	test-just-plugin-header \
 	test-just-filter-header
+	$(NULL)
 
 test_just_plugin_header_SOURCES = \
-	test-just-plugin-header.c
+	test-just-plugin-header.c \
+	$(NULL)
 test_just_plugin_header_CPPFLAGS = \
-	-I$(top_srcdir)/include
-test_just_plugin_header_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/include \
+	$(NULL)
+test_just_plugin_header_CFLAGS = $(WARNINGS_CFLAGS)
 
 test_just_filter_header_SOURCES = \
-	test-just-filter-header.c
+	test-just-filter-header.c \
+	$(NULL)
 test_just_filter_header_CPPFLAGS = \
-	-I$(top_srcdir)/include
-test_just_filter_header_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/include \
+	$(NULL)
+test_just_filter_header_CFLAGS = $(WARNINGS_CFLAGS)
 
 if CAN_TEST_ANSI_C
 # This builds a plugin using an ANSI (ISO C90) compiler to ensure that
 # the header file is compatible.  The plugin does nothing very
 # interesting, it's mainly a compile test.
 TESTS += \
-	test-ansi-c.sh
+	test-ansi-c.sh \
+	$(NULL)
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
 noinst_LTLIBRARIES += test-ansi-c-plugin.la
@@ -230,23 +239,26 @@ test-ansi-c.sh: test-ansi-c-plugin.la
 
 test_ansi_c_plugin_la_SOURCES = \
 	test-ansi-c-plugin.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 test_ansi_c_plugin_la_CPPFLAGS = \
 	-std=c90 -pedantic \
-	-I$(top_srcdir)/include
-test_ansi_c_plugin_la_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/include \
+	$(NULL)
+test_ansi_c_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_ansi_c_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared -rpath /nowhere
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 endif CAN_TEST_ANSI_C
 
 if HAVE_CXX
 # This builds a plugin and a filter using the C++ compiler.  They
 # don't do anything interesting when run.
 TESTS += \
-	test-cxx.sh
+	test-cxx.sh \
+	$(NULL)
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
 noinst_LTLIBRARIES += test-cxx-plugin.la test-cxx-filter.la
@@ -254,27 +266,31 @@ test-cxx.sh: test-cxx-plugin.la test-cxx-filter.la
 
 test_cxx_plugin_la_SOURCES = \
 	test-cxx-plugin.cpp \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 test_cxx_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
-test_cxx_plugin_la_CXXFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/include \
+	$(NULL)
+test_cxx_plugin_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_cxx_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared -rpath /nowhere
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 
 test_cxx_filter_la_SOURCES = \
 	test-cxx-filter.cpp \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 test_cxx_filter_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
-test_cxx_filter_la_CXXFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/include \
+	$(NULL)
+test_cxx_filter_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_cxx_filter_la_LDFLAGS = \
-	-module -avoid-version -shared -rpath /nowhere
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 endif HAVE_CXX
 
 # Exit with parent test.
@@ -282,11 +298,15 @@ check_PROGRAMS += test-exit-with-parent
 TESTS += test-exit-with-parent
 
 test_exit_with_parent_SOURCES = \
-	test-exit-with-parent.c test.h
+	test-exit-with-parent.c test.h \
+	$(NULL)
 test_exit_with_parent_CPPFLAGS = \
-	-I$(top_srcdir)/common/include
+	-I$(top_srcdir)/common/include \
+	$(NULL)
 test_exit_with_parent_CFLAGS = \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 
 # PKI files for the TLS tests.
 check_DATA += pki/.stamp
@@ -320,7 +340,8 @@ file-data: generate-file-data.sh
 # using qemu-io to kick off asynchronous requests.
 TESTS += \
 	test-parallel-file.sh \
-	test-parallel-nbd.sh
+	test-parallel-nbd.sh \
+	$(NULL)
 
 # Most in-depth tests need libguestfs, since that is a convenient way to
 # drive qemu.
@@ -337,7 +358,8 @@ TESTS_ENVIRONMENT += \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
 	LD_LIBRARY_PATH=../plugins/ocaml/.libs:$(LD_LIBRARY_PATH) \
-	LIBRARY_PATH=../plugins/ocaml/.libs:$(LIBRARY_PATH)
+	LIBRARY_PATH=../plugins/ocaml/.libs:$(LIBRARY_PATH) \
+	$(NULL)
 
 # Common test library.
 check_LTLIBRARIES += libtest.la
@@ -395,16 +417,20 @@ test_curl_SOURCES = \
 	test-curl.c \
 	web-server.c \
 	web-server.h \
-	test.h
+	test.h \
+	$(NULL)
 test_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
-	$(PTHREAD_CFLAGS)
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
 test_curl_LDFLAGS = \
-	$(PTHREAD_LIBS)
+	$(PTHREAD_LIBS) \
+	$(NULL)
 test_curl_LDADD = \
 	libtest.la \
-	$(LIBGUESTFS_LIBS)
+	$(LIBGUESTFS_LIBS) \
+	$(NULL)
 
 endif HAVE_GUESTFISH
 endif HAVE_CURL
@@ -416,7 +442,8 @@ TESTS += \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \
-	test-data-raw.sh
+	test-data-raw.sh \
+	$(NULL)
 
 test_data_SOURCES = test-data.c test.h
 test_data_CPPFLAGS = -I$(top_srcdir)/common/include
@@ -504,7 +531,8 @@ endif HAVE_ISO
 if HAVE_GUESTFISH
 TESTS += \
 	test-linuxdisk.sh \
-	test-linuxdisk-copy-out.sh
+	test-linuxdisk-copy-out.sh \
+	$(NULL)
 endif HAVE_GUESTFISH
 
 # memory plugin test.
@@ -519,26 +547,30 @@ test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 TESTS += \
 	test-partitioning1.sh \
 	test-partitioning4.sh \
-	test-partitioning6.sh
+	test-partitioning6.sh \
+	$(NULL)
 if HAVE_GUESTFISH
 TESTS += \
 	test-partitioning2.sh \
 	test-partitioning3.sh \
-	test-partitioning5.sh
+	test-partitioning5.sh \
+	$(NULL)
 endif HAVE_GUESTFISH
 
 # pattern plugin test.
 TESTS += \
 	test-pattern.sh \
 	test-pattern-largest.sh \
-	test-pattern-largest-for-qemu.sh
+	test-pattern-largest-for-qemu.sh \
+	$(NULL)
 
 # nbd plugin test.
 LIBGUESTFS_TESTS += test-nbd
 TESTS += \
 	test-nbd-extents.sh \
 	test-nbd-tls.sh \
-	test-nbd-tls-psk.sh
+	test-nbd-tls-psk.sh \
+	$(NULL)
 
 test_nbd_SOURCES = test-nbd.c test.h
 test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -590,16 +622,19 @@ endif HAVE_GUESTFISH
 check_DATA += \
 	ssh/sshd_config \
 	ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub \
-	ssh/authorized_keys
+	ssh/authorized_keys \
+	$(NULL)
 SSH_RANDOM_PORT := $(shell bash -c 'echo $$(( 10000 + $$RANDOM ))')
 CLEANFILES += \
 	ssh/*~ \
 	ssh/sshd_config \
-	ssh/authorized_keys
+	ssh/authorized_keys \
+	$(NULL)
 DISTCLEANFILES += \
 	ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub \
 	ssh/id_rsa ssh/id_rsa.pub \
-	stamp-ssh-host-key stamp-ssh-user-key
+	stamp-ssh-host-key stamp-ssh-user-key \
+	$(NULL)
 
 ssh/sshd_config: ssh/sshd_config.in Makefile
 	rm -f $@ $@-t
@@ -649,18 +684,21 @@ test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 noinst_LTLIBRARIES += libvixDiskLib.la
 TESTS += \
 	test-vddk.sh \
-	test-vddk-real.sh
+	test-vddk-real.sh \
+	$(NULL)
 
 libvixDiskLib_la_SOURCES = \
-	dummy-vddk.c
+	dummy-vddk.c \
+	$(NULL)
 libvixDiskLib_la_CPPFLAGS = \
-	-I$(top_srcdir)/plugins/vddk
-libvixDiskLib_la_CXXFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/plugins/vddk \
+	$(NULL)
+libvixDiskLib_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 libvixDiskLib_la_LDFLAGS = \
-	-shared -version-number 6:0:0 -rpath /nowhere
+	-shared -version-number 6:0:0 -rpath /nowhere \
+	$(NULL)
 
 # zero plugin test.
 TESTS += test-zero.sh
@@ -677,7 +715,9 @@ LIBGUESTFS_TESTS += test-ocaml
 # to build an actual plugin here.
 test_ocaml_SOURCES = test-ocaml.c test.h
 test_ocaml_CFLAGS = \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 test_ocaml_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 check_SCRIPTS += test-ocaml-plugin.so
@@ -696,13 +736,16 @@ if HAVE_PERL
 
 TESTS += \
 	test-dump-plugin-example4.sh \
-	test-shebang-perl.sh
+	test-shebang-perl.sh \
+	$(NULL)
 LIBGUESTFS_TESTS += test-perl
 
 test_perl_SOURCES = test-lang-plugins.c test.h
 test_perl_CFLAGS = \
 	-DLANG='"perl"' -DSCRIPT='"$(srcdir)/test.pl"' \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 test_perl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_PERL
@@ -712,13 +755,16 @@ if HAVE_PYTHON
 
 TESTS += \
 	test-python-exception.sh \
-	test-shebang-python.sh
+	test-shebang-python.sh \
+	$(NULL)
 LIBGUESTFS_TESTS += test-python
 
 test_python_SOURCES = test-lang-plugins.c test.h
 test_python_CFLAGS = \
 	-DLANG='"python"' -DSCRIPT='"$(srcdir)/test.py"' \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 test_python_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_PYTHON
@@ -730,14 +776,17 @@ if HAVE_RUBY
 # plugins/ruby/nbdkit-ruby-plugin.pod
 
 #LIBGUESTFS_TESTS += \
-#	test-ruby
+#	test-ruby \
+#	$(NULL)
 #TESTS += test-shebang-ruby.sh
 EXTRA_PROGRAMS += test-ruby
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \
 	-DLANG='"ruby"' -DSCRIPT='"$(srcdir)/test.rb"' \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 test_ruby_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_RUBY
@@ -750,7 +799,9 @@ CLEANFILES += test-shell.img
 test_shell_SOURCES = test-lang-plugins.c test.h
 test_shell_CFLAGS = \
 	-DLANG='"sh"' -DSCRIPT='"$(srcdir)/test-shell.sh"' \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 test_shell_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 test-shell.img:
@@ -766,7 +817,9 @@ LIBGUESTFS_TESTS += test-tcl
 test_tcl_SOURCES = test-lang-plugins.c test.h
 test_tcl_CFLAGS = \
 	-DLANG='"tcl"' -DSCRIPT='"$(srcdir)/test.tcl"' \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 test_tcl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_TCL
@@ -779,7 +832,9 @@ LIBGUESTFS_TESTS += test-lua
 test_lua_SOURCES = test-lang-plugins.c test.h
 test_lua_CFLAGS = \
 	-DLANG='"lua"' -DSCRIPT='"$(srcdir)/test.lua"' \
-	$(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
 test_lua_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_LUA
@@ -792,24 +847,30 @@ check_PROGRAMS += test-layers
 TESTS += test-layers.sh test-layers
 
 test_layers_SOURCES = \
-	test-layers.c
+	test-layers.c \
+	$(NULL)
 test_layers_CPPFLAGS = \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/protocol \
 	-I$(top_srcdir)/common/utils \
-	-I$(top_srcdir)/server
+	-I$(top_srcdir)/server \
+	$(NULL)
 test_layers_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(PTHREAD_CFLAGS)
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
 test_layers_LDFLAGS = \
-	$(PTHREAD_LIBS)
+	$(PTHREAD_LIBS) \
+	$(NULL)
 test_layers_LDADD = \
-	$(top_builddir)/common/utils/libutils.la
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
 test_layers_DEPENDENCIES = \
 	test-layers-plugin.la \
 	test-layers-filter1.la \
 	test-layers-filter2.la \
-	test-layers-filter3.la
+	test-layers-filter3.la \
+	$(NULL)
 
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
@@ -817,47 +878,56 @@ noinst_LTLIBRARIES += \
 	test-layers-plugin.la \
 	test-layers-filter1.la \
 	test-layers-filter2.la \
-	test-layers-filter3.la
+	test-layers-filter3.la \
+	$(NULL)
 
 test_layers_plugin_la_SOURCES = \
 	test-layers-plugin.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 test_layers_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
 test_layers_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_layers_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared -rpath /nowhere
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 
 test_layers_filter1_la_SOURCES = \
 	test-layers-filter.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 test_layers_filter1_la_CPPFLAGS = -I$(top_srcdir)/include
 test_layers_filter1_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter1"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_layers_filter1_la_LDFLAGS = \
-	-module -avoid-version -shared -rpath /nowhere
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 
 test_layers_filter2_la_SOURCES = \
 	test-layers-filter.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 test_layers_filter2_la_CPPFLAGS = -I$(top_srcdir)/include
 test_layers_filter2_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter2"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_layers_filter2_la_LDFLAGS = \
-	-module -avoid-version -shared -rpath /nowhere
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 
 test_layers_filter3_la_SOURCES = \
 	test-layers-filter.c \
-	$(top_srcdir)/include/nbdkit-filter.h
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 test_layers_filter3_la_CPPFLAGS = -I$(top_srcdir)/include
 test_layers_filter3_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter3"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_layers_filter3_la_LDFLAGS = \
-	-module -avoid-version -shared -rpath /nowhere
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 
 # blocksize filter test.
 TESTS += test-blocksize.sh
@@ -866,7 +936,8 @@ TESTS += test-blocksize.sh
 if HAVE_GUESTFISH
 TESTS += \
 	test-cache.sh \
-	test-cache-on-read.sh
+	test-cache-on-read.sh \
+	$(NULL)
 endif HAVE_GUESTFISH
 TESTS += test-cache-max-size.sh
 
@@ -895,7 +966,8 @@ test_error_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 TESTS += \
 	test-error0.sh \
 	test-error10.sh \
-	test-error100.sh
+	test-error100.sh \
+	$(NULL)
 
 # fua filter test.
 TESTS += test-fua.sh
@@ -920,7 +992,8 @@ test_offset_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 TESTS += \
 	test-offset2.sh \
-	test-offset-extents.sh
+	test-offset-extents.sh \
+	$(NULL)
 
 # partition filter test.
 TESTS += test-partition1.sh
@@ -931,7 +1004,8 @@ endif HAVE_GUESTFISH
 # rate filter test.
 TESTS += \
 	test-rate.sh \
-	test-rate-dynamic.sh
+	test-rate-dynamic.sh \
+	$(NULL)
 
 # readahead filter test.
 LIBGUESTFS_TESTS += test-readahead
@@ -947,7 +1021,8 @@ TESTS += \
 	test-truncate2.sh \
 	test-truncate3.sh \
 	test-truncate4.sh \
-	test-truncate-extents.sh
+	test-truncate-extents.sh \
+	$(NULL)
 
 # xz filter test.
 if HAVE_LIBLZMA
@@ -976,16 +1051,20 @@ test_xz_curl_SOURCES = \
 	test-xz-curl.c \
 	web-server.c \
 	web-server.h \
-	test.h
+	test.h \
+	$(NULL)
 test_xz_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
-	$(PTHREAD_CFLAGS)
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
 test_xz_curl_LDFLAGS = \
-	$(PTHREAD_LIBS)
+	$(PTHREAD_LIBS) \
+	$(NULL)
 test_xz_curl_LDADD = \
 	libtest.la \
-	$(LIBGUESTFS_LIBS)
+	$(LIBGUESTFS_LIBS) \
+	$(NULL)
 
 endif HAVE_CURL
 

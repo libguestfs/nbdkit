@@ -38,11 +38,12 @@ libutils_la_SOURCES = \
 	cleanup-nbdkit.c \
 	cleanup.h \
 	utils.c \
-	utils.h
+	utils.h \
+	$(NULL)
 libutils_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
-libutils_la_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/include \
+	$(NULL)
+libutils_la_CFLAGS = $(WARNINGS_CFLAGS)
 
 # Unit tests.
 
@@ -51,6 +52,6 @@ check_PROGRAMS = test-quotes
 
 test_quotes_SOURCES = test-quotes.c utils.c utils.h
 test_quotes_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils
-test_quotes_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
+test_quotes_CFLAGS = $(WARNINGS_CFLAGS)

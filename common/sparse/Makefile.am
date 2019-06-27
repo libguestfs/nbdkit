@@ -35,9 +35,10 @@ noinst_LTLIBRARIES = libsparse.la
 
 libsparse_la_SOURCES = \
         sparse.c \
-        sparse.h
+        sparse.h \
+	$(NULL)
 libsparse_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include
-libsparse_la_CFLAGS = \
-        $(WARNINGS_CFLAGS)
+	-I$(top_srcdir)/common/include \
+	$(NULL)
+libsparse_la_CFLAGS = $(WARNINGS_CFLAGS)

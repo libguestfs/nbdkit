@@ -39,18 +39,23 @@ plugin_LTLIBRARIES = nbdkit-ext2-plugin.la
 
 nbdkit_ext2_plugin_la_SOURCES = \
 	ext2.c \
-	$(top_srcdir)/include/nbdkit-plugin.h
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
 
 nbdkit_ext2_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	$(NULL)
 nbdkit_ext2_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
-	$(EXT2FS_CFLAGS) $(COM_ERR_CFLAGS)
+	$(EXT2FS_CFLAGS) $(COM_ERR_CFLAGS) \
+	$(NULL)
 nbdkit_ext2_plugin_la_LIBADD = \
-	$(EXT2FS_LIBS) $(COM_ERR_LIBS)
+	$(EXT2FS_LIBS) $(COM_ERR_LIBS) \
+	$(NULL)
 nbdkit_ext2_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
+	$(NULL)
 
 if HAVE_POD
 
