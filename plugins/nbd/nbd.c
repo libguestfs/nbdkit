@@ -785,7 +785,7 @@ nbdplug_flush (void *handle, uint32_t flags)
 
 static int
 nbdplug_extent (void *opaque, const char *metacontext, uint64_t offset,
-                uint32_t *entries, size_t nr_entries)
+                uint32_t *entries, size_t nr_entries, int *error)
 {
   struct nbdkit_extents *extents = opaque;
 
@@ -793,8 +793,10 @@ nbdplug_extent (void *opaque, const char *metacontext, uint64_t offset,
   assert (nr_entries % 2 == 0);
   while (nr_entries) {
     /* We rely on the fact that NBDKIT_EXTENT_* match NBD_STATE_* */
-    if (nbdkit_add_extent (extents, offset, entries[0], entries[1]) == -1)
+    if (nbdkit_add_extent (extents, offset, entries[0], entries[1]) == -1) {
+      *error = errno;
       return -1;
+    }
     offset += entries[0];
     entries += 2;
     nr_entries -= 2;

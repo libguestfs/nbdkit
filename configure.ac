@@ -718,7 +718,7 @@ AC_ARG_WITH([libnbd],
     [],
     [with_libnbd=check])
 AS_IF([test "$with_libnbd" != "no"],[
-    PKG_CHECK_MODULES([LIBNBD], [libnbd >= 0.1.3],[
+    PKG_CHECK_MODULES([LIBNBD], [libnbd >= 0.1.5],[
         AC_SUBST([LIBNBD_CFLAGS])
         AC_SUBST([LIBNBD_LIBS])
         AC_DEFINE([HAVE_LIBNBD],[1],[libnbd found at compile time.])
