@@ -59,8 +59,10 @@
 struct transaction {
   int64_t cookie;
   sem_t sem;
+  uint32_t early_err;
   uint32_t err;
   struct transaction *next;
+  struct nbdkit_extents *extents;
 };
 
 /* The per-connection handle */
@@ -400,42 +402,36 @@ nbdplug_reader (void *handle)
   return NULL;
 }
 
-/* Register a cookie and return a transaction. */
-static struct transaction *
-nbdplug_register (struct handle *h, int64_t cookie)
+/* Prepare for a transaction. */
+static void
+nbdplug_prepare (struct transaction *trans)
 {
-  struct transaction *trans;
+  memset (trans, 0, sizeof *trans);
+  if (sem_init (&trans->sem, 0, 0))
+    assert (false);
+}
+
+/* Register a cookie and kick the I/O thread. */
+static void
+nbdplug_register (struct handle *h, struct transaction *trans, int64_t cookie)
+{
   char c = 0;
 
   if (cookie == -1) {
     nbdkit_error ("command failed: %s", nbd_get_error ());
-    errno = nbd_get_errno ();
-    return NULL;
+    trans->early_err = nbd_get_errno ();
+    return;
   }
 
   nbdkit_debug ("cookie %" PRId64 " started by state machine", cookie);
-  trans = calloc (1, sizeof *trans);
-  if (!trans) {
-    nbdkit_error ("unable to track transaction: %m");
-    return NULL;
-  }
 
   /* While locked, kick the reader thread and add our transaction */
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->trans_lock);
-  if (write (h->fds[1], &c, 1) != 1 && errno != EAGAIN) {
-    nbdkit_error ("write to pipe: %m");
-    free (trans);
-    return NULL;
-  }
-  if (sem_init (&trans->sem, 0, 0)) {
-    nbdkit_error ("unable to create semaphore: %m");
-    free (trans);
-    return NULL;
-  }
+  if (write (h->fds[1], &c, 1) != 1 && errno != EAGAIN)
+    nbdkit_debug ("failed to kick reader thread: %m");
   trans->cookie = cookie;
   trans->next = h->trans;
   h->trans = trans;
-  return trans;
 }
 
 /* Perform the reply half of a transaction. */
@@ -444,22 +440,20 @@ nbdplug_reply (struct handle *h, struct transaction *trans)
 {
   int err;
 
-  if (!trans) {
-    assert (errno);
-    return -1;
+  if (trans->early_err)
+    err = trans->early_err;
+  else {
+    while ((err = sem_wait (&trans->sem)) == -1 && errno == EINTR)
+      /* try again */;
+    if (err) {
+      nbdkit_debug ("failed to wait on semaphore: %m");
+      err = EIO;
+    }
+    else
+      err = trans->err;
   }
-
-  while ((err = sem_wait (&trans->sem)) == -1 && errno == EINTR)
-    /* try again */;
-  if (err) {
-    nbdkit_debug ("failed to wait on semaphore: %m");
-    err = EIO;
-  }
-  else
-    err = trans->err;
   if (sem_destroy (&trans->sem))
     abort ();
-  free (trans);
   errno = err;
   return err ? -1 : 0;
 }
@@ -719,11 +713,12 @@ nbdplug_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
                uint32_t flags)
 {
   struct handle *h = handle;
-  struct transaction *s;
+  struct transaction s;
 
   assert (!flags);
-  s = nbdplug_register (h, nbd_aio_pread (h->nbd, buf, count, offset, 0));
-  return nbdplug_reply (h, s);
+  nbdplug_prepare (&s);
+  nbdplug_register (h, &s, nbd_aio_pread (h->nbd, buf, count, offset, 0));
+  return nbdplug_reply (h, &s);
 }
 
 /* Write data to the file. */
@@ -732,12 +727,13 @@ nbdplug_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags)
 {
   struct handle *h = handle;
-  struct transaction *s;
+  struct transaction s;
   uint32_t f = flags & NBDKIT_FLAG_FUA ? LIBNBD_CMD_FLAG_FUA : 0;
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
-  s = nbdplug_register (h, nbd_aio_pwrite (h->nbd, buf, count, offset, f));
-  return nbdplug_reply (h, s);
+  nbdplug_prepare (&s);
+  nbdplug_register (h, &s, nbd_aio_pwrite (h->nbd, buf, count, offset, f));
+  return nbdplug_reply (h, &s);
 }
 
 /* Write zeroes to the file. */
@@ -745,7 +741,7 @@ static int
 nbdplug_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
-  struct transaction *s;
+  struct transaction s;
   uint32_t f = 0;
 
   assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)));
@@ -754,8 +750,9 @@ nbdplug_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
     f |= LIBNBD_CMD_FLAG_NO_HOLE;
   if (flags & NBDKIT_FLAG_FUA)
     f |= LIBNBD_CMD_FLAG_FUA;
-  s = nbdplug_register (h, nbd_aio_zero (h->nbd, count, offset, f));
-  return nbdplug_reply (h, s);
+  nbdplug_prepare (&s);
+  nbdplug_register (h, &s, nbd_aio_zero (h->nbd, count, offset, f));
+  return nbdplug_reply (h, &s);
 }
 
 /* Trim a portion of the file. */
@@ -763,12 +760,13 @@ static int
 nbdplug_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
-  struct transaction *s;
+  struct transaction s;
   uint32_t f = flags & NBDKIT_FLAG_FUA ? LIBNBD_CMD_FLAG_FUA : 0;
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
-  s = nbdplug_register (h, nbd_aio_trim (h->nbd, count, offset, f));
-  return nbdplug_reply (h, s);
+  nbdplug_prepare (&s);
+  nbdplug_register (h, &s, nbd_aio_trim (h->nbd, count, offset, f));
+  return nbdplug_reply (h, &s);
 }
 
 /* Flush the file to disk. */
@@ -776,18 +774,20 @@ static int
 nbdplug_flush (void *handle, uint32_t flags)
 {
   struct handle *h = handle;
-  struct transaction *s;
+  struct transaction s;
 
   assert (!flags);
-  s = nbdplug_register (h, nbd_aio_flush (h->nbd, 0));
-  return nbdplug_reply (h, s);
+  nbdplug_prepare (&s);
+  nbdplug_register (h, &s, nbd_aio_flush (h->nbd, 0));
+  return nbdplug_reply (h, &s);
 }
 
 static int
 nbdplug_extent (void *opaque, const char *metacontext, uint64_t offset,
                 uint32_t *entries, size_t nr_entries, int *error)
 {
-  struct nbdkit_extents *extents = opaque;
+  struct transaction *trans = opaque;
+  struct nbdkit_extents *extents = trans->extents;
 
   assert (strcmp (metacontext, "base:allocation") == 0);
   assert (nr_entries % 2 == 0);
@@ -810,13 +810,15 @@ nbdplug_extents (void *handle, uint32_t count, uint64_t offset,
                  uint32_t flags, struct nbdkit_extents *extents)
 {
   struct handle *h = handle;
-  struct transaction *s;
+  struct transaction s;
   uint32_t f = flags & NBDKIT_FLAG_REQ_ONE ? LIBNBD_CMD_FLAG_REQ_ONE : 0;
 
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
-  s = nbdplug_register (h, nbd_aio_block_status (h->nbd, count, offset,
-                                                 extents, nbdplug_extent, f));
-  return nbdplug_reply (h, s);
+  nbdplug_prepare (&s);
+  s.extents = extents;
+  nbdplug_register (h, &s, nbd_aio_block_status (h->nbd, count, offset,
+                                                 &s, nbdplug_extent, f));
+  return nbdplug_reply (h, &s);
 }
 
 /* Cache a portion of the file. */
@@ -824,11 +826,12 @@ static int
 nbdplug_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
-  struct transaction *s;
+  struct transaction s;
 
   assert (!flags);
-  s = nbdplug_register (h, nbd_aio_cache (h->nbd, count, offset, 0));
-  return nbdplug_reply (h, s);
+  nbdplug_prepare (&s);
+  nbdplug_register (h, &s, nbd_aio_cache (h->nbd, count, offset, 0));
+  return nbdplug_reply (h, &s);
 }
 
 static struct nbdkit_plugin plugin = {
