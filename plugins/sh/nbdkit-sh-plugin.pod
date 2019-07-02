@@ -377,13 +377,6 @@ These are not yet supported.
 
 =back
 
-=head2 Threads
-
-The thread model for scripts currently cannot be set from this plugin.
-It is hard-coded in the C part to
-C<NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS>.  This may change or be
-settable in future.
-
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
