@@ -42,6 +42,7 @@
 #include <poll.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <ctype.h>
 
 #include <nbdkit-plugin.h>
 
@@ -267,32 +268,36 @@ static void
 handle_script_error (char *ebuf, size_t len)
 {
   int err;
-  size_t skip;
+  size_t skip = 0;
   char *p;
 
-  if (strcmp (ebuf, "EPERM ") == 0) {
+  if (strncasecmp (ebuf, "EPERM", 5) == 0) {
     err = EPERM;
+    skip = 5;
+  }
+  else if (strncasecmp (ebuf, "EIO", 3) == 0) {
+    err = EIO;
+    skip = 3;
+  }
+  else if (strncasecmp (ebuf, "ENOMEM", 6) == 0) {
+    err = ENOMEM;
     skip = 6;
   }
-  else if (strcmp (ebuf, "EIO ") == 0) {
-    err = EIO;
-    skip = 4;
-  }
-  else if (strcmp (ebuf, "ENOMEM ") == 0) {
-    err = ENOMEM;
-    skip = 7;
-  }
-  else if (strcmp (ebuf, "EINVAL ") == 0) {
+  else if (strncasecmp (ebuf, "EINVAL", 6) == 0) {
     err = EINVAL;
-    skip = 7;
+    skip = 6;
   }
-  else if (strcmp (ebuf, "ENOSPC ") == 0) {
+  else if (strncasecmp (ebuf, "ENOSPC", 6) == 0) {
     err = ENOSPC;
-    skip = 7;
+    skip = 6;
   }
-  else if (strcmp (ebuf, "ESHUTDOWN ") == 0) {
+  else if (strncasecmp (ebuf, "EOVERFLOW", 9) == 0) {
+    err = EOVERFLOW;
+    skip = 9;
+  }
+  else if (strncasecmp (ebuf, "ESHUTDOWN", 9) == 0) {
     err = ESHUTDOWN;
-    skip = 10;
+    skip = 9;
   }
   else {
     /* Default to EIO. */
@@ -300,19 +305,30 @@ handle_script_error (char *ebuf, size_t len)
     skip = 0;
   }
 
+  if (skip && ebuf[skip]) {
+    if (!isspace ((unsigned char) ebuf[skip])) {
+      /* Treat 'EINVALID' as EIO, not EINVAL */
+      err = EIO;
+      skip = 0;
+    }
+    else
+      do
+        skip++;
+      while (isspace ((unsigned char) ebuf[skip]));
+  }
+
   while (len > 0 && ebuf[len-1] == '\n')
     ebuf[--len] = '\0';
 
   if (len > 0) {
-    p = strchr (ebuf, '\n');
+    p = strchr (ebuf + skip, '\n');
     if (p) {
       /* More than one line, so write the whole message to debug ... */
       nbdkit_debug ("%s: %s", script, ebuf);
       /* ... but truncate it for the error message below. */
       *p = '\0';
     }
-    if (strlen (ebuf) >= skip)
-      ebuf += skip;
+    ebuf += skip;
     nbdkit_error ("%s: %s", script, ebuf);
   }
   else

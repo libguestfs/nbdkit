@@ -85,8 +85,8 @@ The method was executed successfully.
 
 =item 1 and 8-127
 
-There was an error.  The script may print on stderr an errno and a
-message, for example:
+There was an error.  The script may print on stderr an errno name,
+optionally followed by whitespace and a message, for example:
 
  ENOSPC Out of space
 
