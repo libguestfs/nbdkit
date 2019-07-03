@@ -48,6 +48,7 @@ check_PROGRAMS = test-quotes
 
 test_quotes_SOURCES = test-quotes.c utils.c utils.h
 test_quotes_CPPFLAGS = \
+	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/utils
 test_quotes_CFLAGS = \
         $(WARNINGS_CFLAGS)
