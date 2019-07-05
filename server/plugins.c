@@ -668,7 +668,10 @@ plugin_zero (struct backend *b, struct connection *conn,
   threadlocal_set_error (0);
 
   while (count) {
-    static const char buf[MAX_REQUEST_SIZE]; /* Always contains zeroes */
+    /* Always contains zeroes, but we can't use const or else gcc 9
+     * will use .rodata instead of .bss and inflate the binary size.
+     */
+    static /* const */ char buf[MAX_REQUEST_SIZE];
     uint32_t limit = MIN (count, sizeof buf);
 
     r = plugin_pwrite (b, conn, buf, limit, offset, flags, err);

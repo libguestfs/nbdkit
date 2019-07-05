@@ -45,7 +45,6 @@
 
 #define MAX_WRITE (64 * 1024 * 1024)
 
-static const char buffer[MAX_WRITE];
 static enum ZeroMode {
   NONE,
   EMULATE,
@@ -110,7 +109,12 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     return next_ops->zero (nxdata, count, offs, flags, err);
 
   while (count) {
+    /* Always contains zeroes, but we can't use const or else gcc 9
+     * will use .rodata instead of .bss and inflate the binary size.
+     */
+    static /* const */ char buffer[MAX_WRITE];
     uint32_t size = MIN (count, MAX_WRITE);
+
     if (next_ops->pwrite (nxdata, buffer, size, offs, flags, err) == -1)
       return -1;
     offs += size;
