@@ -47,7 +47,6 @@
 
 #define MAX_WRITE (64 * 1024 * 1024)
 
-static char buffer[MAX_WRITE];
 static bool emulate;
 
 static int
@@ -83,6 +82,10 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   assert (emulate);
   while (count) {
+    /* Always contains zeroes, but we can't use const or else gcc 9
+     * will use .rodata instead of .bss and inflate the binary size.
+     */
+    static /* const */ char buffer[MAX_WRITE];
     uint32_t size = MIN (count, MAX_WRITE);
     if (next_ops->pwrite (nxdata, buffer, size, offs,
                           flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
