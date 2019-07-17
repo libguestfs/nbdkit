@@ -672,8 +672,8 @@ nbdplug_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 
   assert (!flags);
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_pread_notify (h->nbd, buf, count, offset,
-                                                 &s, nbdplug_notify, 0));
+  nbdplug_register (h, &s, nbd_aio_pread_callback (h->nbd, buf, count, offset,
+                                                   nbdplug_notify, &s, 0));
   return nbdplug_reply (h, &s);
 }
 
@@ -688,8 +688,8 @@ nbdplug_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_pwrite_notify (h->nbd, buf, count, offset,
-                                                  &s, nbdplug_notify, f));
+  nbdplug_register (h, &s, nbd_aio_pwrite_callback (h->nbd, buf, count, offset,
+                                                    nbdplug_notify, &s, f));
   return nbdplug_reply (h, &s);
 }
 
@@ -708,8 +708,8 @@ nbdplug_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   if (flags & NBDKIT_FLAG_FUA)
     f |= LIBNBD_CMD_FLAG_FUA;
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_zero_notify (h->nbd, count, offset,
-                                                &s, nbdplug_notify, f));
+  nbdplug_register (h, &s, nbd_aio_zero_callback (h->nbd, count, offset,
+                                                  nbdplug_notify, &s, f));
   return nbdplug_reply (h, &s);
 }
 
@@ -723,8 +723,8 @@ nbdplug_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_trim_notify (h->nbd, count, offset,
-                                                &s, nbdplug_notify, f));
+  nbdplug_register (h, &s, nbd_aio_trim_callback (h->nbd, count, offset,
+                                                  nbdplug_notify, &s, f));
   return nbdplug_reply (h, &s);
 }
 
@@ -737,8 +737,8 @@ nbdplug_flush (void *handle, uint32_t flags)
 
   assert (!flags);
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_flush_notify (h->nbd,
-                                                 &s, nbdplug_notify, 0));
+  nbdplug_register (h, &s, nbd_aio_flush_callback (h->nbd,
+                                                   nbdplug_notify, &s, 0));
   return nbdplug_reply (h, &s);
 }
 
@@ -776,9 +776,10 @@ nbdplug_extents (void *handle, uint32_t count, uint64_t offset,
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
   nbdplug_prepare (&s);
   s.extents = extents;
-  nbdplug_register (h, &s, nbd_aio_block_status_notify (h->nbd, count, offset,
-                                                        &s, nbdplug_extent,
-                                                        nbdplug_notify, f));
+  nbdplug_register (h, &s, nbd_aio_block_status_callback (h->nbd, count, offset,
+                                                          nbdplug_extent,
+                                                          nbdplug_notify, &s,
+                                                          f));
   return nbdplug_reply (h, &s);
 }
 
@@ -791,8 +792,8 @@ nbdplug_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 
   assert (!flags);
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_cache_notify (h->nbd, count, offset,
-                                                 &s, nbdplug_notify, 0));
+  nbdplug_register (h, &s, nbd_aio_cache_callback (h->nbd, count, offset,
+                                                   nbdplug_notify, &s, 0));
   return nbdplug_reply (h, &s);
 }
 
