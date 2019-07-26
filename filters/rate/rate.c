@@ -228,8 +228,9 @@ maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
                   old_rate, new_rate);
 }
 
-static inline void
-maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count)
+static inline int
+maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count,
+             int *err)
 {
   struct timespec ts;
   uint64_t bits;
@@ -248,8 +249,13 @@ maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count)
     }
 
     if (bits > 0)
-      nanosleep (&ts, NULL);
+      if (nanosleep (&ts, NULL) == -1) {
+        nbdkit_error ("nanosleep: %m");
+        *err = errno;
+        return -1;
+      }
   }
+  return 0;
 }
 
 /* Read data. */
@@ -261,9 +267,11 @@ rate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   struct rate_handle *h = handle;
 
   maybe_adjust (rate_file, &read_bucket, &read_bucket_lock);
-  maybe_sleep (&read_bucket, &read_bucket_lock, count);
+  if (maybe_sleep (&read_bucket, &read_bucket_lock, count, err))
+    return -1;
   maybe_adjust (connection_rate_file, &h->read_bucket, &h->read_bucket_lock);
-  maybe_sleep (&h->read_bucket, &h->read_bucket_lock, count);
+  if (maybe_sleep (&h->read_bucket, &h->read_bucket_lock, count, err))
+    return -1;
 
   return next_ops->pread (nxdata, buf, count, offset, flags, err);
 }
@@ -278,9 +286,11 @@ rate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   struct rate_handle *h = handle;
 
   maybe_adjust (rate_file, &write_bucket, &write_bucket_lock);
-  maybe_sleep (&write_bucket, &write_bucket_lock, count);
+  if (maybe_sleep (&write_bucket, &write_bucket_lock, count, err))
+    return -1;
   maybe_adjust (connection_rate_file, &h->write_bucket, &h->write_bucket_lock);
-  maybe_sleep (&h->write_bucket, &h->write_bucket_lock, count);
+  if (maybe_sleep (&h->write_bucket, &h->write_bucket_lock, count, err))
+    return -1;
 
   return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
 }
