@@ -57,7 +57,6 @@
 
 /* The per-transaction details */
 struct transaction {
-  int64_t cookie;
   sem_t sem;
   uint32_t early_err;
   uint32_t err;
@@ -309,7 +308,7 @@ nbdplug_reader (void *handle)
       [1].fd = h->fds[0],
       [1].events = POLLIN,
     };
-    int dir;
+    unsigned dir;
     char c;
 
     dir = nbd_aio_get_direction (h->nbd);
@@ -363,14 +362,12 @@ nbdplug_notify (unsigned valid_flag, void *opaque, int64_t cookie, int *error)
 
   nbdkit_debug ("cookie %" PRId64 " completed state machine, status %d",
                 cookie, *error);
-  assert (trans->cookie == 0 || trans->cookie == cookie);
-  trans->cookie = cookie;
   trans->err = *error;
   if (sem_post (&trans->sem)) {
     nbdkit_error ("failed to post semaphore: %m");
     abort ();
   }
-  return 0;
+  return 1;
 }
 
 /* Register a cookie and kick the I/O thread. */
@@ -389,8 +386,6 @@ nbdplug_register (struct handle *h, struct transaction *trans, int64_t cookie)
 
   if (write (h->fds[1], &c, 1) != 1 && errno != EAGAIN)
     nbdkit_debug ("failed to kick reader thread: %m");
-  assert (trans->cookie == 0 || trans->cookie == cookie);
-  trans->cookie = cookie;
 }
 
 /* Perform the reply half of a transaction. */
@@ -408,13 +403,8 @@ nbdplug_reply (struct handle *h, struct transaction *trans)
       nbdkit_debug ("failed to wait on semaphore: %m");
       err = EIO;
     }
-    else {
-      assert (trans->cookie > 0);
-      err = nbd_aio_command_completed (h->nbd, trans->cookie);
-      assert (err != 0);
-      assert (err == 1 ? trans->err == 0 : trans->err == nbd_get_errno ());
+    else
       err = trans->err;
-    }
   }
   if (sem_destroy (&trans->sem))
     abort ();
