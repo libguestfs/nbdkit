@@ -354,9 +354,12 @@ nbdplug_prepare (struct transaction *trans)
 }
 
 static int
-nbdplug_notify (void *opaque, int64_t cookie, int *error)
+nbdplug_notify (unsigned valid_flag, void *opaque, int64_t cookie, int *error)
 {
   struct transaction *trans = opaque;
+
+  if (!(valid_flag & LIBNBD_CALLBACK_VALID))
+    return 0;
 
   nbdkit_debug ("cookie %" PRId64 " completed state machine, status %d",
                 cookie, *error);
@@ -743,11 +746,15 @@ nbdplug_flush (void *handle, uint32_t flags)
 }
 
 static int
-nbdplug_extent (void *opaque, const char *metacontext, uint64_t offset,
+nbdplug_extent (unsigned valid_flag, void *opaque,
+                const char *metacontext, uint64_t offset,
                 uint32_t *entries, size_t nr_entries, int *error)
 {
   struct transaction *trans = opaque;
   struct nbdkit_extents *extents = trans->extents;
+
+  if (!(valid_flag & LIBNBD_CALLBACK_VALID))
+    return 0;
 
   assert (strcmp (metacontext, "base:allocation") == 0);
   assert (nr_entries % 2 == 0);
@@ -777,7 +784,7 @@ nbdplug_extents (void *handle, uint32_t count, uint64_t offset,
   nbdplug_prepare (&s);
   s.extents = extents;
   nbdplug_register (h, &s, nbd_aio_block_status_callback (h->nbd, count, offset,
-                                                          nbdplug_extent,
+                                                          nbdplug_extent, &s,
                                                           nbdplug_notify, &s,
                                                           f));
   return nbdplug_reply (h, &s);
