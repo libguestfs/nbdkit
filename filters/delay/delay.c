@@ -32,6 +32,7 @@
 
 #include <config.h>
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -54,7 +55,7 @@ parse_delay (const char *key, const char *value)
   int r;
 
   if (len > 2 && strcmp (&value[len-2], "ms") == 0) {
-    if (sscanf (value, "%d", &r) == 1)
+    if (sscanf (value, "%d", &r) == 1 && r >= 0)
       return r;
     else {
       nbdkit_error ("cannot parse %s in milliseconds parameter: %s",
@@ -63,8 +64,14 @@ parse_delay (const char *key, const char *value)
     }
   }
   else {
-    if (sscanf (value, "%d", &r) == 1)
+    if (sscanf (value, "%d", &r) == 1 && r >= 0) {
+      if (r * 1000LL > INT_MAX) {
+        nbdkit_error ("seconds parameter %s is too large: %s",
+                      key, value);
+        return -1;
+      }
       return r * 1000;
+    }
     else {
       nbdkit_error ("cannot parse %s in seconds parameter: %s",
                     key, value);
@@ -79,7 +86,7 @@ delay (int ms)
   if (ms > 0) {
     const struct timespec ts = {
       .tv_sec = ms / 1000,
-      .tv_nsec = (ms * 1000000) % 1000000000
+      .tv_nsec = (ms % 1000) * 1000000,
     };
     nanosleep (&ts, NULL);
   }
