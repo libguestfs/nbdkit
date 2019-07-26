@@ -80,52 +80,57 @@ parse_delay (const char *key, const char *value)
   }
 }
 
-static void
-delay (int ms)
+static int
+delay (int ms, int *err)
 {
   if (ms > 0) {
     const struct timespec ts = {
       .tv_sec = ms / 1000,
       .tv_nsec = (ms % 1000) * 1000000,
     };
-    nanosleep (&ts, NULL);
+    if (nanosleep (&ts, NULL) == -1) {
+      nbdkit_error ("nanosleep: %m");
+      *err = errno;
+      return -1;
+    }
   }
+  return 0;
 }
 
-static void
-read_delay (void)
+static int
+read_delay (int *err)
 {
-  delay (delay_read_ms);
+  return delay (delay_read_ms, err);
 }
 
-static void
-write_delay (void)
+static int
+write_delay (int *err)
 {
-  delay (delay_write_ms);
+  return delay (delay_write_ms, err);
 }
 
-static void
-zero_delay (void)
+static int
+zero_delay (int *err)
 {
-  delay (delay_zero_ms);
+  return delay (delay_zero_ms, err);
 }
 
-static void
-trim_delay (void)
+static int
+trim_delay (int *err)
 {
-  delay (delay_trim_ms);
+  return delay (delay_trim_ms, err);
 }
 
-static void
-extents_delay (void)
+static int
+extents_delay (int *err)
 {
-  delay (delay_extents_ms);
+  return delay (delay_extents_ms, err);
 }
 
-static void
-cache_delay (void)
+static int
+cache_delay (int *err)
 {
-  delay (delay_cache_ms);
+  return delay (delay_cache_ms, err);
 }
 
 /* Called for each key=value passed on the command line. */
@@ -205,7 +210,8 @@ delay_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
-  read_delay ();
+  if (read_delay (err) == -1)
+    return -1;
   return next_ops->pread (nxdata, buf, count, offset, flags, err);
 }
 
@@ -216,7 +222,8 @@ delay_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
               const void *buf, uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
-  write_delay ();
+  if (write_delay (err) == -1)
+    return -1;
   return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
 }
 
@@ -226,7 +233,8 @@ delay_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
-  zero_delay ();
+  if (zero_delay (err) == -1)
+    return -1;
   return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
@@ -236,7 +244,8 @@ delay_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
-  trim_delay ();
+  if (trim_delay (err) == -1)
+    return -1;
   return next_ops->trim (nxdata, count, offset, flags, err);
 }
 
@@ -246,7 +255,8 @@ delay_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
                void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                struct nbdkit_extents *extents, int *err)
 {
-  extents_delay ();
+  if (extents_delay (err) == -1)
+    return -1;
   return next_ops->extents (nxdata, count, offset, flags, extents, err);
 }
 
@@ -256,7 +266,8 @@ delay_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
              void *handle, uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
 {
-  cache_delay ();
+  if (cache_delay (err) == -1)
+    return -1;
   return next_ops->cache (nxdata, count, offset, flags, err);
 }
 
