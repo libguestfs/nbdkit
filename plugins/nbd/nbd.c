@@ -57,6 +57,7 @@
 
 /* The per-transaction details */
 struct transaction {
+  int64_t cookie;
   sem_t sem;
   uint32_t early_err;
   uint32_t err;
@@ -353,15 +354,19 @@ nbdplug_prepare (struct transaction *trans)
 }
 
 static int
-nbdplug_notify (unsigned valid_flag, void *opaque, int64_t cookie, int *error)
+nbdplug_notify (unsigned valid_flag, void *opaque, int *error)
 {
   struct transaction *trans = opaque;
 
   if (!(valid_flag & LIBNBD_CALLBACK_VALID))
     return 0;
 
+  /* There's a possible race here where trans->cookie has not yet been
+   * updated by nbdplug_register, but it's only an informational
+   * message.
+   */
   nbdkit_debug ("cookie %" PRId64 " completed state machine, status %d",
-                cookie, *error);
+                trans->cookie, *error);
   trans->err = *error;
   if (sem_post (&trans->sem)) {
     nbdkit_error ("failed to post semaphore: %m");
@@ -383,6 +388,7 @@ nbdplug_register (struct handle *h, struct transaction *trans, int64_t cookie)
   }
 
   nbdkit_debug ("cookie %" PRId64 " started by state machine", cookie);
+  trans->cookie = cookie;
 
   if (write (h->fds[1], &c, 1) != 1 && errno != EAGAIN)
     nbdkit_debug ("failed to kick reader thread: %m");
@@ -504,7 +510,7 @@ nbdplug_open (int readonly)
 static void
 nbdplug_close_handle (struct handle *h)
 {
-  if (nbd_shutdown (h->nbd) == -1)
+  if (nbd_shutdown (h->nbd, 0) == -1)
     nbdkit_debug ("failed to clean up handle: %s", nbd_get_error ());
   if ((errno = pthread_join (h->reader, NULL)))
     nbdkit_debug ("failed to join reader thread: %m");

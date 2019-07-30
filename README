@@ -113,7 +113,7 @@ For the linuxdisk plugin:
 
 For the nbd plugin, to get URI and TLS support:
 
- - libnbd >= 0.1.9
+ - libnbd >= 0.9.6
 
 For the Perl, example4 and tar plugins:
 
