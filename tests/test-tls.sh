@@ -65,12 +65,11 @@ start_nbdkit -P tls.pid -p $port -n --tls=require \
        --tls-certificates="$pkidir" example1
 
 # Run qemu-img against the server.
-LANG=C \
-qemu-img info \
+qemu-img info --output=json \
          --object "tls-creds-x509,id=tls0,endpoint=client,dir=$pkidir" \
          --image-opts "file.driver=nbd,file.host=localhost,file.port=$port,file.tls-creds=tls0" > tls.out
 
 cat tls.out
 
-grep -sq "^file format: raw" tls.out
-grep -sq "^virtual size: 100M" tls.out
+grep -sq '"format": *"raw"' tls.out
+grep -sq '"virtual-size": *104857600\b' tls.out

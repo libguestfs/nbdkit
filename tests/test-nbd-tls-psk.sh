@@ -73,9 +73,9 @@ LIBNBD_DEBUG=1 start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
     nbd tls=require tls-psk=keys.psk tls-username=qemu socket="$sock1"
 
 # Run unencrypted client
-LANG=C qemu-img info -f raw "nbd+unix:///?socket=$sock2" > nbd-tls-psk.out
+qemu-img info --output=json -f raw "nbd+unix:///?socket=$sock2" > nbd-tls-psk.out
 
 cat nbd-tls-psk.out
 
-grep -sq "^file format: raw" nbd-tls-psk.out
-grep -sq "^virtual size: 100M" nbd-tls-psk.out
+grep -sq '"format": *"raw"' nbd-tls-psk.out
+grep -sq '"virtual-size": *104857600\b' nbd-tls-psk.out

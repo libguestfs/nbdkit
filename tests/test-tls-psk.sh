@@ -72,12 +72,11 @@ start_nbdkit -P tls-psk.pid -p $port -n \
              --tls=require --tls-psk=keys.psk example1
 
 # Run qemu-img against the server.
-LANG=C \
-qemu-img info \
+qemu-img info --output=json \
          --object "tls-creds-psk,id=tls0,endpoint=client,dir=$PWD" \
          --image-opts "file.driver=nbd,file.host=localhost,file.port=$port,file.tls-creds=tls0" > tls-psk.out
 
 cat tls-psk.out
 
-grep -sq "^file format: raw" tls-psk.out
-grep -sq "^virtual size: 100M" tls-psk.out
+grep -sq '"format": *"raw"' tls-psk.out
+grep -sq '"virtual-size": *104857600\b' tls-psk.out
