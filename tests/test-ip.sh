@@ -57,15 +57,17 @@ kill -s 0 $pid
 # Check we can connect over the IPv4 loopback interface.
 ipv4_lo="$(ip -o -4 addr show scope host)"
 if test -n "$ipv4_lo"; then
-    qemu-img info --image-opts "file.driver=nbd,file.host=127.0.0.1,file.port=$port" > ipv4.out
+    qemu-img info --output=json \
+        --image-opts "file.driver=nbd,file.host=127.0.0.1,file.port=$port" > ipv4.out
     cat ipv4.out
-    grep -sq "^virtual size: 100M" ipv4.out
+    grep -sq '"virtual-size": *104857600\b' ipv4.out
 fi
 
 # Check we can connect over the IPv6 loopback interface.
 ipv6_lo="$(ip -o -6 addr show scope host)"
 if test -n "$ipv6_lo"; then
-    qemu-img info --image-opts "file.driver=nbd,file.host=::1,file.port=$port" > ipv6.out
+    qemu-img info --output=json \
+        --image-opts "file.driver=nbd,file.host=::1,file.port=$port" > ipv6.out
     cat ipv6.out
-    grep -sq "^virtual size: 100M" ipv6.out
+    grep -sq '"virtual-size": *104857600\b' ipv6.out
 fi
