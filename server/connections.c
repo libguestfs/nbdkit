@@ -39,8 +39,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <assert.h>
 
 #include "internal.h"
+#include "utils.h"
 
 /* Default number of parallel requests. */
 #define DEFAULT_PARALLEL_REQUESTS 16
@@ -114,8 +117,16 @@ connection_set_status (struct connection *conn, int value)
   if (conn->nworkers &&
       pthread_mutex_lock (&conn->status_lock))
     abort ();
-  if (value < conn->status)
+  if (value < conn->status) {
+    if (conn->nworkers && conn->status > 0) {
+      char c = 0;
+
+      assert (conn->status_pipe[1] >= 0);
+      if (write (conn->status_pipe[1], &c, 1) != 1 && errno != EAGAIN)
+        nbdkit_debug ("failed to notify pipe-to-self: %m");
+    }
     conn->status = value;
+  }
   if (conn->nworkers &&
       pthread_mutex_unlock (&conn->status_lock))
     abort ();
@@ -284,6 +295,50 @@ new_connection (int sockin, int sockout, int nworkers)
 
   conn->status = 1;
   conn->nworkers = nworkers;
+  if (nworkers) {
+#ifdef HAVE_PIPE2
+    if (pipe2 (conn->status_pipe, O_NONBLOCK | O_CLOEXEC)) {
+      perror ("pipe2");
+      free (conn);
+      return NULL;
+    }
+#else
+    /* If we were fully parallel, then this function could be
+     * accepting connections in one thread while another thread could
+     * be in a plugin trying to fork.  But plugins.c forced
+     * thread_model to serialize_all_requests when it detects a lack
+     * of atomic CLOEXEC, at which point, we can use a mutex to ensure
+     * we aren't accepting until the plugin is not running, making
+     * non-atomicity okay.
+     */
+    assert (backend->thread_model (backend) <=
+            NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
+    lock_request (NULL);
+    if (pipe (conn->status_pipe)) {
+      perror ("pipe");
+      free (conn);
+      unlock_request (NULL);
+      return NULL;
+    }
+    if (set_nonblock (set_cloexec (conn->status_pipe[0])) == -1) {
+      perror ("fcntl");
+      close (conn->status_pipe[1]);
+      free (conn);
+      unlock_request (NULL);
+      return NULL;
+    }
+    if (set_nonblock (set_cloexec (conn->status_pipe[1])) == -1) {
+      perror ("fcntl");
+      close (conn->status_pipe[0]);
+      free (conn);
+      unlock_request (NULL);
+      return NULL;
+    }
+    unlock_request (NULL);
+#endif
+  }
+  else
+    conn->status_pipe[0] = conn->status_pipe[1] = -1;
   conn->sockin = sockin;
   conn->sockout = sockout;
   pthread_mutex_init (&conn->request_lock, NULL);
@@ -322,6 +377,11 @@ free_connection (struct connection *conn)
       backend->close (backend, conn);
       unlock_request (conn);
     }
+  }
+
+  if (conn->status_pipe[0] >= 0) {
+    close (conn->status_pipe[0]);
+    close (conn->status_pipe[1]);
   }
 
   pthread_mutex_destroy (&conn->request_lock);
