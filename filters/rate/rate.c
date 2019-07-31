@@ -34,6 +34,7 @@
 
 #include <config.h>
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -41,6 +42,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include <pthread.h>
 
@@ -195,6 +197,7 @@ rate_close (void *handle)
 static void
 maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
 {
+  int fd;
   FILE *fp;
   ssize_t r;
   size_t len = 0;
@@ -204,16 +207,27 @@ maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
 
   if (!file) return;
 
-  fp = fopen (file, "r");
-  if (fp == NULL)
+  /* Alas, Haiku lacks fopen("re"), so we have to spell this out the
+   * long way. We require atomic CLOEXEC, in case the plugin is using
+   * fork() in a parallel thread model.
+   */
+  fd = open (file, O_CLOEXEC | O_RDONLY);
+  if (fd == -1)
     return; /* this is not an error */
+  fp = fdopen (fd, "r");
+  if (fp == NULL) {
+    nbdkit_debug ("fdopen: %s: %m", file);
+    close (fd);
+    return; /* unexpected, but treat it as a non-error */
+  }
 
   r = getline (&line, &len, fp);
-  fclose (fp);
   if (r == -1) {
     nbdkit_debug ("could not read rate file: %s: %m", file);
+    fclose (fp);
     return;
   }
+  fclose (fp);
 
   if (r > 0 && line[r-1] == '\n') line[r-1] = '\0';
   new_rate = nbdkit_parse_size (line);
