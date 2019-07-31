@@ -109,8 +109,18 @@ blk_init (void)
 #ifdef HAVE_MKOSTEMP
   fd = mkostemp (template, O_CLOEXEC);
 #else
+  /* Not atomic, but this is only invoked during .load, so the race
+   * won't affect any plugin actions trying to fork
+   */
   fd = mkstemp (template);
-  fcntl (fd, F_SETFD, FD_CLOEXEC);
+  if (fd >= 0) {
+    fd = set_cloexec (fd);
+    if (fd < 0) {
+      int e = errno;
+      unlink (template);
+      errno = e;
+    }
+  }
 #endif
   if (fd == -1) {
     nbdkit_error ("mkostemp: %s: %m", tmpdir);

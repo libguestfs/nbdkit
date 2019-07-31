@@ -140,12 +140,15 @@ exit_status_to_nbd_error (int status, const char *cmd)
  */
 int
 set_cloexec (int fd) {
-#ifdef SOCK_CLOEXEC
+#if defined SOCK_CLOEXEC && defined HAVE_MKOSTEMP
   nbdkit_error ("prefer creating fds with CLOEXEC atomically set");
   close (fd);
   errno = EBADF;
   return -1;
 #else
+# if defined SOCK_CLOEXEC || defined HAVE_MKOSTEMP
+# error "Unexpected: your system has incomplete atomic CLOEXEC support"
+# endif
   int f;
   int err;
 
