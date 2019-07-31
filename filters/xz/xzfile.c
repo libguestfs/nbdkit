@@ -52,10 +52,6 @@
 
 #include "xzfile.h"
 
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 0
-#endif
-
 #define XZ_HEADER_MAGIC     "\xfd" "7zXZ\0"
 #define XZ_HEADER_MAGIC_LEN 6
 #define XZ_FOOTER_MAGIC     "YZ"

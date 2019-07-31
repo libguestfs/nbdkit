@@ -45,10 +45,6 @@
 
 #include <nbdkit-plugin.h>
 
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 0
-#endif
-
 /* The files. */
 static char **filenames = NULL;
 static size_t nr_files = 0;

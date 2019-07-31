@@ -50,14 +50,6 @@
 #define UNIX_PATH_MAX 108
 #endif
 
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 0
-#endif
-
-#ifndef SOCK_CLOEXEC
-#define SOCK_CLOEXEC 0
-#endif
-
 #if HAVE_VALGRIND
 # include <valgrind.h>
 /* http://valgrind.org/docs/manual/faq.html#faq.unhelpful */
