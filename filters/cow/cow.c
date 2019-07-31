@@ -89,6 +89,9 @@ cow_config (nbdkit_next_config *next, void *nxdata,
   }
 }
 
+#define cow_config_help \
+  "cow-on-cache=<BOOL>  Set to true to treat client cache requests as writes.\n"
+
 static void *
 cow_open (nbdkit_next_open *next, void *nxdata, int readonly)
 {
@@ -484,6 +487,7 @@ static struct nbdkit_filter filter = {
   .unload            = cow_unload,
   .open              = cow_open,
   .config            = cow_config,
+  .config_help       = cow_config_help,
   .prepare           = cow_prepare,
   .get_size          = cow_get_size,
   .can_write         = cow_can_write,
