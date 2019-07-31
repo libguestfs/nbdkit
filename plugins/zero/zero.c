@@ -41,21 +41,11 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
-static int
-zero_config (const char *key, const char *value)
-{
-  nbdkit_error ("unknown parameter '%s'", key);
-  return -1;
-}
-
-/* No meaning, just used as the address for the handle. */
-static int zero;
-
 /* Create the per-connection handle. */
 static void *
 zero_open (int readonly)
 {
-  return &zero;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
@@ -96,7 +86,6 @@ zero_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 static struct nbdkit_plugin plugin = {
   .name              = "zero",
   .version           = PACKAGE_VERSION,
-  .config            = zero_config,
   .open              = zero_open,
   .get_size          = zero_get_size,
   .can_multi_conn    = zero_can_multi_conn,
