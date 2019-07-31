@@ -201,6 +201,8 @@ nbdkit_read_password (const char *value, char **password)
   size_t n;
   FILE *fp;
 
+  *password = NULL;
+
   /* Read from stdin. */
   if (strcmp (value, "-") == 0) {
     printf ("password: ");
