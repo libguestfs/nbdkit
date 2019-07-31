@@ -169,6 +169,19 @@ cache_config (nbdkit_next_config *next, void *nxdata,
   }
 }
 
+#define cache_config_help_common \
+  "cache=MODE                Set cache MODE, one of writeback (default),\n" \
+  "                          writethrough, or unsafe.\n" \
+  "cache-on-read=BOOL        Set to true to cache on reads (default false).\n"
+#ifndef HAVE_CACHE_RECLAIM
+#define cache_config_help cache_config_help_common
+#else
+#define cache_config_help cache_config_help_common \
+  "cache-max-size=SIZE       Set maximum space used by cache.\n" \
+  "cache-high-threshold=PCT  Percentage of max size where reclaim begins.\n" \
+  "cache-low-threshold=PCT   Percentage of max size where reclaim ends.\n"
+#endif
+
 static int
 cache_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 {
@@ -474,6 +487,7 @@ static struct nbdkit_filter filter = {
   .unload            = cache_unload,
   .config            = cache_config,
   .config_complete   = cache_config_complete,
+  .config_help       = cache_config_help,
   .prepare           = cache_prepare,
   .get_size          = cache_get_size,
   .pread             = cache_pread,
