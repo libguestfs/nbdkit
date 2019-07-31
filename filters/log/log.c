@@ -42,6 +42,8 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <nbdkit-filter.h>
 
@@ -88,13 +90,29 @@ log_config (nbdkit_next_config *next, void *nxdata,
 static int
 log_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 {
+  int fd;
+
   if (!logfilename) {
     nbdkit_error ("missing logfile= parameter for the log filter");
     return -1;
   }
-  logfile = fopen (logfilename, append ? "a" : "w");
+  /* Using fopen("ae"/"we") would be more convenient, but as Haiku
+   * still lacks that, use this instead. Atomicity is not essential
+   * here since .config completes before threads that might fork, if
+   * we have to later add yet another fallback to fcntl(fileno()) for
+   * systems without O_CLOEXEC.
+   */
+  fd = open (logfilename,
+             O_CLOEXEC | O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC),
+             0666);
+  if (fd < 0) {
+    nbdkit_error ("open: %s: %m", logfilename);
+    return -1;
+  }
+  logfile = fdopen (fd, append ? "a" : "w");
   if (!logfile) {
-    nbdkit_error ("fopen: %m");
+    nbdkit_error ("fdopen: %s: %m", logfilename);
+    close (fd);
     return -1;
   }
 
