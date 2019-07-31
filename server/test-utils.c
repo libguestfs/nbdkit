@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,6 +35,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "internal.h"
 
@@ -137,11 +139,82 @@ test_nbdkit_parse_size (void)
   return pass;
 }
 
+static bool
+test_nbdkit_read_password (void)
+{
+  bool pass = true;
+  char template[] = "+/tmp/nbdkit_testpw_XXXXXX";
+  char *pw = template;
+  int fd;
+
+  /* Test expected failure - no such file */
+  error_flagged = false;
+  if (nbdkit_read_password ("+/nosuch", &pw) != -1) {
+    fprintf (stderr, "Failed to diagnose failed password file\n");
+    pass = false;
+  }
+  else if (pw != NULL) {
+    fprintf (stderr, "Failed to set password to NULL on failure\n");
+    pass = false;
+  }
+  else if (!error_flagged) {
+    fprintf (stderr, "Wrong error message handling\n");
+    pass = false;
+  }
+  error_flagged = false;
+
+  /* Test direct password */
+  if (nbdkit_read_password ("abc", &pw) != 0) {
+    fprintf (stderr, "Failed to reuse direct password\n");
+    pass = false;
+  }
+  else if (strcmp (pw, "abc") != 0) {
+    fprintf (stderr, "Wrong direct password, expected 'abc' got '%s'\n", pw);
+    pass = false;
+  }
+  free (pw);
+  pw = NULL;
+
+  /* Test reading password from file */
+  fd = mkstemp (&template[1]);
+  if (fd < 0) {
+    perror ("mkstemp");
+    pass = false;
+  }
+  else if (write (fd, "abc\n", 4) != 4) {
+    fprintf (stderr, "Failed to write to file %s\n", &template[1]);
+    pass = false;
+  }
+  else if (nbdkit_read_password (template, &pw) != 0) {
+    fprintf (stderr, "Failed to read password from file %s\n", &template[1]);
+    pass = false;
+  }
+  else if (strcmp (pw, "abc") != 0) {
+    fprintf (stderr, "Wrong file password, expected 'abc' got '%s'\n", pw);
+    pass = false;
+  }
+  free (pw);
+
+  if (fd >= 0) {
+    close (fd);
+    unlink (&template[1]);
+  }
+
+  if (error_flagged) {
+    fprintf (stderr, "Wrong error message handling\n");
+    pass = false;
+  }
+
+  /* XXX Testing reading from stdin would require setting up a pty */
+  return pass;
+}
+
 int
 main (int argc, char *argv[])
 {
   bool pass = true;
   pass &= test_nbdkit_parse_size ();
-  /* XXX add tests for nbdkit_absolute_path, nbdkit_read_password */
-  return pass ? 0 : 1;
+  pass &= test_nbdkit_read_password ();
+  /* XXX add tests for nbdkit_absolute_path */
+  return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }
