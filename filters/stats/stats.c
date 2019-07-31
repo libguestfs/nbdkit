@@ -39,6 +39,8 @@
 #include <inttypes.h>
 #include <string.h>
 #include <sys/time.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <pthread.h>
 
@@ -137,14 +139,29 @@ stats_config (nbdkit_next_config *next, void *nxdata,
 static int
 stats_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 {
+  int fd;
+
   if (filename == NULL) {
     nbdkit_error ("stats filter requires statsfile parameter");
     return -1;
   }
 
-  fp = fopen (filename, append ? "a" : "w");
+  /* Using fopen("ae"/"we") would be more convenient, but as Haiku
+   * still lacks that, use this instead. Atomicity is not essential
+   * here since .config completes before threads that might fork, if
+   * we have to later add yet another fallback to fcntl(fileno()) for
+   * systems without O_CLOEXEC.
+   */
+  fd = open (filename,
+             O_CLOEXEC | O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC),
+             0666);
+  if (fd < 0) {
+    nbdkit_error ("open: %s: %m", filename);
+    return -1;
+  }
+  fp = fdopen (fd, append ? "a" : "w");
   if (fp == NULL) {
-    nbdkit_error ("%s: %m", filename);
+    nbdkit_error ("fdopen: %s: %m", filename);
     return -1;
   }
 
