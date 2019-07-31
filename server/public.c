@@ -47,6 +47,8 @@
 #include <limits.h>
 #include <termios.h>
 #include <errno.h>
+#include <poll.h>
+#include <signal.h>
 
 #include "get-current-dir-name.h"
 
@@ -296,4 +298,74 @@ nbdkit_realpath (const char *path)
   }
 
   return ret;
+}
+
+
+int
+nbdkit_nanosleep (unsigned sec, unsigned nsec)
+{
+#if defined HAVE_PPOLL && defined POLLRDHUP
+  /* End the sleep early if any of these happen:
+   * - nbdkit has received a signal to shut down the server
+   * - the current connection is multi-threaded and another thread detects
+   *   NBD_CMD_DISC or a problem with the connection
+   * - the input socket detects POLLRDHUP/POLLHUP/POLLERR
+   */
+  struct timespec ts;
+  struct connection *conn = threadlocal_get_conn ();
+  struct pollfd fds[] = {
+    [0].fd = quit_fd,
+    [0].events = POLLIN,
+    [1].fd = conn ? conn->status_pipe[0] : -1,
+    [1].events = POLLIN,
+    [2].fd = conn ? conn->sockin : -1,
+    [2].events = POLLRDHUP,
+  };
+  sigset_t all;
+
+  if (sec >= INT_MAX - nsec / 1000000000) {
+    nbdkit_error ("sleep request is too long");
+    errno = EINVAL;
+    return -1;
+  }
+  ts.tv_sec = sec + nsec / 1000000000;
+  ts.tv_nsec = nsec % 1000000000;
+
+  /* Block all signals to this thread during the poll, so we don't
+   * have to worry about EINTR
+   */
+  if (sigfillset(&all))
+    abort ();
+  switch (ppoll (fds, sizeof fds / sizeof fds[0], &ts, &all)) {
+  case -1:
+    assert (errno != EINTR);
+    nbdkit_error ("poll: %m");
+    return -1;
+  case 0:
+    return 0;
+  }
+
+  /* We don't have to read the pipe-to-self; if poll returned an
+   * event, we know the connection should be shutting down.
+   */
+  assert (quit ||
+          (conn && conn->nworkers > 0 && connection_get_status (conn) < 1) ||
+          (conn && (fds[2].revents & (POLLRDHUP | POLLHUP | POLLERR))));
+  nbdkit_error ("aborting sleep to shut down");
+  errno = ESHUTDOWN;
+  return -1;
+#else
+# error "Please port this to your platform"
+  /* Porting ideas, in order of preference:
+   * - POSIX requires pselect; it's a bit clunkier to set up than poll,
+   *   but the same ability to atomically mask all signals and operate
+   *   on struct timespec makes it similar to the preferred ppoll interface
+   * - calculate an end time target, then use poll in a loop on EINTR with
+   *   a recalculation of the timeout to still reach the end time (masking
+   *   signals in that case is not safe, as it is a non-atomic race)
+   */
+  nbdkit_error ("nbdkit_nanosleep not yet ported to systems without ppoll");
+  errno = ENOSYS;
+  return -1;
+#endif
 }

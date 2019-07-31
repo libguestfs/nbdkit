@@ -37,7 +37,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <time.h>
 
 #include <nbdkit-filter.h>
 
@@ -83,16 +82,9 @@ parse_delay (const char *key, const char *value)
 static int
 delay (int ms, int *err)
 {
-  if (ms > 0) {
-    const struct timespec ts = {
-      .tv_sec = ms / 1000,
-      .tv_nsec = (ms % 1000) * 1000000,
-    };
-    if (nanosleep (&ts, NULL) == -1) {
-      nbdkit_error ("nanosleep: %m");
-      *err = errno;
-      return -1;
-    }
+  if (ms > 0 && nbdkit_nanosleep (ms / 1000, (ms % 1000) * 1000000) == -1) {
+    *err = errno;
+    return -1;
   }
   return 0;
 }

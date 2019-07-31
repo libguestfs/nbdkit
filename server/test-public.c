@@ -42,12 +42,26 @@
 
 static bool error_flagged;
 
-/* Stub for linking against minimal source files, and for proving that
+/* Stubs for linking against minimal source files, and for proving that
  * an error message is issued when expected.  */
 void
 nbdkit_error (const char *fs, ...)
 {
   error_flagged = true;
+}
+
+volatile int quit;
+int quit_fd = -1;
+
+struct connection *
+threadlocal_get_conn (void)
+{
+  abort ();
+}
+
+int connection_get_status (struct connection *conn)
+{
+  abort ();
 }
 
 static bool
@@ -215,6 +229,8 @@ main (int argc, char *argv[])
   bool pass = true;
   pass &= test_nbdkit_parse_size ();
   pass &= test_nbdkit_read_password ();
-  /* XXX add tests for nbdkit_absolute_path */
+  /* nbdkit_absolute_path and nbdkit_nanosleep not unit-tested here, but
+   * get plenty of coverage in the main testsuite.
+   */
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }

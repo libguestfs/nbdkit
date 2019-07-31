@@ -262,12 +262,10 @@ maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count,
       bits = bucket_run (bucket, bits, &ts);
     }
 
-    if (bits > 0)
-      if (nanosleep (&ts, NULL) == -1) {
-        nbdkit_error ("nanosleep: %m");
-        *err = errno;
-        return -1;
-      }
+    if (bits > 0 && nbdkit_nanosleep (ts.tv_sec, ts.tv_nsec) == -1) {
+      *err = errno;
+      return -1;
+    }
   }
   return 0;
 }
