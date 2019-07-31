@@ -155,6 +155,10 @@ stats_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   return next (nxdata);
 }
 
+#define stats_config_help \
+  "statsfile=<FILE>    (required) The file to place the log in.\n" \
+  "statsappend=<BOOL>  True to append to the log (default false).\n"
+
 /* Read. */
 static int
 stats_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -273,6 +277,7 @@ static struct nbdkit_filter filter = {
   .unload            = stats_unload,
   .config            = stats_config,
   .config_complete   = stats_config_complete,
+  .config_help       = stats_config_help,
   .pread             = stats_pread,
   .pwrite            = stats_pwrite,
   .trim              = stats_trim,
