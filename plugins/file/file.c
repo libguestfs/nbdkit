@@ -60,10 +60,6 @@
 
 #include "isaligned.h"
 
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 0
-#endif
-
 #ifndef HAVE_FDATASYNC
 #define fdatasync fsync
 #endif
