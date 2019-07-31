@@ -311,14 +311,11 @@ data_dump_plugin (void)
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
-/* No meaning, just used as the address for the handle. */
-static int dh;
-
 /* Create the per-connection handle. */
 static void *
 data_open (int readonly)
 {
-  return &dh;
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 /* Get the disk size. */
