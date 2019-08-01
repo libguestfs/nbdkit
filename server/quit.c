@@ -32,6 +32,7 @@
 
 #include <config.h>
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -39,6 +40,7 @@
 #include <unistd.h>
 
 #include "internal.h"
+#include "utils.h"
 
 /* Detection of request to exit via signal.  Most places in the code
  * can just poll quit at opportune moments, while sockets.c needs a
@@ -54,10 +56,26 @@ set_up_quit_pipe (void)
 {
   int fds[2];
 
+#ifdef HAVE_PIPE2
+  if (pipe2 (fds, O_CLOEXEC) < 0) {
+    perror ("pipe2");
+    exit (EXIT_FAILURE);
+  }
+#else
+  /* This is called early enough that no other thread will be
+   * fork()ing while we create this; but we must set CLOEXEC so that
+   * the fds don't leak into children.
+   */
   if (pipe (fds) < 0) {
     perror ("pipe");
     exit (EXIT_FAILURE);
   }
+  if (set_cloexec (fds[0]) == -1 ||
+      set_cloexec (fds[1]) == -1) {
+    perror ("fcntl");
+    exit (EXIT_FAILURE);
+  }
+#endif
   quit_fd = fds[0];
   write_quit_fd = fds[1];
 }

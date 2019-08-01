@@ -54,6 +54,7 @@
 #include <nbdkit-plugin.h>
 #include "byte-swapping.h"
 #include "cleanup.h"
+#include "utils.h"
 
 /* The per-transaction details */
 struct transaction {
@@ -431,11 +432,32 @@ nbdplug_open_handle (int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
+#ifdef HAVE_PIPE2
   if (pipe2 (h->fds, O_NONBLOCK)) {
+    nbdkit_error ("pipe2: %m");
+    free (h);
+    return NULL;
+  }
+#else
+  /* This plugin doesn't fork, so we don't care about CLOEXEC. Our use
+   * of pipe2 is merely for convenience.
+   */
+  if (pipe (h->fds)) {
     nbdkit_error ("pipe: %m");
     free (h);
     return NULL;
   }
+  if (set_nonblock (h->fds[0]) == -1) {
+    close (h->fds[1]);
+    free (h);
+    return NULL;
+  }
+  if (set_nonblock (h->fds[1]) == -1) {
+    close (h->fds[0]);
+    free (h);
+    return NULL;
+  }
+#endif
 
  retry:
   h->fd = -1;

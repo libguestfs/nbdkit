@@ -101,7 +101,9 @@ main (int argc, char *argv[])
   exit (77);
 #endif
 
-  /* Socket for communicating with nbdkit. */
+  /* Socket for communicating with nbdkit. The test doesn't care about
+   * fd leaks, so we don't bother with CLOEXEC.
+   */
   if (socketpair (AF_LOCAL, SOCK_STREAM, 0, sfd) == -1) {
     perror ("socketpair");
     exit (EXIT_FAILURE);

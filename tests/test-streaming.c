@@ -70,8 +70,9 @@ main (int argc, char *argv[])
                          NULL) == -1)
     exit (EXIT_FAILURE);
 
-  /* Fork to run a second process which reads from streaming.fifo
-   * and checks that the content is correct.
+  /* Fork to run a second process which reads from streaming.fifo and
+   * checks that the content is correct.  The test doesn't care about
+   * fd leaks, so we don't bother with CLOEXEC.
    */
   if (pipe (pipefd) == -1) {
     perror ("pipe");

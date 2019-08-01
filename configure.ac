@@ -196,6 +196,7 @@ AC_CHECK_FUNCS([\
 	fdatasync \
 	get_current_dir_name \
 	mkostemp \
+	pipe2 \
 	posix_fadvise])
 
 dnl Check whether printf("%m") works
