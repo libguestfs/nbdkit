@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -36,6 +36,7 @@
 
 #include <config.h>
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -241,9 +242,17 @@ nbdkit_read_password (const char *value, char **password)
 
   /* Read password from a file. */
   else if (value[0] == '+') {
-    fp = fopen (&value[1], "r");
-    if (fp == NULL) {
+    int fd;
+
+    fd = open (&value[1], O_CLOEXEC | O_RDONLY);
+    if (fd == -1) {
       nbdkit_error ("open %s: %m", &value[1]);
+      return -1;
+    }
+    fp = fdopen (fd, "r");
+    if (fp == NULL) {
+      nbdkit_error ("fdopen %s: %m", &value[1]);
+      close (fd);
       return -1;
     }
     r = getline (password, &n, fp);
