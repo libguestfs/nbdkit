@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -60,6 +60,7 @@ struct threadlocal {
   int err;
   void *buffer;
   size_t buffer_size;
+  struct connection *conn;
 };
 
 static pthread_key_t threadlocal_key;
@@ -225,4 +226,23 @@ threadlocal_buffer (size_t size)
   }
 
   return threadlocal->buffer;
+}
+
+/* Set (or clear) the connection that is using the current thread */
+void
+threadlocal_set_conn (struct connection *conn)
+{
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
+
+  if (threadlocal)
+    threadlocal->conn = conn;
+}
+
+/* Get the connection associated with this thread, if available */
+struct connection *
+threadlocal_get_conn (void)
+{
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
+
+  return threadlocal ? threadlocal->conn : NULL;
 }

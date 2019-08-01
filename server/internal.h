@@ -342,6 +342,8 @@ extern void threadlocal_set_sockaddr (const struct sockaddr *addr,
 extern void threadlocal_set_error (int err);
 extern int threadlocal_get_error (void);
 extern void *threadlocal_buffer (size_t size);
+extern void threadlocal_set_conn (struct connection *conn);
+extern struct connection *threadlocal_get_conn (void);
 
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1

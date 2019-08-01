@@ -137,6 +137,7 @@ connection_worker (void *data)
   debug ("starting worker thread %s", name);
   threadlocal_new_server_thread ();
   threadlocal_set_name (name);
+  threadlocal_set_conn (conn);
   free (worker);
 
   while (!quit && connection_get_status (conn) > 0)
@@ -297,6 +298,8 @@ new_connection (int sockin, int sockout, int nworkers)
     conn->send = raw_send_other;
   conn->close = raw_close;
 
+  threadlocal_set_conn (conn);
+
   return conn;
 }
 
@@ -306,6 +309,7 @@ free_connection (struct connection *conn)
   if (!conn)
     return;
 
+  threadlocal_set_conn (NULL);
   conn->close (conn);
 
   /* Don't call the plugin again if quit has been set because the main
