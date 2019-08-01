@@ -176,7 +176,7 @@ plugin_dump_fields (struct backend *b)
     break;
   }
   printf ("\n");
-  printf ("errno_is_preserved=%d\n", p->plugin.errno_is_preserved);
+  printf ("errno_is_preserved=%d\n", !!p->plugin.errno_is_preserved);
   if (p->plugin.magic_config_key)
     printf ("magic_config_key=%s\n", p->plugin.magic_config_key);
 
@@ -492,7 +492,7 @@ get_error (struct backend_plugin *p)
 {
   int ret = threadlocal_get_error ();
 
-  if (!ret && p->plugin.errno_is_preserved)
+  if (!ret && p->plugin.errno_is_preserved != 0)
     ret = errno;
   return ret ? ret : EIO;
 }
