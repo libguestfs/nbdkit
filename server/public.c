@@ -30,6 +30,10 @@
  * SUCH DAMAGE.
  */
 
+/* This file contains the public utility APIs to be exported by nbdkit
+ * for use by filters and plugins, declared in nbdkit-common.h.
+ */
+
 #include <config.h>
 
 #include <stdio.h>

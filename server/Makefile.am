@@ -55,13 +55,13 @@ nbdkit_SOURCES = \
 	protocol-handshake.c \
 	protocol-handshake-oldstyle.c \
 	protocol-handshake-newstyle.c \
+	public.c \
 	quit.c \
 	signals.c \
 	socket-activation.c \
 	sockets.c \
 	threadlocal.c \
 	usergroup.c \
-	utils.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
@@ -121,21 +121,21 @@ pkgconfig_DATA = nbdkit.pc
 
 # Unit testing
 
-TESTS = test-utils
+TESTS = test-public
 
-check_PROGRAMS = test-utils
+check_PROGRAMS = test-public
 
-test_utils_SOURCES = \
-	test-utils.c \
-	utils.c \
+test_public_SOURCES = \
+	test-public.c \
+	public.c \
 	extents.c \
 	$(NULL)
-test_utils_CPPFLAGS = \
+test_public_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
-test_utils_CFLAGS = $(WARNINGS_CFLAGS) $(VALGRIND_CFLAGS)
-test_utils_LDADD = \
+test_public_CFLAGS = $(WARNINGS_CFLAGS) $(VALGRIND_CFLAGS)
+test_public_LDADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
