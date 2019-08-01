@@ -60,6 +60,12 @@ sh_load (void)
     nbdkit_error ("mkdtemp: /tmp: %m");
     exit (EXIT_FAILURE);
   }
+  /* Set $tmpdir for the script. */
+  if (setenv ("tmpdir", tmpdir, 1) == -1) {
+    nbdkit_error ("setenv: tmpdir=%s: %m", tmpdir);
+    exit (EXIT_FAILURE);
+  }
+
   nbdkit_debug ("sh: load: tmpdir: %s", tmpdir);
 }
 
