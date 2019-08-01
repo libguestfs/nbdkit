@@ -204,9 +204,3 @@ using ‘#define NBDKIT_API_VERSION <version>’.
   value) strings.  nbdkit should know the possible keys for the plugin
   and filters, and the type of the values, and both check and parse
   them for the plugin.
-
-* It should be possible to set the thread model dynamically.  This
-  would be especially useful for the language plugins as it would
-  allow them to load plugins with different thread models.  (This is
-  kind of possible today - see the OCaml plugin - but we need an
-  official, supported way to do it.)
