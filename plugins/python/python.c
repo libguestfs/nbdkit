@@ -38,6 +38,7 @@
 
 #include <config.h>
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -295,6 +296,7 @@ py_dump_plugin (void)
 static int
 py_config (const char *key, const char *value)
 {
+  int fd;
   FILE *fp;
   PyObject *modname;
   PyObject *fn;
@@ -309,10 +311,22 @@ py_config (const char *key, const char *value)
     }
     script = value;
 
-    /* Load the Python script. */
-    fp = fopen (script, "r");
+    /* Load the Python script. Mark the file CLOEXEC, in case the act
+     * of loading the script invokes code that in turn fork()s.
+     * However, we can't rely on fopen("re"), so do it by hand.  This
+     * does not have to be atomic, because there are no threads during
+     * .config before the python interpreter is running, but it's
+     * easier to use open/fdopen than fopen/fcntl(fileno).
+     */
+    fd = open (script, O_CLOEXEC | O_RDONLY);
+    if (fd == -1) {
+      nbdkit_error ("%s: cannot open file: %m", script);
+      return -1;
+    }
+    fp = fdopen (fd, "r");
     if (!fp) {
       nbdkit_error ("%s: cannot open file: %m", script);
+      close (fd);
       return -1;
     }
 
