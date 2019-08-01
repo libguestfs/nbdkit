@@ -32,6 +32,7 @@
 
 #include <config.h>
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -54,8 +55,8 @@ set_up_quit_pipe (void)
 {
   int fds[2];
 
-  if (pipe (fds) < 0) {
-    perror ("pipe");
+  if (pipe2 (fds, O_CLOEXEC) < 0) {
+    perror ("pipe2");
     exit (EXIT_FAILURE);
   }
   quit_fd = fds[0];
