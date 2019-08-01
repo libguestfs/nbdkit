@@ -234,7 +234,7 @@ eg. C<NULL> or C<-1>.
 
 If the call to C<nbdkit_set_error> is omitted while serving data, then
 the global variable C<errno> may be used.  For plugins which have
-C<.errno_is_preserved == 1> the core code will use C<errno>.  In
+C<.errno_is_preserved != 0> the core code will use C<errno>.  In
 plugins written in non-C languages, we usually cannot trust that
 C<errno> will not be overwritten when returning from that language to
 C.  In that case, either the plugin must call C<nbdkit_set_error> or
@@ -813,6 +813,22 @@ guarantee that trimmed blocks read back as zeroes.
 C<nbdkit_extent_add> returns C<0> on success or C<-1> on failure.  On
 failure C<nbdkit_error> and/or C<nbdkit_set_error> has already been
 called.  C<errno> will be set to a suitable value.
+
+=head1 OTHER FIELDS
+
+The plugin struct also contains an integer field used as a
+boolean in C code, but unlikely to be exposed in other language
+bindings:
+
+=over 4
+
+=item C<.errno_is_preserved>
+
+This defaults to 0; if non-zero, nbdkit can reliably use the value of
+C<errno> when a callback reports failure, rather than the plugin
+having to call C<nbdkit_set_error>.
+
+=back
 
 =head1 THREADS
 
