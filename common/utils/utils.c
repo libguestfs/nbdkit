@@ -32,11 +32,13 @@
 
 #include <config.h>
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include <nbdkit-plugin.h>
 
@@ -125,4 +127,48 @@ exit_status_to_nbd_error (int status, const char *cmd)
   }
 
   return 0;
+}
+
+/* Set the FD_CLOEXEC flag on the given fd, if it is non-negative.
+ * On failure, close fd and return -1; on success, return fd.
+ */
+int
+set_cloexec (int fd) {
+  int f;
+  int err;
+
+  if (fd == -1)
+    return -1;
+
+  f = fcntl (fd, F_GETFD);
+  if (f == -1 || fcntl (fd, F_SETFD, f | FD_CLOEXEC) == -1) {
+    err = errno;
+    nbdkit_error ("fcntl: %m");
+    close (fd);
+    errno = err;
+    return -1;
+  }
+  return fd;
+}
+
+/* Set the O_NONBLOCK flag on the given fd, if it is non-negative.
+ * On failure, close fd and return -1; on success, return fd.
+ */
+int
+set_nonblock (int fd) {
+  int f;
+  int err;
+
+  if (fd == -1)
+    return -1;
+
+  f = fcntl (fd, F_GETFL);
+  if (f == -1 || fcntl (fd, F_SETFL, f | O_NONBLOCK) == -1) {
+    err = errno;
+    nbdkit_error ("fcntl: %m");
+    close (fd);
+    errno = err;
+    return -1;
+  }
+  return fd;
 }
