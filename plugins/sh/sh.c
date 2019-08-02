@@ -453,6 +453,8 @@ flags_string (uint32_t flags, char *buf, size_t len)
 {
   bool comma = false;
 
+  buf[0] = '\0';
+
   if (flags & NBDKIT_FLAG_FUA)
     flag_append ("fua", &comma, &buf, &len);
 
