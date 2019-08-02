@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -175,7 +175,7 @@ bind_tcpip_socket (size_t *nr_socks)
 
     set_selinux_label ();
 
-    sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+    sock = socket (a->ai_family, a->ai_socktype | SOCK_CLOEXEC, a->ai_protocol);
     if (sock == -1) {
       perror ("bind_tcpip_socket: socket");
       exit (EXIT_FAILURE);
@@ -286,8 +286,9 @@ accept_connection (int listen_sock)
   thread_data->instance_num = instance_num++;
   thread_data->addrlen = sizeof thread_data->addr;
  again:
-  thread_data->sock = accept (listen_sock,
-                              &thread_data->addr, &thread_data->addrlen);
+  thread_data->sock = accept4 (listen_sock,
+                               &thread_data->addr, &thread_data->addrlen,
+                               SOCK_CLOEXEC);
   if (thread_data->sock == -1) {
     if (errno == EINTR || errno == EAGAIN)
       goto again;
