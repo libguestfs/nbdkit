@@ -43,7 +43,7 @@ fi
 
 # Run nbdkit plugin --help for each plugin.
 # However some of these tests are expected to fail.
-test ()
+do_test ()
 {
     vg=; [ "$NBDKIT_VALGRIND" = "1" ] && vg="-valgrind"
     case "$1$vg" in
@@ -58,4 +58,4 @@ test ()
             ;;
     esac
 }
-foreach_plugin test
+foreach_plugin do_test
