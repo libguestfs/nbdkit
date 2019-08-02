@@ -264,7 +264,7 @@ sh_config_complete (void)
 }
 
 /* See also the comments in call.c:call3() */
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 static int
 sh_thread_model (void)
@@ -274,6 +274,11 @@ sh_thread_model (void)
   size_t slen;
   int r;
 
+  /* For historical compatibility: the lack of a script is assumed to
+   * be parallel, but an existing script with missing or unparseable
+   * thread_model remains at the older (but safe)
+   * serialize_all_requests.
+   */
   if (!script)
     return THREAD_MODEL;
 
@@ -295,12 +300,12 @@ sh_thread_model (void)
     else {
       nbdkit_debug ("%s: ignoring unrecognized thread model: %s",
                     script, s);
-      r = THREAD_MODEL;
+      r = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
     }
     return r;
 
   case MISSING:
-    return THREAD_MODEL;
+    return NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
 
   case ERROR:
     return -1;

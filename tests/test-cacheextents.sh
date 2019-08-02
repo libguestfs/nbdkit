@@ -58,6 +58,7 @@ echo "Call: \$@" >>$accessfile_full
 size=4M
 block_size=\$((1024*1024))
 case "\$1" in
+  thread_model) echo parallel ;;
   get_size) echo \$size ;;
   can_extents) ;;
   extents)

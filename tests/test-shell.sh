@@ -28,6 +28,10 @@ if (type yes) >/dev/null 2>&1; then
 fi
 
 case "$1" in
+    thread_model)
+        echo parallel
+        ;;
+
     open)
         echo handle
         ;;

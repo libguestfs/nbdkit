@@ -70,30 +70,67 @@ do_test ()
 foreach_plugin do_test
 
 # Test that --dump-plugin can be used to introspect a resulting dynamic
-# thread model.
-out=$({
-    # sh does not yet support parallel
-    nbdkit --dump-plugin sh
-    # Here, the script further reduces things
-    nbdkit --dump-plugin sh - <<\EOF
+# thread model.  First, get a baseline (since a system without atomic
+# CLOEXEC can't do parallel). Then test various patterns with the sh plugin.
+max=$(nbdkit --dump-plugin file | sed -n '/^thread_model=/ s///p')
+
+# With no script, thread_model matches the baseline
+out=$(nbdkit --dump-plugin sh | grep thread_model)
+exp="max_thread_model=parallel
+thread_model=$max
+has_thread_model=1"
+if [ "$out" != "$exp" ]; then
+    echo "thread_model mismatch"; exit 1
+fi
+
+# With a script that does not specify a model, historical back-compat
+# forces the model to serialized
+out=$(nbdkit --dump-plugin sh - <<\EOF | grep ^thread_model
 case $1 in
     get_size) echo 1M ;;
-    thread_model) echo serialize_connections ;;
     *) exit 2 ;;
 esac
 EOF
-    # Here, the filter further reduces things
-    nbdkit --dump-plugin --filter=noparallel sh serialize=connections
-} | grep thread_model)
-exp="max_thread_model=serialize_all_requests
-thread_model=serialize_all_requests
-has_thread_model=1
-max_thread_model=serialize_all_requests
-thread_model=serialize_connections
-has_thread_model=1
-max_thread_model=serialize_all_requests
-thread_model=serialize_connections
-has_thread_model=1"
-if [ "$out" != "$exp" ]; then
+)
+if [ "$out" != "thread_model=serialize_all_requests" ]; then
+    echo "thread_model mismatch"; exit 1
+fi
+
+# A script can request the maximum, but will only get the baseline
+out=$(nbdkit --dump-plugin sh - <<\EOF | grep ^thread_model
+case $1 in
+    thread_model) echo parallel ;;
+    get_size) echo 1M ;;
+    *) exit 2 ;;
+esac
+EOF
+)
+if [ "$out" != "thread_model=$max" ]; then
+    echo "thread_model mismatch"; exit 1
+fi
+
+# A script can request an even stricter model
+out=$(nbdkit --dump-plugin sh - <<\EOF | grep ^thread_model
+case $1 in
+    thread_model) echo serialize_connections ;;
+    get_size) echo 1M ;;
+    *) exit 2 ;;
+esac
+EOF
+)
+if [ "$out" != "thread_model=serialize_connections" ]; then
+    echo "thread_model mismatch"; exit 1
+fi
+
+# Finally, a filter can restrict things
+out=$(nbdkit --dump-plugin --filter=noparallel sh - \
+	     serialize=connections <<\EOF | grep ^thread_model
+case $1 in
+    get_size) echo 1M ;;
+    *) exit 2 ;;
+esac
+EOF
+)
+if [ "$out" != "thread_model=serialize_connections" ]; then
     echo "thread_model mismatch"; exit 1
 fi

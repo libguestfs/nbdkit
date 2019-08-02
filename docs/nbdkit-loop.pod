@@ -107,6 +107,7 @@ creates a disk which contains a bad sector:
 
  #!/bin/bash -
  case "$1" in
+     thread_model) echo parallel ;;
      get_size) echo 64M ;;
      pread)
          if [ $4 -le 100000 ] && [ $(( $4+$3 )) -gt 100000 ]; then

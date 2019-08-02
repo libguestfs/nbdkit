@@ -76,6 +76,12 @@ case "$1" in
         fi
         ;;
 
+    thread_model)
+        # You must opt-in for parallel behavior; the default is
+        # serialize_all_requests.
+        echo parallel
+        ;;
+
     open)
         # Open a new client connection.
 

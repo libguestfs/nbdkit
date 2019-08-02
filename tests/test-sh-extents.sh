@@ -66,6 +66,7 @@ cat > $expected <<'EOF'
 EOF
 do_test <<'EOF'
 case "$1" in
+     thread_model) echo parallel ;;
      get_size) echo 64K ;;
      can_extents) exit 0 ;;
      extents)
@@ -82,6 +83,7 @@ cat > $expected <<'EOF'
 EOF
 do_test <<'EOF'
 case "$1" in
+     thread_model) echo parallel ;;
      get_size) echo 64K ;;
      can_extents) exit 0 ;;
      extents)
@@ -98,6 +100,7 @@ cat > $expected <<'EOF'
 EOF
 do_test <<'EOF'
 case "$1" in
+     thread_model) echo parallel ;;
      get_size) echo 64K ;;
      can_extents) exit 0 ;;
      extents)
@@ -114,6 +117,7 @@ cat > $expected <<'EOF'
 EOF
 do_test <<'EOF'
 case "$1" in
+     thread_model) echo parallel ;;
      get_size) echo 1M ;;
      can_extents) exit 0 ;;
      extents)
@@ -132,6 +136,7 @@ cat > $expected <<'EOF'
 EOF
 do_test <<'EOF'
 case "$1" in
+     thread_model) echo parallel ;;
      get_size) echo 1M ;;
      can_extents) exit 0 ;;
      extents)
@@ -149,6 +154,7 @@ cat > $expected <<'EOF'
 EOF
 do_test <<'EOF'
 case "$1" in
+     thread_model) echo parallel ;;
      get_size) echo 64K ;;
      extents) exit 1 ;;
      *) exit 2 ;;

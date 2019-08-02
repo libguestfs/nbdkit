@@ -91,6 +91,7 @@ EXTRA_DIST = \
 	test-offset-extents.sh \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
+	test-parallel-sh.sh \
 	test-partition1.sh \
 	test-partition2.sh \
 	test-partitioning1.sh \
@@ -342,6 +343,7 @@ file-data: generate-file-data.sh
 TESTS += \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
+	test-parallel-sh.sh \
 	$(NULL)
 
 # Most in-depth tests need libguestfs, since that is a convenient way to
