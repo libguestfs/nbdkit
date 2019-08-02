@@ -53,11 +53,34 @@ qemu-io -f raw -c "aio_write -P 1 0 512" -c "aio_write -P 2 512 512" \
 # happens). This test may have spurious failures under heavy loads on
 # the test machine, where tuning the delays may help.
 
+# Also test for leaked fds when possible: nbdkit does not close fds it
+# inherited, but other than 0, 1, 2, and the fd associated with the
+# script, the child shell should not see any new fds not also present
+# in nbdkit's parent environment.  When testing for the count of open
+# fds, use ls in a subshell (rather than a glob directly within the
+# shell under test), to avoid yet another fd open on the /proc/self/fd
+# directory.
+
+curr_fds=
+if test -d /proc/$$/fd; then
+    curr_fds=$(/usr/bin/env bash -c '(ls /proc/$$/fd)' | wc -w)
+fi
+echo "using curr_fds=$curr_fds"
+
 cat > test-parallel-sh.script <<EOF
 #!/usr/bin/env bash
 f=test-parallel-sh.data
 if ! test -f \$f; then
   echo "can't locate test-parallel-sh.data" >&2; exit 5
+fi
+if test -d /proc/\$\$/fd; then
+  (
+    if test \$( ls /proc/\$\$/fd | wc -w ) -ne \$(($curr_fds + 1)); then
+      echo "there seem to be leaked fds, curr_fds=$curr_fds" >&2
+      ls -l /proc/\$\$/fd >&2
+      exit 1
+    fi
+  ) || exit 5
 fi
 case \$1 in
   thread_model) echo parallel ;;
