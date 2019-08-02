@@ -54,6 +54,7 @@
 #include <pthread.h>
 
 #include "internal.h"
+#include "utils.h"
 
 static void
 set_selinux_label (void)
@@ -107,7 +108,14 @@ bind_unix_socket (size_t *nr_socks)
 
   set_selinux_label ();
 
+#ifdef SOCK_CLOEXEC
   sock = socket (AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0);
+#else
+  /* Fortunately, this code is only run at startup, so there is no
+   * risk of the fd leaking to a plugin's fork()
+   */
+  sock = set_cloexec (socket (AF_UNIX, SOCK_STREAM, 0));
+#endif
   if (sock == -1) {
     perror ("bind_unix_socket: socket");
     exit (EXIT_FAILURE);

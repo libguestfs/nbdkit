@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -131,9 +132,20 @@ exit_status_to_nbd_error (int status, const char *cmd)
 
 /* Set the FD_CLOEXEC flag on the given fd, if it is non-negative.
  * On failure, close fd and return -1; on success, return fd.
+ *
+ * Note that this function should ONLY be used on platforms that lack
+ * atomic CLOEXEC support during fd creation (such as Haiku in 2019);
+ * when using it as a fallback path, you must also consider how to
+ * prevent fd leaks to plugins that want to fork().
  */
 int
 set_cloexec (int fd) {
+#ifdef SOCK_CLOEXEC
+  nbdkit_error ("prefer creating fds with CLOEXEC atomically set");
+  close (fd);
+  errno = EBADF;
+  return -1;
+#else
   int f;
   int err;
 
@@ -149,6 +161,7 @@ set_cloexec (int fd) {
     return -1;
   }
   return fd;
+#endif
 }
 
 /* Set the O_NONBLOCK flag on the given fd, if it is non-negative.

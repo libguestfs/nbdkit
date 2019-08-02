@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -49,6 +49,11 @@
 #include <sys/un.h>
 
 #include <pthread.h>
+
+#ifndef SOCK_CLOEXEC
+/* For this file, we don't care if fds are marked cloexec; leaking is okay.  */
+#define SOCK_CLOEXEC 0
+#endif
 
 static char tmpdir[]   = "/tmp/wsXXXXXX";
 static char sockpath[] = "............./sock";

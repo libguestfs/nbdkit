@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -57,6 +57,11 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+
+#ifndef SOCK_CLOEXEC
+/* For this file, we don't care if fds are marked cloexec; leaking is okay.  */
+#define SOCK_CLOEXEC 0
+#endif
 
 #define FIRST_SOCKET_ACTIVATION_FD 3
 
@@ -215,12 +220,7 @@ main (int argc, char *argv[])
    * not from the path), so we should be able to connect to the Unix
    * domain socket by its path and receive an NBD magic string.
    */
-#ifdef SOCK_CLOEXEC
   sock = socket (AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0);
-#else
-  sock = socket (AF_UNIX, SOCK_STREAM, 0);
-  fcntl (sock, F_SETFD, FD_CLOEXEC);
-#endif
   if (sock == -1) {
     perror ("socket");
     exit (EXIT_FAILURE);
