@@ -312,10 +312,8 @@ extern struct backend *filter_register (struct backend *next, size_t index,
 extern void lock_init_thread_model (void);
 extern void lock_connection (void);
 extern void unlock_connection (void);
-extern void lock_request (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
-extern void unlock_request (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
+extern void lock_request (struct connection *conn);
+extern void unlock_request (struct connection *conn);
 extern void lock_unload (void);
 extern void unlock_unload (void);
 

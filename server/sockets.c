@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -183,7 +183,14 @@ bind_tcpip_socket (size_t *nr_socks)
 
     set_selinux_label ();
 
-    sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+#ifdef SOCK_CLOEXEC
+    sock = socket (a->ai_family, a->ai_socktype | SOCK_CLOEXEC, a->ai_protocol);
+#else
+    /* Fortunately, this code is only run at startup, so there is no
+     * risk of the fd leaking to a plugin's fork()
+     */
+    sock = set_cloexec (socket (a->ai_family, a->ai_socktype, a->ai_protocol));
+#endif
     if (sock == -1) {
       perror ("bind_tcpip_socket: socket");
       exit (EXIT_FAILURE);
@@ -294,8 +301,26 @@ accept_connection (int listen_sock)
   thread_data->instance_num = instance_num++;
   thread_data->addrlen = sizeof thread_data->addr;
  again:
-  thread_data->sock = accept (listen_sock,
-                              &thread_data->addr, &thread_data->addrlen);
+#ifdef HAVE_ACCEPT4
+  thread_data->sock = accept4 (listen_sock,
+                               &thread_data->addr, &thread_data->addrlen,
+                               SOCK_CLOEXEC);
+#else
+  /* If we were fully parallel, then this function could be accepting
+   * connections in one thread while another thread could be in a
+   * plugin trying to fork.  But plugins.c forced thread_model to
+   * serialize_all_requests when it detects a lack of atomic CLOEXEC,
+   * at which point, we can use a mutex to ensure we aren't accepting
+   * until the plugin is not running, making non-atomicity okay.
+   */
+  assert (backend->thread_model (backend) <=
+          NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
+  lock_request (NULL);
+  thread_data->sock = set_cloexec (accept (listen_sock,
+                                           &thread_data->addr,
+                                           &thread_data->addrlen));
+  unlock_request (NULL);
+#endif
   if (thread_data->sock == -1) {
     if (errno == EINTR || errno == EAGAIN)
       goto again;
