@@ -263,6 +263,7 @@ sh_config_complete (void)
   }
 }
 
+/* See also the comments in call.c:call3() */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
 static int

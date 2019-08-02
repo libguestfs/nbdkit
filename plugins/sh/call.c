@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -32,6 +32,8 @@
 
 #include <config.h>
 
+#include <assert.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -94,6 +96,26 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
   *rbuflen = *ebuflen = 0;
   rbufalloc = ebufalloc = 0;
 
+#ifdef HAVE_PIPE2
+  if (pipe2 (in_fd, O_CLOEXEC) == -1) {
+    nbdkit_error ("%s: pipe2: %m", script);
+    goto error;
+  }
+  if (pipe2 (out_fd, O_CLOEXEC) == -1) {
+    nbdkit_error ("%s: pipe2: %m", script);
+    goto error;
+  }
+  if (pipe2 (err_fd, O_CLOEXEC) == -1) {
+    nbdkit_error ("%s: pipe2: %m", script);
+    goto error;
+  }
+#else
+  /* Without pipe2, nbdkit forces the thread model maximum down to
+   * NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS, this in turn ensures
+   * no other thread will be trying to fork, and thus we can skip
+   * worrying about CLOEXEC races.  Therefore, it's not worth adding a
+   * loop after fork to close unexpected fds.
+   */
   if (pipe (in_fd) == -1) {
     nbdkit_error ("%s: pipe: %m", script);
     goto error;
@@ -106,6 +128,15 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
     nbdkit_error ("%s: pipe: %m", script);
     goto error;
   }
+#endif
+
+  /* Ensure that stdin/out/err of the current process were not empty
+   * before we started creating pipes (otherwise, the close and dup2
+   * calls below become more complex to juggle fds around correctly).
+  */
+  assert (in_fd[0] > STDERR_FILENO && in_fd[1] > STDERR_FILENO &&
+          out_fd[0] > STDERR_FILENO && out_fd[1] > STDERR_FILENO &&
+          err_fd[0] > STDERR_FILENO && err_fd[1] > STDERR_FILENO);
 
   pid = fork ();
   if (pid == -1) {
