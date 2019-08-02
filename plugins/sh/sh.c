@@ -273,6 +273,9 @@ sh_thread_model (void)
   size_t slen;
   int r;
 
+  if (!script)
+    return THREAD_MODEL;
+
   switch (call_read (&s, &slen, args)) {
   case OK:
     if (slen > 0 && s[slen-1] == '\n')

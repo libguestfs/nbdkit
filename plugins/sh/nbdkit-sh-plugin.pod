@@ -191,7 +191,8 @@ C<"serialize_requests">, or C<"parallel">.
 This method is I<not> required; if omitted, then the plugin will be
 executed under the default sh thread model (currently
 C<"serialize_all_requests">, which implies this callback only makes a
-difference with an output of C<"serialize_connections">).  If an error
+difference with an output of C<"serialize_connections">; look for
+'max_thread_model' in C<nbdkit --dump-plugin sh>).  If an error
 occurs, the script should output an error message and exit with status
 C<1>; unrecognized output is ignored.
 

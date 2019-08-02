@@ -140,6 +140,33 @@ plugin_version (struct backend *b)
   return p->plugin.version;
 }
 
+/* Map thread model to a string */
+static void
+plugin_dump_thread_model (const char *prefix, int model)
+{
+  flockfile (stdout);
+  printf ("%s=", prefix);
+  switch (model) {
+  case NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS:
+    printf ("serialize_connections");
+    break;
+  case NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS:
+    printf ("serialize_all_requests");
+    break;
+  case NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS:
+    printf ("serialize_requests");
+    break;
+  case NBDKIT_THREAD_MODEL_PARALLEL:
+    printf ("parallel");
+    break;
+  default:
+    printf ("%d # unknown thread model!", model);
+    break;
+  }
+  printf ("\n");
+  funlockfile (stdout);
+}
+
 /* This implements the --dump-plugin option. */
 static void
 plugin_dump_fields (struct backend *b)
@@ -157,25 +184,8 @@ plugin_dump_fields (struct backend *b)
 
   printf ("api_version=%d\n", p->plugin._api_version);
   printf ("struct_size=%" PRIu64 "\n", p->plugin._struct_size);
-  printf ("thread_model=");
-  switch (p->plugin._thread_model) {
-  case NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS:
-    printf ("serialize_connections");
-    break;
-  case NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS:
-    printf ("serialize_all_requests");
-    break;
-  case NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS:
-    printf ("serialize_requests");
-    break;
-  case NBDKIT_THREAD_MODEL_PARALLEL:
-    printf ("parallel");
-    break;
-  default:
-    printf ("%d # unknown thread model!", p->plugin._thread_model);
-    break;
-  }
-  printf ("\n");
+  plugin_dump_thread_model ("max_thread_model", p->plugin._thread_model);
+  plugin_dump_thread_model ("thread_model", backend->thread_model (backend));
   printf ("errno_is_preserved=%d\n", !!p->plugin.errno_is_preserved);
   if (p->plugin.magic_config_key)
     printf ("magic_config_key=%s\n", p->plugin.magic_config_key);
@@ -213,6 +223,7 @@ plugin_dump_fields (struct backend *b)
   HAS (extents);
   HAS (can_cache);
   HAS (cache);
+  HAS (thread_model);
 #undef HAS
 
   /* Custom fields. */

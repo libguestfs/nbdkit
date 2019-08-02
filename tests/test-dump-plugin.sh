@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2014 Red Hat Inc.
+# Copyright (C) 2014-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -68,3 +68,32 @@ do_test ()
     esac
 }
 foreach_plugin do_test
+
+# Test that --dump-plugin can be used to introspect a resulting dynamic
+# thread model.
+out=$({
+    # sh does not yet support parallel
+    nbdkit --dump-plugin sh
+    # Here, the script further reduces things
+    nbdkit --dump-plugin sh - <<\EOF
+case $1 in
+    get_size) echo 1M ;;
+    thread_model) echo serialize_connections ;;
+    *) exit 2 ;;
+esac
+EOF
+    # Here, the filter further reduces things
+    nbdkit --dump-plugin --filter=noparallel sh serialize=connections
+} | grep thread_model)
+exp="max_thread_model=serialize_all_requests
+thread_model=serialize_all_requests
+has_thread_model=1
+max_thread_model=serialize_all_requests
+thread_model=serialize_connections
+has_thread_model=1
+max_thread_model=serialize_all_requests
+thread_model=serialize_connections
+has_thread_model=1"
+if [ "$out" != "$exp" ]; then
+    echo "thread_model mismatch"; exit 1
+fi

@@ -128,16 +128,19 @@ is called once just after the plugin is loaded into memory.
 
 C<.config> is called zero or more times during command line parsing.
 C<.config_complete> is called once after all configuration information
-has been passed to the plugin.
+has been passed to the plugin (but not during C<nbdkit --dump-plugin>).
 
 Both are called after loading the plugin but before any connections
 are accepted.
 
 =item C<.thread_model>
 
-C<.thread_model> is called once after all configuration information
-has been passed to the plugin, and before any connections are
-accepted.
+In normal operation, C<.thread_model> is called once after
+C<.config_complete> has validated all configuration information, and
+before any connections are accepted.  However, during C<nbdkit
+--dump-plugin>, it is called after any C<.config> calls but without
+C<.config_complete> (so a plugin which determines the results from a
+script must be prepared for a missing script).
 
 =item C<.open>
 
