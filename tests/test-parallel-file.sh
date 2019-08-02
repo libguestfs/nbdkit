@@ -36,6 +36,9 @@ source ./functions.sh
 requires test -f file-data
 requires qemu-io --version
 
+nbdkit --dump-plugin file | grep -q ^thread_model=parallel ||
+    { echo "nbdkit lacks support for parallel requests"; exit 77; }
+
 cleanup_fn rm -f test-parallel-file.data test-parallel-file.out
 
 # Populate file, and sanity check that qemu-io can issue parallel requests

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2017-2018 Red Hat Inc.
+# Copyright (C) 2017-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,6 +35,9 @@ source ./functions.sh
 # Check file-data was created by Makefile and qemu-io exists.
 requires test -f file-data
 requires qemu-io --version
+
+nbdkit --dump-plugin nbd | grep -q ^thread_model=parallel ||
+    { echo "nbdkit lacks support for parallel requests"; exit 77; }
 
 sock=`mktemp -u`
 files="test-parallel-nbd.out $sock test-parallel-nbd.data test-parallel-nbd.pid"

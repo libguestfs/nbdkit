@@ -942,8 +942,16 @@ C<NBDKIT_REGISTER_PLUGIN>).  Additionally, a plugin may implement the
 C<.thread_model> callback, called right after C<.config_complete> to
 make a runtime decision on which thread model to use.  The nbdkit
 server chooses the most restrictive model between the plugin's
-C<THREAD_MODEL>, the C<.thread_model> if present, and any restrictions
-requested by filters.
+C<THREAD_MODEL>, the C<.thread_model> if present, any restrictions
+requested by filters, and any limitations imposed by the system (for
+example, a system without atomic C<FD_CLOEXEC> will serialize all
+requests, so as to avoid nbdkit leaking a new file descriptor from one
+thread into a child process created by another thread).
+
+In C<nbdkit --dump-plugin PLUGIN> output, the C<max_thread_model> line
+matches the C<THREAD_MODEL> macro, and the C<thread_model> line
+matches what the system finally settled on after applying all
+restrictions.
 
 The possible settings for C<THREAD_MODEL> are defined below.
 
@@ -981,8 +989,11 @@ Multiple handles can be open and multiple data requests can happen in
 parallel (even on the same handle).  The server may reorder replies,
 answering a later request before an earlier one.
 
-All the libraries you use must be thread-safe and reentrant.  You may
-also need to provide mutexes for fields in your connection handle.
+All the libraries you use must be thread-safe and reentrant, and any
+code that creates a file descriptor should atomically set
+C<FD_CLOEXEC> if you do not want it accidentally leaked to another
+thread's child process.  You may also need to provide mutexes for
+fields in your connection handle.
 
 =back
 
