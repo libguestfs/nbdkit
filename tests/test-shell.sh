@@ -42,6 +42,11 @@ case "$1" in
         ;;
 
     pwrite)
+        case $5 in
+            '' | fua) ;;
+            *)  echo "garbage flags: '$5'" >&2
+                exit 1;
+        esac
         dd oflag=seek_bytes conv=notrunc seek=$4 of=$f || exit 1
         ;;
     can_write)
@@ -54,6 +59,11 @@ case "$1" in
         ;;
 
     trim)
+        case $5 in
+            '' | fua) ;;
+            *)  echo "garbage flags: '$5'" >&2
+                exit 1;
+        esac
         fallocate -p -o $4 -l $3 -n $f
         ;;
     can_trim)
@@ -62,6 +72,11 @@ case "$1" in
         ;;
 
     zero)
+        case $5 in
+            '' | fua | may_trim | fua,may_trim ) ;;
+            *)  echo "garbage flags: '$5'" >&2
+                exit 1;
+        esac
         fallocate -z -o $4 -l $3 -n $f
         ;;
     can_zero)
