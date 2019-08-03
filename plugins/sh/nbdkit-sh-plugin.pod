@@ -148,6 +148,36 @@ delete the subdirectory explicitly in C<close>:
 or rely on nbdkit deleting the whole temporary directory including all
 per-handle subdirectories when it exits.
 
+=head2 Performance
+
+This plugin has to fork on every request, so performance will never be
+great.  For best performance, consider using the L<nbdkit-plugin(3)>
+API directly.  Having said that, if you have a sh plugin and want to
+improve performance then the following tips may help:
+
+=over 4
+
+=item Relax the thread model.
+
+The default C<thread_model> is C<serialize_all_requests> meaning that
+two instances of the script can never be running at the same time.
+This is safe but slow.  If your script is safe to be called in
+parallel, set this to C<parallel>.
+
+=item Implement the C<zero> method.
+
+If the C<zero> method is not implemented then nbdkit will fall back to
+using C<pwrite> which is considerably slower because nbdkit has to
+send blocks of zeroes to the script.
+
+=item You don't have to write shell scripts.
+
+This plugin can run any external binary, not only shell scripts.  You
+should get more performance by rewriting the shell script as a program
+in a compiled language.
+
+=back
+
 =head2 Methods
 
 This just documents the arguments to the script corresponding to each
