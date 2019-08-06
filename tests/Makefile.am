@@ -110,6 +110,7 @@ EXTRA_DIST = \
 	test-rate-dynamic.sh \
 	test.rb \
 	test-readahead-copy.sh \
+	test-shutdown.sh \
 	test-ssh.sh \
 	test.tcl \
 	test-shebang-perl.sh \
@@ -955,7 +956,8 @@ if HAVE_GUESTFISH
 TESTS += test-cow.sh
 endif HAVE_GUESTFISH
 
-# delay filter test.
+# delay filter tests.
+TESTS += test-shutdown.sh
 LIBGUESTFS_TESTS += test-delay
 
 test_delay_SOURCES = test-delay.c test.h
