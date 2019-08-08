@@ -18,8 +18,11 @@ high overhead (like L<nbdkit-curl-plugin(1)>).  For example:
  nbdkit -U - --filter=readahead curl https://example.com/disk.img \
         --run 'qemu-img convert $nbd disk.img'
 
-If you use this filter with clients that have a random access pattern
-it will slow everything down.
+The filter uses a simple adaptive algorithm which accelerates
+sequential reads, but has a small penalty if the client does random
+reads.  If the client mixes reads with writes or write-like operations
+(trimming, zeroing) then it will work but there can be a large
+performance penalty.
 
 =head1 PARAMETERS
 
