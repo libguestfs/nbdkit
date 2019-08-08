@@ -25,6 +25,11 @@ does not have effective caching, or (with C<cache=unsafe>) to defeat
 flush requests from the client (which is unsafe and can cause data
 loss, as the name suggests).
 
+This filter only caches image contents.  To cache image metadata, use
+L<nbdkit-cacheextents-filter(1)> between this filter and the plugin.
+To accelerate sequential reads, use L<nbdkit-readahead-filter(1)>
+instead.
+
 =head1 PARAMETERS
 
 =over 4
