@@ -34,7 +34,7 @@ set -e
 rm -f $1-t $1
 
 for f in {1..1048576}; do
-    echo -ne '\x55\xAA\x55\xAA\x55\xAA\x55\xAA\x55\xAA'
+    printf '\x55\xAA\x55\xAA\x55\xAA\x55\xAA\x55\xAA'
 done > $1-t
 
 mv $1-t $1

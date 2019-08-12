@@ -34,7 +34,7 @@ set -e
 rm -f $1-t $1
 
 for f in {1..512}; do
-    echo -ne '\x01\x02\x03\x04\x05\x06\x07\x08'
+    printf '\x01\x02\x03\x04\x05\x06\x07\x08'
 done > $1-t
 
 mv $1-t $1

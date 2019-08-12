@@ -40,7 +40,7 @@ type="$1"
 section="$2"
 shift 2
 for (( i = 1; i <= $#; ++i )); do
-    echo -n "L<nbdkit-${!i}-$type($section)>"
-    if [ "$i" -lt "$#" ]; then echo -n , ; fi
+    printf %s "L<nbdkit-${!i}-$type($section)>"
+    if [ "$i" -lt "$#" ]; then printf %s , ; fi
     echo
 done

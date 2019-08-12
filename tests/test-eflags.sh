@@ -73,7 +73,7 @@ do_nbdkit ()
 {
     nbdkit -v -U - "$@" sh - $late_args --run 'qemu-nbd --list -k $unixsocket' |
         grep -E "flags: 0x" | grep -Eoi '0x[a-f0-9]+' > eflags.out
-    echo -n eflags=; cat eflags.out
+    printf eflags=; cat eflags.out
 
     # Convert hex flags to decimal and assign it to $eflags.
     eflags=$(printf "%d" $(cat eflags.out))

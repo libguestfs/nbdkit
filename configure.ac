@@ -968,7 +968,7 @@ echo
 
 feature ()
 {
-    echo -n "    $1"
+    printf %s "    $1"
     shift
     if $@; then echo "yes"; else echo "no"; fi
 }

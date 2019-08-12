@@ -45,7 +45,7 @@ cleanup_fn rm -f $files
 
 rm -f data-hello.txt
 for i in {0..1000}; do
-    echo -n "hello " >> data-hello.txt
+    printf "hello " >> data-hello.txt
 done
 
 # Run nbdkit.

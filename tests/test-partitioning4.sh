@@ -66,7 +66,7 @@ done
 # number of sectors.
 rm $d/part.0250
 for i in {0..1000}; do
-    echo -n "hello " >> $d/part.0250
+    printf "hello " >> $d/part.0250
 done
 truncate -s 6144 $d/part.0250
 
