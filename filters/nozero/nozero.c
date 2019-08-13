@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -102,11 +102,21 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
              int *err)
 {
+  int writeflags = 0;
+  bool need_flush = false;
+
   assert (zeromode != NONE);
   flags &= ~NBDKIT_FLAG_MAY_TRIM;
 
   if (zeromode == NOTRIM)
     return next_ops->zero (nxdata, count, offs, flags, err);
+
+  if (flags & NBDKIT_FLAG_FUA) {
+    if (next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE)
+      need_flush = true;
+    else
+      writeflags = NBDKIT_FLAG_FUA;
+  }
 
   while (count) {
     /* Always contains zeroes, but we can't use const or else gcc 9
@@ -115,7 +125,10 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     static /* const */ char buffer[MAX_WRITE];
     uint32_t size = MIN (count, MAX_WRITE);
 
-    if (next_ops->pwrite (nxdata, buffer, size, offs, flags, err) == -1)
+    if (size == count && need_flush)
+      writeflags = NBDKIT_FLAG_FUA;
+
+    if (next_ops->pwrite (nxdata, buffer, size, offs, writeflags, err) == -1)
       return -1;
     offs += size;
     count -= size;
