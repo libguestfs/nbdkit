@@ -73,6 +73,12 @@ static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
 /* to enable: -D file.zero=1 */
 int file_debug_zero;
 
+static bool
+is_enotsup (int err)
+{
+  return err == ENOTSUP || err == EOPNOTSUPP;
+}
+
 static void
 file_unload (void)
 {
@@ -399,7 +405,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
       goto out;
     }
 
-    if (errno != EOPNOTSUPP) {
+    if (!is_enotsup (errno)) {
       nbdkit_error ("zero: %m");
       return -1;
     }
@@ -418,7 +424,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
       goto out;
     }
 
-    if (errno != EOPNOTSUPP) {
+    if (!is_enotsup (errno)) {
       nbdkit_error ("zero: %m");
       return -1;
     }
@@ -443,14 +449,14 @@ file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
         goto out;
       }
 
-      if (errno != EOPNOTSUPP) {
+      if (!is_enotsup (errno)) {
         nbdkit_error ("zero: %m");
         return -1;
       }
 
       h->can_fallocate = false;
     } else {
-      if (errno != EOPNOTSUPP) {
+      if (!is_enotsup (errno)) {
         nbdkit_error ("zero: %m");
         return -1;
       }
@@ -513,7 +519,7 @@ file_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
         return -1;
       }
 
-      if (errno == EOPNOTSUPP)
+      if (is_enotsup (EOPNOTSUPP))
         h->can_punch_hole = false;
 
       nbdkit_debug ("ignoring failed fallocate during trim: %m");

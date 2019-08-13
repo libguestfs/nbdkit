@@ -679,7 +679,7 @@ plugin_zero (struct backend *b, struct connection *conn,
       emulate = true;
     if (r == -1)
       *err = emulate ? EOPNOTSUPP : get_error (p);
-    if (r == 0 || *err != EOPNOTSUPP)
+    if (r == 0 || (*err != EOPNOTSUPP && *err != ENOTSUP))
       goto done;
   }
 

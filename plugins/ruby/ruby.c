@@ -420,7 +420,7 @@ plugin_rb_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
   argv[3] = may_trim ? Qtrue : Qfalse;
   last_error = 0;
   (void) funcall2 (Qnil, rb_intern ("zero"), 4, argv, &exception_happened);
-  if (last_error == EOPNOTSUPP ||
+  if (last_error == EOPNOTSUPP || last_error == ENOTSUP ||
       exception_happened == EXCEPTION_NO_METHOD_ERROR) {
     nbdkit_debug ("zero falling back to pwrite");
     nbdkit_set_error (EOPNOTSUPP);

@@ -524,15 +524,16 @@ C<next_ops-E<gt>zero> if C<next_ops-E<gt>can_fua> returned a positive
 value.
 
 Note that unlike the plugin C<.zero> which is permitted to fail with
-C<EOPNOTSUPP> to force a fallback to C<.pwrite>, the function
-C<next_ops-E<gt>zero> will never fail with C<err> set to C<EOPNOTSUPP>
-because the fallback has already taken place.
+C<ENOTSUP> or C<EOPNOTSUPP> to force a fallback to C<.pwrite>, the
+function C<next_ops-E<gt>zero> will never fail with C<err> set to
+C<ENOTSUP> or C<EOPNOTSUPP> because the fallback has already taken
+place.
 
 If there is an error, C<.zero> should call C<nbdkit_error> with an
 error message B<and> return -1 with C<err> set to the positive errno
 value to return to the client.  The filter should never fail with
-C<EOPNOTSUPP> (while plugins have automatic fallback to C<.pwrite>,
-filters do not).
+C<ENOTSUP> or C<EOPNOTSUPP> (while plugins have automatic fallback to
+C<.pwrite>, filters do not).
 
 =head2 C<.extents>
 

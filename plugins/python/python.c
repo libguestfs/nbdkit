@@ -603,7 +603,7 @@ py_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     r = PyObject_CallObject (fn, args);
     Py_DECREF (fn);
     Py_DECREF (args);
-    if (last_error == EOPNOTSUPP) {
+    if (last_error == EOPNOTSUPP || last_error == ENOTSUP) {
       /* When user requests this particular error, we want to
          gracefully fall back, and to accomodate both a normal return
          and an exception. */

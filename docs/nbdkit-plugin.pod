@@ -612,15 +612,16 @@ plugin wants the C<.zero> callback to be utilized.  Support for
 writing zeroes is still advertised to the client (unless the nbdkit
 filter nozero is also used), so returning false merely serves as a way
 to avoid complicating the C<.zero> callback to have to fail with
-C<EOPNOTSUPP> on the connections where it will never be more efficient
-than using C<.pwrite> up front.
+C<ENOTSUP> or C<EOPNOTSUPP> on the connections where it will never be
+more efficient than using C<.pwrite> up front.
 
 If there is an error, C<.can_zero> should call C<nbdkit_error> with an
 error message and return C<-1>.
 
 This callback is not required.  If omitted, then nbdkit always tries
 C<.zero> first if it is present, and gracefully falls back to
-C<.pwrite> if C<.zero> was absent or failed with C<EOPNOTSUPP>.
+C<.pwrite> if C<.zero> was absent or failed with C<ENOTSUP> or
+C<EOPNOTSUPP>.
 
 =head2 C<.can_extents>
 
@@ -809,8 +810,9 @@ C<.can_fua>.
 If C<NBDKIT_FLAG_MAY_TRIM> is requested, the operation can punch a
 hole instead of writing actual zero bytes, but only if subsequent
 reads from the hole read as zeroes.  If this callback is omitted, or
-if it fails with C<EOPNOTSUPP> (whether by C<nbdkit_set_error> or
-C<errno>), then C<.pwrite> will be used instead.
+if it fails with C<ENOTSUP> or C<EOPNOTSUPP> (whether by
+C<nbdkit_set_error> or C<errno>), then C<.pwrite> will be used
+instead.
 
 The callback must write the whole C<count> bytes if it can.  The NBD
 protocol doesn't allow partial writes (instead, these would be
