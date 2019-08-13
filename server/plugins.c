@@ -599,7 +599,7 @@ plugin_pwrite (struct backend *b, struct connection *conn,
   }
   if (r != -1 && need_flush)
     r = plugin_flush (b, conn, 0, err);
-  if (r == -1)
+  if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
@@ -633,7 +633,7 @@ plugin_trim (struct backend *b, struct connection *conn,
   }
   if (r != -1 && need_flush)
     r = plugin_flush (b, conn, 0, err);
-  if (r == -1)
+  if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
@@ -700,13 +700,10 @@ plugin_zero (struct backend *b, struct connection *conn,
     count -= limit;
   }
 
-  *err = errno;
-  errno = *err;
-
  done:
   if (r != -1 && need_flush)
     r = plugin_flush (b, conn, 0, err);
-  if (r == -1)
+  if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
