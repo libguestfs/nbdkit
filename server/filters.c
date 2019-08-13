@@ -347,8 +347,13 @@ next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->pread (b_conn->b, b_conn->conn, buf, count, offset, flags,
-                           err);
+  int r;
+
+  r = b_conn->b->pread (b_conn->b, b_conn->conn, buf, count, offset, flags,
+                        err);
+  if (r == -1)
+    assert (*err);
+  return 1;
 }
 
 static int
@@ -356,15 +361,25 @@ next_pwrite (void *nxdata, const void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->pwrite (b_conn->b, b_conn->conn, buf, count, offset, flags,
-                            err);
+  int r;
+
+  r = b_conn->b->pwrite (b_conn->b, b_conn->conn, buf, count, offset, flags,
+                         err);
+  if (r == -1)
+    assert (*err);
+  return r;
 }
 
 static int
 next_flush (void *nxdata, uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->flush (b_conn->b, b_conn->conn, flags, err);
+  int r;
+
+  r = b_conn->b->flush (b_conn->b, b_conn->conn, flags, err);
+  if (r == -1)
+    assert (*err);
+  return r;
 }
 
 static int
@@ -372,7 +387,12 @@ next_trim (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->trim (b_conn->b, b_conn->conn, count, offset, flags, err);
+  int r;
+
+  r = b_conn->b->trim (b_conn->b, b_conn->conn, count, offset, flags, err);
+  if (r == -1)
+    assert (*err);
+  return r;
 }
 
 static int
@@ -380,7 +400,12 @@ next_zero (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->zero (b_conn->b, b_conn->conn, count, offset, flags, err);
+  int r;
+
+  r = b_conn->b->zero (b_conn->b, b_conn->conn, count, offset, flags, err);
+  if (r == -1)
+    assert (*err && *err != ENOTSUP && *err != EOPNOTSUPP);
+  return r;
 }
 
 static int
@@ -388,8 +413,13 @@ next_extents (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
               struct nbdkit_extents *extents, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->extents (b_conn->b, b_conn->conn, count, offset, flags,
-                             extents, err);
+  int r;
+
+  r = b_conn->b->extents (b_conn->b, b_conn->conn, count, offset, flags,
+                          extents, err);
+  if (r == -1)
+    assert (*err);
+  return r;
 }
 
 static int
@@ -397,8 +427,12 @@ next_cache (void *nxdata, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->cache (b_conn->b, b_conn->conn, count, offset, flags,
-                           err);
+  int r;
+
+  r = b_conn->b->cache (b_conn->b, b_conn->conn, count, offset, flags, err);
+  if (r == -1)
+    assert (*err);
+  return r;
 }
 
 static struct nbdkit_next_ops next_ops = {
