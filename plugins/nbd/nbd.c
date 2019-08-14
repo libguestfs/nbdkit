@@ -62,7 +62,7 @@ struct transaction {
   sem_t sem;
   uint32_t early_err;
   uint32_t err;
-  struct nbdkit_extents *extents;
+  nbd_completion_callback cb;
 };
 
 /* The per-connection handle */
@@ -160,11 +160,12 @@ nbdplug_config (const char *key, const char *value)
     if (strcasecmp (value, "require") == 0 ||
         strcasecmp (value, "required") == 0 ||
         strcasecmp (value, "force") == 0)
-      tls = 2;
+      tls = LIBNBD_TLS_REQUIRE;
     else {
-      tls = nbdkit_parse_bool (value);
-      if (tls == -1)
+      r = nbdkit_parse_bool (value);
+      if (r == -1)
         exit (EXIT_FAILURE);
+      tls = r ? LIBNBD_TLS_ALLOW : LIBNBD_TLS_DISABLE;
     }
   }
   else if (strcmp (key, "tls-certificates") == 0) {
@@ -245,8 +246,9 @@ nbdplug_config_complete (void)
     export = "";
 
   if (tls == -1)
-    tls = tls_certificates || tls_verify >= 0 || tls_username || tls_psk;
-  if (tls > 0) {
+    tls = (tls_certificates || tls_verify >= 0 || tls_username || tls_psk)
+      ? LIBNBD_TLS_ALLOW : LIBNBD_TLS_DISABLE;
+  if (tls != LIBNBD_TLS_DISABLE) {
     struct nbd_handle *nbd = nbd_create ();
 
     if (!nbd) {
@@ -345,22 +347,11 @@ nbdplug_reader (void *handle)
   return NULL;
 }
 
-/* Prepare for a transaction. */
-static void
-nbdplug_prepare (struct transaction *trans)
-{
-  memset (trans, 0, sizeof *trans);
-  if (sem_init (&trans->sem, 0, 0))
-    assert (false);
-}
-
+/* Callback used at end of a transaction. */
 static int
-nbdplug_notify (unsigned valid_flag, void *opaque, int *error)
+nbdplug_notify (void *opaque, int *error)
 {
   struct transaction *trans = opaque;
-
-  if (!(valid_flag & LIBNBD_CALLBACK_VALID))
-    return 0;
 
   /* There's a possible race here where trans->cookie has not yet been
    * updated by nbdplug_register, but it's only an informational
@@ -374,6 +365,17 @@ nbdplug_notify (unsigned valid_flag, void *opaque, int *error)
     abort ();
   }
   return 1;
+}
+
+/* Prepare for a transaction. */
+static void
+nbdplug_prepare (struct transaction *trans)
+{
+  memset (trans, 0, sizeof *trans);
+  if (sem_init (&trans->sem, 0, 0))
+    assert (false);
+  trans->cb.callback = nbdplug_notify;
+  trans->cb.user_data = trans;
 }
 
 /* Register a cookie and kick the I/O thread. */
@@ -466,7 +468,7 @@ nbdplug_open_handle (int readonly)
     goto err;
   if (nbd_set_export_name (h->nbd, export) == -1)
     goto err;
-  if (nbd_add_meta_context (h->nbd, "base:allocation") == -1)
+  if (nbd_add_meta_context (h->nbd, LIBNBD_CONTEXT_BASE_ALLOCATION) == -1)
     goto err;
   if (nbd_set_tls (h->nbd, tls) == -1)
     goto err;
@@ -570,7 +572,7 @@ static int
 nbdplug_can_write (void *handle)
 {
   struct handle *h = handle;
-  int i = nbd_read_only (h->nbd);
+  int i = nbd_is_read_only (h->nbd);
 
   if (i == -1) {
     nbdkit_error ("failure to check readonly flag: %s", nbd_get_error ());
@@ -674,7 +676,7 @@ static int
 nbdplug_can_extents (void *handle)
 {
   struct handle *h = handle;
-  int i = nbd_can_meta_context (h->nbd, "base:allocation");
+  int i = nbd_can_meta_context (h->nbd, LIBNBD_CONTEXT_BASE_ALLOCATION);
 
   if (i == -1) {
     nbdkit_error ("failure to check extents ability: %s", nbd_get_error ());
@@ -693,8 +695,8 @@ nbdplug_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 
   assert (!flags);
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_pread_callback (h->nbd, buf, count, offset,
-                                                   nbdplug_notify, &s, 0));
+  nbdplug_register (h, &s, nbd_aio_pread (h->nbd, buf, count, offset,
+                                          s.cb, 0));
   return nbdplug_reply (h, &s);
 }
 
@@ -709,8 +711,8 @@ nbdplug_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_pwrite_callback (h->nbd, buf, count, offset,
-                                                    nbdplug_notify, &s, f));
+  nbdplug_register (h, &s, nbd_aio_pwrite (h->nbd, buf, count, offset,
+                                           s.cb, f));
   return nbdplug_reply (h, &s);
 }
 
@@ -729,8 +731,7 @@ nbdplug_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   if (flags & NBDKIT_FLAG_FUA)
     f |= LIBNBD_CMD_FLAG_FUA;
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_zero_callback (h->nbd, count, offset,
-                                                  nbdplug_notify, &s, f));
+  nbdplug_register (h, &s, nbd_aio_zero (h->nbd, count, offset, s.cb, f));
   return nbdplug_reply (h, &s);
 }
 
@@ -744,8 +745,7 @@ nbdplug_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_trim_callback (h->nbd, count, offset,
-                                                  nbdplug_notify, &s, f));
+  nbdplug_register (h, &s, nbd_aio_trim (h->nbd, count, offset, s.cb, f));
   return nbdplug_reply (h, &s);
 }
 
@@ -758,23 +758,17 @@ nbdplug_flush (void *handle, uint32_t flags)
 
   assert (!flags);
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_flush_callback (h->nbd,
-                                                   nbdplug_notify, &s, 0));
+  nbdplug_register (h, &s, nbd_aio_flush (h->nbd, s.cb, 0));
   return nbdplug_reply (h, &s);
 }
 
 static int
-nbdplug_extent (unsigned valid_flag, void *opaque,
-                const char *metacontext, uint64_t offset,
+nbdplug_extent (void *opaque, const char *metacontext, uint64_t offset,
                 uint32_t *entries, size_t nr_entries, int *error)
 {
-  struct transaction *trans = opaque;
-  struct nbdkit_extents *extents = trans->extents;
+  struct nbdkit_extents *extents = opaque;
 
-  if (!(valid_flag & LIBNBD_CALLBACK_VALID))
-    return 0;
-
-  assert (strcmp (metacontext, "base:allocation") == 0);
+  assert (strcmp (metacontext, LIBNBD_CONTEXT_BASE_ALLOCATION) == 0);
   assert (nr_entries % 2 == 0);
   while (nr_entries) {
     /* We rely on the fact that NBDKIT_EXTENT_* match NBD_STATE_* */
@@ -797,14 +791,12 @@ nbdplug_extents (void *handle, uint32_t count, uint64_t offset,
   struct handle *h = handle;
   struct transaction s;
   uint32_t f = flags & NBDKIT_FLAG_REQ_ONE ? LIBNBD_CMD_FLAG_REQ_ONE : 0;
+  nbd_extent_callback extcb = { nbdplug_extent, extents };
 
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
   nbdplug_prepare (&s);
-  s.extents = extents;
-  nbdplug_register (h, &s, nbd_aio_block_status_callback (h->nbd, count, offset,
-                                                          nbdplug_extent, &s,
-                                                          nbdplug_notify, &s,
-                                                          f));
+  nbdplug_register (h, &s, nbd_aio_block_status (h->nbd, count, offset,
+                                                 extcb, s.cb, f));
   return nbdplug_reply (h, &s);
 }
 
@@ -817,8 +809,7 @@ nbdplug_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 
   assert (!flags);
   nbdplug_prepare (&s);
-  nbdplug_register (h, &s, nbd_aio_cache_callback (h->nbd, count, offset,
-                                                   nbdplug_notify, &s, 0));
+  nbdplug_register (h, &s, nbd_aio_cache (h->nbd, count, offset, s.cb, 0));
   return nbdplug_reply (h, &s);
 }
 

@@ -721,12 +721,12 @@ AC_ARG_WITH([libnbd],
     [],
     [with_libnbd=check])
 AS_IF([test "$with_libnbd" != "no"],[
-    PKG_CHECK_MODULES([LIBNBD], [libnbd >= 0.9.6],[
+    PKG_CHECK_MODULES([LIBNBD], [libnbd >= 0.9.8],[
         AC_SUBST([LIBNBD_CFLAGS])
         AC_SUBST([LIBNBD_LIBS])
         AC_DEFINE([HAVE_LIBNBD],[1],[libnbd found at compile time.])
     ],
-    [AC_MSG_WARN([libnbd >= 0.9.6 not found, nbd plugin will be crippled])])
+    [AC_MSG_WARN([libnbd >= 0.9.8 not found, nbd plugin will be crippled])])
 ])
 AM_CONDITIONAL([HAVE_LIBNBD], [test "x$LIBNBD_LIBS" != "x"])
 
