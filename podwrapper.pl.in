@@ -92,6 +92,15 @@ Display brief help.
 
 =cut
 
+my $allow_long_lines;
+
+=item B<--allow-long-lines>
+
+Allow lines longer than 76 characters in the input.  Use this
+if the man page is not written by hand.
+
+=cut
+
 my $html;
 
 =item B<--html> output.html
@@ -177,6 +186,7 @@ $progname =~ s{.*/}{};
 
 # Parse options.
 GetOptions ("help|?" => \$help,
+            "allow-long-lines" => \$allow_long_lines,
             "html=s" => \$html,
             "insert=s" => \@inserts,
             "man=s" => \$man,
@@ -341,14 +351,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 ";
 
-# Check no over-long lines in the input.  (As a special exception this
-# is permitted in verbatim sections or if the line contains a URL).
 @lines = split /\n/, $content;
-foreach (@lines) {
-    die "$progname: $input: line too long:\n$_\n"
-        if length $_ > 76 &&
-        substr ($_, 0, 1) ne ' ' &&
-        ! m/https?:/;
+unless ($allow_long_lines) {
+    # Check no over-long lines in the input.  (As a special exception
+    # this is permitted in verbatim sections or if the line contains a
+    # URL).
+    foreach (@lines) {
+        die "$progname: $input: line too long:\n$_\n"
+            if length $_ > 76 &&
+            substr ($_, 0, 1) ne ' ' &&
+            ! m/https?:/;
+    }
 }
 
 # Check cross-references to other nbdkit man pages exist.
