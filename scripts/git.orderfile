@@ -46,8 +46,15 @@ docs/*
 configure.ac
 Makefile.am
 
-# Header files.
+# Server and common files.
+server/*.h
+common/include
+common/*/*.h
+server/*
+common/*
+
+# Remaining Header files.
 *.h
 
-# Source files.
+# Remaining Source files.
 *.c
