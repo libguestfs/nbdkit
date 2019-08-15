@@ -1,3 +1,4 @@
+(* hey emacs, this is OCaml code: -*- tuareg -*- *)
 (* nbdkit OCaml interface
  * Copyright (C) 2014-2019 Red Hat Inc.
  *
@@ -38,6 +39,12 @@ and flag = May_trim | FUA | Req_one
 type fua_flag = FuaNone | FuaEmulate | FuaNative
 
 type cache_flag = CacheNone | CacheEmulate | CacheNop
+
+type thread_model =
+| THREAD_MODEL_SERIALIZE_CONNECTIONS
+| THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+| THREAD_MODEL_SERIALIZE_REQUESTS
+| THREAD_MODEL_PARALLEL
 
 type extent = {
   offset : int64;
@@ -87,6 +94,8 @@ type 'a plugin = {
 
   can_cache : ('a -> cache_flag) option;
   cache : ('a -> int32 -> int64 -> flags -> unit) option;
+
+  thread_model : (unit -> thread_model) option;
 }
 
 let default_callbacks = {
@@ -130,15 +139,9 @@ let default_callbacks = {
 
   can_cache = None;
   cache = None;
+
+  thread_model = None;
 }
-
-type thread_model =
-| THREAD_MODEL_SERIALIZE_CONNECTIONS
-| THREAD_MODEL_SERIALIZE_ALL_REQUESTS
-| THREAD_MODEL_SERIALIZE_REQUESTS
-| THREAD_MODEL_PARALLEL
-
-external set_thread_model : int -> unit = "ocaml_nbdkit_set_thread_model" "noalloc"
 
 external set_name : string -> unit = "ocaml_nbdkit_set_name" "noalloc"
 external set_longname : string -> unit = "ocaml_nbdkit_set_longname" "noalloc"
@@ -181,9 +184,11 @@ external set_extents : ('a -> int32 -> int64 -> flags -> extent list) -> unit = 
 external set_can_cache : ('a -> cache_flag) -> unit = "ocaml_nbdkit_set_can_cache"
 external set_cache : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_cache"
 
+external set_thread_model : (unit -> thread_model) -> unit = "ocaml_nbdkit_set_thread_model"
+
 let may f = function None -> () | Some a -> f a
 
-let register_plugin thread_model plugin =
+let register_plugin plugin =
   (* Check the required fields have been set by the caller. *)
   if plugin.name = "" then
     failwith "'.name' field in NBDKit.plugin structure must be set";
@@ -198,7 +203,6 @@ let register_plugin thread_model plugin =
                 plugin.name);
 
   (* Set the fields in the C code. *)
-  set_thread_model (Obj.magic thread_model);
 
   set_name plugin.name;
   if plugin.longname <> "" then
@@ -243,7 +247,9 @@ let register_plugin thread_model plugin =
   may set_extents plugin.extents;
 
   may set_can_cache plugin.can_cache;
-  may set_cache plugin.cache
+  may set_cache plugin.cache;
+
+  may set_thread_model plugin.thread_model
 
 external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
 

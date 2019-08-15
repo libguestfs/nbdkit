@@ -1,3 +1,4 @@
+(* hey emacs, this is OCaml code: -*- tuareg -*- *)
 (* nbdkit OCaml interface
  * Copyright (C) 2014-2019 Red Hat Inc.
  *
@@ -50,6 +51,13 @@ type extent = {
 }
 (** The type of the extent list returned by [.extents]. *)
 
+type thread_model =
+| THREAD_MODEL_SERIALIZE_CONNECTIONS
+| THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+| THREAD_MODEL_SERIALIZE_REQUESTS
+| THREAD_MODEL_PARALLEL
+(** The type of the thread model returned by [.thread_model]. *)
+
 type 'a plugin = {
   name : string;                                  (* required *)
   longname : string;
@@ -91,6 +99,8 @@ type 'a plugin = {
 
   can_cache : ('a -> cache_flag) option;
   cache : ('a -> int32 -> int64 -> flags -> unit) option;
+
+  thread_model : (unit -> thread_model) option;
 }
 (** The plugin fields and callbacks.  ['a] is the handle type. *)
 
@@ -98,14 +108,7 @@ val default_callbacks : 'a plugin
 (** The plugin with all fields set to [None], so you can write
     [{ defaults_callbacks with field1 = Some foo1; field2 = Some foo2 }] *)
 
-type thread_model =
-| THREAD_MODEL_SERIALIZE_CONNECTIONS
-| THREAD_MODEL_SERIALIZE_ALL_REQUESTS
-| THREAD_MODEL_SERIALIZE_REQUESTS
-| THREAD_MODEL_PARALLEL
-(** The thread model. *)
-
-val register_plugin : thread_model -> 'a plugin -> unit
+val register_plugin : 'a plugin -> unit
 (** Register the plugin with nbdkit. *)
 
 val set_error : Unix.error -> unit

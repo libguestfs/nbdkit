@@ -72,6 +72,7 @@ static void remove_roots (void);
 static struct nbdkit_plugin plugin = {
   ._struct_size = sizeof (plugin),
   ._api_version = NBDKIT_API_VERSION,
+  ._thread_model = NBDKIT_THREAD_MODEL_PARALLEL,
 
   /* The following field is used as a canary to detect whether the
    * OCaml code started up and called us back successfully.  If it's
@@ -130,6 +131,8 @@ static value extents_fn;
 
 static value can_cache_fn;
 static value cache_fn;
+
+static value thread_model_fn;
 
 /*----------------------------------------------------------------------*/
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
@@ -683,17 +686,29 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   CAMLreturnT (int, 0);
 }
 
+static int
+thread_model_wrapper (void)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (thread_model_fn, Val_unit);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Int_val (rv));
+}
+
 /*----------------------------------------------------------------------*/
 /* set_* functions called from OCaml code at load time to initialize
  * fields in the plugin struct.
  */
-
-value
-ocaml_nbdkit_set_thread_model (value modelv)
-{
-  plugin._thread_model = Int_val (modelv);
-  return Val_unit;
-}
 
 value
 ocaml_nbdkit_set_name (value namev)
@@ -775,6 +790,8 @@ SET(extents)
 SET(can_cache)
 SET(cache)
 
+SET(thread_model)
+
 #undef SET
 
 static void
@@ -816,6 +833,8 @@ remove_roots (void)
 
   REMOVE (can_cache);
   REMOVE (cache);
+
+  REMOVE (thread_model);
 
 #undef REMOVE
 }

@@ -75,8 +75,7 @@ let plugin = {
     pwrite          = Some test_pwrite;
 
     extents         = Some test_extents;
+    thread_model    = Some (fun () -> NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS);
 }
 
-let thread_model = NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS
-
-let () = NBDKit.register_plugin thread_model plugin
+let () = NBDKit.register_plugin plugin

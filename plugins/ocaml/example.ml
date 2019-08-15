@@ -70,6 +70,9 @@ let ocamlexample_pwrite h buf offset _ =
   let offset = Int64.to_int offset in
   String.blit buf 0 !disk offset len
 
+let ocamlexample_thread_model () =
+  NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS
+
 let plugin = {
   NBDKit.default_callbacks with
     (* name, open_connection, get_size and pread are required,
@@ -87,8 +90,8 @@ let plugin = {
     get_size        = Some ocamlexample_get_size;
     pread           = Some ocamlexample_pread;
     pwrite          = Some ocamlexample_pwrite;
+
+    thread_model    = Some ocamlexample_thread_model;
 }
 
-let thread_model = NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS
-
-let () = NBDKit.register_plugin thread_model plugin
+let () = NBDKit.register_plugin plugin

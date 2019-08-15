@@ -36,12 +36,11 @@ Your OCaml code should call C<NBDKit.register_plugin> like this:
      open_connection = Some myplugin_open;
      get_size        = Some myplugin_get_size;
      pread           = Some myplugin_pread;
+     thread_model    = Some (fun () -> NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS);
      (* etc *)
  }
  
- let thread_model = NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS
- 
- let () = NBDKit.register_plugin thread_model plugin
+ let () = NBDKit.register_plugin plugin
 
 Your plugin must call C<register_plugin> exactly once when the plugin
 is loaded.
@@ -108,9 +107,11 @@ to control this.
 
 =head2 Threads
 
-The first parameter of C<NBDKit.register_plugin> is the thread model,
-which can be one of the values in the table below.  For more
-information on thread models, see L<nbdkit-plugin(3)/THREADS>.  Note
+One of the members in the plugin record passed to
+C<NBDKit.register_plugin> is C<thread model>, which must return one of
+the values in the table below.  For more information on thread models,
+see L<nbdkit-plugin(3)/THREADS>.  If this optional function is not
+provided, the thread model defaults to THREAD_MODEL_PARALLEL.  Note
 that because of the garbage collector lock in OCaml, callbacks are
 never truly concurrent.
 
