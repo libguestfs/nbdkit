@@ -311,6 +311,7 @@ extern struct backend *filter_register (struct backend *next, size_t index,
 
 /* locks.c */
 extern void lock_init_thread_model (void);
+extern const char *name_of_thread_model (int model);
 extern void lock_connection (void);
 extern void unlock_connection (void);
 extern void lock_request (struct connection *conn);

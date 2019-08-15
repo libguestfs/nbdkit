@@ -46,10 +46,31 @@ static pthread_mutex_t connection_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t all_requests_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_rwlock_t unload_prevention_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+/* Map thread model to string; use only from single-threaded context */
+const char *
+name_of_thread_model (int model)
+{
+  static char buf[] = "-2147483648 # unknown thread model!";
+
+  switch (model) {
+  case NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS:
+    return "serialize_connections";
+  case NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS:
+    return "serialize_all_requests";
+  case NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS:
+    return "serialize_requests";
+  case NBDKIT_THREAD_MODEL_PARALLEL:
+    return "parallel";
+  }
+  snprintf (buf, sizeof buf, "%d # unknown thread model!", model);
+  return buf;
+}
+
 void
 lock_init_thread_model (void)
 {
   thread_model = backend->thread_model (backend);
+  debug ("using thread model: %s", name_of_thread_model (thread_model));
 }
 
 void
