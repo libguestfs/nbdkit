@@ -343,10 +343,13 @@ sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset)
       n = count;
 
     if (p) {
-      memset (p, 0, n);
+      if (n < PAGE_SIZE)
+        memset (p, 0, n);
+      else
+        assert (p == *l2_page);
 
       /* If the whole page is now zero, free it. */
-      if (is_zero (*l2_page, PAGE_SIZE)) {
+      if (n >= PAGE_SIZE || is_zero (*l2_page, PAGE_SIZE)) {
         if (sa->debug)
           nbdkit_debug ("%s: freeing zero page at offset %" PRIu64,
                         __func__, offset);
