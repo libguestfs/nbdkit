@@ -90,6 +90,16 @@ thread models, see L<nbdkit-plugin(3)/THREADS>.
 
 =back
 
+=head2 Missing callbacks
+
+=over 4
+
+=item Missing: C<can_extents> and C<extents>
+
+These are not yet supported.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

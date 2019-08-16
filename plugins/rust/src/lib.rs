@@ -93,6 +93,15 @@ pub struct Plugin {
     pub magic_config_key: *const c_char,
 
     pub can_multi_conn: Option<extern fn (h: *mut c_void) -> c_int>,
+
+    // Slots for extents functions, which needs more integration.
+    _can_extents: Option<extern fn ()>,
+    _extents: Option<extern fn ()>,
+
+    pub can_cache: Option<extern fn (h: *mut c_void) -> c_int>,
+    pub cache: Option<extern fn (h: *mut c_void,
+                                 count: u32, offset: u64,
+                                 flags: u32) -> c_int>,
 }
 
 pub enum ThreadModel {
@@ -146,6 +155,10 @@ impl Plugin {
             zero: None,
             magic_config_key: std::ptr::null(),
             can_multi_conn: None,
+            _can_extents: None,
+            _extents: None,
+            can_cache: None,
+            cache: None,
         }
     }
 }
