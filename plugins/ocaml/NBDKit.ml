@@ -267,6 +267,10 @@ let set_error unix_error =
     | Unix.EINVAL     -> 4
     | Unix.ENOSPC     -> 5
     | Unix.ESHUTDOWN  -> 6
+    | Unix.EOVERFLOW  -> 7
+    | Unix.EOPNOTSUPP -> 8
+    | Unix.EROFS      -> 9
+    | Unix.EFBIG      -> 10
     | _               -> 4 (* EINVAL *) in
 
   _set_error nbd_error
