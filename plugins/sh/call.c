@@ -318,6 +318,7 @@ handle_script_error (char *ebuf, size_t len)
   size_t skip = 0;
   char *p;
 
+  /* Recognize the errno values that match NBD protocol errors */
   if (strncasecmp (ebuf, "EPERM", 5) == 0) {
     err = EPERM;
     skip = 5;
@@ -346,8 +347,34 @@ handle_script_error (char *ebuf, size_t len)
     err = ESHUTDOWN;
     skip = 9;
   }
+  /* Necessary for .zero support */
+  else if (strncasecmp (ebuf, "ENOTSUP", 7) == 0) {
+    err = ENOTSUP;
+    skip = 7;
+  }
+  else if (strncasecmp (ebuf, "EOPNOTSUPP", 10) == 0) {
+    err = EOPNOTSUPP;
+    skip = 10;
+  }
+  /* Other errno values that server/protocol.c treats specially */
+  else if (strncasecmp (ebuf, "EROFS", 5) == 0) {
+    err = EROFS;
+    skip = 5;
+  }
+  else if (strncasecmp (ebuf, "EDQUOT", 6) == 0) {
+#ifdef EDQUOT
+    err = EDQUOT;
+#else
+    err = ENOSPC;
+#endif
+    skip = 6;
+  }
+  else if (strncasecmp (ebuf, "EFBIG", 5) == 0) {
+    err = EFBIG;
+    skip = 5;
+  }
+  /* Default to EIO. */
   else {
-    /* Default to EIO. */
     err = EIO;
     skip = 0;
   }
