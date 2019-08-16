@@ -361,8 +361,6 @@ TESTS_ENVIRONMENT += \
 	LIBGUESTFS_ATTACH_METHOD=appliance \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
-	LD_LIBRARY_PATH=../plugins/ocaml/.libs:$(LD_LIBRARY_PATH) \
-	LIBRARY_PATH=../plugins/ocaml/.libs:$(LIBRARY_PATH) \
 	$(NULL)
 
 # Common test library.

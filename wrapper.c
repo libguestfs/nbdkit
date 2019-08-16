@@ -136,6 +136,7 @@ main (int argc, char *argv[])
   time_t t;
   unsigned tu;
   char ts[32];
+  int r;
 
   /* If NBDKIT_VALGRIND=1 is set in the environment, then we run the
    * program under valgrind.  This is used by the tests.  Similarly if
@@ -163,6 +164,30 @@ main (int argc, char *argv[])
       passthru ("--args");
     }
   }
+
+  /* Needed for plugins written in OCaml. */
+  s = getenv ("LD_LIBRARY_PATH");
+  if (s)
+    r = asprintf (&s, "%s/plugins/ocaml/.libs:%s", builddir, s);
+  else
+    r = asprintf (&s, "%s/plugins/ocaml/.libs", builddir);
+  if (r < 0) {
+    perror ("asprintf");
+    exit (EXIT_FAILURE);
+  }
+  setenv ("LD_LIBRARY_PATH", s, 1);
+  free (s);
+  s = getenv ("LIBRARY_PATH");
+  if (s)
+    r = asprintf (&s, "%s/plugins/ocaml/.libs:%s", builddir, s);
+  else
+    r = asprintf (&s, "%s/plugins/ocaml/.libs", builddir);
+  if (r < 0) {
+    perror ("asprintf");
+    exit (EXIT_FAILURE);
+  }
+  setenv ("LIBRARY_PATH", s, 1);
+  free (s);
 
   /* Absolute path of the real nbdkit command. */
   passthru_format ("%s/server/nbdkit", builddir);

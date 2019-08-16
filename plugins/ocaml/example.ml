@@ -8,7 +8,6 @@
 
    You can run it from the build directory like this:
 
-     LD_LIBRARY_PATH=plugins/ocaml/.libs \
      ./nbdkit -f -v plugins/ocaml/nbdkit-ocamlexample-plugin.so [size=100M]
 
    and connect to it with guestfish like this:
