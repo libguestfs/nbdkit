@@ -36,6 +36,7 @@ use std::os::raw::{c_char, c_int, c_void};
 // function must return.
 #[repr(C)]
 pub struct Plugin {
+    // Do not modify these three fields directly.
     _struct_size: u64,
     _api_version: c_int,
     _thread_model: c_int,
@@ -102,8 +103,11 @@ pub struct Plugin {
     pub cache: Option<extern fn (h: *mut c_void,
                                  count: u32, offset: u64,
                                  flags: u32) -> c_int>,
+
+    pub thread_model: Option<extern fn () -> ThreadModel>,
 }
 
+#[repr(C)]
 pub enum ThreadModel {
     SerializeConnections = 0,
     SerializeAllRequests = 1,
@@ -112,8 +116,7 @@ pub enum ThreadModel {
 }
 
 impl Plugin {
-    pub fn new (thread_model: ThreadModel,
-                name: *const c_char,
+    pub fn new (name: *const c_char,
                 open: extern fn (c_int) -> *mut c_void,
                 get_size: extern fn (*mut c_void) -> i64,
                 pread: extern fn (h: *mut c_void, buf: *mut c_char,
@@ -122,7 +125,7 @@ impl Plugin {
         Plugin {
             _struct_size: mem::size_of::<Plugin>() as u64,
             _api_version: 2,
-            _thread_model: thread_model as c_int,
+            _thread_model: ThreadModel::Parallel as c_int,
             name: name,
             longname: std::ptr::null(),
             version: std::ptr::null(),
@@ -159,6 +162,7 @@ impl Plugin {
             _extents: None,
             can_cache: None,
             cache: None,
+            thread_model: None,
         }
     }
 }

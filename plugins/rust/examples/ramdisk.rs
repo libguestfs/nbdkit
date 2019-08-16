@@ -53,6 +53,10 @@ struct Handle {
     _not_used: i32,
 }
 
+extern fn ramdisk_thread_model () -> ThreadModel {
+    Parallel
+}
+
 extern fn ramdisk_open (_readonly: c_int) -> *mut c_void {
     let h = Handle {_not_used: 0};
     let h = Box::new(h);
@@ -98,9 +102,8 @@ pub extern fn plugin_init () -> *const Plugin {
     // https://github.com/rust-lang/rfcs/issues/400
     let name = "ramdisk\0" as *const str as *const [c_char] as *const c_char;
 
-    // Create a mutable plugin, setting the 5 required fields.
+    // Create a mutable plugin, setting the 4 required fields.
     let mut plugin = Plugin::new (
-        Parallel,
         name,
         ramdisk_open,
         ramdisk_get_size,
@@ -109,6 +112,7 @@ pub extern fn plugin_init () -> *const Plugin {
     // Update any other fields as required.
     plugin.close = Some (ramdisk_close);
     plugin.pwrite = Some (ramdisk_pwrite);
+    plugin.thread_model = Some (ramdisk_thread_model);
 
     // Return the pointer.
     let plugin = Box::new(plugin);

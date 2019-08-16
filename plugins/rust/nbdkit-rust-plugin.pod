@@ -37,14 +37,19 @@ compatible with the C struct used by C plugins.
  use nbdkit::ThreadModel::*;
  
  #[no_mangle]
+ extern fn myplugin_thread_model () -> ThreadModel {
+    SerializeAllRequests
+ }
+ 
+ //... more functions
+ 
  pub extern fn plugin_init () -> *const Plugin {
     // Plugin name.
     let name = "myplugin\0"
       as *const str as *const [c_char] as *const c_char;
 
-    // Create a mutable plugin, setting the 5 required fields.
+    // Create a mutable plugin, setting the 4 required fields.
     let mut plugin = Plugin::new (
-        Serialize_All_Requests,
         name,
         myplugin_open,
         myplugin_get_size,
@@ -53,6 +58,7 @@ compatible with the C struct used by C plugins.
     // Update any other fields as required.
     plugin.close = Some (myplugin_close);
     plugin.pwrite = Some (myplugin_pwrite);
+    plugin.thread_model = Some (myplugin_thread_model);
 
     // Return the pointer.
     let plugin = Box::new(plugin);
@@ -74,17 +80,20 @@ L<nbdkit-plugin(3)>):
 
 =head2 Threads
 
-The first parameter of C<Plugin::new> is the thread model, which can
-be one of the values in the table below.  For more information on
-thread models, see L<nbdkit-plugin(3)/THREADS>.
+One of the members in C<Plugin> returned by C<plugin_init> is
+C<thread_model>, which must return one of the values in the table
+below. For more information on thread models, see
+L<nbdkit-plugin(3)/THREADS>.  If this optional function is not
+provided, the thread model defaults to
+C<nbdkit::ThreadModel::Parallel>.
 
 =over 4
 
-=item C<nbdkit::ThreadModel::Serialize_Connections>
+=item C<nbdkit::ThreadModel::SerializeConnections>
 
-=item C<nbdkit::ThreadModel::Serialize_All_Requests>
+=item C<nbdkit::ThreadModel::SerializeAllRequests>
 
-=item C<nbdkit::ThreadModel::Serialize_Requests>
+=item C<nbdkit::ThreadModel::SerializeRequests>
 
 =item C<nbdkit::ThreadModel::Parallel>
 
