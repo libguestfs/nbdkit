@@ -618,11 +618,17 @@ sh_can_fua (void *handle)
     return r;
 
   case MISSING:
-    /* NBDKIT_FUA_EMULATE means that nbdkit will call .flush.  However
-     * we cannot know if that callback exists, so the safest default
-     * is to return NBDKIT_FUA_NONE.
-     */
-    return NBDKIT_FUA_NONE;
+    /* Check if the plugin claims to support flush. */
+    switch (sh_can_flush (handle)) {
+    case -1:
+      return -1;
+    case 0:
+      return NBDKIT_FUA_NONE;
+    case 1:
+      return NBDKIT_FUA_EMULATE;
+    default:
+      abort ();
+    }
 
   case ERROR:
     return -1;
