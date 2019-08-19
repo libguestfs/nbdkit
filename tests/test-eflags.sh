@@ -115,9 +115,9 @@ EOF
 #----------------------------------------------------------------------
 # can_write=true
 #
-# NBD_FLAG_SEND_WRITE_ZEROES is always set on writable connections
-# even if can_zero returns false, because nbdkit reckons it can
-# emulate zeroing using pwrite.
+# NBD_FLAG_SEND_WRITE_ZEROES is set on writable connections
+# even when can_zero returns false, because nbdkit reckons it
+# can emulate zeroing using pwrite.
 
 do_nbdkit <<'EOF'
 case "$1" in
@@ -129,6 +129,23 @@ EOF
 
 [ $eflags -eq $(( HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF )) ] ||
     fail "expected HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF"
+
+#----------------------------------------------------------------------
+# --filter=nozero
+# can_write=true
+#
+# NBD_FLAG_SEND_WRITE_ZEROES is omitted when a filter says so.
+
+do_nbdkit --filter=nozero <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -274,6 +291,44 @@ EOF
     fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
+# can_write=true
+# can_flush=true
+#
+# When can_flush is true, nbdkit reckons it can emulate fua with flush.
+
+do_nbdkit <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     can_flush) exit 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF"
+
+#----------------------------------------------------------------------
+# can_write=true
+# can_flush=true
+# can_fua=none
+#
+# Explicit request for no fua emulation.
+
+do_nbdkit <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     can_flush) exit 0 ;;
+     can_fua) echo "none" ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF )) ] ||
+    fail "expected HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF"
+
+#----------------------------------------------------------------------
 # -r
 # can_multi_conn=true
 
@@ -292,6 +347,8 @@ EOF
 # -r
 # --filter=noparallel serialize=connections
 # can_multi_conn=true
+#
+# A single-threaded server does not allow multiple connections.
 
 late_args="serialize=connections" do_nbdkit -r --filter=noparallel <<'EOF'
 case "$1" in
@@ -308,6 +365,8 @@ EOF
 # -r
 # thread_model=serialize_connections
 # can_multi_conn=true
+#
+# A single-threaded server does not allow multiple connections.
 
 do_nbdkit -r <<'EOF'
 case "$1" in
@@ -323,7 +382,7 @@ EOF
 
 #----------------------------------------------------------------------
 # -r
-# can_cache=native
+# can_cache=emulate
 
 do_nbdkit -r <<'EOF'
 case "$1" in
@@ -339,7 +398,9 @@ EOF
 #----------------------------------------------------------------------
 # -r
 # --filter=nocache cachemode=none
-# can_cache=native
+# can_cache=emulate
+#
+# Filters override the plugin's choice of caching.
 
 late_args="cachemode=none" do_nbdkit -r --filter=nocache <<'EOF'
 case "$1" in
