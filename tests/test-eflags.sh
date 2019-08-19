@@ -81,7 +81,7 @@ do_nbdkit ()
 
 fail ()
 {
-    echo "error: $@ (actual flags were $eflags)"
+    echo "error: $@ (actual flags were $(printf 0x%x $eflags))"
     exit 1
 }
 
@@ -96,7 +96,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -110,7 +110,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -128,7 +128,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # --filter=nozero
@@ -145,7 +145,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -163,7 +163,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=false
@@ -183,7 +183,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -204,7 +204,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -220,7 +220,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -236,7 +236,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -253,7 +253,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|ROTATIONAL|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|ROTATIONAL|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|ROTATIONAL|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -269,7 +269,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -288,7 +288,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -306,7 +306,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -326,7 +326,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -341,7 +341,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF|CAN_MULTI_CONN )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF|CAN_MULTI_CONN"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF|CAN_MULTI_CONN"
 
 #----------------------------------------------------------------------
 # -r
@@ -359,7 +359,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -378,7 +378,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
 
 #----------------------------------------------------------------------
 # -r
@@ -393,7 +393,7 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF|SEND_CACHE )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF|SEND_CACHE"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF|SEND_CACHE"
 
 #----------------------------------------------------------------------
 # -r
@@ -411,4 +411,4 @@ esac
 EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
-    fail "expected HAS_FLAGS|READ_ONLY|SEND_DF"
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
