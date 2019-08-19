@@ -87,6 +87,8 @@ fail ()
 
 #----------------------------------------------------------------------
 # can_write=false
+#
+# nbdkit supports DF if client requests SR.
 
 do_nbdkit <<'EOF'
 case "$1" in
@@ -97,6 +99,22 @@ EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
     fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
+
+#----------------------------------------------------------------------
+# --no-sr
+# can_write=false
+#
+# When SR is disabled, so is the DF flag.
+
+do_nbdkit --no-sr <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY"
 
 #----------------------------------------------------------------------
 # -r
@@ -146,6 +164,24 @@ EOF
 
 [ $eflags -eq $(( HAS_FLAGS|SEND_DF )) ] ||
     fail "$LINENO: expected HAS_FLAGS|SEND_DF"
+
+#----------------------------------------------------------------------
+# --no=sr
+# --filter=nozero
+# can_write=true
+#
+# Absolute minimum in flags.
+
+do_nbdkit --no-sr --filter=nozero <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS )) ] ||
+    fail "$LINENO: expected HAS_FLAGS"
 
 #----------------------------------------------------------------------
 # -r

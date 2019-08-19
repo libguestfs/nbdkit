@@ -264,9 +264,17 @@ For more details see L<nbdkit-service(1)/LOGGING>.
 
 =item B<--newstyle>
 
-Use the newstyle NBD protocol protocol.  This is the default in nbdkit
+Use the newstyle NBD protocol.  This is the default in nbdkit
 E<ge> 1.3.  In earlier versions the default was oldstyle.
 See L<nbdkit-protocol(1)>.
+
+=item B<--no-sr>
+
+Do not advertise structured replies.  A client must request structured
+replies to take advantage of block status and potential sparse reads;
+however, as structured reads are not a mandatory part of the newstyle
+NBD protocol, this option can be used to debug client fallbacks for
+dealing with older servers.  See L<nbdkit-protocol(1)>.
 
 =item B<-o>
 
@@ -622,4 +630,4 @@ Pino Toscano
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2018 Red Hat Inc.
+Copyright (C) 2013-2019 Red Hat Inc.

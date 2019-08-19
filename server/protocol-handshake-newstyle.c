@@ -481,6 +481,17 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       debug ("newstyle negotiation: %s: client requested structured replies",
              name_of_nbd_opt (option));
 
+      if (no_sr) {
+        /* Must fail with ERR_UNSUP for qemu 4.2 to remain happy;
+         * but failing with ERR_POLICY would have been nicer.
+         */
+        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
+          return -1;
+        debug ("newstyle negotiation: %s: structured replies are disabled",
+               name_of_nbd_opt (option));
+        break;
+      }
+
       if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
         return -1;
 
@@ -499,6 +510,9 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         if (conn_recv_full (conn, data, optlen, "read: %s: %m", optname) == -1)
           return -1;
 
+        /* Note that we support base:allocation whether or not the plugin
+         * supports can_extents.
+         */
         if (!conn->structured_replies) {
           if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
               == -1)

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -46,6 +46,7 @@ enum {
   FILTER_OPTION,
   LOG_OPTION,
   LONG_OPTIONS_OPTION,
+  NO_SR_OPTION,
   RUN_OPTION,
   SELINUX_LABEL_OPTION,
   SHORT_OPTIONS_OPTION,
@@ -75,6 +76,7 @@ static const struct option long_options[] = {
   { "long-options",     no_argument,       NULL, LONG_OPTIONS_OPTION },
   { "new-style",        no_argument,       NULL, 'n' },
   { "newstyle",         no_argument,       NULL, 'n' },
+  { "no-sr",            no_argument,       NULL, NO_SR_OPTION },
   { "old-style",        no_argument,       NULL, 'o' },
   { "oldstyle",         no_argument,       NULL, 'o' },
   { "pid-file",         required_argument, NULL, 'P' },

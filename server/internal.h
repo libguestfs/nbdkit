@@ -88,6 +88,7 @@ extern bool foreground;
 extern const char *ipaddr;
 extern enum log_to log_to;
 extern bool newstyle;
+extern bool no_sr;
 extern const char *port;
 extern bool readonly;
 extern const char *run;

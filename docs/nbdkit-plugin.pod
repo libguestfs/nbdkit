@@ -833,7 +833,10 @@ allocated, sparse and zeroed regions of the disk.
 
 This function will not be called if C<.can_extents> returned false.
 nbdkit's default behaviour in this case is to treat the whole virtual
-disk as if it was allocated.
+disk as if it was allocated.  Also, this function will not be called
+by a client that does not request structured replies (the I<--no-sr>
+option of nbdkit can be used to test behavior when C<.extents> is
+unavailable to the client).
 
 The callback should detect and return the list of extents overlapping
 the range C<[offset...offset+count-1]>.  The C<extents> parameter

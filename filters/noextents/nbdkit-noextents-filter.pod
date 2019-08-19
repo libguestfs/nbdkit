@@ -11,7 +11,11 @@ nbdkit-noextents-filter - disable extents in the underlying plugin
 “Extents” are a feature of the NBD protocol / nbdkit which allow the
 client to detect sparse regions of the underlying disk.
 C<nbdkit-noextents-filter> disables this so that the plugin appears to
-be fully allocated.
+be fully allocated, at least to a client that requests structured
+replies.  It is also possible to use the I<--no-sr> option to nbdkit
+to prevent the client from using structured replies, which among its
+other side effects will prevent the client from querying extents at
+all.
 
 This filter can be useful when combined with L<nbdkit-file-plugin(1)>
 serving a file from a file system known to have poor C<lseek(2)>

@@ -68,6 +68,7 @@ bool foreground;                /* -f */
 const char *ipaddr;             /* -i */
 enum log_to log_to = LOG_TO_DEFAULT; /* --log */
 bool newstyle = true;           /* false = -o, true = -n */
+bool no_sr;                     /* --no-sr */
 char *pidfile;                  /* -P */
 const char *port;               /* -p */
 bool readonly;                  /* -r */
@@ -339,6 +340,10 @@ main (int argc, char *argv[])
 
     case 'n':
       newstyle = true;
+      break;
+
+    case NO_SR_OPTION:
+      no_sr = true;
       break;
 
     case 'o':
