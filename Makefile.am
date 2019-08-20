@@ -83,7 +83,7 @@ SUBDIRS += \
 	$(NULL)
 endif
 
-SUBDIRS += tests
+SUBDIRS += . tests
 
 check-valgrind:
 	$(MAKE) -C tests check-valgrind
