@@ -132,6 +132,10 @@ case "$1" in
 
     zero)
         # Efficiently zero the backing file, if supported.
+        # Attempt a fallback to write on any failure, but this requires
+        # specific prefix on stderr prior to any message from fallocate;
+        # exploit the fact that stderr is ignored on success.
+        echo ENOTSUP >&2
         fallocate -z -o $4 -l $3 -n $f || exit 1
         ;;
     can_zero)

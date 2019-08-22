@@ -91,7 +91,10 @@ optionally followed by whitespace and a message, for example:
  ENOSPC Out of space
 
 If the script doesn't print anything or the output cannot be parsed
-then nbdkit assumes error C<EIO>.
+then nbdkit assumes error C<EIO>.  Note that output to stderr is
+ignored if the command succeeds, so it is acceptable to output a
+potential error message prefix prior to attempting a command which
+will add further details if a failure occurs.
 
 =item S<2>
 

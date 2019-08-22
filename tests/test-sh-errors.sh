@@ -42,13 +42,18 @@ files="$out $expected"
 rm -f $files
 cleanup_fn rm -f $files
 
-# do_test 'egrep pattern'
+# do_test 'egrep pattern' ['write_zero']
 # (Use of an egrep pattern makes it easy to whitelist other localized error
 # outputs that may be system-dependent)
 do_test ()
 {
     : > $out
-    nbdkit -v -U - sh - --run 'qemu-io -r -f raw -c "r 0 1" $nbd &&
+    if [ "$2" = write_zero ]; then
+        cmd='qemu-io -f raw -c "w -z 0 1" $nbd'
+    else
+        cmd='qemu-io -r -f raw -c "r 0 1" $nbd'
+    fi
+    nbdkit -v -U - sh - --run "$cmd"' &&
       echo qemu-io unexpectedly passed >> '$out'; :' >> $out
     if grep "qemu-io unexpectedly passed" $out ||
        ! egrep "$1" $out; then
@@ -110,6 +115,18 @@ do_test 'Input/output error' <<'EOF'
 case "$1" in
     get_size) echo 1M ;;
     pread) echo EINVALID >&2; exit 1 ;;
+    *) exit 2 ;;
+esac
+EOF
+
+# ENOTSUP is special to write zero; it triggers a fallback to pwrite
+# Also test that anything on stderr is ignored when the script succeeds
+do_test 'No space left on device' write_zero <<'EOF'
+case "$1" in
+    get_size) echo 'EINVAL ignored' >&2; echo 1M ;;
+    can_write | can_zero) echo ENOMEM >&2; exit 0 ;;
+    pwrite) echo ENOSPC >&2; exit 1 ;;
+    zero) echo ENOTSUP >&2; exit 1 ;;
     *) exit 2 ;;
 esac
 EOF
