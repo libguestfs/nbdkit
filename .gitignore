@@ -10,6 +10,7 @@
 *.lo
 *.log
 *.o
+*.so
 *.trs
 
 .deps
@@ -57,7 +58,6 @@ Makefile.in
 /missing
 /nbdkit
 /plugins/example4/nbdkit-example4-plugin
-/plugins/ocaml/nbdkit-ocamlexample-plugin.so
 /plugins/rust/Cargo.lock
 /plugins/rust/Cargo.toml
 /plugins/rust/target
@@ -108,7 +108,6 @@ Makefile.in
 /tests/test-nbd
 /tests/test-null
 /tests/test-ocaml
-/tests/test-ocaml-plugin.so
 /tests/test-offset
 /tests/test-oldstyle
 /tests/test-partition
