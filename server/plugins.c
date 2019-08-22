@@ -638,6 +638,7 @@ plugin_zero (struct backend *b, struct connection *conn,
   assert (p->plugin.pwrite || p->plugin._pwrite_old);
   flags &= ~NBDKIT_FLAG_MAY_TRIM;
   threadlocal_set_error (0);
+  *err = 0;
 
   while (count) {
     /* Always contains zeroes, but we can't use const or else gcc 9
