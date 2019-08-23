@@ -46,7 +46,7 @@ fail=0
 # react to both connection death and server shutdown without finishing
 # the entire delay duration.
 start_nbdkit -P shutdown.pid -U $sock --filter=noparallel --filter=delay \
-    null 1M serialize=connections rdelay=10
+    null 1M serialize=connections rdelay=60
 
 # Early client death should not stall connection of second client.
 trap '' ERR
@@ -55,7 +55,7 @@ test $? = 124 || {
     echo "Unexpected status; qemu-io should have been killed for timing out"
     fail=1
 }
-timeout 1s qemu-io -f raw "nbd+unix:///?socket=$sock" -c 'quit' </dev/null
+timeout 5s qemu-io -f raw "nbd+unix:///?socket=$sock" -c 'quit' </dev/null
 test $? = 0 || {
     echo "Unexpected status; nbdkit was not responsive to allow second qemu-io"
     fail=1
@@ -66,11 +66,14 @@ qemu-io -f raw "nbd+unix:///?socket=$sock" -c 'r 0 512' </dev/null &
 pid=$!
 sleep 1
 kill -s INT "$(cat "$pidfile")"
-sleep 1
-kill -s 0 "$(cat "$pidfile")" && {
+for (( i=0; i < 5; i++ )); do
+    kill -s 0 "$(cat "$pidfile")" || break
+    sleep 1
+done
+if [ $i = 5 ]; then
     echo "Unexpected status; nbdkit didn't react fast enough to signal"
     fail=1
-}
+fi
 wait $pid
 
 exit $fail
