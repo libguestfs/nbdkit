@@ -353,7 +353,7 @@ next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
                         err);
   if (r == -1)
     assert (*err);
-  return 1;
+  return r;
 }
 
 static int
