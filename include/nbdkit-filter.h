@@ -43,7 +43,7 @@
 extern "C" {
 #endif
 
-#define NBDKIT_FILTER_API_VERSION 2
+#define NBDKIT_FILTER_API_VERSION 4 /* Corresponding to v1.12 */
 
 struct nbdkit_extent {
   uint64_t offset;
@@ -98,8 +98,10 @@ struct nbdkit_filter {
   int _api_version;
   int _thread_model;
 
-  /* Because there is no ABI guarantee, new fields may be added
-   * where logically appropriate.  */
+  /* Because there is no ABI guarantee, new fields may be added where
+   * logically appropriate, as long as we correctly bump
+   * NBDKIT_FILTER_API_VERSION once per stable release.
+   */
   const char *name;
   const char *longname;
   const char *version;
