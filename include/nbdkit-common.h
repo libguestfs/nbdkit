@@ -41,6 +41,8 @@
 #include <stdint.h>
 #include <errno.h>
 
+#include <nbdkit-version.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

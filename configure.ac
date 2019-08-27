@@ -29,7 +29,11 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-AC_INIT([nbdkit], [1.14.0])
+m4_define([NBDKIT_VERSION_MAJOR], [1])
+m4_define([NBDKIT_VERSION_MINOR], [14])
+m4_define([NBDKIT_VERSION_MICRO], [0])
+AC_INIT([nbdkit],
+        NBDKIT_VERSION_MAJOR.NBDKIT_VERSION_MINOR.NBDKIT_VERSION_MICRO)
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],[],
          [m4_define([AC_USE_SYSTEM_EXTENSIONS],[])])
@@ -44,6 +48,14 @@ LT_INIT
 AC_CANONICAL_HOST
 
 AC_PROG_SED
+
+dnl Expose version information to the public headers
+[NBDKIT_]VERSION_MAJOR=NBDKIT_VERSION_MAJOR
+[NBDKIT_]VERSION_MINOR=NBDKIT_VERSION_MINOR
+[NBDKIT_]VERSION_MICRO=NBDKIT_VERSION_MICRO
+AC_SUBST([NBDKIT_VERSION_MAJOR])
+AC_SUBST([NBDKIT_VERSION_MINOR])
+AC_SUBST([NBDKIT_VERSION_MICRO])
 
 dnl Check for basic C environment.
 AC_PROG_CC_STDC
@@ -891,6 +903,7 @@ AC_CONFIG_FILES([Makefile
                  common/utils/Makefile
                  docs/Makefile
                  include/Makefile
+                 include/nbdkit-version.h
                  plugins/Makefile
                  plugins/curl/Makefile
                  plugins/data/Makefile
