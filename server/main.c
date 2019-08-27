@@ -148,6 +148,17 @@ main (int argc, char *argv[])
   size_t i;
   const char *magic_config_key;
 
+  /* Refuse to run if stdin/out/err are closed, whether or not -s is used. */
+  if (fcntl (STDERR_FILENO, F_GETFL) == -1) {
+    /* Nowhere we can report the error. Oh well. */
+    exit (EXIT_FAILURE);
+  }
+  if (fcntl (STDIN_FILENO, F_GETFL) == -1 ||
+      fcntl (STDOUT_FILENO, F_GETFL) == -1) {
+    perror ("expecting stdin/stdout to be opened");
+    exit (EXIT_FAILURE);
+  }
+
   threadlocal_init ();
 
   /* The default setting for TLS depends on whether we were
