@@ -366,6 +366,18 @@ free_connection (struct connection *conn)
 
   threadlocal_set_conn (NULL);
   conn->close (conn);
+  if (listen_stdin) {
+    int fd;
+
+    /* Restore something to stdin/out so the rest of our code can
+     * continue to assume that all new fds will be above stderr.
+     * Swap directions to get EBADF on improper use of stdin/out.
+     */
+    fd = open ("/dev/null", O_WRONLY | O_CLOEXEC);
+    assert (fd == 0);
+    fd = open ("/dev/null", O_RDONLY | O_CLOEXEC);
+    assert (fd == 1);
+  }
 
   /* Don't call the plugin again if quit has been set because the main
    * thread will be in the process of unloading it.  The plugin.unload

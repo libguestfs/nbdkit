@@ -92,6 +92,7 @@ extern bool no_sr;
 extern const char *port;
 extern bool readonly;
 extern const char *run;
+extern bool listen_stdin;
 extern const char *selinux_label;
 extern int threads;
 extern int tls;
