@@ -178,13 +178,6 @@ methods.
 This field (a string) is required, and B<must> contain only ASCII
 alphanumeric characters and be unique amongst all filters.
 
-=head2 C<.version>
-
- const char *version;
-
-Filters may optionally set a version string which is displayed in help
-and debugging output.
-
 =head2 C<.longname>
 
  const char *longname;

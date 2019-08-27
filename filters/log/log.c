@@ -435,7 +435,6 @@ log_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "log",
   .longname          = "nbdkit log filter",
-  .version           = PACKAGE_VERSION,
   .config            = log_config,
   .config_complete   = log_config_complete,
   .config_help       = log_config_help,

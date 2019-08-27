@@ -192,7 +192,6 @@ cacheextents_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "cacheextents",
   .longname          = "nbdkit cacheextents filter",
-  .version           = PACKAGE_VERSION,
   .unload            = cacheextents_unload,
   .pwrite            = cacheextents_pwrite,
   .trim              = cacheextents_trim,

@@ -43,7 +43,7 @@
 extern "C" {
 #endif
 
-#define NBDKIT_FILTER_API_VERSION 5 /* Corresponding to v1.14 */
+#define NBDKIT_FILTER_API_VERSION 6 /* Corresponding to v1.16+ */
 
 struct nbdkit_extent {
   uint64_t offset;
@@ -93,20 +93,21 @@ struct nbdkit_next_ops {
 };
 
 struct nbdkit_filter {
-  /* Do not set this field directly; use NBDKIT_REGISTER_FILTER.
-   * It exists so that we can diagnose filters compiled against
-   * one version of the header with a runtime compiled against a
-   * different version.
+  /* Do not set these fields directly; use NBDKIT_REGISTER_FILTER.
+   * They exist so that we can diagnose filters compiled against one
+   * version of the header with a runtime compiled against a different
+   * version.  As of API version 6, _version is also part of the
+   * guaranteed ABI, so we no longer have to remember to bump API
+   * versions regardless of other API/ABI changes later in the struct.
    */
   int _api_version;
+  const char *_version;
 
   /* Because there is no ABI guarantee, new fields may be added where
-   * logically appropriate, as long as we correctly bump
-   * NBDKIT_FILTER_API_VERSION once per stable release.
+   * logically appropriate.
    */
   const char *name;
   const char *longname;
-  const char *version;
   const char *description;
 
   void (*load) (void);
@@ -179,6 +180,7 @@ struct nbdkit_filter {
   filter_init (void)                                                    \
   {                                                                     \
     (filter)._api_version = NBDKIT_FILTER_API_VERSION;                  \
+    (filter)._version = NBDKIT_VERSION_STRING;                          \
     return &(filter);                                                   \
   }
 

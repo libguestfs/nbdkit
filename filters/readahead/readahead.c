@@ -247,7 +247,6 @@ readahead_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "readahead",
   .longname          = "nbdkit readahead filter",
-  .version           = PACKAGE_VERSION,
   .unload            = readahead_unload,
   .prepare           = readahead_prepare,
   .get_size          = readahead_get_size,

@@ -76,7 +76,6 @@ noparallel_thread_model (void)
 static struct nbdkit_filter filter = {
   .name              = "noparallel",
   .longname          = "nbdkit noparallel filter",
-  .version           = PACKAGE_VERSION,
   .config            = noparallel_config,
   .config_help       = noparallel_config_help,
   .thread_model      = noparallel_thread_model,

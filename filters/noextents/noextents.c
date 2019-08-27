@@ -44,7 +44,6 @@ noextents_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "noextents",
   .longname          = "nbdkit noextents filter",
-  .version           = PACKAGE_VERSION,
   .can_extents       = noextents_can_extents,
 };
 

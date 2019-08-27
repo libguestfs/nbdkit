@@ -399,7 +399,6 @@ blocksize_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "blocksize",
   .longname          = "nbdkit blocksize filter",
-  .version           = PACKAGE_VERSION,
   .config            = blocksize_config,
   .config_complete   = blocksize_config_complete,
   .config_help       = blocksize_config_help,

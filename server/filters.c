@@ -102,7 +102,7 @@ filter_version (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
-  return f->filter.version;
+  return f->filter._version;
 }
 
 static void
@@ -730,14 +730,24 @@ filter_register (struct backend *next, size_t index, const char *filename,
   }
 
   /* We do not provide API or ABI guarantees for filters, other than
-   * the ABI position of _api_version that will let us diagnose
-   * mismatch when the API changes.
+   * the ABI position and API contents of _api_version and _version to
+   * diagnose mismatch from the current nbdkit version.
    */
   if (filter->_api_version != NBDKIT_FILTER_API_VERSION) {
     fprintf (stderr,
              "%s: %s: filter is incompatible with this version of nbdkit "
-             "(_api_version = %d)\n",
-             program_name, filename, filter->_api_version);
+             "(_api_version = %d, need %d)\n",
+             program_name, filename, filter->_api_version,
+             NBDKIT_FILTER_API_VERSION);
+    exit (EXIT_FAILURE);
+  }
+  if (filter->_version == NULL ||
+      strcmp (filter->_version, PACKAGE_VERSION) != 0) {
+    fprintf (stderr,
+             "%s: %s: filter is incompatible with this version of nbdkit "
+             "(_version = %s, need %s)\n",
+             program_name, filename, filter->_version ?: "<null>",
+             PACKAGE_VERSION);
     exit (EXIT_FAILURE);
   }
 

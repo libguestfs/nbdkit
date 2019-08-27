@@ -482,7 +482,6 @@ cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "cow",
   .longname          = "nbdkit copy-on-write (COW) filter",
-  .version           = PACKAGE_VERSION,
   .load              = cow_load,
   .unload            = cow_unload,
   .open              = cow_open,

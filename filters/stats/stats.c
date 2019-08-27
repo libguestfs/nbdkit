@@ -290,7 +290,6 @@ stats_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "stats",
   .longname          = "nbdkit stats filter",
-  .version           = PACKAGE_VERSION,
   .unload            = stats_unload,
   .config            = stats_config,
   .config_complete   = stats_config_complete,

@@ -266,7 +266,6 @@ delay_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "delay",
   .longname          = "nbdkit delay filter",
-  .version           = PACKAGE_VERSION,
   .config            = delay_config,
   .config_help       = delay_config_help,
   .pread             = delay_pread,

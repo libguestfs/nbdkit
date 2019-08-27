@@ -375,7 +375,6 @@ error_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "error",
   .longname          = "nbdkit error filter",
-  .version           = PACKAGE_VERSION,
   .load              = error_load,
   .unload            = error_unload,
   .config            = error_config,

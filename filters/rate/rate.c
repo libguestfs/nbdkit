@@ -310,7 +310,6 @@ rate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "rate",
   .longname          = "nbdkit rate filter",
-  .version           = PACKAGE_VERSION,
   .unload            = rate_unload,
   .config            = rate_config,
   .config_complete   = rate_config_complete,

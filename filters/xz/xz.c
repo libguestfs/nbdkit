@@ -254,7 +254,6 @@ static int xz_thread_model (void)
 static struct nbdkit_filter filter = {
   .name              = "xz",
   .longname          = "nbdkit XZ filter",
-  .version           = PACKAGE_VERSION,
   .config            = xz_config,
   .config_help       = xz_config_help,
   .thread_model      = xz_thread_model,

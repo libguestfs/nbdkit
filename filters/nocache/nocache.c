@@ -101,7 +101,6 @@ nocache_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "nocache",
   .longname          = "nbdkit nocache filter",
-  .version           = PACKAGE_VERSION,
   .config            = nocache_config,
   .config_help       = nocache_config_help,
   .can_cache         = nocache_can_cache,

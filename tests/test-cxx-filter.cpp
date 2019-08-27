@@ -49,7 +49,6 @@ namespace {
   nbdkit_filter create_filter() {
     nbdkit_filter filter = nbdkit_filter ();
     filter.name = "cxxfilter";
-    filter.version = PACKAGE_VERSION;
     return filter;
   }
 }

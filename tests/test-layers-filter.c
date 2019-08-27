@@ -261,7 +261,6 @@ test_layers_filter_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 static struct nbdkit_filter filter = {
   .name              = "testlayers" layer,
-  .version           = PACKAGE_VERSION,
   .load              = test_layers_filter_load,
   .unload            = test_layers_filter_unload,
   .config            = test_layers_filter_config,

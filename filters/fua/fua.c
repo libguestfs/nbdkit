@@ -233,7 +233,6 @@ fua_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "fua",
   .longname          = "nbdkit fua filter",
-  .version           = PACKAGE_VERSION,
   .config            = fua_config,
   .config_help       = fua_config_help,
   .prepare           = fua_prepare,

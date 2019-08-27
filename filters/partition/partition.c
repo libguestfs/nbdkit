@@ -265,7 +265,6 @@ partition_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "partition",
   .longname          = "nbdkit partition filter",
-  .version           = PACKAGE_VERSION,
   .config            = partition_config,
   .config_complete   = partition_config_complete,
   .config_help       = partition_config_help,

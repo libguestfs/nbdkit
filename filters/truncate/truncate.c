@@ -385,7 +385,6 @@ truncate_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "truncate",
   .longname          = "nbdkit truncate filter",
-  .version           = PACKAGE_VERSION,
   .config            = truncate_config,
   .config_help       = truncate_config_help,
   .open              = truncate_open,

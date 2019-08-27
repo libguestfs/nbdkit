@@ -139,7 +139,6 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "nozero",
   .longname          = "nbdkit nozero filter",
-  .version           = PACKAGE_VERSION,
   .config            = nozero_config,
   .config_help       = nozero_config_help,
   .prepare           = nozero_prepare,

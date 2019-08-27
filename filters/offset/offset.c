@@ -175,7 +175,6 @@ offset_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "offset",
   .longname          = "nbdkit offset filter",
-  .version           = PACKAGE_VERSION,
   .config            = offset_config,
   .config_help       = offset_config_help,
   .get_size          = offset_get_size,

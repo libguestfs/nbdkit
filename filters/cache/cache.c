@@ -615,7 +615,6 @@ cache_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "cache",
   .longname          = "nbdkit caching filter",
-  .version           = PACKAGE_VERSION,
   .load              = cache_load,
   .unload            = cache_unload,
   .config            = cache_config,
