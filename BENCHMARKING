@@ -27,14 +27,15 @@ FIO is a Flexible I/O tester written by Jens Axboe, and it is the
 primary tool used for generating the load to test filesystems and
 block devices.
 
-(1) Clone and compile fio:
+(1) Install libnbd.
+
+(2) Clone and compile fio:
 
     https://github.com/axboe/fio
 
-(2) Add the NBD engine patch.  The current version is linked below,
-although we are hoping it will eventually get upstream:
+using:
 
-    https://www.spinics.net/lists/fio/msg07832.html
+    ./configure --enable-libnbd
 
 (3) Edit the test file in examples/nbd.fio, if required.
 
