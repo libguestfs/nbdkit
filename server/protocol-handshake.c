@@ -128,8 +128,6 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   fl = backend_can_extents (backend, conn);
   if (fl == -1)
     return -1;
-  if (fl)
-    conn->can_extents = true;
 
   if (conn->structured_replies)
     eflags |= NBD_FLAG_SEND_DF;

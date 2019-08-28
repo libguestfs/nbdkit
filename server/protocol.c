@@ -288,27 +288,11 @@ handle_request (struct connection *conn,
     break;
 
   case NBD_CMD_BLOCK_STATUS:
-    /* The other backend methods don't check can_*.  That is because
-     * those methods are implicitly suppressed by returning eflags to
-     * the client.  However there is no eflag for extents so we must
-     * check it here.
-     */
-    if (conn->can_extents) {
-      if (flags & NBD_CMD_FLAG_REQ_ONE)
-        f |= NBDKIT_FLAG_REQ_ONE;
-      if (backend_extents (backend, conn, count, offset, f,
-                           extents, &err) == -1)
-        return err;
-    }
-    else {
-      /* By default it is safe assume that everything in the range is
-       * allocated.
-       */
-      if (nbdkit_add_extent (extents, offset, count,
-                             0 /* allocated data */) == -1)
-        return errno;
-      return 0;
-    }
+    if (flags & NBD_CMD_FLAG_REQ_ONE)
+      f |= NBDKIT_FLAG_REQ_ONE;
+    if (backend_extents (backend, conn, count, offset, f,
+                         extents, &err) == -1)
+      return err;
     break;
 
   default:

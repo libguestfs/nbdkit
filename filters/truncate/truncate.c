@@ -201,6 +201,20 @@ truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   return h->size;
 }
 
+/* Advertise extents support. */
+static int
+truncate_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+                      void *handle)
+{
+  /* Advertise unconditional support for the image tail, but also call
+   * into next_ops to ensure next_ops->extents doesn't fail later.
+   */
+  int r = next_ops->can_extents (nxdata);
+  if (r == -1)
+    return -1;
+  return 1;
+}
+
 /* Read data. */
 static int
 truncate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -387,6 +401,7 @@ static struct nbdkit_filter filter = {
   .longname          = "nbdkit truncate filter",
   .config            = truncate_config,
   .config_help       = truncate_config_help,
+  .can_extents       = truncate_can_extents,
   .open              = truncate_open,
   .close             = truncate_close,
   .prepare           = truncate_prepare,

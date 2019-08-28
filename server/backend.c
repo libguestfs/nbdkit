@@ -269,9 +269,13 @@ backend_can_zero (struct backend *b, struct connection *conn)
 int
 backend_can_extents (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
+
   debug ("%s: can_extents", b->name);
 
-  return b->can_extents (b, conn);
+  if (h->can_extents == -1)
+    h->can_extents = b->can_extents (b, conn);
+  return h->can_extents;
 }
 
 int
@@ -398,12 +402,23 @@ backend_extents (struct backend *b, struct connection *conn,
                  uint32_t count, uint64_t offset, uint32_t flags,
                  struct nbdkit_extents *extents, int *err)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->can_extents >= 0);
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
   debug ("%s: extents count=%" PRIu32 " offset=%" PRIu64 " req_one=%d",
          b->name, count, offset, !!(flags & NBDKIT_FLAG_REQ_ONE));
 
+  if (h->can_extents == 0) {
+    /* By default it is safe assume that everything in the range is
+     * allocated.
+     */
+    r = nbdkit_add_extent (extents, offset, count, 0 /* allocated data */);
+    if (r == -1)
+      *err = errno;
+    return r;
+  }
   r = b->extents (b, conn, count, offset, flags, extents, err);
   if (r == -1)
     assert (*err);
