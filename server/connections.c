@@ -274,8 +274,9 @@ new_connection (int sockin, int sockout, int nworkers)
     return NULL;
   }
   conn->nr_handles = backend->i + 1;
+  memset (conn->handles, -1, conn->nr_handles * sizeof *conn->handles);
   for_each_backend (b)
-    conn->handles[b->i].exportsize = -1;
+    conn->handles[b->i].handle = NULL;
 
   conn->status = 1;
   conn->nworkers = nworkers;

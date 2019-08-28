@@ -174,6 +174,8 @@ backend_set_handle (struct backend *b, struct connection *conn, void *handle)
   conn->handles[b->i].handle = handle;
 }
 
+/* Wrappers for all callbacks in a filter's struct nbdkit_next_ops. */
+
 int64_t
 backend_get_size (struct backend *b, struct connection *conn)
 {
@@ -189,9 +191,17 @@ backend_get_size (struct backend *b, struct connection *conn)
 int
 backend_can_write (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
+
   debug ("%s: can_write", b->name);
 
-  return b->can_write (b, conn);
+  if (h->can_write == -1) {
+    /* Special case for outermost backend when -r is in effect. */
+    if (readonly && b == backend)
+      return h->can_write = 0;
+    h->can_write = b->can_write (b, conn);
+  }
+  return h->can_write;
 }
 
 int
@@ -213,16 +223,26 @@ backend_is_rotational (struct backend *b, struct connection *conn)
 int
 backend_can_trim (struct backend *b, struct connection *conn)
 {
+  int r;
+
   debug ("%s: can_trim", b->name);
 
+  r = backend_can_write (b, conn);
+  if (r != 1)
+    return r;
   return b->can_trim (b, conn);
 }
 
 int
 backend_can_zero (struct backend *b, struct connection *conn)
 {
+  int r;
+
   debug ("%s: can_zero", b->name);
 
+  r = backend_can_write (b, conn);
+  if (r != 1)
+    return r;
   return b->can_zero (b, conn);
 }
 
@@ -237,8 +257,13 @@ backend_can_extents (struct backend *b, struct connection *conn)
 int
 backend_can_fua (struct backend *b, struct connection *conn)
 {
+  int r;
+
   debug ("%s: can_fua", b->name);
 
+  r = backend_can_write (b, conn);
+  if (r != 1)
+    return r; /* Relies on 0 == NBDKIT_FUA_NONE */
   return b->can_fua (b, conn);
 }
 
@@ -280,8 +305,10 @@ backend_pwrite (struct backend *b, struct connection *conn,
                 const void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->can_write == 1);
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   debug ("%s: pwrite count=%" PRIu32 " offset=%" PRIu64 " fua=%d",
          b->name, count, offset, !!(flags & NBDKIT_FLAG_FUA));
@@ -312,8 +339,10 @@ backend_trim (struct backend *b, struct connection *conn,
               uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->can_write == 1);
   assert (flags == 0);
   debug ("%s: trim count=%" PRIu32 " offset=%" PRIu64 " fua=%d",
          b->name, count, offset, !!(flags & NBDKIT_FLAG_FUA));
@@ -329,8 +358,10 @@ backend_zero (struct backend *b, struct connection *conn,
               uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->can_write == 1);
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
   debug ("%s: zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
          b->name, count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM),

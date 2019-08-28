@@ -52,37 +52,37 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
 
+  /* Check all flags even if they won't be advertised, to prime the
+   * cache and make later request validation easier.
+   */
   fl = backend_can_write (backend, conn);
   if (fl == -1)
     return -1;
-  if (readonly || !fl) {
+  if (!fl)
     eflags |= NBD_FLAG_READ_ONLY;
-    conn->readonly = true;
+
+  fl = backend_can_zero (backend, conn);
+  if (fl == -1)
+    return -1;
+  if (fl) {
+    eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
+    conn->can_zero = true;
   }
-  if (!conn->readonly) {
-    fl = backend_can_zero (backend, conn);
-    if (fl == -1)
-      return -1;
-    if (fl) {
-      eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
-      conn->can_zero = true;
-    }
 
-    fl = backend_can_trim (backend, conn);
-    if (fl == -1)
-      return -1;
-    if (fl) {
-      eflags |= NBD_FLAG_SEND_TRIM;
-      conn->can_trim = true;
-    }
+  fl = backend_can_trim (backend, conn);
+  if (fl == -1)
+    return -1;
+  if (fl) {
+    eflags |= NBD_FLAG_SEND_TRIM;
+    conn->can_trim = true;
+  }
 
-    fl = backend_can_fua (backend, conn);
-    if (fl == -1)
-      return -1;
-    if (fl) {
-      eflags |= NBD_FLAG_SEND_FUA;
-      conn->can_fua = true;
-    }
+  fl = backend_can_fua (backend, conn);
+  if (fl == -1)
+    return -1;
+  if (fl) {
+    eflags |= NBD_FLAG_SEND_FUA;
+    conn->can_fua = true;
   }
 
   fl = backend_can_flush (backend, conn);
@@ -101,16 +101,14 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     conn->is_rotational = true;
   }
 
-  /* multi-conn is useless if parallel connections are not allowed */
-  if (backend->thread_model (backend) >
-      NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
-    fl = backend_can_multi_conn (backend, conn);
-    if (fl == -1)
-      return -1;
-    if (fl) {
-      eflags |= NBD_FLAG_CAN_MULTI_CONN;
-      conn->can_multi_conn = true;
-    }
+  /* multi-conn is useless if parallel connections are not allowed. */
+  fl = backend_can_multi_conn (backend, conn);
+  if (fl == -1)
+    return -1;
+  if (fl && (backend->thread_model (backend) >
+             NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS)) {
+    eflags |= NBD_FLAG_CAN_MULTI_CONN;
+    conn->can_multi_conn = true;
   }
 
   fl = backend_can_cache (backend, conn);
@@ -122,10 +120,10 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     conn->emulate_cache = fl == NBDKIT_CACHE_EMULATE;
   }
 
-  /* The result of this is not returned to callers here (or at any
-   * time during the handshake).  However it makes sense to do it once
-   * per connection and store the result in the handle anyway.  This
-   * protocol_compute_eflags function is a bit misnamed XXX.
+  /* The result of this is not directly advertised as part of the
+   * handshake, but priming the cache here makes BLOCK_STATUS handling
+   * not have to worry about errors, and makes test-layers easier to
+   * write.
    */
   fl = backend_can_extents (backend, conn);
   if (fl == -1)

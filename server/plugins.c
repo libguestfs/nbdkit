@@ -361,7 +361,7 @@ plugin_can_zero (struct backend *b, struct connection *conn)
   if (p->plugin.can_zero &&
       p->plugin.can_zero (connection_get_handle (conn, 0)) == -1)
     return -1;
-  return plugin_can_write (b, conn);
+  return 1;
 }
 
 static int

@@ -155,6 +155,7 @@ struct b_conn_handle {
   void *handle;
 
   uint64_t exportsize;
+  int can_write;
 };
 
 struct connection {
@@ -172,7 +173,6 @@ struct connection {
 
   uint32_t cflags;
   uint16_t eflags;
-  bool readonly;
   bool can_flush;
   bool is_rotational;
   bool can_trim;
