@@ -260,6 +260,7 @@ new_connection (int sockin, int sockout, int nworkers)
   struct connection *conn;
   int opt;
   socklen_t optlen = sizeof opt;
+  struct backend *b;
 
   conn = calloc (1, sizeof *conn);
   if (conn == NULL) {
@@ -273,6 +274,8 @@ new_connection (int sockin, int sockout, int nworkers)
     return NULL;
   }
   conn->nr_handles = backend->i + 1;
+  for_each_backend (b)
+    conn->handles[b->i].exportsize = -1;
 
   conn->status = 1;
   conn->nworkers = nworkers;

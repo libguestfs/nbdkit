@@ -346,10 +346,9 @@ will see.
 
 The returned size must be E<ge> 0.  If there is an error, C<.get_size>
 should call C<nbdkit_error> with an error message and return C<-1>.
-If this function is called more than once for the same connection, it
-should return the same value; similarly, the filter may cache
-C<next_ops-E<gt>get_size> for a given connection rather than repeating
-calls.
+This function is only called once per connection and cached by nbdkit.
+Similarly, repeated calls to C<next_ops-E<gt>get_size> will return a
+cached value.
 
 =head2 C<.can_write>
 

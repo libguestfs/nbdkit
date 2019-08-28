@@ -50,8 +50,9 @@
 static bool
 valid_range (struct connection *conn, uint64_t offset, uint32_t count)
 {
-  uint64_t exportsize = conn->exportsize;
+  uint64_t exportsize = backend_get_size (backend, conn);
 
+  assert (exportsize <= INT64_MAX); /* Guaranteed by negotiation phase */
   return count > 0 && offset <= exportsize && offset + count <= exportsize;
 }
 
@@ -702,7 +703,7 @@ protocol_recv_request_send_reply (struct connection *conn)
 
     /* Allocate the extents list for block status only. */
     if (cmd == NBD_CMD_BLOCK_STATUS) {
-      extents = nbdkit_extents_new (offset, conn->exportsize);
+      extents = nbdkit_extents_new (offset, backend_get_size (backend, conn));
       if (extents == NULL) {
         error = ENOMEM;
         goto send_reply;

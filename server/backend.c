@@ -177,10 +177,13 @@ backend_set_handle (struct backend *b, struct connection *conn, void *handle)
 int64_t
 backend_get_size (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
+
   debug ("%s: get_size", b->name);
 
-  /* TODO caching */
-  return b->get_size (b, conn);
+  if (h->exportsize == -1)
+    h->exportsize = b->get_size (b, conn);
+  return h->exportsize;
 }
 
 int

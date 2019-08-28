@@ -117,7 +117,7 @@ send_newstyle_option_reply_exportname (struct connection *conn,
 static int
 send_newstyle_option_reply_info_export (struct connection *conn,
                                         uint32_t option, uint32_t reply,
-                                        uint16_t info)
+                                        uint16_t info, uint64_t exportsize)
 {
   struct fixed_new_option_reply fixed_new_option_reply;
   struct fixed_new_option_reply_info_export export;
@@ -127,7 +127,7 @@ send_newstyle_option_reply_info_export (struct connection *conn,
   fixed_new_option_reply.reply = htobe32 (reply);
   fixed_new_option_reply.replylen = htobe32 (sizeof export);
   export.info = htobe16 (info);
-  export.exportsize = htobe64 (conn->exportsize);
+  export.exportsize = htobe64 (exportsize);
   export.eflags = htobe16 (conn->eflags);
 
   if (conn->send (conn,
@@ -201,7 +201,7 @@ conn_recv_full (struct connection *conn, void *buf, size_t len,
  * in that function.
  */
 static int
-finish_newstyle_options (struct connection *conn)
+finish_newstyle_options (struct connection *conn, uint64_t *exportsize)
 {
   int64_t r;
 
@@ -213,7 +213,7 @@ finish_newstyle_options (struct connection *conn)
                   "(%" PRIi64 ")", r);
     return -1;
   }
-  conn->exportsize = (uint64_t) r;
+  *exportsize = r;
 
   if (protocol_compute_eflags (conn, &conn->eflags) < 0)
     return -1;
@@ -233,6 +233,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
   char data[MAX_OPTION_LENGTH+1];
   struct new_handshake_finish handshake_finish;
   const char *optname;
+  uint64_t exportsize;
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
     if (conn_recv_full (conn, &new_option, sizeof new_option,
@@ -281,11 +282,11 @@ negotiate_handshake_newstyle_options (struct connection *conn)
              name_of_nbd_opt (option), data);
 
       /* We have to finish the handshake by sending handshake_finish. */
-      if (finish_newstyle_options (conn) == -1)
+      if (finish_newstyle_options (conn, &exportsize) == -1)
         return -1;
 
       memset (&handshake_finish, 0, sizeof handshake_finish);
-      handshake_finish.exportsize = htobe64 (conn->exportsize);
+      handshake_finish.exportsize = htobe64 (exportsize);
       handshake_finish.eflags = htobe16 (conn->eflags);
 
       if (conn->send (conn,
@@ -432,12 +433,13 @@ negotiate_handshake_newstyle_options (struct connection *conn)
          * qemu client in particular does not request this, but will
          * fail if we don't send it.
          */
-        if (finish_newstyle_options (conn) == -1)
+        if (finish_newstyle_options (conn, &exportsize) == -1)
           return -1;
 
         if (send_newstyle_option_reply_info_export (conn, option,
                                                     NBD_REP_INFO,
-                                                    NBD_INFO_EXPORT) == -1)
+                                                    NBD_INFO_EXPORT,
+                                                    exportsize) == -1)
           return -1;
 
         /* For now we ignore all other info requests (but we must

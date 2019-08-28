@@ -68,7 +68,6 @@ protocol_handshake_oldstyle (struct connection *conn)
     return -1;
   }
   exportsize = (uint64_t) r;
-  conn->exportsize = exportsize;
 
   gflags = 0;
   if (protocol_compute_eflags (conn, &eflags) < 0)

@@ -154,7 +154,7 @@ typedef void (*connection_close_function) (struct connection *)
 struct b_conn_handle {
   void *handle;
 
-  // TODO add per-backend caching
+  uint64_t exportsize;
 };
 
 struct connection {
@@ -171,7 +171,6 @@ struct connection {
   size_t nr_handles;
 
   uint32_t cflags;
-  uint64_t exportsize;
   uint16_t eflags;
   bool readonly;
   bool can_flush;
