@@ -262,19 +262,7 @@ handle_request (struct connection *conn,
     break;
 
   case NBD_CMD_CACHE:
-    if (conn->emulate_cache) {
-      static char dropbuf[MAX_REQUEST_SIZE]; /* data sink, never read */
-      uint32_t limit;
-
-      while (count) {
-        limit = MIN (count, sizeof dropbuf);
-        if (backend_pread (backend, conn, dropbuf, limit, offset, flags,
-                           &err) == -1)
-          return err;
-        count -= limit;
-      }
-    }
-    else if (backend_cache (backend, conn, count, offset, 0, &err) == -1)
+    if (backend_cache (backend, conn, count, offset, 0, &err) == -1)
       return err;
     break;
 

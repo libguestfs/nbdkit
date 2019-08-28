@@ -176,6 +176,12 @@ cow_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 static int
 cow_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
+  /* Cache next_ops->can_cache now, so later calls to next_ops->cache
+   * don't fail, even though we override the answer here.
+   */
+  int r = next_ops->can_cache (nxdata);
+  if (r == -1)
+    return -1;
   return NBDKIT_FUA_NATIVE;
 }
 
@@ -427,7 +433,7 @@ cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint64_t blknum, blkoffs;
   int r;
   uint64_t remaining = count; /* Rounding out could exceed 32 bits */
-  enum cache_mode mode; /* XXX Cache this per connection? */
+  enum cache_mode mode;
 
   switch (next_ops->can_cache (nxdata)) {
   case NBDKIT_CACHE_NONE:
@@ -440,8 +446,7 @@ cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
     mode = BLK_CACHE_PASSTHROUGH;
     break;
   default:
-    *err = EINVAL;
-    return -1;
+    assert (false); /* Guaranteed thanks to early caching */
   }
   if (cow_on_cache)
     mode = BLK_CACHE_COW;

@@ -114,11 +114,8 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   fl = backend_can_cache (backend, conn);
   if (fl == -1)
     return -1;
-  if (fl) {
+  if (fl)
     eflags |= NBD_FLAG_SEND_CACHE;
-    conn->can_cache = true;
-    conn->emulate_cache = fl == NBDKIT_CACHE_EMULATE;
-  }
 
   /* The result of this is not directly advertised as part of the
    * handshake, but priming the cache here makes BLOCK_STATUS handling

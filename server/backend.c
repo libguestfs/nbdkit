@@ -40,6 +40,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "minmax.h"
 
 /* Helpers for registering a new backend. */
 
@@ -302,9 +303,13 @@ backend_can_multi_conn (struct backend *b, struct connection *conn)
 int
 backend_can_cache (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
+
   debug ("%s: can_cache", b->name);
 
-  return b->can_cache (b, conn);
+  if (h->can_cache == -1)
+    h->can_cache = b->can_cache (b, conn);
+  return h->can_cache;
 }
 
 int
@@ -430,12 +435,26 @@ backend_cache (struct backend *b, struct connection *conn,
                uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->can_cache > NBDKIT_CACHE_NONE);
   assert (flags == 0);
   debug ("%s: cache count=%" PRIu32 " offset=%" PRIu64,
          b->name, count, offset);
 
+  if (h->can_cache == NBDKIT_CACHE_EMULATE) {
+    static char buf[MAX_REQUEST_SIZE]; /* data sink, never read */
+    uint32_t limit;
+
+    while (count) {
+      limit = MIN (count, sizeof buf);
+      if (backend_pread (b, conn, buf, limit, offset, flags, err) == -1)
+        return -1;
+      count -= limit;
+    }
+    return 0;
+  }
   r = b->cache (b, conn, count, offset, flags, err);
   if (r == -1)
     assert (*err);

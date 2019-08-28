@@ -157,6 +157,7 @@ struct b_conn_handle {
   uint64_t exportsize;
   int can_write;
   int can_extents;
+  int can_cache;
 };
 
 struct connection {
@@ -180,8 +181,6 @@ struct connection {
   bool can_zero;
   bool can_fua;
   bool can_multi_conn;
-  bool can_cache;
-  bool emulate_cache;
   bool using_tls;
   bool structured_replies;
   bool meta_context_base_allocation;
