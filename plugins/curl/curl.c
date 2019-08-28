@@ -118,8 +118,12 @@ static struct { const char *name; long bitmask; } curl_protocols[] = {
   { "rtmps", CURLPROTO_RTMPS },
   { "rtmpts", CURLPROTO_RTMPTS },
   { "gopher", CURLPROTO_GOPHER },
+#ifdef CURLPROTO_SMB
   { "smb", CURLPROTO_SMB },
+#endif
+#ifdef CURLPROTO_SMBS
   { "smbs", CURLPROTO_SMBS },
+#endif
   { NULL }
 };
 
