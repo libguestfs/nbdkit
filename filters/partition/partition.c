@@ -230,9 +230,8 @@ partition_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   size_t i;
   CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 = NULL;
   struct nbdkit_extent e;
-  int64_t real_size = next_ops->get_size (nxdata);
 
-  extents2 = nbdkit_extents_new (offs + h->offset, real_size - h->offset);
+  extents2 = nbdkit_extents_new (offs + h->offset, h->offset + h->range);
   if (extents2 == NULL) {
     *err = errno;
     return -1;
