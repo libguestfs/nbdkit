@@ -64,16 +64,9 @@ offset_config (nbdkit_next_config *next, void *nxdata,
     return next (nxdata, key, value);
 }
 
-/* Check the user did pass both parameters. */
-static int
-offset_config_complete (nbdkit_next_config_complete *next, void *nxdata)
-{
-  return next (nxdata);
-}
-
 #define offset_config_help \
-  "offset=<OFFSET>     (required) The start offset to serve.\n" \
-  "range=<LENGTH>                 The total size to serve."
+  "offset=<OFFSET>            The start offset to serve (default 0).\n" \
+  "range=<LENGTH>             The total size to serve (default rest of file)."
 
 /* Get the file size. */
 static int64_t
@@ -82,13 +75,21 @@ offset_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   int64_t real_size = next_ops->get_size (nxdata);
 
+  if (real_size == -1)
+    return -1;
+
   if (range >= 0) {
-    if (offset + range > real_size) {
+    if (offset > real_size - range) {
       nbdkit_error ("offset+range is larger than the real size "
                     "of the underlying file or device");
       return -1;
     }
     return range;
+  }
+  else if (offset > real_size) {
+    nbdkit_error ("offset is larger than the real size "
+                  "of the underlying file or device");
+    return -1;
   }
   else
     return real_size - offset;
@@ -176,7 +177,6 @@ static struct nbdkit_filter filter = {
   .longname          = "nbdkit offset filter",
   .version           = PACKAGE_VERSION,
   .config            = offset_config,
-  .config_complete   = offset_config_complete,
   .config_help       = offset_config_help,
   .get_size          = offset_get_size,
   .pread             = offset_pread,
