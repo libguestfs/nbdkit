@@ -542,7 +542,7 @@ from the layer below.  Without error checking it would look like this:
    int64_t size;
 
    size = next_ops->get_size (nxdata);
-   extents2 = nbdkit_extents_new (offset + shift, size - shift);
+   extents2 = nbdkit_extents_new (offset + shift, size);
    next_ops->extents (nxdata, count, offset + shift, flags, extents2, err);
    for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
      e = nbdkit_get_extent (extents2, i);
