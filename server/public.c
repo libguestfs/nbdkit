@@ -304,6 +304,16 @@ nbdkit_realpath (const char *path)
 int
 nbdkit_nanosleep (unsigned sec, unsigned nsec)
 {
+  struct timespec ts;
+
+  if (sec >= INT_MAX - nsec / 1000000000) {
+    nbdkit_error ("sleep request is too long");
+    errno = EINVAL;
+    return -1;
+  }
+  ts.tv_sec = sec + nsec / 1000000000;
+  ts.tv_nsec = nsec % 1000000000;
+
 #if defined HAVE_PPOLL && defined POLLRDHUP
   /* End the sleep early if any of these happen:
    * - nbdkit has received a signal to shut down the server
@@ -311,7 +321,6 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
    *   NBD_CMD_DISC or a problem with the connection
    * - the input socket detects POLLRDHUP/POLLHUP/POLLERR
    */
-  struct timespec ts;
   struct connection *conn = threadlocal_get_conn ();
   struct pollfd fds[] = {
     [0].fd = quit_fd,
@@ -322,14 +331,6 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
     [2].events = POLLRDHUP,
   };
   sigset_t all;
-
-  if (sec >= INT_MAX - nsec / 1000000000) {
-    nbdkit_error ("sleep request is too long");
-    errno = EINVAL;
-    return -1;
-  }
-  ts.tv_sec = sec + nsec / 1000000000;
-  ts.tv_nsec = nsec % 1000000000;
 
   /* Block all signals to this thread during the poll, so we don't
    * have to worry about EINTR
@@ -354,9 +355,13 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
   nbdkit_error ("aborting sleep to shut down");
   errno = ESHUTDOWN;
   return -1;
+
 #else
-# error "Please port this to your platform"
-  /* Porting ideas, in order of preference:
+  /* The fallback path simply calls ordinary nanosleep, and will
+   * cause long delays on server shutdown.
+   *
+   * If however you want to port this to your platform, then
+   * porting ideas, in order of preference:
    * - POSIX requires pselect; it's a bit clunkier to set up than poll,
    *   but the same ability to atomically mask all signals and operate
    *   on struct timespec makes it similar to the preferred ppoll interface
@@ -364,8 +369,13 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
    *   a recalculation of the timeout to still reach the end time (masking
    *   signals in that case is not safe, as it is a non-atomic race)
    */
-  nbdkit_error ("nbdkit_nanosleep not yet ported to systems without ppoll");
-  errno = ENOSYS;
-  return -1;
+  int r;
+
+  r = nanosleep (&ts, NULL);
+  if (r == -1 && errno != EINTR && errno != EAGAIN) {
+    nbdkit_error ("nanosleep: %m");
+    return -1;
+  }
+  return 0;
 #endif
 }
