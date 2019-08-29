@@ -167,6 +167,13 @@ backend_unload (struct backend *b, void (*unload) (void))
   free (b->name);
 }
 
+void
+backend_set_handle (struct backend *b, struct connection *conn, void *handle)
+{
+  assert (b->i < conn->nr_handles);
+  conn->handles[b->i].handle = handle;
+}
+
 int64_t
 backend_get_size (struct backend *b, struct connection *conn)
 {

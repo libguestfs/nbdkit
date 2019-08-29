@@ -151,6 +151,12 @@ typedef int (*connection_send_function) (struct connection *,
 typedef void (*connection_close_function) (struct connection *)
   __attribute__((__nonnull__ (1)));
 
+struct b_conn_handle {
+  void *handle;
+
+  // TODO add per-backend caching
+};
+
 struct connection {
   pthread_mutex_t request_lock;
   pthread_mutex_t read_lock;
@@ -161,7 +167,7 @@ struct connection {
   void *crypto_session;
   int nworkers;
 
-  void **handles;
+  struct b_conn_handle *handles;
   size_t nr_handles;
 
   uint32_t cflags;
@@ -188,9 +194,6 @@ struct connection {
 };
 
 extern int handle_single_connection (int sockin, int sockout);
-extern int connection_set_handle (struct connection *conn,
-                                  size_t i, void *handle)
-  __attribute__((__nonnull__ (1 /* not 3 */)));
 extern void *connection_get_handle (struct connection *conn, size_t i)
   __attribute__((__nonnull__ (1)));
 extern int connection_get_status (struct connection *conn)
@@ -322,6 +325,10 @@ extern void backend_load (struct backend *b, const char *name,
   __attribute__((__nonnull__ (1 /* not 2 */)));
 extern void backend_unload (struct backend *b, void (*unload) (void))
   __attribute__((__nonnull__ (1)));
+
+extern void backend_set_handle (struct backend *b, struct connection *conn,
+                                void *handle)
+  __attribute__((__nonnull__ (1, 2 /* not 3 */)));
 
 extern int64_t backend_get_size (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));

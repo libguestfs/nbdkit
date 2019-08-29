@@ -247,7 +247,7 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
   if (!handle)
     return -1;
 
-  connection_set_handle (conn, 0, handle);
+  backend_set_handle (b, conn, handle);
   return 0;
 }
 
@@ -279,7 +279,7 @@ plugin_close (struct backend *b, struct connection *conn)
   if (p->plugin.close)
     p->plugin.close (connection_get_handle (conn, 0));
 
-  connection_set_handle (conn, 0, NULL);
+  backend_set_handle (b, conn, NULL);
 }
 
 static int64_t

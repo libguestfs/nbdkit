@@ -60,37 +60,11 @@ static int raw_send_other (struct connection *, const void *buf, size_t len,
                            int flags);
 static void raw_close (struct connection *);
 
-int
-connection_set_handle (struct connection *conn, size_t i, void *handle)
-{
-  size_t j;
-
-  if (i < conn->nr_handles)
-    conn->handles[i] = handle;
-  else {
-    j = conn->nr_handles;
-    conn->nr_handles = i+1;
-    conn->handles = realloc (conn->handles,
-                             conn->nr_handles * sizeof (void *));
-    if (conn->handles == NULL) {
-      perror ("realloc");
-      conn->nr_handles = 0;
-      return -1;
-    }
-    for (; j < i; ++j)
-      conn->handles[j] = NULL;
-    conn->handles[i] = handle;
-  }
-  return 0;
-}
-
 void *
 connection_get_handle (struct connection *conn, size_t i)
 {
-  if (i < conn->nr_handles)
-    return conn->handles[i];
-  else
-    return NULL;
+  assert (i < conn->nr_handles);
+  return conn->handles[i].handle;
 }
 
 int
@@ -292,6 +266,13 @@ new_connection (int sockin, int sockout, int nworkers)
     perror ("malloc");
     return NULL;
   }
+  conn->handles = calloc (backend->i + 1, sizeof *conn->handles);
+  if (conn->handles == NULL) {
+    perror ("malloc");
+    free (conn);
+    return NULL;
+  }
+  conn->nr_handles = backend->i + 1;
 
   conn->status = 1;
   conn->nworkers = nworkers;
@@ -383,12 +364,10 @@ free_connection (struct connection *conn)
    * thread will be in the process of unloading it.  The plugin.unload
    * callback should always be called.
    */
-  if (!quit) {
-    if (conn->nr_handles > 0 && conn->handles[0]) {
-      lock_request (conn);
-      backend->close (backend, conn);
-      unlock_request (conn);
-    }
+  if (!quit && connection_get_handle (conn, 0)) {
+    lock_request (conn);
+    backend->close (backend, conn);
+    unlock_request (conn);
   }
 
   if (conn->status_pipe[0] >= 0) {

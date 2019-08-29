@@ -211,7 +211,7 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
     handle = f->filter.open (next_open, &nxdata, readonly);
     if (handle == NULL)
       return -1;
-    connection_set_handle (conn, b->i, handle);
+    backend_set_handle (b, conn, handle);
     return 0;
   }
   else
