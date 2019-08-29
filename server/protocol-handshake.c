@@ -70,44 +70,34 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   fl = backend_can_trim (backend, conn);
   if (fl == -1)
     return -1;
-  if (fl) {
+  if (fl)
     eflags |= NBD_FLAG_SEND_TRIM;
-    conn->can_trim = true;
-  }
 
   fl = backend_can_fua (backend, conn);
   if (fl == -1)
     return -1;
-  if (fl) {
+  if (fl)
     eflags |= NBD_FLAG_SEND_FUA;
-    conn->can_fua = true;
-  }
 
   fl = backend_can_flush (backend, conn);
   if (fl == -1)
     return -1;
-  if (fl) {
+  if (fl)
     eflags |= NBD_FLAG_SEND_FLUSH;
-    conn->can_flush = true;
-  }
 
   fl = backend_is_rotational (backend, conn);
   if (fl == -1)
     return -1;
-  if (fl) {
+  if (fl)
     eflags |= NBD_FLAG_ROTATIONAL;
-    conn->is_rotational = true;
-  }
 
   /* multi-conn is useless if parallel connections are not allowed. */
   fl = backend_can_multi_conn (backend, conn);
   if (fl == -1)
     return -1;
   if (fl && (backend->thread_model (backend) >
-             NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS)) {
+             NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS))
     eflags |= NBD_FLAG_CAN_MULTI_CONN;
-    conn->can_multi_conn = true;
-  }
 
   fl = backend_can_cache (backend, conn);
   if (fl == -1)

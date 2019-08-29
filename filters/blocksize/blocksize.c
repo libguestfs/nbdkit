@@ -138,8 +138,6 @@ blocksize_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   "maxdata=<SIZE>       Maximum size for read/write (default 64M).\n" \
   "maxlen=<SIZE>        Maximum size for trim/zero (default 4G-minblock)."
 
-/* TODO: Should we have a .prepare to cache per-connection FUA mode? */
-
 /* Round size down to avoid issues at end of file. */
 static int64_t
 blocksize_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,

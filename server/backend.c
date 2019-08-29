@@ -228,30 +228,44 @@ backend_can_write (struct backend *b, struct connection *conn)
 int
 backend_can_flush (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
+
   debug ("%s: can_flush", b->name);
 
-  return b->can_flush (b, conn);
+  if (h->can_flush == -1)
+    h->can_flush = b->can_flush (b, conn);
+  return h->can_flush;
 }
 
 int
 backend_is_rotational (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
+
   debug ("%s: is_rotational", b->name);
 
-  return b->is_rotational (b, conn);
+  if (h->is_rotational == -1)
+    h->is_rotational = b->is_rotational (b, conn);
+  return h->is_rotational;
 }
 
 int
 backend_can_trim (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
   debug ("%s: can_trim", b->name);
 
-  r = backend_can_write (b, conn);
-  if (r != 1)
-    return r;
-  return b->can_trim (b, conn);
+  if (h->can_trim == -1) {
+    r = backend_can_write (b, conn);
+    if (r != 1) {
+      h->can_trim = 0;
+      return r;
+    }
+    h->can_trim = b->can_trim (b, conn);
+  }
+  return h->can_trim;
 }
 
 int
@@ -288,22 +302,32 @@ backend_can_extents (struct backend *b, struct connection *conn)
 int
 backend_can_fua (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
   debug ("%s: can_fua", b->name);
 
-  r = backend_can_write (b, conn);
-  if (r != 1)
-    return r; /* Relies on 0 == NBDKIT_FUA_NONE */
-  return b->can_fua (b, conn);
+  if (h->can_fua == -1) {
+    r = backend_can_write (b, conn);
+    if (r != 1) {
+      h->can_fua = NBDKIT_FUA_NONE;
+      return r; /* Relies on 0 == NBDKIT_FUA_NONE */
+    }
+    h->can_fua = b->can_fua (b, conn);
+  }
+  return h->can_fua;
 }
 
 int
 backend_can_multi_conn (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
+
   debug ("%s: can_multi_conn", b->name);
 
-  return b->can_multi_conn (b, conn);
+  if (h->can_multi_conn == -1)
+    h->can_multi_conn = b->can_multi_conn (b, conn);
+  return h->can_multi_conn;
 }
 
 int
@@ -341,12 +365,15 @@ backend_pwrite (struct backend *b, struct connection *conn,
                 uint32_t flags, int *err)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
+  bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
   assert (h->can_write == 1);
   assert (!(flags & ~NBDKIT_FLAG_FUA));
+  if (fua)
+    assert (h->can_fua > NBDKIT_FUA_NONE);
   debug ("%s: pwrite count=%" PRIu32 " offset=%" PRIu64 " fua=%d",
-         b->name, count, offset, !!(flags & NBDKIT_FLAG_FUA));
+         b->name, count, offset, fua);
 
   r = b->pwrite (b, conn, buf, count, offset, flags, err);
   if (r == -1)
@@ -358,8 +385,10 @@ int
 backend_flush (struct backend *b, struct connection *conn,
                uint32_t flags, int *err)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->can_flush == 1);
   assert (flags == 0);
   debug ("%s: flush", b->name);
 
@@ -375,12 +404,16 @@ backend_trim (struct backend *b, struct connection *conn,
               int *err)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
+  bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
   assert (h->can_write == 1);
+  assert (h->can_trim == 1);
   assert (!(flags & ~NBDKIT_FLAG_FUA));
+  if (fua)
+    assert (h->can_fua > NBDKIT_FUA_NONE);
   debug ("%s: trim count=%" PRIu32 " offset=%" PRIu64 " fua=%d",
-         b->name, count, offset, !!(flags & NBDKIT_FLAG_FUA));
+         b->name, count, offset, fua);
 
   r = b->trim (b, conn, count, offset, flags, err);
   if (r == -1)
@@ -394,14 +427,16 @@ backend_zero (struct backend *b, struct connection *conn,
               int *err)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
+  bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
   assert (h->can_write == 1);
   assert (h->can_zero > NBDKIT_ZERO_NONE);
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
+  if (fua)
+    assert (h->can_fua > NBDKIT_FUA_NONE);
   debug ("%s: zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
-         b->name, count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM),
-         !!(flags & NBDKIT_FLAG_FUA));
+         b->name, count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM), fua);
 
   r = b->zero (b, conn, count, offset, flags, err);
   if (r == -1)

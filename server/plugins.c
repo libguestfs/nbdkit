@@ -505,7 +505,7 @@ plugin_pwrite (struct backend *b, struct connection *conn,
 
   assert (connection_get_handle (conn, 0));
 
-  if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
+  if (fua && backend_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -537,7 +537,7 @@ plugin_trim (struct backend *b, struct connection *conn,
 
   assert (connection_get_handle (conn, 0));
 
-  if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
+  if (fua && backend_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -569,7 +569,7 @@ plugin_zero (struct backend *b, struct connection *conn,
 
   assert (connection_get_handle (conn, 0));
 
-  if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
+  if (fua && backend_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }

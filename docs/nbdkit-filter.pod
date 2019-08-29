@@ -440,10 +440,12 @@ on to only the final sub-request, or by dropping the flag and ending
 with a direct call to C<next_ops-E<gt>flush>).
 
 If there is an error, the callback should call C<nbdkit_error> with an
-error message and return C<-1>.  If these functions are called more
-than once for the same connection, they should return the same value;
-similarly, the filter may cache the results of each counterpart in
-C<next_ops> for a given connection rather than repeating calls.
+error message and return C<-1>.  These functions are called at most
+once per connection and cached by nbdkit. Similarly, repeated calls to
+any of the C<next_ops> counterparts will return a cached value; by
+calling into the plugin during C<.prepare>, you can ensure that later
+use of the cached values during data commands like <.pwrite> will not
+fail.
 
 =head2 C<.pread>
 

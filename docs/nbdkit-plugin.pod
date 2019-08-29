@@ -150,10 +150,8 @@ A new client has connected.
 
 These are called during option negotiation with the client, but before
 any data is served.  These callbacks may return different values
-across different C<.open> calls, but within a single connection, must
-always return the same value; other code in nbdkit may cache the
-per-connection value returned rather than using the callback a second
-time.
+across different C<.open> calls, but within a single connection, they
+are called at most once and cached by nbdkit for that connection.
 
 =item C<.pread>, C<.pwrite> and other data serving callbacks
 

@@ -156,7 +156,12 @@ struct b_conn_handle {
 
   uint64_t exportsize;
   int can_write;
+  int can_flush;
+  int is_rotational;
+  int can_trim;
   int can_zero;
+  int can_fua;
+  int can_multi_conn;
   int can_extents;
   int can_cache;
 };
@@ -176,11 +181,6 @@ struct connection {
 
   uint32_t cflags;
   uint16_t eflags;
-  bool can_flush;
-  bool is_rotational;
-  bool can_trim;
-  bool can_fua;
-  bool can_multi_conn;
   bool using_tls;
   bool structured_replies;
   bool meta_context_base_allocation;

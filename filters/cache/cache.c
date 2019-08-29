@@ -239,7 +239,6 @@ cache_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   r = cache_get_size (next_ops, nxdata, handle);
   if (r < 0)
     return -1;
-  /* TODO: cache per-connection FUA mode? */
   return 0;
 }
 
