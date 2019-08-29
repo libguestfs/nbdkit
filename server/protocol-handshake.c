@@ -52,7 +52,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
 
-  fl = backend->can_write (backend, conn);
+  fl = backend_can_write (backend, conn);
   if (fl == -1)
     return -1;
   if (readonly || !fl) {
@@ -60,7 +60,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     conn->readonly = true;
   }
   if (!conn->readonly) {
-    fl = backend->can_zero (backend, conn);
+    fl = backend_can_zero (backend, conn);
     if (fl == -1)
       return -1;
     if (fl) {
@@ -68,7 +68,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
       conn->can_zero = true;
     }
 
-    fl = backend->can_trim (backend, conn);
+    fl = backend_can_trim (backend, conn);
     if (fl == -1)
       return -1;
     if (fl) {
@@ -76,7 +76,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
       conn->can_trim = true;
     }
 
-    fl = backend->can_fua (backend, conn);
+    fl = backend_can_fua (backend, conn);
     if (fl == -1)
       return -1;
     if (fl) {
@@ -85,7 +85,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     }
   }
 
-  fl = backend->can_flush (backend, conn);
+  fl = backend_can_flush (backend, conn);
   if (fl == -1)
     return -1;
   if (fl) {
@@ -93,7 +93,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     conn->can_flush = true;
   }
 
-  fl = backend->is_rotational (backend, conn);
+  fl = backend_is_rotational (backend, conn);
   if (fl == -1)
     return -1;
   if (fl) {
@@ -104,7 +104,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   /* multi-conn is useless if parallel connections are not allowed */
   if (backend->thread_model (backend) >
       NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
-    fl = backend->can_multi_conn (backend, conn);
+    fl = backend_can_multi_conn (backend, conn);
     if (fl == -1)
       return -1;
     if (fl) {
@@ -113,7 +113,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
     }
   }
 
-  fl = backend->can_cache (backend, conn);
+  fl = backend_can_cache (backend, conn);
   if (fl == -1)
     return -1;
   if (fl) {
@@ -127,7 +127,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
    * per connection and store the result in the handle anyway.  This
    * protocol_compute_eflags function is a bit misnamed XXX.
    */
-  fl = backend->can_extents (backend, conn);
+  fl = backend_can_extents (backend, conn);
   if (fl == -1)
     return -1;
   if (fl)

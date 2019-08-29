@@ -237,35 +237,27 @@ handle_request (struct connection *conn,
 
   switch (cmd) {
   case NBD_CMD_READ:
-    if (backend->pread (backend, conn, buf, count, offset, 0, &err) == -1) {
-      assert (err);
+    if (backend_pread (backend, conn, buf, count, offset, 0, &err) == -1)
       return err;
-    }
     break;
 
   case NBD_CMD_WRITE:
     if (fua)
       f |= NBDKIT_FLAG_FUA;
-    if (backend->pwrite (backend, conn, buf, count, offset, f, &err) == -1) {
-      assert (err);
+    if (backend_pwrite (backend, conn, buf, count, offset, f, &err) == -1)
       return err;
-    }
     break;
 
   case NBD_CMD_FLUSH:
-    if (backend->flush (backend, conn, 0, &err) == -1) {
-      assert (err);
+    if (backend_flush (backend, conn, 0, &err) == -1)
       return err;
-    }
     break;
 
   case NBD_CMD_TRIM:
     if (fua)
       f |= NBDKIT_FLAG_FUA;
-    if (backend->trim (backend, conn, count, offset, f, &err) == -1) {
-      assert (err);
+    if (backend_trim (backend, conn, count, offset, f, &err) == -1)
       return err;
-    }
     break;
 
   case NBD_CMD_CACHE:
@@ -275,18 +267,14 @@ handle_request (struct connection *conn,
 
       while (count) {
         limit = MIN (count, sizeof buf);
-        if (backend->pread (backend, conn, buf, limit, offset, flags,
-                            &err) == -1) {
-          assert (err);
+        if (backend_pread (backend, conn, buf, limit, offset, flags,
+                           &err) == -1)
           return err;
-        }
         count -= limit;
       }
     }
-    else if (backend->cache (backend, conn, count, offset, 0, &err) == -1) {
-      assert (err);
+    else if (backend_cache (backend, conn, count, offset, 0, &err) == -1)
       return err;
-    }
     break;
 
   case NBD_CMD_WRITE_ZEROES:
@@ -294,10 +282,8 @@ handle_request (struct connection *conn,
       f |= NBDKIT_FLAG_MAY_TRIM;
     if (fua)
       f |= NBDKIT_FLAG_FUA;
-    if (backend->zero (backend, conn, count, offset, f, &err) == -1) {
-      assert (err && err != ENOTSUP && err != EOPNOTSUPP);
+    if (backend_zero (backend, conn, count, offset, f, &err) == -1)
       return err;
-    }
     break;
 
   case NBD_CMD_BLOCK_STATUS:
@@ -309,11 +295,9 @@ handle_request (struct connection *conn,
     if (conn->can_extents) {
       if (flags & NBD_CMD_FLAG_REQ_ONE)
         f |= NBDKIT_FLAG_REQ_ONE;
-      if (backend->extents (backend, conn, count, offset, f,
-                            extents, &err) == -1) {
-        assert (err);
+      if (backend_extents (backend, conn, count, offset, f,
+                           extents, &err) == -1)
         return err;
-      }
     }
     else {
       int r;

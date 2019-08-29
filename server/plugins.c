@@ -290,8 +290,6 @@ plugin_get_size (struct backend *b, struct connection *conn)
   assert (connection_get_handle (conn, 0));
   assert (p->plugin.get_size != NULL);
 
-  debug ("get_size");
-
   return p->plugin.get_size (connection_get_handle (conn, 0));
 }
 
@@ -301,8 +299,6 @@ plugin_can_write (struct backend *b, struct connection *conn)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (connection_get_handle (conn, 0));
-
-  debug ("can_write");
 
   if (p->plugin.can_write)
     return p->plugin.can_write (connection_get_handle (conn, 0));
@@ -317,8 +313,6 @@ plugin_can_flush (struct backend *b, struct connection *conn)
 
   assert (connection_get_handle (conn, 0));
 
-  debug ("can_flush");
-
   if (p->plugin.can_flush)
     return p->plugin.can_flush (connection_get_handle (conn, 0));
   else
@@ -331,8 +325,6 @@ plugin_is_rotational (struct backend *b, struct connection *conn)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (connection_get_handle (conn, 0));
-
-  debug ("is_rotational");
 
   if (p->plugin.is_rotational)
     return p->plugin.is_rotational (connection_get_handle (conn, 0));
@@ -347,8 +339,6 @@ plugin_can_trim (struct backend *b, struct connection *conn)
 
   assert (connection_get_handle (conn, 0));
 
-  debug ("can_trim");
-
   if (p->plugin.can_trim)
     return p->plugin.can_trim (connection_get_handle (conn, 0));
   else
@@ -361,8 +351,6 @@ plugin_can_zero (struct backend *b, struct connection *conn)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (connection_get_handle (conn, 0));
-
-  debug ("can_zero");
 
   /* Note the special case here: the plugin's .can_zero controls only
    * whether we call .zero; while the backend expects .can_zero to
@@ -383,8 +371,6 @@ plugin_can_extents (struct backend *b, struct connection *conn)
 
   assert (connection_get_handle (conn, 0));
 
-  debug ("can_extents");
-
   if (p->plugin.can_extents)
     return p->plugin.can_extents (connection_get_handle (conn, 0));
   else
@@ -398,8 +384,6 @@ plugin_can_fua (struct backend *b, struct connection *conn)
   int r;
 
   assert (connection_get_handle (conn, 0));
-
-  debug ("can_fua");
 
   /* The plugin must use API version 2 and have .can_fua return
      NBDKIT_FUA_NATIVE before we will pass the FUA flag on. */
@@ -422,8 +406,6 @@ plugin_can_multi_conn (struct backend *b, struct connection *conn)
 
   assert (connection_get_handle (conn, 0));
 
-  debug ("can_multi_conn");
-
   if (p->plugin.can_multi_conn)
     return p->plugin.can_multi_conn (connection_get_handle (conn, 0));
   else
@@ -436,8 +418,6 @@ plugin_can_cache (struct backend *b, struct connection *conn)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (connection_get_handle (conn, 0));
-
-  debug ("can_cache");
 
   if (p->plugin.can_cache)
     return p->plugin.can_cache (connection_get_handle (conn, 0));
@@ -477,9 +457,6 @@ plugin_pread (struct backend *b, struct connection *conn,
 
   assert (connection_get_handle (conn, 0));
   assert (p->plugin.pread || p->plugin._pread_old);
-  assert (!flags);
-
-  debug ("pread count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
   if (p->plugin.pread)
     r = p->plugin.pread (connection_get_handle (conn, 0), buf, count, offset,
@@ -500,9 +477,6 @@ plugin_flush (struct backend *b, struct connection *conn, uint32_t flags,
   int r;
 
   assert (connection_get_handle (conn, 0));
-  assert (!flags);
-
-  debug ("flush");
 
   if (p->plugin.flush)
     r = p->plugin.flush (connection_get_handle (conn, 0), 0);
@@ -528,10 +502,6 @@ plugin_pwrite (struct backend *b, struct connection *conn,
   bool need_flush = false;
 
   assert (connection_get_handle (conn, 0));
-  assert (!(flags & ~NBDKIT_FLAG_FUA));
-
-  debug ("pwrite count=%" PRIu32 " offset=%" PRIu64 " fua=%d", count, offset,
-         fua);
 
   if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
@@ -564,10 +534,6 @@ plugin_trim (struct backend *b, struct connection *conn,
   bool need_flush = false;
 
   assert (connection_get_handle (conn, 0));
-  assert (!(flags & ~NBDKIT_FLAG_FUA));
-
-  debug ("trim count=%" PRIu32 " offset=%" PRIu64 " fua=%d", count, offset,
-         fua);
 
   if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
@@ -601,10 +567,6 @@ plugin_zero (struct backend *b, struct connection *conn,
   int can_zero = 1; /* TODO cache this per-connection? */
 
   assert (connection_get_handle (conn, 0));
-  assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
-
-  debug ("zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
-         count, offset, may_trim, fua);
 
   if (fua && plugin_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
@@ -665,20 +627,12 @@ plugin_extents (struct backend *b, struct connection *conn,
                 struct nbdkit_extents *extents, int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-  bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
   int r;
 
   assert (connection_get_handle (conn, 0));
-  assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
 
   /* This should be true because plugin_can_extents checks it. */
   assert (p->plugin.extents);
-
-  debug ("extents count=%" PRIu32 " offset=%" PRIu64 " req_one=%d",
-         count, offset, req_one);
-
-  if (!count)
-    return 0;
 
   r = p->plugin.extents (connection_get_handle (conn, 0), count, offset,
                          flags, extents);
@@ -701,9 +655,6 @@ plugin_cache (struct backend *b, struct connection *conn,
   int r;
 
   assert (connection_get_handle (conn, 0));
-  assert (!flags);
-
-  debug ("cache count=%" PRIu32 " offset=%" PRIu64, count, offset);
 
   /* A plugin may advertise caching but not provide .cache; in that
    * case, caching is explicitly a no-op. */

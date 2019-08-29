@@ -205,7 +205,7 @@ finish_newstyle_options (struct connection *conn)
 {
   int64_t r;
 
-  r = backend->get_size (backend, conn);
+  r = backend_get_size (backend, conn);
   if (r == -1)
     return -1;
   if (r < 0) {

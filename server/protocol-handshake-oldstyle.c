@@ -59,7 +59,7 @@ protocol_handshake_oldstyle (struct connection *conn)
     return -1;
   }
 
-  r = backend->get_size (backend, conn);
+  r = backend_get_size (backend, conn);
   if (r == -1)
     return -1;
   if (r < 0) {

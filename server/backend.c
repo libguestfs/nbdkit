@@ -32,8 +32,10 @@
 
 #include <config.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <dlfcn.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -163,4 +165,203 @@ backend_unload (struct backend *b, void (*unload) (void))
   unlock_unload ();
 
   free (b->name);
+}
+
+int64_t
+backend_get_size (struct backend *b, struct connection *conn)
+{
+  debug ("%s: get_size", b->name);
+
+  /* TODO caching */
+  return b->get_size (b, conn);
+}
+
+int
+backend_can_write (struct backend *b, struct connection *conn)
+{
+  debug ("%s: can_write", b->name);
+
+  return b->can_write (b, conn);
+}
+
+int
+backend_can_flush (struct backend *b, struct connection *conn)
+{
+  debug ("%s: can_flush", b->name);
+
+  return b->can_flush (b, conn);
+}
+
+int
+backend_is_rotational (struct backend *b, struct connection *conn)
+{
+  debug ("%s: is_rotational", b->name);
+
+  return b->is_rotational (b, conn);
+}
+
+int
+backend_can_trim (struct backend *b, struct connection *conn)
+{
+  debug ("%s: can_trim", b->name);
+
+  return b->can_trim (b, conn);
+}
+
+int
+backend_can_zero (struct backend *b, struct connection *conn)
+{
+  debug ("%s: can_zero", b->name);
+
+  return b->can_zero (b, conn);
+}
+
+int
+backend_can_extents (struct backend *b, struct connection *conn)
+{
+  debug ("%s: can_extents", b->name);
+
+  return b->can_extents (b, conn);
+}
+
+int
+backend_can_fua (struct backend *b, struct connection *conn)
+{
+  debug ("%s: can_fua", b->name);
+
+  return b->can_fua (b, conn);
+}
+
+int
+backend_can_multi_conn (struct backend *b, struct connection *conn)
+{
+  debug ("%s: can_multi_conn", b->name);
+
+  return b->can_multi_conn (b, conn);
+}
+
+int
+backend_can_cache (struct backend *b, struct connection *conn)
+{
+  debug ("%s: can_cache", b->name);
+
+  return b->can_cache (b, conn);
+}
+
+int
+backend_pread (struct backend *b, struct connection *conn,
+               void *buf, uint32_t count, uint64_t offset,
+               uint32_t flags, int *err)
+{
+  int r;
+
+  assert (flags == 0);
+  debug ("%s: pread count=%" PRIu32 " offset=%" PRIu64,
+         b->name, count, offset);
+
+  r = b->pread (b, conn, buf, count, offset, flags, err);
+  if (r == -1)
+    assert (*err);
+  return r;
+}
+
+int
+backend_pwrite (struct backend *b, struct connection *conn,
+                const void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags, int *err)
+{
+  int r;
+
+  assert (!(flags & ~NBDKIT_FLAG_FUA));
+  debug ("%s: pwrite count=%" PRIu32 " offset=%" PRIu64 " fua=%d",
+         b->name, count, offset, !!(flags & NBDKIT_FLAG_FUA));
+
+  r = b->pwrite (b, conn, buf, count, offset, flags, err);
+  if (r == -1)
+    assert (*err);
+  return r;
+}
+
+int
+backend_flush (struct backend *b, struct connection *conn,
+               uint32_t flags, int *err)
+{
+  int r;
+
+  assert (flags == 0);
+  debug ("%s: flush", b->name);
+
+  r = b->flush (b, conn, flags, err);
+  if (r == -1)
+    assert (*err);
+  return r;
+}
+
+int
+backend_trim (struct backend *b, struct connection *conn,
+              uint32_t count, uint64_t offset, uint32_t flags,
+              int *err)
+{
+  int r;
+
+  assert (flags == 0);
+  debug ("%s: trim count=%" PRIu32 " offset=%" PRIu64 " fua=%d",
+         b->name, count, offset, !!(flags & NBDKIT_FLAG_FUA));
+
+  r = b->trim (b, conn, count, offset, flags, err);
+  if (r == -1)
+    assert (*err);
+  return r;
+}
+
+int
+backend_zero (struct backend *b, struct connection *conn,
+              uint32_t count, uint64_t offset, uint32_t flags,
+              int *err)
+{
+  int r;
+
+  assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
+  debug ("%s: zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
+         b->name, count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM),
+         !!(flags & NBDKIT_FLAG_FUA));
+
+  r = b->zero (b, conn, count, offset, flags, err);
+  if (r == -1)
+    assert (*err && *err != ENOTSUP && *err != EOPNOTSUPP);
+  return r;
+}
+
+int
+backend_extents (struct backend *b, struct connection *conn,
+                 uint32_t count, uint64_t offset, uint32_t flags,
+                 struct nbdkit_extents *extents, int *err)
+{
+  int r;
+
+  assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
+  debug ("%s: extents count=%" PRIu32 " offset=%" PRIu64 " req_one=%d",
+         b->name, count, offset, !!(flags & NBDKIT_FLAG_REQ_ONE));
+
+  r = b->extents (b, conn, count, offset, flags, extents, err);
+  if (r == -1)
+    assert (*err);
+  return r;
+}
+
+int
+backend_cache (struct backend *b, struct connection *conn,
+               uint32_t count, uint64_t offset,
+               uint32_t flags, int *err)
+{
+  int r;
+
+  assert (flags == 0);
+  debug ("%s: cache count=%" PRIu32 " offset=%" PRIu64,
+         b->name, count, offset);
+
+  r = b->cache (b, conn, count, offset, flags, err);
+  if (r == -1)
+    assert (*err);
+  return r;
 }

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -400,13 +400,13 @@ main (int argc, char *argv[])
 
   sleep (1);
   log_verify_seen_in_order
-    ("testlayersfilter3: pread count=512 offset=0 flags=0x0",
+    ("testlayersfilter3: pread count=512 offset=0",
      "filter3: test_layers_filter_pread",
-     "testlayersfilter2: pread count=512 offset=0 flags=0x0",
+     "testlayersfilter2: pread count=512 offset=0",
      "filter2: test_layers_filter_pread",
-     "testlayersfilter1: pread count=512 offset=0 flags=0x0",
+     "testlayersfilter1: pread count=512 offset=0",
      "filter1: test_layers_filter_pread",
-     "testlayersplugin: debug: pread count=512 offset=0",
+     "testlayersplugin: pread count=512 offset=0",
      "test_layers_plugin_pread",
      NULL);
 
@@ -434,13 +434,13 @@ main (int argc, char *argv[])
 
   sleep (1);
   log_verify_seen_in_order
-    ("testlayersfilter3: pwrite count=512 offset=0 flags=0x0",
+    ("testlayersfilter3: pwrite count=512 offset=0 fua=0",
      "filter3: test_layers_filter_pwrite",
-     "testlayersfilter2: pwrite count=512 offset=0 flags=0x0",
+     "testlayersfilter2: pwrite count=512 offset=0 fua=0",
      "filter2: test_layers_filter_pwrite",
-     "testlayersfilter1: pwrite count=512 offset=0 flags=0x0",
+     "testlayersfilter1: pwrite count=512 offset=0 fua=0",
      "filter1: test_layers_filter_pwrite",
-     "testlayersplugin: debug: pwrite count=512 offset=0",
+     "testlayersplugin: pwrite count=512 offset=0 fua=0",
      "test_layers_plugin_pwrite",
      NULL);
 
@@ -464,13 +464,13 @@ main (int argc, char *argv[])
 
   sleep (1);
   log_verify_seen_in_order
-    ("testlayersfilter3: flush flags=0x0",
+    ("testlayersfilter3: flush",
      "filter3: test_layers_filter_flush",
-     "testlayersfilter2: flush flags=0x0",
+     "testlayersfilter2: flush",
      "filter2: test_layers_filter_flush",
-     "testlayersfilter1: flush flags=0x0",
+     "testlayersfilter1: flush",
      "filter1: test_layers_filter_flush",
-     "testlayersplugin: debug: flush",
+     "testlayersplugin: flush",
      "test_layers_plugin_flush",
      NULL);
 
@@ -494,13 +494,13 @@ main (int argc, char *argv[])
 
   sleep (1);
   log_verify_seen_in_order
-    ("testlayersfilter3: trim count=512 offset=0 flags=0x0",
+    ("testlayersfilter3: trim count=512 offset=0 fua=0",
      "filter3: test_layers_filter_trim",
-     "testlayersfilter2: trim count=512 offset=0 flags=0x0",
+     "testlayersfilter2: trim count=512 offset=0 fua=0",
      "filter2: test_layers_filter_trim",
-     "testlayersfilter1: trim count=512 offset=0 flags=0x0",
+     "testlayersfilter1: trim count=512 offset=0 fua=0",
      "filter1: test_layers_filter_trim",
-     "testlayersplugin: debug: trim count=512 offset=0",
+     "testlayersplugin: trim count=512 offset=0 fua=0",
      "test_layers_plugin_trim",
      NULL);
 
@@ -524,13 +524,13 @@ main (int argc, char *argv[])
 
   sleep (1);
   log_verify_seen_in_order
-    ("testlayersfilter3: zero count=512 offset=0 flags=0x1",
+    ("testlayersfilter3: zero count=512 offset=0 may_trim=1 fua=0",
      "filter3: test_layers_filter_zero",
-     "testlayersfilter2: zero count=512 offset=0 flags=0x1",
+     "testlayersfilter2: zero count=512 offset=0 may_trim=1 fua=0",
      "filter2: test_layers_filter_zero",
-     "testlayersfilter1: zero count=512 offset=0 flags=0x1",
+     "testlayersfilter1: zero count=512 offset=0 may_trim=1 fua=0",
      "filter1: test_layers_filter_zero",
-     "testlayersplugin: debug: zero count=512 offset=0 may_trim=1 fua=0",
+     "testlayersplugin: zero count=512 offset=0 may_trim=1 fua=0",
      "test_layers_plugin_zero",
      NULL);
 
@@ -554,13 +554,13 @@ main (int argc, char *argv[])
 
   sleep (1);
   log_verify_seen_in_order
-    ("testlayersfilter3: cache count=512 offset=0 flags=0x0",
+    ("testlayersfilter3: cache count=512 offset=0",
      "filter3: test_layers_filter_cache",
-     "testlayersfilter2: cache count=512 offset=0 flags=0x0",
+     "testlayersfilter2: cache count=512 offset=0",
      "filter2: test_layers_filter_cache",
-     "testlayersfilter1: cache count=512 offset=0 flags=0x0",
+     "testlayersfilter1: cache count=512 offset=0",
      "filter1: test_layers_filter_cache",
-     "testlayersplugin: debug: cache count=512 offset=0",
+     "testlayersplugin: cache count=512 offset=0",
      "test_layers_plugin_cache",
      NULL);
 

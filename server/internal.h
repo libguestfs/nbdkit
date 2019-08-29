@@ -323,6 +323,55 @@ extern void backend_load (struct backend *b, const char *name,
 extern void backend_unload (struct backend *b, void (*unload) (void))
   __attribute__((__nonnull__ (1)));
 
+extern int64_t backend_get_size (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_write (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_flush (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_is_rotational (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_trim (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_zero (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_extents (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_fua (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_multi_conn (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_cache (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+
+extern int backend_pread (struct backend *b, struct connection *conn,
+                          void *buf, uint32_t count, uint64_t offset,
+                          uint32_t flags, int *err)
+  __attribute__((__nonnull__ (1, 2, 3, 7)));
+extern int backend_pwrite (struct backend *b, struct connection *conn,
+                           const void *buf, uint32_t count, uint64_t offset,
+                           uint32_t flags, int *err)
+  __attribute__((__nonnull__ (1, 2, 3, 7)));
+extern int backend_flush (struct backend *b, struct connection *conn,
+                          uint32_t flags, int *err)
+  __attribute__((__nonnull__ (1, 2, 4)));
+extern int backend_trim (struct backend *b, struct connection *conn,
+                         uint32_t count, uint64_t offset, uint32_t flags,
+                         int *err)
+  __attribute__((__nonnull__ (1, 2, 6)));
+extern int backend_zero (struct backend *b, struct connection *conn,
+                         uint32_t count, uint64_t offset, uint32_t flags,
+                         int *err)
+  __attribute__((__nonnull__ (1, 2, 6)));
+extern int backend_extents (struct backend *b, struct connection *conn,
+                            uint32_t count, uint64_t offset, uint32_t flags,
+                            struct nbdkit_extents *extents, int *err)
+  __attribute__((__nonnull__ (1, 2, 6, 7)));
+extern int backend_cache (struct backend *b, struct connection *conn,
+                          uint32_t count, uint64_t offset,
+                          uint32_t flags, int *err)
+  __attribute__((__nonnull__ (1, 2, 6)));
+
 /* plugins.c */
 extern struct backend *plugin_register (size_t index, const char *filename,
                                         void *dl, struct nbdkit_plugin *(*plugin_init) (void))

@@ -242,70 +242,70 @@ static int64_t
 next_get_size (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->get_size (b_conn->b, b_conn->conn);
+  return backend_get_size (b_conn->b, b_conn->conn);
 }
 
 static int
 next_can_write (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->can_write (b_conn->b, b_conn->conn);
+  return backend_can_write (b_conn->b, b_conn->conn);
 }
 
 static int
 next_can_flush (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->can_flush (b_conn->b, b_conn->conn);
+  return backend_can_flush (b_conn->b, b_conn->conn);
 }
 
 static int
 next_is_rotational (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->is_rotational (b_conn->b, b_conn->conn);
+  return backend_is_rotational (b_conn->b, b_conn->conn);
 }
 
 static int
 next_can_trim (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->can_trim (b_conn->b, b_conn->conn);
+  return backend_can_trim (b_conn->b, b_conn->conn);
 }
 
 static int
 next_can_zero (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->can_zero (b_conn->b, b_conn->conn);
+  return backend_can_zero (b_conn->b, b_conn->conn);
 }
 
 static int
 next_can_extents (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->can_extents (b_conn->b, b_conn->conn);
+  return backend_can_extents (b_conn->b, b_conn->conn);
 }
 
 static int
 next_can_fua (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->can_fua (b_conn->b, b_conn->conn);
+  return backend_can_fua (b_conn->b, b_conn->conn);
 }
 
 static int
 next_can_multi_conn (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->can_multi_conn (b_conn->b, b_conn->conn);
+  return backend_can_multi_conn (b_conn->b, b_conn->conn);
 }
 
 static int
 next_can_cache (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
-  return b_conn->b->can_cache (b_conn->b, b_conn->conn);
+  return backend_can_cache (b_conn->b, b_conn->conn);
 }
 
 static int
@@ -313,13 +313,8 @@ next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int r;
-
-  r = b_conn->b->pread (b_conn->b, b_conn->conn, buf, count, offset, flags,
+  return backend_pread (b_conn->b, b_conn->conn, buf, count, offset, flags,
                         err);
-  if (r == -1)
-    assert (*err);
-  return r;
 }
 
 static int
@@ -327,25 +322,15 @@ next_pwrite (void *nxdata, const void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int r;
-
-  r = b_conn->b->pwrite (b_conn->b, b_conn->conn, buf, count, offset, flags,
+  return backend_pwrite (b_conn->b, b_conn->conn, buf, count, offset, flags,
                          err);
-  if (r == -1)
-    assert (*err);
-  return r;
 }
 
 static int
 next_flush (void *nxdata, uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int r;
-
-  r = b_conn->b->flush (b_conn->b, b_conn->conn, flags, err);
-  if (r == -1)
-    assert (*err);
-  return r;
+  return backend_flush (b_conn->b, b_conn->conn, flags, err);
 }
 
 static int
@@ -353,12 +338,7 @@ next_trim (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int r;
-
-  r = b_conn->b->trim (b_conn->b, b_conn->conn, count, offset, flags, err);
-  if (r == -1)
-    assert (*err);
-  return r;
+  return backend_trim (b_conn->b, b_conn->conn, count, offset, flags, err);
 }
 
 static int
@@ -366,12 +346,7 @@ next_zero (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int r;
-
-  r = b_conn->b->zero (b_conn->b, b_conn->conn, count, offset, flags, err);
-  if (r == -1)
-    assert (*err && *err != ENOTSUP && *err != EOPNOTSUPP);
-  return r;
+  return backend_zero (b_conn->b, b_conn->conn, count, offset, flags, err);
 }
 
 static int
@@ -379,13 +354,8 @@ next_extents (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
               struct nbdkit_extents *extents, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int r;
-
-  r = b_conn->b->extents (b_conn->b, b_conn->conn, count, offset, flags,
+  return backend_extents (b_conn->b, b_conn->conn, count, offset, flags,
                           extents, err);
-  if (r == -1)
-    assert (*err);
-  return r;
 }
 
 static int
@@ -393,12 +363,7 @@ next_cache (void *nxdata, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
   struct b_conn *b_conn = nxdata;
-  int r;
-
-  r = b_conn->b->cache (b_conn->b, b_conn->conn, count, offset, flags, err);
-  if (r == -1)
-    assert (*err);
-  return r;
+  return backend_cache (b_conn->b, b_conn->conn, count, offset, flags, err);
 }
 
 static struct nbdkit_next_ops next_ops = {
@@ -469,12 +434,10 @@ filter_get_size (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: get_size", b->name);
-
   if (f->filter.get_size)
     return f->filter.get_size (&next_ops, &nxdata, handle);
   else
-    return b->next->get_size (b->next, conn);
+    return backend_get_size (b->next, conn);
 }
 
 static int
@@ -484,12 +447,10 @@ filter_can_write (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_write", b->name);
-
   if (f->filter.can_write)
     return f->filter.can_write (&next_ops, &nxdata, handle);
   else
-    return b->next->can_write (b->next, conn);
+    return backend_can_write (b->next, conn);
 }
 
 static int
@@ -499,12 +460,10 @@ filter_can_flush (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_flush", b->name);
-
   if (f->filter.can_flush)
     return f->filter.can_flush (&next_ops, &nxdata, handle);
   else
-    return b->next->can_flush (b->next, conn);
+    return backend_can_flush (b->next, conn);
 }
 
 static int
@@ -514,12 +473,10 @@ filter_is_rotational (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: is_rotational", b->name);
-
   if (f->filter.is_rotational)
     return f->filter.is_rotational (&next_ops, &nxdata, handle);
   else
-    return b->next->is_rotational (b->next, conn);
+    return backend_is_rotational (b->next, conn);
 }
 
 static int
@@ -529,12 +486,10 @@ filter_can_trim (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_trim", b->name);
-
   if (f->filter.can_trim)
     return f->filter.can_trim (&next_ops, &nxdata, handle);
   else
-    return b->next->can_trim (b->next, conn);
+    return backend_can_trim (b->next, conn);
 }
 
 static int
@@ -544,12 +499,10 @@ filter_can_zero (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_zero", b->name);
-
   if (f->filter.can_zero)
     return f->filter.can_zero (&next_ops, &nxdata, handle);
   else
-    return b->next->can_zero (b->next, conn);
+    return backend_can_zero (b->next, conn);
 }
 
 static int
@@ -559,12 +512,10 @@ filter_can_extents (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_extents", b->name);
-
   if (f->filter.can_extents)
     return f->filter.can_extents (&next_ops, &nxdata, handle);
   else
-    return b->next->can_extents (b->next, conn);
+    return backend_can_extents (b->next, conn);
 }
 
 static int
@@ -574,12 +525,10 @@ filter_can_fua (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_fua", b->name);
-
   if (f->filter.can_fua)
     return f->filter.can_fua (&next_ops, &nxdata, handle);
   else
-    return b->next->can_fua (b->next, conn);
+    return backend_can_fua (b->next, conn);
 }
 
 static int
@@ -589,12 +538,10 @@ filter_can_multi_conn (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_multi_conn", b->name);
-
   if (f->filter.can_multi_conn)
     return f->filter.can_multi_conn (&next_ops, &nxdata, handle);
   else
-    return b->next->can_multi_conn (b->next, conn);
+    return backend_can_multi_conn (b->next, conn);
 }
 
 static int
@@ -604,12 +551,10 @@ filter_can_cache (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_cache", b->name);
-
   if (f->filter.can_cache)
     return f->filter.can_cache (&next_ops, &nxdata, handle);
   else
-    return b->next->can_cache (b->next, conn);
+    return backend_can_cache (b->next, conn);
 }
 
 static int
@@ -621,16 +566,11 @@ filter_pread (struct backend *b, struct connection *conn,
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  assert (flags == 0);
-
-  debug ("%s: pread count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         b->name, count, offset, flags);
-
   if (f->filter.pread)
     return f->filter.pread (&next_ops, &nxdata, handle,
                             buf, count, offset, flags, err);
   else
-    return b->next->pread (b->next, conn, buf, count, offset, flags, err);
+    return backend_pread (b->next, conn, buf, count, offset, flags, err);
 }
 
 static int
@@ -642,16 +582,11 @@ filter_pwrite (struct backend *b, struct connection *conn,
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  assert (!(flags & ~NBDKIT_FLAG_FUA));
-
-  debug ("%s: pwrite count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         b->name, count, offset, flags);
-
   if (f->filter.pwrite)
     return f->filter.pwrite (&next_ops, &nxdata, handle,
                              buf, count, offset, flags, err);
   else
-    return b->next->pwrite (b->next, conn, buf, count, offset, flags, err);
+    return backend_pwrite (b->next, conn, buf, count, offset, flags, err);
 }
 
 static int
@@ -662,14 +597,10 @@ filter_flush (struct backend *b, struct connection *conn, uint32_t flags,
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  assert (flags == 0);
-
-  debug ("%s: flush flags=0x%" PRIx32, b->name, flags);
-
   if (f->filter.flush)
     return f->filter.flush (&next_ops, &nxdata, handle, flags, err);
   else
-    return b->next->flush (b->next, conn, flags, err);
+    return backend_flush (b->next, conn, flags, err);
 }
 
 static int
@@ -681,16 +612,11 @@ filter_trim (struct backend *b, struct connection *conn,
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  assert (flags == 0);
-
-  debug ("%s: trim count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         b->name, count, offset, flags);
-
   if (f->filter.trim)
     return f->filter.trim (&next_ops, &nxdata, handle, count, offset, flags,
                            err);
   else
-    return b->next->trim (b->next, conn, count, offset, flags, err);
+    return backend_trim (b->next, conn, count, offset, flags, err);
 }
 
 static int
@@ -701,16 +627,11 @@ filter_zero (struct backend *b, struct connection *conn,
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
-
-  debug ("%s: zero count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         b->name, count, offset, flags);
-
   if (f->filter.zero)
     return f->filter.zero (&next_ops, &nxdata, handle,
                            count, offset, flags, err);
   else
-    return b->next->zero (b->next, conn, count, offset, flags, err);
+    return backend_zero (b->next, conn, count, offset, flags, err);
 }
 
 static int
@@ -722,18 +643,13 @@ filter_extents (struct backend *b, struct connection *conn,
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
-
-  debug ("%s: extents count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         b->name, count, offset, flags);
-
   if (f->filter.extents)
     return f->filter.extents (&next_ops, &nxdata, handle,
                               count, offset, flags,
                               extents, err);
   else
-    return b->next->extents (b->next, conn, count, offset, flags,
-                             extents, err);
+    return backend_extents (b->next, conn, count, offset, flags,
+                            extents, err);
 }
 
 static int
@@ -745,16 +661,12 @@ filter_cache (struct backend *b, struct connection *conn,
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  assert (flags == 0);
-
-  debug ("%s: cache count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         b->name, count, offset, flags);
 
   if (f->filter.cache)
     return f->filter.cache (&next_ops, &nxdata, handle,
                             count, offset, flags, err);
   else
-    return b->next->cache (b->next, conn, count, offset, flags, err);
+    return backend_cache (b->next, conn, count, offset, flags, err);
 }
 
 static struct backend filter_functions = {
