@@ -137,7 +137,7 @@ However we don’t expose the capability to send structured replies to
 plugins yet, nor do we send human-readable error messages using this
 facility.
 
-In nbdkit E<ge> 1.13.9>, the command-line option I<--no-rc> can be
+In nbdkit E<ge> 1.13.9>, the command-line option I<--no-sr> can be
 used to disable server support for structured replies, for testing
 client fallbacks.
 
