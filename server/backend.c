@@ -167,6 +167,20 @@ backend_unload (struct backend *b, void (*unload) (void))
   free (b->name);
 }
 
+int
+backend_open (struct backend *b, struct connection *conn, int readonly)
+{
+  struct b_conn_handle *h = &conn->handles[b->i];
+
+  debug ("%s: open readonly=%d", b->name, readonly);
+
+  assert (h->handle == NULL);
+  assert (h->can_write == -1);
+  if (readonly)
+    h->can_write = 0;
+  return b->open (b, conn, readonly);
+}
+
 void
 backend_set_handle (struct backend *b, struct connection *conn, void *handle)
 {
@@ -195,12 +209,8 @@ backend_can_write (struct backend *b, struct connection *conn)
 
   debug ("%s: can_write", b->name);
 
-  if (h->can_write == -1) {
-    /* Special case for outermost backend when -r is in effect. */
-    if (readonly && b == backend)
-      return h->can_write = 0;
+  if (h->can_write == -1)
     h->can_write = b->can_write (b, conn);
-  }
   return h->can_write;
 }
 

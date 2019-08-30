@@ -241,8 +241,6 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
   assert (connection_get_handle (conn, 0) == NULL);
   assert (p->plugin.open != NULL);
 
-  debug ("%s: open readonly=%d", b->name, readonly);
-
   handle = p->plugin.open (readonly);
   if (!handle)
     return -1;

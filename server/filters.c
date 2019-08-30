@@ -195,7 +195,7 @@ next_open (void *nxdata, int readonly)
 {
   struct b_conn *b_conn = nxdata;
 
-  return b_conn->b->open (b_conn->b, b_conn->conn, readonly);
+  return backend_open (b_conn->b, b_conn->conn, readonly);
 }
 
 static int
@@ -205,8 +205,6 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
   struct b_conn nxdata = { .b = b->next, .conn = conn };
   void *handle;
 
-  debug ("%s: open readonly=%d", b->name, readonly);
-
   if (f->filter.open) {
     handle = f->filter.open (next_open, &nxdata, readonly);
     if (handle == NULL)
@@ -215,7 +213,7 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
     return 0;
   }
   else
-    return b->next->open (b->next, conn, readonly);
+    return backend_open (b->next, conn, readonly);
 }
 
 static void

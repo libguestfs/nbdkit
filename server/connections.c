@@ -149,7 +149,7 @@ _handle_single_connection (int sockin, int sockout)
     goto done;
 
   lock_request (conn);
-  r = backend->open (backend, conn, readonly);
+  r = backend_open (backend, conn, readonly);
   unlock_request (conn);
   if (r == -1)
     goto done;

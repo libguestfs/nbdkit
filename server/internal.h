@@ -325,6 +325,9 @@ extern void backend_load (struct backend *b, const char *name,
 extern void backend_unload (struct backend *b, void (*unload) (void))
   __attribute__((__nonnull__ (1)));
 
+extern int backend_open (struct backend *b, struct connection *conn,
+                         int readonly)
+  __attribute__((__nonnull__ (1, 2)));
 extern void backend_set_handle (struct backend *b, struct connection *conn,
                                 void *handle)
   __attribute__((__nonnull__ (1, 2 /* not 3 */)));
