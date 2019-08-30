@@ -477,6 +477,9 @@ flags_string (uint32_t flags, char *buf, size_t len)
 
   if (flags & NBDKIT_FLAG_REQ_ONE)
     flag_append ("req_one", &comma, &buf, &len);
+
+  if (flags & NBDKIT_FLAG_FAST_ZERO)
+    flag_append("fast", &comma, &buf, &len);
 }
 
 static void
@@ -535,7 +538,7 @@ sh_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 
 /* Common code for handling all boolean methods like can_write etc. */
 static int
-boolean_method (void *handle, const char *method_name)
+boolean_method (void *handle, const char *method_name, int def)
 {
   char *h = handle;
   const char *args[] = { script, method_name, h, NULL };
@@ -545,8 +548,8 @@ boolean_method (void *handle, const char *method_name)
     return 1;
   case RET_FALSE:               /* false */
     return 0;
-  case MISSING:                 /* missing => assume false */
-    return 0;
+  case MISSING:                 /* missing => caller chooses default */
+    return def;
   case ERROR:                   /* error cases */
     return -1;
   default: abort ();
@@ -556,37 +559,37 @@ boolean_method (void *handle, const char *method_name)
 static int
 sh_can_write (void *handle)
 {
-  return boolean_method (handle, "can_write");
+  return boolean_method (handle, "can_write", 0);
 }
 
 static int
 sh_can_flush (void *handle)
 {
-  return boolean_method (handle, "can_flush");
+  return boolean_method (handle, "can_flush", 0);
 }
 
 static int
 sh_is_rotational (void *handle)
 {
-  return boolean_method (handle, "is_rotational");
+  return boolean_method (handle, "is_rotational", 0);
 }
 
 static int
 sh_can_trim (void *handle)
 {
-  return boolean_method (handle, "can_trim");
+  return boolean_method (handle, "can_trim", 0);
 }
 
 static int
 sh_can_zero (void *handle)
 {
-  return boolean_method (handle, "can_zero");
+  return boolean_method (handle, "can_zero", 0);
 }
 
 static int
 sh_can_extents (void *handle)
 {
-  return boolean_method (handle, "can_extents");
+  return boolean_method (handle, "can_extents", 0);
 }
 
 /* Not a boolean method, the method prints "none", "emulate" or "native". */
@@ -645,7 +648,7 @@ sh_can_fua (void *handle)
 static int
 sh_can_multi_conn (void *handle)
 {
-  return boolean_method (handle, "can_multi_conn");
+  return boolean_method (handle, "can_multi_conn", 0);
 }
 
 /* Not a boolean method, the method prints "none", "emulate" or "native". */
@@ -693,6 +696,21 @@ sh_can_cache (void *handle)
 
   default: abort ();
   }
+}
+
+static int
+sh_can_fast_zero (void *handle)
+{
+  int r = boolean_method (handle, "can_fast_zero", 2);
+  if (r < 2)
+    return r;
+  /* We need to duplicate the logic of plugins.c: if can_fast_zero is
+   * missing, we advertise fast fail support when can_zero is false.
+   */
+  r = sh_can_zero (handle);
+  if (r == -1)
+    return -1;
+  return !r;
 }
 
 static int
@@ -961,6 +979,7 @@ static struct nbdkit_plugin plugin = {
   .can_fua           = sh_can_fua,
   .can_multi_conn    = sh_can_multi_conn,
   .can_cache         = sh_can_cache,
+  .can_fast_zero     = sh_can_fast_zero,
 
   .pread             = sh_pread,
   .pwrite            = sh_pwrite,

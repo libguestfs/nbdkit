@@ -129,13 +129,10 @@ full_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   return -1;
 }
 
-/* Write zeroes. */
-static int
-full_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
-{
-  errno = ENOSPC;
-  return -1;
-}
+/* Omitting full_zero is intentional: that way, nbdkit defaults to
+ * permitting fast zeroes which respond with ENOTSUP, while normal
+ * zeroes fall back to pwrite and respond with ENOSPC.
+ */
 
 /* Trim. */
 static int
@@ -172,7 +169,6 @@ static struct nbdkit_plugin plugin = {
   .can_cache         = full_can_cache,
   .pread             = full_pread,
   .pwrite            = full_pwrite,
-  .zero              = full_zero,
   .trim              = full_trim,
   .extents           = full_extents,
   /* In this plugin, errno is preserved properly along error return

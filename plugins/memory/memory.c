@@ -147,6 +147,13 @@ memory_can_cache (void *handle)
   return NBDKIT_CACHE_NATIVE;
 }
 
+/* Fast zero. */
+static int
+memory_can_fast_zero (void *handle)
+{
+  return 1;
+}
+
 /* Read data. */
 static int
 memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -173,8 +180,10 @@ memory_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 static int
 memory_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
-  /* Flushing, and thus FUA flag, is a no-op */
-  assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)) == 0);
+  /* Flushing, and thus FUA flag, is a no-op. Assume that
+   * sparse_array_zero generally beats writes, so FAST_ZERO is a no-op. */
+  assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
+                     NBDKIT_FLAG_FAST_ZERO)) == 0);
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   sparse_array_zero (sa, count, offset);
   return 0;
@@ -221,6 +230,7 @@ static struct nbdkit_plugin plugin = {
   .can_fua           = memory_can_fua,
   .can_multi_conn    = memory_can_multi_conn,
   .can_cache         = memory_can_cache,
+  .can_fast_zero     = memory_can_fast_zero,
   .pread             = memory_pread,
   .pwrite            = memory_pwrite,
   .zero              = memory_zero,

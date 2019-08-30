@@ -100,6 +100,13 @@ null_can_cache (void *handle)
   return NBDKIT_CACHE_NATIVE;
 }
 
+/* Fast zero. */
+static int
+null_can_fast_zero (void *handle)
+{
+  return 1;
+}
+
 /* Read data. */
 static int
 null_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
@@ -167,6 +174,7 @@ static struct nbdkit_plugin plugin = {
   .get_size          = null_get_size,
   .can_multi_conn    = null_can_multi_conn,
   .can_cache         = null_can_cache,
+  .can_fast_zero     = null_can_fast_zero,
   .pread             = null_pread,
   .pwrite            = null_pwrite,
   .zero              = null_zero,

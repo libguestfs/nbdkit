@@ -183,6 +183,7 @@ plugin_dump_fields (struct backend *b)
   HAS (can_cache);
   HAS (cache);
   HAS (thread_model);
+  HAS (can_fast_zero);
 #undef HAS
 
   /* Custom fields. */
@@ -369,9 +370,23 @@ plugin_can_zero (struct backend *b, struct connection *conn)
 static int
 plugin_can_fast_zero (struct backend *b, struct connection *conn)
 {
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  int r;
+
   assert (connection_get_handle (conn, 0));
 
-  return 0; /* Upcoming patch will actually add support. */
+  if (p->plugin.can_fast_zero)
+    return p->plugin.can_fast_zero (connection_get_handle (conn, 0));
+  /* Advertise support for fast zeroes if no .zero or .can_zero is
+   * false: in those cases, we fail fast instead of using .pwrite.
+   * This also works when v1 plugin has only ._zero_old.
+   */
+  if (p->plugin.zero == NULL)
+    return 1;
+  r = backend_can_zero (b, conn);
+  if (r == -1)
+    return -1;
+  return !r;
 }
 
 static int
@@ -586,15 +601,18 @@ plugin_zero (struct backend *b, struct connection *conn,
     return 0;
 
   if (backend_can_zero (b, conn) == NBDKIT_ZERO_NATIVE) {
-    /* if (!can_fast_zero) */
-    flags &= ~NBDKIT_FLAG_FAST_ZERO;
     errno = 0;
     if (p->plugin.zero)
       r = p->plugin.zero (connection_get_handle (conn, 0), count, offset,
                           flags);
-    else if (p->plugin._zero_old)
+    else if (p->plugin._zero_old) {
+      if (fast_zero) {
+        *err = EOPNOTSUPP;
+        return -1;
+      }
       r = p->plugin._zero_old (connection_get_handle (conn, 0), count, offset,
                                may_trim);
+    }
     else
       emulate = true;
     if (r == -1)

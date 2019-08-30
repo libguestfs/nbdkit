@@ -289,7 +289,10 @@ The script should exit with code C<0> for true or code C<3> for false.
 
 =item C<is_rotational>
 
+=item C<can_fast_zero>
+
  /path/to/script is_rotational <handle>
+ /path/to/script can_fast_zero <handle>
 
 The script should exit with code C<0> for true or code C<3> for false.
 
@@ -361,11 +364,17 @@ also provide a C<can_trim> method which exits with code C<0> (true).
  /path/to/script zero <handle> <count> <offset> <flags>
 
 The C<flags> parameter can be an empty string or a comma-separated
-list of the flags: C<"fua"> and C<"may_trim"> (eg. C<"">, C<"fua">,
-C<"fua,may_trim"> are all possible values).
+list of the flags: C<"fua">, C<"may_trim">, and C<"fast"> (eg. C<"">,
+C<"fua">, C<"fua,may_trim,fast"> are some of the 8 possible values).
 
 Unlike in other languages, if you provide a C<zero> method you B<must>
 also provide a C<can_zero> method which exits with code C<0> (true).
+
+To trigger a fallback to <pwrite> on a normal zero request, or to
+respond quickly to the C<"fast"> flag that a specific zero request is
+no faster than a corresponding write, the script must output
+C<ENOTSUP> or C<EOPNOTSUPP> to stderr (possibly followed by a
+description of the problem) before exiting with code C<1> (failure).
 
 =item C<extents>
 

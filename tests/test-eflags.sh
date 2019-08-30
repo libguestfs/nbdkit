@@ -68,6 +68,7 @@ SEND_DF=$((           1 <<  7 ))
 CAN_MULTI_CONN=$((    1 <<  8 ))
 SEND_RESIZE=$((       1 <<  9 ))
 SEND_CACHE=$((        1 << 10 ))
+SEND_FAST_ZERO=$((    1 << 11 ))
 
 do_nbdkit ()
 {
@@ -133,8 +134,8 @@ EOF
 #----------------------------------------------------------------------
 # can_write=true
 #
-# NBD_FLAG_SEND_WRITE_ZEROES is set on writable connections
-# even when can_zero returns false, because nbdkit reckons it
+# NBD_FLAG_SEND_WRITE_ZEROES and NBD_FLAG_SEND_FAST_ZERO are set on writable
+# connections even when can_zero returns false, because nbdkit reckons it
 # can emulate zeroing using pwrite.
 
 do_nbdkit <<'EOF'
@@ -145,8 +146,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "$LINENO: expected HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF"
+[ $eflags -eq $(( HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO"
 
 #----------------------------------------------------------------------
 # --filter=nozero
@@ -255,8 +256,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "$LINENO: expected HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF"
+[ $eflags -eq $(( HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|SEND_TRIM|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -271,8 +272,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "$LINENO: expected HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF"
+[ $eflags -eq $(( HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|ROTATIONAL|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO"
 
 #----------------------------------------------------------------------
 # -r
@@ -304,8 +305,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "$LINENO: expected HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF"
+[ $eflags -eq $(( HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO"
 
 #----------------------------------------------------------------------
 # -r
@@ -341,8 +342,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "$LINENO: expected HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF"
+[ $eflags -eq $(( HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|SEND_FLUSH|SEND_FUA|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO"
 
 #----------------------------------------------------------------------
 # can_write=true
@@ -361,8 +362,8 @@ case "$1" in
 esac
 EOF
 
-[ $eflags -eq $(( HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF )) ] ||
-    fail "$LINENO: expected HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF"
+[ $eflags -eq $(( HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|SEND_FLUSH|SEND_WRITE_ZEROES|SEND_DF|SEND_FAST_ZERO"
 
 #----------------------------------------------------------------------
 # -r
@@ -442,6 +443,99 @@ late_args="cachemode=none" do_nbdkit -r --filter=nocache <<'EOF'
 case "$1" in
      get_size) echo 1M ;;
      can_cache) echo "emulate" ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
+
+#----------------------------------------------------------------------
+# -r
+# can_fast_zero=true
+#
+# Fast zero support isn't advertised without regular zero support
+
+do_nbdkit -r <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_fast_zero) exit 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
+
+#----------------------------------------------------------------------
+# --filter=nozero
+# can_write=true
+# can_fast_zero=true
+#
+# Fast zero support isn't advertised without regular zero support
+
+do_nbdkit --filter=nozero <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     can_fast_zero) exit 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|SEND_DF )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|SEND_DF"
+
+#----------------------------------------------------------------------
+# can_write=true
+# can_zero=true
+#
+# Fast zero support is omitted for a plugin that has .zero but did not opt in
+
+do_nbdkit -r <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     can_zero) exit 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
+
+#----------------------------------------------------------------------
+# can_write=true
+# can_zero=true
+# can_fast_zero=false
+#
+# Fast zero support is omitted if the plugin says so
+
+do_nbdkit -r <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     can_zero) exit 0 ;;
+     can_fast_zero) exit 3 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
+
+#----------------------------------------------------------------------
+# can_write=true
+# can_zero=false
+# can_fast_zero=false
+#
+# Fast zero support is omitted if the plugin says so
+
+do_nbdkit -r <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     can_fast_zero) exit 3 ;;
      *) exit 2 ;;
 esac
 EOF

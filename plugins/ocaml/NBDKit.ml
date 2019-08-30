@@ -96,6 +96,8 @@ type 'a plugin = {
   cache : ('a -> int32 -> int64 -> flags -> unit) option;
 
   thread_model : (unit -> thread_model) option;
+
+  can_fast_zero : ('a -> bool) option;
 }
 
 let default_callbacks = {
@@ -141,6 +143,8 @@ let default_callbacks = {
   cache = None;
 
   thread_model = None;
+
+  can_fast_zero = None;
 }
 
 external set_name : string -> unit = "ocaml_nbdkit_set_name" "noalloc"
@@ -185,6 +189,8 @@ external set_can_cache : ('a -> cache_flag) -> unit = "ocaml_nbdkit_set_can_cach
 external set_cache : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_cache"
 
 external set_thread_model : (unit -> thread_model) -> unit = "ocaml_nbdkit_set_thread_model"
+
+external set_can_fast_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_fast_zero"
 
 let may f = function None -> () | Some a -> f a
 
@@ -249,7 +255,9 @@ let register_plugin plugin =
   may set_can_cache plugin.can_cache;
   may set_cache plugin.cache;
 
-  may set_thread_model plugin.thread_model
+  may set_thread_model plugin.thread_model;
+
+  may set_can_fast_zero plugin.can_fast_zero
 
 external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
 

@@ -634,6 +634,24 @@ nbdplug_can_zero (void *handle)
 }
 
 static int
+nbdplug_can_fast_zero (void *handle)
+{
+#if LIBNBD_HAVE_NBD_CAN_FAST_ZERO
+  struct handle *h = handle;
+  int i = nbd_can_fast_zero (h->nbd);
+
+  if (i == -1) {
+    nbdkit_error ("failure to check fast zero flag: %s", nbd_get_error ());
+    return -1;
+  }
+  return i;
+#else
+  /* libnbd 0.9.8 lacks fast zero support */
+  return 0;
+#endif
+}
+
+static int
 nbdplug_can_fua (void *handle)
 {
   struct handle *h = handle;
@@ -724,12 +742,19 @@ nbdplug_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   struct transaction s;
   uint32_t f = 0;
 
-  assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)));
+  assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
+                      NBDKIT_FLAG_FAST_ZERO)));
 
   if (!(flags & NBDKIT_FLAG_MAY_TRIM))
     f |= LIBNBD_CMD_FLAG_NO_HOLE;
   if (flags & NBDKIT_FLAG_FUA)
     f |= LIBNBD_CMD_FLAG_FUA;
+#if LIBNBD_HAVE_NBD_CAN_FAST_ZERO
+  if (flags & NBDKIT_FLAG_FAST_ZERO)
+    f |= LIBNBD_CMD_FLAG_FAST_ZERO;
+#else
+  assert (!(flags & NBDKIT_FLAG_FAST_ZERO));
+#endif
   nbdplug_prepare (&s);
   nbdplug_register (h, &s, nbd_aio_zero (h->nbd, count, offset, s.cb, f));
   return nbdplug_reply (h, &s);
@@ -831,6 +856,7 @@ static struct nbdkit_plugin plugin = {
   .is_rotational      = nbdplug_is_rotational,
   .can_trim           = nbdplug_can_trim,
   .can_zero           = nbdplug_can_zero,
+  .can_fast_zero      = nbdplug_can_fast_zero,
   .can_fua            = nbdplug_can_fua,
   .can_multi_conn     = nbdplug_can_multi_conn,
   .can_extents        = nbdplug_can_extents,

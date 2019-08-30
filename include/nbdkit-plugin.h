@@ -132,6 +132,8 @@ struct nbdkit_plugin {
   int (*cache) (void *handle, uint32_t count, uint64_t offset, uint32_t flags);
 
   int (*thread_model) (void);
+
+  int (*can_fast_zero) (void *handle);
 };
 
 extern void nbdkit_set_error (int err);

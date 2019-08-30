@@ -134,6 +134,8 @@ static value cache_fn;
 
 static value thread_model_fn;
 
+static value can_fast_zero_fn;
+
 /*----------------------------------------------------------------------*/
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
 
@@ -705,6 +707,25 @@ thread_model_wrapper (void)
   CAMLreturnT (int, Int_val (rv));
 }
 
+static int
+can_fast_zero_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_fast_zero_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Bool_val (rv));
+}
+
 /*----------------------------------------------------------------------*/
 /* set_* functions called from OCaml code at load time to initialize
  * fields in the plugin struct.
@@ -792,6 +813,8 @@ SET(cache)
 
 SET(thread_model)
 
+SET(can_fast_zero)
+
 #undef SET
 
 static void
@@ -835,6 +858,8 @@ remove_roots (void)
   REMOVE (cache);
 
   REMOVE (thread_model);
+
+  REMOVE (can_fast_zero);
 
 #undef REMOVE
 }

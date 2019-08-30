@@ -101,6 +101,8 @@ type 'a plugin = {
   cache : ('a -> int32 -> int64 -> flags -> unit) option;
 
   thread_model : (unit -> thread_model) option;
+
+  can_fast_zero : ('a -> bool) option;
 }
 (** The plugin fields and callbacks.  ['a] is the handle type. *)
 

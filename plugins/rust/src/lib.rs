@@ -105,6 +105,8 @@ pub struct Plugin {
                                  flags: u32) -> c_int>,
 
     pub thread_model: Option<extern fn () -> ThreadModel>,
+
+    pub can_fast_zero: Option<extern fn (h: *mut c_void) -> c_int>,
 }
 
 #[repr(C)]
@@ -163,6 +165,7 @@ impl Plugin {
             can_cache: None,
             cache: None,
             thread_model: None,
+            can_fast_zero: None,
         }
     }
 }
