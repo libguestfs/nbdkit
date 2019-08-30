@@ -301,15 +301,12 @@ handle_request (struct connection *conn,
         return err;
     }
     else {
-      int r;
-
       /* By default it is safe assume that everything in the range is
        * allocated.
        */
-      errno = 0;
-      r = nbdkit_add_extent (extents, offset, count, 0 /* allocated data */);
-      if (r == -1)
-        return errno ? errno : EINVAL;
+      if (nbdkit_add_extent (extents, offset, count,
+                             0 /* allocated data */) == -1)
+        return errno;
       return 0;
     }
     break;
