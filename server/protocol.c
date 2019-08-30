@@ -62,7 +62,7 @@ validate_request (struct connection *conn,
                   uint32_t *error)
 {
   /* Readonly connection? */
-  if (conn->readonly &&
+  if (conn->eflags & NBD_FLAG_READ_ONLY &&
       (cmd == NBD_CMD_WRITE || cmd == NBD_CMD_TRIM ||
        cmd == NBD_CMD_WRITE_ZEROES)) {
     nbdkit_error ("invalid request: %s: write request on readonly connection",
@@ -139,7 +139,7 @@ validate_request (struct connection *conn,
     *error = EINVAL;
     return false;
   }
-  if (!conn->can_fua && (flags & NBD_CMD_FLAG_FUA)) {
+  if (flags & NBD_CMD_FLAG_FUA && !(conn->eflags & NBD_FLAG_SEND_FUA)) {
     nbdkit_error ("invalid request: FUA flag not supported");
     *error = EINVAL;
     return false;
@@ -156,7 +156,7 @@ validate_request (struct connection *conn,
   }
 
   /* Flush allowed? */
-  if (!conn->can_flush && cmd == NBD_CMD_FLUSH) {
+  if (cmd == NBD_CMD_FLUSH && !(conn->eflags & NBD_FLAG_SEND_FLUSH)) {
     nbdkit_error ("invalid request: %s: flush operation not supported",
                   name_of_nbd_cmd (cmd));
     *error = EINVAL;
@@ -164,7 +164,7 @@ validate_request (struct connection *conn,
   }
 
   /* Trim allowed? */
-  if (!conn->can_trim && cmd == NBD_CMD_TRIM) {
+  if (cmd == NBD_CMD_TRIM && !(conn->eflags & NBD_FLAG_SEND_TRIM)) {
     nbdkit_error ("invalid request: %s: trim operation not supported",
                   name_of_nbd_cmd (cmd));
     *error = EINVAL;
@@ -172,7 +172,8 @@ validate_request (struct connection *conn,
   }
 
   /* Zero allowed? */
-  if (!conn->can_zero && cmd == NBD_CMD_WRITE_ZEROES) {
+  if (cmd == NBD_CMD_WRITE_ZEROES &&
+      !(conn->eflags & NBD_FLAG_SEND_WRITE_ZEROES)) {
     nbdkit_error ("invalid request: %s: write zeroes operation not supported",
                   name_of_nbd_cmd (cmd));
     *error = EINVAL;
@@ -180,7 +181,7 @@ validate_request (struct connection *conn,
   }
 
   /* Cache allowed? */
-  if (!conn->can_cache && cmd == NBD_CMD_CACHE) {
+  if (cmd == NBD_CMD_CACHE && !(conn->eflags & NBD_FLAG_SEND_CACHE)) {
     nbdkit_error ("invalid request: %s: cache operation not supported",
                   name_of_nbd_cmd (cmd));
     *error = EINVAL;
@@ -229,7 +230,6 @@ handle_request (struct connection *conn,
                 void *buf, struct nbdkit_extents *extents)
 {
   uint32_t f = 0;
-  bool fua = conn->can_fua && (flags & NBD_CMD_FLAG_FUA);
   int err = 0;
 
   /* Clear the error, so that we know if the plugin calls
@@ -243,7 +243,7 @@ handle_request (struct connection *conn,
     break;
 
   case NBD_CMD_WRITE:
-    if (fua)
+    if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
     if (backend_pwrite (backend, conn, buf, count, offset, f, &err) == -1)
       return err;
@@ -255,7 +255,7 @@ handle_request (struct connection *conn,
     break;
 
   case NBD_CMD_TRIM:
-    if (fua)
+    if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
     if (backend_trim (backend, conn, count, offset, f, &err) == -1)
       return err;
@@ -281,7 +281,7 @@ handle_request (struct connection *conn,
   case NBD_CMD_WRITE_ZEROES:
     if (!(flags & NBD_CMD_FLAG_NO_HOLE))
       f |= NBDKIT_FLAG_MAY_TRIM;
-    if (fua)
+    if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
     if (backend_zero (backend, conn, count, offset, f, &err) == -1)
       return err;
