@@ -602,7 +602,7 @@ main (int argc, char *argv[])
 
     display_version ();
     for_each_backend (b) {
-      printf ("%s", b->name (b));
+      printf ("%s", b->name);
       if ((v = b->version (b)) != NULL)
         printf (" %s", v);
       printf ("\n");

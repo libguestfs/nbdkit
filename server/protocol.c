@@ -47,9 +47,6 @@
 #include "minmax.h"
 #include "protocol.h"
 
-/* Maximum read or write request that we will handle. */
-#define MAX_REQUEST_SIZE (64 * 1024 * 1024)
-
 static bool
 valid_range (struct connection *conn, uint64_t offset, uint32_t count)
 {

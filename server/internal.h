@@ -65,6 +65,9 @@
       (type *) ((char *) __mptr - offsetof(type, member));       \
     })
 
+/* Maximum read or write request that we will handle. */
+#define MAX_REQUEST_SIZE (64 * 1024 * 1024)
+
 /* main.c */
 struct debug_flag {
   struct debug_flag *next;
@@ -242,6 +245,7 @@ extern void log_stderr_verror (const char *fs, va_list args)
 extern void log_syslog_verror (const char *fs, va_list args)
   __attribute__((__format__ (printf, 1, 0)));
 
+/* backend.c */
 struct backend {
   /* Next filter or plugin in the chain.  This is always NULL for
    * plugins and never NULL for filters.
@@ -255,9 +259,21 @@ struct backend {
    */
   size_t i;
 
+  /* The type of backend: filter or plugin. */
+  const char *type;
+
+  /* A copy of the backend name that survives a dlclose. */
+  char *name;
+
+  /* The file the backend was loaded from. */
+  char *filename;
+
+  /* The dlopen handle for the backend. */
+  void *dl;
+
+  /* Backend callbacks. All are required. */
   void (*free) (struct backend *);
   int (*thread_model) (struct backend *);
-  const char *(*name) (struct backend *);
   const char *(*plugin_name) (struct backend *);
   void (*usage) (struct backend *);
   const char *(*version) (struct backend *);
@@ -298,12 +314,19 @@ struct backend {
                 uint64_t offset, uint32_t flags, int *err);
 };
 
+extern void backend_init (struct backend *b, struct backend *next, size_t index,
+                          const char *filename, void *dl, const char *type)
+  __attribute__((__nonnull__ (1, 4, 5, 6)));
+extern void backend_load (struct backend *b, const char *name,
+                          void (*load) (void))
+  __attribute__((__nonnull__ (1 /* not 2 */)));
+extern void backend_unload (struct backend *b, void (*unload) (void))
+  __attribute__((__nonnull__ (1)));
+
 /* plugins.c */
 extern struct backend *plugin_register (size_t index, const char *filename,
                                         void *dl, struct nbdkit_plugin *(*plugin_init) (void))
   __attribute__((__nonnull__ (2, 3, 4)));
-extern void set_debug_flags (void *dl, const char *name)
-  __attribute__((__nonnull__ (1, 2)));
 
 /* filters.c */
 extern struct backend *filter_register (struct backend *next, size_t index,

@@ -39,8 +39,6 @@
 #include <inttypes.h>
 #include <assert.h>
 
-#include <dlfcn.h>
-
 #include "internal.h"
 
 /* We extend the generic backend struct with extra fields relating
@@ -48,9 +46,6 @@
  */
 struct backend_filter {
   struct backend backend;
-  char *name;                   /* copy of filter.name */
-  char *filename;
-  void *dl;
   struct nbdkit_filter filter;
 };
 
@@ -70,22 +65,7 @@ filter_free (struct backend *b)
 
   b->next->free (b->next);
 
-  /* Acquiring this lock prevents any filter callbacks from running
-   * simultaneously.
-   */
-  lock_unload ();
-
-  debug ("%s: unload", f->name);
-  if (f->filter.unload)
-    f->filter.unload ();
-
-  if (DO_DLCLOSE)
-    dlclose (f->dl);
-  free (f->filename);
-
-  unlock_unload ();
-
-  free (f->name);
+  backend_unload (b, f->filter.unload);
   free (f);
 }
 
@@ -118,14 +98,6 @@ plugin_name (struct backend *b)
 }
 
 static const char *
-filter_name (struct backend *b)
-{
-  struct backend_filter *f = container_of (b, struct backend_filter, backend);
-
-  return f->name;
-}
-
-static const char *
 filter_version (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
@@ -139,11 +111,11 @@ filter_usage (struct backend *b)
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   const char *p;
 
-  printf ("filter: %s", f->name);
+  printf ("filter: %s", b->name);
   if (f->filter.longname)
     printf (" (%s)", f->filter.longname);
   printf ("\n");
-  printf ("(%s)\n", f->filename);
+  printf ("(%s)\n", b->filename);
   if (f->filter.description) {
     printf ("%s", f->filter.description);
     if ((p = strrchr (f->filter.description, '\n')) == NULL || p[1])
@@ -176,7 +148,7 @@ filter_config (struct backend *b, const char *key, const char *value)
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   debug ("%s: config key=%s, value=%s",
-         f->name, key, value);
+         b->name, key, value);
 
   if (f->filter.config) {
     if (f->filter.config (next_config, b->next, key, value) == -1)
@@ -199,7 +171,7 @@ filter_config_complete (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
-  debug ("%s: config_complete", f->name);
+  debug ("%s: config_complete", b->name);
 
   if (f->filter.config_complete) {
     if (f->filter.config_complete (next_config_complete, b->next) == -1)
@@ -233,7 +205,7 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
   struct b_conn nxdata = { .b = b->next, .conn = conn };
   void *handle;
 
-  debug ("%s: open readonly=%d", f->name, readonly);
+  debug ("%s: open readonly=%d", b->name, readonly);
 
   if (f->filter.open) {
     handle = f->filter.open (next_open, &nxdata, readonly);
@@ -252,7 +224,7 @@ filter_close (struct backend *b, struct connection *conn)
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle = connection_get_handle (conn, b->i);
 
-  debug ("%s: close", f->name);
+  debug ("%s: close", b->name);
 
   if (f->filter.close)
     f->filter.close (handle);
@@ -456,7 +428,7 @@ filter_prepare (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: prepare", f->name);
+  debug ("%s: prepare", b->name);
 
   /* Call these in order starting from the filter closest to the
    * plugin.
@@ -478,7 +450,7 @@ filter_finalize (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: finalize", f->name);
+  debug ("%s: finalize", b->name);
 
   /* Call these in reverse order to .prepare above, starting from the
    * filter furthest away from the plugin.
@@ -497,7 +469,7 @@ filter_get_size (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: get_size", f->name);
+  debug ("%s: get_size", b->name);
 
   if (f->filter.get_size)
     return f->filter.get_size (&next_ops, &nxdata, handle);
@@ -512,7 +484,7 @@ filter_can_write (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_write", f->name);
+  debug ("%s: can_write", b->name);
 
   if (f->filter.can_write)
     return f->filter.can_write (&next_ops, &nxdata, handle);
@@ -527,7 +499,7 @@ filter_can_flush (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_flush", f->name);
+  debug ("%s: can_flush", b->name);
 
   if (f->filter.can_flush)
     return f->filter.can_flush (&next_ops, &nxdata, handle);
@@ -542,7 +514,7 @@ filter_is_rotational (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: is_rotational", f->name);
+  debug ("%s: is_rotational", b->name);
 
   if (f->filter.is_rotational)
     return f->filter.is_rotational (&next_ops, &nxdata, handle);
@@ -557,7 +529,7 @@ filter_can_trim (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_trim", f->name);
+  debug ("%s: can_trim", b->name);
 
   if (f->filter.can_trim)
     return f->filter.can_trim (&next_ops, &nxdata, handle);
@@ -572,7 +544,7 @@ filter_can_zero (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_zero", f->name);
+  debug ("%s: can_zero", b->name);
 
   if (f->filter.can_zero)
     return f->filter.can_zero (&next_ops, &nxdata, handle);
@@ -587,7 +559,7 @@ filter_can_extents (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_extents", f->name);
+  debug ("%s: can_extents", b->name);
 
   if (f->filter.can_extents)
     return f->filter.can_extents (&next_ops, &nxdata, handle);
@@ -602,7 +574,7 @@ filter_can_fua (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_fua", f->name);
+  debug ("%s: can_fua", b->name);
 
   if (f->filter.can_fua)
     return f->filter.can_fua (&next_ops, &nxdata, handle);
@@ -617,7 +589,7 @@ filter_can_multi_conn (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_multi_conn", f->name);
+  debug ("%s: can_multi_conn", b->name);
 
   if (f->filter.can_multi_conn)
     return f->filter.can_multi_conn (&next_ops, &nxdata, handle);
@@ -632,7 +604,7 @@ filter_can_cache (struct backend *b, struct connection *conn)
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: can_cache", f->name);
+  debug ("%s: can_cache", b->name);
 
   if (f->filter.can_cache)
     return f->filter.can_cache (&next_ops, &nxdata, handle);
@@ -652,7 +624,7 @@ filter_pread (struct backend *b, struct connection *conn,
   assert (flags == 0);
 
   debug ("%s: pread count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         f->name, count, offset, flags);
+         b->name, count, offset, flags);
 
   if (f->filter.pread)
     return f->filter.pread (&next_ops, &nxdata, handle,
@@ -673,7 +645,7 @@ filter_pwrite (struct backend *b, struct connection *conn,
   assert (!(flags & ~NBDKIT_FLAG_FUA));
 
   debug ("%s: pwrite count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         f->name, count, offset, flags);
+         b->name, count, offset, flags);
 
   if (f->filter.pwrite)
     return f->filter.pwrite (&next_ops, &nxdata, handle,
@@ -692,7 +664,7 @@ filter_flush (struct backend *b, struct connection *conn, uint32_t flags,
 
   assert (flags == 0);
 
-  debug ("%s: flush flags=0x%" PRIx32, f->name, flags);
+  debug ("%s: flush flags=0x%" PRIx32, b->name, flags);
 
   if (f->filter.flush)
     return f->filter.flush (&next_ops, &nxdata, handle, flags, err);
@@ -712,7 +684,7 @@ filter_trim (struct backend *b, struct connection *conn,
   assert (flags == 0);
 
   debug ("%s: trim count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         f->name, count, offset, flags);
+         b->name, count, offset, flags);
 
   if (f->filter.trim)
     return f->filter.trim (&next_ops, &nxdata, handle, count, offset, flags,
@@ -732,7 +704,7 @@ filter_zero (struct backend *b, struct connection *conn,
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
 
   debug ("%s: zero count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         f->name, count, offset, flags);
+         b->name, count, offset, flags);
 
   if (f->filter.zero)
     return f->filter.zero (&next_ops, &nxdata, handle,
@@ -753,7 +725,7 @@ filter_extents (struct backend *b, struct connection *conn,
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
 
   debug ("%s: extents count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         f->name, count, offset, flags);
+         b->name, count, offset, flags);
 
   if (f->filter.extents)
     return f->filter.extents (&next_ops, &nxdata, handle,
@@ -776,7 +748,7 @@ filter_cache (struct backend *b, struct connection *conn,
   assert (flags == 0);
 
   debug ("%s: cache count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
-         f->name, count, offset, flags);
+         b->name, count, offset, flags);
 
   if (f->filter.cache)
     return f->filter.cache (&next_ops, &nxdata, handle,
@@ -788,7 +760,6 @@ filter_cache (struct backend *b, struct connection *conn,
 static struct backend filter_functions = {
   .free = filter_free,
   .thread_model = filter_thread_model,
-  .name = filter_name,
   .plugin_name = plugin_name,
   .usage = filter_usage,
   .version = filter_version,
@@ -826,23 +797,15 @@ filter_register (struct backend *next, size_t index, const char *filename,
 {
   struct backend_filter *f;
   const struct nbdkit_filter *filter;
-  size_t i, len;
 
   f = calloc (1, sizeof *f);
   if (f == NULL) {
-  out_of_memory:
     perror ("strdup");
     exit (EXIT_FAILURE);
   }
 
   f->backend = filter_functions;
-  f->backend.next = next;
-  f->backend.i = index;
-  f->filename = strdup (filename);
-  if (f->filename == NULL) goto out_of_memory;
-  f->dl = dl;
-
-  debug ("registering filter %s", filename);
+  backend_init (&f->backend, next, index, filename, dl, "filter");
 
   /* Call the initialization function which returns the address of the
    * filter's own 'struct nbdkit_filter'.
@@ -868,49 +831,7 @@ filter_register (struct backend *next, size_t index, const char *filename,
 
   f->filter = *filter;
 
-  /* Only filter.name is required. */
-  if (f->filter.name == NULL) {
-    fprintf (stderr, "%s: %s: filter must have a .name field\n",
-             program_name, filename);
-    exit (EXIT_FAILURE);
-  }
-
-  len = strlen (f->filter.name);
-  if (len == 0) {
-    fprintf (stderr, "%s: %s: filter.name field must not be empty\n",
-             program_name, filename);
-    exit (EXIT_FAILURE);
-  }
-  for (i = 0; i < len; ++i) {
-    if (!((f->filter.name[i] >= '0' && f->filter.name[i] <= '9') ||
-          (f->filter.name[i] >= 'a' && f->filter.name[i] <= 'z') ||
-          (f->filter.name[i] >= 'A' && f->filter.name[i] <= 'Z'))) {
-      fprintf (stderr,
-               "%s: %s: filter.name ('%s') field "
-               "must contain only ASCII alphanumeric characters\n",
-               program_name, filename, f->filter.name);
-      exit (EXIT_FAILURE);
-    }
-  }
-
-  /* Copy the module's name into local storage, so that filter.name
-   * survives past unload.
-   */
-  f->name = strdup (f->filter.name);
-  if (f->name == NULL) {
-    perror ("strdup");
-    exit (EXIT_FAILURE);
-  }
-
-  debug ("registered filter %s (name %s)", f->filename, f->name);
-
-  /* Set debug flags before calling load. */
-  set_debug_flags (dl, f->name);
-
-  /* Call the on-load callback if it exists. */
-  debug ("%s: load", f->name);
-  if (f->filter.load)
-    f->filter.load ();
+  backend_load (&f->backend, f->filter.name, f->filter.load);
 
   return (struct backend *) f;
 }

@@ -41,22 +41,14 @@
 #include <errno.h>
 #include <sys/socket.h>
 
-#include <dlfcn.h>
-
 #include "internal.h"
 #include "minmax.h"
-
-/* Maximum read or write request that we will handle. */
-#define MAX_REQUEST_SIZE (64 * 1024 * 1024)
 
 /* We extend the generic backend struct with extra fields relating
  * to this plugin.
  */
 struct backend_plugin {
   struct backend backend;
-  char *name;                   /* copy of plugin.name */
-  char *filename;
-  void *dl;
   struct nbdkit_plugin plugin;
 };
 
@@ -65,22 +57,7 @@ plugin_free (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  /* Acquiring this lock prevents any plugin callbacks from running
-   * simultaneously.
-   */
-  lock_unload ();
-
-  debug ("%s: unload", p->name);
-  if (p->plugin.unload)
-    p->plugin.unload ();
-
-  if (DO_DLCLOSE)
-    dlclose (p->dl);
-  free (p->filename);
-
-  unlock_unload ();
-
-  free (p->name);
+  backend_unload (b, p->plugin.unload);
   free (p);
 }
 
@@ -113,9 +90,7 @@ plugin_thread_model (struct backend *b)
 static const char *
 plugin_name (struct backend *b)
 {
-  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-
-  return p->name;
+  return b->name;
 }
 
 static void
@@ -124,11 +99,11 @@ plugin_usage (struct backend *b)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   const char *t;
 
-  printf ("plugin: %s", p->name);
+  printf ("plugin: %s", b->name);
   if (p->plugin.longname)
     printf (" (%s)", p->plugin.longname);
   printf ("\n");
-  printf ("(%s)\n", p->filename);
+  printf ("(%s)\n", b->filename);
   if (p->plugin.description) {
     printf ("%s", p->plugin.description);
     if ((t = strrchr (p->plugin.description, '\n')) == NULL || t[1])
@@ -156,11 +131,11 @@ plugin_dump_fields (struct backend *b)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   char *path;
 
-  path = nbdkit_realpath (p->filename);
+  path = nbdkit_realpath (b->filename);
   printf ("path=%s\n", path);
   free (path);
 
-  printf ("name=%s\n", p->name);
+  printf ("name=%s\n", b->name);
   if (p->plugin.version)
     printf ("version=%s\n", p->plugin.version);
 
@@ -220,14 +195,14 @@ plugin_config (struct backend *b, const char *key, const char *value)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  debug ("%s: config key=%s, value=%s", p->name, key, value);
+  debug ("%s: config key=%s, value=%s", b->name, key, value);
 
   if (p->plugin.config == NULL) {
     fprintf (stderr,
              "%s: %s: this plugin does not need command line configuration\n"
              "Try using: %s --help %s\n",
-             program_name, p->filename,
-             program_name, p->filename);
+             program_name, b->filename,
+             program_name, b->filename);
     exit (EXIT_FAILURE);
   }
 
@@ -240,7 +215,7 @@ plugin_config_complete (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  debug ("%s: config_complete", p->name);
+  debug ("%s: config_complete", b->name);
 
   if (!p->plugin.config_complete)
     return;
@@ -266,7 +241,7 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
   assert (connection_get_handle (conn, 0) == NULL);
   assert (p->plugin.open != NULL);
 
-  debug ("%s: open readonly=%d", p->name, readonly);
+  debug ("%s: open readonly=%d", b->name, readonly);
 
   handle = p->plugin.open (readonly);
   if (!handle)
@@ -744,7 +719,6 @@ plugin_cache (struct backend *b, struct connection *conn,
 static struct backend plugin_functions = {
   .free = plugin_free,
   .thread_model = plugin_thread_model,
-  .name = plugin_name,
   .plugin_name = plugin_name,
   .usage = plugin_usage,
   .version = plugin_version,
@@ -782,23 +756,16 @@ plugin_register (size_t index, const char *filename,
 {
   struct backend_plugin *p;
   const struct nbdkit_plugin *plugin;
-  size_t i, len, size;
+  size_t size;
 
   p = malloc (sizeof *p);
   if (p == NULL) {
-  out_of_memory:
     perror ("strdup");
     exit (EXIT_FAILURE);
   }
 
   p->backend = plugin_functions;
-  p->backend.next = NULL;
-  p->backend.i = index;
-  p->filename = strdup (filename);
-  if (p->filename == NULL) goto out_of_memory;
-  p->dl = dl;
-
-  debug ("registering plugin %s", p->filename);
+  backend_init (&p->backend, NULL, index, filename, dl, "plugin");
 
   /* Call the initialization function which returns the address of the
    * plugin's own 'struct nbdkit_plugin'.
@@ -806,7 +773,7 @@ plugin_register (size_t index, const char *filename,
   plugin = plugin_init ();
   if (!plugin) {
     fprintf (stderr, "%s: %s: plugin registration function failed\n",
-             program_name, p->filename);
+             program_name, filename);
     exit (EXIT_FAILURE);
   }
 
@@ -815,7 +782,7 @@ plugin_register (size_t index, const char *filename,
     fprintf (stderr,
              "%s: %s: plugin is incompatible with this version of nbdkit "
              "(_api_version = %d)\n",
-             program_name, p->filename, plugin->_api_version);
+             program_name, filename, plugin->_api_version);
     exit (EXIT_FAILURE);
   }
 
@@ -833,99 +800,23 @@ plugin_register (size_t index, const char *filename,
   /* Check for the minimum fields which must exist in the
    * plugin struct.
    */
-  if (p->plugin.name == NULL) {
-    fprintf (stderr, "%s: %s: plugin must have a .name field\n",
-             program_name, p->filename);
-    exit (EXIT_FAILURE);
-  }
   if (p->plugin.open == NULL) {
     fprintf (stderr, "%s: %s: plugin must have a .open callback\n",
-             program_name, p->filename);
+             program_name, filename);
     exit (EXIT_FAILURE);
   }
   if (p->plugin.get_size == NULL) {
     fprintf (stderr, "%s: %s: plugin must have a .get_size callback\n",
-             program_name, p->filename);
+             program_name, filename);
     exit (EXIT_FAILURE);
   }
   if (p->plugin.pread == NULL && p->plugin._pread_old == NULL) {
     fprintf (stderr, "%s: %s: plugin must have a .pread callback\n",
-             program_name, p->filename);
+             program_name, filename);
     exit (EXIT_FAILURE);
   }
 
-  len = strlen (p->plugin.name);
-  if (len == 0) {
-    fprintf (stderr, "%s: %s: plugin.name field must not be empty\n",
-             program_name, p->filename);
-    exit (EXIT_FAILURE);
-  }
-  for (i = 0; i < len; ++i) {
-    if (!((p->plugin.name[i] >= '0' && p->plugin.name[i] <= '9') ||
-          (p->plugin.name[i] >= 'a' && p->plugin.name[i] <= 'z') ||
-          (p->plugin.name[i] >= 'A' && p->plugin.name[i] <= 'Z'))) {
-      fprintf (stderr,
-               "%s: %s: plugin.name ('%s') field "
-               "must contain only ASCII alphanumeric characters\n",
-               program_name, p->filename, p->plugin.name);
-      exit (EXIT_FAILURE);
-    }
-  }
-
-  /* Copy the module's name into local storage, so that plugin.name
-   * survives past unload.
-   */
-  p->name = strdup (p->plugin.name);
-  if (p->name == NULL) {
-    perror ("strdup");
-    exit (EXIT_FAILURE);
-  }
-
-  debug ("registered plugin %s (name %s)", p->filename, p->name);
-
-  /* Set debug flags before calling load. */
-  set_debug_flags (dl, p->name);
-
-  /* Call the on-load callback if it exists. */
-  debug ("%s: load", p->name);
-  if (p->plugin.load)
-    p->plugin.load ();
+  backend_load (&p->backend, p->plugin.name, p->plugin.load);
 
   return (struct backend *) p;
-}
-
-/* Set all debug flags which apply to this plugin (also used by filters). */
-void
-set_debug_flags (void *dl, const char *name)
-{
-  struct debug_flag *flag;
-
-  for (flag = debug_flags; flag != NULL; flag = flag->next) {
-    if (!flag->used && strcmp (name, flag->name) == 0) {
-      CLEANUP_FREE char *var = NULL;
-      int *sym;
-
-      /* Synthesize the name of the variable. */
-      if (asprintf (&var, "%s_debug_%s", name, flag->flag) == -1) {
-        perror ("asprintf");
-        exit (EXIT_FAILURE);
-      }
-
-      /* Find the symbol. */
-      sym = dlsym (dl, var);
-      if (sym == NULL) {
-        fprintf (stderr,
-                 "%s: -D %s.%s: %s does not contain a "
-                 "global variable called %s\n",
-                 program_name, name, flag->flag, name, var);
-        exit (EXIT_FAILURE);
-      }
-
-      /* Set the flag. */
-      *sym = flag->value;
-
-      /* Mark this flag as used. */
-      flag->used = true;
-    }
-  }
 }
