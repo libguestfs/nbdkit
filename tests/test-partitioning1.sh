@@ -61,7 +61,7 @@ nbdkit -f -v -D partitioning.regions=1 -U - \
        partitioning1-p1 \
        mbr-id=0x82 alignment=$((2048 * 512)) \
        partitioning1-p2 \
-       mbr-id=0x83 \
+       mbr-id=default \
        file-data \
        mbr-id=0x82 \
        partitioning1-p3 \

@@ -52,7 +52,7 @@ truncate -s 100M partitioning3.p3
 start_nbdkit -P partitioning3.pid -U $sock \
              partitioning \
              partitioning3.p1 \
-             type-guid=0FC63DAF-8483-4772-8E79-3D69D8477DE4 \
+             type-guid=default \
              partitioning3.p2 \
              type-guid=0657FD6D-A4AB-43C4-84E5-0933C84B4F4F \
              partitioning3.p3 \

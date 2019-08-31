@@ -86,7 +86,7 @@ Create a virtual disk containing boot, swap and root partitions:
 
  nbdkit partitioning \
             boot.img \
-            mbr-id=0x82 swap.img mbr-id=0x83 \
+            mbr-id=0x82 swap.img mbr-id=default \
             root.img
 
 This will not be bootable since the virtual partition table does not
@@ -94,8 +94,9 @@ contain a boot sector or boot loader.
 
 Notice that the swap partition is bracketed by C<mbr-id=0x82> to set
 the MBR partition type byte to C<0x82> (Linux swap) for the swap
-partition, followed by C<mbr-id=0x83> to set the MBR partition type
-byte back to C<0x83> (Linux filesystem) for the remaining partition.
+partition, followed by C<mbr-id=default> to set the MBR partition type
+byte back to the default (C<0x83>, Linux filesystem) for the remaining
+partition.
 
 If F<file.raw> has a size which is a multiple of 512 bytes then this
 is a no-op because the partitioning plugin adds a partition table
@@ -144,14 +145,22 @@ alignment is 1M (2048 sectors).
 
 Set the MBR type byte of all following files to C<0xN>.  Type bytes
 are normally specified in hexadecimal, and you must use the C<0x>
-prefix to indicate this.  The default is C<0x83> which indicates a
+prefix to indicate this.
+
+=item B<mbr-id=default>
+
+Set the MBR type byte back to the default, C<0x83> which indicates a
 Linux filesystem.
 
 =item B<type-guid=>GUID
 
 Set the GPT partition type GUID of all following files to C<GUID>.
-The default is C<0FC63DAF-8483-4772-8E79-3D69D8477DE4> which indicates
-a Linux filesystem.
+
+=item B<type-guid=default>
+
+Set the GPT partition type GUID back to the default,
+C<0FC63DAF-8483-4772-8E79-3D69D8477DE4> which indicates a Linux
+filesystem.
 
 =back
 

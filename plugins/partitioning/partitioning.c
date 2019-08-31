@@ -209,13 +209,17 @@ partitioning_config (const char *key, const char *value)
     alignment = r;
   }
   else if (strcmp (key, "mbr-id") == 0) {
-    if (sscanf (value, "%i", &mbr_id) != 1) {
+    if (strcasecmp (value, "default") == 0)
+      mbr_id = DEFAULT_MBR_ID;
+    else if (sscanf (value, "%i", &mbr_id) != 1) {
       nbdkit_error ("could not parse mbr-id: %s", value);
       return -1;
     }
   }
   else if (strcmp (key, "type-guid") == 0) {
-    if (parse_guid (value, type_guid) == -1) {
+    if (strcasecmp (value, "default") == 0)
+      parse_guid (DEFAULT_TYPE_GUID, type_guid);
+    else if (parse_guid (value, type_guid) == -1) {
       nbdkit_error ("could not validate GUID: %s", value);
       return -1;
     }
