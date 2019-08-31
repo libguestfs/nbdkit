@@ -584,9 +584,11 @@ __LANG_PLUGIN_LINKS__.
 
 =head2 NBD clients
 
-L<qemu(1)>,
+L<guestfish(1)>,
+L<libnbd(3)>,
 L<nbd-client(1)>,
-L<guestfish(1)>.
+L<nbdsh(1)>,
+L<qemu(1)>.
 
 =head2 nbdkit links
 
