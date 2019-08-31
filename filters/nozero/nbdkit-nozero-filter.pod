@@ -18,7 +18,11 @@ testing client or server fallbacks.
 
 =over 4
 
-=item B<zeromode=none|emulate|notrim>
+=item B<zeromode=none>
+
+=item B<zeromode=emulate>
+
+=item B<zeromode=notrim>
 
 Optional, controls which mode the filter will use.  Mode B<none>
 (default) means that zero support is not advertised to the

@@ -84,7 +84,9 @@ Add the named disk image.  You may specify this option multiple times.
 
 Add the disk(s) from the libvirt guest called C<DOMAIN>.
 
-=item B<export=>DEVICE|FILE
+=item B<export=>DEVICE
+
+=item B<export=>FILE
 
 Export C<DEVICE> or C<FILE> (from inside the disk image or guest) over
 NBD.

@@ -21,7 +21,11 @@ replies.
 
 =over 4
 
-=item B<serialize=requests|all-requests|connections>
+=item B<serialize=requests>
+
+=item B<serialize=all-requests>
+
+=item B<serialize=connections>
 
 Optional, controls how much serialization the filter will
 enforce. Mode B<requests> (default) prevents a single client from

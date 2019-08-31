@@ -65,11 +65,11 @@ This is dangerous and can cause data loss, but this may be acceptable
 if you only use it for testing or with data that you don't care about
 or can cheaply reconstruct.
 
-=item B<cache-max-size=SIZE>
+=item B<cache-max-size=>SIZE
 
-=item B<cache-high-threshold=N>
+=item B<cache-high-threshold=>N
 
-=item B<cache-low-threshold=N>
+=item B<cache-low-threshold=>N
 
 Limit the size of the cache to C<SIZE>.  See L</CACHE MAXIMUM SIZE> below.
 

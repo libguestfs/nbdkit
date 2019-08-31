@@ -23,7 +23,11 @@ timings.
 
 =over 4
 
-=item B<cachemode=none|emulate|nop>
+=item B<cachemode=none>
+
+=item B<cachemode=emulate>
+
+=item B<cachemode=nop>
 
 Optional, controls which mode the filter will use.  Mode B<none>
 (default) means that cache support is not advertised to the
