@@ -96,7 +96,7 @@ my $html;
 
 =item B<--html output.html>
 
-Write a web page to C<output.html>.  If this option is not
+Write a web page to F<output.html>.  If this option is not
 given, then no web page output is produced.
 
 =cut
@@ -106,10 +106,10 @@ my @inserts;
 =item B<--insert filename:__PATTERN__>
 
 In the input file, replace the literal text C<__PATTERN__> with the
-replacement file C<filename>.  You can give this option multiple
+replacement file F<filename>.  You can give this option multiple
 times.
 
-The contents of C<filename> are treated as POD.
+The contents of F<filename> are treated as POD.
 Compare and contrast with I<--verbatim>.
 
 Although it is conventional to use C<__...__> (double underscores) for
@@ -121,7 +121,7 @@ my $man;
 
 =item B<--man output.n>
 
-Write a man page to C<output.n> (C<n> is the manual section number).
+Write a man page to F<output.n> (C<n> is the manual section number).
 If this option is not given, then no man page output is produced.
 
 =cut
@@ -149,7 +149,7 @@ my $text;
 
 =item B<--text output.txt>
 
-Write a text file to C<output.txt>.  If this option is not
+Write a text file to F<output.txt>.  If this option is not
 given, then no text output is produced.
 
 =cut
@@ -159,10 +159,10 @@ my @verbatims;
 =item B<--verbatim filename:__PATTERN__>
 
 In the input file, replace the literal text C<__PATTERN__> with the
-replacement file C<filename>.  You can give this option multiple
+replacement file F<filename>.  You can give this option multiple
 times.
 
-The contents of C<filename> are inserted as verbatim text, and
+The contents of F<filename> are inserted as verbatim text, and
 are I<not> interpreted as POD.
 Compare and contrast with I<--insert>.
 
