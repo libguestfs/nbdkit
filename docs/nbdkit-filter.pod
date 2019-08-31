@@ -289,6 +289,16 @@ C<NBDKIT_HANDLE_NOT_NEEDED> which is a static non-NULL pointer.
 If there is an error, C<.open> should call C<nbdkit_error> with an
 error message and return C<NULL>.
 
+This callback is optional, but if provided, it must call C<next>,
+passing a value for C<readonly> according to how the filter plans to
+use the plugin.  Typically, the filter passes the same value as it
+received, or passes true to provide a writable layer on top of a
+read-only backend.  However, it is also acceptable to attempt write
+access to the plugin even if this filter is readonly, such as when a
+file system mounted read-only still requires write access to the
+underlying device in case a journal needs to be replayed for
+consistency as part of the mounting process.
+
 =head2 C<.close>
 
  void (*close) (void *handle);
@@ -301,7 +311,7 @@ up any per-connection resources used by the filter.
 =head2 C<.finalize>
 
   int (*prepare) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                  void *handle);
+                  void *handle, int readonly);
   int (*finalize) (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle);
 
@@ -316,6 +326,9 @@ cleanly update superblock data in the image on close you can do it in
 your C<.finalize> method (calling the plugin's C<.pwrite> method).
 Doing these things in the filter's C<.open> or C<.close> method is not
 possible.
+
+For C<.prepare>, the value of C<readonly> is the same as was passed to
+C<.open>, declaring how this filter will be used.
 
 There is no C<next_ops-E<gt>prepare> or C<next_ops-E<gt>finalize>.
 Unlike other filter methods, prepare and finalize are not chained

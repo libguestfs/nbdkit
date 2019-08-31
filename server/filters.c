@@ -385,22 +385,20 @@ static struct nbdkit_next_ops next_ops = {
 };
 
 static int
-filter_prepare (struct backend *b, struct connection *conn)
+filter_prepare (struct backend *b, struct connection *conn, int readonly)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle = connection_get_handle (conn, b->i);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  debug ("%s: prepare", b->name);
-
   /* Call these in order starting from the filter closest to the
    * plugin.
    */
-  if (b->next->prepare (b->next, conn) == -1)
+  if (backend_prepare (b->next, conn) == -1)
     return -1;
 
   if (f->filter.prepare &&
-      f->filter.prepare (&next_ops, &nxdata, handle) == -1)
+      f->filter.prepare (&next_ops, &nxdata, handle, readonly) == -1)
     return -1;
 
   return 0;

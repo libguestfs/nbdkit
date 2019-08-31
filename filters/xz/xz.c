@@ -140,7 +140,8 @@ xz_close (void *handle)
 }
 
 static int
-xz_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+xz_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+            int readonly)
 {
   struct xz_handle *h = handle;
 

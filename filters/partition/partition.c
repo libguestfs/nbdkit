@@ -113,7 +113,7 @@ partition_close (void *handle)
 
 static int
 partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
-                   void *handle)
+                   void *handle, int readonly)
 {
   struct handle *h = handle;
   int64_t size;

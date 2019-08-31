@@ -124,7 +124,7 @@ struct nbdkit_filter {
   void (*close) (void *handle);
 
   int (*prepare) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                  void *handle);
+                  void *handle, int readonly);
   int (*finalize) (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle);
 

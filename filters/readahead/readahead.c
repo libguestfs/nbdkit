@@ -82,7 +82,7 @@ static int64_t readahead_get_size (struct nbdkit_next_ops *next_ops,
 /* In prepare, force a call to get_size which sets the size global. */
 static int
 readahead_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
-                   void *handle)
+                   void *handle, int readonly)
 {
   int64_t r;
 

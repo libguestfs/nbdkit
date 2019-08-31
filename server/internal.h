@@ -284,7 +284,7 @@ struct backend {
   void (*config_complete) (struct backend *);
   const char *(*magic_config_key) (struct backend *);
   int (*open) (struct backend *, struct connection *conn, int readonly);
-  int (*prepare) (struct backend *, struct connection *conn);
+  int (*prepare) (struct backend *, struct connection *conn, int readonly);
   int (*finalize) (struct backend *, struct connection *conn);
   void (*close) (struct backend *, struct connection *conn);
 
@@ -327,6 +327,8 @@ extern void backend_unload (struct backend *b, void (*unload) (void))
 
 extern int backend_open (struct backend *b, struct connection *conn,
                          int readonly)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_prepare (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));
 extern void backend_set_handle (struct backend *b, struct connection *conn,
                                 void *handle)

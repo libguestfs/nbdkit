@@ -132,7 +132,7 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
  */
 static int
 cow_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
-             void *handle)
+             void *handle, int readonly)
 {
   int64_t r;
 

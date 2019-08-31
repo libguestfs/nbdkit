@@ -248,7 +248,8 @@ log_close (void *handle)
 }
 
 static int
-log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+             int readonly)
 {
   struct handle *h = handle;
   int64_t size = next_ops->get_size (nxdata);

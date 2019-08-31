@@ -95,7 +95,7 @@ test_layers_filter_close (void *handle)
 
 static int
 test_layers_filter_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
-                             void *handle)
+                            void *handle, int readonly)
 {
   DEBUG_FUNCTION;
   return 0;

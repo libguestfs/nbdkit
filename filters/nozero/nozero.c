@@ -74,9 +74,14 @@ nozero_config (nbdkit_next_config *next, void *nxdata,
 
 /* Check that desired mode is supported by plugin. */
 static int
-nozero_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+nozero_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+                int readonly)
 {
   int r;
+
+  /* If we are opened readonly, this filter has no impact */
+  if (readonly)
+    return 0;
 
   if (zeromode == NOTRIM) {
     r = next_ops->can_zero (nxdata);

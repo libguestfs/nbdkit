@@ -254,7 +254,7 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
  * .close.
  */
 static int
-plugin_prepare (struct backend *b, struct connection *conn)
+plugin_prepare (struct backend *b, struct connection *conn, int readonly)
 {
   return 0;
 }

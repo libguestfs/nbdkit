@@ -166,7 +166,7 @@ _handle_single_connection (int sockin, int sockout)
   /* Prepare (for filters), called just after open. */
   lock_request (conn);
   if (backend)
-    r = backend->prepare (backend, conn);
+    r = backend_prepare (backend, conn);
   else
     r = 0;
   unlock_request (conn);
