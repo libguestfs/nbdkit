@@ -60,7 +60,7 @@ struct drive {
   const char *value;
   const char *format;
 };
-struct drive *drives = NULL;
+struct drive *all_drives = NULL;
 
 /* mount options.  (NB: list stored in reverse order)  */
 struct mount {
@@ -69,7 +69,7 @@ struct mount {
   const char *dev;
   const char *mp;
 };
-struct mount *mounts = NULL;
+struct mount *all_mounts = NULL;
 
 static int
 plugin_guestfs_config (const char *key, const char *value)
@@ -109,8 +109,8 @@ plugin_guestfs_config (const char *key, const char *value)
     d->type = drv_disk;
     d->value = value;
     d->format = format;
-    d->next = drives;
-    drives = d;
+    d->next = all_drives;
+    all_drives = d;
   }
   else if (strcmp (key, "domain") == 0) {
     struct drive *d;
@@ -122,8 +122,8 @@ plugin_guestfs_config (const char *key, const char *value)
     }
     d->type = drv_domain;
     d->value = value;
-    d->next = drives;
-    drives = d;
+    d->next = all_drives;
+    all_drives = d;
   }
   else if (strcmp (key, "mount") == 0) {
     struct mount *m;
@@ -150,8 +150,8 @@ plugin_guestfs_config (const char *key, const char *value)
       m->dev = value;
       m->mp = "/";
     }
-    m->next = mounts;
-    mounts = m;
+    m->next = all_mounts;
+    all_mounts = m;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -169,7 +169,7 @@ plugin_guestfs_config_complete (void)
     return -1;
   }
 
-  if (drives == NULL) {
+  if (all_drives == NULL) {
     nbdkit_error ("at least one 'disk' or 'domain' parameter is required");
     return -1;
   }
@@ -193,12 +193,12 @@ plugin_guestfs_unload (void)
   struct drive *d, *d_next;
   struct mount *m, *m_next;
 
-  for (d = drives; d != NULL; d = d_next) {
+  for (d = all_drives; d != NULL; d = d_next) {
     d_next = d->next;
     free (d);
   }
 
-  for (m = mounts; m != NULL; m = m_next) {
+  for (m = all_mounts; m != NULL; m = m_next) {
     m_next = m->next;
     free (m);
   }
@@ -257,7 +257,7 @@ plugin_guestfs_open (int readonly)
   if (set_up_logging (h->g) == -1)
     goto err2;
 
-  if (add_disks (h->g, readonly, drives) == -1)
+  if (add_disks (h->g, readonly, all_drives) == -1)
     goto err2;
 
   if (guestfs_launch (h->g) == -1) {
@@ -265,7 +265,7 @@ plugin_guestfs_open (int readonly)
     goto err2;
   }
 
-  if (mount_filesystems (h->g, readonly, mounts) == -1)
+  if (mount_filesystems (h->g, readonly, all_mounts) == -1)
     goto err2;
 
   /* Exported thing. */
