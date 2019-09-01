@@ -281,11 +281,11 @@ authenticate_pubkey (ssh_session session)
 }
 
 static int
-authenticate_password (ssh_session session, const char *password)
+authenticate_password (ssh_session session, const char *pass)
 {
   int rc;
 
-  rc = ssh_userauth_password (session, NULL, password);
+  rc = ssh_userauth_password (session, NULL, pass);
   if (rc == SSH_AUTH_ERROR)
     nbdkit_debug ("password authentication failed: %s",
                   ssh_get_error (session));
