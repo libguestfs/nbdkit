@@ -200,8 +200,6 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
 
     /* If cache-on-read, copy the block to the cache. */
     if (cache_on_read) {
-      off_t offset = blknum * blksize;
-
       nbdkit_debug ("cache: cache-on-read block %" PRIu64
                     " (offset %" PRIu64 ")",
                     blknum, (uint64_t) offset);
@@ -244,8 +242,6 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
                 "unknown");
 
   if (state == BLOCK_NOT_CACHED) {
-    off_t offset = blknum * blksize;
-
     /* Read underlying plugin, copy to cache regardless of cache-on-read. */
     if (next_ops->pread (nxdata, block, blksize, offset, 0, err) == -1)
       return -1;
