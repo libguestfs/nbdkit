@@ -93,7 +93,7 @@ extern enum log_to log_to;
 extern bool newstyle;
 extern bool no_sr;
 extern const char *port;
-extern bool readonly;
+extern bool read_only;
 extern const char *run;
 extern bool listen_stdin;
 extern const char *selinux_label;

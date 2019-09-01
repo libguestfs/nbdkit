@@ -71,7 +71,7 @@ bool newstyle = true;           /* false = -o, true = -n */
 bool no_sr;                     /* --no-sr */
 char *pidfile;                  /* -P */
 const char *port;               /* -p */
-bool readonly;                  /* -r */
+bool read_only;                 /* -r */
 const char *run;                /* --run */
 bool listen_stdin;              /* -s */
 const char *selinux_label;      /* --selinux-label */
@@ -139,9 +139,9 @@ main (int argc, char *argv[])
   int c;
   bool help = false, version = false, dump_plugin = false;
   int tls_set_on_cli = false;
-  int short_name;
+  bool short_name;
   const char *filename;
-  char *p;
+  char *p, *q;
   static struct filter_filename {
     struct filter_filename *next;
     const char *filename;
@@ -182,7 +182,6 @@ main (int argc, char *argv[])
     switch (c) {
     case 'D':
       {
-        const char *p, *q;
         struct debug_flag *flag;
 
         /* Debug Flag must be "NAME.FLAG=N".
@@ -377,7 +376,7 @@ main (int argc, char *argv[])
       break;
 
     case 'r':
-      readonly = true;
+      read_only = true;
       break;
 
     case 's':
@@ -526,7 +525,6 @@ main (int argc, char *argv[])
    * If so we simply execute it with the current command line.
    */
   if (short_name) {
-    size_t i;
     struct stat statbuf;
     CLEANUP_FREE char *script;
 
@@ -560,8 +558,9 @@ main (int argc, char *argv[])
   i = 1;
   while (filter_filenames) {
     struct filter_filename *t = filter_filenames;
-    const char *filename = t->filename;
-    int short_name = is_short_name (filename);
+
+    filename = t->filename;
+    short_name = is_short_name (filename);
 
     backend = open_filter_so (backend, i++, filename, short_name);
 
@@ -687,7 +686,7 @@ static char *
 make_random_fifo (void)
 {
   char template[] = "/tmp/nbdkitXXXXXX";
-  char *unixsocket;
+  char *sock;
 
   if (mkdtemp (template) == NULL) {
     perror ("mkdtemp");
@@ -705,13 +704,13 @@ make_random_fifo (void)
     return NULL;
   }
 
-  unixsocket = strdup (random_fifo);
-  if (unixsocket == NULL) {
+  sock = strdup (random_fifo);
+  if (sock == NULL) {
     perror ("strdup");
     return NULL;
   }
 
-  return unixsocket;
+  return sock;
 }
 
 static struct backend *

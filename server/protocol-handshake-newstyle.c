@@ -80,8 +80,7 @@ send_newstyle_option_reply (struct connection *conn,
 
 static int
 send_newstyle_option_reply_exportname (struct connection *conn,
-                                       uint32_t option, uint32_t reply,
-                                       const char *exportname)
+                                       uint32_t option, uint32_t reply)
 {
   struct fixed_new_option_reply fixed_new_option_reply;
   size_t name_len = strlen (exportname);
@@ -320,8 +319,8 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       /* Send back the exportname. */
       debug ("newstyle negotiation: %s: advertising export '%s'",
              name_of_nbd_opt (option), exportname);
-      if (send_newstyle_option_reply_exportname (conn, option, NBD_REP_SERVER,
-                                                 exportname) == -1)
+      if (send_newstyle_option_reply_exportname (conn, option,
+                                                 NBD_REP_SERVER) == -1)
         return -1;
 
       if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
