@@ -156,7 +156,6 @@ tcl_config (const char *key, const char *value)
     }
   }
   else if (proc_defined ("config")) {
-    int r;
     Tcl_Obj *cmd;
 
     cmd = Tcl_NewObj ();
