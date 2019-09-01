@@ -185,21 +185,19 @@ streaming_pwrite (void *handle, const void *buf,
 
   /* Need to write some zeroes. */
   if (offset > highestwrite) {
-    int64_t size = offset - highestwrite;
-    char buf[4096];
+    int64_t remaining = offset - highestwrite;
+    static char zerobuf[4096];
 
-    memset (buf, 0, sizeof buf);
-
-    while (size > 0) {
-      n = size > sizeof buf ? sizeof buf : size;
-      r = write (fd, buf, n);
+    while (remaining > 0) {
+      n = remaining > sizeof zerobuf ? sizeof zerobuf : remaining;
+      r = write (fd, zerobuf, n);
       if (r == -1) {
         nbdkit_error ("write: %m");
         errorstate = 1;
         return -1;
       }
       highestwrite += r;
-      size -= r;
+      remaining -= r;
     }
   }
 
