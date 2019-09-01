@@ -166,7 +166,7 @@ create_gpt_partition_table_entry (const struct region *region,
   len = strlen (filename);
   if (len < 36) {
     for (i = 0; i < len; ++i)
-      if (filename[i] > 127)
+      if ((unsigned char) filename[i] > 127)
         goto out;
 
     for (i = 0; i < len; ++i) {
