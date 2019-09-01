@@ -65,10 +65,10 @@ struct bitmap {
 };
 
 static inline void __attribute__((__nonnull__ (1)))
-bitmap_init (struct bitmap *bm, unsigned blksize, unsigned bpb)
+bitmap_init (struct bitmap *bm, unsigned blocksize, unsigned bpb)
 {
-  assert (is_power_of_2 (blksize));
-  bm->blksize = blksize;
+  assert (is_power_of_2 (blocksize));
+  bm->blksize = blocksize;
 
   /* bpb can be 1, 2, 4 or 8 only. */
   bm->bpb = bpb;
