@@ -66,7 +66,7 @@ static void *start_web_server (void *arg);
 static void handle_requests (int s);
 static void handle_request (int s, bool headers_only);
 static void xwrite (int s, const char *buf, size_t len);
-static void xpread (int fd, char *buf, size_t count, off_t offset);
+static void xpread (char *buf, size_t count, off_t offset);
 
 static void
 cleanup (void)
@@ -281,7 +281,7 @@ handle_request (int s, bool headers_only)
     exit (EXIT_FAILURE);
   }
 
-  xpread (fd, data, length, offset);
+  xpread (data, length, offset);
   xwrite (s, data, length);
 
   free (data);
@@ -304,7 +304,7 @@ xwrite (int s, const char *buf, size_t len)
 }
 
 static void
-xpread (int fd, char *buf, size_t count, off_t offset)
+xpread (char *buf, size_t count, off_t offset)
 {
   ssize_t r;
 

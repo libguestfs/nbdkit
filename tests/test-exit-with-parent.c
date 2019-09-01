@@ -92,10 +92,8 @@ run_test (void)
    */
   cpid = fork ();
   if (cpid == 0) {              /* child process */
-    pid_t pid;
-
-    pid = fork ();
-    if (pid == 0) {             /* exec nbdkit process */
+    nbdpid = fork ();
+    if (nbdpid == 0) {             /* exec nbdkit process */
       const char *argv[] = {
         "nbdkit", "-U", "-", "-P", pidpath, "-f", "--exit-with-parent",
         "example1",
@@ -109,20 +107,20 @@ run_test (void)
 
     /* Wait for the pidfile to turn up, which indicates that nbdkit has
      * started up successfully and is ready to serve requests.  However
-     * if 'pid' exits in this time it indicates a failure to start up.
+     * if 'nbdpid' exits in this time it indicates a failure to start up.
      * Also there is a timeout in case nbdkit hangs.
      */
     for (i = 0; i < NBDKIT_START_TIMEOUT; ++i) {
-      if (waitpid (pid, NULL, WNOHANG) == pid)
+      if (waitpid (nbdpid, NULL, WNOHANG) == nbdpid)
         goto early_exit;
 
-      if (kill (pid, 0) == -1) {
+      if (kill (nbdpid, 0) == -1) {
         if (errno == ESRCH) {
         early_exit:
           fprintf (stderr,
                    "%s FAILED: nbdkit exited before starting to serve files\n",
                    program_name);
-          pid = 0;
+          nbdpid = 0;
           exit (EXIT_FAILURE);
         }
         perror ("kill");

@@ -615,7 +615,7 @@ main (int argc, char *argv[])
 }
 
 /* The log from nbdkit is captured in a separate thread. */
-static char *log = NULL;
+static char *log_buf = NULL;
 static size_t log_len = 0;
 static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -631,15 +631,15 @@ start_log_capture (void *arg)
       ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
       if (allocated <= log_len) {
         allocated += 4096;
-        log = realloc (log, allocated);
-        if (log == NULL) {
+        log_buf = realloc (log_buf, allocated);
+        if (log_buf == NULL) {
           perror ("log: realloc");
           exit (EXIT_FAILURE);
         }
       }
     }
 
-    r = read (fd, &log[log_len], allocated-log_len);
+    r = read (fd, &log_buf[log_len], allocated-log_len);
     if (r == -1) {
       perror ("log: read");
       exit (EXIT_FAILURE);
@@ -648,7 +648,7 @@ start_log_capture (void *arg)
       break;
 
     /* Dump the log as we receive it to stderr, for debugging. */
-    if (write (2, &log[log_len], r) == -1)
+    if (write (2, &log_buf[log_len], r) == -1)
       perror ("log: write");
 
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
@@ -679,7 +679,7 @@ static void
 log_verify_seen (const char *msg)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
-  if (memmem (log, log_len, msg, strlen (msg)) == NULL)
+  if (memmem (log_buf, log_len, msg, strlen (msg)) == NULL)
     no_message_error (msg);
 }
 
@@ -703,13 +703,13 @@ log_verify_seen_in_order (const char *msg, ...)
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
 
-  prev = memmem (log, log_len, msg, strlen (msg));
+  prev = memmem (log_buf, log_len, msg, strlen (msg));
   if (prev == NULL) no_message_error (msg);
   prev_msg = msg;
 
   va_start (args, msg);
   while ((curr_msg = va_arg (args, char *)) != NULL) {
-    curr = memmem (log, log_len, curr_msg, strlen (curr_msg));
+    curr = memmem (log_buf, log_len, curr_msg, strlen (curr_msg));
     if (curr == NULL) no_message_error (curr_msg);
     if (prev > curr) messages_out_of_order (prev_msg, curr_msg);
     prev_msg = curr_msg;
@@ -722,7 +722,7 @@ static void
 log_free (void)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
-  free (log);
-  log = NULL;
+  free (log_buf);
+  log_buf = NULL;
   log_len = 0;
 }
