@@ -622,7 +622,7 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
 
   /* Convert extents list into calls to nbdkit_add_extent. */
   while (rv != Val_int (0)) {
-    uint64_t offset, length;
+    uint64_t length;
     uint32_t type = 0;
 
     v = Field (rv, 0);          /* extent struct */
