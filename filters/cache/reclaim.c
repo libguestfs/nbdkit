@@ -83,7 +83,7 @@ enum reclaim_state {
 };
 
 static enum reclaim_state reclaiming = NOT_RECLAIMING;
-static uint64_t reclaim_blk;
+static int64_t reclaim_blk;
 
 static void reclaim_one (int fd, struct bitmap *bm);
 static void reclaim_lru (int fd, struct bitmap *bm);
@@ -143,7 +143,7 @@ reclaim_one (int fd, struct bitmap *bm)
 static void
 reclaim_lru (int fd, struct bitmap *bm)
 {
-  uint64_t old_reclaim_blk;
+  int64_t old_reclaim_blk;
 
   /* Find the next block in the cache. */
   reclaim_blk = bitmap_next (bm, reclaim_blk+1);
