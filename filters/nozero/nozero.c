@@ -99,7 +99,14 @@ nozero_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 static int
 nozero_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
-  return zeromode != NONE;
+  switch (zeromode) {
+  case NONE:
+    return NBDKIT_ZERO_NONE;
+  case EMULATE:
+    return NBDKIT_ZERO_EMULATE;
+  default:
+    return next_ops->can_zero (nxdata);
+  }
 }
 
 static int

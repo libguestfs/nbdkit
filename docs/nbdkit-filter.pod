@@ -397,16 +397,37 @@ cached value.
 These intercept the corresponding plugin methods, and control feature
 bits advertised to the client.
 
-Of note, the C<.can_zero> callback in the filter controls whether the
-server advertises zero support to the client, which is slightly
-different semantics than the plugin; that is,
-C<next_ops-E<gt>can_zero> always returns true for a plugin, even when
-the plugin's own C<.can_zero> callback returned false, because nbdkit
-implements a fallback to C<.pwrite> at the plugin layer.
+Of note, the semantics of C<.can_zero> callback in the filter are
+slightly different from the plugin, and must be one of three success
+values visible only to filters:
+
+=over 4
+
+=item C<NBDKIT_ZERO_NONE>
+
+Completely suppress advertisement of write zero support (this can only
+be done from filters, not plugins).
+
+=item C<NBDKIT_ZERO_EMULATE>
+
+Inform nbdkit that write zeroes should immediately fall back to
+C<.pwrite> emulation without trying C<.zero> (this value is returned
+by C<next_ops-E<gt>can_zero> if the plugin returned false in its
+C<.can_zero>).
+
+=item C<NBDKIT_ZERO_NATIVE>
+
+Inform nbdkit that write zeroes should attempt to use C<.zero>,
+although it may still fall back to C<.pwrite> emulation for C<ENOTSUP>
+or C<EOPNOTSUPP> failures (this value is returned by
+C<next_ops-E<gt>can_zero> if the plugin returned true in its
+C<.can_zero>).
+
+=back
 
 Remember that most of the feature check functions return merely a
-boolean success value, while C<.can_fua> and C<.can_cache> have three
-success values.
+boolean success value, while C<.can_zero>, C<.can_fua> and
+C<.can_cache> have three success values.
 
 The difference between C<.can_fua> values may affect choices made in
 the filter: when splitting a write request that requested FUA from the
@@ -517,9 +538,10 @@ value to return to the client.
 This intercepts the plugin C<.zero> method and can be used to modify
 zero requests.
 
-This function will not be called if C<.can_zero> returned false; in
-turn, the filter should not call C<next_ops-E<gt>zero> if
-C<next_ops-E<gt>can_zero> did not return true.
+This function will not be called if C<.can_zero> returned
+C<NBDKIT_ZERO_NONE>; in turn, the filter should not call
+C<next_ops-E<gt>zero> if C<next_ops-E<gt>can_zero> returned
+C<NBDKIT_ZERO_NONE>.
 
 On input, the parameter C<flags> may include C<NBDKIT_FLAG_MAY_TRIM>
 unconditionally, and C<NBDKIT_FLAG_FUA> based on the result of

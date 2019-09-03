@@ -45,6 +45,10 @@ extern "C" {
 
 #define NBDKIT_FILTER_API_VERSION 6 /* Corresponding to v1.16+ */
 
+#define NBDKIT_ZERO_NONE     0
+#define NBDKIT_ZERO_EMULATE  1
+#define NBDKIT_ZERO_NATIVE   2
+
 struct nbdkit_extent {
   uint64_t offset;
   uint64_t length;

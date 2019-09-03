@@ -257,14 +257,20 @@ backend_can_trim (struct backend *b, struct connection *conn)
 int
 backend_can_zero (struct backend *b, struct connection *conn)
 {
+  struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
   debug ("%s: can_zero", b->name);
 
-  r = backend_can_write (b, conn);
-  if (r != 1)
-    return r;
-  return b->can_zero (b, conn);
+  if (h->can_zero == -1) {
+    r = backend_can_write (b, conn);
+    if (r != 1) {
+      h->can_zero = NBDKIT_ZERO_NONE;
+      return r; /* Relies on 0 == NBDKIT_ZERO_NONE */
+    }
+    h->can_zero = b->can_zero (b, conn);
+  }
+  return h->can_zero;
 }
 
 int
@@ -391,6 +397,7 @@ backend_zero (struct backend *b, struct connection *conn,
   int r;
 
   assert (h->can_write == 1);
+  assert (h->can_zero > NBDKIT_ZERO_NONE);
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
   debug ("%s: zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
          b->name, count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM),

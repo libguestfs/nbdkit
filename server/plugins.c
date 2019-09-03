@@ -347,19 +347,23 @@ static int
 plugin_can_zero (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  int r;
 
   assert (connection_get_handle (conn, 0));
 
-  /* Note the special case here: the plugin's .can_zero controls only
-   * whether we call .zero; while the backend expects .can_zero to
-   * return whether to advertise zero support.  Since we ALWAYS know
-   * how to fall back to .pwrite in plugin_zero(), we ignore the
-   * difference between the plugin's true or false return, and only
-   * call it to catch a -1 failure during negotiation.  */
-  if (p->plugin.can_zero &&
-      p->plugin.can_zero (connection_get_handle (conn, 0)) == -1)
-    return -1;
-  return 1;
+  /* Note the special case here: the plugin's .can_zero returns a bool
+   * which controls only whether we call .zero; while the backend
+   * expects .can_zero to return a tri-state on level of support.
+   */
+  if (p->plugin.can_zero) {
+    r = p->plugin.can_zero (connection_get_handle (conn, 0));
+    if (r == -1)
+      return -1;
+    return r ? NBDKIT_ZERO_NATIVE : NBDKIT_ZERO_EMULATE;
+  }
+  if (p->plugin.zero || p->plugin._zero_old)
+    return NBDKIT_ZERO_NATIVE;
+  return NBDKIT_ZERO_EMULATE;
 }
 
 static int
@@ -562,7 +566,6 @@ plugin_zero (struct backend *b, struct connection *conn,
   bool fua = flags & NBDKIT_FLAG_FUA;
   bool emulate = false;
   bool need_flush = false;
-  int can_zero = 1; /* TODO cache this per-connection? */
 
   assert (connection_get_handle (conn, 0));
 
@@ -572,12 +575,8 @@ plugin_zero (struct backend *b, struct connection *conn,
   }
   if (!count)
     return 0;
-  if (p->plugin.can_zero) {
-    can_zero = p->plugin.can_zero (connection_get_handle (conn, 0));
-    assert (can_zero != -1);
-  }
 
-  if (can_zero) {
+  if (backend_can_zero (b, conn) == NBDKIT_ZERO_NATIVE) {
     errno = 0;
     if (p->plugin.zero)
       r = p->plugin.zero (connection_get_handle (conn, 0), count, offset,
