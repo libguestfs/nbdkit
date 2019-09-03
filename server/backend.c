@@ -299,6 +299,25 @@ backend_can_zero (struct backend *b, struct connection *conn)
 }
 
 int
+backend_can_fast_zero (struct backend *b, struct connection *conn)
+{
+  struct b_conn_handle *h = &conn->handles[b->i];
+  int r;
+
+  debug ("%s: can_fast_zero", b->name);
+
+  if (h->can_fast_zero == -1) {
+    r = backend_can_zero (b, conn);
+    if (r < NBDKIT_ZERO_EMULATE) {
+      h->can_fast_zero = 0;
+      return r; /* Relies on 0 == NBDKIT_ZERO_NONE */
+    }
+    h->can_fast_zero = b->can_fast_zero (b, conn);
+  }
+  return h->can_fast_zero;
+}
+
+int
 backend_can_extents (struct backend *b, struct connection *conn)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
@@ -442,20 +461,28 @@ backend_zero (struct backend *b, struct connection *conn,
 {
   struct b_conn_handle *h = &conn->handles[b->i];
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
+  bool fast = !!(flags & NBDKIT_FLAG_FAST_ZERO);
   int r;
 
   assert (h->can_write == 1);
   assert (h->can_zero > NBDKIT_ZERO_NONE);
   assert (backend_valid_range (b, conn, offset, count));
-  assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
+  assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA |
+                      NBDKIT_FLAG_FAST_ZERO)));
   if (fua)
     assert (h->can_fua > NBDKIT_FUA_NONE);
-  debug ("%s: zero count=%" PRIu32 " offset=%" PRIu64 " may_trim=%d fua=%d",
-         b->name, count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM), fua);
+  if (fast)
+    assert (h->can_fast_zero == 1);
+  debug ("%s: zero count=%" PRIu32 " offset=%" PRIu64
+         " may_trim=%d fua=%d fast=%d",
+         b->name, count, offset, !!(flags & NBDKIT_FLAG_MAY_TRIM), fua, fast);
 
   r = b->zero (b, conn, count, offset, flags, err);
-  if (r == -1)
-    assert (*err && *err != ENOTSUP && *err != EOPNOTSUPP);
+  if (r == -1) {
+    assert (*err);
+    if (!fast)
+      assert (*err != ENOTSUP && *err != EOPNOTSUPP);
+  }
   return r;
 }
 

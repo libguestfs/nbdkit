@@ -96,6 +96,7 @@ extern const char *name_of_nbd_flag (int);
 #define NBD_FLAG_SEND_DF           (1 << 7)
 #define NBD_FLAG_CAN_MULTI_CONN    (1 << 8)
 #define NBD_FLAG_SEND_CACHE        (1 << 10)
+#define NBD_FLAG_SEND_FAST_ZERO    (1 << 11)
 
 /* NBD options (new style handshake only). */
 extern const char *name_of_nbd_opt (int);
@@ -223,10 +224,11 @@ extern const char *name_of_nbd_cmd (int);
 #define NBD_CMD_BLOCK_STATUS      7
 
 extern const char *name_of_nbd_cmd_flag (int);
-#define NBD_CMD_FLAG_FUA      (1<<0)
-#define NBD_CMD_FLAG_NO_HOLE  (1<<1)
-#define NBD_CMD_FLAG_DF       (1<<2)
-#define NBD_CMD_FLAG_REQ_ONE  (1<<3)
+#define NBD_CMD_FLAG_FUA       (1<<0)
+#define NBD_CMD_FLAG_NO_HOLE   (1<<1)
+#define NBD_CMD_FLAG_DF        (1<<2)
+#define NBD_CMD_FLAG_REQ_ONE   (1<<3)
+#define NBD_CMD_FLAG_FAST_ZERO (1<<4)
 
 /* Error codes (previously errno).
  * See http://git.qemu.org/?p=qemu.git;a=commitdiff;h=ca4414804114fd0095b317785bc0b51862e62ebb
@@ -239,6 +241,7 @@ extern const char *name_of_nbd_error (int);
 #define NBD_EINVAL     22
 #define NBD_ENOSPC     28
 #define NBD_EOVERFLOW  75
+#define NBD_ENOTSUP    95
 #define NBD_ESHUTDOWN 108
 
 #endif /* NBDKIT_PROTOCOL_H */

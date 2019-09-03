@@ -502,6 +502,12 @@ filter_can_zero (struct backend *b, struct connection *conn)
 }
 
 static int
+filter_can_fast_zero (struct backend *b, struct connection *conn)
+{
+  return 0; /* Next patch will query or pass through */
+}
+
+static int
 filter_can_extents (struct backend *b, struct connection *conn)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
@@ -685,6 +691,7 @@ static struct backend filter_functions = {
   .is_rotational = filter_is_rotational,
   .can_trim = filter_can_trim,
   .can_zero = filter_can_zero,
+  .can_fast_zero = filter_can_fast_zero,
   .can_extents = filter_can_extents,
   .can_fua = filter_can_fua,
   .can_multi_conn = filter_can_multi_conn,

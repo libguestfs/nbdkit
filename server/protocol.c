@@ -99,7 +99,8 @@ validate_request (struct connection *conn,
 
   /* Validate flags */
   if (flags & ~(NBD_CMD_FLAG_FUA | NBD_CMD_FLAG_NO_HOLE |
-                NBD_CMD_FLAG_DF | NBD_CMD_FLAG_REQ_ONE)) {
+                NBD_CMD_FLAG_DF | NBD_CMD_FLAG_REQ_ONE |
+                NBD_CMD_FLAG_FAST_ZERO)) {
     nbdkit_error ("invalid request: unknown flag (0x%x)", flags);
     *error = EINVAL;
     return false;
@@ -107,6 +108,13 @@ validate_request (struct connection *conn,
   if ((flags & NBD_CMD_FLAG_NO_HOLE) &&
       cmd != NBD_CMD_WRITE_ZEROES) {
     nbdkit_error ("invalid request: NO_HOLE flag needs WRITE_ZEROES request");
+    *error = EINVAL;
+    return false;
+  }
+  if ((flags & NBD_CMD_FLAG_FAST_ZERO) &&
+      cmd != NBD_CMD_WRITE_ZEROES) {
+    nbdkit_error ("invalid request: "
+                  "FAST_ZERO flag needs WRITE_ZEROES request");
     *error = EINVAL;
     return false;
   }
@@ -262,6 +270,8 @@ handle_request (struct connection *conn,
       f |= NBDKIT_FLAG_MAY_TRIM;
     if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
+    if (flags & NBD_CMD_FLAG_FAST_ZERO)
+      f |= NBDKIT_FLAG_FAST_ZERO;
     if (backend_zero (backend, conn, count, offset, f, &err) == -1)
       return err;
     break;
@@ -310,7 +320,7 @@ skip_over_write_buffer (int sock, size_t count)
 
 /* Convert a system errno to an NBD_E* error code. */
 static int
-nbd_errno (int error, bool flag_df)
+nbd_errno (int error, uint16_t flags)
 {
   switch (error) {
   case 0:
@@ -332,10 +342,17 @@ nbd_errno (int error, bool flag_df)
   case ESHUTDOWN:
     return NBD_ESHUTDOWN;
 #endif
+  case ENOTSUP:
+#if ENOTSUP != EOPNOTSUPP
+  case EOPNOTSUPP:
+#endif
+    if (flags & NBD_CMD_FLAG_FAST_ZERO)
+      return NBD_ENOTSUP;
+    return NBD_EINVAL;
   case EOVERFLOW:
-    if (flag_df)
+    if (flags & NBD_CMD_FLAG_DF)
       return NBD_EOVERFLOW;
-    /* fallthrough */
+    return NBD_EINVAL;
   case EINVAL:
   default:
     return NBD_EINVAL;
@@ -344,7 +361,7 @@ nbd_errno (int error, bool flag_df)
 
 static int
 send_simple_reply (struct connection *conn,
-                   uint64_t handle, uint16_t cmd,
+                   uint64_t handle, uint16_t cmd, uint16_t flags,
                    const char *buf, uint32_t count,
                    uint32_t error)
 {
@@ -355,7 +372,7 @@ send_simple_reply (struct connection *conn,
 
   reply.magic = htobe32 (NBD_SIMPLE_REPLY_MAGIC);
   reply.handle = handle;
-  reply.error = htobe32 (nbd_errno (error, false));
+  reply.error = htobe32 (nbd_errno (error, flags));
 
   r = conn->send (conn, &reply, sizeof reply, f);
   if (r == -1) {
@@ -582,7 +599,7 @@ send_structured_reply_error (struct connection *conn,
   }
 
   /* Send the error. */
-  error_data.error = htobe32 (nbd_errno (error, flags & NBD_CMD_FLAG_DF));
+  error_data.error = htobe32 (nbd_errno (error, flags));
   error_data.len = htobe16 (0);
   r = conn->send (conn, &error_data, sizeof error_data, 0);
   if (r == -1) {
@@ -732,5 +749,6 @@ protocol_recv_request_send_reply (struct connection *conn)
                                           error);
   }
   else
-    return send_simple_reply (conn, request.handle, cmd, buf, count, error);
+    return send_simple_reply (conn, request.handle, cmd, flags, buf, count,
+                              error);
 }

@@ -524,13 +524,13 @@ main (int argc, char *argv[])
 
   sleep (1);
   log_verify_seen_in_order
-    ("testlayersfilter3: zero count=512 offset=0 may_trim=1 fua=0",
+    ("testlayersfilter3: zero count=512 offset=0 may_trim=1 fua=0 fast=0",
      "filter3: test_layers_filter_zero",
-     "testlayersfilter2: zero count=512 offset=0 may_trim=1 fua=0",
+     "testlayersfilter2: zero count=512 offset=0 may_trim=1 fua=0 fast=0",
      "filter2: test_layers_filter_zero",
-     "testlayersfilter1: zero count=512 offset=0 may_trim=1 fua=0",
+     "testlayersfilter1: zero count=512 offset=0 may_trim=1 fua=0 fast=0",
      "filter1: test_layers_filter_zero",
-     "testlayersplugin: zero count=512 offset=0 may_trim=1 fua=0",
+     "testlayersplugin: zero count=512 offset=0 may_trim=1 fua=0 fast=0",
      "test_layers_plugin_zero",
      NULL);
 

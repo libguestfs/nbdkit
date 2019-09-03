@@ -857,7 +857,6 @@ ocaml_nbdkit_set_error (value nv)
   case 5: err = ENOSPC; break;
   case 6: err = ESHUTDOWN; break;
   case 7: err = EOVERFLOW; break;
-    /* Necessary for .zero support */
   case 8: err = EOPNOTSUPP; break;
     /* Other errno values that server/protocol.c treats specially */
   case 9: err = EROFS; break;

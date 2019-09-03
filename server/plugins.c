@@ -367,6 +367,14 @@ plugin_can_zero (struct backend *b, struct connection *conn)
 }
 
 static int
+plugin_can_fast_zero (struct backend *b, struct connection *conn)
+{
+  assert (connection_get_handle (conn, 0));
+
+  return 0; /* Upcoming patch will actually add support. */
+}
+
+static int
 plugin_can_extents (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
@@ -564,6 +572,7 @@ plugin_zero (struct backend *b, struct connection *conn,
   int r = -1;
   bool may_trim = flags & NBDKIT_FLAG_MAY_TRIM;
   bool fua = flags & NBDKIT_FLAG_FUA;
+  bool fast_zero = flags & NBDKIT_FLAG_FAST_ZERO;
   bool emulate = false;
   bool need_flush = false;
 
@@ -577,6 +586,8 @@ plugin_zero (struct backend *b, struct connection *conn,
     return 0;
 
   if (backend_can_zero (b, conn) == NBDKIT_ZERO_NATIVE) {
+    /* if (!can_fast_zero) */
+    flags &= ~NBDKIT_FLAG_FAST_ZERO;
     errno = 0;
     if (p->plugin.zero)
       r = p->plugin.zero (connection_get_handle (conn, 0), count, offset,
@@ -590,6 +601,12 @@ plugin_zero (struct backend *b, struct connection *conn,
       *err = emulate ? EOPNOTSUPP : get_error (p);
     if (r == 0 || (*err != EOPNOTSUPP && *err != ENOTSUP))
       goto done;
+  }
+
+  if (fast_zero) {
+    assert (r == -1);
+    *err = EOPNOTSUPP;
+    goto done;
   }
 
   assert (p->plugin.pwrite || p->plugin._pwrite_old);
@@ -684,6 +701,7 @@ static struct backend plugin_functions = {
   .is_rotational = plugin_is_rotational,
   .can_trim = plugin_can_trim,
   .can_zero = plugin_can_zero,
+  .can_fast_zero = plugin_can_fast_zero,
   .can_extents = plugin_can_extents,
   .can_fua = plugin_can_fua,
   .can_multi_conn = plugin_can_multi_conn,

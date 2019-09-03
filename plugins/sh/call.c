@@ -347,7 +347,6 @@ handle_script_error (char *ebuf, size_t len)
     err = ESHUTDOWN;
     skip = 9;
   }
-  /* Necessary for .zero support */
   else if (strncasecmp (ebuf, "ENOTSUP", 7) == 0) {
     err = ENOTSUP;
     skip = 7;

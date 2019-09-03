@@ -59,9 +59,10 @@ extern "C" {
 #define NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS        2
 #define NBDKIT_THREAD_MODEL_PARALLEL                  3
 
-#define NBDKIT_FLAG_MAY_TRIM (1<<0) /* Maps to !NBD_CMD_FLAG_NO_HOLE */
-#define NBDKIT_FLAG_FUA      (1<<1) /* Maps to NBD_CMD_FLAG_FUA */
-#define NBDKIT_FLAG_REQ_ONE  (1<<2) /* Maps to NBD_CMD_FLAG_REQ_ONE */
+#define NBDKIT_FLAG_MAY_TRIM  (1<<0) /* Maps to !NBD_CMD_FLAG_NO_HOLE */
+#define NBDKIT_FLAG_FUA       (1<<1) /* Maps to NBD_CMD_FLAG_FUA */
+#define NBDKIT_FLAG_REQ_ONE   (1<<2) /* Maps to NBD_CMD_FLAG_REQ_ONE */
+#define NBDKIT_FLAG_FAST_ZERO (1<<3) /* Maps to NBD_CMD_FLAG_FAST_ZERO */
 
 #define NBDKIT_FUA_NONE       0
 #define NBDKIT_FUA_EMULATE    1

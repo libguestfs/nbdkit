@@ -160,6 +160,7 @@ struct b_conn_handle {
   int is_rotational;
   int can_trim;
   int can_zero;
+  int can_fast_zero;
   int can_fua;
   int can_multi_conn;
   int can_extents;
@@ -293,6 +294,7 @@ struct backend {
   int (*is_rotational) (struct backend *, struct connection *conn);
   int (*can_trim) (struct backend *, struct connection *conn);
   int (*can_zero) (struct backend *, struct connection *conn);
+  int (*can_fast_zero) (struct backend *, struct connection *conn);
   int (*can_extents) (struct backend *, struct connection *conn);
   int (*can_fua) (struct backend *, struct connection *conn);
   int (*can_multi_conn) (struct backend *, struct connection *conn);
@@ -347,6 +349,8 @@ extern int backend_is_rotational (struct backend *b, struct connection *conn)
 extern int backend_can_trim (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));
 extern int backend_can_zero (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_can_fast_zero (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));
 extern int backend_can_extents (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));

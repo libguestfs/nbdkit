@@ -173,6 +173,17 @@ This protocol extension allows a client to inform the server about
 intent to access a portion of the export, to allow the server an
 opportunity to cache things appropriately.
 
+=item C<NBD_CMD_FLAG_FAST_ZERO>
+
+Supported in nbdkit E<ge> 1.15.0.
+
+This protocol extension allows a server to advertise that it can rank
+all zero requests as fast or slow, at which point the client can make
+fast zero requests which fail immediately with C<ENOTSUP> if the
+request is no faster than a counterpart write would be, while normal
+zero requests still benefit from compressed network traffic regardless
+of the time taken.
+
 =item Resize Extension
 
 I<Not supported>.

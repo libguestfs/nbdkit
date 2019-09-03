@@ -67,6 +67,12 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   if (fl)
     eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
 
+  fl = backend_can_fast_zero (backend, conn);
+  if (fl == -1)
+    return -1;
+  if (fl)
+    eflags |= NBD_FLAG_SEND_FAST_ZERO;
+
   fl = backend_can_trim (backend, conn);
   if (fl == -1)
     return -1;
