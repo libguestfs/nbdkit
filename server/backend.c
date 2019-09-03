@@ -363,7 +363,7 @@ backend_trim (struct backend *b, struct connection *conn,
   int r;
 
   assert (h->can_write == 1);
-  assert (flags == 0);
+  assert (!(flags & ~NBDKIT_FLAG_FUA));
   debug ("%s: trim count=%" PRIu32 " offset=%" PRIu64 " fua=%d",
          b->name, count, offset, !!(flags & NBDKIT_FLAG_FUA));
 
