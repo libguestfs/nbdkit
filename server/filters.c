@@ -717,7 +717,7 @@ filter_trim (struct backend *b, struct connection *conn,
   void *handle = connection_get_handle (conn, f->backend.i);
   struct b_conn nxdata = { .b = f->backend.next, .conn = conn };
 
-  assert (flags == 0);
+  assert (!(flags & ~NBDKIT_FLAG_FUA));
 
   debug ("%s: trim count=%" PRIu32 " offset=%" PRIu64 " flags=0x%" PRIx32,
          f->name, count, offset, flags);
