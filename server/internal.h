@@ -332,6 +332,9 @@ extern int backend_prepare (struct backend *b, struct connection *conn)
 extern void backend_set_handle (struct backend *b, struct connection *conn,
                                 void *handle)
   __attribute__((__nonnull__ (1, 2 /* not 3 */)));
+extern bool backend_valid_range (struct backend *b, struct connection *conn,
+                                 uint64_t offset, uint32_t count)
+  __attribute__((__nonnull__ (1, 2)));
 
 extern int64_t backend_get_size (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));

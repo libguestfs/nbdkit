@@ -199,6 +199,17 @@ backend_set_handle (struct backend *b, struct connection *conn, void *handle)
   conn->handles[b->i].handle = handle;
 }
 
+bool
+backend_valid_range (struct backend *b, struct connection *conn,
+                     uint64_t offset, uint32_t count)
+{
+  struct b_conn_handle *h = &conn->handles[b->i];
+
+  assert (h->exportsize >= 0); /* Guaranteed by negotiation phase */
+  return count > 0 && offset <= h->exportsize &&
+    offset + count <= h->exportsize;
+}
+
 /* Wrappers for all callbacks in a filter's struct nbdkit_next_ops. */
 
 int64_t
@@ -349,6 +360,7 @@ backend_pread (struct backend *b, struct connection *conn,
 {
   int r;
 
+  assert (backend_valid_range (b, conn, offset, count));
   assert (flags == 0);
   debug ("%s: pread count=%" PRIu32 " offset=%" PRIu64,
          b->name, count, offset);
@@ -369,6 +381,7 @@ backend_pwrite (struct backend *b, struct connection *conn,
   int r;
 
   assert (h->can_write == 1);
+  assert (backend_valid_range (b, conn, offset, count));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   if (fua)
     assert (h->can_fua > NBDKIT_FUA_NONE);
@@ -409,6 +422,7 @@ backend_trim (struct backend *b, struct connection *conn,
 
   assert (h->can_write == 1);
   assert (h->can_trim == 1);
+  assert (backend_valid_range (b, conn, offset, count));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   if (fua)
     assert (h->can_fua > NBDKIT_FUA_NONE);
@@ -432,6 +446,7 @@ backend_zero (struct backend *b, struct connection *conn,
 
   assert (h->can_write == 1);
   assert (h->can_zero > NBDKIT_ZERO_NONE);
+  assert (backend_valid_range (b, conn, offset, count));
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA)));
   if (fua)
     assert (h->can_fua > NBDKIT_FUA_NONE);
@@ -453,6 +468,7 @@ backend_extents (struct backend *b, struct connection *conn,
   int r;
 
   assert (h->can_extents >= 0);
+  assert (backend_valid_range (b, conn, offset, count));
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
   debug ("%s: extents count=%" PRIu32 " offset=%" PRIu64 " req_one=%d",
          b->name, count, offset, !!(flags & NBDKIT_FLAG_REQ_ONE));
@@ -481,6 +497,7 @@ backend_cache (struct backend *b, struct connection *conn,
   int r;
 
   assert (h->can_cache > NBDKIT_CACHE_NONE);
+  assert (backend_valid_range (b, conn, offset, count));
   assert (flags == 0);
   debug ("%s: cache count=%" PRIu32 " offset=%" PRIu64,
          b->name, count, offset);

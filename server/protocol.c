@@ -48,15 +48,6 @@
 #include "protocol.h"
 
 static bool
-valid_range (struct connection *conn, uint64_t offset, uint32_t count)
-{
-  uint64_t exportsize = backend_get_size (backend, conn);
-
-  assert (exportsize <= INT64_MAX); /* Guaranteed by negotiation phase */
-  return count > 0 && offset <= exportsize && offset + count <= exportsize;
-}
-
-static bool
 validate_request (struct connection *conn,
                   uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                   uint32_t *error)
@@ -79,7 +70,7 @@ validate_request (struct connection *conn,
   case NBD_CMD_TRIM:
   case NBD_CMD_WRITE_ZEROES:
   case NBD_CMD_BLOCK_STATUS:
-    if (!valid_range (conn, offset, count)) {
+    if (!backend_valid_range (backend, conn, offset, count)) {
       /* XXX Allow writes to extend the disk? */
       nbdkit_error ("invalid request: %s: offset and count are out of range: "
                     "offset=%" PRIu64 " count=%" PRIu32,
