@@ -35,10 +35,6 @@ General ideas for improvements
   ones like offset) can fail to initialize if they can't guarantee
   strict alignment and don't want to deal with bounce buffers.
 
-* Add per-connection caching of .can_FOO callbacks (we already have
-  some: .can_write is only called once, but .can_fua is called on
-  every request with the FUA flag set).
-
 * Test that zero-length read/write/extents requests behave sanely
   (NBD protocol says they are unspecified).
 
@@ -50,16 +46,6 @@ General ideas for improvements
 
 * Test and document how to run nbdkit from inetd and xinetd in
   nbdkit-service(1).
-
-* Validate that requests which are forwarded by filters are not out of
-  range.  This is harder than it looks because filters don't "know"
-  the size of the layer below (unless they call .get_size, but that
-  might be expensive).  This gets particularly tricky if you assume
-  that .get_size cannot be cached and/or might change per-connection,
-  although the rest of nbdkit doesn't behave well in that case either.
-
-* Similarly validate the filters don't forward write requests to
-  read-only plugins.
 
 * Audit the code base to get rid of strerror() usage (the function is
   not thread-safe); however, using geterror_r() can be tricky as it
