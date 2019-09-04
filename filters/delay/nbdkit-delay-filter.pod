@@ -12,6 +12,7 @@ nbdkit-delay-filter - nbdkit delay filter
           delay-read=(SECS|NNms) delay-write=(SECS|NNms)
           delay-zero=(SECS|NNms) delay-trim=(SECS|NNms)
           delay-extents=(SECS|NNms) delay-cache=(SECS|NNms)
+          delay-fast-zero=BOOL
 
 =head1 DESCRIPTION
 
@@ -56,7 +57,8 @@ Delay write operations by C<SECS> seconds or C<NN> milliseconds.
 
 =item B<delay-zero=>NNB<ms>
 
-Delay zero operations by C<SECS> seconds or C<NN> milliseconds.
+Delay zero operations by C<SECS> seconds or C<NN> milliseconds.  See
+also B<delay-fast-zero>.
 
 =item B<delay-trim=>SECS
 
@@ -84,6 +86,17 @@ milliseconds.
 
 Delay write, zero and trim operations by C<SECS> seconds or C<NN>
 milliseconds.
+
+=item B<delay-fast-zero=>BOOL
+
+The NBD specification documents an extension called fast zero, in
+which the client may request that a server should reply with
+C<ENOTSUP> as soon as possible if the zero operation offers no real
+speedup over a corresponding write.  By default, this parameter is
+true, and fast zero requests are serviced by the plugin after the same
+delay as any other zero request; but setting this parameter to false
+instantly fails a fast zero response without waiting for or consulting
+the plugin.
 
 =back
 

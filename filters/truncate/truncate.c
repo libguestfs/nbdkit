@@ -215,6 +215,20 @@ truncate_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 1;
 }
 
+/* Override the plugin's .can_fast_zero, because zeroing a tail is fast. */
+static int
+truncate_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+                        void *handle)
+{
+  /* Cache next_ops->can_fast_zero now, so later calls don't fail,
+   * even though we override the answer here.
+   */
+  int r = next_ops->can_fast_zero (nxdata);
+  if (r == -1)
+    return -1;
+  return 1;
+}
+
 /* Read data. */
 static int
 truncate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -311,6 +325,11 @@ truncate_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
       n = count;
     else
       n = h->real_size - offset;
+    if (flags & NBDKIT_FLAG_FAST_ZERO &&
+        next_ops->can_fast_zero (nxdata) == 0) {
+      *err = ENOTSUP;
+      return -1;
+    }
     return next_ops->zero (nxdata, n, offset, flags, err);
   }
   return 0;
@@ -406,6 +425,7 @@ static struct nbdkit_filter filter = {
   .close             = truncate_close,
   .prepare           = truncate_prepare,
   .get_size          = truncate_get_size,
+  .can_fast_zero     = truncate_can_fast_zero,
   .pread             = truncate_pread,
   .pwrite            = truncate_pwrite,
   .trim              = truncate_trim,

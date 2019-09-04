@@ -366,6 +366,8 @@ cached value.
 
 =head2 C<.can_zero>
 
+=head2 C<.can_fast_zero>
+
 =head2 C<.can_extents>
 
 =head2 C<.can_fua>
@@ -385,6 +387,8 @@ cached value.
                   void *handle);
  int (*can_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
                   void *handle);
+ int (*can_fast_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                       void *handle);
  int (*can_extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
                      void *handle);
  int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -546,22 +550,25 @@ C<next_ops-E<gt>zero> if C<next_ops-E<gt>can_zero> returned
 C<NBDKIT_ZERO_NONE>.
 
 On input, the parameter C<flags> may include C<NBDKIT_FLAG_MAY_TRIM>
-unconditionally, and C<NBDKIT_FLAG_FUA> based on the result of
-C<.can_fua>.  In turn, the filter may pass C<NBDKIT_FLAG_MAY_TRIM>
-unconditionally, but should only pass C<NBDKIT_FLAG_FUA> on to
-C<next_ops-E<gt>zero> if C<next_ops-E<gt>can_fua> returned a positive
-value.
+unconditionally, C<NBDKIT_FLAG_FUA> based on the result of
+C<.can_fua>, and C<NBDKIT_FLAG_FAST_ZERO> based on the result of
+C<.can_fast_zero>.  In turn, the filter may pass
+C<NBDKIT_FLAG_MAY_TRIM> unconditionally, but should only pass
+C<NBDKIT_FLAG_FUA> or C<NBDKIT_FLAG_FAST_ZERO> on to
+C<next_ops-E<gt>zero> if the corresponding C<next_ops-E<gt>can_fua> or
+C<next_ops-E<gt>can_fast_zero> returned a positive value.
 
 Note that unlike the plugin C<.zero> which is permitted to fail with
 C<ENOTSUP> or C<EOPNOTSUPP> to force a fallback to C<.pwrite>, the
-function C<next_ops-E<gt>zero> will never fail with C<err> set to
-C<ENOTSUP> or C<EOPNOTSUPP> because the fallback has already taken
-place.
+function C<next_ops-E<gt>zero> will not fail with C<err> set to
+C<ENOTSUP> or C<EOPNOTSUPP> unless C<NBDKIT_FLAG_FAST_ZERO> was used,
+because otherwise the fallback has already taken place.
 
 If there is an error, C<.zero> should call C<nbdkit_error> with an
 error message B<and> return -1 with C<err> set to the positive errno
-value to return to the client.  The filter should never fail with
-C<ENOTSUP> or C<EOPNOTSUPP> (while plugins have automatic fallback to
+value to return to the client.  The filter should not fail with
+C<ENOTSUP> or C<EOPNOTSUPP> unless C<flags> includes
+C<NBDKIT_FLAG_FAST_ZERO> (while plugins have automatic fallback to
 C<.pwrite>, filters do not).
 
 =head2 C<.extents>

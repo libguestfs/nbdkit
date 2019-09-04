@@ -37,6 +37,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
+#include <errno.h>
 
 #include <nbdkit-filter.h>
 
@@ -46,6 +48,7 @@ static int delay_zero_ms = 0;   /* zero delay (milliseconds) */
 static int delay_trim_ms = 0;   /* trim delay (milliseconds) */
 static int delay_extents_ms = 0;/* extents delay (milliseconds) */
 static int delay_cache_ms = 0;  /* cache delay (milliseconds) */
+static int delay_fast_zero = 1; /* whether delaying zero includes fast zero */
 
 static int
 parse_delay (const char *key, const char *value)
@@ -182,6 +185,12 @@ delay_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     return 0;
   }
+  else if (strcmp (key, "delay-fast-zero") == 0) {
+    delay_fast_zero = nbdkit_parse_bool (value);
+    if (delay_fast_zero < 0)
+      return -1;
+    return 0;
+  }
   else
     return next (nxdata, key, value);
 }
@@ -194,7 +203,19 @@ delay_config (nbdkit_next_config *next, void *nxdata,
   "delay-trim=<NN>[ms]            Trim delay in seconds/milliseconds.\n" \
   "delay-extents=<NN>[ms]         Extents delay in seconds/milliseconds.\n" \
   "delay-cache=<NN>[ms]           Cache delay in seconds/milliseconds.\n" \
-  "wdelay=<NN>[ms]                Write, zero and trim delay in secs/msecs."
+  "wdelay=<NN>[ms]                Write, zero and trim delay in secs/msecs.\n" \
+  "delay-fast-zero=<BOOL>         Delay fast zero requests (default true).\n"
+
+/* Override the plugin's .can_fast_zero if needed */
+static int
+delay_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+                     void *handle)
+{
+  /* Advertise if we are handling fast zero requests locally */
+  if (delay_zero_ms && !delay_fast_zero)
+    return 1;
+  return next_ops->can_fast_zero (nxdata);
+}
 
 /* Read data. */
 static int
@@ -225,6 +246,10 @@ delay_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
+  if ((flags & NBDKIT_FLAG_FAST_ZERO) && delay_zero_ms && !delay_fast_zero) {
+    *err = ENOTSUP;
+    return -1;
+  }
   if (zero_delay (err) == -1)
     return -1;
   return next_ops->zero (nxdata, count, offset, flags, err);
@@ -268,6 +293,7 @@ static struct nbdkit_filter filter = {
   .longname          = "nbdkit delay filter",
   .config            = delay_config,
   .config_help       = delay_config_help,
+  .can_fast_zero     = delay_can_fast_zero,
   .pread             = delay_pread,
   .pwrite            = delay_pwrite,
   .zero              = delay_zero,

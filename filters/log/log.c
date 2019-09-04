@@ -261,14 +261,15 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   int F = next_ops->can_fua (nxdata);
   int e = next_ops->can_extents (nxdata);
   int c = next_ops->can_cache (nxdata);
+  int Z = next_ops->can_fast_zero (nxdata);
 
   if (size < 0 || w < 0 || f < 0 || r < 0 || t < 0 || z < 0 || F < 0 ||
-      e < 0 || c < 0)
+      e < 0 || c < 0 || Z < 0)
     return -1;
 
   output (h, "Connect", 0, "size=0x%" PRIx64 " write=%d flush=%d "
-          "rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d",
-          size, w, f, r, t, z, F, e, c);
+          "rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d "
+          "fast_zero=%d", size, w, f, r, t, z, F, e, c, Z);
   return 0;
 }
 
@@ -361,10 +362,13 @@ log_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint64_t id = get_id (h);
   int r;
 
-  assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM)));
-  output (h, "Zero", id, "offset=0x%" PRIx64 " count=0x%x trim=%d fua=%d ...",
+  assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
+                      NBDKIT_FLAG_FAST_ZERO)));
+  output (h, "Zero", id,
+          "offset=0x%" PRIx64 " count=0x%x trim=%d fua=%d fast=%d...",
           offs, count, !!(flags & NBDKIT_FLAG_MAY_TRIM),
-          !!(flags & NBDKIT_FLAG_FUA));
+          !!(flags & NBDKIT_FLAG_FUA),
+          !!(flags & NBDKIT_FLAG_FAST_ZERO));
   r = next_ops->zero (nxdata, count, offs, flags, err);
   output_return (h, "...Zero", id, r, err);
   return r;

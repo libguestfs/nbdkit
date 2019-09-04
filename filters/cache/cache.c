@@ -249,6 +249,17 @@ cache_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   return NBDKIT_CACHE_NATIVE;
 }
 
+/* Override the plugin's .can_fast_zero, because our .zero is not fast */
+static int
+cache_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+                     void *handle)
+{
+  /* It is better to advertise support even when we always reject fast
+   * zero attempts.
+   */
+  return 1;
+}
+
 /* Read data. */
 static int
 cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -416,6 +427,14 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint64_t blknum, blkoffs;
   int r;
   bool need_flush = false;
+
+  /* We are purposefully avoiding next_ops->zero, so a zero request is
+   * never faster than plain writes.
+   */
+  if (flags & NBDKIT_FLAG_FAST_ZERO) {
+    *err = ENOTSUP;
+    return -1;
+  }
 
   block = malloc (blksize);
   if (block == NULL) {
@@ -622,6 +641,7 @@ static struct nbdkit_filter filter = {
   .prepare           = cache_prepare,
   .get_size          = cache_get_size,
   .can_cache         = cache_can_cache,
+  .can_fast_zero     = cache_can_fast_zero,
   .pread             = cache_pread,
   .pwrite            = cache_pwrite,
   .zero              = cache_zero,

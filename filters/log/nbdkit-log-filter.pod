@@ -55,7 +55,7 @@ on the connection).
 An example logging session of a client that performs a single
 successful read is:
 
- 2018-01-27 20:38:22.959984 connection=1 Connect size=0x400 write=1 flush=1 rotational=0 trim=0 zero=1 fua=1
+ 2018-01-27 20:38:22.959984 connection=1 Connect size=0x400 write=1 flush=1 rotational=0 trim=0 zero=1 fua=1 extents=1 cache=0 fast_zero=0
  2018-01-27 20:38:23.001720 connection=1 Read id=1 offset=0x0 count=0x100 ...
  2018-01-27 20:38:23.001995 connection=1 ...Read id=1 return=0 (Success)
  2018-01-27 20:38:23.044259 connection=1 Disconnect transactions=1

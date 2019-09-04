@@ -106,14 +106,14 @@ test $(grep -c 'connection=1 Flush' fua1.log) -lt \
 # all earlier parts of the transaction do not have fua
 flush1=$(grep -c 'connection=1 Flush' fua2.log || :)
 flush2=$(grep -c 'connection=2 Flush' fua2.log || :)
-fua=$(grep -c 'connection=2.*fua=1 \.' fua2.log || :)
+fua=$(grep -c 'connection=2.*fua=1 .*\.' fua2.log || :)
 test $(( $flush2 - $flush1 + $fua )) = 2
 
 # Test 3: every part of split has fua, and no flushes are added
 flush1=$(grep -c 'connection=1 Flush' fua3.log || :)
 flush2=$(grep -c 'connection=2 Flush' fua3.log || :)
 test $flush1 = $flush2
-test $(grep -c 'connection=2.*fua=1 \.' fua3.log) = 32
+test $(grep -c 'connection=2.*fua=1 .*\.' fua3.log) = 32
 
 # Test 4: flush is no-op, and every transaction has fua
 if grep 'fua=0' fua4.log; then

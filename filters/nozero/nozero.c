@@ -38,6 +38,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <errno.h>
 
 #include <nbdkit-filter.h>
 
@@ -49,7 +50,15 @@ static enum ZeroMode {
   NONE,
   EMULATE,
   NOTRIM,
+  PLUGIN,
 } zeromode;
+
+static enum FastZeroMode {
+  DEFAULT,
+  SLOW,
+  IGNORE,
+  NOFAST,
+} fastzeromode;
 
 static int
 nozero_config (nbdkit_next_config *next, void *nxdata,
@@ -60,17 +69,35 @@ nozero_config (nbdkit_next_config *next, void *nxdata,
       zeromode = EMULATE;
     else if (strcmp (value, "notrim") == 0)
       zeromode = NOTRIM;
+    else if (strcmp (value, "plugin") == 0)
+      zeromode = PLUGIN;
     else if (strcmp (value, "none") != 0) {
       nbdkit_error ("unknown zeromode '%s'", value);
       return -1;
     }
     return 0;
   }
+
+  if (strcmp (key, "fastzeromode") == 0) {
+    if (strcmp (value, "none") == 0)
+      fastzeromode = NOFAST;
+    else if (strcmp (value, "ignore") == 0)
+      fastzeromode = IGNORE;
+    else if (strcmp (value, "slow") == 0)
+      fastzeromode = SLOW;
+    else if (strcmp (value, "default") != 0) {
+      nbdkit_error ("unknown fastzeromode '%s'", value);
+      return -1;
+    }
+    return 0;
+  }
+
   return next (nxdata, key, value);
 }
 
 #define nozero_config_help \
-  "zeromode=<MODE>      Either 'none' (default), 'emulate', or 'notrim'.\n" \
+  "zeromode=<MODE>      One of 'none' (default), 'emulate', 'notrim', 'plugin'.\n" \
+  "fastzeromode=<MODE>  One of 'default', 'none', 'slow', 'ignore'.\n"
 
 /* Check that desired mode is supported by plugin. */
 static int
@@ -83,12 +110,13 @@ nozero_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   if (readonly)
     return 0;
 
-  if (zeromode == NOTRIM) {
+  if (zeromode == NOTRIM || zeromode == PLUGIN) {
     r = next_ops->can_zero (nxdata);
     if (r == -1)
       return -1;
     if (!r) {
-      nbdkit_error ("zeromode 'notrim' requires plugin zero support");
+      nbdkit_error ("zeromode '%s' requires plugin zero support",
+                    zeromode == NOTRIM ? "notrim" : "plugin");
       return -1;
     }
   }
@@ -109,6 +137,18 @@ nozero_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   }
 }
 
+/* Advertise desired FAST_ZERO mode. */
+static int
+nozero_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+                      void *handle)
+{
+  if (zeromode == NONE)
+    return 0;
+  if (zeromode != EMULATE && fastzeromode == DEFAULT)
+    return next_ops->can_fast_zero (nxdata);
+  return fastzeromode != NOFAST;
+}
+
 static int
 nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
@@ -118,9 +158,21 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   bool need_flush = false;
 
   assert (zeromode != NONE);
-  flags &= ~NBDKIT_FLAG_MAY_TRIM;
+  if (flags & NBDKIT_FLAG_FAST_ZERO) {
+    assert (fastzeromode != NOFAST);
+    if (fastzeromode == SLOW ||
+        (fastzeromode == DEFAULT && zeromode == EMULATE)) {
+      *err = ENOTSUP;
+      return -1;
+    }
+    if (fastzeromode == IGNORE)
+      flags &= ~NBDKIT_FLAG_FAST_ZERO;
+  }
 
   if (zeromode == NOTRIM)
+    flags &= ~NBDKIT_FLAG_MAY_TRIM;
+
+  if (zeromode != EMULATE)
     return next_ops->zero (nxdata, count, offs, flags, err);
 
   if (flags & NBDKIT_FLAG_FUA) {
@@ -155,6 +207,7 @@ static struct nbdkit_filter filter = {
   .config_help       = nozero_config_help,
   .prepare           = nozero_prepare,
   .can_zero          = nozero_can_zero,
+  .can_fast_zero     = nozero_can_fast_zero,
   .zero              = nozero_zero,
 };
 

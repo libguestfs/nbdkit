@@ -305,6 +305,18 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint32_t drop;
   bool need_flush = false;
 
+  if (flags & NBDKIT_FLAG_FAST_ZERO) {
+    /* If we have to split the transaction, an ENOTSUP fast failure in
+     * a later call would be unnecessarily delayed behind earlier
+     * calls; it's easier to just declare that anything that can't be
+     * done in one call to the plugin is not fast.
+     */
+    if ((offs | count) & (minblock - 1) || count > maxlen) {
+      *err = ENOTSUP;
+      return -1;
+    }
+  }
+
   if ((flags & NBDKIT_FLAG_FUA) &&
       next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
     flags &= ~NBDKIT_FLAG_FUA;

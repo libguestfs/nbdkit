@@ -75,6 +75,7 @@ struct nbdkit_next_ops {
   int (*is_rotational) (void *nxdata);
   int (*can_trim) (void *nxdata);
   int (*can_zero) (void *nxdata);
+  int (*can_fast_zero) (void *nxdata);
   int (*can_extents) (void *nxdata);
   int (*can_fua) (void *nxdata);
   int (*can_multi_conn) (void *nxdata);
@@ -146,6 +147,8 @@ struct nbdkit_filter {
                    void *handle);
   int (*can_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle);
+  int (*can_fast_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
+                        void *handle);
   int (*can_extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
                       void *handle);
   int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,

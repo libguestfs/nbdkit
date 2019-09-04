@@ -279,6 +279,13 @@ next_can_zero (void *nxdata)
 }
 
 static int
+next_can_fast_zero (void *nxdata)
+{
+  struct b_conn *b_conn = nxdata;
+  return backend_can_fast_zero (b_conn->b, b_conn->conn);
+}
+
+static int
 next_can_extents (void *nxdata)
 {
   struct b_conn *b_conn = nxdata;
@@ -371,6 +378,7 @@ static struct nbdkit_next_ops next_ops = {
   .is_rotational = next_is_rotational,
   .can_trim = next_can_trim,
   .can_zero = next_can_zero,
+  .can_fast_zero = next_can_fast_zero,
   .can_extents = next_can_extents,
   .can_fua = next_can_fua,
   .can_multi_conn = next_can_multi_conn,
@@ -504,7 +512,14 @@ filter_can_zero (struct backend *b, struct connection *conn)
 static int
 filter_can_fast_zero (struct backend *b, struct connection *conn)
 {
-  return 0; /* Next patch will query or pass through */
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  void *handle = connection_get_handle (conn, b->i);
+  struct b_conn nxdata = { .b = b->next, .conn = conn };
+
+  if (f->filter.can_fast_zero)
+    return f->filter.can_fast_zero (&next_ops, &nxdata, handle);
+  else
+    return backend_can_fast_zero (b->next, conn);
 }
 
 static int
