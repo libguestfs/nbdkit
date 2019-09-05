@@ -74,8 +74,7 @@ sh_load (void)
 static void
 sh_unload (void)
 {
-  const size_t tmpdir_len = strlen (tmpdir);
-  char cmd[7 + tmpdir_len + 1]; /* "rm -rf " + tmpdir + \0 */
+  CLEANUP_FREE char *cmd = NULL;
 
   /* Run the unload method.  Ignore all errors. */
   if (script) {
@@ -85,8 +84,8 @@ sh_unload (void)
   }
 
   /* Delete the temporary directory.  Ignore all errors. */
-  snprintf (cmd, sizeof cmd, "rm -rf %s", tmpdir);
-  system (cmd);
+  if (asprintf (&cmd, "rm -rf %s", tmpdir) >= 0)
+    system (cmd);
 
   free (script);
 }
