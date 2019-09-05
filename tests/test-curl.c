@@ -42,6 +42,7 @@
 
 #include <guestfs.h>
 
+#include "cleanup.h"
 #include "web-server.h"
 
 #include "test.h"
@@ -50,10 +51,10 @@ int
 main (int argc, char *argv[])
 {
   const char *sockpath;
-  size_t n;
   guestfs_h *g;
   int r;
   char *data;
+  CLEANUP_FREE char *usp_param = NULL;
 
 #ifndef HAVE_CURLOPT_UNIX_SOCKET_PATH
   fprintf (stderr, "%s: curl does not support CURLOPT_UNIX_SOCKET_PATH\n",
@@ -68,9 +69,10 @@ main (int argc, char *argv[])
   }
 
   /* Start nbdkit. */
-  n = strlen ("unix-socket-path") + 1 + strlen (sockpath) + 1;
-  char usp_param[n];
-  snprintf (usp_param, n, "%s=%s", "unix-socket-path", sockpath);
+  if (asprintf (&usp_param, "unix-socket-path=%s", sockpath) == -1) {
+    perror ("asprintf");
+    exit (EXIT_FAILURE);
+  }
   if (test_start_nbdkit ("curl",
                          "cookie=foo=bar; baz=1;",
                          usp_param, /* unix-socket-path=... */

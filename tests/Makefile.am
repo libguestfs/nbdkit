@@ -421,12 +421,15 @@ test_curl_SOURCES = \
 	web-server.h \
 	test.h \
 	$(NULL)
+test_curl_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils
 test_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(NULL)
 test_curl_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
 	$(PTHREAD_LIBS) \
 	$(NULL)
 test_curl_LDADD = \
@@ -1059,12 +1062,15 @@ test_xz_curl_SOURCES = \
 	web-server.h \
 	test.h \
 	$(NULL)
+test_xz_curl_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils
 test_xz_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(NULL)
 test_xz_curl_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
 	$(PTHREAD_LIBS) \
 	$(NULL)
 test_xz_curl_LDADD = \
