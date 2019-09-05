@@ -366,9 +366,15 @@ accept_connection (int listen_sock)
 static void
 check_sockets_and_quit_fd (int *socks, size_t nr_socks)
 {
-  struct pollfd fds[nr_socks + 1];
   size_t i;
   int r;
+
+  CLEANUP_FREE struct pollfd *fds =
+    malloc (sizeof (struct pollfd) * (nr_socks+1));
+  if (fds == NULL) {
+    perror ("malloc");
+    exit (EXIT_FAILURE);
+  }
 
   for (i = 0; i < nr_socks; ++i) {
     fds[i].fd = socks[i];
