@@ -132,11 +132,16 @@ case "$1" in
 
     zero)
         # Efficiently zero the backing file, if supported.
+        # Try punching a hole if flags includes may_trim, otherwise
+        # request to leave the zeroed range allocated.
         # Attempt a fallback to write on any failure, but this requires
         # specific prefix on stderr prior to any message from fallocate;
         # exploit the fact that stderr is ignored on success.
         echo ENOTSUP >&2
-        fallocate -z -o $4 -l $3 -n $f || exit 1
+        case ,$5, in
+            *,may_trim,*) fallocate -p -o $4 -l $3 -n $f || exit 1 ;;
+            *)            fallocate -z -o $4 -l $3 -n $f || exit 1 ;;
+        esac
         ;;
     can_zero)
         # We can efficiently zero if the fallocate command exists.
