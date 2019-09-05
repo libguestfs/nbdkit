@@ -137,7 +137,7 @@ test_start_nbdkit (const char *arg, ...)
   kit->pid = fork ();
   if (kit->pid == 0) {               /* Child (nbdkit). */
     const char *p;
-    const int MAX_ARGS = 64;
+#define MAX_ARGS 64
     const char *argv[MAX_ARGS+1];
     va_list args;
 
