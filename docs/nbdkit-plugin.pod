@@ -362,6 +362,32 @@ requested, or -1 after calling C<nbdkit_error> if there is no point in
 continuing the current command.  Attempts to sleep more than
 C<INT_MAX> seconds are treated as an error.
 
+=head1 EXPORT NAME
+
+If the client negotiated an NBD export name with nbdkit then plugins
+may read this from any connected callbacks.  Nbdkit's normal behaviour
+is to accept any export name passed by the client, log it in debug
+output, but otherwise ignore it.  By using C<nbdkit_export_name>
+plugins may choose to filter by export name or serve different
+content.
+
+=head2 C<nbdkit_export_name>
+
+ const char *nbdkit_export_name (void);
+
+Return the optional NBD export name if one was negotiated with the
+current client (this uses thread-local magic so no parameter is
+required).  The returned string is only valid while the client is
+connected, so if you need to store it in the plugin you must copy it.
+
+The export name is a free-form text string, it is not necessarily a
+path or filename and it does not need to begin with a C<'/'>
+character.  The NBD protocol describes the empty string (C<"">) as a
+representing a "default export" or to be used in cases where the
+export name does not make sense.
+
+On error, nbdkit_error is called and the call returns C<NULL>.
+
 =head1 CALLBACKS
 
 =head2 C<.name>
@@ -708,6 +734,9 @@ at all.  Or if it does cache them then the effects of a C<.flush>
 request or setting C<NBDKIT_FLAG_FUA> on a request must be visible
 across all connections to the plugin before the plugin replies to that
 request.
+
+Properly working clients should send the same export name for each of
+these connections.
 
 If you use Linux L<nbd-client(8)> option S<I<-C num>> with
 S<num E<gt> 1> then Linux checks this flag and will refuse to connect

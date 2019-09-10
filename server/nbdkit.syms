@@ -42,6 +42,7 @@
     nbdkit_add_extent;
     nbdkit_debug;
     nbdkit_error;
+    nbdkit_export_name;
     nbdkit_extents_count;
     nbdkit_extents_free;
     nbdkit_extents_new;

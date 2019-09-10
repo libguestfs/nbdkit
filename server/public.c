@@ -379,3 +379,16 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
   return 0;
 #endif
 }
+
+const char *
+nbdkit_export_name (void)
+{
+  struct connection *conn = threadlocal_get_conn ();
+
+  if (!conn) {
+    nbdkit_error ("no connection in this thread");
+    return NULL;
+  }
+
+  return conn->exportname;
+}

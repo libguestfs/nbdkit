@@ -181,6 +181,7 @@ struct connection {
   struct b_conn_handle *handles;
   size_t nr_handles;
 
+  char *exportname;
   uint32_t cflags;
   uint16_t eflags;
   bool using_tls;

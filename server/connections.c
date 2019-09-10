@@ -255,11 +255,18 @@ new_connection (int sockin, int sockout, int nworkers)
     perror ("malloc");
     return NULL;
   }
+
+  conn->status_pipe[0] = conn->status_pipe[1] = -1;
+
+  conn->exportname = strdup ("");
+  if (conn->exportname == NULL) {
+    perror ("strdup");
+    goto error;
+  }
   conn->handles = calloc (backend->i + 1, sizeof *conn->handles);
   if (conn->handles == NULL) {
     perror ("malloc");
-    free (conn);
-    return NULL;
+    goto error;
   }
   conn->nr_handles = backend->i + 1;
   memset (conn->handles, -1, conn->nr_handles * sizeof *conn->handles);
@@ -272,8 +279,7 @@ new_connection (int sockin, int sockout, int nworkers)
 #ifdef HAVE_PIPE2
     if (pipe2 (conn->status_pipe, O_NONBLOCK | O_CLOEXEC)) {
       perror ("pipe2");
-      free (conn);
-      return NULL;
+      goto error;
     }
 #else
     /* If we were fully parallel, then this function could be
@@ -289,29 +295,24 @@ new_connection (int sockin, int sockout, int nworkers)
     lock_request (NULL);
     if (pipe (conn->status_pipe)) {
       perror ("pipe");
-      free (conn);
       unlock_request (NULL);
-      return NULL;
+      goto error;
     }
     if (set_nonblock (set_cloexec (conn->status_pipe[0])) == -1) {
       perror ("fcntl");
       close (conn->status_pipe[1]);
-      free (conn);
       unlock_request (NULL);
-      return NULL;
+      goto error;
     }
     if (set_nonblock (set_cloexec (conn->status_pipe[1])) == -1) {
       perror ("fcntl");
       close (conn->status_pipe[0]);
-      free (conn);
       unlock_request (NULL);
-      return NULL;
+      goto error;
     }
     unlock_request (NULL);
 #endif
   }
-  else
-    conn->status_pipe[0] = conn->status_pipe[1] = -1;
   conn->sockin = sockin;
   conn->sockout = sockout;
   pthread_mutex_init (&conn->request_lock, NULL);
@@ -329,6 +330,16 @@ new_connection (int sockin, int sockout, int nworkers)
   threadlocal_set_conn (conn);
 
   return conn;
+
+ error:
+  if (conn->status_pipe[0] >= 0)
+    close (conn->status_pipe[0]);
+  if (conn->status_pipe[1] >= 0)
+    close (conn->status_pipe[1]);
+  free (conn->exportname);
+  free (conn->handles);
+  free (conn);
+  return NULL;
 }
 
 static void
@@ -373,6 +384,7 @@ free_connection (struct connection *conn)
   pthread_mutex_destroy (&conn->status_lock);
 
   free (conn->handles);
+  free (conn->exportname);
   free (conn);
 }
 

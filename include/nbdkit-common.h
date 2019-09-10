@@ -86,6 +86,7 @@ extern int nbdkit_parse_bool (const char *str);
 extern int nbdkit_read_password (const char *value, char **password);
 extern char *nbdkit_realpath (const char *path);
 extern int nbdkit_nanosleep (unsigned sec, unsigned nsec);
+extern const char *nbdkit_export_name (void);
 
 struct nbdkit_extents;
 extern int nbdkit_add_extent (struct nbdkit_extents *,

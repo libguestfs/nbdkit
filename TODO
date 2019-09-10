@@ -71,6 +71,12 @@ General ideas for improvements
   continue to keep their non-standard handshake while utilizing nbdkit
   to prototype new behaviors in serving the kernel.
 
+* Clients should be able to list export names supported by plugins.
+  Current behaviour is not really correct: We only list the -e
+  parameter from the command line, which is different from the export
+  name(s) that a plugin might want to support.  Probably we should
+  deprecate the -e option entirely since it does nothing useful.
+
 Suggestions for plugins
 -----------------------
 
@@ -199,3 +205,5 @@ using ‘#define NBDKIT_API_VERSION <version>’.
   value) strings.  nbdkit should know the possible keys for the plugin
   and filters, and the type of the values, and both check and parse
   them for the plugin.
+
+* Modify open() API so it takes an export name parameter.

@@ -272,11 +272,17 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       if (conn_recv_full (conn, data, optlen,
                           "read: %s: %m", name_of_nbd_opt (option)) == -1)
         return -1;
-      /* Apart from printing it, ignore the export name. */
+      /* Print the export name and save it in the connection. */
       data[optlen] = '\0';
-      debug ("newstyle negotiation: %s: "
-             "client requested export '%s' (ignored)",
+      debug ("newstyle negotiation: %s: client requested export '%s'",
              name_of_nbd_opt (option), data);
+      free (conn->exportname);
+      conn->exportname = malloc (optlen+1);
+      if (conn->exportname == NULL) {
+        nbdkit_error ("malloc: %m");
+        return -1;
+      }
+      strcpy (conn->exportname, data);
 
       /* We have to finish the handshake by sending handshake_finish. */
       if (finish_newstyle_options (conn, &exportsize) == -1)
@@ -388,7 +394,6 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         uint16_t nrinfos;
         uint16_t info;
         size_t i;
-        CLEANUP_FREE char *requested_exportname = NULL;
 
         /* Validate the name length and number of INFO requests. */
         memcpy (&exportnamelen, &data[0], 4);
@@ -411,19 +416,19 @@ negotiate_handshake_newstyle_options (struct connection *conn)
           continue;
         }
 
-        /* As with NBD_OPT_EXPORT_NAME we print the export name and then
-         * ignore it.
+        /* As with NBD_OPT_EXPORT_NAME we print the export name and
+         * save it in the connection.
          */
-        requested_exportname = malloc (exportnamelen+1);
-        if (requested_exportname == NULL) {
+        free (conn->exportname);
+        conn->exportname = malloc (exportnamelen+1);
+        if (conn->exportname == NULL) {
           nbdkit_error ("malloc: %m");
           return -1;
         }
-        memcpy (requested_exportname, &data[4], exportnamelen);
-        requested_exportname[exportnamelen] = '\0';
-        debug ("newstyle negotiation: %s: "
-               "client requested export '%s' (ignored)",
-               optname, requested_exportname);
+        memcpy (conn->exportname, &data[4], exportnamelen);
+        conn->exportname[exportnamelen] = '\0';
+        debug ("newstyle negotiation: %s: client requested export '%s'",
+               optname, conn->exportname);
 
         /* The spec is confusing, but it is required that we send back
          * NBD_INFO_EXPORT, even if the client did not request it!
