@@ -73,6 +73,9 @@ parameter is always the method name.  For example:
                    │       │       └── request size in bytes ($3)
                method ($1) └── handle ($2) ─ see "Handles" below
 
+Scripts should ignore extra parameters that they don't understand
+since we may add new parameters in future.
+
 =head2 Exit codes
 
 The script should exit with specific exit codes:
