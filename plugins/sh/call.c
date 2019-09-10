@@ -49,6 +49,7 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "utils.h"
 
 #include "call.h"
 
@@ -69,6 +70,28 @@ expand_buf (char **buf, size_t *buflen, size_t *bufalloc)
   }
   *buf = nb;
   return 0;
+}
+
+static void
+debug_call (const char **argv)
+{
+  CLEANUP_FREE char *debug = NULL;
+  size_t i, len = 0;
+  FILE *fp;
+
+  fp = open_memstream (&debug, &len);
+  if (fp == NULL)
+    return;
+
+  fprintf (fp, "calling:");
+  for (i = 0; argv[i] != NULL; ++i) {
+    fputc (' ', fp);
+    shell_quote (argv[i], fp);
+  }
+
+  fclose (fp);
+
+  nbdkit_debug ("%s", debug);
 }
 
 /* This is the generic function that calls the script.  It can
@@ -95,24 +118,8 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
   *rbuf = *ebuf = NULL;
   *rbuflen = *ebuflen = 0;
   rbufalloc = ebufalloc = 0;
-  {
-    /* Decent logging is worth the hassle. We don't send more than 5 args. */
-    const char *arg1 = argv[1], *arg2 = "", *arg3 = "", *arg4 = "", *arg5 = "";
-    assert (arg1);
-    if (argv[2]) {
-      arg2 = argv[2];
-      if (argv[3]) {
-        arg3 = argv[3];
-        if (argv[4]) {
-          arg4 = argv[4];
-          if (argv[5])
-            arg5 = argv[5];
-        }
-      }
-    }
-    nbdkit_debug ("%s: invoking %s %s %s %s %s ...",
-                  script, arg1, arg2, arg3, arg4, arg5);
-  }
+
+  debug_call (argv);
 
 #ifdef HAVE_PIPE2
   if (pipe2 (in_fd, O_CLOEXEC) == -1) {
@@ -290,7 +297,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
   (*ebuf)[*ebuflen] = '\0';
 
   ret = WEXITSTATUS (status);
-  nbdkit_debug ("%s: ... %s completed with status %d", script, argv[1], ret);
+  nbdkit_debug ("completed: %s %s: status %d", script, argv[1], ret);
 
  error:
   if (in_fd[0] >= 0)
