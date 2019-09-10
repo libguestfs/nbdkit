@@ -340,6 +340,18 @@ and returns C<NULL>.
 
 The returned string must be freed by the caller.
 
+=head2 umask
+
+All plugins will see a L<umask(2)> of C<0022>.
+
+=head1 SLEEPING
+
+A plugin that needs to sleep may call L<sleep(2)>, L<nanosleep(2)> and
+similar.  However that can cause nbdkit to delay excessively when
+shutting down (since it must wait for any plugin or filter which is
+sleeping).  To avoid this there is a special wrapper around nanosleep
+which plugins and filters should use instead.
+
 =head2 C<nbdkit_nanosleep>
 
  int nbdkit_nanosleep (unsigned sec, unsigned nsec);
@@ -349,14 +361,6 @@ and returns 0 if it slept at least as many seconds and nanoseconds as
 requested, or -1 after calling C<nbdkit_error> if there is no point in
 continuing the current command.  Attempts to sleep more than
 C<INT_MAX> seconds are treated as an error.
-
-Plugins should prefer this function instead of sleeping using system
-calls like L<sleep(3)> or L<nanosleep(3)>, since it allows nbdkit to
-shut down cleanly without delay.
-
-=head2 umask
-
-All plugins will see a L<umask(2)> of C<0022>.
 
 =head1 CALLBACKS
 
