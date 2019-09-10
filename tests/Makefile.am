@@ -395,6 +395,9 @@ endif HAVE_LIBGUESTFS
 # Test export flags.
 TESTS += test-eflags.sh
 
+# Test export name.
+TESTS += test-export-name.sh
+
 # common disk image shared with several tests
 if HAVE_GUESTFISH
 check_DATA += disk
