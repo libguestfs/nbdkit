@@ -36,7 +36,7 @@
 source ./functions.sh
 set -e
 
-requires qemu-io --version
+requires nbdsh --version
 
 sock=`mktemp -u`
 files="full.pid $sock full.out"
@@ -47,13 +47,27 @@ cleanup_fn rm -f $files
 start_nbdkit -P full.pid -U $sock full 1M
 
 # All reads should succeed.
-qemu-io -f raw "nbd+unix://?socket=$sock" \
-        -c 'r -v 0 512' \
-        -c 'r -v 512 512' \
-        -c 'r -v 1048064 512'
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c 'h.pread (512, 0)' \
+      -c 'h.pread (512, 512)' \
+      -c 'h.pread (512, 1048064)'
 
 # All writes should fail with the ENOSPC error.
-! LANG=C qemu-io -f raw "nbd+unix://?socket=$sock" \
-        -c 'w -P 1 0 512' \
-        -c 'w -P 2 1048064 512' >& full.out
-grep "No space left on device" full.out
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+try:
+    h.pwrite (bytearray (512), 0)
+    # This should not happen.
+    exit (1)
+except nbd.Error as ex:
+    # Check the errno is expected.
+    assert ex.errno == "ENOSPC"
+
+try:
+    h.pwrite (bytearray (512), 1048064)
+    # This should not happen.
+    exit (1)
+except nbd.Error as ex:
+    # Check the errno is expected.
+    assert ex.errno == "ENOSPC"
+'

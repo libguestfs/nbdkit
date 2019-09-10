@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires qemu-io --version
+requires nbdsh --version
 
 sock=`mktemp -u`
 files="$sock error0.pid"
@@ -47,8 +47,9 @@ start_nbdkit -P error0.pid -U $sock \
              pattern 1G error-rate=0%
 
 # Because error rate is 0%, reads should never fail.
-qemu-io -r -f raw "nbd+unix://?socket=$sock" \
-        -c "r 0M 10M" \
-        -c "r 20M 10M" \
-        -c "r 40M 10M" \
-        -c "r 60M 10M"
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c 'mbytes = 2**20' \
+      -c 'h.pread(10*mbytes, 0)' \
+      -c 'h.pread(10*mbytes, 20*mbytes)' \
+      -c 'h.pread(10*mbytes, 40*mbytes)' \
+      -c 'h.pread(10*mbytes, 60*mbytes)'

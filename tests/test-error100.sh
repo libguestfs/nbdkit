@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires qemu-io --version
+requires nbdsh --version
 
 sock=`mktemp -u`
 files="$sock error100.pid"
@@ -46,11 +46,16 @@ start_nbdkit -P error100.pid -U $sock \
              --filter=error \
              pattern 1G error-rate=100%
 
-# The error rate is 100% so every operation must fail.
+# The error rate is 100% so every operation must fail with error EIO.
 for i in {1..100}; do
-    if qemu-io -r -f raw "nbd+unix://?socket=$sock" \
-               -c "r 0 512"; then
-        echo "$0: expected qemu-io command to fail"
-        exit 1
-    fi
+    nbdsh --connect "nbd+unix://?socket=$sock" \
+          -c '
+try:
+    h.pread (512, 0)
+    # This should not happen.
+    exit (1)
+except nbd.Error as ex:
+    # Check the errno is expected.
+    assert ex.errno == "EIO"
+'
 done

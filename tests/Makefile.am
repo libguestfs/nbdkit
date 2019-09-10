@@ -355,12 +355,13 @@ if HAVE_LIBGUESTFS
 check_PROGRAMS += $(LIBGUESTFS_TESTS)
 TESTS += $(LIBGUESTFS_TESTS)
 
-# Use the 'direct' backend, and ensure maximum libguestfs debugging is
-# written to the *.log files in case there is a problem.
+# Use the 'direct' backend, and ensure maximum libguestfs and libnbd
+# debugging is written to the *.log files in case there is a problem.
 TESTS_ENVIRONMENT += \
 	LIBGUESTFS_ATTACH_METHOD=appliance \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
+	LIBNBD_DEBUG=1 \
 	$(NULL)
 
 # Common test library.
