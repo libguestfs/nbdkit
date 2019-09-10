@@ -237,9 +237,11 @@ with status C<1>; unrecognized output is ignored.
 
 =item C<open>
 
- /path/to/script open <readonly>
+ /path/to/script open <readonly> <exportname>
 
-The C<readonly> parameter will be C<true> or C<false>.
+The C<readonly> parameter will be C<true> or C<false>.  The
+C<exportname> parameter, if present, is the export name passed to the
+server from the client.
 
 On success this should print the handle (any string) on stdout and
 exit with code C<0>.  If the handle ends with a newline character then

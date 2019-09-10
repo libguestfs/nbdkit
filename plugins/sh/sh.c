@@ -324,7 +324,11 @@ sh_open (int readonly)
 {
   char *h = NULL;
   size_t hlen;
-  const char *args[] = { script, "open", readonly ? "true" : "false", NULL };
+  const char *args[] =
+    { script, "open",
+      readonly ? "true" : "false",
+      nbdkit_export_name () ? : "",
+      NULL };
 
   /* We store the string returned by open in the handle. */
   switch (call_read (&h, &hlen, args)) {
