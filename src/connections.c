@@ -246,12 +246,6 @@ _handle_single_connection (int sockin, int sockout)
   if (!conn)
     goto done;
 
-  lock_request (conn);
-  r = backend->open (backend, conn, readonly);
-  unlock_request (conn);
-  if (r == -1)
-    goto done;
-
   /* NB: because of an asynchronous exit backend can be set to NULL at
    * just about any time.
    */
@@ -261,17 +255,11 @@ _handle_single_connection (int sockin, int sockout)
     plugin_name = "(unknown)";
   threadlocal_set_name (plugin_name);
 
-  /* Prepare (for filters), called just after open. */
-  lock_request (conn);
-  if (backend)
-    r = backend->prepare (backend, conn);
-  else
-    r = 0;
-  unlock_request (conn);
-  if (r == -1)
-    goto done;
-
-  /* Handshake. */
+  /* NBD handshake.
+   *
+   * Note that this calls the backend .open callback when it is safe
+   * to do so (eg. after TLS authentication).
+   */
   if (negotiate_handshake (conn) == -1)
     goto done;
 
@@ -408,11 +396,42 @@ free_connection (struct connection *conn)
   free (conn);
 }
 
+/* Common code used by oldstyle and newstyle protocols to:
+ *
+ * - call the backend .open method
+ *
+ * - get the export size
+ *
+ * - compute the eflags (same between oldstyle and newstyle
+ *   protocols)
+ *
+ * The protocols must defer this as late as possible so that
+ * unauthorized clients can't cause unnecessary work in .open by
+ * simply opening a TCP connection.
+ */
 static int
-compute_eflags (struct connection *conn, uint16_t *flags)
+protocol_common_open (struct connection *conn,
+                      uint64_t *exportsize, uint16_t *flags)
 {
+  int64_t size;
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
+
+  if (backend->open (backend, conn, readonly) == -1)
+    return -1;
+
+  /* Prepare (for filters), called just after open. */
+  if (backend->prepare (backend, conn) == -1)
+    return -1;
+
+  size = backend->get_size (backend, conn);
+  if (size == -1)
+    return -1;
+  if (size < 0) {
+    nbdkit_error (".get_size function returned invalid value "
+                  "(%" PRIi64 ")", size);
+    return -1;
+  }
 
   fl = backend->can_write (backend, conn);
   if (fl == -1)
@@ -463,6 +482,7 @@ compute_eflags (struct connection *conn, uint16_t *flags)
     conn->is_rotational = true;
   }
 
+  *exportsize = size;
   *flags = eflags;
   return 0;
 }
@@ -471,7 +491,6 @@ static int
 _negotiate_handshake_oldstyle (struct connection *conn)
 {
   struct old_handshake handshake;
-  int64_t r;
   uint64_t exportsize;
   uint16_t gflags, eflags;
 
@@ -483,21 +502,11 @@ _negotiate_handshake_oldstyle (struct connection *conn)
     return -1;
   }
 
-  r = backend->get_size (backend, conn);
-  if (r == -1)
+  if (protocol_common_open (conn, &exportsize, &eflags) == -1)
     return -1;
-  if (r < 0) {
-    nbdkit_error (".get_size function returned invalid value "
-                  "(%" PRIi64 ")", r);
-    return -1;
-  }
-  exportsize = (uint64_t) r;
   conn->exportsize = exportsize;
 
   gflags = 0;
-  if (compute_eflags (conn, &eflags) < 0)
-    return -1;
-
   debug ("oldstyle negotiation: flags: global 0x%x export 0x%x",
          gflags, eflags);
 
@@ -632,19 +641,7 @@ conn_recv_full (struct connection *conn, void *buf, size_t len,
 static int
 finish_newstyle_options (struct connection *conn)
 {
-  int64_t r;
-
-  r = backend->get_size (backend, conn);
-  if (r == -1)
-    return -1;
-  if (r < 0) {
-    nbdkit_error (".get_size function returned invalid value "
-                  "(%" PRIi64 ")", r);
-    return -1;
-  }
-  conn->exportsize = (uint64_t) r;
-
-  if (compute_eflags (conn, &conn->eflags) < 0)
+  if (protocol_common_open (conn, &conn->exportsize, &conn->eflags) == -1)
     return -1;
 
   debug ("newstyle negotiation: flags: export 0x%x", conn->eflags);
