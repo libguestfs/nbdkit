@@ -198,8 +198,9 @@ extern int connection_set_status (struct connection *conn, int value)
 /* protocol-handshake.c */
 extern int protocol_handshake (struct connection *conn)
   __attribute__((__nonnull__ (1)));
-extern int protocol_compute_eflags (struct connection *conn, uint16_t *flags)
-  __attribute__((__nonnull__ (1, 2)));
+extern int protocol_common_open (struct connection *conn,
+                                 uint64_t *exportsize, uint16_t *flags)
+  __attribute__((__nonnull__ (1, 2, 3)));
 
 /* protocol-handshake-oldstyle.c */
 extern int protocol_handshake_oldstyle (struct connection *conn)
