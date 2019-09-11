@@ -55,19 +55,15 @@ nbdsh --connect "nbd+unix://?socket=$sock" \
 # All writes should fail with the ENOSPC error.
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-try:
-    h.pwrite (bytearray (512), 0)
-    # This should not happen.
-    exit (1)
-except nbd.Error as ex:
-    # Check the errno is expected.
-    assert ex.errno == "ENOSPC"
+def test (offset):
+    try:
+        h.pwrite (bytearray (512), offset)
+        # This should not happen.
+        exit (1)
+    except nbd.Error as ex:
+        # Check the errno is expected.
+        assert ex.errno == "ENOSPC"
 
-try:
-    h.pwrite (bytearray (512), 1048064)
-    # This should not happen.
-    exit (1)
-except nbd.Error as ex:
-    # Check the errno is expected.
-    assert ex.errno == "ENOSPC"
+test (0)
+test (1048064)
 '
