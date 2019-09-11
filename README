@@ -125,8 +125,7 @@ For the Perl, example4 and tar plugins:
 
 For the Python plugin:
 
- - python interpreter
-   (either version 2 or 3 may be used)
+ - python interpreter (version 3 only)
 
  - python development libraries
 
@@ -201,12 +200,14 @@ Optionally run this command as root to install everything:
 Python
 ------
 
-By default nbdkit uses the Python version of the Python interpreter
-called “python” on the current $PATH.  To use another version of
-Python you may need to set the PYTHON variable when configuring.  For
-example:
+Since nbdkit >= 1.16, only Python >= 3.3 is supported.
 
-    ./configure PYTHON=/usr/bin/python3
+By default nbdkit uses the Python version of the Python interpreter
+called “python” on the current $PATH.  If you have parallel versions
+of Python installed then you can choose a different version by setting
+the PYTHON variable when configuring.  For example:
+
+    ./configure PYTHON=/usr/bin/python3.8
 
 Running the tests
 -----------------

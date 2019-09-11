@@ -470,7 +470,7 @@ AC_SUBST([PERL_ARCHLIB])
 AC_SUBST([PERL_CFLAGS])
 AC_SUBST([PERL_LDOPTS])
 
-dnl Check for Python, for embedding in the python plugin.
+dnl Check for Python 3, for embedding in the python plugin.
 AC_CHECK_PROG([PYTHON],[python],[python],[no])
 AC_ARG_ENABLE([python],
     [AS_HELP_STRING([--disable-python], [disable Python embed plugin])],
@@ -486,6 +486,19 @@ AS_IF([test "x$PYTHON" != "xno" && test "x$enable_python" != "xno"],[
     ],[
         AC_MSG_NOTICE([Python embed module disabled])
         enable_python=no
+    ])
+
+    AC_MSG_CHECKING([Python major version is 3])
+    AS_IF([test "x$PYTHON_VERSION_MAJOR" = "x3"],[
+        AC_MSG_RESULT([yes])
+    ],[
+        AC_MSG_RESULT([no])
+        AC_MSG_ERROR([Python $PYTHON_VERSION_MAJOR <> 3 is no longer supported.
+
+Python 2 end of life is 2020-01-01 and nbdkit >= 1.16 no longer
+supports it.
+
+If you want to use Python 2, you will need to use nbdkit 1.14.])
     ])
 
     dnl Check for Python CFLAGS, libraries.
@@ -515,27 +528,6 @@ AS_IF([test "x$PYTHON" != "xno" && test "x$enable_python" != "xno"],[
         AC_MSG_WARN([python $PYTHON_VERSION not found])
         enable_python=no
     ])])])
-
-    dnl Check for various functions needed by the bindings.
-    old_LIBS="$LIBS"
-
-    PYTHON_BLDLIBRARY=`$PYTHON -c "import distutils.sysconfig; \
-        print (distutils.sysconfig.get_config_var('BLDLIBRARY'))"`
-    AC_CHECK_LIB([c],[PyString_FromString],
-                 [AC_DEFINE([HAVE_PYSTRING_FROMSTRING],1,
-                            [Found PyString_FromString in libpython.])],
-                 [],[$PYTHON_BLDLIBRARY])
-    AC_CHECK_LIB([c],[PyString_AsString],
-                 [AC_DEFINE([HAVE_PYSTRING_ASSTRING],1,
-                            [Found PyString_AsString in libpython.])],
-                 [],[$PYTHON_BLDLIBRARY])
-    AC_CHECK_LIB([c],[PyUnicode_AsUTF8],
-                 [AC_DEFINE([HAVE_PYUNICODE_ASUTF8],1,
-                            [Found PyUnicode_AsUTF8 in libpython.])],
-                 [],[$PYTHON_BLDLIBRARY])
-
-    LIBS="$old_LIBS"
-
 ])
 AM_CONDITIONAL([HAVE_PYTHON],[test "x$enable_python" != "xno" && test "x$PYTHON" != "xno"])
 AC_SUBST([PYTHON_CFLAGS])

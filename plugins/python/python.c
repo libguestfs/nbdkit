@@ -117,17 +117,9 @@ static char *
 python_to_string (PyObject *str)
 {
   if (str) {
-#ifdef HAVE_PYUNICODE_ASUTF8
     if (PyUnicode_Check (str))
       return strdup (PyUnicode_AsUTF8 (str));
-    else
-#endif
-#ifdef HAVE_PYSTRING_ASSTRING
-    if (PyString_Check (str))
-      return strdup (PyString_AsString (str));
-    else
-#endif
-    if (PyBytes_Check (str))
+    else if (PyBytes_Check (str))
       return strdup (PyBytes_AS_STRING (str));
   }
   return NULL;
@@ -159,11 +151,7 @@ print_python_traceback (const char *callback,
     *traceback_str;
   CLEANUP_FREE char *traceback_cstr = NULL;
 
-#ifdef HAVE_PYSTRING_FROMSTRING
-  module_name = PyString_FromString ("traceback");
-#else
   module_name = PyUnicode_FromString ("traceback");
-#endif
   traceback_module = PyImport_Import (module_name);
   Py_DECREF (module_name);
 
@@ -222,7 +210,6 @@ check_python_failure (const char *callback)
   return 0;
 }
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
   PyModuleDef_HEAD_INIT,
   "nbdkit",
@@ -234,25 +221,18 @@ static struct PyModuleDef moduledef = {
   NULL,
   NULL
 };
-#endif
 
 static PyMODINIT_FUNC
 create_nbdkit_module (void)
 {
   PyObject *m;
 
-#if PY_MAJOR_VERSION >= 3
   m = PyModule_Create (&moduledef);
-#else
-  m = Py_InitModule ("nbdkit", NbdkitMethods);
-#endif
   if (m == NULL) {
     nbdkit_error ("could not create the nbdkit API module");
     exit (EXIT_FAILURE);
   }
-#if PY_MAJOR_VERSION >= 3
   return m;
-#endif
 }
 
 static void
@@ -276,13 +256,8 @@ py_dump_plugin (void)
   PyObject *fn;
   PyObject *r;
 
-#ifdef PY_VERSION
   printf ("python_version=%s\n", PY_VERSION);
-#endif
-
-#ifdef PYTHON_ABI_VERSION
   printf ("python_pep_384_abi_version=%d\n", PYTHON_ABI_VERSION);
-#endif
 
   if (script && callback_defined ("dump_plugin", &fn)) {
     PyErr_Clear ();
@@ -337,11 +312,7 @@ py_config (const char *key, const char *value)
     /* Note that because closeit flag == 1, fp is now closed. */
 
     /* The script should define a module called __main__. */
-#ifdef HAVE_PYSTRING_FROMSTRING
-    modname = PyString_FromString ("__main__");
-#else
     modname = PyUnicode_FromString ("__main__");
-#endif
     module = PyImport_Import (modname);
     Py_DECREF (modname);
     if (!module) {
