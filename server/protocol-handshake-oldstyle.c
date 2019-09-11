@@ -47,7 +47,6 @@ int
 protocol_handshake_oldstyle (struct connection *conn)
 {
   struct old_handshake handshake;
-  int64_t r;
   uint64_t exportsize;
   uint16_t gflags, eflags;
 
@@ -59,21 +58,11 @@ protocol_handshake_oldstyle (struct connection *conn)
     return -1;
   }
 
-  r = backend->get_size (backend, conn);
-  if (r == -1)
+  if (protocol_common_open (conn, &exportsize, &eflags) == -1)
     return -1;
-  if (r < 0) {
-    nbdkit_error (".get_size function returned invalid value "
-                  "(%" PRIi64 ")", r);
-    return -1;
-  }
-  exportsize = (uint64_t) r;
   conn->exportsize = exportsize;
 
   gflags = 0;
-  if (protocol_compute_eflags (conn, &eflags) < 0)
-    return -1;
-
   debug ("oldstyle negotiation: flags: global 0x%x export 0x%x",
          gflags, eflags);
 

@@ -156,12 +156,6 @@ _handle_single_connection (int sockin, int sockout)
   if (!conn)
     goto done;
 
-  lock_request (conn);
-  r = backend->open (backend, conn, readonly);
-  unlock_request (conn);
-  if (r == -1)
-    goto done;
-
   /* NB: because of an asynchronous exit backend can be set to NULL at
    * just about any time.
    */
@@ -171,17 +165,11 @@ _handle_single_connection (int sockin, int sockout)
     plugin_name = "(unknown)";
   threadlocal_set_name (plugin_name);
 
-  /* Prepare (for filters), called just after open. */
-  lock_request (conn);
-  if (backend)
-    r = backend->prepare (backend, conn);
-  else
-    r = 0;
-  unlock_request (conn);
-  if (r == -1)
-    goto done;
-
-  /* Handshake. */
+  /* NBD handshake.
+   *
+   * Note that this calls the backend .open callback when it is safe
+   * to do so (eg. after TLS authentication).
+   */
   if (protocol_handshake (conn) == -1)
     goto done;
 
