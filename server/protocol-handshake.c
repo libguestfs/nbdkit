@@ -43,14 +43,57 @@
 #include "byte-swapping.h"
 #include "protocol.h"
 
-/* eflags calculation is the same between oldstyle and newstyle
- * protocols.
+int
+protocol_handshake (struct connection *conn)
+{
+  int r;
+
+  lock_request (conn);
+  if (!newstyle)
+    r = protocol_handshake_oldstyle (conn);
+  else
+    r = protocol_handshake_newstyle (conn);
+  unlock_request (conn);
+
+  return r;
+}
+
+/* Common code used by oldstyle and newstyle protocols to:
+ *
+ * - call the backend .open method
+ *
+ * - get the export size
+ *
+ * - compute the eflags (same between oldstyle and newstyle
+ *   protocols)
+ *
+ * The protocols must defer this as late as possible so that
+ * unauthorized clients can't cause unnecessary work in .open by
+ * simply opening a TCP connection.
  */
 int
-protocol_compute_eflags (struct connection *conn, uint16_t *flags)
+protocol_common_open (struct connection *conn,
+                      uint64_t *exportsize, uint16_t *flags)
 {
+  int64_t size;
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
+
+  if (backend->open (backend, conn, readonly) == -1)
+    return -1;
+
+  /* Prepare (for filters), called just after open. */
+  if (backend->prepare (backend, conn) == -1)
+    return -1;
+
+  size = backend->get_size (backend, conn);
+  if (size == -1)
+    return -1;
+  if (size < 0) {
+    nbdkit_error (".get_size function returned invalid value "
+                  "(%" PRIi64 ")", size);
+    return -1;
+  }
 
   fl = backend->can_write (backend, conn);
   if (fl == -1)
@@ -127,21 +170,7 @@ protocol_compute_eflags (struct connection *conn, uint16_t *flags)
   if (conn->structured_replies)
     eflags |= NBD_FLAG_SEND_DF;
 
+  *exportsize = size;
   *flags = eflags;
   return 0;
-}
-
-int
-protocol_handshake (struct connection *conn)
-{
-  int r;
-
-  lock_request (conn);
-  if (!newstyle)
-    r = protocol_handshake_oldstyle (conn);
-  else
-    r = protocol_handshake_newstyle (conn);
-  unlock_request (conn);
-
-  return r;
 }
