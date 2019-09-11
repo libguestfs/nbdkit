@@ -37,7 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires qemu-io --version
+requires nbdsh --version
 
 sock=`mktemp -u`
 files="data-7E.out data-7E.pid $sock"
@@ -86,11 +86,8 @@ start_nbdkit -P data-7E.pid -U $sock --export= \
    "
 
 # Since we're reading the empty first partition, any read returns zeroes.
-qemu-io -r -f raw "nbd+unix://?socket=$sock" \
-        -c 'r -v 498 16' | grep -E '^[[:xdigit:]]+:' > data-7E.out
-if [ "$(cat data-7E.out)" != "000001f2:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................" ]
-then
-    echo "$0: unexpected pattern:"
-    cat data-7E.out
-    exit 1
-fi
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+buf = h.pread (16, 498)
+assert buf == bytearray(16)
+'

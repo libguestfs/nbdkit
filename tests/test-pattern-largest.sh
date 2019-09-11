@@ -30,13 +30,14 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Test the pattern plugin with the largest possible size supported
-# by nbdkit.
+# Test the pattern plugin with the largest possible size supported by
+# nbdkit.  By using nbdsh (libnbd) as the client we are able to read
+# the final 511 byte "sector" which eludes qemu.
 
 source ./functions.sh
 set -e
 
-requires qemu-io --version
+requires nbdsh --version
 
 sock=`mktemp -u`
 files="pattern-largest.out pattern-largest.pid $sock"
@@ -48,22 +49,20 @@ cleanup_fn rm -f $files
 start_nbdkit -P pattern-largest.pid -U $sock \
        pattern 9223372036854775807
 
-# qemu cannot open this image!
-#
-#   can't open device nbd+unix://?socket=$sock: Could not get image size: File too large
-#
-# Therefore we skip the remainder of this test (in effect, testing
-# only that nbdkit can create the file).
-exit 77
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+# Construct what we expect to see in the last 511 bytes.
+expected = b""
+for i in range(0, 512-8, 8):
+    expected = expected + \
+               bytes([0x7f, 0xff, 0xff, 0xff, \
+                      0xff, 0xff, 0xfe + (i >> 8), i & 255])
+# final byte is truncated so we have to deal with last 7
+# bytes specially ...
+expected = expected + b"\x7f\xff\xff\xff\xff\xff\xff"
 
-# XXX Unfortunately qemu-io can only issue 512-byte aligned requests,
-# and the final block is only 511 bytes, so we have to request the 512
-# bytes before that block.
-qemu-io -r -f raw "nbd+unix://?socket=$sock" \
-        -c 'r -v 9223372036854774784 512' | grep -E '^[[:xdigit:]]+:' > pattern-largest.out
-if [ "$(cat pattern-largest.out)" != "XXX EXPECTED PATTERN HERE" ]
-then
-    echo "$0: unexpected pattern:"
-    cat pattern-largest.out
-    exit 1
-fi
+# Read and compare.
+buf = h.pread (511, 9223372036854775296)
+print ("buf = %r\nexpected = %r\n" % (buf, expected))
+assert buf == expected
+'

@@ -31,7 +31,7 @@
 # SUCH DAMAGE.
 
 # Test the full plugin.  Note that this plugin causes libguestfs to
-# hang so we have to use low level tools (qemu-io).
+# hang so we have to use low level tools.
 
 source ./functions.sh
 set -e
