@@ -259,6 +259,16 @@ negotiate_handshake_newstyle_options (struct connection *conn)
     option = be32toh (new_option.option);
     optname = name_of_nbd_opt (option);
 
+    /* If the client lacks fixed newstyle support, it should only send
+     * NBD_OPT_EXPORT_NAME.
+     */
+    if (!(conn->cflags & NBD_FLAG_FIXED_NEWSTYLE) &&
+        option != NBD_OPT_EXPORT_NAME) {
+      if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID))
+        return -1;
+      continue;
+    }
+
     /* In --tls=require / FORCEDTLS mode the only options allowed
      * before TLS negotiation are NBD_OPT_ABORT and NBD_OPT_STARTTLS.
      */
