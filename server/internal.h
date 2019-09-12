@@ -90,6 +90,7 @@ extern const char *exportname;
 extern bool foreground;
 extern const char *ipaddr;
 extern enum log_to log_to;
+extern unsigned mask_handshake;
 extern bool newstyle;
 extern bool no_sr;
 extern const char *port;

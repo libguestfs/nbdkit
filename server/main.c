@@ -67,6 +67,7 @@ const char *exportname;         /* -e */
 bool foreground;                /* -f */
 const char *ipaddr;             /* -i */
 enum log_to log_to = LOG_TO_DEFAULT; /* --log */
+unsigned mask_handshake = ~0U;  /* --mask-handshake */
 bool newstyle = true;           /* false = -o, true = -n */
 bool no_sr;                     /* --no-sr */
 char *pidfile;                  /* -P */
@@ -148,6 +149,7 @@ main (int argc, char *argv[])
   } *filter_filenames = NULL;
   size_t i;
   const char *magic_config_key;
+  char *end;
 
   /* Refuse to run if stdin/out/err are closed, whether or not -s is used. */
   if (fcntl (STDERR_FILENO, F_GETFL) == -1) {
@@ -348,6 +350,16 @@ main (int argc, char *argv[])
       ipaddr = optarg;
       break;
 
+    case MASK_HANDSHAKE_OPTION:
+      errno = 0;
+      mask_handshake = strtoul (optarg, &end, 0);
+      if (errno || *end) {
+        fprintf (stderr, "%s: cannot parse '%s' into mask-handshake\n",
+                 program_name, optarg);
+        exit (EXIT_FAILURE);
+      }
+      break;
+
     case 'n':
       newstyle = true;
       break;
@@ -389,18 +401,14 @@ main (int argc, char *argv[])
       break;
 
     case 't':
-      {
-        char *end;
-
-        errno = 0;
-        threads = strtoul (optarg, &end, 0);
-        if (errno || *end) {
-          fprintf (stderr, "%s: cannot parse '%s' into threads\n",
-                   program_name, optarg);
-          exit (EXIT_FAILURE);
-        }
-        /* XXX Worth a maximimum limit on threads? */
+      errno = 0;
+      threads = strtoul (optarg, &end, 0);
+      if (errno || *end) {
+        fprintf (stderr, "%s: cannot parse '%s' into threads\n",
+                 program_name, optarg);
+        exit (EXIT_FAILURE);
       }
+      /* XXX Worth a maximimum limit on threads? */
       break;
 
     case 'U':

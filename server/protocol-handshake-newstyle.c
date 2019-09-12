@@ -673,7 +673,7 @@ protocol_handshake_newstyle (struct connection *conn)
   struct new_handshake handshake;
   uint16_t gflags;
 
-  gflags = NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES;
+  gflags = (NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES) & mask_handshake;
 
   debug ("newstyle negotiation: flags: global 0x%x", gflags);
 
@@ -694,7 +694,7 @@ protocol_handshake_newstyle (struct connection *conn)
   /* ... which we check for accuracy. */
   debug ("newstyle negotiation: client flags: 0x%x", conn->cflags);
   if (conn->cflags & ~gflags) {
-    nbdkit_error ("client requested unknown flags 0x%x", conn->cflags);
+    nbdkit_error ("client requested unexpected flags 0x%x", conn->cflags);
     return -1;
   }
 

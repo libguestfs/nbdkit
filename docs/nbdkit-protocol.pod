@@ -4,8 +4,8 @@ nbdkit - which parts of the NBD protocol nbdkit supports
 
 =head1 SYNOPSIS
 
- nbdkit [-n|--newstyle] [--no-sr] [-o|--oldstyle] [-e|--exportname EXPORTNAME]
-        [...]
+ nbdkit [-n|--newstyle] [--mask-handshake MASK] [--no-sr] [-o|--oldstyle]
+        [-e|--exportname EXPORTNAME] [...]
 
 =head1 DESCRIPTION
 
@@ -24,15 +24,30 @@ newstyle protocol is better in every respect than the oldstyle
 protocol and you should prefer it if possible.  The newstyle protocol
 also includes an extension where a client may request structured
 replies for even more capabilities, such as sparse reads or obtaining
-block status.
+block status.  By default, nbdkit advertises as many features as it
+can support (in some cases, this can be limited by what callbacks the
+plugin handles), even if the client does not negotiate to use all
+advertised features.
 
 Use the I<-e> or I<--exportname> flag to set the optional exportname
 for the newstyle protocol.
 
-Use the I<--no-sr> flag to force the newstyle protocol to decline any
-client request for structured replies.
+Nbdkit also includes some options that are useful mainly when
+performing integration tests, for proving whether clients have sane
+fallback behavior when dealing various older servers permitted by the
+NBD protocol.  Use the I<--no-sr> flag to force the newstyle protocol
+to decline any client request for structured replies.  Use the
+I<--mask-handshake> parameter to mask off particular global features
+which are advertised during new-style handshake (defaulting to all
+supported bits set).  Clearing bit 0 (the low order bit) limits a
+client to using just C<NBD_OPT_EXPORT_NAME> (and is incompatible with
+TLS or structured replies); clearing bit 1 causes the handshake to
+send more padding bytes in response to C<NBD_OPT_EXPORT_NAME>.  Other
+bits in the mask will only have an effect if the NBD protocol is
+extended in the future to define other global bits.
 
 Use the I<-o> or I<--oldstyle> flag to force the oldstyle protocol.
+In this mode, I<--no-sr> and I<--mask-handshake> have no effect.
 
 =head2 Common clients and the protocol they require
 
