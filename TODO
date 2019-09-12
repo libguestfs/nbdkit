@@ -24,8 +24,9 @@ General ideas for improvements
   to inform nbdkit when the response is ready:
   https://www.redhat.com/archives/libguestfs/2018-January/msg00149.html
 
-* More NBD protocol features.  The only currently missing features are
-  structured replies for sparse reads, and online resize.
+* More NBD protocol features.  The currently missing features are
+  structured replies for sparse reads, block size constraints, and
+  online resize.
 
 * Add a callback to let plugins request minimum alignment for the
   buffer to pread/pwrite; useful for a plugin utilizing O_DIRECT or
@@ -61,6 +62,14 @@ General ideas for improvements
   https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg1933394.html
   and also look at the implementation of the -swap option in
   nbd-client.
+
+* Add a mode of operation where nbdkit is handed a pre-opened fd to be
+  used immediately in transmission phase (skipping handshake).  There
+  are already third-party clients of the kernel's /dev/nbdX which rely
+  on their own protocol instead of NBD handshake, before calling
+  ioctl(NBD_SET_SOCK); this mode would let the third-party client
+  continue to keep their non-standard handshake while utilizing nbdkit
+  to prototype new behaviors in serving the kernel.
 
 Suggestions for plugins
 -----------------------
