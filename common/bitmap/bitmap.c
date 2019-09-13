@@ -59,10 +59,16 @@ bitmap_resize (struct bitmap *bm, uint64_t new_size)
   }
   new_bm_size = (size_t) new_bm_size_u64;
 
-  new_bitmap = realloc (bm->bitmap, new_bm_size);
-  if (new_bitmap == NULL) {
-    nbdkit_error ("realloc: %m");
-    return -1;
+  if (new_bm_size > 0) {
+    new_bitmap = realloc (bm->bitmap, new_bm_size);
+    if (new_bitmap == NULL) {
+      nbdkit_error ("realloc: %m");
+      return -1;
+    }
+  }
+  else {
+    free (bm->bitmap);
+    new_bitmap = NULL;
   }
   bm->bitmap = new_bitmap;
   bm->size = new_bm_size;

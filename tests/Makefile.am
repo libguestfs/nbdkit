@@ -50,6 +50,7 @@ EXTRA_DIST = \
 	test-cacheextents.sh \
 	test-captive.sh \
 	test-cow.sh \
+	test-cow-null.sh \
 	test-cxx.sh \
 	test-data-7E.sh \
 	test-data-base64.sh \
@@ -956,6 +957,7 @@ TESTS += test-cacheextents.sh
 if HAVE_GUESTFISH
 TESTS += test-cow.sh
 endif HAVE_GUESTFISH
+TESTS += test-cow-null.sh
 
 # delay filter tests.
 TESTS += test-shutdown.sh
