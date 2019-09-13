@@ -49,6 +49,7 @@ EXTRA_DIST = \
 	test-cache-on-read.sh \
 	test-captive.sh \
 	test-cow.sh \
+	test-cow-null.sh \
 	test-cxx.sh \
 	test-data-7E.sh \
 	test-data-base64.sh \
@@ -862,6 +863,7 @@ TESTS += test-cache-max-size.sh
 if HAVE_GUESTFISH
 TESTS += test-cow.sh
 endif HAVE_GUESTFISH
+TESTS += test-cow-null.sh
 
 # delay filter test.
 LIBGUESTFS_TESTS += test-delay
