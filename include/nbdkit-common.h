@@ -40,6 +40,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <errno.h>
+#include <sys/socket.h>
 
 #include <nbdkit-version.h>
 
@@ -87,6 +88,7 @@ extern int nbdkit_read_password (const char *value, char **password);
 extern char *nbdkit_realpath (const char *path);
 extern int nbdkit_nanosleep (unsigned sec, unsigned nsec);
 extern const char *nbdkit_export_name (void);
+extern int nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen);
 
 struct nbdkit_extents;
 extern int nbdkit_add_extent (struct nbdkit_extents *,

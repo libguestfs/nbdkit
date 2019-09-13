@@ -49,6 +49,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <signal.h>
+#include <sys/socket.h>
 
 #include "get-current-dir-name.h"
 
@@ -391,4 +392,29 @@ nbdkit_export_name (void)
   }
 
   return conn->exportname;
+}
+
+int
+nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen)
+{
+  struct connection *conn = threadlocal_get_conn ();
+  int s;
+
+  if (!conn) {
+    nbdkit_error ("no connection in this thread");
+    return -1;
+  }
+
+  s = conn->sockin;
+  if (s == -1) {
+    nbdkit_error ("socket not open");
+    return -1;
+  }
+
+  if (getpeername (s, addr, addrlen) == -1) {
+    nbdkit_error ("peername: %m");
+    return -1;
+  }
+
+  return 0;
 }

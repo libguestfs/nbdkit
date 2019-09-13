@@ -389,6 +389,29 @@ client data, be cautious when parsing it.>
 
 On error, C<nbdkit_error> is called and the call returns C<NULL>.
 
+=head1 PEER NAME
+
+It is possible to get the address of the client when you are running
+in any connected callback.
+
+=head2 C<nbdkit_peer_name>
+
+ int nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen);
+
+Return the peer (client) address, if available.  The C<addr> and
+C<addrlen> parameters behave like L<getpeername(2)>.  In particular
+you must initialize C<addrlen> with the size of the buffer pointed to
+by C<addr>, and if C<addr> is not large enough then the address will
+be truncated.
+
+In some cases this is not available or the address returned will be
+meaningless (eg. if there is a proxy between the client and nbdkit).
+This call uses thread-local magic so no parameter is required to
+specify the current connection.
+
+On success this returns C<0>.  On error, C<nbdkit_error> is called and
+this call returns C<-1>.
+
 =head1 CALLBACKS
 
 =head2 C<.name>

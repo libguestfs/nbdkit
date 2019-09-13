@@ -50,6 +50,7 @@
     nbdkit_nanosleep;
     nbdkit_parse_bool;
     nbdkit_parse_size;
+    nbdkit_peer_name;
     nbdkit_read_password;
     nbdkit_realpath;
     nbdkit_set_error;

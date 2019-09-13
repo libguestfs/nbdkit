@@ -77,6 +77,12 @@ General ideas for improvements
   name(s) that a plugin might want to support.  Probably we should
   deprecate the -e option entirely since it does nothing useful.
 
+* Add plugin "connect" method.  This would be called on a connection
+  before handshaking or TLS negotiation, and could be used (with
+  nbdkit_peer_name) to accept or reject connections based on IP
+  address, rather like a poor man's TCP wrappers.  See also commit
+  c05686f9577f.
+
 Suggestions for plugins
 -----------------------
 
