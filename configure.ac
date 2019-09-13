@@ -846,6 +846,7 @@ non_lang_plugins="\
         partitioning \
         pattern \
         random \
+        reflection \
         split \
         ssh \
         streaming \
@@ -922,6 +923,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/perl/Makefile
                  plugins/python/Makefile
                  plugins/random/Makefile
+                 plugins/reflection/Makefile
                  plugins/ruby/Makefile
                  plugins/rust/Cargo.toml
                  plugins/rust/Makefile

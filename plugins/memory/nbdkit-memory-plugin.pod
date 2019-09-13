@@ -86,7 +86,8 @@ L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-loop(1)>,
 L<nbdkit-data-plugin(1)>,
-L<nbdkit-file-plugin(1)>.
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-reflection-plugin(1)>.
 
 =head1 AUTHORS
 

@@ -1,0 +1,105 @@
+=head1 NAME
+
+nbdkit-reflection-plugin - reflect export name back to the client
+
+=head1 SYNOPSIS
+
+ nbdkit reflection [mode=]exportname|base64exportname
+
+=head1 DESCRIPTION
+
+C<nbdkit-reflection-plugin> is a test plugin which reflects
+information sent by the client back to the client.
+
+In its default mode (C<mode=exportname>) it converts the export name
+passed from the client into a disk image.  C<mode=base64exportname> is
+similar except the client must base64-encode the data in the export
+name, allowing arbitrary binary data to be sent (see L</EXAMPLES>
+below to make this clearer).  Export names are limited to 4096 bytes
+by the NBD protocol, and nbdkit limits them to a few bytes smaller
+than this.
+
+The plugin only supports read-only access.  To make the disk writable,
+add L<nbdkit-cow-filter(1)> on top.
+
+=head1 EXAMPLES
+
+Create a reflection disk.  By setting the export name to C<"hello">
+when we open it, a virtual disk of only 5 bytes containing these
+characters is created.  We then display the contents:
+
+ $ nbdkit --exit-with-parent reflection mode=exportname &
+ $ nbdsh -u 'nbd://localhost/hello' -c - <<'EOF'
+ size = h.get_size()
+ print("size = %d" % size)
+ buf = h.pread(size, 0)
+ print("buf = %r" % buf)
+ EOF
+
+ size = 5
+ buf = b"hello"
+
+By running a reflection plugin, you can pass whole bootable VMs on the
+qemu command line:
+
+ $ nbdkit reflection mode=base64exportname
+ $ qemu-system-x86_64 \
+   -drive 'snapshot=on,file.driver=nbd,file.host=localhost,file.port=10809,file.export=
+ tACwA80QtBOzCrABuRwAtgCyAL0ZfM0Q9CoqKiBIZWxsbyBmcm9tIG5iZGtp
+ dCEgKioqDQoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ AAAAAAAAAAAAAAAAAAAAVao=
+ '
+
+=head1 PARAMETERS
+
+=over 4
+
+=item [B<mode=>]B<base64exportname>
+
+Reflect the export name passed by the client, assuming the client
+string is base64 encoded.
+
+This mode is only supported if nbdkit was compiled with GnuTLS E<ge>
+3.6.0.  You can find out by checking if:
+
+ $ nbdkit reflection --dump-plugin
+
+contains:
+
+ reflection_base64=yes
+
+=item [B<mode=>]B<exportname>
+
+Reflect the raw export name passed by the client.  Note the export
+name cannot contain ASCII NUL characters.
+
+This is the default mode.
+
+C<mode=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-cow-filter(1)>,
+L<nbdkit-data-plugin(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

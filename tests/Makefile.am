@@ -111,6 +111,8 @@ EXTRA_DIST = \
 	test-rate-dynamic.sh \
 	test.rb \
 	test-readahead-copy.sh \
+	test-reflection-base64.sh \
+	test-reflection-raw.sh \
 	test-shutdown.sh \
 	test-ssh.sh \
 	test.tcl \
@@ -601,6 +603,12 @@ test_random_SOURCES = test-random.c test.h
 test_random_CPPFLAGS = -I $(top_srcdir)/common/include
 test_random_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_random_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# reflection plugin test.
+TESTS += \
+	test-reflection-base64.sh \
+	test-reflection-raw.sh \
+	$(NULL)
 
 # split files plugin test.
 check_DATA += split1 split2 split3
