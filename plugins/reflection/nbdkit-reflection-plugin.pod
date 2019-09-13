@@ -1,10 +1,10 @@
 =head1 NAME
 
-nbdkit-reflection-plugin - reflect export name back to the client
+nbdkit-reflection-plugin - reflect client info back to the client
 
 =head1 SYNOPSIS
 
- nbdkit reflection [mode=]exportname|base64exportname
+ nbdkit reflection [mode=]exportname|base64exportname|address
 
 =head1 DESCRIPTION
 
@@ -18,6 +18,9 @@ name, allowing arbitrary binary data to be sent (see L</EXAMPLES>
 below to make this clearer).  Export names are limited to 4096 bytes
 by the NBD protocol, and nbdkit limits them to a few bytes smaller
 than this.
+
+C<mode=address> creates a disk which contains the client's IP address
+and port number as a string.
 
 The plugin only supports read-only access.  To make the disk writable,
 add L<nbdkit-cow-filter(1)> on top.
@@ -59,9 +62,25 @@ qemu command line:
  AAAAAAAAAAAAAAAAAAAAVao=
  '
 
+Another use for the reflection plugin is to send back the client's IP
+address:
+
+ $ nbdkit reflection mode=address
+ $ nbdsh -u 'nbd://localhost' -c 'print(h.pread(h.get_size(), 0))'
+
+which will print something like:
+
+ b'[::1]:58912'
+
 =head1 PARAMETERS
 
 =over 4
+
+=item [B<mode=>]B<address>
+
+Reflect the client's IP address and client port number as a string in
+the usual format.  For Unix sockets this sets the disk to the string
+C<"unix"> to avoid leaking host paths.
 
 =item [B<mode=>]B<base64exportname>
 

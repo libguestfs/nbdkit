@@ -111,6 +111,7 @@ EXTRA_DIST = \
 	test-rate-dynamic.sh \
 	test.rb \
 	test-readahead-copy.sh \
+	test-reflection-address.sh \
 	test-reflection-base64.sh \
 	test-reflection-raw.sh \
 	test-shutdown.sh \
@@ -606,6 +607,7 @@ test_random_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # reflection plugin test.
 TESTS += \
+	test-reflection-address.sh \
 	test-reflection-base64.sh \
 	test-reflection-raw.sh \
 	$(NULL)

@@ -35,6 +35,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
 #include <gnutls/gnutls.h>
@@ -49,6 +52,7 @@
 enum mode {
   MODE_EXPORTNAME,
   MODE_BASE64EXPORTNAME,
+  MODE_ADDRESS,
 };
 static enum mode mode = MODE_EXPORTNAME;
 
@@ -69,6 +73,9 @@ reflection_config (const char *key, const char *value)
       return -1;
 #endif
     }
+    else if (strcasecmp (value, "address") == 0) {
+      mode = MODE_ADDRESS;
+    }
     else {
       nbdkit_error ("unknown mode: '%s'", value);
       return -1;
@@ -83,7 +90,7 @@ reflection_config (const char *key, const char *value)
 }
 
 #define reflection_config_help \
-  "mode=exportname|base64exportname  Plugin mode."
+  "mode=exportname|base64exportname|address  Plugin mode."
 
 /* Provide a way to detect if the base64 feature is supported. */
 static void
@@ -139,6 +146,74 @@ decode_base64 (const char *data, size_t len, struct handle *ret)
 #endif
 }
 
+static int
+handle_address (struct sockaddr *sa, socklen_t addrlen,
+                struct handle *ret)
+{
+  struct sockaddr_in *addr = (struct sockaddr_in *) sa;
+  struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *) sa;
+  union {
+    char straddr[INET_ADDRSTRLEN];
+    char straddr6[INET6_ADDRSTRLEN];
+  } u;
+  int r;
+  char *str;
+
+  switch (addr->sin_family) {
+  case AF_INET:
+    if (inet_ntop (AF_INET, &addr->sin_addr,
+                   u.straddr, sizeof u.straddr) == NULL) {
+      nbdkit_error ("inet_ntop: %m");
+      return -1;
+    }
+    r = asprintf (&str, "%s:%d", u.straddr, ntohs (addr->sin_port));
+    if (r == -1) {
+      nbdkit_error ("asprintf: %m");
+      return -1;
+    }
+    ret->len = r;
+    ret->data = str;
+    return 0;
+
+  case AF_INET6:
+    if (inet_ntop (AF_INET6, &addr6->sin6_addr,
+                   u.straddr6, sizeof u.straddr6) == NULL) {
+      nbdkit_error ("inet_ntop: %m");
+      return -1;
+    }
+    r = asprintf (&str, "[%s]:%d", u.straddr6, ntohs (addr6->sin6_port));
+    if (r == -1) {
+      nbdkit_error ("asprintf: %m");
+      return -1;
+    }
+    ret->len = r;
+    ret->data = str;
+    return 0;
+
+  case AF_UNIX:
+    /* We don't want to expose the socket path because it's a host
+     * filesystem name.  The client might not really be running on the
+     * same machine (eg. it is using a proxy).  However it doesn't
+     * even matter because getpeername(2) on Linux returns a zero
+     * length sun_path in this case!
+     */
+    str = strdup ("unix");
+    if (str == NULL) {
+      nbdkit_error ("strdup: %m");
+      return -1;
+    }
+    ret->len = strlen (str);
+    ret->data = str;
+    return 0;
+
+  default:
+    nbdkit_debug ("unsupported socket family %d", addr->sin_family);
+    ret->data = NULL;
+    ret->len = 0;
+    return 0;
+  }
+}
+
 /* Create the per-connection handle.
  *
  * This is a rather unusual plugin because it has to parse data sent
@@ -149,12 +224,16 @@ decode_base64 (const char *data, size_t len, struct handle *ret)
  * - Inputs that result in unbounded output.
  *
  * - Inputs that could hang, crash or exploit the server.
+ *
+ * - Leaking host information (eg. paths).
  */
 static void *
 reflection_open (int readonly)
 {
   const char *export_name;
   size_t export_name_len;
+  struct sockaddr_storage addr;
+  socklen_t addrlen;
   struct handle *h;
 
   h = malloc (sizeof *h);
@@ -191,6 +270,15 @@ reflection_open (int readonly)
       return h;
     }
 
+  case MODE_ADDRESS:
+    addrlen = sizeof addr;
+    if (nbdkit_peer_name ((struct sockaddr *) &addr, &addrlen) == -1 ||
+        handle_address ((struct sockaddr *) &addr, addrlen, h) == -1) {
+      free (h);
+      return NULL;
+    }
+    return h;
+
   default:
     abort ();
   }
@@ -217,11 +305,26 @@ reflection_get_size (void *handle)
   return (int64_t) h->len;
 }
 
-/* Read-only plugin so multi-conn is safe. */
 static int
 reflection_can_multi_conn (void *handle)
 {
-  return 1;
+  switch (mode) {
+    /* Safe for exportname modes since clients should only request
+     * multi-conn with the same export name.
+     */
+  case MODE_EXPORTNAME:
+  case MODE_BASE64EXPORTNAME:
+    return 1;
+    /* Unsafe for mode=address because all multi-conn connections
+     * won't necessarily originate from the same client address.
+     */
+  case MODE_ADDRESS:
+    return 0;
+
+    /* Keep GCC happy. */
+  default:
+    abort ();
+  }
 }
 
 /* Cache. */
