@@ -55,7 +55,7 @@
 #include <nbdkit-plugin.h>
 
 /* Configuration. */
-static const char *connect = NULL;
+static const char *libvirt_uri = NULL;
 static const char *domain = NULL;
 static const char *disk = NULL;
 
@@ -63,7 +63,7 @@ static int
 virt_config (const char *key, const char *value)
 {
   if (strcmp (key, "connect") == 0) {
-    connect = value;
+    libvirt_uri = value;
   }
   else if (strcmp (key, "domain") == 0) {
     domain = value;
@@ -119,7 +119,7 @@ virt_open (int readonly)
   }
 
   /* Connect to libvirt. */
-  h->conn = virConnectOpen (connect);
+  h->conn = virConnectOpen (libvirt_uri);
   if (!h->conn) {
     nbdkit_error ("virConnectOpen failed, see earlier error messages");
     goto err1;

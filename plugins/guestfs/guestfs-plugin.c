@@ -48,7 +48,7 @@
 #include "cleanup.h"
 
 /* Configuration. */
-static const char *connect = NULL; /* libvirt URI */
+static const char *libvirt_uri = NULL; /* libvirt URI */
 static const char *export = NULL;  /* export device or file */
 static const char *format = NULL;  /* format parameter */
 static int trace = 0, debug = 0;
@@ -87,7 +87,7 @@ plugin_guestfs_config (const char *key, const char *value)
     }
   }
   else if (strcmp (key, "connect") == 0) {
-    connect = value;
+    libvirt_uri = value;
   }
   else if (strcmp (key, "export") == 0) {
     export = value;
@@ -355,9 +355,9 @@ add_disks (guestfs_h *g, int readonly, struct drive *drives)
       GUESTFS_ADD_DOMAIN_ALLOWUUID_BITMASK;
     domain_optargs.readonly = readonly;
     domain_optargs.allowuuid = 1;
-    if (connect) {
+    if (libvirt_uri) {
       domain_optargs.bitmask |= GUESTFS_ADD_DOMAIN_LIBVIRTURI_BITMASK;
-      domain_optargs.libvirturi = connect;
+      domain_optargs.libvirturi = libvirt_uri;
     }
     if (guestfs_add_domain_argv (g, drives->value, &domain_optargs) == -1) {
       GERROR (g, "domain %s", drives->value);
