@@ -384,7 +384,8 @@ The export name is a free-form text string, it is not necessarily a
 path or filename and it does not need to begin with a C<'/'>
 character.  The NBD protocol describes the empty string (C<"">) as a
 representing a "default export" or to be used in cases where the
-export name does not make sense.
+export name does not make sense.  B<The export name is untrusted
+client data, be cautious when parsing it.>
 
 On error, nbdkit_error is called and the call returns C<NULL>.
 
