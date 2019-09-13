@@ -387,7 +387,7 @@ representing a "default export" or to be used in cases where the
 export name does not make sense.  B<The export name is untrusted
 client data, be cautious when parsing it.>
 
-On error, nbdkit_error is called and the call returns C<NULL>.
+On error, C<nbdkit_error> is called and the call returns C<NULL>.
 
 =head1 CALLBACKS
 
