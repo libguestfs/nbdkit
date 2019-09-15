@@ -48,8 +48,9 @@ start_nbdkit -P exportname.pid -U $sock \
 case "$1" in
     open)
         # The export name is the handle.  nbdkit-sh-plugin removes
-        # the trailing \n for us.
-        echo "$3"
+        # exactly one trailing \n for us, so we must add one in case
+        # the client's handle also has one.
+        printf '%s\n' "$3"
         ;;
     get_size)
         # Returns the length of the export name / handle in _bytes_.
@@ -57,14 +58,14 @@ case "$1" in
         echo ${#2}
         ;;
     pread)
-        echo "$2" | dd skip=$4 count=$3 iflag=skip_bytes,count_bytes
+        printf %s "$2" | dd skip=$4 count=$3 iflag=skip_bytes,count_bytes
         ;;
     *) exit 2 ;;
 esac
 EOF
 
 # Try to read back various export names from the plugin.
-for e in "" "test" "/" "//" " " "/ " "?" "テスト" \
+for e in "" "test" "/" "//" " " "/ " "?" "テスト" "-n" '\\' $'\n' \
          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 do
     export e sock
