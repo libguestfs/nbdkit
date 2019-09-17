@@ -90,7 +90,7 @@ reflection_config (const char *key, const char *value)
 }
 
 #define reflection_config_help \
-  "mode=exportname|base64exportname|address  Plugin mode."
+  "mode=exportname|base64exportname|address  Plugin mode (default exportname)."
 
 /* Provide a way to detect if the base64 feature is supported. */
 static void
