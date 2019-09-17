@@ -65,7 +65,7 @@ esac
 EOF
 
 # Try to read back various export names from the plugin.
-for e in "" "test" "/" "//" " " "/ " "?" "テスト" "-n" '\\' $'\n' \
+for e in "" "test" "/" "//" " " "/ " "?" "テスト" "-n" '\\' $'\n' "%%" \
          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 do
     export e sock

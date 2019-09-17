@@ -46,7 +46,7 @@ cleanup_fn rm -f $files
 # Run nbdkit.
 start_nbdkit -P reflection-raw.pid -U $sock reflection
 
-for e in "" "test" "テスト" \
+for e in "" "test" "/" "//" " " "/ " "?" "テスト" "-n" '\\' $'\n' "%%" \
          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 do
     export e sock

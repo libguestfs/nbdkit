@@ -54,7 +54,7 @@ start_nbdkit -P reflection-base64.pid -U $sock \
        reflection mode=base64exportname
 
 export e sock
-for e in "" "test" "テスト" "-n" '\\' $'\n' \
+for e in "" "test" "/" "//" " " "/ " "?" "テスト" "-n" '\\' $'\n' "%%" \
          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 do
     nbdsh -c '
