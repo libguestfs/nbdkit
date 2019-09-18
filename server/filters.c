@@ -257,6 +257,7 @@ filter_close (struct backend *b, struct connection *conn)
   if (f->filter.close)
     f->filter.close (handle);
   f->backend.next->close (f->backend.next, conn);
+  connection_set_handle (conn, f->backend.i, NULL);
 }
 
 /* The next_functions structure contains pointers to backend
