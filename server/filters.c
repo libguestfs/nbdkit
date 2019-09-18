@@ -241,15 +241,21 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
 
   debug ("%s: open readonly=%d", f->name, readonly);
 
+  assert (connection_get_handle (conn, b->i) == NULL);
+
   if (f->filter.open) {
     handle = f->filter.open (next_open, &nxdata, readonly);
     if (handle == NULL)
       return -1;
     connection_set_handle (conn, f->backend.i, handle);
-    return 0;
   }
-  else
-    return f->backend.next->open (f->backend.next, conn, readonly);
+  else {
+    if (f->backend.next->open (f->backend.next, conn, readonly) == -1)
+      return -1;
+    connection_set_handle (conn, f->backend.i, NBDKIT_HANDLE_NOT_NEEDED);
+  }
+  assert (connection_get_handle (conn, b->i - 1) != NULL);
+  return 0;
 }
 
 static void
@@ -260,7 +266,7 @@ filter_close (struct backend *b, struct connection *conn)
 
   debug ("%s: close", f->name);
 
-  if (f->filter.close)
+  if (handle && f->filter.close)
     f->filter.close (handle);
   f->backend.next->close (f->backend.next, conn);
 }
