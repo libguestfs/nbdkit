@@ -172,6 +172,7 @@ int
 backend_open (struct backend *b, struct connection *conn, int readonly)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
+  int r;
 
   debug ("%s: open readonly=%d", b->name, readonly);
 
@@ -179,7 +180,15 @@ backend_open (struct backend *b, struct connection *conn, int readonly)
   assert (h->can_write == -1);
   if (readonly)
     h->can_write = 0;
-  return b->open (b, conn, readonly);
+  r = b->open (b, conn, readonly);
+  if (r == 0) {
+    assert (h->handle != NULL);
+    if (b->i) /* A filter must not succeed unless its backend did also */
+      assert (conn->handles[b->i - 1].handle);
+  }
+  else
+    assert (h->handle == NULL);
+  return r;
 }
 
 int

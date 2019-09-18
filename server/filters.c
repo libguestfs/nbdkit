@@ -210,10 +210,13 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
     if (handle == NULL)
       return -1;
     backend_set_handle (b, conn, handle);
-    return 0;
   }
-  else
-    return backend_open (b->next, conn, readonly);
+  else {
+    if (backend_open (b->next, conn, readonly) == -1)
+      return -1;
+    backend_set_handle (b, conn, NBDKIT_HANDLE_NOT_NEEDED);
+  }
+  return 0;
 }
 
 static void
@@ -224,8 +227,9 @@ filter_close (struct backend *b, struct connection *conn)
 
   debug ("%s: close", b->name);
 
-  if (f->filter.close)
+  if (handle && f->filter.close)
     f->filter.close (handle);
+  backend_set_handle (b, conn, NULL);
   b->next->close (b->next, conn);
 }
 
