@@ -187,7 +187,7 @@ backend_prepare (struct backend *b, struct connection *conn)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
 
-  debug ("%s: backend readonly=%d", b->name, h->can_write == 0);
+  debug ("%s: prepare readonly=%d", b->name, h->can_write == 0);
 
   return b->prepare (b, conn, h->can_write == 0);
 }
