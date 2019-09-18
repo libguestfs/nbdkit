@@ -202,9 +202,22 @@ backend_prepare (struct backend *b, struct connection *conn)
 }
 
 void
+backend_close (struct backend *b, struct connection *conn)
+{
+  struct b_conn_handle *h = &conn->handles[b->i];
+
+  debug ("%s: close", b->name);
+
+  b->close (b, conn);
+  memset (h, -1, sizeof *h);
+  h->handle = NULL;
+}
+
+void
 backend_set_handle (struct backend *b, struct connection *conn, void *handle)
 {
   assert (b->i < conn->nr_handles);
+  assert (conn->handles[b->i].handle == NULL);
   conn->handles[b->i].handle = handle;
 }
 

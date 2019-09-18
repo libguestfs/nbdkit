@@ -273,12 +273,8 @@ plugin_close (struct backend *b, struct connection *conn)
 
   assert (connection_get_handle (conn, 0));
 
-  debug ("close");
-
   if (p->plugin.close)
     p->plugin.close (connection_get_handle (conn, 0));
-
-  backend_set_handle (b, conn, NULL);
 }
 
 static int64_t

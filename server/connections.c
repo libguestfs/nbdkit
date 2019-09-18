@@ -369,7 +369,7 @@ free_connection (struct connection *conn)
    */
   if (!quit && connection_get_handle (conn, 0)) {
     lock_request (conn);
-    backend->close (backend, conn);
+    backend_close (backend, conn);
     unlock_request (conn);
   }
 
