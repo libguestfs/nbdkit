@@ -39,4 +39,4 @@ set -x
 
 requires qemu-img --version
 
-nbdkit -fv --filter=cow null --run 'qemu-img info $nbd'
+nbdkit -fv -U - --filter=cow null --run 'qemu-img info $nbd'
