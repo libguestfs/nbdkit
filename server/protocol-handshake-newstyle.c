@@ -453,6 +453,12 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
         return -1;
 
+      if (option == NBD_OPT_INFO) {
+        if (backend->finalize (backend, conn) == -1)
+          return -1;
+        backend->close (backend, conn);
+      }
+
       break;
 
     case NBD_OPT_STRUCTURED_REPLY:
