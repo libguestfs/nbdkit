@@ -50,13 +50,7 @@ protocol_handshake_oldstyle (struct connection *conn)
   uint64_t exportsize;
   uint16_t gflags, eflags;
 
-  /* In --tls=require / FORCEDTLS mode, old style handshakes are
-   * rejected because they cannot support TLS.
-   */
-  if (tls == 2) {
-    nbdkit_error ("non-TLS client tried to connect in --tls=require mode");
-    return -1;
-  }
+  assert (tls != 2); /* Already filtered in main */
 
   if (protocol_common_open (conn, &exportsize, &eflags) == -1)
     return -1;
