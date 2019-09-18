@@ -55,8 +55,6 @@
 struct threadlocal {
   char *name;                   /* Can be NULL. */
   size_t instance_num;          /* Can be 0. */
-  struct sockaddr *addr;
-  socklen_t addrlen;
   int err;
   void *buffer;
   size_t buffer_size;
@@ -71,7 +69,6 @@ free_threadlocal (void *threadlocalv)
   struct threadlocal *threadlocal = threadlocalv;
 
   free (threadlocal->name);
-  free (threadlocal->addr);
   free (threadlocal->buffer);
   free (threadlocal);
 }
@@ -131,22 +128,6 @@ threadlocal_set_instance_num (size_t instance_num)
 
   if (threadlocal)
     threadlocal->instance_num = instance_num;
-}
-
-void
-threadlocal_set_sockaddr (const struct sockaddr *addr, socklen_t addrlen)
-{
-  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
-
-  if (threadlocal) {
-    free (threadlocal->addr);
-    threadlocal->addr = calloc (1, addrlen);
-    if (threadlocal->addr == NULL) {
-      perror ("calloc");
-      exit (EXIT_FAILURE);
-    }
-    memcpy (threadlocal->addr, addr, addrlen);
-  }
 }
 
 const char *

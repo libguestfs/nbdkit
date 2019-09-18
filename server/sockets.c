@@ -260,8 +260,6 @@ free_listening_sockets (int *socks, size_t nr_socks)
 struct thread_data {
   int sock;
   size_t instance_num;
-  struct sockaddr addr;
-  socklen_t addrlen;
 };
 
 static void *
@@ -274,7 +272,6 @@ start_thread (void *datav)
   /* Set thread-local data. */
   threadlocal_new_server_thread ();
   threadlocal_set_instance_num (data->instance_num);
-  threadlocal_set_sockaddr (&data->addr, data->addrlen);
 
   handle_single_connection (data->sock, data->sock);
 
@@ -299,12 +296,9 @@ accept_connection (int listen_sock)
   }
 
   thread_data->instance_num = instance_num++;
-  thread_data->addrlen = sizeof thread_data->addr;
  again:
 #ifdef HAVE_ACCEPT4
-  thread_data->sock = accept4 (listen_sock,
-                               &thread_data->addr, &thread_data->addrlen,
-                               SOCK_CLOEXEC);
+  thread_data->sock = accept4 (listen_sock, NULL, NULL, SOCK_CLOEXEC);
 #else
   /* If we were fully parallel, then this function could be accepting
    * connections in one thread while another thread could be in a
@@ -316,9 +310,7 @@ accept_connection (int listen_sock)
   assert (backend->thread_model (backend) <=
           NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
   lock_request (NULL);
-  thread_data->sock = set_cloexec (accept (listen_sock,
-                                           &thread_data->addr,
-                                           &thread_data->addrlen));
+  thread_data->sock = set_cloexec (accept (listen_sock, NULL, NULL));
   unlock_request (NULL);
 #endif
   if (thread_data->sock == -1) {
