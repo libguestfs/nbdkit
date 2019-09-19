@@ -46,17 +46,12 @@ cleanup_fn rm -f $files
 # burst for a couple of seconds to begin with, therefore the
 # expected minimum time is more like 18-19 seconds.
 
-# We are using the bash time builtin, so setting TIMEFORMAT will
-# control the output format of the time builtin.  For strange use of
-# { ; } here, see: https://stackoverflow.com/a/13356654
-set +x
-{ TIMEFORMAT="%0R" ; time nbdkit -U - --filter=rate pattern 25M rate=10M --run 'qemu-img convert -p $nbd rate.img' 2>rate.err ; } 2>rate.time
-set -x
+start_t=$SECONDS
+nbdkit -U - --filter=rate pattern 25M rate=10M \
+       --run 'qemu-img convert -p $nbd rate.img'
+end_t=$SECONDS
 
-cat rate.err ||:
-
-seconds="$( cat rate.time )"
-if [ "$seconds" -lt 18 ]; then
+if [ $((end_t - start_t)) -lt 18 ]; then
     echo "$0: rate filter failed: command took $seconds seconds, expected about 20"
     exit 1
 fi
