@@ -45,8 +45,6 @@
 
 #include "cleanup.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 /* This lock protects the global state. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
