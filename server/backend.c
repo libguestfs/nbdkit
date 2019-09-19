@@ -209,8 +209,7 @@ backend_close (struct backend *b, struct connection *conn)
   debug ("%s: close", b->name);
 
   b->close (b, conn);
-  memset (h, -1, sizeof *h);
-  h->handle = NULL;
+  reset_b_conn_handle (h);
 }
 
 void
