@@ -360,6 +360,9 @@ extern bool backend_valid_range (struct backend *b, struct connection *conn,
                                  uint64_t offset, uint32_t count)
   __attribute__((__nonnull__ (1, 2)));
 
+extern int backend_reopen (struct backend *b, struct connection *conn,
+                           int readonly)
+  __attribute__((__nonnull__ (1, 2)));
 extern int64_t backend_get_size (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));
 extern int backend_can_write (struct backend *b, struct connection *conn)

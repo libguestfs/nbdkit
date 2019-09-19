@@ -161,6 +161,10 @@ C<nbdkit_set_error> or setting C<errno>), whereas
 C<next_ops-E<gt>pread> exposes this via an explicit parameter,
 allowing a filter to learn or modify this error if desired.
 
+There is also a C<next_ops-E<gt>reopen> function which is used by
+L<nbdkit-retry-filter(3)> to close and reopen the underlying plugin.
+It should be used with caution because it is difficult to use safely.
+
 =head2 Other considerations
 
 You can modify parameters when you call the C<next> function.  However

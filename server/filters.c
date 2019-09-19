@@ -237,6 +237,13 @@ filter_close (struct backend *b, struct connection *conn)
  * single ‘void *nxdata’ struct pointer (‘b_conn’).
  */
 
+static int
+next_reopen (void *nxdata, int readonly)
+{
+  struct b_conn *b_conn = nxdata;
+  return backend_reopen (b_conn->b, b_conn->conn, readonly);
+}
+
 static int64_t
 next_get_size (void *nxdata)
 {
@@ -373,6 +380,7 @@ next_cache (void *nxdata, uint32_t count, uint64_t offset,
 }
 
 static struct nbdkit_next_ops next_ops = {
+  .reopen = next_reopen,
   .get_size = next_get_size,
   .can_write = next_can_write,
   .can_flush = next_can_flush,

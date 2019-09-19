@@ -68,6 +68,12 @@ typedef int nbdkit_next_open (void *nxdata,
                               int readonly);
 
 struct nbdkit_next_ops {
+  /* Performs close + open on the underlying chain.
+   * Used by the retry filter.
+   */
+  int (*reopen) (void *nxdata, int readonly);
+
+  /* The rest of the next ops are the same as normal plugin operations. */
   int64_t (*get_size) (void *nxdata);
 
   int (*can_write) (void *nxdata);

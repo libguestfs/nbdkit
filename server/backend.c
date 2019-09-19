@@ -233,6 +233,18 @@ backend_valid_range (struct backend *b, struct connection *conn,
 
 /* Wrappers for all callbacks in a filter's struct nbdkit_next_ops. */
 
+int
+backend_reopen (struct backend *b, struct connection *conn, int readonly)
+{
+  struct b_conn_handle *h = &conn->handles[b->i];
+
+  debug ("%s: reopen readonly=%d", b->name, readonly);
+
+  if (h->handle != NULL)
+    backend_close (b, conn);
+  return backend_open (b, conn, readonly);
+}
+
 int64_t
 backend_get_size (struct backend *b, struct connection *conn)
 {
