@@ -62,8 +62,6 @@
 #include "minmax.h"
 #include "rounding.h"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 /* In order to handle parallel requests safely, this lock must be held
  * when calling any blk_* functions.
  */
