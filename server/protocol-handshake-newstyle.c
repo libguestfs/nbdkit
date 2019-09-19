@@ -566,10 +566,10 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         debug ("newstyle negotiation: %s: %s count: %d", optname,
                option == NBD_OPT_LIST_META_CONTEXT ? "query" : "set",
                nr_queries);
+        if (option == NBD_OPT_SET_META_CONTEXT)
+          conn->meta_context_base_allocation = false;
         if (nr_queries == 0) {
-          if (option == NBD_OPT_SET_META_CONTEXT)
-            conn->meta_context_base_allocation = false;
-          else /* LIST */ {
+          if (option == NBD_OPT_LIST_META_CONTEXT) {
             if (send_newstyle_option_reply_meta_context
                 (conn, option, NBD_REP_META_CONTEXT,
                  0, "base:allocation") == -1)
