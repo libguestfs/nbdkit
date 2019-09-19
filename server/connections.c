@@ -269,9 +269,8 @@ new_connection (int sockin, int sockout, int nworkers)
     goto error;
   }
   conn->nr_handles = backend->i + 1;
-  memset (conn->handles, -1, conn->nr_handles * sizeof *conn->handles);
   for_each_backend (b)
-    conn->handles[b->i].handle = NULL;
+    reset_b_conn_handle (&conn->handles[b->i]);
 
   conn->status = 1;
   conn->nworkers = nworkers;

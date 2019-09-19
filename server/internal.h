@@ -168,6 +168,23 @@ struct b_conn_handle {
   int can_cache;
 };
 
+static inline void
+reset_b_conn_handle (struct b_conn_handle *h)
+{
+  h->handle = NULL;
+  h->exportsize = -1;
+  h->can_write = -1;
+  h->can_flush = -1;
+  h->is_rotational = -1;
+  h->can_trim = -1;
+  h->can_zero = -1;
+  h->can_fast_zero = -1;
+  h->can_fua = -1;
+  h->can_multi_conn = -1;
+  h->can_extents = -1;
+  h->can_cache = -1;
+}
+
 struct connection {
   pthread_mutex_t request_lock;
   pthread_mutex_t read_lock;
