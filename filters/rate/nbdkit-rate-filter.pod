@@ -7,7 +7,8 @@ nbdkit-rate-filter - limit bandwidth by connection or server
  nbdkit --filter=rate PLUGIN [PLUGIN-ARGS...]
                       [rate=BITSPERSEC]
                       [connection-rate=BITSPERSEC]
-                      [rate-file=FILENAME] [connection-rate-file=FILENAME]
+                      [rate-file=FILENAME]
+                      [connection-rate-file=FILENAME]
 
 =head1 DESCRIPTION
 
