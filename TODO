@@ -136,6 +136,22 @@ nbdkit-rate-filter:
 * split large requests to avoid long, lumpy sleeps when request size
   is much larger than rate limit
 
+nbdkit-retry-filter:
+
+* allow user to specify which errors cause a retry and which ones are
+  passed through; for example there's probably no point retrying on
+  ENOMEM
+
+* implement a softer mode (retry-reopen=no) where we don't reopen the
+  plugin, we just retry the data command that failed
+
+* there are all kinds of extra complications possible here,
+  eg. specifying a pattern of retrying and reopening:
+  retry-method=RRRORRRRRORRRRR meaning to retry the data command 3
+  times, reopen, retry 5 times, etc.
+
+* subsecond times
+
 Filters for security
 --------------------
 

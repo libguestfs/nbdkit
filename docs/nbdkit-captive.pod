@@ -92,6 +92,9 @@ help performance:
  nbdkit -U - --filter=readahead curl https://example.com/disk.img \
         --run 'qemu-img convert $nbd disk.img'
 
+If the source suffers from temporary network failures
+L<nbdkit-retry-filter(1)> may help.
+
 To overwrite a file inside an uncompressed tar file (the file being
 overwritten must be the same size), use L<nbdkit-tar-plugin(1)> like
 this:

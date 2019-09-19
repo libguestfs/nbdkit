@@ -159,6 +159,7 @@ L<CURLOPT_COOKIE(3)>
 L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
 L<nbdkit-readahead-filter(1)>,
+L<nbdkit-retry-filter(1)>,
 L<nbdkit-ssh-plugin(1)>,
 L<nbdkit-plugin(3)>,
 L<http://curl.haxx.se>.

@@ -1,0 +1,108 @@
+=head1 NAME
+
+nbdkit-retry-filter - reopen connection on error
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=retry PLUGIN [retries=N] [retry-delay=N]
+                              [retry-exponential=yes|no]
+                              [retry-readonly=yes|no]
+
+=head1 DESCRIPTION
+
+C<nbdkit-retry-filter> is a filter that transparently reopens the
+plugin connection when an error is encountered.  It can be used to
+make long-running copy operations reliable in the presence of
+temporary network failures, without requiring any changes to the
+plugin or the NBD client.
+
+Several optional parameters are available to control:
+
+=over 4
+
+=item *
+
+how many times we retry,
+
+=item *
+
+the delay between retries, and whether we wait longer each time (known
+as “exponential back-off”),
+
+=item *
+
+if we reopen the plugin in read-only mode after the first failure.
+
+=back
+
+The default (with no parameters) is designed to offer a happy medium
+between recovering from short temporary failures but not doing
+anything too bad when permanent or unrecoverable failures happen.  The
+default behaviour is: we retry 5 times with exponential back-off,
+waiting in total about 1 minute before we give up.
+
+=head1 EXAMPLE
+
+In this example we copy and convert a large file using
+L<nbdkit-ssh-plugin(1)>, L<qemu-img(1)> and L<nbdkit-captive(1)>.
+
+ nbdkit -U - \
+   ssh host=remote.example.com /var/tmp/test.iso \
+   --filter=retry \
+   --run 'qemu-img convert -p -f raw $nbd -O qcow2 test.qcow2'
+
+Without I<--filter=retry> a temporary failure would cause the copy to
+fail (for example, the remote host’s firewall is restarted causing the
+SSH connection to be dropped).  Adding this filter means that it may
+be possible to transparently recover.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<retries=>N
+
+The number of times any single operation will be retried before we
+give up and fail the operation.  The default is 5.
+
+=item B<retry-delay=>N
+
+The number of seconds to wait before retrying.  The default is 2
+seconds.
+
+=item B<retry-exponential=yes>
+
+Use exponential back-off.  The retry delay is doubled between each
+retry.  This is the default.
+
+=item B<retry-exponential=no>
+
+Do not use exponential back-off.  The retry delay is the same between
+each retry.
+
+=item B<retry-readonly=yes>
+
+As soon as a failure occurs, switch the underlying plugin to read-only
+mode for the rest of this connection.  (A new NBD client connection
+will still open the plugin in the original mode.)
+
+=item B<retry-readonly=no>
+
+Do not change the read-write/read-only mode of the plugin when
+retrying.  This is the default.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-readahead-filter(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

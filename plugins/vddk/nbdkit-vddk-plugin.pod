@@ -431,6 +431,8 @@ writing.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
+L<nbdkit-readahead-filter(1)>,
+L<nbdkit-retry-filter(1)>,
 L<virsh(1)>,
 L<https://www.vmware.com/support/developer/vddk/>
 
