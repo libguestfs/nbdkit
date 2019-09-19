@@ -114,6 +114,8 @@ EXTRA_DIST = \
 	test-reflection-address.sh \
 	test-reflection-base64.sh \
 	test-reflection-raw.sh \
+	test-retry.sh \
+	test-retry-reopen-fail.sh \
 	test-shutdown.sh \
 	test-ssh.sh \
 	test.tcl \
@@ -1039,6 +1041,12 @@ TESTS += test-readahead-copy.sh
 test_readahead_SOURCES = test-readahead.c test.h
 test_readahead_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_readahead_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# retry filter test.
+TESTS += \
+	test-retry.sh \
+	test-retry-reopen-fail.sh \
+	$(NULL)
 
 # truncate filter tests.
 TESTS += \
