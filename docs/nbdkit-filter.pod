@@ -149,6 +149,8 @@ These abstract the next plugin or filter in the chain.  There is also
 an opaque pointer C<nxdata> which must be passed along when calling
 these functions.
 
+=head2 Next config, open and close
+
 The filter’s C<.config>, C<.config_complete> and C<.open> methods may
 only call the next C<.config>, C<.config_complete> and C<.open> method
 in the chain (optionally for C<.config>).
@@ -157,18 +159,25 @@ The filter’s C<.close> method is called when an old connection closed,
 and this has no C<next> parameter because it cannot be
 short-circuited.
 
+=head2 C<next_ops>
+
 The filter’s other methods like C<.prepare>, C<.get_size>, C<.pread>
 etc ― always called in the context of a connection ― are passed a
 pointer to C<struct nbdkit_next_ops> which contains a comparable set
 of accessors to plugin methods that can be called during a connection.
-It is possible for a filter to issue (for example) extra read calls in
-response to a single C<.pwrite> call.  Note that the semantics of the
-functions in C<struct nbdkit_next_ops> are slightly different from
-what a plugin implements: for example, when a plugin's C<.pread>
-returns -1 on error, the error value to advertise to the client is
-implicit (via the plugin calling C<nbdkit_set_error> or setting
-C<errno>), whereas C<next_ops-E<gt>pread> exposes this via an explicit
-parameter, allowing a filter to learn or modify this error if desired.
+
+It is possible for a filter to issue (for example) extra
+C<next_ops-E<gt>pread> calls in response to a single C<.pwrite> call.
+
+Note that the semantics of the functions in C<struct nbdkit_next_ops>
+are slightly different from what a plugin implements: for example,
+when a plugin's C<.pread> returns -1 on error, the error value to
+advertise to the client is implicit (via the plugin calling
+C<nbdkit_set_error> or setting C<errno>), whereas
+C<next_ops-E<gt>pread> exposes this via an explicit parameter,
+allowing a filter to learn or modify this error if desired.
+
+=head2 Other considerations
 
 You can modify parameters when you call the C<next> function.  However
 be careful when modifying strings because for some methods
