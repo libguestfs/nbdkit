@@ -46,9 +46,6 @@
 #include "minmax.h"
 #include "rounding.h"
 
-/* XXX See design comment in filters/cow/cow.c. */
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
-
 #define BLOCKSIZE_MIN_LIMIT (64U * 1024)
 
 /* As long as we don't have parallel requests, we can reuse a common
@@ -58,6 +55,15 @@ static char bounce[BLOCKSIZE_MIN_LIMIT];
 static unsigned int minblock;
 static unsigned int maxdata;
 static unsigned int maxlen;
+
+/* We are using a common bounce buffer (see above) so we must
+ * serialize all requests.
+ */
+static int
+blocksize_thread_model (void)
+{
+  return NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
+}
 
 static int
 blocksize_parse (const char *name, const char *s, unsigned int *v)
@@ -409,6 +415,7 @@ blocksize_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "blocksize",
   .longname          = "nbdkit blocksize filter",
+  .thread_model      = blocksize_thread_model,
   .config            = blocksize_config,
   .config_complete   = blocksize_config_complete,
   .config_help       = blocksize_config_help,
