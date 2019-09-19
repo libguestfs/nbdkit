@@ -50,16 +50,12 @@ cleanup_fn rm -f $files
 # it will take much longer (approx 200 seconds).
 echo 10M > rate-dynamic.txt
 
-# We are using the bash time builtin, so setting TIMEFORMAT will
-# control the output format of the time builtin.  For strange use of
-# { ; } here, see: https://stackoverflow.com/a/13356654
-set +x
-{ TIMEFORMAT="%0R" ; time nbdkit -U - --filter=rate pattern size=25M rate=1M rate-file=rate-dynamic.txt --run 'qemu-img convert -p $nbd rate-dynamic.img' 2>rate-dynamic.err ; } 2>rate-dynamic.time
-set -x
+start_t=$SECONDS
+nbdkit -U - --filter=rate pattern size=25M rate=1M rate-file=rate-dynamic.txt \
+       --run 'qemu-img convert -p $nbd rate-dynamic.img'
+end_t=$SECONDS
 
-cat rate-dynamic.err ||:
-
-seconds="$( cat rate-dynamic.time )"
+seconds=$(( end_t - start_t ))
 if [ "$seconds" -lt 18 ]; then
     echo "$0: rate filter failed: command took $seconds seconds, expected about 20"
     exit 1
