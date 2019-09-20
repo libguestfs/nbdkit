@@ -295,123 +295,6 @@ an indication of failure.  It has the following prototype:
 
  void nbdkit_set_error (int err);
 
-=head1 FILENAMES AND PATHS
-
-The server usually (not always) changes directory to C</> before it
-starts serving connections.  This means that any relative paths passed
-during configuration will not work when the server is running
-(example: S<C<nbdkit plugin.so disk.img>>).
-
-To avoid problems, prepend relative paths with the current directory
-before storing them in the handle.  Or open files and store the file
-descriptor.
-
-=head2 C<nbdkit_absolute_path>
-
- char *nbdkit_absolute_path (const char *filename);
-
-The utility function C<nbdkit_absolute_path> converts any path to an
-absolute path: if it is relative, then all this function does is
-prepend the current working directory to the path, with no extra
-checks.
-
-Note that this function works I<only> when used in the C<.config>, and
-C<.config_complete> callbacks.
-
-If conversion was not possible, this calls C<nbdkit_error> and returns
-C<NULL>.  Note that this function does not check that the file exists.
-
-The returned string must be freed by the caller.
-
-=head2 C<nbdkit_realpath>
-
- char *nbdkit_realpath (const char *filename);
-
-The utility function C<nbdkit_realpath> converts any path to an
-absolute path, resolving symlinks.  Under the hood it uses the
-C<realpath> function, and thus it fails if the path does not exist,
-or it is not possible to access to any of the components of the path.
-
-Note that this function works I<only> when used in the C<.config>, and
-C<.config_complete> callbacks.
-
-If the path resolution was not possible, this calls C<nbdkit_error>
-and returns C<NULL>.
-
-The returned string must be freed by the caller.
-
-=head2 umask
-
-All plugins will see a L<umask(2)> of C<0022>.
-
-=head1 SLEEPING
-
-A plugin that needs to sleep may call L<sleep(2)>, L<nanosleep(2)> and
-similar.  However that can cause nbdkit to delay excessively when
-shutting down (since it must wait for any plugin or filter which is
-sleeping).  To avoid this there is a special wrapper around nanosleep
-which plugins and filters should use instead.
-
-=head2 C<nbdkit_nanosleep>
-
- int nbdkit_nanosleep (unsigned sec, unsigned nsec);
-
-The utility function C<nbdkit_nanosleep> suspends the current thread,
-and returns 0 if it slept at least as many seconds and nanoseconds as
-requested, or -1 after calling C<nbdkit_error> if there is no point in
-continuing the current command.  Attempts to sleep more than
-C<INT_MAX> seconds are treated as an error.
-
-=head1 EXPORT NAME
-
-If the client negotiated an NBD export name with nbdkit then plugins
-may read this from any connected callbacks.  Nbdkit's normal behaviour
-is to accept any export name passed by the client, log it in debug
-output, but otherwise ignore it.  By using C<nbdkit_export_name>
-plugins may choose to filter by export name or serve different
-content.
-
-=head2 C<nbdkit_export_name>
-
- const char *nbdkit_export_name (void);
-
-Return the optional NBD export name if one was negotiated with the
-current client (this uses thread-local magic so no parameter is
-required).  The returned string is only valid while the client is
-connected, so if you need to store it in the plugin you must copy it.
-
-The export name is a free-form text string, it is not necessarily a
-path or filename and it does not need to begin with a C<'/'>
-character.  The NBD protocol describes the empty string (C<"">) as a
-representing a "default export" or to be used in cases where the
-export name does not make sense.  B<The export name is untrusted
-client data, be cautious when parsing it.>
-
-On error, C<nbdkit_error> is called and the call returns C<NULL>.
-
-=head1 PEER NAME
-
-It is possible to get the address of the client when you are running
-in any connected callback.
-
-=head2 C<nbdkit_peer_name>
-
- int nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen);
-
-Return the peer (client) address, if available.  The C<addr> and
-C<addrlen> parameters behave like L<getpeername(2)>.  In particular
-you must initialize C<addrlen> with the size of the buffer pointed to
-by C<addr>, and if C<addr> is not large enough then the address will
-be truncated.
-
-In some cases this is not available or the address returned will be
-meaningless (eg. if there is a proxy between the client and nbdkit).
-This call uses thread-local magic so no parameter is required to
-specify the current connection.
-
-On success this returns C<0>.  On error, C<nbdkit_error> is called and
-this call returns C<-1>.
-
 =head1 CALLBACKS
 
 =head2 C<.name>
@@ -1128,7 +1011,9 @@ before unloading the plugin.
 Note that it's not guaranteed this can always happen (eg. the server
 might be killed by C<SIGKILL> or segfault).
 
-=head1 PARSING SIZE PARAMETERS
+=head1 PARSING COMMAND LINE PARAMETERS
+
+=head2 Parsing sizes
 
 Use the C<nbdkit_parse_size> utility function to parse human-readable
 size strings such as "100M" into the size in bytes.
@@ -1138,7 +1023,7 @@ size strings such as "100M" into the size in bytes.
 C<str> can be a string in a number of common formats.  The function
 returns the size in bytes.  If there was an error, it returns C<-1>.
 
-=head1 PARSING BOOLEAN PARAMETERS
+=head2 Parsing booleans
 
 Use the C<nbdkit_parse_bool> utility function to parse human-readable
 strings such as "on" into a boolean value.
@@ -1149,7 +1034,7 @@ C<str> can be a string containing a case-insensitive form of various
 common toggle values.  The function returns 0 or 1 if the parse was
 successful.  If there was an error, it returns C<-1>.
 
-=head1 READING PASSWORDS
+=head2 Reading passwords
 
 The C<nbdkit_read_password> utility function can be used to read
 passwords from config parameters:
@@ -1191,6 +1076,123 @@ or from a file:
 
 (If the password begins with a C<-> or C<+> character then it must be
 passed in a file).
+
+=head1 FILENAMES AND PATHS
+
+The server usually (not always) changes directory to C</> before it
+starts serving connections.  This means that any relative paths passed
+during configuration will not work when the server is running
+(example: S<C<nbdkit plugin.so disk.img>>).
+
+To avoid problems, prepend relative paths with the current directory
+before storing them in the handle.  Or open files and store the file
+descriptor.
+
+=head2 C<nbdkit_absolute_path>
+
+ char *nbdkit_absolute_path (const char *filename);
+
+The utility function C<nbdkit_absolute_path> converts any path to an
+absolute path: if it is relative, then all this function does is
+prepend the current working directory to the path, with no extra
+checks.
+
+Note that this function works I<only> when used in the C<.config>, and
+C<.config_complete> callbacks.
+
+If conversion was not possible, this calls C<nbdkit_error> and returns
+C<NULL>.  Note that this function does not check that the file exists.
+
+The returned string must be freed by the caller.
+
+=head2 C<nbdkit_realpath>
+
+ char *nbdkit_realpath (const char *filename);
+
+The utility function C<nbdkit_realpath> converts any path to an
+absolute path, resolving symlinks.  Under the hood it uses the
+C<realpath> function, and thus it fails if the path does not exist,
+or it is not possible to access to any of the components of the path.
+
+Note that this function works I<only> when used in the C<.config>, and
+C<.config_complete> callbacks.
+
+If the path resolution was not possible, this calls C<nbdkit_error>
+and returns C<NULL>.
+
+The returned string must be freed by the caller.
+
+=head2 umask
+
+All plugins will see a L<umask(2)> of C<0022>.
+
+=head1 SLEEPING
+
+A plugin that needs to sleep may call L<sleep(2)>, L<nanosleep(2)> and
+similar.  However that can cause nbdkit to delay excessively when
+shutting down (since it must wait for any plugin or filter which is
+sleeping).  To avoid this there is a special wrapper around nanosleep
+which plugins and filters should use instead.
+
+=head2 C<nbdkit_nanosleep>
+
+ int nbdkit_nanosleep (unsigned sec, unsigned nsec);
+
+The utility function C<nbdkit_nanosleep> suspends the current thread,
+and returns 0 if it slept at least as many seconds and nanoseconds as
+requested, or -1 after calling C<nbdkit_error> if there is no point in
+continuing the current command.  Attempts to sleep more than
+C<INT_MAX> seconds are treated as an error.
+
+=head1 EXPORT NAME
+
+If the client negotiated an NBD export name with nbdkit then plugins
+may read this from any connected callbacks.  Nbdkit's normal behaviour
+is to accept any export name passed by the client, log it in debug
+output, but otherwise ignore it.  By using C<nbdkit_export_name>
+plugins may choose to filter by export name or serve different
+content.
+
+=head2 C<nbdkit_export_name>
+
+ const char *nbdkit_export_name (void);
+
+Return the optional NBD export name if one was negotiated with the
+current client (this uses thread-local magic so no parameter is
+required).  The returned string is only valid while the client is
+connected, so if you need to store it in the plugin you must copy it.
+
+The export name is a free-form text string, it is not necessarily a
+path or filename and it does not need to begin with a C<'/'>
+character.  The NBD protocol describes the empty string (C<"">) as a
+representing a "default export" or to be used in cases where the
+export name does not make sense.  B<The export name is untrusted
+client data, be cautious when parsing it.>
+
+On error, C<nbdkit_error> is called and the call returns C<NULL>.
+
+=head1 PEER NAME
+
+It is possible to get the address of the client when you are running
+in any connected callback.
+
+=head2 C<nbdkit_peer_name>
+
+ int nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen);
+
+Return the peer (client) address, if available.  The C<addr> and
+C<addrlen> parameters behave like L<getpeername(2)>.  In particular
+you must initialize C<addrlen> with the size of the buffer pointed to
+by C<addr>, and if C<addr> is not large enough then the address will
+be truncated.
+
+In some cases this is not available or the address returned will be
+meaningless (eg. if there is a proxy between the client and nbdkit).
+This call uses thread-local magic so no parameter is required to
+specify the current connection.
+
+On success this returns C<0>.  On error, C<nbdkit_error> is called and
+this call returns C<-1>.
 
 =head1 DEBUGGING
 
