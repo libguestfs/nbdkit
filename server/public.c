@@ -89,6 +89,25 @@ nbdkit_absolute_path (const char *path)
   return ret;
 }
 
+char *
+nbdkit_realpath (const char *path)
+{
+  char *ret;
+
+  if (path == NULL || *path == '\0') {
+    nbdkit_error ("cannot resolve a null or empty path");
+    return NULL;
+  }
+
+  ret = realpath (path, NULL);
+  if (ret == NULL) {
+    nbdkit_error ("realpath: %s: %m", path);
+    return NULL;
+  }
+
+  return ret;
+}
+
 /* Parse a string as a size with possible scaling suffix, or return -1
  * after reporting the error.
  */
@@ -281,26 +300,6 @@ nbdkit_read_password (const char *value, char **password)
 
   return 0;
 }
-
-char *
-nbdkit_realpath (const char *path)
-{
-  char *ret;
-
-  if (path == NULL || *path == '\0') {
-    nbdkit_error ("cannot resolve a null or empty path");
-    return NULL;
-  }
-
-  ret = realpath (path, NULL);
-  if (ret == NULL) {
-    nbdkit_error ("realpath: %s: %m", path);
-    return NULL;
-  }
-
-  return ret;
-}
-
 
 int
 nbdkit_nanosleep (unsigned sec, unsigned nsec)
