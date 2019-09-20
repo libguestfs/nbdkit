@@ -65,6 +65,7 @@ EXTRA_DIST = \
 	test-error0.sh \
 	test-error10.sh \
 	test-error100.sh \
+	test-export-name.sh \
 	test-file-extents.sh \
 	test-floppy.sh \
 	test-foreground.sh \
