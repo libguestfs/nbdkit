@@ -80,6 +80,17 @@ installed.  A complete shell script which does this is:
      fi
  done
 
+=head2 Detect if a filter is installed
+
+To find out if a filter is installed (and working) use
+I<--dump-plugin> with the C<null> plugin and the name of the filter to
+test:
+
+ nbdkit --dump-plugin --filter=foo null
+
+This will fail with an error and non-zero exit code if the C<foo>
+filter cannot be loaded.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>.
