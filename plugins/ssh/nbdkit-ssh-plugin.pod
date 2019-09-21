@@ -187,9 +187,7 @@ be done in conjunction with L<ssh-agent(1)>.
 =head2 Path expansion
 
 In the C<config>, C<identity> and C<known-hosts> options, libssh
-expands some C<%>-sequences.  Unfortunately there is no escape
-character for C<%> itself, so there is no way to specify that
-character in the path.
+expands some C<%>-sequences.
 
 =over 4
 
@@ -216,6 +214,12 @@ The remote username.
 =item C<%p>
 
 The SSH port number.
+
+=item C<%%>
+
+In libssh E<gt> 0.9.0 this expands to a single C<%> character.  In
+earlier versions of libssh there was no way to escape a C<%>
+character.
 
 =back
 
