@@ -46,6 +46,18 @@ S<C<E<lt>target dev=...E<gt>>> in the XML.
 
 =back
 
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-libvirt-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

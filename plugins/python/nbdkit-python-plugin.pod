@@ -278,6 +278,18 @@ Python.  It is hard-coded in the C part to
 C<NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS>.  This may change or be
 settable in future.
 
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-python-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

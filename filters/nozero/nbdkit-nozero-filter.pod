@@ -88,6 +88,18 @@ the client even if the plugin supports it:
 
  nbdkit --filter=nozero file zeromode=plugin fastzeromode=none disk.img
 
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-nozero-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

@@ -20,6 +20,18 @@ nbdkit plugins (L<nbdkit-plugin(3)>).
 For extra debugging (only useful for developers) use
 I<-D example2.extra=1>
 
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-example2-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example2/example2.c>,

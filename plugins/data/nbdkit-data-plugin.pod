@@ -230,6 +230,18 @@ described above.
 It is provided in the nbdkit sources.  See
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>
 
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-data-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

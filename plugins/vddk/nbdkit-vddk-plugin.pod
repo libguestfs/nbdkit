@@ -427,6 +427,18 @@ VDDK E<ge> 6.0 should be used if possible.  This is the first version
 which added Flush support which is crucial for data integrity when
 writing.
 
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-vddk-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

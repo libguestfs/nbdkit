@@ -66,6 +66,18 @@ always requested FUA:
 
  nbdkit --filter=fua file fuamode=force disk.img
 
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-fua-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

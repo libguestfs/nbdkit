@@ -74,6 +74,18 @@ example, would choose FAT12 or FAT16).  This results in extra wasted
 space, but since it is only I<virtual> wasted space it isn't really
 important, and it simplifies the implementation greatly.
 
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-floppy-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

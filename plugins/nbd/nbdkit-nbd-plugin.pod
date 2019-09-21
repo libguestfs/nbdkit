@@ -178,6 +178,18 @@ C<libnbd_*> lines:
 
  nbdkit --dump-plugin nbd
 
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-nbd-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

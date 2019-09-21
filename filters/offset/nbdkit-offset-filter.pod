@@ -62,6 +62,18 @@ You can then serve the partition only using:
 
  nbdkit --filter=offset file disk.img offset=65536 range=104727040
 
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-offset-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

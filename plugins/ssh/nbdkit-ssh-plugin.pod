@@ -223,38 +223,6 @@ character.
 
 =back
 
-=head1 FILES
-
-=over 4
-
-=item F<~/.ssh/config>
-
-=item F</etc/ssh/ssh_config>
-
-These are the default SSH config files which are read to get other
-options.  You can change this using the C<config> option.
-
-=item F<~/.ssh/id_dsa>
-
-=item F<~/.ssh/id_ecdsa>
-
-=item F<~/.ssh/id_ed25519>
-
-=item F<~/.ssh/id_rsa>
-
-These are some of the default private key (identify) files used by
-libssh.  You can prepend more to the list using the C<identity>
-option.
-
-=item F<~/.ssh/known_hosts>
-
-=item F</etc/ssh/ssh_known_hosts>
-
-These are the default SSH files recording the identity of previously
-seen hosts.  You can change this using the C<known-hosts> option.
-
-=back
-
 =head1 DEBUG FLAGS
 
 =head2 -D ssh.log=[1..4]
@@ -286,6 +254,44 @@ libssh functions
 Use level 2 to diagnose SSH protocol or server problems.  Levels 3 and
 4 are extremely verbose and probably only useful if you are debugging
 libssh itself.
+
+=head1 FILES
+
+=over 4
+
+=item F<~/.ssh/config>
+
+=item F</etc/ssh/ssh_config>
+
+These are the default SSH config files which are read to get other
+options.  You can change this using the C<config> option.
+
+=item F<~/.ssh/id_dsa>
+
+=item F<~/.ssh/id_ecdsa>
+
+=item F<~/.ssh/id_ed25519>
+
+=item F<~/.ssh/id_rsa>
+
+These are some of the default private key (identify) files used by
+libssh.  You can prepend more to the list using the C<identity>
+option.
+
+=item F<~/.ssh/known_hosts>
+
+=item F</etc/ssh/ssh_known_hosts>
+
+These are the default SSH files recording the identity of previously
+seen hosts.  You can change this using the C<known-hosts> option.
+
+=item F<$plugindir/nbdkit-ssh-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
 
 =head1 SEE ALSO
 

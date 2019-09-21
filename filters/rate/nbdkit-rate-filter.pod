@@ -108,6 +108,18 @@ automatically in order to limit the length of sleeps.  Placing the
 L<nbdkit-blocksize-filter(1)> in front of this filter may help in the
 meantime.
 
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-rate-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
