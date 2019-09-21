@@ -75,13 +75,15 @@ static int
 plugin_guestfs_config (const char *key, const char *value)
 {
   if (strcmp (key, "debug") == 0) {
-    if (sscanf (value, "%d", &debug) != 1) {
+    debug = nbdkit_parse_bool (value);
+    if (debug == -1) {
       nbdkit_error ("could not parse 'debug' option, expecting an integer");
       return -1;
     }
   }
   else if (strcmp (key, "trace") == 0) {
-    if (sscanf (value, "%d", &trace) != 1) {
+    trace = nbdkit_parse_bool (value);
+    if (trace == -1) {
       nbdkit_error ("could not parse 'trace' option, expecting an integer");
       return -1;
     }

@@ -6,7 +6,7 @@ nbdkit-guestfs-plugin - nbdkit libguestfs plugin
 
  nbdkit [-r] guestfs
    [disk=DISK] [domain=DOMAIN] [format=FORMAT] [connect=URI]
-   [mount=inspect|MOUNT] [trace=1] [debug=1] export=DEVICE|FILE
+   [mount=inspect|MOUNT] [trace=on] [debug=on] export=DEVICE|FILE
 
 =head1 WARNING
 
@@ -71,7 +71,7 @@ Use the I<-r> option to export read-only.  The default is read-write.
 This optional parameter specifies the libvirt connection URI.  This is
 only used with the C<domain> parameter.
 
-=item B<debug=1>
+=item B<debug=on>
 
 Enable full debugging of libguestfs.  Note you'll probably also have
 to use the L<nbdkit(1)> option I<-v> in order to see the messages.
@@ -118,7 +118,7 @@ Use guest inspection to mount disks.  This is like C<guestfish -i>.
 Mount C<DEV> from inside the guest on C<MOUNTPOINT> (defaults to
 F</>).  This is like C<guestfish -m>.
 
-=item B<trace=1>
+=item B<trace=on>
 
 Enable tracing of libguestfs calls.  Note you'll probably also have to
 use the L<nbdkit(1)> option I<-v> in order to see the messages.
@@ -177,7 +177,7 @@ from the guest that we want to export.
 
 To debug this plugin, use the following options:
 
- nbdkit -f -v guestfs debug=1 trace=1 [...]
+ nbdkit -f -v guestfs debug=on trace=on [...]
 
 This enables libguestfs debugging and tracing (see L<guestfs-faq(1)>).
 It also ensures that the messages are displayed by nbdkit (because of
