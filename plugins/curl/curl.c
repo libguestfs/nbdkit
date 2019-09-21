@@ -62,7 +62,7 @@ static const char *proxy_user = NULL;
 static char *proxy_password = NULL;
 static char *cookie = NULL;
 static bool sslverify = true;
-static long timeout = 0;
+static uint32_t timeout = 0;
 static const char *unix_socket_path = NULL;
 static long protocols = CURLPROTO_ALL;
 
@@ -204,7 +204,9 @@ curl_config (const char *key, const char *value)
   }
 
   else if (strcmp (key, "timeout") == 0) {
-    if (sscanf (value, "%ld", &timeout) != 1 || timeout < 0) {
+    if (nbdkit_parse_uint32_t ("timeout", value, &timeout) == -1)
+      return -1;
+    if (timeout < 0) {
       nbdkit_error ("'timeout' must be 0 or a positive timeout in seconds");
       return -1;
     }
@@ -334,8 +336,12 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_REDIR_PROTOCOLS, protocols);
   }
   if (timeout > 0)
-    curl_easy_setopt (h->c, CURLOPT_TIMEOUT, timeout);
+    /* NB: The cast is required here because the parameter is varargs
+     * treated as long, and not type safe.
+     */
+    curl_easy_setopt (h->c, CURLOPT_TIMEOUT, (long) timeout);
   if (!sslverify) {
+    /* See comment above. */
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYHOST, 0L);
   }

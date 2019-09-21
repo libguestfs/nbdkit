@@ -1013,6 +1013,52 @@ might be killed by C<SIGKILL> or segfault).
 
 =head1 PARSING COMMAND LINE PARAMETERS
 
+=head2 Parsing numbers
+
+There are several functions for parsing numbers.  These all deal
+correctly with overflow, out of range and parse errors, and you should
+use them instead of unsafe functions like L<sscanf(3)>, L<atoi(3)> and
+similar.
+
+ int nbdkit_parse_int (const char *what, const char *str, int *r);
+ int nbdkit_parse_unsigned (const char *what,
+                            const char *str, unsigned *r);
+ int nbdkit_parse_int8_t (const char *what,
+                          const char *str, int8_t *r);
+ int nbdkit_parse_uint8_t (const char *what,
+                           const char *str, uint8_t *r);
+ int nbdkit_parse_int16_t (const char *what,
+                           const char *str, int16_t *r);
+ int nbdkit_parse_uint16_t (const char *what,
+                            const char *str, uint16_t *r);
+ int nbdkit_parse_int32_t (const char *what,
+                           const char *str, int32_t *r);
+ int nbdkit_parse_uint32_t (const char *what,
+                            const char *str, uint32_t *r);
+ int nbdkit_parse_int64_t (const char *what,
+                           const char *str, int64_t *r);
+ int nbdkit_parse_uint64_t (const char *what,
+                            const char *str, uint64_t *r);
+
+Parse string C<str> into an integer of various types.  These functions
+parse a decimal, hexadecimal (C<"0x...">) or octal (C<"0...">) number.
+
+On success the functions return C<0> and set C<*r> to the parsed value
+(unless C<*r == NULL> in which case the result is discarded).  On
+error, C<nbdkit_error> is called and the functions return C<-1>.  On
+error C<*r> is always unchanged.
+
+The C<what> parameter is printed in error messages to provide context.
+It should usually be a short descriptive string of what you are trying
+to parse, eg:
+
+ if (nbdkit_parse_int ("random seed", argv[1], &seed) == -1)
+   return -1;
+
+might print an error:
+
+ random seed: could not parse number: "lalala"
+
 =head2 Parsing sizes
 
 Use the C<nbdkit_parse_size> utility function to parse human-readable

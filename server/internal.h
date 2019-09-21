@@ -98,7 +98,7 @@ extern bool read_only;
 extern const char *run;
 extern bool listen_stdin;
 extern const char *selinux_label;
-extern int threads;
+extern unsigned threads;
 extern int tls;
 extern const char *tls_certificates_dir;
 extern const char *tls_psk;

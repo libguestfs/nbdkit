@@ -59,11 +59,8 @@ get_socket_activation (void)
   s = getenv ("LISTEN_PID");
   if (s == NULL)
     return 0;
-  if (sscanf (s, "%u", &pid) != 1) {
-    fprintf (stderr, "%s: malformed %s environment variable (ignored)\n",
-             program_name, "LISTEN_PID");
+  if (nbdkit_parse_unsigned ("LISTEN_PID", s, &pid) == -1)
     return 0;
-  }
   if (pid != getpid ()) {
     fprintf (stderr, "%s: %s was not for us (ignored)\n",
              program_name, "LISTEN_PID");
@@ -73,11 +70,8 @@ get_socket_activation (void)
   s = getenv ("LISTEN_FDS");
   if (s == NULL)
     return 0;
-  if (sscanf (s, "%u", &nr_fds) != 1) {
-    fprintf (stderr, "%s: malformed %s environment variable (ignored)\n",
-             program_name, "LISTEN_FDS");
+  if (nbdkit_parse_unsigned ("LISTEN_FDS", s, &nr_fds) == -1)
     return 0;
-  }
 
   /* So these are not passed to any child processes we might start. */
   unsetenv ("LISTEN_FDS");

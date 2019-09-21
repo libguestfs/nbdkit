@@ -97,7 +97,7 @@ parseuser (const char *id)
 
     saved_errno = errno;
 
-    if (sscanf (id, "%d", &val) == 1)
+    if (nbdkit_parse_int ("parseuser", id, &val) == 0)
       return val;
 
     fprintf (stderr, "%s: -u option: %s is not a valid user name or uid",
@@ -125,7 +125,7 @@ parsegroup (const char *id)
 
     saved_errno = errno;
 
-    if (sscanf (id, "%d", &val) == 1)
+    if (nbdkit_parse_int ("parsegroup", id, &val) == 0)
       return val;
 
     fprintf (stderr, "%s: -g option: %s is not a valid group name or gid",

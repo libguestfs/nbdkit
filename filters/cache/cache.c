@@ -70,7 +70,7 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 unsigned blksize;
 enum cache_mode cache_mode = CACHE_MODE_WRITEBACK;
 int64_t max_size = -1;
-int hi_thresh = 95, lo_thresh = 80;
+unsigned hi_thresh = 95, lo_thresh = 80;
 bool cache_on_read = false;
 
 static int cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
@@ -129,22 +129,20 @@ cache_config (nbdkit_next_config *next, void *nxdata,
     return 0;
   }
   else if (strcmp (key, "cache-high-threshold") == 0) {
-    if (sscanf (value, "%d", &hi_thresh) != 1) {
-      nbdkit_error ("invalid cache-high-threshold parameter: %s", value);
+    if (nbdkit_parse_unsigned ("cache-high-threshold",
+                               value, &hi_thresh) == -1)
       return -1;
-    }
-    if (hi_thresh <= 0) {
+    if (hi_thresh == 0) {
       nbdkit_error ("cache-high-threshold must be greater than zero");
       return -1;
     }
     return 0;
   }
   else if (strcmp (key, "cache-low-threshold") == 0) {
-    if (sscanf (value, "%d", &lo_thresh) != 1) {
-      nbdkit_error ("invalid cache-low-threshold parameter: %s", value);
+    if (nbdkit_parse_unsigned ("cache-low-threshold",
+                               value, &lo_thresh) == -1)
       return -1;
-    }
-    if (lo_thresh <= 0) {
+    if (lo_thresh == 0) {
       nbdkit_error ("cache-low-threshold must be greater than zero");
       return -1;
     }

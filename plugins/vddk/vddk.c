@@ -91,9 +91,9 @@ static char *config = NULL;                /* config */
 static const char *cookie = NULL;          /* cookie */
 static const char *filename = NULL;        /* file */
 static char *libdir = NULL;                /* libdir */
-static int nfc_host_port = 0;              /* nfchostport */
+static uint16_t nfc_host_port = 0;         /* nfchostport */
 static char *password = NULL;              /* password */
-static int port = 0;                       /* port */
+static uint16_t port = 0;                  /* port */
 static const char *server_name = NULL;     /* server */
 static bool single_link = false;           /* single-link */
 static const char *snapshot_moref = NULL;  /* snapshot */
@@ -271,10 +271,8 @@ vddk_config (const char *key, const char *value)
       return -1;
   }
   else if (strcmp (key, "nfchostport") == 0) {
-    if (sscanf (value, "%d", &nfc_host_port) != 1) {
-      nbdkit_error ("cannot parse nfchostport: %s", value);
+    if (nbdkit_parse_uint16_t ("nfchostport", value, &nfc_host_port) == -1)
       return -1;
-    }
   }
   else if (strcmp (key, "password") == 0) {
     free (password);
@@ -282,10 +280,8 @@ vddk_config (const char *key, const char *value)
       return -1;
   }
   else if (strcmp (key, "port") == 0) {
-    if (sscanf (value, "%d", &port) != 1) {
-      nbdkit_error ("cannot parse port: %s", value);
+    if (nbdkit_parse_uint16_t ("port", value, &port) == -1)
       return -1;
-    }
   }
   else if (strcmp (key, "server") == 0) {
     server_name = value;

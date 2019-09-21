@@ -44,8 +44,8 @@
 
 #include "cleanup.h"
 
-static int retries = 5;         /* 0 = filter is disabled */
-static int initial_delay = 2;
+static unsigned retries = 5;    /* 0 = filter is disabled */
+static unsigned initial_delay = 2;
 static bool exponential_backoff = true;
 static bool force_readonly = false;
 
@@ -67,15 +67,15 @@ retry_config (nbdkit_next_config *next, void *nxdata,
   int r;
 
   if (strcmp (key, "retries") == 0) {
-    if (sscanf (value, "%d", &retries) != 1 || retries < 0) {
-      nbdkit_error ("cannot parse retries: %s", value);
+    if (nbdkit_parse_unsigned ("retries", value, &retries) == -1)
       return -1;
-    }
     return 0;
   }
   else if (strcmp (key, "retry-delay") == 0) {
-    if (sscanf (value, "%d", &initial_delay) != 1 || initial_delay <= 0) {
-      nbdkit_error ("cannot parse retry-delay: %s", value);
+    if (nbdkit_parse_unsigned ("retry-delay", value, &initial_delay) == -1)
+      return -1;
+    if (initial_delay == 0) {
+      nbdkit_error ("retry-delay cannot be 0");
       return -1;
     }
     return 0;

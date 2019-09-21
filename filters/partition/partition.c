@@ -45,7 +45,7 @@
 
 #include "partition.h"
 
-int partnum = -1;
+unsigned partnum = 0;
 
 /* Called for each key=value passed on the command line. */
 static int
@@ -53,7 +53,9 @@ partition_config (nbdkit_next_config *next, void *nxdata,
                   const char *key, const char *value)
 {
   if (strcmp (key, "partition") == 0) {
-    if (sscanf (value, "%d", &partnum) != 1 || partnum <= 0) {
+    if (nbdkit_parse_unsigned ("partition", value, &partnum) == -1)
+      return -1;
+    if (partnum == 0) {
       nbdkit_error ("invalid partition number");
       return -1;
     }
@@ -67,7 +69,7 @@ partition_config (nbdkit_next_config *next, void *nxdata,
 static int
 partition_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 {
-  if (partnum == -1) {
+  if (partnum == 0) {
     nbdkit_error ("you must supply the partition parameter on the command line");
     return -1;
   }

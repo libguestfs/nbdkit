@@ -45,6 +45,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <ctype.h>
 #include <termios.h>
 #include <errno.h>
 #include <poll.h>
@@ -106,6 +107,191 @@ nbdkit_realpath (const char *path)
   }
 
   return ret;
+}
+
+/* Common code for parsing integers. */
+#define PARSE_COMMON_TAIL                                               \
+  if (errno != 0) {                                                     \
+    nbdkit_error ("%s: could not parse number: \"%s\": %m",             \
+                  what, str);                                           \
+    return -1;                                                          \
+  }                                                                     \
+  if (end == str) {                                                     \
+    nbdkit_error ("%s: empty string where we expected a number",        \
+                  what);                                                \
+    return -1;                                                          \
+  }                                                                     \
+  if (*end) {                                                           \
+    nbdkit_error ("%s: could not parse number: \"%s\": trailing garbage", \
+                  what, str);                                           \
+    return -1;                                                          \
+  }                                                                     \
+                                                                        \
+  if (rp)                                                               \
+    *rp = r;                                                            \
+  return 0
+
+/* Functions for parsing signed integers. */
+int
+nbdkit_parse_int (const char *what, const char *str, int *rp)
+{
+  long r;
+  char *end;
+
+  errno = 0;
+  r = strtol (str, &end, 0);
+#if INT_MAX != LONG_MAX
+  if (r < INT_MIN || r > INT_MAX)
+    errno = ERANGE;
+#endif
+  PARSE_COMMON_TAIL;
+}
+
+int
+nbdkit_parse_int8_t (const char *what, const char *str, int8_t *rp)
+{
+  long r;
+  char *end;
+
+  errno = 0;
+  r = strtol (str, &end, 0);
+  if (r < INT8_MIN || r > INT8_MAX)
+    errno = ERANGE;
+  PARSE_COMMON_TAIL;
+}
+
+int
+nbdkit_parse_int16_t (const char *what, const char *str, int16_t *rp)
+{
+  long r;
+  char *end;
+
+  errno = 0;
+  r = strtol (str, &end, 0);
+  if (r < INT16_MIN || r > INT16_MAX)
+    errno = ERANGE;
+  PARSE_COMMON_TAIL;
+}
+
+int
+nbdkit_parse_int32_t (const char *what, const char *str, int32_t *rp)
+{
+  long r;
+  char *end;
+
+  errno = 0;
+  r = strtol (str, &end, 0);
+#if INT32_MAX != LONG_MAX
+  if (r < INT32_MIN || r > INT32_MAX)
+    errno = ERANGE;
+#endif
+  PARSE_COMMON_TAIL;
+}
+
+int
+nbdkit_parse_int64_t (const char *what, const char *str, int64_t *rp)
+{
+  long long r;
+  char *end;
+
+  errno = 0;
+  r = strtoll (str, &end, 0);
+#if INT64_MAX != LONGLONG_MAX
+  if (r < INT64_MIN || r > INT64_MAX)
+    errno = ERANGE;
+#endif
+  PARSE_COMMON_TAIL;
+}
+
+/* Functions for parsing unsigned integers. */
+
+/* strtou* functions have surprising behaviour if the first character
+ * (after whitespace) is '-', so reject this early.
+ */
+#define PARSE_ERROR_IF_NEGATIVE                                         \
+  do {                                                                  \
+    while (isspace (*str))                                              \
+      str++;                                                            \
+    if (*str == '-') {                                                  \
+      nbdkit_error ("%s: negative numbers are not allowed", what);      \
+      return -1;                                                        \
+    }                                                                   \
+  } while (0)
+
+int
+nbdkit_parse_unsigned (const char *what, const char *str, unsigned *rp)
+{
+  unsigned long r;
+  char *end;
+
+  PARSE_ERROR_IF_NEGATIVE;
+  errno = 0;
+  r = strtoul (str, &end, 0);
+#if UINT_MAX != ULONG_MAX
+  if (r > UINT_MAX)
+    errno = ERANGE;
+#endif
+  PARSE_COMMON_TAIL;
+}
+
+int
+nbdkit_parse_uint8_t (const char *what, const char *str, uint8_t *rp)
+{
+  unsigned long r;
+  char *end;
+
+  PARSE_ERROR_IF_NEGATIVE;
+  errno = 0;
+  r = strtoul (str, &end, 0);
+  if (r > UINT8_MAX)
+    errno = ERANGE;
+  PARSE_COMMON_TAIL;
+}
+
+int
+nbdkit_parse_uint16_t (const char *what, const char *str, uint16_t *rp)
+{
+  unsigned long r;
+  char *end;
+
+  PARSE_ERROR_IF_NEGATIVE;
+  errno = 0;
+  r = strtoul (str, &end, 0);
+  if (r > UINT16_MAX)
+    errno = ERANGE;
+  PARSE_COMMON_TAIL;
+}
+
+int
+nbdkit_parse_uint32_t (const char *what, const char *str, uint32_t *rp)
+{
+  unsigned long r;
+  char *end;
+
+  PARSE_ERROR_IF_NEGATIVE;
+  errno = 0;
+  r = strtoul (str, &end, 0);
+#if UINT32_MAX != ULONG_MAX
+  if (r > UINT32_MAX)
+    errno = ERANGE;
+#endif
+  PARSE_COMMON_TAIL;
+}
+
+int
+nbdkit_parse_uint64_t (const char *what, const char *str, uint64_t *rp)
+{
+  unsigned long long r;
+  char *end;
+
+  PARSE_ERROR_IF_NEGATIVE;
+  errno = 0;
+  r = strtoull (str, &end, 0);
+#if UINT64_MAX != ULONGLONG_MAX
+  if (r > UINT64_MAX)
+    errno = ERANGE;
+#endif
+  PARSE_COMMON_TAIL;
 }
 
 /* Parse a string as a size with possible scaling suffix, or return -1

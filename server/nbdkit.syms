@@ -49,7 +49,17 @@
     nbdkit_get_extent;
     nbdkit_nanosleep;
     nbdkit_parse_bool;
+    nbdkit_parse_int8_t;
+    nbdkit_parse_int16_t;
+    nbdkit_parse_int32_t;
+    nbdkit_parse_int64_t;
+    nbdkit_parse_int;
     nbdkit_parse_size;
+    nbdkit_parse_uint8_t;
+    nbdkit_parse_uint16_t;
+    nbdkit_parse_uint32_t;
+    nbdkit_parse_uint64_t;
+    nbdkit_parse_unsigned;
     nbdkit_peer_name;
     nbdkit_read_password;
     nbdkit_realpath;

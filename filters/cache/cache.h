@@ -47,7 +47,7 @@ extern unsigned blksize;
 
 /* Maximum size of the cache and high/low thresholds. */
 extern int64_t max_size;
-extern int hi_thresh, lo_thresh;
+extern unsigned hi_thresh, lo_thresh;
 
 /* Cache read requests. */
 extern bool cache_on_read;

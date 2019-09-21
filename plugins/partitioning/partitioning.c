@@ -68,7 +68,7 @@ int partitioning_debug_regions;
  * following partitions.
  */
 unsigned long alignment = DEFAULT_ALIGNMENT;
-int mbr_id = DEFAULT_MBR_ID;
+uint8_t mbr_id = DEFAULT_MBR_ID;
 char type_guid[16]; /* initialized by partitioning_load function below */
 
 /* partition-type parameter. */
@@ -211,10 +211,8 @@ partitioning_config (const char *key, const char *value)
   else if (strcmp (key, "mbr-id") == 0) {
     if (strcasecmp (value, "default") == 0)
       mbr_id = DEFAULT_MBR_ID;
-    else if (sscanf (value, "%i", &mbr_id) != 1) {
-      nbdkit_error ("could not parse mbr-id: %s", value);
+    else if (nbdkit_parse_uint8_t ("mbr-id", value, &mbr_id) == -1)
       return -1;
-    }
   }
   else if (strcmp (key, "type-guid") == 0) {
     if (strcasecmp (value, "default") == 0)

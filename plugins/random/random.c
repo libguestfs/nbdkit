@@ -67,10 +67,8 @@ random_config (const char *key, const char *value)
   int64_t r;
 
   if (strcmp (key, "seed") == 0) {
-    if (sscanf (value, "%" SCNu32, &seed) != 1) {
-      nbdkit_error ("could not parse seed parameter");
+    if (nbdkit_parse_uint32_t ("seed", value, &seed) == -1)
       return -1;
-    }
   }
   else if (strcmp (key, "size") == 0) {
     r = nbdkit_parse_size (value);

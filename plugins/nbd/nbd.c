@@ -89,7 +89,7 @@ static const char *uri;
 static const char *export;
 
 /* Number of retries */
-static unsigned long retry;
+static unsigned retry;
 
 /* True to share single server connection among all clients */
 static bool shared;
@@ -124,7 +124,6 @@ nbdplug_unload (void)
 static int
 nbdplug_config (const char *key, const char *value)
 {
-  char *end;
   int r;
 
   if (strcmp (key, "socket") == 0) {
@@ -143,12 +142,8 @@ nbdplug_config (const char *key, const char *value)
   else if (strcmp (key, "export") == 0)
     export = value;
   else if (strcmp (key, "retry") == 0) {
-    errno = 0;
-    retry = strtoul (value, &end, 0);
-    if (value == end || errno) {
-      nbdkit_error ("could not parse retry as integer (%s)", value);
+    if (nbdkit_parse_unsigned ("retry", value, &retry) == -1)
       return -1;
-    }
   }
   else if (strcmp (key, "shared") == 0) {
     r = nbdkit_parse_bool (value);

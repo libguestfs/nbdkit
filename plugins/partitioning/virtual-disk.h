@@ -69,7 +69,7 @@
 extern int partitioning_debug_regions;
 
 extern unsigned long alignment;
-extern int mbr_id;
+extern uint8_t mbr_id;
 extern char type_guid[16];
 
 #define PARTTYPE_UNSET 0
@@ -84,7 +84,7 @@ struct file {
   struct stat statbuf;
   char guid[16];                /* random GUID used for GPT */
   unsigned long alignment;      /* alignment of this partition */
-  int mbr_id;                   /* MBR ID of this partition */
+  uint8_t mbr_id;               /* MBR ID of this partition */
   char type_guid[16];           /* partition type GUID of this partition */
 };
 

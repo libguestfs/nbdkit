@@ -84,6 +84,26 @@ extern void nbdkit_vdebug (const char *msg, va_list args);
 extern char *nbdkit_absolute_path (const char *path);
 extern int64_t nbdkit_parse_size (const char *str);
 extern int nbdkit_parse_bool (const char *str);
+extern int nbdkit_parse_int (const char *what, const char *str,
+                             int *r);
+extern int nbdkit_parse_unsigned (const char *what, const char *str,
+                                  unsigned *r);
+extern int nbdkit_parse_int8_t (const char *what, const char *str,
+                                int8_t *r);
+extern int nbdkit_parse_uint8_t (const char *what, const char *str,
+                                 uint8_t *r);
+extern int nbdkit_parse_int16_t (const char *what, const char *str,
+                                 int16_t *r);
+extern int nbdkit_parse_uint16_t (const char *what, const char *str,
+                                  uint16_t *r);
+extern int nbdkit_parse_int32_t (const char *what, const char *str,
+                                 int32_t *r);
+extern int nbdkit_parse_uint32_t (const char *what, const char *str,
+                                  uint32_t *r);
+extern int nbdkit_parse_int64_t (const char *what, const char *str,
+                                 int64_t *r);
+extern int nbdkit_parse_uint64_t (const char *what, const char *str,
+                                  uint64_t *r);
 extern int nbdkit_read_password (const char *value, char **password);
 extern char *nbdkit_realpath (const char *path);
 extern int nbdkit_nanosleep (unsigned sec, unsigned nsec);

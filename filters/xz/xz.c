@@ -49,7 +49,7 @@
 #include "blkcache.h"
 
 static uint64_t maxblock = 512 * 1024 * 1024;
-static size_t maxdepth = 8;
+static uint32_t maxdepth = 8;
 
 static int
 xz_config (nbdkit_next_config *next, void *nxdata,
@@ -63,18 +63,12 @@ xz_config (nbdkit_next_config *next, void *nxdata,
     return 0;
   }
   else if (strcmp (key, "xz-max-depth") == 0) {
-    size_t r;
-
-    if (sscanf (value, "%zu", &r) != 1) {
-      nbdkit_error ("could not parse 'xz-max-depth' parameter");
+    if (nbdkit_parse_uint32_t ("xz-max-depth", value, &maxdepth) == -1)
       return -1;
-    }
-    if (r == 0) {
+    if (maxdepth == 0) {
       nbdkit_error ("'xz-max-depth' parameter must be >= 1");
       return -1;
     }
-
-    maxdepth = r;
     return 0;
   }
   else

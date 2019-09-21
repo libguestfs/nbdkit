@@ -38,6 +38,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -59,7 +60,7 @@ static bool verify_remote_host = true;
 static const char *known_hosts = NULL;
 static const char **identity = NULL;
 static size_t nr_identities = 0;
-static long timeout = 0;
+static uint32_t timeout = 0;
 
 /* config can be:
  * NULL => parse options from default file
@@ -151,8 +152,13 @@ ssh_config (const char *key, const char *value)
   }
 
   else if (strcmp (key, "timeout") == 0) {
-    if (sscanf (value, "%ld", &timeout) != 1) {
-      nbdkit_error ("cannot parse timeout: %s", value);
+    if (nbdkit_parse_uint32_t ("timeout", value, &timeout) == -1)
+      return -1;
+    /* C17 5.2.4.2.1 requires that LONG_MAX is at least 2^31 - 1.
+     * However a large positive number might still exceed the limit.
+     */
+    if (timeout > LONG_MAX) {
+      nbdkit_error ("timeout is too large");
       return -1;
     }
   }
@@ -403,9 +409,10 @@ ssh_open (int readonly)
     }
   }
   if (timeout > 0) {
-    r = ssh_options_set (h->session, SSH_OPTIONS_TIMEOUT, &timeout);
+    long arg = timeout;
+    r = ssh_options_set (h->session, SSH_OPTIONS_TIMEOUT, &arg);
     if (r != SSH_OK) {
-      nbdkit_error ("failed to set timeout in libssh session: %ld: %s",
+      nbdkit_error ("failed to set timeout in libssh session: %" PRIu32 ": %s",
                     timeout, ssh_get_error (h->session));
       goto err;
     }

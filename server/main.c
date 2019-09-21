@@ -76,7 +76,7 @@ bool read_only;                 /* -r */
 const char *run;                /* --run */
 bool listen_stdin;              /* -s */
 const char *selinux_label;      /* --selinux-label */
-int threads;                    /* -t */
+unsigned threads;               /* -t */
 int tls;                        /* --tls : 0=off 1=on 2=require */
 const char *tls_certificates_dir; /* --tls-certificates */
 const char *tls_psk;            /* --tls-psk */
@@ -149,7 +149,6 @@ main (int argc, char *argv[])
   } *filter_filenames = NULL;
   size_t i;
   const char *magic_config_key;
-  char *end;
 
   /* Refuse to run if stdin/out/err are closed, whether or not -s is used. */
   if (fcntl (STDERR_FILENO, F_GETFL) == -1) {
@@ -217,7 +216,8 @@ main (int argc, char *argv[])
         if (!flag->name) goto debug_flag_perror;
         flag->flag = strndup (p, q-p-1);
         if (!flag->flag) goto debug_flag_perror;
-        if (sscanf (q, "%d", &flag->value) != 1) goto bad_debug_flag;
+        if (nbdkit_parse_int ("flag", q, &flag->value) == -1)
+          goto bad_debug_flag;
         flag->used = false;
 
         /* Add flag to the linked list. */
@@ -351,13 +351,9 @@ main (int argc, char *argv[])
       break;
 
     case MASK_HANDSHAKE_OPTION:
-      errno = 0;
-      mask_handshake = strtoul (optarg, &end, 0);
-      if (errno || *end) {
-        fprintf (stderr, "%s: cannot parse '%s' into mask-handshake\n",
-                 program_name, optarg);
+      if (nbdkit_parse_unsigned ("mask-handshake",
+                                 optarg, &mask_handshake) == -1)
         exit (EXIT_FAILURE);
-      }
       break;
 
     case 'n':
@@ -401,13 +397,8 @@ main (int argc, char *argv[])
       break;
 
     case 't':
-      errno = 0;
-      threads = strtoul (optarg, &end, 0);
-      if (errno || *end) {
-        fprintf (stderr, "%s: cannot parse '%s' into threads\n",
-                 program_name, optarg);
+      if (nbdkit_parse_unsigned ("threads", optarg, &threads) == -1)
         exit (EXIT_FAILURE);
-      }
       /* XXX Worth a maximimum limit on threads? */
       break;
 

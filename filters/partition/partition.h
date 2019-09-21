@@ -37,7 +37,7 @@
 
 #define SECTOR_SIZE 512
 
-extern int partnum;
+extern unsigned partnum;
 
 extern int find_mbr_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
                                int64_t size, uint8_t *mbr,
