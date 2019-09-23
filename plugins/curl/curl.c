@@ -46,6 +46,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
@@ -206,8 +207,11 @@ curl_config (const char *key, const char *value)
   else if (strcmp (key, "timeout") == 0) {
     if (nbdkit_parse_uint32_t ("timeout", value, &timeout) == -1)
       return -1;
-    if (timeout < 0) {
-      nbdkit_error ("'timeout' must be 0 or a positive timeout in seconds");
+    /* C17 5.2.4.2.1 requires that LONG_MAX is at least 2^31 - 1.
+     * However a large positive number might still exceed the limit.
+     */
+    if (timeout > LONG_MAX) {
+      nbdkit_error ("timeout is too large");
       return -1;
     }
   }
