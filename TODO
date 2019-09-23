@@ -83,6 +83,25 @@ General ideas for improvements
   address, rather like a poor man's TCP wrappers.  See also commit
   c05686f9577f.
 
+* Background thread for filters.  Some filters (readahead, cache and
+  proposed scan filter - see below) could be more effective if they
+  were able to defer work to a background thread.  However it's not as
+  simple as just creating a background thread, because you only have
+  access to the connection / next_ops from the context of a filter
+  callback.  (Also you can't "save" next_ops because it becomes
+  invalid outside the callback).  The background thread would need to
+  have its own connection to the plugin, which would be independent of
+  any client connection, and this requires some care because it breaks
+  an existing assumption.
+
+* Add scan filter.  This would be placed on top of cache filters and
+  would scan (read) the whole disk in the background, ensuring it is
+  copied into the cache.  Useful if you have a slow plugin, limited
+  size device, and lots of local disk space, especially if you know
+  that the NBD clients will eventually read all of the device.  RWMJ
+  wrote an implementation of this but it doesn't work well without a
+  background thread.
+
 Suggestions for plugins
 -----------------------
 
