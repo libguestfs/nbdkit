@@ -29,12 +29,12 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Generate the protostrings.c file from protocol.h.
+# Generate the protostrings.c file from nbd-protocol.h.
 
 # Prologue.
 1i\
-/* Generated from protocol.h by protostrings.sed. */\
-\#include "protocol.h"\
+/* Generated from nbd-protocol.h by protostrings.sed. */\
+\#include "nbd-protocol.h"\
 
 
 # Match the precise sections of the source file.

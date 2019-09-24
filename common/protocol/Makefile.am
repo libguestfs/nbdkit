@@ -32,7 +32,7 @@
 include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
-	protocol.h \
+	nbd-protocol.h \
 	protostrings.c \
 	protostrings.sed \
 	$(NULL)
@@ -40,17 +40,17 @@ EXTRA_DIST = \
 noinst_LTLIBRARIES = libprotocol.la
 
 libprotocol_la_SOURCES = \
-        protostrings.c \
-	protocol.h \
+	protostrings.c \
+	nbd-protocol.h \
 	$(NULL)
 libprotocol_la_CFLAGS = $(WARNINGS_CFLAGS)
 
-# protostrings.c is generated from the protocol.h header file where it
-# is used to map NBD protocol flags to strings.
+# protostrings.c is generated from the nbd-protocol.h header file
+# where it is used to map NBD protocol flags to strings.
 
 BUILT_SOURCES = protostrings.c
 CLEANFILES += protostrings.c
-protostrings.c: protocol.h protostrings.sed Makefile
+protostrings.c: nbd-protocol.h protostrings.sed Makefile
 	rm -f $@ $@-t
 	$(SED) -n -f $(srcdir)/protostrings.sed < $< > $@-t
 	mv $@-t $@

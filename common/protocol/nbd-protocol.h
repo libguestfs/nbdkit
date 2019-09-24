@@ -30,8 +30,8 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NBDKIT_PROTOCOL_H
-#define NBDKIT_PROTOCOL_H
+#ifndef NBD_PROTOCOL_H
+#define NBD_PROTOCOL_H
 
 #include <stdint.h>
 
@@ -244,4 +244,4 @@ extern const char *name_of_nbd_error (int);
 #define NBD_ENOTSUP    95
 #define NBD_ESHUTDOWN 108
 
-#endif /* NBDKIT_PROTOCOL_H */
+#endif /* NBD_PROTOCOL_H */

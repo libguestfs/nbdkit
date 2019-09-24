@@ -41,7 +41,7 @@
 
 #include "internal.h"
 #include "byte-swapping.h"
-#include "protocol.h"
+#include "nbd-protocol.h"
 
 int
 protocol_handshake (struct connection *conn)

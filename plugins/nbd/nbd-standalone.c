@@ -53,7 +53,7 @@
 #define NBDKIT_API_VERSION 2
 
 #include <nbdkit-plugin.h>
-#include "protocol.h"
+#include "nbd-protocol.h"
 #include "byte-swapping.h"
 #include "cleanup.h"
 

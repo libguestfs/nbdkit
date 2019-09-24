@@ -61,7 +61,7 @@
 #include "byte-swapping.h"
 #include "cleanup.h"
 #include "exit-with-parent.h"
-#include "protocol.h"
+#include "nbd-protocol.h"
 
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
