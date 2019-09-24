@@ -42,6 +42,7 @@
 #include "internal.h"
 #include "byte-swapping.h"
 #include "nbd-protocol.h"
+#include "protostrings.h"
 
 /* Maximum number of client options we allow before giving up. */
 #define MAX_NR_OPTIONS 32

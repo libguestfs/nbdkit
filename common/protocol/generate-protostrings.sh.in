@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -29,30 +30,45 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Generate the protostrings.c file from nbd-protocol.h.
+# The header.
+cat <<'EOF'
+/* Generated from nbd-protocol.h by generate-protostrings.sh.
+ * License of this file is BSD, the same as the rest of nbdkit.
+ */
 
-# Prologue.
-1i\
-/* Generated from nbd-protocol.h by protostrings.sed. */\
-\#include "nbd-protocol.h"\
+#include "nbd-protocol.h"
 
+EOF
 
-# Match the precise sections of the source file.
-/^extern const char \*name_of_/,/^$/ {
+declare -A functions=(
+    [global_flag]=NBD_FLAG_FIXED_NEWSTYLE
+    [flag]=NBD_FLAG_HAS_FLAGS
+    [opt]=NBD_OPT_EXPORT_NAME
+    [rep]=NBD_REP_ACK
+    [info]=NBD_INFO_EXPORT
+    [reply]=NBD_REPLY_FLAG_DONE
+    [reply_type]=NBD_REPLY_TYPE_NONE
+    [cmd]=NBD_CMD_READ
+    [cmd_flag]=NBD_CMD_FLAG_FUA
+    [error]=NBD_SUCCESS
+)
 
-  # Convert extern function prototype into a definition.
-  s/extern \(const char \*name_of_.*\) (int);/\1 (int fl) {\
-  switch (fl) {/;
+# Generate each 'const char *name_of_nbd_<fn>'
+keys=$( printf '%s\n' ${!functions[@]} | sort )
+for fn in $keys; do
+    echo 'extern const char *'
+    echo "name_of_nbd_$fn (int fl)"
+    echo '{'
+    echo '  switch (fl) {'
 
-  # Convert #define lines into cases.
-  s/^#define \([_A-Z]*\).*/  case \1: return "\1\";/;
+    # We look for the first #define <symbol> and rewrite every
+    # line up to the next blank line.
+    symbol="${functions[$fn]}"
+    @SED@ -n "/^#define $symbol/,/^$/p" nbd-protocol.h |
+        @SED@ 's/^#define \([_A-Z]*\).*/  case \1:\n    return "\1\";/'
 
-  # Append closing brace.
-  s/^$/  default: return "unknown";\
-  }\
-}/;
-
-  # Print pattern buffer.
-  p;
-
-}
+    echo '  default: return "unknown";'
+    echo '  }'
+    echo '}'
+    echo
+done

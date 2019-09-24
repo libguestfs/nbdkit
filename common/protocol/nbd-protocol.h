@@ -80,12 +80,10 @@ struct fixed_new_option_reply {
 #define NBD_REP_MAGIC UINT64_C(0x3e889045565a9)
 
 /* Global flags. */
-extern const char *name_of_nbd_global_flag (int);
 #define NBD_FLAG_FIXED_NEWSTYLE 1
 #define NBD_FLAG_NO_ZEROES      2
 
 /* Per-export flags. */
-extern const char *name_of_nbd_flag (int);
 #define NBD_FLAG_HAS_FLAGS         (1 << 0)
 #define NBD_FLAG_READ_ONLY         (1 << 1)
 #define NBD_FLAG_SEND_FLUSH        (1 << 2)
@@ -99,7 +97,6 @@ extern const char *name_of_nbd_flag (int);
 #define NBD_FLAG_SEND_FAST_ZERO    (1 << 11)
 
 /* NBD options (new style handshake only). */
-extern const char *name_of_nbd_opt (int);
 #define NBD_OPT_EXPORT_NAME        1
 #define NBD_OPT_ABORT              2
 #define NBD_OPT_LIST               3
@@ -113,7 +110,6 @@ extern const char *name_of_nbd_opt (int);
 #define NBD_REP_ERR(val) (0x80000000 | (val))
 #define NBD_REP_IS_ERR(val) (!!((val) & 0x80000000))
 
-extern const char *name_of_nbd_rep (int);
 #define NBD_REP_ACK          1
 #define NBD_REP_SERVER       2
 #define NBD_REP_INFO         3
@@ -124,7 +120,6 @@ extern const char *name_of_nbd_rep (int);
 #define NBD_REP_ERR_PLATFORM NBD_REP_ERR (4)
 #define NBD_REP_ERR_TLS_REQD NBD_REP_ERR (5)
 
-extern const char *name_of_nbd_info (int);
 #define NBD_INFO_EXPORT      0
 
 /* NBD_INFO_EXPORT reply (follows fixed_new_option_reply). */
@@ -197,14 +192,12 @@ struct structured_reply_error {
 #define NBD_STRUCTURED_REPLY_MAGIC  0x668e33ef
 
 /* Structured reply flags. */
-extern const char *name_of_nbd_reply_flag (int);
 #define NBD_REPLY_FLAG_DONE         (1<<0)
 
 #define NBD_REPLY_TYPE_ERR(val) ((1<<15) | (val))
 #define NBD_REPLY_TYPE_IS_ERR(val) (!!((val) & (1<<15)))
 
 /* Structured reply types. */
-extern const char *name_of_nbd_reply_type (int);
 #define NBD_REPLY_TYPE_NONE         0
 #define NBD_REPLY_TYPE_OFFSET_DATA  1
 #define NBD_REPLY_TYPE_OFFSET_HOLE  2
@@ -213,7 +206,6 @@ extern const char *name_of_nbd_reply_type (int);
 #define NBD_REPLY_TYPE_ERROR_OFFSET NBD_REPLY_TYPE_ERR (2)
 
 /* NBD commands. */
-extern const char *name_of_nbd_cmd (int);
 #define NBD_CMD_READ              0
 #define NBD_CMD_WRITE             1
 #define NBD_CMD_DISC              2 /* Disconnect. */
@@ -223,7 +215,6 @@ extern const char *name_of_nbd_cmd (int);
 #define NBD_CMD_WRITE_ZEROES      6
 #define NBD_CMD_BLOCK_STATUS      7
 
-extern const char *name_of_nbd_cmd_flag (int);
 #define NBD_CMD_FLAG_FUA       (1<<0)
 #define NBD_CMD_FLAG_NO_HOLE   (1<<1)
 #define NBD_CMD_FLAG_DF        (1<<2)
@@ -233,7 +224,6 @@ extern const char *name_of_nbd_cmd_flag (int);
 /* Error codes (previously errno).
  * See http://git.qemu.org/?p=qemu.git;a=commitdiff;h=ca4414804114fd0095b317785bc0b51862e62ebb
  */
-extern const char *name_of_nbd_error (int);
 #define NBD_SUCCESS     0
 #define NBD_EPERM       1
 #define NBD_EIO         5

@@ -886,6 +886,8 @@ dnl Produce output files.
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([podwrapper.pl],
                 [chmod +x,-w podwrapper.pl])
+AC_CONFIG_FILES([common/protocol/generate-protostrings.sh],
+                [chmod +x,-w common/protocol/generate-protostrings.sh])
 AC_CONFIG_FILES([Makefile
                  bash/Makefile
                  common/bitmap/Makefile

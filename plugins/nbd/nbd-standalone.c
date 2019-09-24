@@ -54,6 +54,7 @@
 
 #include <nbdkit-plugin.h>
 #include "nbd-protocol.h"
+#include "protostrings.h"
 #include "byte-swapping.h"
 #include "cleanup.h"
 

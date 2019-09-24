@@ -46,6 +46,7 @@
 #include "byte-swapping.h"
 #include "minmax.h"
 #include "nbd-protocol.h"
+#include "protostrings.h"
 
 static bool
 validate_request (struct connection *conn,

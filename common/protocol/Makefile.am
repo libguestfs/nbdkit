@@ -34,13 +34,14 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = \
 	nbd-protocol.h \
 	protostrings.c \
-	protostrings.sed \
+	generate-protostrings.sh \
 	$(NULL)
 
 noinst_LTLIBRARIES = libprotocol.la
 
 libprotocol_la_SOURCES = \
 	protostrings.c \
+	protostrings.h \
 	nbd-protocol.h \
 	$(NULL)
 libprotocol_la_CFLAGS = $(WARNINGS_CFLAGS)
@@ -50,8 +51,9 @@ libprotocol_la_CFLAGS = $(WARNINGS_CFLAGS)
 
 BUILT_SOURCES = protostrings.c
 CLEANFILES += protostrings.c
-protostrings.c: nbd-protocol.h protostrings.sed Makefile
+
+protostrings.c: nbd-protocol.h generate-protostrings.sh Makefile
 	rm -f $@ $@-t
-	$(SED) -n -f $(srcdir)/protostrings.sed < $< > $@-t
+	$(srcdir)/generate-protostrings.sh > $@-t
 	mv $@-t $@
 	chmod 0444 $@
