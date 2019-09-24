@@ -37,6 +37,8 @@ EXTRA_DIST = \
 	generate-protostrings.sh \
 	$(NULL)
 
+include_HEADERS = nbd-protocol.h
+
 noinst_LTLIBRARIES = libprotocol.la
 
 libprotocol_la_SOURCES = \
