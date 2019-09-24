@@ -86,13 +86,13 @@ main (int argc, char *argv[])
   int err;
   pthread_t thread;
   int sock;
-  struct new_handshake handshake;
+  struct nbd_new_handshake handshake;
   uint32_t cflags;
-  struct new_option option;
-  struct new_handshake_finish handshake_finish;
+  struct nbd_new_option option;
+  struct nbd_new_handshake_finish handshake_finish;
   uint16_t eflags;
-  struct request request;
-  struct simple_reply reply;
+  struct nbd_request request;
+  struct nbd_simple_reply reply;
   char data[512];
 
 #ifndef HAVE_EXIT_WITH_PARENT
@@ -175,7 +175,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
   if (memcmp (handshake.nbdmagic, "NBDMAGIC", 8) != 0 ||
-      be64toh (handshake.version) != NEW_VERSION) {
+      be64toh (handshake.version) != NBD_NEW_VERSION) {
     fprintf (stderr, "%s: unexpected NBDMAGIC or version\n",
              program_name);
     exit (EXIT_FAILURE);
@@ -189,7 +189,7 @@ main (int argc, char *argv[])
   }
 
   /* Send NBD_OPT_EXPORT_NAME with no export name. */
-  option.version = htobe64 (NEW_VERSION);
+  option.version = htobe64 (NBD_NEW_VERSION);
   option.option = htobe32 (NBD_OPT_EXPORT_NAME);
   option.optlen = htobe32 (0);
   if (send (sock, &option, sizeof option, 0) != sizeof option) {

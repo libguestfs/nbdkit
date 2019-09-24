@@ -40,37 +40,46 @@
  * these structures.
  */
 
+#define NBD_MAX_STRING 4096 /* Maximum length of a string field */
+
 /* Old-style handshake. */
-struct old_handshake {
+struct nbd_old_handshake {
   char nbdmagic[8];           /* "NBDMAGIC" */
-  uint64_t version;           /* OLD_VERSION */
+  uint64_t version;           /* NBD_OLD_VERSION */
   uint64_t exportsize;
   uint16_t gflags;            /* global flags */
   uint16_t eflags;            /* per-export flags */
   char zeroes[124];           /* must be sent as zero bytes */
 } __attribute__((packed));
 
-#define OLD_VERSION UINT64_C(0x420281861253)
+#define NBD_OLD_VERSION UINT64_C(0x420281861253)
 
 /* New-style handshake. */
-struct new_handshake {
+struct nbd_new_handshake {
   char nbdmagic[8];           /* "NBDMAGIC" */
-  uint64_t version;           /* NEW_VERSION */
+  uint64_t version;           /* NBD_NEW_VERSION */
   uint16_t gflags;            /* global flags */
 } __attribute__((packed));
 
-#define NEW_VERSION UINT64_C(0x49484156454F5054)
+#define NBD_NEW_VERSION UINT64_C(0x49484156454F5054)
 
 /* New-style handshake option (sent by the client to us). */
-struct new_option {
+struct nbd_new_option {
   uint64_t version;           /* NEW_VERSION */
   uint32_t option;            /* NBD_OPT_* */
   uint32_t optlen;            /* option data length */
   /* option data follows */
 } __attribute__((packed));
 
+/* Newstyle handshake OPT_EXPORT_NAME reply message. */
+struct nbd_export_name_option_reply {
+  uint64_t exportsize;          /* size of export */
+  uint16_t eflags;              /* per-export flags */
+  char zeroes[124];             /* optional zeroes */
+} __attribute__((packed));
+
 /* Fixed newstyle handshake reply message. */
-struct fixed_new_option_reply {
+struct nbd_fixed_new_option_reply {
   uint64_t magic;             /* NBD_REP_MAGIC */
   uint32_t option;            /* option we are replying to */
   uint32_t reply;             /* NBD_REP_* */
@@ -110,33 +119,37 @@ struct fixed_new_option_reply {
 #define NBD_REP_ERR(val) (0x80000000 | (val))
 #define NBD_REP_IS_ERR(val) (!!((val) & 0x80000000))
 
-#define NBD_REP_ACK          1
-#define NBD_REP_SERVER       2
-#define NBD_REP_INFO         3
-#define NBD_REP_META_CONTEXT 4
-#define NBD_REP_ERR_UNSUP    NBD_REP_ERR (1)
-#define NBD_REP_ERR_POLICY   NBD_REP_ERR (2)
-#define NBD_REP_ERR_INVALID  NBD_REP_ERR (3)
-#define NBD_REP_ERR_PLATFORM NBD_REP_ERR (4)
-#define NBD_REP_ERR_TLS_REQD NBD_REP_ERR (5)
+#define NBD_REP_ACK                  1
+#define NBD_REP_SERVER               2
+#define NBD_REP_INFO                 3
+#define NBD_REP_META_CONTEXT         4
+#define NBD_REP_ERR_UNSUP            NBD_REP_ERR (1)
+#define NBD_REP_ERR_POLICY           NBD_REP_ERR (2)
+#define NBD_REP_ERR_INVALID          NBD_REP_ERR (3)
+#define NBD_REP_ERR_PLATFORM         NBD_REP_ERR (4)
+#define NBD_REP_ERR_TLS_REQD         NBD_REP_ERR (5)
+#define NBD_REP_ERR_UNKNOWN          NBD_REP_ERR (6)
+#define NBD_REP_ERR_SHUTDOWN         NBD_REP_ERR (7)
+#define NBD_REP_ERR_BLOCK_SIZE_REQD  NBD_REP_ERR (8)
+#define NBD_REP_ERR_TOO_BIG          NBD_REP_ERR (9)
 
 #define NBD_INFO_EXPORT      0
 
 /* NBD_INFO_EXPORT reply (follows fixed_new_option_reply). */
-struct fixed_new_option_reply_info_export {
+struct nbd_fixed_new_option_reply_info_export {
   uint16_t info;                /* NBD_INFO_EXPORT */
   uint64_t exportsize;          /* size of export */
   uint16_t eflags;              /* per-export flags */
 } __attribute__((packed));
 
 /* NBD_REP_META_CONTEXT reply (follows fixed_new_option_reply). */
-struct fixed_new_option_reply_meta_context {
+struct nbd_fixed_new_option_reply_meta_context {
   uint32_t context_id;          /* metadata context ID */
   /* followed by a string */
 } __attribute__((packed));
 
 /* NBD_REPLY_TYPE_BLOCK_STATUS block descriptor. */
-struct block_descriptor {
+struct nbd_block_descriptor {
   uint32_t length;              /* length of block */
   uint32_t status_flags;        /* block type (hole etc) */
 } __attribute__((packed));
@@ -144,14 +157,14 @@ struct block_descriptor {
 /* New-style handshake server reply when using NBD_OPT_EXPORT_NAME.
  * Modern clients use NBD_OPT_GO instead of this.
  */
-struct new_handshake_finish {
+struct nbd_new_handshake_finish {
   uint64_t exportsize;
   uint16_t eflags;            /* per-export flags */
   char zeroes[124];           /* must be sent as zero bytes */
 } __attribute__((packed));
 
 /* Request (client -> server). */
-struct request {
+struct nbd_request {
   uint32_t magic;               /* NBD_REQUEST_MAGIC. */
   uint16_t flags;               /* Request flags. */
   uint16_t type;                /* Request type. */
@@ -161,14 +174,14 @@ struct request {
 } __attribute__((packed));
 
 /* Simple reply (server -> client). */
-struct simple_reply {
+struct nbd_simple_reply {
   uint32_t magic;               /* NBD_SIMPLE_REPLY_MAGIC. */
   uint32_t error;               /* NBD_SUCCESS or one of NBD_E*. */
   uint64_t handle;              /* Opaque handle. */
 } __attribute__((packed));
 
 /* Structured reply (server -> client). */
-struct structured_reply {
+struct nbd_structured_reply {
   uint32_t magic;               /* NBD_STRUCTURED_REPLY_MAGIC. */
   uint16_t flags;               /* NBD_REPLY_FLAG_* */
   uint16_t type;                /* NBD_REPLY_TYPE_* */
@@ -176,15 +189,20 @@ struct structured_reply {
   uint32_t length;              /* Length of payload which follows. */
 } __attribute__((packed));
 
-struct structured_reply_offset_data {
+struct nbd_structured_reply_offset_data {
   uint64_t offset;              /* offset */
   /* Followed by data. */
 } __attribute__((packed));
 
-struct structured_reply_error {
+struct nbd_structured_reply_offset_hole {
+  uint64_t offset;
+  uint32_t length;              /* Length of hole. */
+} __attribute__((packed));
+
+struct nbd_structured_reply_error {
   uint32_t error;               /* NBD_E* error number */
   uint16_t len;                 /* Length of human readable error. */
-  /* Followed by human readable error string. */
+  /* Followed by human readable error string, and possibly more structure. */
 } __attribute__((packed));
 
 #define NBD_REQUEST_MAGIC           0x25609513
@@ -221,9 +239,7 @@ struct structured_reply_error {
 #define NBD_CMD_FLAG_REQ_ONE   (1<<3)
 #define NBD_CMD_FLAG_FAST_ZERO (1<<4)
 
-/* Error codes (previously errno).
- * See http://git.qemu.org/?p=qemu.git;a=commitdiff;h=ca4414804114fd0095b317785bc0b51862e62ebb
- */
+/* NBD error codes. */
 #define NBD_SUCCESS     0
 #define NBD_EPERM       1
 #define NBD_EIO         5

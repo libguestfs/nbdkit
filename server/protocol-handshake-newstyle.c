@@ -55,7 +55,7 @@ static int
 send_newstyle_option_reply (struct connection *conn,
                             uint32_t option, uint32_t reply)
 {
-  struct fixed_new_option_reply fixed_new_option_reply;
+  struct nbd_fixed_new_option_reply fixed_new_option_reply;
 
   fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
   fixed_new_option_reply.option = htobe32 (option);
@@ -83,7 +83,7 @@ static int
 send_newstyle_option_reply_exportname (struct connection *conn,
                                        uint32_t option, uint32_t reply)
 {
-  struct fixed_new_option_reply fixed_new_option_reply;
+  struct nbd_fixed_new_option_reply fixed_new_option_reply;
   size_t name_len = strlen (exportname);
   uint32_t len;
 
@@ -119,8 +119,8 @@ send_newstyle_option_reply_info_export (struct connection *conn,
                                         uint32_t option, uint32_t reply,
                                         uint16_t info, uint64_t exportsize)
 {
-  struct fixed_new_option_reply fixed_new_option_reply;
-  struct fixed_new_option_reply_info_export export;
+  struct nbd_fixed_new_option_reply fixed_new_option_reply;
+  struct nbd_fixed_new_option_reply_info_export export;
 
   fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
   fixed_new_option_reply.option = htobe32 (option);
@@ -147,8 +147,8 @@ send_newstyle_option_reply_meta_context (struct connection *conn,
                                          uint32_t context_id,
                                          const char *name)
 {
-  struct fixed_new_option_reply fixed_new_option_reply;
-  struct fixed_new_option_reply_meta_context context;
+  struct nbd_fixed_new_option_reply fixed_new_option_reply;
+  struct nbd_fixed_new_option_reply_meta_context context;
   const size_t namelen = strlen (name);
 
   debug ("newstyle negotiation: %s: replying with %s id %d",
@@ -213,13 +213,13 @@ finish_newstyle_options (struct connection *conn, uint64_t *exportsize)
 static int
 negotiate_handshake_newstyle_options (struct connection *conn)
 {
-  struct new_option new_option;
+  struct nbd_new_option new_option;
   size_t nr_options;
   uint64_t version;
   uint32_t option;
   uint32_t optlen;
   char data[MAX_OPTION_LENGTH+1];
-  struct new_handshake_finish handshake_finish;
+  struct nbd_new_handshake_finish handshake_finish;
   const char *optname;
   uint64_t exportsize;
 
@@ -229,10 +229,10 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       return -1;
 
     version = be64toh (new_option.version);
-    if (version != NEW_VERSION) {
+    if (version != NBD_NEW_VERSION) {
       nbdkit_error ("unknown option version %" PRIx64
                     ", expecting %" PRIx64,
-                    version, NEW_VERSION);
+                    version, NBD_NEW_VERSION);
       return -1;
     }
 
@@ -296,7 +296,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       if (conn->send (conn,
                       &handshake_finish,
                       (conn->cflags & NBD_FLAG_NO_ZEROES)
-                      ? offsetof (struct new_handshake_finish, zeroes)
+                      ? offsetof (struct nbd_new_handshake_finish, zeroes)
                       : sizeof handshake_finish, 0) == -1) {
         nbdkit_error ("write: %s: %m", optname);
         return -1;
@@ -670,7 +670,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
 int
 protocol_handshake_newstyle (struct connection *conn)
 {
-  struct new_handshake handshake;
+  struct nbd_new_handshake handshake;
   uint16_t gflags;
 
   gflags = (NBD_FLAG_FIXED_NEWSTYLE | NBD_FLAG_NO_ZEROES) & mask_handshake;
@@ -678,7 +678,7 @@ protocol_handshake_newstyle (struct connection *conn)
   debug ("newstyle negotiation: flags: global 0x%x", gflags);
 
   memcpy (handshake.nbdmagic, "NBDMAGIC", 8);
-  handshake.version = htobe64 (NEW_VERSION);
+  handshake.version = htobe64 (NBD_NEW_VERSION);
   handshake.gflags = htobe16 (gflags);
 
   if (conn->send (conn, &handshake, sizeof handshake, 0) == -1) {

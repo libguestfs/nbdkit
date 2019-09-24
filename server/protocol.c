@@ -367,7 +367,7 @@ send_simple_reply (struct connection *conn,
                    uint32_t error)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
-  struct simple_reply reply;
+  struct nbd_simple_reply reply;
   int r;
   int f = (cmd == NBD_CMD_READ && !error) ? SEND_MORE : 0;
 
@@ -404,8 +404,8 @@ send_structured_reply_read (struct connection *conn,
    * that yet we acquire the lock for the whole function.
    */
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
-  struct structured_reply reply;
-  struct structured_reply_offset_data offset_data;
+  struct nbd_structured_reply reply;
+  struct nbd_structured_reply_offset_data offset_data;
   int r;
 
   assert (cmd == NBD_CMD_READ);
@@ -442,7 +442,7 @@ send_structured_reply_read (struct connection *conn,
 /* Convert a list of extents into NBD_REPLY_TYPE_BLOCK_STATUS blocks.
  * The rules here are very complicated.  Read the spec carefully!
  */
-static struct block_descriptor *
+static struct nbd_block_descriptor *
 extents_to_block_descriptors (struct nbdkit_extents *extents,
                               uint16_t flags,
                               uint32_t count, uint64_t offset,
@@ -451,13 +451,14 @@ extents_to_block_descriptors (struct nbdkit_extents *extents,
   const bool req_one = flags & NBD_CMD_FLAG_REQ_ONE;
   const size_t nr_extents = nbdkit_extents_count (extents);
   size_t i;
-  struct block_descriptor *blocks;
+  struct nbd_block_descriptor *blocks;
 
   /* This is checked in server/plugins.c. */
   assert (nr_extents >= 1);
 
   /* We may send fewer than nr_extents blocks, but never more. */
-  blocks = calloc (req_one ? 1 : nr_extents, sizeof (struct block_descriptor));
+  blocks = calloc (req_one ? 1 : nr_extents,
+                   sizeof (struct nbd_block_descriptor));
   if (blocks == NULL) {
     nbdkit_error ("calloc: %m");
     return NULL;
@@ -528,8 +529,8 @@ send_structured_reply_block_status (struct connection *conn,
                                     struct nbdkit_extents *extents)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
-  struct structured_reply reply;
-  CLEANUP_FREE struct block_descriptor *blocks = NULL;
+  struct nbd_structured_reply reply;
+  CLEANUP_FREE struct nbd_block_descriptor *blocks = NULL;
   size_t nr_blocks;
   uint32_t context_id;
   size_t i;
@@ -548,7 +549,7 @@ send_structured_reply_block_status (struct connection *conn,
   reply.flags = htobe16 (NBD_REPLY_FLAG_DONE);
   reply.type = htobe16 (NBD_REPLY_TYPE_BLOCK_STATUS);
   reply.length = htobe32 (sizeof context_id +
-                          nr_blocks * sizeof (struct block_descriptor));
+                          nr_blocks * sizeof (struct nbd_block_descriptor));
 
   r = conn->send (conn, &reply, sizeof reply, SEND_MORE);
   if (r == -1) {
@@ -583,8 +584,8 @@ send_structured_reply_error (struct connection *conn,
                              uint32_t error)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
-  struct structured_reply reply;
-  struct structured_reply_error error_data;
+  struct nbd_structured_reply reply;
+  struct nbd_structured_reply_error error_data;
   int r;
 
   reply.magic = htobe32 (NBD_STRUCTURED_REPLY_MAGIC);
@@ -616,7 +617,7 @@ int
 protocol_recv_request_send_reply (struct connection *conn)
 {
   int r;
-  struct request request;
+  struct nbd_request request;
   uint16_t cmd, flags;
   uint32_t magic, count, error = 0;
   uint64_t offset;
