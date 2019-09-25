@@ -60,7 +60,7 @@ protocol_handshake_oldstyle (struct connection *conn)
          gflags, eflags);
 
   memset (&handshake, 0, sizeof handshake);
-  memcpy (handshake.nbdmagic, "NBDMAGIC", 8);
+  handshake.nbdmagic = htobe64 (NBD_MAGIC);
   handshake.version = htobe64 (NBD_OLD_VERSION);
   handshake.exportsize = htobe64 (exportsize);
   handshake.gflags = htobe16 (gflags);

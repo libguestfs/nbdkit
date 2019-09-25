@@ -205,6 +205,9 @@ check_PROGRAMS += \
 	$(NULL)
 
 test_socket_activation_SOURCES = test-socket-activation.c
+test_socket_activation_CPPFLAGS = \
+	-I$(top_srcdir)/common/protocol \
+	$(NULL)
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
 
 endif HAVE_PLUGINS

@@ -174,7 +174,7 @@ main (int argc, char *argv[])
     perror ("recv: handshake");
     exit (EXIT_FAILURE);
   }
-  if (memcmp (handshake.nbdmagic, "NBDMAGIC", 8) != 0 ||
+  if (be64toh (handshake.nbdmagic) != NBD_MAGIC ||
       be64toh (handshake.version) != NBD_NEW_VERSION) {
     fprintf (stderr, "%s: unexpected NBDMAGIC or version\n",
              program_name);

@@ -58,6 +58,8 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 
+#include "nbd-protocol.h"
+
 #ifndef SOCK_CLOEXEC
 /* For this file, we don't care if fds are marked cloexec; leaking is okay.  */
 #define SOCK_CLOEXEC 0
@@ -122,7 +124,7 @@ main (int argc, char *argv[])
   struct sockaddr_un addr;
   char pid_str[16];
   size_t i, len;
-  char magic[8];
+  uint64_t magic;
 
   if (mkdtemp (tmpdir) == NULL) {
     perror ("mkdtemp");
@@ -232,12 +234,12 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  if (read (sock, magic, 8) != 8) {
+  if (read (sock, &magic, sizeof magic) != sizeof magic) {
     perror ("read");
     exit (EXIT_FAILURE);
   }
 
-  if (memcmp (magic, "NBDMAGIC", 8) != 0) {
+  if (be64toh (magic) != NBD_MAGIC) {
     fprintf (stderr, "%s FAILED: did not read magic string from server\n",
              program_name);
     exit (EXIT_FAILURE);

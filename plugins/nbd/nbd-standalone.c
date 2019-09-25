@@ -1018,7 +1018,7 @@ nbd_open_handle (int readonly)
     nbdkit_error ("unable to read magic: %m");
     goto err;
   }
-  if (strncmp (old.nbdmagic, "NBDMAGIC", sizeof old.nbdmagic)) {
+  if (be64toh (old.nbdmagic) != NBD_MAGIC) {
     nbdkit_error ("wrong magic, %s is not an NBD server", servname);
     goto err;
   }

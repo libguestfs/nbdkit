@@ -50,7 +50,7 @@
 
 /* Old-style handshake. */
 struct nbd_old_handshake {
-  char nbdmagic[8];           /* "NBDMAGIC" */
+  uint64_t nbdmagic;          /* NBD_MAGIC */
   uint64_t version;           /* NBD_OLD_VERSION */
   uint64_t exportsize;
   uint16_t gflags;            /* global flags */
@@ -58,20 +58,21 @@ struct nbd_old_handshake {
   char zeroes[124];           /* must be sent as zero bytes */
 } NBD_ATTRIBUTE_PACKED;
 
-#define NBD_OLD_VERSION UINT64_C(0x420281861253)
+#define NBD_MAGIC       UINT64_C(0x4e42444d41474943) /* ASCII "NBDMAGIC" */
+#define NBD_OLD_VERSION UINT64_C(0x0000420281861253)
 
 /* New-style handshake. */
 struct nbd_new_handshake {
-  char nbdmagic[8];           /* "NBDMAGIC" */
+  uint64_t nbdmagic;          /* NBD_MAGIC */
   uint64_t version;           /* NBD_NEW_VERSION */
   uint16_t gflags;            /* global flags */
 } NBD_ATTRIBUTE_PACKED;
 
-#define NBD_NEW_VERSION UINT64_C(0x49484156454F5054)
+#define NBD_NEW_VERSION UINT64_C(0x49484156454F5054) /* ASCII "IHAVEOPT" */
 
 /* New-style handshake option (sent by the client to us). */
 struct nbd_new_option {
-  uint64_t version;           /* NEW_VERSION */
+  uint64_t version;           /* NBD_NEW_VERSION */
   uint32_t option;            /* NBD_OPT_* */
   uint32_t optlen;            /* option data length */
   /* option data follows */

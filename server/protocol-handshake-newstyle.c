@@ -677,7 +677,7 @@ protocol_handshake_newstyle (struct connection *conn)
 
   debug ("newstyle negotiation: flags: global 0x%x", gflags);
 
-  memcpy (handshake.nbdmagic, "NBDMAGIC", 8);
+  handshake.nbdmagic = htobe64 (NBD_MAGIC);
   handshake.version = htobe64 (NBD_NEW_VERSION);
   handshake.gflags = htobe16 (gflags);
 
