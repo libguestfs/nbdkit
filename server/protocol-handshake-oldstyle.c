@@ -52,6 +52,9 @@ protocol_handshake_oldstyle (struct connection *conn)
 
   assert (tls != 2); /* Already filtered in main */
 
+  /* With oldstyle, our only option if .open or friends fail is to
+   * disconnect, as we cannot report the problem to the client.
+   */
   if (protocol_common_open (conn, &exportsize, &eflags) == -1)
     return -1;
 

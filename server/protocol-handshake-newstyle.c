@@ -195,7 +195,7 @@ conn_recv_full (struct connection *conn, void *buf, size_t len,
 
 /* Sub-function of negotiate_handshake_newstyle_options below.  It
  * must be called on all non-error paths out of the options for-loop
- * in that function.
+ * in that function, and must not cause any wire traffic.
  */
 static int
 finish_newstyle_options (struct connection *conn, uint64_t *exportsize)
@@ -325,7 +325,9 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       if (check_export_name (conn, option, data, optlen, optlen, true) == -1)
         return -1;
 
-      /* We have to finish the handshake by sending handshake_finish. */
+      /* We have to finish the handshake by sending handshake_finish.
+       * On failure, we have to disconnect.
+       */
       if (finish_newstyle_options (conn, &exportsize) == -1)
         return -1;
 
@@ -463,16 +465,30 @@ negotiate_handshake_newstyle_options (struct connection *conn)
          * or else we drop the support for that context.
          */
         if (check_export_name (conn, option, &data[4], exportnamelen,
-                               optlen - 6, true) == -1)
-          return -1;
+                               optlen - 6, true) == -1) {
+          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+              == -1)
+            return -1;
+          continue;
+        }
 
         /* The spec is confusing, but it is required that we send back
          * NBD_INFO_EXPORT, even if the client did not request it!
          * qemu client in particular does not request this, but will
-         * fail if we don't send it.
+         * fail if we don't send it.  Note that if .open fails, but we
+         * succeed at .close, then we merely return an error to the
+         * client and let them try another NBD_OPT, rather than
+         * disconnecting.
          */
-        if (finish_newstyle_options (conn, &exportsize) == -1)
-          return -1;
+        if (finish_newstyle_options (conn, &exportsize) == -1) {
+          if (backend->finalize (backend, conn) == -1)
+            return -1;
+          backend_close (backend, conn);
+          if (send_newstyle_option_reply (conn, option,
+                                          NBD_REP_ERR_UNKNOWN) == -1)
+            return -1;
+          continue;
+        }
 
         if (send_newstyle_option_reply_info_export (conn, option,
                                                     NBD_REP_INFO,
@@ -500,7 +516,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       }
 
       /* Unlike NBD_OPT_EXPORT_NAME, NBD_OPT_GO sends back an ACK
-       * or ERROR packet.
+       * or ERROR packet.  If this was NBD_OPT_LIST, call .close.
        */
       if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
         return -1;
