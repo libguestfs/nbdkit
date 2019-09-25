@@ -98,8 +98,8 @@ struct nbd_fixed_new_option_reply {
 #define NBD_REP_MAGIC UINT64_C(0x3e889045565a9)
 
 /* Global flags. */
-#define NBD_FLAG_FIXED_NEWSTYLE 1
-#define NBD_FLAG_NO_ZEROES      2
+#define NBD_FLAG_FIXED_NEWSTYLE    (1 << 0)
+#define NBD_FLAG_NO_ZEROES         (1 << 1)
 
 /* Per-export flags. */
 #define NBD_FLAG_HAS_FLAGS         (1 << 0)
@@ -143,6 +143,9 @@ struct nbd_fixed_new_option_reply {
 #define NBD_REP_ERR_TOO_BIG          NBD_REP_ERR (9)
 
 #define NBD_INFO_EXPORT      0
+#define NBD_INFO_NAME        1
+#define NBD_INFO_DESCRIPTION 2
+#define NBD_INFO_BLOCK_SIZE  3
 
 /* NBD_INFO_EXPORT reply (follows fixed_new_option_reply). */
 struct nbd_fixed_new_option_reply_info_export {
