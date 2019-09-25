@@ -200,6 +200,7 @@ struct connection {
   size_t nr_handles;
 
   char exportname[NBD_MAX_STRING + 1];
+  uint32_t exportnamelen;
   uint32_t cflags;
   uint16_t eflags;
   bool using_tls;

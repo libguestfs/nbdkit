@@ -241,8 +241,12 @@ check_export_name (struct connection *conn, uint32_t option, char *buf,
 
   assert (exportnamelen < sizeof conn->exportname);
   if (save) {
+    if (exportnamelen != conn->exportnamelen ||
+        memcmp (conn->exportname, buf, exportnamelen) != 0)
+      conn->meta_context_base_allocation = false;
     memcpy (conn->exportname, buf, exportnamelen);
     conn->exportname[exportnamelen] = '\0';
+    conn->exportnamelen = exportnamelen;
   }
   debug ("newstyle negotiation: %s: client requested export '%.*s'",
          name_of_nbd_opt (option), (int) exportnamelen, buf);
@@ -454,7 +458,9 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         }
 
         /* As with NBD_OPT_EXPORT_NAME we print the export name and
-         * save it in the connection.
+         * save it in the connection.  If an earlier
+         * NBD_OPT_SET_META_CONTEXT used an export name, it must match
+         * or else we drop the support for that context.
          */
         if (check_export_name (conn, option, &data[4], exportnamelen,
                                optlen - 6, true) == -1)
@@ -577,12 +583,16 @@ negotiate_handshake_newstyle_options (struct connection *conn)
           continue;
         }
 
-        /* Discard the export name, after validating it. */
+        /* Remember the export name: the NBD spec says that if the client
+         * later uses NBD_OPT_GO on a different export, then the context
+         * returned here is not usable.
+         */
         memcpy (&exportnamelen, &data[0], 4);
         exportnamelen = be32toh (exportnamelen);
         what = "validating export name";
         if (check_export_name (conn, option, &data[4], exportnamelen,
-                               optlen - 8, false) == -1)
+                               optlen - 8,
+                               option == NBD_OPT_SET_META_CONTEXT) == -1)
           goto opt_meta_invalid_option_len;
         opt_index = 4 + exportnamelen;
 
