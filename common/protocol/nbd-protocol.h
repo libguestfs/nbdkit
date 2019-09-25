@@ -43,7 +43,7 @@
 #if defined(__GNUC__) || defined(__clang__)
 #define NBD_ATTRIBUTE_PACKED __attribute__((__packed__))
 #else
-#define NBD_ATTRIBUTE_PACKED
+#error "Please port to your compiler's notion of a packed struct"
 #endif
 
 #define NBD_MAX_STRING 4096 /* Maximum length of a string field */
