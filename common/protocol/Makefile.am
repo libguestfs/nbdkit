@@ -34,7 +34,6 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = \
 	nbd-protocol.h \
 	protostrings.c \
-	generate-protostrings.sh \
 	$(NULL)
 
 include_HEADERS = nbd-protocol.h
