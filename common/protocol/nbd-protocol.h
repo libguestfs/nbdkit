@@ -77,11 +77,13 @@ struct nbd_new_option {
   /* option data follows */
 } NBD_ATTRIBUTE_PACKED;
 
-/* Newstyle handshake OPT_EXPORT_NAME reply message. */
+/* Newstyle handshake OPT_EXPORT_NAME reply message.
+ * Modern clients use NBD_OPT_GO instead of this.
+ */
 struct nbd_export_name_option_reply {
-  uint64_t exportsize;          /* size of export */
-  uint16_t eflags;              /* per-export flags */
-  char zeroes[124];             /* optional zeroes */
+  uint64_t exportsize;        /* size of export */
+  uint16_t eflags;            /* per-export flags */
+  char zeroes[124];           /* optional zeroes, unless NBD_FLAG_NO_ZEROES */
 } NBD_ATTRIBUTE_PACKED;
 
 /* Fixed newstyle handshake reply message. */
@@ -158,15 +160,6 @@ struct nbd_fixed_new_option_reply_meta_context {
 struct nbd_block_descriptor {
   uint32_t length;              /* length of block */
   uint32_t status_flags;        /* block type (hole etc) */
-} NBD_ATTRIBUTE_PACKED;
-
-/* New-style handshake server reply when using NBD_OPT_EXPORT_NAME.
- * Modern clients use NBD_OPT_GO instead of this.
- */
-struct nbd_new_handshake_finish {
-  uint64_t exportsize;
-  uint16_t eflags;            /* per-export flags */
-  char zeroes[124];           /* must be sent as zero bytes */
 } NBD_ATTRIBUTE_PACKED;
 
 /* Request (client -> server). */

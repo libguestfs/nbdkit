@@ -89,7 +89,7 @@ main (int argc, char *argv[])
   struct nbd_new_handshake handshake;
   uint32_t cflags;
   struct nbd_new_option option;
-  struct nbd_new_handshake_finish handshake_finish;
+  struct nbd_export_name_option_reply handshake_finish;
   uint16_t eflags;
   struct nbd_request request;
   struct nbd_simple_reply reply;

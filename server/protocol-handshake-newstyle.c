@@ -219,7 +219,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
   uint32_t option;
   uint32_t optlen;
   char data[MAX_OPTION_LENGTH+1];
-  struct nbd_new_handshake_finish handshake_finish;
+  struct nbd_export_name_option_reply handshake_finish;
   const char *optname;
   uint64_t exportsize;
 
@@ -296,7 +296,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       if (conn->send (conn,
                       &handshake_finish,
                       (conn->cflags & NBD_FLAG_NO_ZEROES)
-                      ? offsetof (struct nbd_new_handshake_finish, zeroes)
+                      ? offsetof (struct nbd_export_name_option_reply, zeroes)
                       : sizeof handshake_finish, 0) == -1) {
         nbdkit_error ("write: %s: %m", optname);
         return -1;
