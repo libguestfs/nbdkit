@@ -210,6 +210,48 @@ finish_newstyle_options (struct connection *conn, uint64_t *exportsize)
   return 0;
 }
 
+/* Check that the string sent as part of @option, beginning at @buf,
+ * and with a client-reported length of @len, fits within @maxlen
+ * bytes and is well-formed.  If not, report an error mentioning
+ * @name.
+ */
+static int
+check_string (uint32_t option, char *buf, uint32_t len, uint32_t maxlen,
+              const char *name)
+{
+  if (len > NBD_MAX_STRING || len > maxlen) {
+    nbdkit_error ("%s: %s too long", name_of_nbd_opt (option), name);
+    return -1;
+  }
+  if (strnlen (buf, len) != len) {
+    nbdkit_error ("%s: %s may not include NUL bytes",
+                  name_of_nbd_opt (option), name);
+    return -1;
+  }
+  /* TODO: Check for valid UTF-8? */
+  return 0;
+}
+
+/* Sub-function of negotiate_handshake_newstyle_options, to grab and
+ * validate an export name.
+ */
+static int
+check_export_name (struct connection *conn, uint32_t option, char *buf,
+                   uint32_t exportnamelen, uint32_t maxlen, bool save)
+{
+  if (check_string (option, buf, exportnamelen, maxlen, "export name") == -1)
+    return -1;
+
+  assert (exportnamelen < sizeof conn->exportname);
+  if (save) {
+    memcpy (conn->exportname, buf, exportnamelen);
+    conn->exportname[exportnamelen] = '\0';
+  }
+  debug ("newstyle negotiation: %s: client requested export '%.*s'",
+         name_of_nbd_opt (option), (int) exportnamelen, buf);
+  return 0;
+}
+
 static int
 negotiate_handshake_newstyle_options (struct connection *conn)
 {
@@ -273,12 +315,8 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       if (conn_recv_full (conn, data, optlen,
                           "read: %s: %m", name_of_nbd_opt (option)) == -1)
         return -1;
-      /* Print the export name and save it in the connection. */
-      data[optlen] = '\0';
-      debug ("newstyle negotiation: %s: client requested export '%s'",
-             name_of_nbd_opt (option), data);
-      assert (optlen < sizeof conn->exportname);
-      strcpy (conn->exportname, data);
+      if (check_export_name (conn, option, data, optlen, optlen, true) == -1)
+        return -1;
 
       /* We have to finish the handshake by sending handshake_finish. */
       if (finish_newstyle_options (conn, &exportsize) == -1)
@@ -418,11 +456,9 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         /* FIXME: Our current MAX_OPTION_LENGTH prevents us from receiving
          * an export name at the full NBD_MAX_STRING length.
          */
-        assert (exportnamelen < sizeof conn->exportname);
-        memcpy (conn->exportname, &data[4], exportnamelen);
-        conn->exportname[exportnamelen] = '\0';
-        debug ("newstyle negotiation: %s: client requested export '%s'",
-               optname, conn->exportname);
+        if (check_export_name (conn, option, &data[4], exportnamelen,
+                               optlen - 6, true) == -1)
+          return -1;
 
         /* The spec is confusing, but it is required that we send back
          * NBD_INFO_EXPORT, even if the client did not request it!
@@ -541,9 +577,13 @@ negotiate_handshake_newstyle_options (struct connection *conn)
           continue;
         }
 
-        /* Discard the export name. */
+        /* Discard the export name, after validating it. */
         memcpy (&exportnamelen, &data[0], 4);
         exportnamelen = be32toh (exportnamelen);
+        what = "validating export name";
+        if (check_export_name (conn, option, &data[4], exportnamelen,
+                               optlen - 8, false) == -1)
+          goto opt_meta_invalid_option_len;
         opt_index = 4 + exportnamelen;
 
         /* Read the number of queries. */
@@ -583,7 +623,8 @@ negotiate_handshake_newstyle_options (struct connection *conn)
             querylen = be32toh (querylen);
             opt_index += 4;
             what = "reading query string";
-            if (opt_index + querylen > optlen)
+            if (check_string (option, &data[opt_index], querylen,
+                              optlen - opt_index, "meta context query") == -1)
               goto opt_meta_invalid_option_len;
 
             debug ("newstyle negotiation: %s: %s %.*s",

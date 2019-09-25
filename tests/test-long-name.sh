@@ -38,6 +38,7 @@ fail=0
 
 # Test handling of NBD maximum string length of 4k.
 
+requires qemu-io --version
 requires qemu-nbd --version
 
 name16=1234567812345678
@@ -70,6 +71,23 @@ case $out in
     *) echo "$0: \$uri contains wrong contents" >&2
        fail=1 ;;
 esac
+
+# Use largest possible export name, then oversize, with NBD_OPT_EXPORT_NAME.
+nbdkit -U - --mask-handshake=0 null --run 'qemu-io -r -f raw -c quit \
+  nbd+unix:///'$name4k'\?socket=$unixsocket' || fail=1
+# qemu 4.1 did not length check, letting it send an invalid NBD client
+# request which nbdkit must filter out. Later qemu might refuse to
+# send the request (like libnbd does), at which point this is no longer
+# testing nbdkit proper, so we may remove it later:
+nbdkit -U - --mask-handshake=0 null --run 'qemu-io -r -f raw -c quit \
+  nbd+unix:///'a$name4k'\?socket=$unixsocket' && fail=1
+
+# Repeat with NBD_OPT_GO.
+nbdkit -U - null --run 'qemu-io -r -f raw -c quit \
+  nbd+unix:///'$name1k$name1k'\?socket=$unixsocket' || fail=1
+# FIXME: Right now, we can't accept full 4k length - this should succeed
+nbdkit -U - null --run 'qemu-io -r -f raw -c quit \
+  nbd+unix:///'$almost4k'\?socket=$unixsocket' && fail=1
 
 # The rest of this test uses the ‘qemu-nbd --list’ option added in qemu 4.0.
 if ! qemu-nbd --help | grep -sq -- --list; then
