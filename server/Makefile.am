@@ -134,6 +134,7 @@ test_public_SOURCES = \
 test_public_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/protocol \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 test_public_CFLAGS = $(WARNINGS_CFLAGS) $(VALGRIND_CFLAGS)

@@ -43,6 +43,7 @@
 #include "nbdkit-plugin.h"
 #include "nbdkit-filter.h"
 #include "cleanup.h"
+#include "nbd-protocol.h"
 
 #ifdef __APPLE__
 #define UNIX_PATH_MAX 104
@@ -198,7 +199,7 @@ struct connection {
   struct b_conn_handle *handles;
   size_t nr_handles;
 
-  char *exportname;
+  char exportname[NBD_MAX_STRING + 1];
   uint32_t cflags;
   uint16_t eflags;
   bool using_tls;

@@ -277,12 +277,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       data[optlen] = '\0';
       debug ("newstyle negotiation: %s: client requested export '%s'",
              name_of_nbd_opt (option), data);
-      free (conn->exportname);
-      conn->exportname = malloc (optlen+1);
-      if (conn->exportname == NULL) {
-        nbdkit_error ("malloc: %m");
-        return -1;
-      }
+      assert (optlen < sizeof conn->exportname);
       strcpy (conn->exportname, data);
 
       /* We have to finish the handshake by sending handshake_finish. */
@@ -420,12 +415,10 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         /* As with NBD_OPT_EXPORT_NAME we print the export name and
          * save it in the connection.
          */
-        free (conn->exportname);
-        conn->exportname = malloc (exportnamelen+1);
-        if (conn->exportname == NULL) {
-          nbdkit_error ("malloc: %m");
-          return -1;
-        }
+        /* FIXME: Our current MAX_OPTION_LENGTH prevents us from receiving
+         * an export name at the full NBD_MAX_STRING length.
+         */
+        assert (exportnamelen < sizeof conn->exportname);
         memcpy (conn->exportname, &data[4], exportnamelen);
         conn->exportname[exportnamelen] = '\0';
         debug ("newstyle negotiation: %s: client requested export '%s'",

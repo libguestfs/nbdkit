@@ -258,11 +258,6 @@ new_connection (int sockin, int sockout, int nworkers)
 
   conn->status_pipe[0] = conn->status_pipe[1] = -1;
 
-  conn->exportname = strdup ("");
-  if (conn->exportname == NULL) {
-    perror ("strdup");
-    goto error;
-  }
   conn->handles = calloc (backend->i + 1, sizeof *conn->handles);
   if (conn->handles == NULL) {
     perror ("malloc");
@@ -335,7 +330,6 @@ new_connection (int sockin, int sockout, int nworkers)
     close (conn->status_pipe[0]);
   if (conn->status_pipe[1] >= 0)
     close (conn->status_pipe[1]);
-  free (conn->exportname);
   free (conn->handles);
   free (conn);
   return NULL;
@@ -383,7 +377,6 @@ free_connection (struct connection *conn)
   pthread_mutex_destroy (&conn->status_lock);
 
   free (conn->handles);
-  free (conn->exportname);
   free (conn);
 }
 
