@@ -85,6 +85,7 @@ EXTRA_DIST = \
 	test-linuxdisk.sh \
 	test-linuxdisk-copy-out.sh \
 	test-log.sh \
+	test-long-name.sh \
 	test.lua \
 	test-memory-largest.sh \
 	test-memory-largest-for-qemu.sh \
@@ -201,6 +202,7 @@ TESTS += \
 	test-socket-activation \
 	test-foreground.sh \
 	test-debug-flags.sh \
+	test-long-name.sh \
 	$(NULL)
 
 check_PROGRAMS += \

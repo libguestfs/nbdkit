@@ -51,6 +51,7 @@
 #include <dlfcn.h>
 
 #include "internal.h"
+#include "nbd-protocol.h"
 #include "options.h"
 #include "exit-with-parent.h"
 
@@ -330,6 +331,11 @@ main (int argc, char *argv[])
 
     case 'e':
       exportname = optarg;
+      if (strnlen (exportname, NBD_MAX_STRING + 1) > NBD_MAX_STRING) {
+        nbdkit_error ("export name too long");
+        exit (EXIT_FAILURE);
+      }
+      /* TODO: Check that name is valid UTF-8? */
       newstyle = true;
       break;
 
