@@ -40,6 +40,7 @@ fail=0
 
 requires qemu-io --version
 requires qemu-nbd --version
+requires nbdsh -c 'exit(not h.supports_uri())'
 
 name16=1234567812345678
 name64=$name16$name16$name16$name16
@@ -84,10 +85,26 @@ nbdkit -U - --mask-handshake=0 null --run 'qemu-io -r -f raw -c quit \
 
 # Repeat with NBD_OPT_GO.
 nbdkit -U - null --run 'qemu-io -r -f raw -c quit \
-  nbd+unix:///'$name1k$name1k'\?socket=$unixsocket' || fail=1
-# FIXME: Right now, we can't accept full 4k length - this should succeed
+  nbd+unix:///'$name4k'\?socket=$unixsocket' || fail=1
+# See above comment about whether this is testing nbdkit or qemu:
 nbdkit -U - null --run 'qemu-io -r -f raw -c quit \
-  nbd+unix:///'$almost4k'\?socket=$unixsocket' && fail=1
+  nbd+unix:///'a$name4k'\?socket=$unixsocket' && fail=1
+
+# Use nbdsh to provoke an extremely large NBD_OPT_SET_META_CONTEXT.
+nbdkit -U - -e $almost4k null --run 'export exportname uri
+nbdsh -c - <<\EOF
+import os
+long = os.environ["exportname"]
+h.set_export_name (long)
+h.add_meta_context ("a" + long)
+h.add_meta_context ("b" + long)
+h.add_meta_context ("c" + long)
+h.add_meta_context ("d" + long)
+h.add_meta_context ("e" + long)
+h.connect_uri (os.environ["uri"])
+assert h.get_size() == 0
+EOF
+'
 
 # The rest of this test uses the ‘qemu-nbd --list’ option added in qemu 4.0.
 if ! qemu-nbd --help | grep -sq -- --list; then
@@ -96,8 +113,6 @@ if ! qemu-nbd --help | grep -sq -- --list; then
 fi
 
 # Test response to NBD_OPT_LIST
-nbdkit -U - -e $almost4k null --run 'qemu-nbd --list -k $unixsocket' || fail=1
-# FIXME: Right now, we can't accept full 4k length - this should succeed
-nbdkit -U - -e $name4k null --run 'qemu-nbd --list -k $unixsocket' && fail=1
+nbdkit -U - -e $name4k null --run 'qemu-nbd --list -k $unixsocket' || fail=1
 
 exit $fail

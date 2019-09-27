@@ -47,9 +47,6 @@
 /* Maximum number of client options we allow before giving up. */
 #define MAX_NR_OPTIONS 32
 
-/* Maximum length of any option data (bytes). */
-#define MAX_OPTION_LENGTH 4096
-
 /* Receive newstyle options. */
 static int
 send_newstyle_option_reply (struct connection *conn,
@@ -260,12 +257,13 @@ negotiate_handshake_newstyle_options (struct connection *conn)
   uint64_t version;
   uint32_t option;
   uint32_t optlen;
-  char data[MAX_OPTION_LENGTH+1];
   struct nbd_export_name_option_reply handshake_finish;
   const char *optname;
   uint64_t exportsize;
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
+    CLEANUP_FREE char *data = NULL;
+
     if (conn_recv_full (conn, &new_option, sizeof new_option,
                         "reading option: conn->recv: %m") == -1)
       return -1;
@@ -282,8 +280,13 @@ negotiate_handshake_newstyle_options (struct connection *conn)
      * of the option type.
      */
     optlen = be32toh (new_option.optlen);
-    if (optlen > MAX_OPTION_LENGTH) {
+    if (optlen > MAX_REQUEST_SIZE) {
       nbdkit_error ("client option data too long (%" PRIu32 ")", optlen);
+      return -1;
+    }
+    data = malloc (optlen + 1); /* Allowing a trailing NUL helps some uses */
+    if (data == NULL) {
+      nbdkit_error ("malloc: %m");
       return -1;
     }
 
@@ -452,9 +455,6 @@ negotiate_handshake_newstyle_options (struct connection *conn)
 
         /* As with NBD_OPT_EXPORT_NAME we print the export name and
          * save it in the connection.
-         */
-        /* FIXME: Our current MAX_OPTION_LENGTH prevents us from receiving
-         * an export name at the full NBD_MAX_STRING length.
          */
         if (check_export_name (conn, option, &data[4], exportnamelen,
                                optlen - 6, true) == -1)
