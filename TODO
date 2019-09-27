@@ -146,6 +146,11 @@ Suggestions for filters
 * nbdkit-cache-filter should handle ENOSPC errors automatically by
   reclaiming blocks from the cache
 
+* zstd filter was requested as a way to do what we currently do with
+  xz but saving many hours on compression (at the cost of hundreds of
+  MBs of extra data)
+  https://github.com/facebook/zstd/issues/395#issuecomment-535875379
+
 nbdkit-rate-filter:
 
 * allow other kinds of traffic shaping such as VBR
