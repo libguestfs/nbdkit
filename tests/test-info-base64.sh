@@ -30,7 +30,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Test the reflection plugin with base64-encoded export name.
+# Test the info plugin with base64-encoded export name.
 
 source ./functions.sh
 set -e
@@ -39,19 +39,19 @@ set -x
 requires nbdsh -c 'import base64'
 
 # Test if mode=base64exportname is supported in this build.
-if ! nbdkit reflection --dump-plugin | grep -sq "reflection_base64=yes"; then
+if ! nbdkit info --dump-plugin | grep -sq "info_base64=yes"; then
     echo "$0: mode=base64exportname is not supported in this build"
     exit 77
 fi
 
 sock=`mktemp -u`
-files="reflection-base64.out reflection-base64.pid $sock"
+files="info-base64.out info-base64.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P reflection-base64.pid -U $sock \
-       reflection mode=base64exportname
+start_nbdkit -P info-base64.pid -U $sock \
+       info mode=base64exportname
 
 export e sock
 for e in "" "test" "/" "//" " " "/ " "?" "テスト" "-n" '\\' $'\n' "%%" \

@@ -31,32 +31,32 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = nbdkit-reflection-plugin.pod
+EXTRA_DIST = nbdkit-info-plugin.pod
 
-plugin_LTLIBRARIES = nbdkit-reflection-plugin.la
+plugin_LTLIBRARIES = nbdkit-info-plugin.la
 
-nbdkit_reflection_plugin_la_SOURCES = \
-	reflection.c \
+nbdkit_info_plugin_la_SOURCES = \
+	info.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
 
-nbdkit_reflection_plugin_la_CPPFLAGS = \
+nbdkit_info_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	$(NULL)
-nbdkit_reflection_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
-nbdkit_reflection_plugin_la_LDFLAGS = \
+nbdkit_info_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+nbdkit_info_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
-nbdkit_reflection_plugin_la_LIBADD = \
+nbdkit_info_plugin_la_LIBADD = \
 	$(NULL)
 
 if HAVE_POD
 
-man_MANS = nbdkit-reflection-plugin.1
+man_MANS = nbdkit-info-plugin.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-reflection-plugin.1: nbdkit-reflection-plugin.pod
+nbdkit-info-plugin.1: nbdkit-info-plugin.pod
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

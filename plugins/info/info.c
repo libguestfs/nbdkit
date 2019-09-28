@@ -57,7 +57,7 @@ enum mode {
 static enum mode mode = MODE_EXPORTNAME;
 
 static int
-reflection_config (const char *key, const char *value)
+info_config (const char *key, const char *value)
 {
   if (strcmp (key, "mode") == 0) {
     if (strcasecmp (value, "exportname") == 0 ||
@@ -89,15 +89,15 @@ reflection_config (const char *key, const char *value)
   return 0;
 }
 
-#define reflection_config_help \
+#define info_config_help \
   "mode=exportname|base64exportname|address  Plugin mode (default exportname)."
 
 /* Provide a way to detect if the base64 feature is supported. */
 static void
-reflection_dump_plugin (void)
+info_dump_plugin (void)
 {
 #ifdef HAVE_BASE64
-  printf ("reflection_base64=yes\n");
+  printf ("info_base64=yes\n");
 #endif
 }
 
@@ -228,7 +228,7 @@ handle_address (struct sockaddr *sa, socklen_t addrlen,
  * - Leaking host information (eg. paths).
  */
 static void *
-reflection_open (int readonly)
+info_open (int readonly)
 {
   const char *export_name;
   size_t export_name_len;
@@ -286,7 +286,7 @@ reflection_open (int readonly)
 
 /* Close the per-connection handle. */
 static void
-reflection_close (void *handle)
+info_close (void *handle)
 {
   struct handle *h = handle;
 
@@ -298,7 +298,7 @@ reflection_close (void *handle)
 
 /* Get the disk size. */
 static int64_t
-reflection_get_size (void *handle)
+info_get_size (void *handle)
 {
   struct handle *h = handle;
 
@@ -306,7 +306,7 @@ reflection_get_size (void *handle)
 }
 
 static int
-reflection_can_multi_conn (void *handle)
+info_can_multi_conn (void *handle)
 {
   switch (mode) {
     /* Safe for exportname modes since clients should only request
@@ -329,7 +329,7 @@ reflection_can_multi_conn (void *handle)
 
 /* Cache. */
 static int
-reflection_can_cache (void *handle)
+info_can_cache (void *handle)
 {
   /* Everything is already in memory, returning this without
    * implementing .cache lets nbdkit do the correct no-op.
@@ -339,8 +339,8 @@ reflection_can_cache (void *handle)
 
 /* Read data. */
 static int
-reflection_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
-                  uint32_t flags)
+info_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags)
 {
   struct handle *h = handle;
 
@@ -349,18 +349,18 @@ reflection_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 }
 
 static struct nbdkit_plugin plugin = {
-  .name              = "reflection",
+  .name              = "info",
   .version           = PACKAGE_VERSION,
-  .config            = reflection_config,
-  .config_help       = reflection_config_help,
-  .dump_plugin       = reflection_dump_plugin,
+  .config            = info_config,
+  .config_help       = info_config_help,
+  .dump_plugin       = info_dump_plugin,
   .magic_config_key  = "mode",
-  .open              = reflection_open,
-  .close             = reflection_close,
-  .get_size          = reflection_get_size,
-  .can_multi_conn    = reflection_can_multi_conn,
-  .can_cache         = reflection_can_cache,
-  .pread             = reflection_pread,
+  .open              = info_open,
+  .close             = info_close,
+  .get_size          = info_get_size,
+  .can_multi_conn    = info_can_multi_conn,
+  .can_cache         = info_can_cache,
+  .pread             = info_pread,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */

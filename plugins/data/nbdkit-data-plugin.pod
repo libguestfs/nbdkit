@@ -251,12 +251,12 @@ C<nbdkit-data-plugin> first appeared in nbdkit 1.6.
 L<nbdkit(1)>,
 L<nbdkit-captive(1)>,
 L<nbdkit-plugin(3)>,
+L<nbdkit-info-plugin(1)>,
 L<nbdkit-memory-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
 L<nbdkit-partitioning-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-random-plugin(1)>,
-L<nbdkit-reflection-plugin(1)>,
 L<nbdkit-zero-plugin(1)>,
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>,
 L<https://en.wikipedia.org/wiki/Base64>.

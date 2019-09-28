@@ -30,7 +30,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Test the reflection plugin with raw export name.
+# Test the info plugin with mode=address.
 
 source ./functions.sh
 set -e
@@ -39,30 +39,25 @@ set -x
 requires nbdsh --version
 
 sock=`mktemp -u`
-files="reflection-raw.out reflection-raw.pid $sock"
+files="info-address.out info-address.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P reflection-raw.pid -U $sock reflection
+start_nbdkit -P info-address.pid -U $sock \
+       info mode=address
 
-for e in "" "test" "/" "//" " " "/ " "?" "テスト" "-n" '\\' $'\n' "%%" \
-         "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-do
-    export e sock
-    nbdsh -c '
+export sock
+nbdsh -c - <<'EOF'
 import os
+import re
 
-e = os.environ["e"]
-h.set_export_name (e)
 h.connect_unix (os.environ["sock"])
 
 size = h.get_size ()
-assert size == len (e.encode("utf-8"))
+assert size > 0
 
-# Zero-sized reads are not defined in the NBD protocol.
-if size > 0:
-   buf = h.pread (size, 0)
-   assert buf == e.encode("utf-8")
-'
-done
+buf = h.pread (size, 0)
+print ("buf = %r" % buf)
+assert buf == b'unix'
+EOF

@@ -1,15 +1,15 @@
 =head1 NAME
 
-nbdkit-reflection-plugin - reflect client info back to the client
+nbdkit-info-plugin - serve client and server information
 
 =head1 SYNOPSIS
 
- nbdkit reflection [mode=]exportname|base64exportname|address
+ nbdkit info [mode=]exportname|base64exportname|address
 
 =head1 DESCRIPTION
 
-C<nbdkit-reflection-plugin> is a test plugin which reflects
-information sent by the client back to the client.
+C<nbdkit-info-plugin> is a test plugin which serves information about
+the client and server in a disk image back to the client.
 
 In its default mode (C<mode=exportname>) it converts the export name
 passed from the client into a disk image.  C<mode=base64exportname> is
@@ -27,11 +27,11 @@ add L<nbdkit-cow-filter(1)> on top.
 
 =head1 EXAMPLES
 
-Create a reflection disk.  By setting the export name to C<"hello">
+Create a “reflection disk”.  By setting the export name to C<"hello">
 when we open it, a virtual disk of only 5 bytes containing these
 characters is created.  We then display the contents:
 
- $ nbdkit --exit-with-parent reflection mode=exportname &
+ $ nbdkit --exit-with-parent info mode=exportname &
  $ nbdsh -u 'nbd://localhost/hello' -c - <<'EOF'
  size = h.get_size()
  print("size = %d" % size)
@@ -42,10 +42,10 @@ characters is created.  We then display the contents:
  size = 5
  buf = b"hello"
 
-By running a reflection plugin, you can pass whole bootable VMs on the
+By running the info plugin, you can pass whole bootable VMs on the
 qemu command line:
 
- $ nbdkit reflection mode=base64exportname
+ $ nbdkit info mode=base64exportname
  $ qemu-system-x86_64 \
    -drive 'snapshot=on,file.driver=nbd,file.host=localhost,file.port=10809,file.export=
  tACwA80QtBOzCrABuRwAtgCyAL0ZfM0Q9CoqKiBIZWxsbyBmcm9tIG5iZGtp
@@ -62,10 +62,10 @@ qemu command line:
  AAAAAAAAAAAAAAAAAAAAVao=
  '
 
-Another use for the reflection plugin is to send back the client's IP
+Another use for the info plugin is to send back the client's IP
 address:
 
- $ nbdkit reflection mode=address
+ $ nbdkit info mode=address
  $ nbdsh -u 'nbd://localhost' -c 'print(h.pread(h.get_size(), 0))'
 
 which will print something like:
@@ -78,28 +78,28 @@ which will print something like:
 
 =item [B<mode=>]B<address>
 
-Reflect the client's IP address and client port number as a string in
-the usual format.  For Unix sockets this sets the disk to the string
+Send the client's IP address and client port number as a string in the
+usual format.  For Unix sockets this sets the disk to the string
 C<"unix"> to avoid leaking host paths.
 
 =item [B<mode=>]B<base64exportname>
 
-Reflect the export name passed by the client, assuming the client
-string is base64 encoded.
+Send the export name passed by the client, assuming the client string
+is base64 encoded.
 
 This mode is only supported if nbdkit was compiled with GnuTLS E<ge>
 3.6.0.  You can find out by checking if:
 
- $ nbdkit reflection --dump-plugin
+ $ nbdkit info --dump-plugin
 
 contains:
 
- reflection_base64=yes
+ info_base64=yes
 
 =item [B<mode=>]B<exportname>
 
-Reflect the raw export name passed by the client.  Note the export
-name cannot contain ASCII NUL characters.
+Send the raw export name passed by the client.  Note the export name
+cannot contain ASCII NUL characters.
 
 This is the default mode.
 
@@ -112,7 +112,7 @@ See L<nbdkit(1)/Magic parameters>.
 
 =over 4
 
-=item F<$plugindir/nbdkit-reflection-plugin.so>
+=item F<$plugindir/nbdkit-info-plugin.so>
 
 The plugin.
 
@@ -122,7 +122,7 @@ Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
 
 =head1 VERSION
 
-C<nbdkit-reflection-plugin> first appeared in nbdkit 1.16.
+C<nbdkit-info-plugin> first appeared in nbdkit 1.16.
 
 =head1 SEE ALSO
 
