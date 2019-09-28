@@ -52,6 +52,7 @@ nbdkit -v -U - \
        sh - \
        --filter=retry retry-delay=1 \
        --run 'qemu-img convert $nbd retry-reopen-fail.img' <<'EOF'
+#!/usr/bin/env bash
 case "$1" in
     open)
         # Count how many times the connection is (re-)opened.
