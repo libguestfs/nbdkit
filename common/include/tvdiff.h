@@ -40,7 +40,7 @@
 #include <sys/time.h>
 
 /* Return the number of µs (microseconds) in y - x. */
-static int64_t
+static inline int64_t
 tvdiff_usec (const struct timeval *x, const struct timeval *y)
 {
   int64_t usec;
@@ -48,6 +48,17 @@ tvdiff_usec (const struct timeval *x, const struct timeval *y)
   usec = (y->tv_sec - x->tv_sec) * 1000000;
   usec += y->tv_usec - x->tv_usec;
   return usec;
+}
+
+/* Return timeval difference as another struct timeval. z = y - x. */
+static inline void
+subtract_timeval (const struct timeval *x, const struct timeval *y,
+                  struct timeval *z)
+{
+  int64_t usec = tvdiff_usec (x, y);
+
+  z->tv_sec = usec / 1000000;
+  z->tv_usec = usec % 1000000;
 }
 
 #endif /* NBDKIT_TVDIFF_H */

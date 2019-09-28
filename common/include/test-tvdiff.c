@@ -36,7 +36,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include <assert.h>
 #include <sys/time.h>
 
 #include "tvdiff.h"
@@ -45,37 +44,87 @@
  * implementation.
  */
 
+#define TEST_TVDIFF(tv1, tv2, expected)                                 \
+  do {                                                                  \
+    int64_t actual = tvdiff_usec (&(tv1), &(tv2));                      \
+                                                                        \
+    if (actual != (expected)) {                                         \
+      fprintf (stderr,                                                  \
+               "%s: unexpected result %" PRIi64 ", expecting %" PRIi64 "\n", \
+               argv[0], actual, (int64_t) (expected));                  \
+      errors++;                                                         \
+    }                                                                   \
+  } while (0)
+
+#define TEST_SUBTRACT(tv1, tv2, exp_sec, exp_usec)                      \
+  do {                                                                  \
+    struct timeval z;                                                   \
+                                                                        \
+    subtract_timeval (&tv1, &tv2, &z);                                  \
+    if (z.tv_sec != (exp_sec) || z.tv_usec != (exp_usec)) {             \
+      fprintf (stderr,                                                  \
+               "%s: unexpected (%ld, %d), expecting (%ld, %d)\n",       \
+               argv[0],                                                 \
+               (long) z.tv_sec, (int) z.tv_usec,                        \
+               (long) (exp_sec), (int) (exp_usec));                     \
+      errors++;                                                         \
+    }                                                                   \
+  } while (0)
+
 int
-main (void)
+main (int argc, char *argv[])
 {
   struct timeval tv1, tv2;
+  unsigned errors = 0;
 
   tv1.tv_sec = 1000;
   tv1.tv_usec = 1;
-  assert (tvdiff_usec (&tv1, &tv1) == 0);
+  TEST_TVDIFF (tv1, tv1, 0);
+  TEST_SUBTRACT (tv1, tv1, 0, 0);
+
   tv2.tv_sec = 1000;
   tv2.tv_usec = 2;
-  assert (tvdiff_usec (&tv1, &tv2) == 1);
-  assert (tvdiff_usec (&tv2, &tv1) == -1);
+  TEST_TVDIFF (tv1, tv2, 1);
+  TEST_SUBTRACT (tv1, tv2, 0, 1);
+  TEST_TVDIFF (tv2, tv1, -1);
+  TEST_SUBTRACT (tv2, tv1, 0, -1);
+
   tv2.tv_sec = 1000;
   tv2.tv_usec = 3;
-  assert (tvdiff_usec (&tv1, &tv2) == 2);
-  assert (tvdiff_usec (&tv2, &tv1) == -2);
+  TEST_TVDIFF (tv1, tv2, 2);
+  TEST_SUBTRACT (tv1, tv2, 0, 2);
+  TEST_TVDIFF (tv2, tv1, -2);
+  TEST_SUBTRACT (tv2, tv1, 0, -2);
+
   tv2.tv_sec = 1001;
   tv2.tv_usec = 0;
-  assert (tvdiff_usec (&tv1, &tv2) == 999999);
-  assert (tvdiff_usec (&tv2, &tv1) == -999999);
+  TEST_TVDIFF (tv1, tv2, 999999);
+  TEST_SUBTRACT (tv1, tv2, 0, 999999);
+  TEST_TVDIFF (tv2, tv1, -999999);
+  TEST_SUBTRACT (tv2, tv1, 0, -999999);
 
   tv1.tv_sec = 1000;
   tv1.tv_usec = 999999;
   tv2.tv_sec = 1001;
   tv2.tv_usec = 1;
-  assert (tvdiff_usec (&tv1, &tv2) == 2);
-  assert (tvdiff_usec (&tv2, &tv1) == -2);
+  TEST_TVDIFF (tv1, tv2, 2);
+  TEST_SUBTRACT (tv1, tv2, 0, 2);
+  TEST_TVDIFF (tv2, tv1, -2);
+  TEST_SUBTRACT (tv2, tv1, 0, -2);
+
+  tv1.tv_sec = 1000;
+  tv1.tv_usec = 1;
+  tv2.tv_sec = 1001;
+  tv2.tv_usec = 2;
+  TEST_TVDIFF (tv1, tv2, 1000001);
+  TEST_SUBTRACT (tv1, tv2, 1, 1);
+  TEST_TVDIFF (tv2, tv1, -1000001);
+  TEST_SUBTRACT (tv2, tv1, -1, -1);
 
   /* Test that an arbitrary tv is equal to itself. */
   gettimeofday (&tv1, NULL);
-  assert (tvdiff_usec (&tv1, &tv1) == 0);
+  TEST_TVDIFF (tv1, tv1, 0);
+  TEST_SUBTRACT (tv1, tv1, 0, 0);
 
-  exit (EXIT_SUCCESS);
+  exit (errors == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
