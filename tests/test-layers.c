@@ -282,19 +282,20 @@ main (int argc, char *argv[])
      "test_layers_plugin_config_complete",
      NULL);
 
-  /* open methods called in order. */
+  /* open methods called in outer-to-inner order, but thanks to next
+   * pointer, complete in inner-to-outer order. */
   log_verify_seen_in_order
     ("testlayersfilter3: open readonly=0",
-     "filter3: test_layers_filter_open",
      "testlayersfilter2: open readonly=0",
-     "filter2: test_layers_filter_open",
      "testlayersfilter1: open readonly=0",
-     "filter1: test_layers_filter_open",
      "testlayersplugin: open readonly=0",
      "test_layers_plugin_open",
+     "filter1: test_layers_filter_open",
+     "filter2: test_layers_filter_open",
+     "filter3: test_layers_filter_open",
      NULL);
 
-  /* prepare methods called in order.
+  /* prepare methods called in inner-to-outer order.
    *
    * Note that prepare methods only exist for filters, and they must
    * be called from inner to outer (but finalize methods below are
@@ -595,7 +596,8 @@ main (int argc, char *argv[])
      "filter1: test_layers_filter_finalize",
      NULL);
 
-  /* close methods called in order */
+  /* close methods called outer-to-inner, which is reverse of completion
+   * of open */
   log_verify_seen_in_order
     ("filter3: test_layers_filter_close",
      "filter2: test_layers_filter_close",

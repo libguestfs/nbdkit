@@ -205,6 +205,9 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
   struct b_conn nxdata = { .b = b->next, .conn = conn };
   void *handle;
 
+  /* Most filters will call next_open first, resulting in
+   * inner-to-outer ordering.
+   */
   if (f->filter.open) {
     handle = f->filter.open (next_open, &nxdata, readonly);
     if (handle == NULL)
@@ -225,6 +228,7 @@ filter_close (struct backend *b, struct connection *conn)
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle = connection_get_handle (conn, b->i);
 
+  /* outer-to-inner order, opposite .open */
   if (handle && f->filter.close)
     f->filter.close (handle);
   backend_close (b->next, conn);
@@ -409,7 +413,7 @@ filter_prepare (struct backend *b, struct connection *conn, int readonly)
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
   /* Call these in order starting from the filter closest to the
-   * plugin.
+   * plugin, similar to typical .open order.
    */
   if (backend_prepare (b->next, conn) == -1)
     return -1;
@@ -431,7 +435,7 @@ filter_finalize (struct backend *b, struct connection *conn)
   debug ("%s: finalize", b->name);
 
   /* Call these in reverse order to .prepare above, starting from the
-   * filter furthest away from the plugin.
+   * filter furthest away from the plugin, and matching .close order.
    */
   if (f->filter.finalize &&
       f->filter.finalize (&next_ops, &nxdata, handle) == -1)

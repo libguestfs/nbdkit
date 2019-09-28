@@ -79,10 +79,11 @@ test_layers_filter_open (nbdkit_next_open *next, void *nxdata, int readonly)
 {
   static int handle;
 
-  DEBUG_FUNCTION;
-
   if (next (nxdata, readonly) == -1)
     return NULL;
+
+  /* Debug after recursing, to show opposite order from .close */
+  DEBUG_FUNCTION;
 
   return &handle;
 }

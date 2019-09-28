@@ -310,14 +310,21 @@ read-only backend.  However, it is also acceptable to attempt write
 access to the plugin even if this filter is readonly, such as when a
 file system mounted read-only still requires write access to the
 underlying device in case a journal needs to be replayed for
-consistency as part of the mounting process.
+consistency as part of the mounting process.  The filter should
+generally call C<next> as its first step, to allocate from the plugin
+outwards, so that C<.close> running from the outer filter to the
+plugin will be in reverse.
 
 =head2 C<.close>
 
  void (*close) (void *handle);
 
 This is called when the client closes the connection.  It should clean
-up any per-connection resources used by the filter.
+up any per-connection resources used by the filter.  It is called
+beginning with the outermost filter and ending with the plugin (the
+opposite order of C<.open> if all filters call C<next> first),
+although this order technically does not matter since the callback
+cannot report failures or access the underlying plugin.
 
 =head2 C<.prepare>
 
@@ -348,8 +355,10 @@ Unlike other filter methods, prepare and finalize are not chained
 through the C<next_ops> structure.  Instead the core nbdkit server
 calls the prepare and finalize methods of all filters.  Prepare
 methods are called starting with the filter closest to the plugin and
-proceeding outwards.  Finalize methods are called in the reverse order
-of prepare methods.
+proceeding outwards (matching the order of C<.open> if all filters
+call C<next> before doing anything locally).  Finalize methods are
+called in the reverse order of prepare methods, with the outermost
+filter first (and matching the order of C<.close>).
 
 If there is an error, both callbacks should call C<nbdkit_error> with
 an error message and return C<-1>.
