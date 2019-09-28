@@ -153,8 +153,16 @@ typedef int (*connection_send_function) (struct connection *,
 typedef void (*connection_close_function) (struct connection *)
   __attribute__((__nonnull__ (1)));
 
+enum {
+  HANDLE_OPEN = 1,      /* Set if .open passed, so .close is needed */
+  HANDLE_CONNECTED = 2, /* Set if .prepare passed, so .finalize is needed */
+  HANDLE_FAILED = 4,    /* Set if .finalize failed */
+};
+
 struct b_conn_handle {
   void *handle;
+
+  unsigned char state; /* Bitmask of HANDLE_* values */
 
   uint64_t exportsize;
   int can_write;
@@ -173,6 +181,7 @@ static inline void
 reset_b_conn_handle (struct b_conn_handle *h)
 {
   h->handle = NULL;
+  h->state = 0;
   h->exportsize = -1;
   h->can_write = -1;
   h->can_flush = -1;

@@ -358,10 +358,14 @@ methods are called starting with the filter closest to the plugin and
 proceeding outwards (matching the order of C<.open> if all filters
 call C<next> before doing anything locally).  Finalize methods are
 called in the reverse order of prepare methods, with the outermost
-filter first (and matching the order of C<.close>).
+filter first (and matching the order of C<.close>), and only if the
+prepare method succeeded.
 
 If there is an error, both callbacks should call C<nbdkit_error> with
-an error message and return C<-1>.
+an error message and return C<-1>.  An error in C<.prepare> is
+reported to the client, but leaves the connection open (a client may
+try again with a different export name, for example); while an error
+in C<.finalize> forces the client to disconnect.
 
 =head2 C<.get_size>
 
