@@ -360,7 +360,7 @@ free_connection (struct connection *conn)
    * thread will be in the process of unloading it.  The plugin.unload
    * callback should always be called.
    */
-  if (!quit && connection_get_handle (conn, 0)) {
+  if (!quit) {
     lock_request (conn);
     backend_close (backend, conn);
     unlock_request (conn);

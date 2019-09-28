@@ -186,8 +186,11 @@ backend_open (struct backend *b, struct connection *conn, int readonly)
     if (b->i) /* A filter must not succeed unless its backend did also */
       assert (conn->handles[b->i - 1].handle);
   }
-  else
+  else {
     assert (h->handle == NULL);
+    if (b->i) /* Do not strand backend if this layer failed */
+      backend_close (b->next, conn);
+  }
   return r;
 }
 
