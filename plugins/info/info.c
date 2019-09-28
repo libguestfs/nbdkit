@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -48,13 +49,28 @@
 
 #include <nbdkit-plugin.h>
 
+#include "byte-swapping.h"
+#include "tvdiff.h"
+
 /* The mode. */
 enum mode {
   MODE_EXPORTNAME,
   MODE_BASE64EXPORTNAME,
   MODE_ADDRESS,
+  MODE_TIME,
+  MODE_UPTIME,
+  MODE_CONNTIME,
 };
 static enum mode mode = MODE_EXPORTNAME;
+
+/* Plugin load time. */
+static struct timeval load_t;
+
+static void
+info_load (void)
+{
+  gettimeofday (&load_t, NULL);
+}
 
 static int
 info_config (const char *key, const char *value)
@@ -73,9 +89,14 @@ info_config (const char *key, const char *value)
       return -1;
 #endif
     }
-    else if (strcasecmp (value, "address") == 0) {
+    else if (strcasecmp (value, "address") == 0)
       mode = MODE_ADDRESS;
-    }
+    else if (strcasecmp (value, "time") == 0)
+      mode = MODE_TIME;
+    else if (strcasecmp (value, "uptime") == 0)
+      mode = MODE_UPTIME;
+    else if (strcasecmp (value, "conntime") == 0)
+      mode = MODE_CONNTIME;
     else {
       nbdkit_error ("unknown mode: '%s'", value);
       return -1;
@@ -90,7 +111,8 @@ info_config (const char *key, const char *value)
 }
 
 #define info_config_help \
-  "mode=exportname|base64exportname|address  Plugin mode (default exportname)."
+  "mode=exportname|base64exportname|address|time|uptime|conntime\n" \
+  "                                      Plugin mode (default exportname)."
 
 /* Provide a way to detect if the base64 feature is supported. */
 static void
@@ -105,6 +127,7 @@ info_dump_plugin (void)
 struct handle {
   void *data;                   /* Block device data. */
   size_t len;                   /* Length of data in bytes. */
+  struct timeval conn_t;        /* Time since connection was opened. */
 };
 
 static int
@@ -279,6 +302,19 @@ info_open (int readonly)
     }
     return h;
 
+  case MODE_TIME:
+  case MODE_UPTIME:
+  case MODE_CONNTIME:
+    gettimeofday (&h->conn_t, NULL);
+    h->len = 12;
+    h->data = malloc (h->len);
+    if (h->data == NULL) {
+      nbdkit_error ("malloc: %m");
+      free (h);
+      return NULL;
+    }
+    return h;
+
   default:
     abort ();
   }
@@ -320,6 +356,13 @@ info_can_multi_conn (void *handle)
      */
   case MODE_ADDRESS:
     return 0;
+    /* All time modes will read different values at different times,
+     * so all of them are unsafe for multi-conn.
+     */
+  case MODE_TIME:
+  case MODE_UPTIME:
+  case MODE_CONNTIME:
+    return 0;
 
     /* Keep GCC happy. */
   default:
@@ -337,12 +380,52 @@ info_can_cache (void *handle)
   return NBDKIT_CACHE_NATIVE;
 }
 
+static void
+update_time (struct handle *h)
+{
+  struct timeval tv;
+  int64_t secs;
+  int32_t usecs;
+  char *p;
+
+  gettimeofday (&tv, NULL);
+
+  switch (mode) {
+  case MODE_TIME:
+    break;
+
+  case MODE_UPTIME:
+    subtract_timeval (&load_t, &tv, &tv);
+    break;
+
+  case MODE_CONNTIME:
+    subtract_timeval (&h->conn_t, &tv, &tv);
+    break;
+
+  default:
+    abort ();
+  }
+
+  /* Pack the result into the output buffer. */
+  secs = tv.tv_sec;
+  usecs = tv.tv_usec;
+  secs = htobe64 (secs);
+  usecs = htobe32 (usecs);
+  p = h->data;
+  memcpy (&p[0], &secs, 8);
+  memcpy (&p[8], &usecs, 4);
+}
+
 /* Read data. */
 static int
 info_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags)
 {
   struct handle *h = handle;
+
+  /* For the time modes we update the data on every read. */
+  if (mode == MODE_TIME || mode == MODE_UPTIME || mode == MODE_CONNTIME)
+    update_time (h);
 
   memcpy (buf, h->data + offset, count);
   return 0;
@@ -351,6 +434,7 @@ info_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 static struct nbdkit_plugin plugin = {
   .name              = "info",
   .version           = PACKAGE_VERSION,
+  .load              = info_load,
   .config            = info_config,
   .config_help       = info_config_help,
   .dump_plugin       = info_dump_plugin,

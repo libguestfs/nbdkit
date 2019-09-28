@@ -4,7 +4,8 @@ nbdkit-info-plugin - serve client and server information
 
 =head1 SYNOPSIS
 
- nbdkit info [mode=]exportname|base64exportname|address
+ nbdkit info [mode=]exportname|base64exportname|address|
+                    time|uptime|conntime
 
 =head1 DESCRIPTION
 
@@ -21,6 +22,10 @@ than this.
 
 C<mode=address> creates a disk which contains the client's IP address
 and port number as a string.
+
+C<mode=time>, C<mode=uptime> and C<mode=conntime> report server
+wallclock time, nbdkit uptime, or time since the connection was opened
+respectively and may be used to measure latency.
 
 The plugin only supports read-only access.  To make the disk writable,
 add L<nbdkit-cow-filter(1)> on top.
@@ -72,6 +77,30 @@ which will print something like:
 
  b'[::1]:58912'
 
+This plugin can also return the wallclock time:
+
+ $ nbdkit info time --run 'nbdsh --connect $uri -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
+ 00000000  00 00 00 00 5d 8f 24 c7  00 04 24 01
+                      └─────┬─────┘
+                          ┌─┘
+                          │
+ $ date --date="@$(( 0x5d8f24c7 ))"
+ Sat 28 Sep 10:15:51 BST 2019
+
+or the nbdkit server uptime:
+
+ $ nbdkit info uptime --run 'nbdsh --connect $uri -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
+ 00000000  00 00 00 00 00 00 00 00  00 00 60 4b
+                                         └──┬──┘
+                                   0x604b is about 25ms
+
+or the time since the client opened the connection:
+
+ $ nbdkit info conntime --run 'nbdsh --connect $uri -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
+ 00000000  00 00 00 00 00 00 00 00  00 00 00 e0
+                                            └─┬─┘
+                                     0xe0 is about 200μs
+
 =head1 PARAMETERS
 
 =over 4
@@ -102,6 +131,48 @@ Send the raw export name passed by the client.  Note the export name
 cannot contain ASCII NUL characters.
 
 This is the default mode.
+
+=item [B<mode=>]B<time>
+
+Reflect server wallclock time as seconds and microseconds since the
+Epoch (see L<gettimeofday(2)>):
+
+ ┌────────┬────────┬────────────┬──────────────────────┐
+ │ offset │ length │ format     │ field                │
+ ╞════════╪════════╪════════════╪══════════════════════╡
+ │   0    │    8   │ 64 bit int │ seconds              │
+ │        │        │ big endian │                      │
+ ├────────┼────────┼────────────┼──────────────────────┤
+ │   8    │    4   │ 32 bit int │ microseconds         │
+ │        │        │ big endian │                      │
+ └────────┴────────┴────────────┴──────────────────────┘
+
+To be able to read this atomically you must read the whole 12 bytes in
+a single request.
+
+Note that exposing server time may be insecure.  It is safer to use
+C<mode=uptime> or C<mode=conntime> instead.
+
+=item [B<mode=>]B<uptime>
+
+Reflect nbdkit uptime in seconds and microseconds (ie. both fields are
+C<0> immediately after nbdkit starts, although a client would never be
+able to observe this).  The format is exactly the same as for
+C<mode=time> above.
+
+In the current implementation this can jump forwards or backwards
+discontinuously if the server time is adjusted.  In future we may fix
+this bug.
+
+=item [B<mode=>]B<conntime>
+
+Reflect time since the NBD client connection was opened in seconds and
+microseconds.  The format is exactly the same as for C<mode=time>
+above.
+
+In the current implementation this can jump forwards or backwards
+discontinuously if the server time is adjusted.  In future we may fix
+this bug.
 
 C<mode=> is a magic config key and may be omitted in most cases.
 See L<nbdkit(1)/Magic parameters>.
