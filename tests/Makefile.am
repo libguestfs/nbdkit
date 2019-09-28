@@ -123,6 +123,7 @@ EXTRA_DIST = \
 	test-retry-extents.sh \
 	test-retry-readonly.sh \
 	test-retry-reopen-fail.sh \
+	test-retry-zero-flags.sh \
 	test-shutdown.sh \
 	test-ssh.sh \
 	test.tcl \
@@ -1062,6 +1063,7 @@ TESTS += \
 	test-retry-readonly.sh \
 	test-retry-extents.sh \
 	test-retry-reopen-fail.sh \
+	test-retry-zero-flags.sh \
 	$(NULL)
 
 # truncate filter tests.
