@@ -76,6 +76,9 @@ EXTRA_DIST = \
 	test-info-address.sh \
 	test-info-base64.sh \
 	test-info-raw.sh \
+	test-info-time.sh \
+	test-info-uptime.sh \
+	test-info-conntime.sh \
 	test-ip.sh \
 	test-iso.sh \
 	test-layers.sh \
@@ -542,6 +545,9 @@ TESTS += \
 	test-info-address.sh \
 	test-info-base64.sh \
 	test-info-raw.sh \
+	test-info-time.sh \
+	test-info-uptime.sh \
+	test-info-conntime.sh \
 	$(NULL)
 
 # iso plugin test.
