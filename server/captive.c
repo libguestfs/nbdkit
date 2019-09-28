@@ -71,12 +71,26 @@ run_command (void)
   if (port) {
     fprintf (fp, "nbd://localhost:");
     shell_quote (port, fp);
+    if (exportname) {
+      putc ('/', fp);
+      uri_quote (exportname, fp);
+    }
   }
   else if (unixsocket) {
-    fprintf (fp, "nbd+unix://\\?socket=");
+    fprintf (fp, "nbd+unix://");
+    if (exportname) {
+      putc ('/', fp);
+      uri_quote (exportname, fp);
+    }
+    fprintf (fp, "\\?socket=");
     uri_quote (unixsocket, fp);
   }
-  fprintf (fp, "\n");
+  putc ('\n', fp);
+
+  /* Expose $exportname. */
+  fprintf (fp, "exportname=");
+  shell_quote (exportname, fp);
+  putc ('\n', fp);
 
   /* Construct older $nbd "URL".  Unfortunately guestfish and qemu take
    * different syntax, so try to guess which one we need.
@@ -106,13 +120,13 @@ run_command (void)
     else
       abort ();
   }
-  fprintf (fp, "\n");
+  putc ('\n', fp);
 
   /* Construct $port and $unixsocket. */
   fprintf (fp, "port=");
   if (port)
     shell_quote (port, fp);
-  fprintf (fp, "\n");
+  putc ('\n', fp);
   fprintf (fp, "unixsocket=");
   if (unixsocket)
     shell_quote (unixsocket, fp);

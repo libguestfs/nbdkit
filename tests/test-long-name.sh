@@ -51,6 +51,26 @@ almost4k=${name4k%8$name16}
 nbdkit -U - -e $name4k null --run true || fail=1
 nbdkit -U - -e a$name4k null --run true && fail=1
 
+# Test that $exportname and $uri reflect the name
+out=$(nbdkit -U - -e $name4k null --run 'echo $exportname')
+if test "$name4k" != "$out"; then
+    echo "$0: \$exportname contains wrong contents" >&2
+    fail=1
+fi
+out=$(nbdkit -U - -e $name4k null --run 'echo $uri')
+case $out in
+    nbd+unix:///$name4k\?socket=*) ;;
+    *) echo "$0: \$uri contains wrong contents" >&2
+       fail=1 ;;
+esac
+pick_unused_port
+out=$(nbdkit -i localhost -p $port -e $name4k null --run 'echo $uri')
+case $out in
+    nbd://localhost:$port/$name4k) ;;
+    *) echo "$0: \$uri contains wrong contents" >&2
+       fail=1 ;;
+esac
+
 # The rest of this test uses the ‘qemu-nbd --list’ option added in qemu 4.0.
 if ! qemu-nbd --help | grep -sq -- --list; then
     echo "$0: skipping because qemu-nbd does not support the --list option"
