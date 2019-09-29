@@ -105,6 +105,10 @@ Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
 
 =back
 
+=head1 VERSION
+
+C<nbdkit-retry-filter> first appeared in nbdkit 1.16.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

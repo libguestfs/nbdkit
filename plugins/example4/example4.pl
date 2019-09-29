@@ -31,6 +31,10 @@ written in Perl.  You should also read L<nbdkit-plugin(3)> and
 L<nbdkit-perl-plugin(3)>.  Note that nbdkit plugins may be written in
 C or other scripting languages.
 
+=head1 VERSION
+
+C<nbdkit-example4-plugin> first appeared in nbdkit 1.2.
+
 =head1 SEE ALSO
 
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example4/example4.pl>,

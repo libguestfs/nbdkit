@@ -112,6 +112,11 @@ Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
 
 =back
 
+=head1 VERSION
+
+C<nbdkit-delay-filter> first appeared in nbdkit 1.2, based on earlier
+C<rdelay> and C<wdelay> options in L<nbdkit-file-plugin(1)>.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

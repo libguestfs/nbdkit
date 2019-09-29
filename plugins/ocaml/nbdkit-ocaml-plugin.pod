@@ -136,6 +136,10 @@ in verbose mode by calling:
 
 This function works like C<Printf.printf>.
 
+=head1 VERSION
+
+OCaml plugins first appeared in nbdkit 1.2.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

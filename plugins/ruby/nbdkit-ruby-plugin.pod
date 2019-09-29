@@ -297,6 +297,10 @@ Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
 
 =back
 
+=head1 VERSION
+
+C<nbdkit-ruby-plugin> first appeared in nbdkit 1.2.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,

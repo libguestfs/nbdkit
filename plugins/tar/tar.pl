@@ -53,6 +53,10 @@ another tool afterwards.
 
 The disk image cannot be resized.
 
+=head1 VERSION
+
+C<nbdkit-tar-plugin> first appeared in nbdkit 1.2.
+
 =head1 SEE ALSO
 
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/tar/tar.pl>,

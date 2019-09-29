@@ -109,6 +109,10 @@ These are not yet supported.
 
 =back
 
+=head1 VERSION
+
+Rust plugins first appeared in nbdkit 1.12.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
