@@ -322,16 +322,38 @@ retry_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   struct retry_handle *h = handle;
   struct retry_data data = {0};
+  CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 = NULL;
   int r;
+  size_t i;
 
  again:
   if (next_ops->can_extents (nxdata) != 1) {
     *err = EIO;
     r = -1;
   }
-  else
-    r = next_ops->extents (nxdata, count, offset, flags, extents, err);
+  else {
+    /* Each retry must begin with extents reset to the right beginning. */
+    nbdkit_extents_free (extents2);
+    extents2 = nbdkit_extents_new (offset, next_ops->get_size (nxdata));
+    if (extents2 == NULL) {
+      *err = errno;
+      return -1; /* Not worth a retry after ENOMEM. */
+    }
+    r = next_ops->extents (nxdata, count, offset, flags, extents2, err);
+  }
   if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+
+  if (r == 0) {
+    /* Transfer the successful extents back to the caller. */
+    for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
+      struct nbdkit_extent e = nbdkit_get_extent (extents2, i);
+
+      if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
+        *err = errno;
+        return -1;
+      }
+    }
+  }
 
   return r;
 }
