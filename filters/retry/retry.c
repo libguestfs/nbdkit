@@ -242,6 +242,23 @@ retry_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   return r;
 }
 
+/* Flush. */
+static int
+retry_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+             void *handle, uint32_t flags,
+             int *err)
+{
+  struct retry_handle *h = handle;
+  struct retry_data data = {0};
+  int r;
+
+ again:
+  r = next_ops->flush (nxdata, flags, err);
+  if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+
+  return r;
+}
+
 /* Zero. */
 static int
 retry_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -307,6 +324,7 @@ static struct nbdkit_filter filter = {
   .pread             = retry_pread,
   .pwrite            = retry_pwrite,
   .trim              = retry_trim,
+  .flush             = retry_flush,
   .zero              = retry_zero,
   .extents           = retry_extents,
   .cache             = retry_cache,
