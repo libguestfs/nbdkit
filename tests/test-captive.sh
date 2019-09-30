@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2014-2018 Red Hat Inc.
+# Copyright (C) 2014-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -36,13 +36,15 @@ set -x
 
 # Test nbdkit --run (captive nbdkit) option.
 
+fail=0
+
 sock=`mktemp -u`
-files="$sock captive.out"
+files="$sock captive.out captive.pid"
 rm -f $files
 cleanup_fn rm -f $files
 
 nbdkit -U $sock example1 --run '
-    sleep 5; echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
+    sleep 1; echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
   ' > captive.out
 
 # Check the output.
@@ -51,5 +53,41 @@ port=
 socket=$sock" ]; then
     echo "$0: unexpected output"
     cat captive.out
-    exit 1
+    fail=1
 fi
+
+# Check that a failed --run process affects exit status
+status=0
+nbdkit -U - example1 --run 'exit 2' > captive.out || status=$?
+if test $status != 2; then
+    echo "$0: unexpected exit status $status"
+    fail=1
+fi
+if test -s captive.out; then
+    echo "$0: unexpected output"
+    cat captive.out
+    fail=1
+fi
+
+# Check that nbdkit death from unhandled signal affects exit status
+status=0
+nbdkit -U - -P captive.pid example1 --run '
+test ! -s captive.pid || sleep 1
+if test ! -s captive.pid; then
+  echo "no pidfile yet"
+  exit 10
+fi
+kill -s ABRT $(cat captive.pid) || exit 10
+sleep 1
+' > captive.out || status=$?
+if test $status != $(( 128 + $(kill -l ABRT) )); then
+    echo "$0: unexpected exit status $status"
+    fail=1
+fi
+if test -s captive.out; then
+    echo "$0: unexpected output"
+    cat captive.out
+    fail=1
+fi
+
+exit $fail
