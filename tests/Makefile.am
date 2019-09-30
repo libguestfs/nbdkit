@@ -120,6 +120,7 @@ EXTRA_DIST = \
 	test.rb \
 	test-readahead-copy.sh \
 	test-retry.sh \
+	test-retry-readonly.sh \
 	test-retry-reopen-fail.sh \
 	test-shutdown.sh \
 	test-ssh.sh \
@@ -1057,6 +1058,7 @@ test_readahead_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # retry filter test.
 TESTS += \
 	test-retry.sh \
+	test-retry-readonly.sh \
 	test-retry-reopen-fail.sh \
 	$(NULL)
 
