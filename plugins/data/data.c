@@ -160,7 +160,7 @@ read_data (const char *value)
   size_t i, len = strlen (value);
 
   for (i = 0; i < len; ++i) {
-    int64_t j;
+    int64_t j, k;
     int n;
     char c, cc[2];
 
@@ -171,6 +171,28 @@ read_data (const char *value)
       }
       i += n;
       offset = j;
+    }
+    else if (sscanf (&value[i], " %" SCNi64 "*%" SCNi64 "%n",
+                     &j, &k, &n) == 2) {
+      if (j < 0 || j > 255) {
+        nbdkit_error ("data parameter BYTE must be in the range 0..255");
+        return -1;
+      }
+      if (k < 0) {
+        nbdkit_error ("data parameter *N must be >= 0");
+        return -1;
+      }
+      i += n;
+
+      c = j;
+      while (k > 0) {
+        if (sparse_array_write (sa, &c, 1, offset) == -1)
+          return -1;
+        offset++;
+        k--;
+      }
+      if (data_size < offset)
+        data_size = offset;
     }
     /* We need %1s for obscure reasons.  sscanf " <%n" can return 0
      * if nothing is matched, not only if the '<' is matched.
