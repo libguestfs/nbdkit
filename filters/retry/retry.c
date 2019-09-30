@@ -106,6 +106,7 @@ retry_config (nbdkit_next_config *next, void *nxdata,
 
 struct retry_handle {
   int readonly;                 /* Save original readonly setting. */
+  unsigned reopens;
 };
 
 static void *
@@ -123,6 +124,7 @@ retry_open (nbdkit_next_open *next, void *nxdata, int readonly)
   }
 
   h->readonly = readonly;
+  h->reopens = 0;
 
   return h;
 }
@@ -132,6 +134,7 @@ retry_close (void *handle)
 {
   struct retry_handle *h = handle;
 
+  nbdkit_debug ("reopens needed: %u", h->reopens);
   free (h);
 }
 
@@ -179,6 +182,7 @@ do_retry (struct retry_handle *h,
     data->delay *= 2;
 
   /* Reopen the connection. */
+  h->reopens++;
   if (next_ops->reopen (nxdata, h->readonly || force_readonly) == -1) {
     /* If the reopen fails we treat it the same way as a command
      * failing.
@@ -218,7 +222,16 @@ retry_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  if (h->reopens && force_readonly) {
+    *err = EROFS;
+    return -1;
+  }
+  if (next_ops->can_write (nxdata) != 1) {
+    *err = EROFS;
+    r = -1;
+  }
+  else
+    r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
   if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
 
   return r;
@@ -236,7 +249,16 @@ retry_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  r = next_ops->trim (nxdata, count, offset, flags, err);
+  if (h->reopens && force_readonly) {
+    *err = EROFS;
+    return -1;
+  }
+  if (next_ops->can_trim (nxdata) != 1) {
+    *err = EROFS;
+    r = -1;
+  }
+  else
+    r = next_ops->trim (nxdata, count, offset, flags, err);
   if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
 
   return r;
@@ -253,7 +275,12 @@ retry_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  r = next_ops->flush (nxdata, flags, err);
+  if (next_ops->can_flush (nxdata) != 1) {
+    *err = EIO;
+    r = -1;
+  }
+  else
+    r = next_ops->flush (nxdata, flags, err);
   if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
 
   return r;
@@ -271,7 +298,16 @@ retry_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  r = next_ops->zero (nxdata, count, offset, flags, err);
+  if (h->reopens && force_readonly) {
+    *err = EROFS;
+    return -1;
+  }
+  if (next_ops->can_zero (nxdata) <= NBDKIT_ZERO_NONE) {
+    *err = EROFS;
+    r = -1;
+  }
+  else
+    r = next_ops->zero (nxdata, count, offset, flags, err);
   if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
 
   return r;
@@ -289,7 +325,12 @@ retry_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  r = next_ops->extents (nxdata, count, offset, flags, extents, err);
+  if (next_ops->can_extents (nxdata) != 1) {
+    *err = EIO;
+    r = -1;
+  }
+  else
+    r = next_ops->extents (nxdata, count, offset, flags, extents, err);
   if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
 
   return r;
@@ -307,7 +348,12 @@ retry_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  r = next_ops->cache (nxdata, count, offset, flags, err);
+  if (next_ops->can_cache (nxdata) <= NBDKIT_CACHE_NONE) {
+    *err = EIO;
+    r = -1;
+  }
+  else
+    r = next_ops->cache (nxdata, count, offset, flags, err);
   if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
 
   return r;
