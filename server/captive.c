@@ -54,7 +54,7 @@ run_command (void)
   FILE *fp;
   char *cmd = NULL;
   size_t len = 0;
-  int r;
+  int r, status;
   pid_t pid;
 
   if (!run)
@@ -149,22 +149,47 @@ run_command (void)
 
   if (pid > 0) {              /* Parent process is the run command. */
     r = system (cmd);
-    if (WIFEXITED (r))
+    if (r == -1) {
+      nbdkit_error ("failure to execute external command: %m");
+      r = EXIT_FAILURE;
+    }
+    else if (WIFEXITED (r))
       r = WEXITSTATUS (r);
-    else if (WIFSIGNALED (r)) {
+    else {
+      assert (WIFSIGNALED (r));
       fprintf (stderr, "%s: external command was killed by signal %d\n",
                program_name, WTERMSIG (r));
-      r = 1;
-    }
-    else if (WIFSTOPPED (r)) {
-      fprintf (stderr, "%s: external command was stopped by signal %d\n",
-               program_name, WSTOPSIG (r));
-      r = 1;
+      r = WTERMSIG (r) + 128;
     }
 
-    kill (pid, SIGTERM);        /* Kill captive nbdkit. */
+    switch (waitpid (pid, &status, WNOHANG)) {
+    case -1:
+      nbdkit_error ("waitpid: %m");
+      r = EXIT_FAILURE;
+      break;
+    case 0:
+      /* Captive nbdkit still running; kill it, but no need to wait
+       * for it, as the --run program's exit status is good enough (if
+       * the captive nbdkit fails to exit after SIGTERM, we have a
+       * bigger bug to fix).
+       */
+      kill (pid, SIGTERM);
+      break;
+    default:
+      /* Captive nbdkit exited unexpectedly; update the exit status. */
+      if (WIFEXITED (status)) {
+        if (r == 0)
+          r = WEXITSTATUS (status);
+      }
+      else {
+        assert (WIFSIGNALED (status));
+        fprintf (stderr, "%s: nbdkit command was killed by signal %d\n",
+                 program_name, WTERMSIG (status));
+        r = WTERMSIG (status) + 128;
+      }
+    }
 
-    _exit (r);
+    exit (r);
   }
 
   free (cmd);
