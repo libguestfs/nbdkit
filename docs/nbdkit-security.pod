@@ -1,0 +1,41 @@
+=head1 NAME
+
+nbdkit-security - information about past security issues in nbdkit
+
+=head1 DESCRIPTION
+
+This page details past security issues found in nbdkit.
+
+For how to report new security issues, see the C<SECURITY> file in the
+top level source directory, also available online here:
+L<https://github.com/libguestfs/nbdkit/blob/master/SECURITY>
+
+=head2 CVE-2019-14850 
+denial of service due to premature opening of back-end connection
+
+See the full announcement and links to mitigation, tests and fixes
+here:
+https://www.redhat.com/archives/libguestfs/2019-September/msg00084.html
+
+=head2 CVE-2019-14851
+assertion failure by issuing commands in the wrong order
+
+This CVE was caused by the fix to the previous issue.
+
+See the full announcement and links to mitigation, tests and fixes
+here:
+https://www.redhat.com/archives/libguestfs/2019-September/msg00272.html
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2019 Red Hat Inc.

@@ -38,6 +38,7 @@ EXTRA_DIST = \
 	nbdkit-loop.pod \
 	nbdkit-probing.pod \
 	nbdkit-protocol.pod \
+	nbdkit-security.pod \
 	nbdkit-service.pod \
 	nbdkit-tls.pod \
 	nbdkit-plugin.pod \
@@ -53,6 +54,7 @@ man_MANS = \
 	nbdkit-loop.1 \
 	nbdkit-probing.1 \
 	nbdkit-protocol.1 \
+	nbdkit-security.1 \
 	nbdkit-service.1 \
 	nbdkit-tls.1 \
 	nbdkit-plugin.3 \
@@ -86,6 +88,11 @@ nbdkit-probing.1: nbdkit-probing.pod
 	    $<
 
 nbdkit-protocol.1: nbdkit-protocol.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-security.1: nbdkit-security.pod
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

@@ -559,6 +559,8 @@ L<nbdkit-probing(1)> — How to probe for nbdkit configuration and plugins.
 
 L<nbdkit-protocol(1)> — Which parts of the NBD protocol nbdkit supports.
 
+L<nbdkit-security(1)> — Lists past security issues in nbdkit.
+
 L<nbdkit-service(1)> — Running nbdkit as a service, and systemd socket
 activation.
 
