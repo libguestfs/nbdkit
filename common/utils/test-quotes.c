@@ -96,13 +96,3 @@ main (void)
   }
   return fail ? EXIT_FAILURE : EXIT_SUCCESS;
 }
-
-/* Unrelated utils code uses nbdkit_error, normally provided by the main
- * server program.  So we have to provide it here.
- */
-void
-nbdkit_error (const char *fs, ...)
-{
-  /* XXX split utils.c to avoid needing this linker stub? */
-  assert (false);
-}

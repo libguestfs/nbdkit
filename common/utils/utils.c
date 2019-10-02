@@ -33,77 +33,13 @@
 #include <config.h>
 
 #include <fcntl.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include <nbdkit-plugin.h>
-
-/* Print str to fp, shell quoting if necessary.  This comes from
- * libguestfs, but was written by me so I'm relicensing it to a BSD
- * license for nbdkit.
- */
-void
-shell_quote (const char *str, FILE *fp)
-{
-  /* Note possible bug in this list (XXX):
-   * https://www.redhat.com/archives/libguestfs/2019-February/msg00036.html
-   */
-  const char *safe_chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_=,:/";
-  size_t i, len;
-
-  /* If the string consists only of safe characters, output it as-is. */
-  len = strlen (str);
-  if (len > 0 && len == strspn (str, safe_chars)) {
-    fputs (str, fp);
-    return;
-  }
-
-  /* Double-quote the string. */
-  fputc ('"', fp);
-  for (i = 0; i < len; ++i) {
-    switch (str[i]) {
-    case '$': case '`': case '\\': case '"':
-      fputc ('\\', fp);
-      /*FALLTHROUGH*/
-    default:
-      fputc (str[i], fp);
-    }
-  }
-  fputc ('"', fp);
-}
-
-/* Print str to fp, URI quoting if necessary.
- * The resulting string is safe for use in a URI path or query component,
- * and can be passed through the shell without further quoting.
- */
-void
-uri_quote (const char *str, FILE *fp)
-{
-  /* safe_chars contains the RFC 3986 unreserved characters plus '/'. */
-  const char *safe_chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_~/";
-  size_t i, len;
-
-  /* If the string consists only of safe characters, output it as-is. */
-  len = strlen (str);
-  if (len == strspn (str, safe_chars)) {
-    fputs (str, fp);
-    return;
-  }
-
-  for (i = 0; i < len; ++i) {
-    if (strchr (safe_chars, str[i]))
-      fputc (str[i], fp);
-    else
-      fprintf (fp, "%%%02X", str[i] & 0xff);
-  }
-}
 
 /* Convert exit status to nbd_error.  If the exit status was nonzero
  * or another failure then -1 is returned.
