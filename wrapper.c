@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -72,6 +72,7 @@
 #include <time.h>
 
 #include "options.h"
+#include "utils.h"
 
 /* Construct an array of parameters passed through to real nbdkit. */
 static const char **cmd;
@@ -122,10 +123,12 @@ print_command (void)
   size_t i;
 
   if (len > 0)
-    fprintf (stderr, "%s", cmd[0]);
-  for (i = 1; i < len && cmd[i] != NULL; ++i)
-    fprintf (stderr, " %s", cmd[i]);
-  fprintf (stderr, "\n");
+    shell_quote (cmd[0], stderr);
+  for (i = 1; i < len && cmd[i] != NULL; ++i) {
+    fputc (' ', stderr);
+    shell_quote (cmd[i], stderr);
+  }
+  fputc ('\n', stderr);
 }
 
 int
