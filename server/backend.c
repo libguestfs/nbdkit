@@ -229,7 +229,7 @@ backend_valid_range (struct backend *b, struct connection *conn,
 {
   struct b_conn_handle *h = &conn->handles[b->i];
 
-  assert (h->exportsize >= 0); /* Guaranteed by negotiation phase */
+  assert (h->exportsize <= INT64_MAX); /* Guaranteed by negotiation phase */
   return count > 0 && offset <= h->exportsize &&
     offset + count <= h->exportsize;
 }
