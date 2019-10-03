@@ -121,6 +121,7 @@ EXTRA_DIST = \
 	test-readahead-copy.sh \
 	test-retry.sh \
 	test-retry-extents.sh \
+	test-retry-size.sh \
 	test-retry-readonly.sh \
 	test-retry-reopen-fail.sh \
 	test-retry-zero-flags.sh \
@@ -1062,6 +1063,7 @@ TESTS += \
 	test-retry.sh \
 	test-retry-readonly.sh \
 	test-retry-extents.sh \
+	test-retry-size.sh \
 	test-retry-reopen-fail.sh \
 	test-retry-zero-flags.sh \
 	$(NULL)
