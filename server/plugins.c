@@ -270,11 +270,10 @@ static void
 plugin_close (struct backend *b, struct connection *conn)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  void *handle = connection_get_handle (conn, 0);
 
-  assert (connection_get_handle (conn, 0));
-
-  if (p->plugin.close)
-    p->plugin.close (connection_get_handle (conn, 0));
+  if (handle && p->plugin.close)
+    p->plugin.close (handle);
 }
 
 static int64_t
