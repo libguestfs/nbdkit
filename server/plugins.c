@@ -239,7 +239,6 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   void *handle;
 
-  assert (connection_get_handle (conn, 0) == NULL);
   assert (p->plugin.open != NULL);
 
   handle = p->plugin.open (readonly);
@@ -255,104 +254,93 @@ plugin_open (struct backend *b, struct connection *conn, int readonly)
  * .close.
  */
 static int
-plugin_prepare (struct backend *b, struct connection *conn, int readonly)
+plugin_prepare (struct backend *b, struct connection *conn, void *handle,
+                int readonly)
 {
   return 0;
 }
 
 static int
-plugin_finalize (struct backend *b, struct connection *conn)
+plugin_finalize (struct backend *b, struct connection *conn, void *handle)
 {
   return 0;
 }
 
 static void
-plugin_close (struct backend *b, struct connection *conn)
+plugin_close (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-  void *handle = connection_get_handle (conn, 0);
 
   if (handle && p->plugin.close)
     p->plugin.close (handle);
 }
 
 static int64_t
-plugin_get_size (struct backend *b, struct connection *conn)
+plugin_get_size (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn, 0));
   assert (p->plugin.get_size != NULL);
 
-  return p->plugin.get_size (connection_get_handle (conn, 0));
+  return p->plugin.get_size (handle);
 }
 
 static int
-plugin_can_write (struct backend *b, struct connection *conn)
+plugin_can_write (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.can_write)
-    return p->plugin.can_write (connection_get_handle (conn, 0));
+    return p->plugin.can_write (handle);
   else
     return p->plugin.pwrite || p->plugin._pwrite_old;
 }
 
 static int
-plugin_can_flush (struct backend *b, struct connection *conn)
+plugin_can_flush (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.can_flush)
-    return p->plugin.can_flush (connection_get_handle (conn, 0));
+    return p->plugin.can_flush (handle);
   else
     return p->plugin.flush || p->plugin._flush_old;
 }
 
 static int
-plugin_is_rotational (struct backend *b, struct connection *conn)
+plugin_is_rotational (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.is_rotational)
-    return p->plugin.is_rotational (connection_get_handle (conn, 0));
+    return p->plugin.is_rotational (handle);
   else
     return 0; /* assume false */
 }
 
 static int
-plugin_can_trim (struct backend *b, struct connection *conn)
+plugin_can_trim (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.can_trim)
-    return p->plugin.can_trim (connection_get_handle (conn, 0));
+    return p->plugin.can_trim (handle);
   else
     return p->plugin.trim || p->plugin._trim_old;
 }
 
 static int
-plugin_can_zero (struct backend *b, struct connection *conn)
+plugin_can_zero (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
-
-  assert (connection_get_handle (conn, 0));
 
   /* Note the special case here: the plugin's .can_zero returns a bool
    * which controls only whether we call .zero; while the backend
    * expects .can_zero to return a tri-state on level of support.
    */
   if (p->plugin.can_zero) {
-    r = p->plugin.can_zero (connection_get_handle (conn, 0));
+    r = p->plugin.can_zero (handle);
     if (r == -1)
       return -1;
     return r ? NBDKIT_ZERO_NATIVE : NBDKIT_ZERO_EMULATE;
@@ -363,15 +351,13 @@ plugin_can_zero (struct backend *b, struct connection *conn)
 }
 
 static int
-plugin_can_fast_zero (struct backend *b, struct connection *conn)
+plugin_can_fast_zero (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.can_fast_zero)
-    return p->plugin.can_fast_zero (connection_get_handle (conn, 0));
+    return p->plugin.can_fast_zero (handle);
   /* Advertise support for fast zeroes if no .zero or .can_zero is
    * false: in those cases, we fail fast instead of using .pwrite.
    * This also works when v1 plugin has only ._zero_old.
@@ -385,30 +371,26 @@ plugin_can_fast_zero (struct backend *b, struct connection *conn)
 }
 
 static int
-plugin_can_extents (struct backend *b, struct connection *conn)
+plugin_can_extents (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.can_extents)
-    return p->plugin.can_extents (connection_get_handle (conn, 0));
+    return p->plugin.can_extents (handle);
   else
     return p->plugin.extents != NULL;
 }
 
 static int
-plugin_can_fua (struct backend *b, struct connection *conn)
+plugin_can_fua (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
-  assert (connection_get_handle (conn, 0));
-
   /* The plugin must use API version 2 and have .can_fua return
      NBDKIT_FUA_NATIVE before we will pass the FUA flag on. */
   if (p->plugin.can_fua) {
-    r = p->plugin.can_fua (connection_get_handle (conn, 0));
+    r = p->plugin.can_fua (handle);
     if (r > NBDKIT_FUA_EMULATE && p->plugin._api_version == 1)
       r = NBDKIT_FUA_EMULATE;
     return r;
@@ -420,27 +402,23 @@ plugin_can_fua (struct backend *b, struct connection *conn)
 }
 
 static int
-plugin_can_multi_conn (struct backend *b, struct connection *conn)
+plugin_can_multi_conn (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.can_multi_conn)
-    return p->plugin.can_multi_conn (connection_get_handle (conn, 0));
+    return p->plugin.can_multi_conn (handle);
   else
     return 0; /* assume false */
 }
 
 static int
-plugin_can_cache (struct backend *b, struct connection *conn)
+plugin_can_cache (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.can_cache)
-    return p->plugin.can_cache (connection_get_handle (conn, 0));
+    return p->plugin.can_cache (handle);
   if (p->plugin.cache)
     return NBDKIT_CACHE_NATIVE;
   return NBDKIT_CACHE_NONE;
@@ -468,40 +446,35 @@ get_error (struct backend_plugin *p)
 }
 
 static int
-plugin_pread (struct backend *b, struct connection *conn,
+plugin_pread (struct backend *b, struct connection *conn, void *handle,
               void *buf, uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
-  assert (connection_get_handle (conn, 0));
   assert (p->plugin.pread || p->plugin._pread_old);
 
   if (p->plugin.pread)
-    r = p->plugin.pread (connection_get_handle (conn, 0), buf, count, offset,
-                         0);
+    r = p->plugin.pread (handle, buf, count, offset, 0);
   else
-    r = p->plugin._pread_old (connection_get_handle (conn, 0), buf, count,
-                              offset);
+    r = p->plugin._pread_old (handle, buf, count, offset);
   if (r == -1)
     *err = get_error (p);
   return r;
 }
 
 static int
-plugin_flush (struct backend *b, struct connection *conn, uint32_t flags,
-              int *err)
+plugin_flush (struct backend *b, struct connection *conn, void *handle,
+              uint32_t flags, int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
-  assert (connection_get_handle (conn, 0));
-
   if (p->plugin.flush)
-    r = p->plugin.flush (connection_get_handle (conn, 0), 0);
+    r = p->plugin.flush (handle, 0);
   else if (p->plugin._flush_old)
-    r = p->plugin._flush_old (connection_get_handle (conn, 0));
+    r = p->plugin._flush_old (handle);
   else {
     *err = EINVAL;
     return -1;
@@ -512,7 +485,7 @@ plugin_flush (struct backend *b, struct connection *conn, uint32_t flags,
 }
 
 static int
-plugin_pwrite (struct backend *b, struct connection *conn,
+plugin_pwrite (struct backend *b, struct connection *conn, void *handle,
                const void *buf, uint32_t count, uint64_t offset, uint32_t flags,
                int *err)
 {
@@ -521,31 +494,27 @@ plugin_pwrite (struct backend *b, struct connection *conn,
   bool fua = flags & NBDKIT_FLAG_FUA;
   bool need_flush = false;
 
-  assert (connection_get_handle (conn, 0));
-
   if (fua && backend_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
   if (p->plugin.pwrite)
-    r = p->plugin.pwrite (connection_get_handle (conn, 0), buf, count, offset,
-                          flags);
+    r = p->plugin.pwrite (handle, buf, count, offset, flags);
   else if (p->plugin._pwrite_old)
-    r = p->plugin._pwrite_old (connection_get_handle (conn, 0),
-                               buf, count, offset);
+    r = p->plugin._pwrite_old (handle, buf, count, offset);
   else {
     *err = EROFS;
     return -1;
   }
   if (r != -1 && need_flush)
-    r = plugin_flush (b, conn, 0, err);
+    r = plugin_flush (b, conn, handle, 0, err);
   if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
 
 static int
-plugin_trim (struct backend *b, struct connection *conn,
+plugin_trim (struct backend *b, struct connection *conn, void *handle,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
   int r;
@@ -553,29 +522,27 @@ plugin_trim (struct backend *b, struct connection *conn,
   bool fua = flags & NBDKIT_FLAG_FUA;
   bool need_flush = false;
 
-  assert (connection_get_handle (conn, 0));
-
   if (fua && backend_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
   if (p->plugin.trim)
-    r = p->plugin.trim (connection_get_handle (conn, 0), count, offset, flags);
+    r = p->plugin.trim (handle, count, offset, flags);
   else if (p->plugin._trim_old)
-    r = p->plugin._trim_old (connection_get_handle (conn, 0), count, offset);
+    r = p->plugin._trim_old (handle, count, offset);
   else {
     *err = EINVAL;
     return -1;
   }
   if (r != -1 && need_flush)
-    r = plugin_flush (b, conn, 0, err);
+    r = plugin_flush (b, conn, handle, 0, err);
   if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
 
 static int
-plugin_zero (struct backend *b, struct connection *conn,
+plugin_zero (struct backend *b, struct connection *conn, void *handle,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
@@ -585,8 +552,6 @@ plugin_zero (struct backend *b, struct connection *conn,
   bool fast_zero = flags & NBDKIT_FLAG_FAST_ZERO;
   bool emulate = false;
   bool need_flush = false;
-
-  assert (connection_get_handle (conn, 0));
 
   if (fua && backend_can_fua (b, conn) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
@@ -598,15 +563,13 @@ plugin_zero (struct backend *b, struct connection *conn,
   if (backend_can_zero (b, conn) == NBDKIT_ZERO_NATIVE) {
     errno = 0;
     if (p->plugin.zero)
-      r = p->plugin.zero (connection_get_handle (conn, 0), count, offset,
-                          flags);
+      r = p->plugin.zero (handle, count, offset, flags);
     else if (p->plugin._zero_old) {
       if (fast_zero) {
         *err = EOPNOTSUPP;
         return -1;
       }
-      r = p->plugin._zero_old (connection_get_handle (conn, 0), count, offset,
-                               may_trim);
+      r = p->plugin._zero_old (handle, count, offset, may_trim);
     }
     else
       emulate = true;
@@ -634,7 +597,7 @@ plugin_zero (struct backend *b, struct connection *conn,
     static /* const */ char buf[MAX_REQUEST_SIZE];
     uint32_t limit = MIN (count, sizeof buf);
 
-    r = plugin_pwrite (b, conn, buf, limit, offset, flags, err);
+    r = plugin_pwrite (b, conn, handle, buf, limit, offset, flags, err);
     if (r == -1)
       break;
     count -= limit;
@@ -642,27 +605,24 @@ plugin_zero (struct backend *b, struct connection *conn,
 
  done:
   if (r != -1 && need_flush)
-    r = plugin_flush (b, conn, 0, err);
+    r = plugin_flush (b, conn, handle, 0, err);
   if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
 
 static int
-plugin_extents (struct backend *b, struct connection *conn,
+plugin_extents (struct backend *b, struct connection *conn, void *handle,
                 uint32_t count, uint64_t offset, uint32_t flags,
                 struct nbdkit_extents *extents, int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
-  assert (connection_get_handle (conn, 0));
-
   /* This should be true because plugin_can_extents checks it. */
   assert (p->plugin.extents);
 
-  r = p->plugin.extents (connection_get_handle (conn, 0), count, offset,
-                         flags, extents);
+  r = p->plugin.extents (handle, count, offset, flags, extents);
   if (r >= 0 && nbdkit_extents_count (extents) < 1) {
     nbdkit_error ("extents: plugin must return at least one extent");
     nbdkit_set_error (EINVAL);
@@ -674,21 +634,19 @@ plugin_extents (struct backend *b, struct connection *conn,
 }
 
 static int
-plugin_cache (struct backend *b, struct connection *conn,
+plugin_cache (struct backend *b, struct connection *conn, void *handle,
               uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
-  assert (connection_get_handle (conn, 0));
-
   /* A plugin may advertise caching but not provide .cache; in that
    * case, caching is explicitly a no-op. */
   if (!p->plugin.cache)
     return 0;
 
-  r = p->plugin.cache (connection_get_handle (conn, 0), count, offset, flags);
+  r = p->plugin.cache (handle, count, offset, flags);
   if (r == -1)
     *err = get_error (p);
   return r;

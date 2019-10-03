@@ -214,8 +214,6 @@ struct connection {
 };
 
 extern int handle_single_connection (int sockin, int sockout);
-extern void *connection_get_handle (struct connection *conn, size_t i)
-  __attribute__((__nonnull__ (1)));
 extern int connection_get_status (struct connection *conn)
   __attribute__((__nonnull__ (1)));
 extern int connection_set_status (struct connection *conn, int value)
@@ -306,37 +304,43 @@ struct backend {
   void (*config_complete) (struct backend *);
   const char *(*magic_config_key) (struct backend *);
   int (*open) (struct backend *, struct connection *conn, int readonly);
-  int (*prepare) (struct backend *, struct connection *conn, int readonly);
-  int (*finalize) (struct backend *, struct connection *conn);
-  void (*close) (struct backend *, struct connection *conn);
+  int (*prepare) (struct backend *, struct connection *conn, void *handle,
+                  int readonly);
+  int (*finalize) (struct backend *, struct connection *conn, void *handle);
+  void (*close) (struct backend *, struct connection *conn, void *handle);
 
-  int64_t (*get_size) (struct backend *, struct connection *conn);
-  int (*can_write) (struct backend *, struct connection *conn);
-  int (*can_flush) (struct backend *, struct connection *conn);
-  int (*is_rotational) (struct backend *, struct connection *conn);
-  int (*can_trim) (struct backend *, struct connection *conn);
-  int (*can_zero) (struct backend *, struct connection *conn);
-  int (*can_fast_zero) (struct backend *, struct connection *conn);
-  int (*can_extents) (struct backend *, struct connection *conn);
-  int (*can_fua) (struct backend *, struct connection *conn);
-  int (*can_multi_conn) (struct backend *, struct connection *conn);
-  int (*can_cache) (struct backend *, struct connection *conn);
+  int64_t (*get_size) (struct backend *, struct connection *conn, void *handle);
+  int (*can_write) (struct backend *, struct connection *conn, void *handle);
+  int (*can_flush) (struct backend *, struct connection *conn, void *handle);
+  int (*is_rotational) (struct backend *, struct connection *conn,
+                        void *handle);
+  int (*can_trim) (struct backend *, struct connection *conn, void *handle);
+  int (*can_zero) (struct backend *, struct connection *conn, void *handle);
+  int (*can_fast_zero) (struct backend *, struct connection *conn,
+                        void *handle);
+  int (*can_extents) (struct backend *, struct connection *conn, void *handle);
+  int (*can_fua) (struct backend *, struct connection *conn, void *handle);
+  int (*can_multi_conn) (struct backend *, struct connection *conn,
+                         void *handle);
+  int (*can_cache) (struct backend *, struct connection *conn, void *handle);
 
-  int (*pread) (struct backend *, struct connection *conn, void *buf,
-                uint32_t count, uint64_t offset, uint32_t flags, int *err);
-  int (*pwrite) (struct backend *, struct connection *conn, const void *buf,
-                 uint32_t count, uint64_t offset, uint32_t flags, int *err);
-  int (*flush) (struct backend *, struct connection *conn, uint32_t flags,
-                int *err);
-  int (*trim) (struct backend *, struct connection *conn, uint32_t count,
-               uint64_t offset, uint32_t flags, int *err);
-  int (*zero) (struct backend *, struct connection *conn, uint32_t count,
-               uint64_t offset, uint32_t flags, int *err);
-  int (*extents) (struct backend *, struct connection *conn, uint32_t count,
-                  uint64_t offset, uint32_t flags,
+  int (*pread) (struct backend *, struct connection *conn, void *handle,
+                void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags, int *err);
+  int (*pwrite) (struct backend *, struct connection *conn, void *handle,
+                 const void *buf, uint32_t count, uint64_t offset,
+                 uint32_t flags, int *err);
+  int (*flush) (struct backend *, struct connection *conn, void *handle,
+                uint32_t flags, int *err);
+  int (*trim) (struct backend *, struct connection *conn, void *handle,
+               uint32_t count, uint64_t offset, uint32_t flags, int *err);
+  int (*zero) (struct backend *, struct connection *conn, void *handle,
+               uint32_t count, uint64_t offset, uint32_t flags, int *err);
+  int (*extents) (struct backend *, struct connection *conn, void *handle,
+                  uint32_t count, uint64_t offset, uint32_t flags,
                   struct nbdkit_extents *extents, int *err);
-  int (*cache) (struct backend *, struct connection *conn, uint32_t count,
-                uint64_t offset, uint32_t flags, int *err);
+  int (*cache) (struct backend *, struct connection *conn, void *handle,
+                uint32_t count, uint64_t offset, uint32_t flags, int *err);
 };
 
 extern void backend_init (struct backend *b, struct backend *next, size_t index,
@@ -352,6 +356,8 @@ extern int backend_open (struct backend *b, struct connection *conn,
                          int readonly)
   __attribute__((__nonnull__ (1, 2)));
 extern int backend_prepare (struct backend *b, struct connection *conn)
+  __attribute__((__nonnull__ (1, 2)));
+extern int backend_finalize (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));
 extern void backend_close (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));

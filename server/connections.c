@@ -217,7 +217,7 @@ _handle_single_connection (int sockin, int sockout)
   /* Finalize (for filters), called just before close. */
   lock_request (conn);
   if (backend)
-    r = backend->finalize (backend, conn);
+    r = backend_finalize (backend, conn);
   else
     r = 0;
   unlock_request (conn);

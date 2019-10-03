@@ -481,7 +481,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
          * disconnecting.
          */
         if (finish_newstyle_options (conn, &exportsize) == -1) {
-          if (backend->finalize (backend, conn) == -1)
+          if (backend_finalize (backend, conn) == -1)
             return -1;
           backend_close (backend, conn);
           if (send_newstyle_option_reply (conn, option,
@@ -522,7 +522,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         return -1;
 
       if (option == NBD_OPT_INFO) {
-        if (backend->finalize (backend, conn) == -1)
+        if (backend_finalize (backend, conn) == -1)
           return -1;
         backend_close (backend, conn);
       }
