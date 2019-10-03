@@ -20,13 +20,13 @@ and as many slaves (-S) as you can.
 Master:
 
   mkdir -p fuzzing/sync_dir
-  afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -M fuzz01 \
+  afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -m 256 -M fuzz01 \
       ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so 1M
 
 Slaves:
 
   # replace fuzzNN with fuzz02, fuzz03, etc.
-  afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -S fuzzNN \
+  afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -m 256 -S fuzzNN \
       ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so 1M
 
 Test Coverage
