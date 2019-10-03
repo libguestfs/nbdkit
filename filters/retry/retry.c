@@ -230,6 +230,11 @@ retry_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     *err = EROFS;
     r = -1;
   }
+  else if (flags & NBDKIT_FLAG_FUA &&
+           next_ops->can_fua (nxdata) <= NBDKIT_FUA_NONE) {
+    *err = EIO;
+    r = -1;
+  }
   else
     r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
   if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
@@ -255,6 +260,11 @@ retry_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   if (next_ops->can_trim (nxdata) != 1) {
     *err = EROFS;
+    r = -1;
+  }
+  else if (flags & NBDKIT_FLAG_FUA &&
+           next_ops->can_fua (nxdata) <= NBDKIT_FUA_NONE) {
+    *err = EIO;
     r = -1;
   }
   else
@@ -302,8 +312,18 @@ retry_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     *err = EROFS;
     return -1;
   }
+  if (flags & NBDKIT_FLAG_FAST_ZERO &&
+           next_ops->can_fast_zero (nxdata) != 1) {
+    *err = EOPNOTSUPP;
+    return -1;
+  }
   if (next_ops->can_zero (nxdata) <= NBDKIT_ZERO_NONE) {
     *err = EROFS;
+    r = -1;
+  }
+  else if (flags & NBDKIT_FLAG_FUA &&
+           next_ops->can_fua (nxdata) <= NBDKIT_FUA_NONE) {
+    *err = EIO;
     r = -1;
   }
   else
