@@ -37,21 +37,30 @@ source ./functions.sh
 set -e
 set -x
 
-requires qemu-img --version
+fail=0
 
-files="retry-reopen-fail.img
-       retry-reopen-fail-count retry-reopen-fail-open-count"
+requires qemu-io --version
+
+files="retry-reopen-fail-count retry-reopen-fail-open-count"
 rm -f $files
 cleanup_fn rm -f $files
 
-touch retry-reopen-fail-count retry-reopen-fail-open-count
-start_t=$SECONDS
+# do_test retries mintime expcount
+do_test ()
+{
+    retries=$1
+    mintime=$2
+    expcount=$3
 
-# Create a custom plugin which will test retrying.
-nbdkit -v -U - \
-       sh - \
-       --filter=retry retry-delay=1 \
-       --run 'qemu-img convert $nbd retry-reopen-fail.img' <<'EOF'
+    echo 0 > retry-reopen-fail-count
+    echo 0 > retry-reopen-fail-open-count
+    start_t=$SECONDS
+
+    # Create a custom plugin which will test retrying.
+    nbdkit -v -U - \
+           sh - \
+           --filter=retry retry-delay=1 retries=$retries \
+           --run 'qemu-io -r -f raw $nbd -c "r 0 512" -c "r 0 512"' <<'EOF'
 #!/usr/bin/env bash
 case "$1" in
     open)
@@ -82,27 +91,34 @@ case "$1" in
 esac
 EOF
 
+    # Check that running time appears reasonable.
+    end_t=$SECONDS
+    if [ $((end_t - start_t)) -lt $mintime ]; then
+        echo "$0: test ran too quickly"
+        fail=1
+    fi
+
+    # Check the handle was opened as often as expected.
+    read open_count < retry-reopen-fail-open-count
+    if [ $open_count -ne $expcount ]; then
+        echo "$0: open-count ($open_count) != $expcount"
+        fail=1
+    fi
+}
+
 # In this test we should see 3 failures:
-# pread FAILS
+# first pread FAILS
 # retry and wait 1 seconds
 # open FAILS
 # retry and wait 2 seconds
 # open succeeds
-# pread FAILS
+# first pread FAILS
 # retry and wait 4 seconds
 # open succeeds
-# pread succeeds
+# first pread succeeds
+# second pread succeeds
 
 # The minimum time for the test should be 1+2+4 = 7 seconds.
-end_t=$SECONDS
-if [ $((end_t - start_t)) -lt 7 ]; then
-    echo "$0: test ran too quickly"
-    exit 1
-fi
+do_test 5 7 4
 
-# Check the handle was opened 4 times.
-read open_count < retry-reopen-fail-open-count
-if [ $open_count -ne 4 ]; then
-    echo "$0: open-count ($open_count) != 4"
-    exit 1
-fi
+exit $fail
