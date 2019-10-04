@@ -172,7 +172,6 @@ int
 backend_open (struct backend *b, struct connection *conn, int readonly)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
-  int r;
 
   debug ("%s: open readonly=%d", b->name, readonly);
 
@@ -180,24 +179,36 @@ backend_open (struct backend *b, struct connection *conn, int readonly)
   assert (h->can_write == -1);
   if (readonly)
     h->can_write = 0;
-  r = b->open (b, conn, readonly);
-  if (r == 0) {
-    assert (h->handle != NULL);
-    if (b->i) /* A filter must not succeed unless its backend did also */
-      assert (conn->handles[b->i - 1].handle);
-  }
-  else {
-    assert (h->handle == NULL);
+
+  /* Most filters will call next_open first, resulting in
+   * inner-to-outer ordering.
+   */
+  h->handle = b->open (b, conn, readonly);
+  debug ("%s: open returned handle %p", b->name, h->handle);
+
+  if (h->handle == NULL) {
     if (b->i) /* Do not strand backend if this layer failed */
       backend_close (b->next, conn);
+    return -1;
   }
-  return r;
+
+  if (b->i) /* A filter must not succeed unless its backend did also */
+    assert (conn->handles[b->i - 1].handle);
+  return 0;
 }
 
 int
 backend_prepare (struct backend *b, struct connection *conn)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
+
+  assert (h->handle);
+
+  /* Call these in order starting from the filter closest to the
+   * plugin, similar to typical .open order.
+   */
+  if (b->i && backend_prepare (b->next, conn) == -1)
+    return -1;
 
   debug ("%s: prepare readonly=%d", b->name, h->can_write == 0);
 
@@ -209,9 +220,19 @@ backend_finalize (struct backend *b, struct connection *conn)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
 
+  /* Call these in reverse order to .prepare above, starting from the
+   * filter furthest away from the plugin, and matching .close order.
+   */
+
+  assert (h->handle);
   debug ("%s: finalize", b->name);
 
-  return b->finalize (b, conn, h->handle);
+  if (b->finalize (b, conn, h->handle) == -1)
+    return -1;
+
+  if (b->i)
+    return backend_finalize (b->next, conn);
+  return 0;
 }
 
 void
@@ -219,18 +240,13 @@ backend_close (struct backend *b, struct connection *conn)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
 
+  /* outer-to-inner order, opposite .open */
   debug ("%s: close", b->name);
 
   b->close (b, conn, h->handle);
   reset_b_conn_handle (h);
-}
-
-void
-backend_set_handle (struct backend *b, struct connection *conn, void *handle)
-{
-  assert (b->i < conn->nr_handles);
-  assert (conn->handles[b->i].handle == NULL);
-  conn->handles[b->i].handle = handle;
+  if (b->i)
+    backend_close (b->next, conn);
 }
 
 bool

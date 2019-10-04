@@ -198,28 +198,21 @@ next_open (void *nxdata, int readonly)
   return backend_open (b_conn->b, b_conn->conn, readonly);
 }
 
-static int
+static void *
 filter_open (struct backend *b, struct connection *conn, int readonly)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
-  void *handle;
 
   /* Most filters will call next_open first, resulting in
    * inner-to-outer ordering.
    */
-  if (f->filter.open) {
-    handle = f->filter.open (next_open, &nxdata, readonly);
-    if (handle == NULL)
-      return -1;
-    backend_set_handle (b, conn, handle);
-  }
-  else {
-    if (backend_open (b->next, conn, readonly) == -1)
-      return -1;
-    backend_set_handle (b, conn, NBDKIT_HANDLE_NOT_NEEDED);
-  }
-  return 0;
+  if (f->filter.open)
+    return f->filter.open (next_open, &nxdata, readonly);
+  else if (backend_open (b->next, conn, readonly) == -1)
+    return NULL;
+  else
+    return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 static void
@@ -227,10 +220,8 @@ filter_close (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
-  /* outer-to-inner order, opposite .open */
   if (handle && f->filter.close)
     f->filter.close (handle);
-  backend_close (b->next, conn);
 }
 
 /* The next_functions structure contains pointers to backend
@@ -411,12 +402,6 @@ filter_prepare (struct backend *b, struct connection *conn, void *handle,
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  /* Call these in order starting from the filter closest to the
-   * plugin, similar to typical .open order.
-   */
-  if (backend_prepare (b->next, conn) == -1)
-    return -1;
-
   if (f->filter.prepare &&
       f->filter.prepare (&next_ops, &nxdata, handle, readonly) == -1)
     return -1;
@@ -430,14 +415,10 @@ filter_finalize (struct backend *b, struct connection *conn, void *handle)
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-  /* Call these in reverse order to .prepare above, starting from the
-   * filter furthest away from the plugin, and matching .close order.
-   */
   if (f->filter.finalize &&
       f->filter.finalize (&next_ops, &nxdata, handle) == -1)
     return -1;
-
-  return backend_finalize (b->next, conn);
+  return 0;
 }
 
 static int64_t

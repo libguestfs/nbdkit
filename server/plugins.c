@@ -233,20 +233,14 @@ plugin_magic_config_key (struct backend *b)
   return p->plugin.magic_config_key;
 }
 
-static int
+static void *
 plugin_open (struct backend *b, struct connection *conn, int readonly)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-  void *handle;
 
   assert (p->plugin.open != NULL);
 
-  handle = p->plugin.open (readonly);
-  if (!handle)
-    return -1;
-
-  backend_set_handle (b, conn, handle);
-  return 0;
+  return p->plugin.open (readonly);
 }
 
 /* We don't expose .prepare and .finalize to plugins since they aren't

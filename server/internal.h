@@ -303,7 +303,7 @@ struct backend {
   void (*config) (struct backend *, const char *key, const char *value);
   void (*config_complete) (struct backend *);
   const char *(*magic_config_key) (struct backend *);
-  int (*open) (struct backend *, struct connection *conn, int readonly);
+  void *(*open) (struct backend *, struct connection *conn, int readonly);
   int (*prepare) (struct backend *, struct connection *conn, void *handle,
                   int readonly);
   int (*finalize) (struct backend *, struct connection *conn, void *handle);
@@ -361,9 +361,6 @@ extern int backend_finalize (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));
 extern void backend_close (struct backend *b, struct connection *conn)
   __attribute__((__nonnull__ (1, 2)));
-extern void backend_set_handle (struct backend *b, struct connection *conn,
-                                void *handle)
-  __attribute__((__nonnull__ (1, 2, 3)));
 extern bool backend_valid_range (struct backend *b, struct connection *conn,
                                  uint64_t offset, uint32_t count)
   __attribute__((__nonnull__ (1, 2)));
