@@ -117,6 +117,10 @@ check_header_magic (struct nbdkit_next_ops *next_ops, void *nxdata)
   char buf[XZ_HEADER_MAGIC_LEN];
   int err;
 
+  if (next_ops->get_size (nxdata) < XZ_HEADER_MAGIC_LEN) {
+    nbdkit_error ("xz: file too short");
+    return false;
+  }
   if (next_ops->pread (nxdata, buf, XZ_HEADER_MAGIC_LEN, 0, 0, &err) == -1) {
     nbdkit_error ("xz: could not read header magic: error %d", err);
     return false;
