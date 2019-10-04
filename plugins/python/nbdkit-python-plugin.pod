@@ -46,14 +46,15 @@ may want to include documentation and globals (eg. for storing global
 state).  Any other top level statements are run when the script is
 loaded, just like ordinary Python.
 
-=head2 Python 2 and Python 3
+=head2 Python versions
 
-The Python plugin has to be compiled for either Python 2 or Python 3
-when building nbdkit.  You can set the C<PYTHON> environment variable
-to the desired interpreter, otherwise nbdkit will use the interpreter
-called C<python> on the current C<$PATH>.  For example:
+Python 2 end of life is 2020-01-01 and nbdkit >= 1.16 no longer
+supports it.  If you want to use Python 2, you will need to use nbdkit
+version 1.14.  You can set the C<PYTHON> environment variable
+to the desired interpreter, otherwise nbdkit will use interpreter
+called C<python3> or C<python> on the current C<$PATH>.  For example:
 
- PYTHON=/usr/bin/python3 ./configure
+ PYTHON=/opt/local/bin/python3 ./configure
 
 To find out which version the Python plugin was compiled for, use the
 I<--dump-plugin> option, eg:

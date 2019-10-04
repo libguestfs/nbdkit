@@ -471,7 +471,7 @@ AC_SUBST([PERL_CFLAGS])
 AC_SUBST([PERL_LDOPTS])
 
 dnl Check for Python 3, for embedding in the python plugin.
-AC_CHECK_PROG([PYTHON],[python],[python],[no])
+AC_PATH_PROGS([PYTHON],[python3 python],[no])
 AC_ARG_ENABLE([python],
     [AS_HELP_STRING([--disable-python], [disable Python embed plugin])],
     [],
