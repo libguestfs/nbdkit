@@ -41,27 +41,38 @@ fail=0
 
 requires qemu-io --version
 
-files="retry-reopen-fail-count retry-reopen-fail-open-count"
+files="retry-reopen-fail-count retry-reopen-fail-open-count
+       retry-reopen-fail-status"
 rm -f $files
 cleanup_fn rm -f $files
 
-# do_test retries mintime expcount
+# do_test retries mintime expcount status
 do_test ()
 {
     retries=$1
     mintime=$2
     expcount=$3
+    status=$4
 
     echo 0 > retry-reopen-fail-count
     echo 0 > retry-reopen-fail-open-count
+    : > retry-reopen-fail-status
     start_t=$SECONDS
 
     # Create a custom plugin which will test retrying.
     nbdkit -v -U - \
            sh - \
            --filter=retry retry-delay=1 retries=$retries \
-           --run 'qemu-io -r -f raw $nbd -c "r 0 512" -c "r 0 512"' <<'EOF'
+           --run 'qemu-io -r -f raw $nbd -c "r 0 512" -c "r 0 512"
+                  echo $? >> retry-reopen-fail-status' <<'EOF'
 #!/usr/bin/env bash
+handle=$2
+check_handle () {
+    if [ x"$handle" != xhandle ]; then
+        echo 22 >> retry-reopen-fail-status
+        exit 22
+    fi
+}
 case "$1" in
     open)
         # Count how many times the connection is (re-)opened.
@@ -72,8 +83,10 @@ case "$1" in
             echo "EIO open failed" >&2
             exit 1
         fi
+        echo "handle"
         ;;
     pread)
+        check_handle
         # Fail 2 times then succeed.
         read i < retry-reopen-fail-count
         ((i++))
@@ -86,7 +99,9 @@ case "$1" in
         fi
         ;;
 
-    get_size) echo 512 ;;
+    get_size)
+        check_handle
+        echo 512 ;;
     *) exit 2 ;;
 esac
 EOF
@@ -104,9 +119,16 @@ EOF
         echo "$0: open-count ($open_count) != $expcount"
         fail=1
     fi
+
+    # Check the exit status of qemu-io
+    read qemu_status < retry-reopen-fail-status
+    if [ $qemu_status -ne $status ]; then
+        echo "$0: status ($qemu_status) != $status"
+        fail=1
+    fi
 }
 
-# In this test we should see 3 failures:
+# In this first test we should see 3 failures:
 # first pread FAILS
 # retry and wait 1 seconds
 # open FAILS
@@ -119,6 +141,21 @@ EOF
 # second pread succeeds
 
 # The minimum time for the test should be 1+2+4 = 7 seconds.
-do_test 5 7 4
+do_test 5 7 4 0
+
+# In this second test we should see the following:
+# first pread FAILS
+# retry and wait 1 seconds
+# open FAILS, ending first pread in failure
+# first pread FAILS
+# second pread requires open
+# open succeeds
+# second pread FAILS
+# retry and wait 1 seconds
+# open succeeds
+# second pread succeeds
+
+# The minimum time for the test should be 1+1 = 2 seconds.
+do_test 1 2 3 1
 
 exit $fail
