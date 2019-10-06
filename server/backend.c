@@ -265,6 +265,7 @@ backend_get_size (struct backend *b, struct connection *conn)
 
   debug ("%s: get_size", b->name);
 
+  assert (h->handle);
   if (h->exportsize == -1)
     h->exportsize = b->get_size (b, conn, h->handle);
   return h->exportsize;
@@ -277,6 +278,7 @@ backend_can_write (struct backend *b, struct connection *conn)
 
   debug ("%s: can_write", b->name);
 
+  assert (h->handle);
   if (h->can_write == -1)
     h->can_write = b->can_write (b, conn, h->handle);
   return h->can_write;
@@ -289,6 +291,7 @@ backend_can_flush (struct backend *b, struct connection *conn)
 
   debug ("%s: can_flush", b->name);
 
+  assert (h->handle);
   if (h->can_flush == -1)
     h->can_flush = b->can_flush (b, conn, h->handle);
   return h->can_flush;
@@ -301,6 +304,7 @@ backend_is_rotational (struct backend *b, struct connection *conn)
 
   debug ("%s: is_rotational", b->name);
 
+  assert (h->handle);
   if (h->is_rotational == -1)
     h->is_rotational = b->is_rotational (b, conn, h->handle);
   return h->is_rotational;
@@ -314,6 +318,7 @@ backend_can_trim (struct backend *b, struct connection *conn)
 
   debug ("%s: can_trim", b->name);
 
+  assert (h->handle);
   if (h->can_trim == -1) {
     r = backend_can_write (b, conn);
     if (r != 1) {
@@ -333,6 +338,7 @@ backend_can_zero (struct backend *b, struct connection *conn)
 
   debug ("%s: can_zero", b->name);
 
+  assert (h->handle);
   if (h->can_zero == -1) {
     r = backend_can_write (b, conn);
     if (r != 1) {
@@ -352,6 +358,7 @@ backend_can_fast_zero (struct backend *b, struct connection *conn)
 
   debug ("%s: can_fast_zero", b->name);
 
+  assert (h->handle);
   if (h->can_fast_zero == -1) {
     r = backend_can_zero (b, conn);
     if (r < NBDKIT_ZERO_EMULATE) {
@@ -370,6 +377,7 @@ backend_can_extents (struct backend *b, struct connection *conn)
 
   debug ("%s: can_extents", b->name);
 
+  assert (h->handle);
   if (h->can_extents == -1)
     h->can_extents = b->can_extents (b, conn, h->handle);
   return h->can_extents;
@@ -383,6 +391,7 @@ backend_can_fua (struct backend *b, struct connection *conn)
 
   debug ("%s: can_fua", b->name);
 
+  assert (h->handle);
   if (h->can_fua == -1) {
     r = backend_can_write (b, conn);
     if (r != 1) {
@@ -399,6 +408,7 @@ backend_can_multi_conn (struct backend *b, struct connection *conn)
 {
   struct b_conn_handle *h = &conn->handles[b->i];
 
+  assert (h->handle);
   debug ("%s: can_multi_conn", b->name);
 
   if (h->can_multi_conn == -1)
@@ -413,6 +423,7 @@ backend_can_cache (struct backend *b, struct connection *conn)
 
   debug ("%s: can_cache", b->name);
 
+  assert (h->handle);
   if (h->can_cache == -1)
     h->can_cache = b->can_cache (b, conn, h->handle);
   return h->can_cache;
@@ -426,6 +437,7 @@ backend_pread (struct backend *b, struct connection *conn,
   struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->handle);
   assert (backend_valid_range (b, conn, offset, count));
   assert (flags == 0);
   debug ("%s: pread count=%" PRIu32 " offset=%" PRIu64,
@@ -446,6 +458,7 @@ backend_pwrite (struct backend *b, struct connection *conn,
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
+  assert (h->handle);
   assert (h->can_write == 1);
   assert (backend_valid_range (b, conn, offset, count));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
@@ -467,6 +480,7 @@ backend_flush (struct backend *b, struct connection *conn,
   struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->handle);
   assert (h->can_flush == 1);
   assert (flags == 0);
   debug ("%s: flush", b->name);
@@ -486,6 +500,7 @@ backend_trim (struct backend *b, struct connection *conn,
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
+  assert (h->handle);
   assert (h->can_write == 1);
   assert (h->can_trim == 1);
   assert (backend_valid_range (b, conn, offset, count));
@@ -511,6 +526,7 @@ backend_zero (struct backend *b, struct connection *conn,
   bool fast = !!(flags & NBDKIT_FLAG_FAST_ZERO);
   int r;
 
+  assert (h->handle);
   assert (h->can_write == 1);
   assert (h->can_zero > NBDKIT_ZERO_NONE);
   assert (backend_valid_range (b, conn, offset, count));
@@ -541,6 +557,7 @@ backend_extents (struct backend *b, struct connection *conn,
   struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->handle);
   assert (h->can_extents >= 0);
   assert (backend_valid_range (b, conn, offset, count));
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
@@ -570,6 +587,7 @@ backend_cache (struct backend *b, struct connection *conn,
   struct b_conn_handle *h = &conn->handles[b->i];
   int r;
 
+  assert (h->handle);
   assert (h->can_cache > NBDKIT_CACHE_NONE);
   assert (backend_valid_range (b, conn, offset, count));
   assert (flags == 0);

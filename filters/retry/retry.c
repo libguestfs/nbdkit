@@ -107,6 +107,7 @@ retry_config (nbdkit_next_config *next, void *nxdata,
 struct retry_handle {
   int readonly;                 /* Save original readonly setting. */
   unsigned reopens;
+  bool open;
 };
 
 static void *
@@ -125,6 +126,7 @@ retry_open (nbdkit_next_open *next, void *nxdata, int readonly)
 
   h->readonly = readonly;
   h->reopens = 0;
+  h->open = true;
 
   return h;
 }
@@ -183,7 +185,8 @@ do_retry (struct retry_handle *h,
     /* We could do this but it would overwrite the more important
      * errno from the underlying data call.
      */
-    /* *err = errno; */
+    if (*err == 0)
+      *err = errno;
     return false;
   }
 
@@ -198,8 +201,11 @@ do_retry (struct retry_handle *h,
     /* If the reopen fails we treat it the same way as a command
      * failing.
      */
+    h->open = false;
+    *err = ESHUTDOWN;
     goto again;
   }
+  h->open = true;
 
   /* Retry the data command. */
   return true;
@@ -215,7 +221,7 @@ retry_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  if (! valid_range (next_ops, nxdata, count, offset, false, err))
+  if (! (h->open && valid_range (next_ops, nxdata, count, offset, false, err)))
     r = -1;
   else
     r = next_ops->pread (nxdata, buf, count, offset, flags, err);
@@ -240,7 +246,7 @@ retry_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     *err = EROFS;
     return -1;
   }
-  if (! valid_range (next_ops, nxdata, count, offset, true, err))
+  if (! (h->open && valid_range (next_ops, nxdata, count, offset, true, err)))
     r = -1;
   else if (next_ops->can_write (nxdata) != 1) {
     *err = EROFS;
@@ -274,7 +280,7 @@ retry_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
     *err = EROFS;
     return -1;
   }
-  if (! valid_range (next_ops, nxdata, count, offset, true, err))
+  if (! (h->open && valid_range (next_ops, nxdata, count, offset, true, err)))
     r = -1;
   else if (next_ops->can_trim (nxdata) != 1) {
     *err = EROFS;
@@ -303,7 +309,9 @@ retry_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  if (next_ops->can_flush (nxdata) != 1) {
+  if (! h->open)
+    r = -1;
+  else if (next_ops->can_flush (nxdata) != 1) {
     *err = EIO;
     r = -1;
   }
@@ -331,11 +339,11 @@ retry_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
   }
   if (flags & NBDKIT_FLAG_FAST_ZERO &&
-      next_ops->can_fast_zero (nxdata) != 1) {
+      (! h->open || next_ops->can_fast_zero (nxdata) != 1)) {
     *err = EOPNOTSUPP;
     return -1;
   }
-  if (! valid_range (next_ops, nxdata, count, offset, true, err))
+  if (! (h->open && valid_range (next_ops, nxdata, count, offset, true, err)))
     r = -1;
   else if (next_ops->can_zero (nxdata) <= NBDKIT_ZERO_NONE) {
     *err = EROFS;
@@ -367,7 +375,7 @@ retry_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   size_t i;
 
  again:
-  if (! valid_range (next_ops, nxdata, count, offset, false, err))
+  if (! (h->open && valid_range (next_ops, nxdata, count, offset, false, err)))
     r = -1;
   else if (next_ops->can_extents (nxdata) != 1) {
     *err = EIO;
@@ -412,7 +420,7 @@ retry_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  if (! valid_range (next_ops, nxdata, count, offset, false, err))
+  if (! h->open && (valid_range (next_ops, nxdata, count, offset, false, err)))
     r = -1;
   else if (next_ops->can_cache (nxdata) <= NBDKIT_CACHE_NONE) {
     *err = EIO;
