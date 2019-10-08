@@ -48,13 +48,31 @@ loaded, just like ordinary Python.
 
 =head2 Python versions
 
-Python 2 end of life is 2020-01-01 and nbdkit >= 1.16 no longer
-supports it.  If you want to use Python 2, you will need to use nbdkit
-version 1.14.  You can set the C<PYTHON> environment variable
-to the desired interpreter, otherwise nbdkit will use interpreter
-called C<python3> or C<python> on the current C<$PATH>.  For example:
+In B<nbdkit E<le> 1.14>, either Python 2 or 3 could be used.  It was
+selected at compile time by either:
 
- PYTHON=/opt/local/bin/python3 ./configure
+ ./configure
+
+which selected the version of Python by looking at the C<python>
+interpreter found on the C<$PATH>.  Or:
+
+ ./configure PYTHON=/usr/bin/python3
+
+which allowed you to select a different interpreter and hence a
+different version of Python.
+
+B<nbdkit E<ge> 1.16> drops all support for Python 2, since Python 2
+has reached its end of life.
+
+The new behaviour is that C<./configure> looks for C<python3> or
+C<python> (in that order) on the C<$PATH>.  It will fail if the first
+interpreter it finds is a Python 2 interpreter.  You may also still
+choose a Python interpreter by setting the C<PYTHON> variable at
+configure time as above.
+
+If you wish to continue using nbdkit plugins written in Python 2 then
+you must use nbdkit E<le> 1.14, but we would advise you to update your
+plugins.
 
 To find out which version the Python plugin was compiled for, use the
 I<--dump-plugin> option, eg:
