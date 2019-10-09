@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -58,27 +58,14 @@ int vddk_debug_diskinfo;
 /* Enable debugging of extents code with: -D vddk.extents=1 */
 int vddk_debug_extents;
 
-/* The VDDK APIs that we call.  These globals are initialized when the
- * plugin is loaded (by vddk_load).
+/* For each VDDK API define a static global variable.  These globals
+ * are initialized when the plugin is loaded (by vddk_load).
  */
-static char *(*VixDiskLib_GetErrorText) (VixError err, const char *unused);
-static void (*VixDiskLib_FreeErrorText) (char *text);
-static VixError (*VixDiskLib_InitEx) (uint32_t major, uint32_t minor, VixDiskLibGenericLogFunc *log_function, VixDiskLibGenericLogFunc *warn_function, VixDiskLibGenericLogFunc *panic_function, const char *lib_dir, const char *config_file);
-static void (*VixDiskLib_Exit) (void);
-static VixDiskLibConnectParams *(*VixDiskLib_AllocateConnectParams) (void);
-static void (*VixDiskLib_FreeConnectParams) (VixDiskLibConnectParams *params);
-static VixError (*VixDiskLib_ConnectEx) (const VixDiskLibConnectParams *params, char read_only, const char *snapshot_ref, const char *transport_modes, VixDiskLibConnection *connection);
-static VixError (*VixDiskLib_Open) (const VixDiskLibConnection connection, const char *path, uint32_t flags, VixDiskLibHandle *handle);
-static const char *(*VixDiskLib_GetTransportMode) (VixDiskLibHandle handle);
-static VixError (*VixDiskLib_Close) (VixDiskLibHandle handle);
-static VixError (*VixDiskLib_Disconnect) (VixDiskLibConnection connection);
-static VixError (*VixDiskLib_GetInfo) (VixDiskLibHandle handle, VixDiskLibInfo **info);
-static void (*VixDiskLib_FreeInfo) (VixDiskLibInfo *info);
-static VixError (*VixDiskLib_Read) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, unsigned char *buf);
-static VixError (*VixDiskLib_Write) (VixDiskLibHandle handle, uint64_t start_sector, uint64_t nr_sectors, const unsigned char *buf);
-static VixError (*VixDiskLib_Flush) (VixDiskLibHandle handle);
-static VixError (*VixDiskLib_QueryAllocatedBlocks) (VixDiskLibHandle diskHandle, uint64_t start_sector, uint64_t nr_sectors, uint64_t chunk_size, VixDiskLibBlockList **block_list);
-static VixError (*VixDiskLib_FreeBlockList) (VixDiskLibBlockList *block_list);
+#define STUB(fn,ret,args) static ret (*fn) args
+#define OPTIONAL_STUB(fn,ret,args) static ret (*fn) args
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
 
 /* Parameters passed to InitEx. */
 #define VDDK_MAJOR 5
@@ -188,44 +175,20 @@ vddk_load (void)
     exit (EXIT_FAILURE);
   }
 
-  /* Non-optional symbols.  I have checked that all these exist in at
-   * least VDDK 5.1.1 (2011) which is the earliest version of VDDK
-   * that we support.
-   */
-#define LOAD(sym)                                                 \
+  /* Load symbols. */
+#define STUB(fn,ret,args)                                         \
   do {                                                            \
-    sym = dlsym (dl, #sym);                                       \
-    if (sym == NULL) {                                            \
+    fn = dlsym (dl, #fn);                                         \
+    if (fn == NULL) {                                             \
       nbdkit_error ("required VDDK symbol \"%s\" is missing: %s", \
-                    #sym, dlerror ());                            \
+                    #fn, dlerror ());                             \
       exit (EXIT_FAILURE);                                        \
     }                                                             \
   } while (0)
-  LOAD (VixDiskLib_GetErrorText);
-  LOAD (VixDiskLib_FreeErrorText);
-  LOAD (VixDiskLib_InitEx);
-  LOAD (VixDiskLib_Exit);
-  LOAD (VixDiskLib_ConnectEx);
-  LOAD (VixDiskLib_Open);
-  LOAD (VixDiskLib_GetTransportMode);
-  LOAD (VixDiskLib_Close);
-  LOAD (VixDiskLib_Disconnect);
-  LOAD (VixDiskLib_GetInfo);
-  LOAD (VixDiskLib_FreeInfo);
-  LOAD (VixDiskLib_Read);
-  LOAD (VixDiskLib_Write);
-  LOAD (VixDiskLib_FreeConnectParams);
-#undef LOAD
-
-#define LOAD_OPTIONAL(sym) sym = dlsym (dl, #sym)
-  /* Added in VDDK 6.0, this will be NULL in earlier versions. */
-  LOAD_OPTIONAL (VixDiskLib_Flush);
-
-  /* Added in VDDK 6.7, these will be NULL for earlier versions: */
-  LOAD_OPTIONAL (VixDiskLib_QueryAllocatedBlocks);
-  LOAD_OPTIONAL (VixDiskLib_FreeBlockList);
-  LOAD_OPTIONAL (VixDiskLib_AllocateConnectParams);
-#undef LOAD_OPTIONAL
+#define OPTIONAL_STUB(fn,ret,args) fn = dlsym (dl, #fn)
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
 }
 
 static void

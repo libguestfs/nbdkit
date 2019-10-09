@@ -59,16 +59,10 @@ VixDiskLib_Exit (void)
   /* Do nothing. */
 }
 
-#define STUB(fn) void fn (void) { abort (); }
-STUB (VixDiskLib_GetErrorText)
-STUB (VixDiskLib_FreeErrorText)
-STUB (VixDiskLib_ConnectEx)
-STUB (VixDiskLib_Open)
-STUB (VixDiskLib_GetTransportMode)
-STUB (VixDiskLib_Close)
-STUB (VixDiskLib_Disconnect)
-STUB (VixDiskLib_GetInfo)
-STUB (VixDiskLib_FreeInfo)
-STUB (VixDiskLib_Read)
-STUB (VixDiskLib_Write)
-STUB (VixDiskLib_FreeConnectParams)
+#define NO_INITEX_STUB
+#define NO_EXIT_STUB
+#define STUB(fn,ret,args) void fn (void) { abort (); }
+#define OPTIONAL_STUB(fn,ret,args)
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
