@@ -556,11 +556,11 @@ vddk_close (void *handle)
 {
   struct vddk_handle *h = handle;
 
-  free_connect_params (h->params);
   DEBUG_CALL ("VixDiskLib_Close", "handle");
   VixDiskLib_Close (h->handle);
   DEBUG_CALL ("VixDiskLib_Disconnect", "connection");
   VixDiskLib_Disconnect (h->connection);
+  free_connect_params (h->params);
   free (h);
 }
 
