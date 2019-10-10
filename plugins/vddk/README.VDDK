@@ -25,3 +25,8 @@ Bugs
 
 Write calls sometimes return VIX_E_DISK_OUTOFRANGE even for write
 requests which are well inside the disk.
+
+The way we do threading in nbdkit is not congruent with the way you're
+supposed to call VDDK from multithreaded programs.  For more
+information see:
+https://www.redhat.com/archives/libguestfs/2019-October/msg00062.html
