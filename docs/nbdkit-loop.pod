@@ -135,6 +135,7 @@ L<nbdkit-plugin(3)>,
 L<loop(4)>,
 L<losetup(8)>,
 L<mount(8)>,
+L<nbdfuse(1)>,
 L<nbd-client(8)>,
 L<modprobe(8)>,
 L<libguestfs(3)>, L<http://libguestfs.org>.
