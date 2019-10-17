@@ -1120,6 +1120,10 @@ or from a file:
 
  nbdkit myplugin password=+/tmp/secret
 
+or from a file descriptor inherited by nbdkit:
+
+ nbdkit myplugin password=-99
+
 (If the password begins with a C<-> or C<+> character then it must be
 passed in a file).
 

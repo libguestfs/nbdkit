@@ -6,7 +6,8 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
 
  nbdkit vddk file=FILENAME [config=FILENAME] [libdir=LIBRARY]
              [vm=moref=ID] [server=HOSTNAME] [user=USERNAME]
-             [password=PASSWORD | password=- | password=+FILENAME]
+             [password=PASSWORD | password=- | password=+FILENAME |
+              password=-FD]
              [cookie=COOKIE] [thumbprint=THUMBPRINT]
              [port=PORT] [nfchostport=PORT] [single-link=true]
              [snapshot=MOREF] [transports=MODE:MODE:...]
@@ -140,9 +141,15 @@ Ask for the password (interactively) when nbdkit starts up.
 
 =item B<password=+>FILENAME
 
-Read the password from the named file.  This is the most secure method
+Read the password from the named file.  This is a secure method
 to supply a password, as long as you set the permissions on the file
 appropriately.
+
+=item B<password=->FD
+
+Read the password from file descriptor number C<FD>, inherited from
+the parent process when nbdkit starts up.  This is also a secure
+method to supply a password.
 
 =item B<port=>PORT
 

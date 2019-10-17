@@ -335,6 +335,8 @@ test_nbdkit_read_password (void)
 {
   bool pass = true;
   char template[] = "+/tmp/nbdkit_testpw_XXXXXX";
+  char template2[] = "/tmp/nbdkit_testpw2_XXXXXX";
+  char fdbuf[16];
   char *pw = template;
   int fd;
 
@@ -389,6 +391,35 @@ test_nbdkit_read_password (void)
   if (fd >= 0) {
     close (fd);
     unlink (&template[1]);
+  }
+
+  /* Test reading password from file descriptor. */
+  fd = mkstemp (template2);
+  if (fd < 0) {
+    perror ("mkstemp");
+    pass = false;
+  }
+  else if (write (fd, "abc\n", 4) != 4) {
+    fprintf (stderr, "Failed to write to file %s\n", template2);
+    pass = false;
+  }
+  else {
+    snprintf (fdbuf, sizeof fdbuf, "-%d", fd);
+    lseek (fd, 0, 0);
+    if (nbdkit_read_password (fdbuf, &pw) == -1) {
+      fprintf (stderr, "Failed to read password from fd %s\n", fdbuf);
+      pass = false;
+    }
+    else if (strcmp (pw, "abc") != 0) {
+      fprintf (stderr, "Wrong file password, expected 'abc' got '%s'\n", pw);
+      pass = false;
+    }
+    free (pw);
+  }
+
+  if (fd >= 0) {
+    /* Don't close fd, it is closed by nbdkit_read_password. */
+    unlink (template2);
   }
 
   if (error_flagged) {

@@ -70,9 +70,15 @@ Ask for the password (interactively) when nbdkit starts up.
 
 =item B<password=+>FILENAME
 
-Read the password from the named file.  This is the most secure method
+Read the password from the named file.  This is a secure method
 to supply a password, as long as you set the permissions on the file
 appropriately.
+
+=item B<password=->FD
+
+Read the password from file descriptor number C<FD>, inherited from
+the parent process when nbdkit starts up.  This is also a secure
+method to supply a password.
 
 =item B<protocols=>PROTO,PROTO,...
 
@@ -99,6 +105,8 @@ The default is to allow any protocol.
 =item B<proxy-password=->
 
 =item B<proxy-password=+>FILENAME
+
+=item B<proxy-password=->FD
 
 =item B<proxy-user=>USERNAME
 

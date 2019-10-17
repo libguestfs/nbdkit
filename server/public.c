@@ -405,6 +405,8 @@ nbdkit_parse_bool (const char *str)
 }
 
 /* Read a password from configuration value. */
+static int read_password_from_fd (const char *what, int fd, char **password);
+
 int
 nbdkit_read_password (const char *value, char **password)
 {
@@ -412,7 +414,6 @@ nbdkit_read_password (const char *value, char **password)
   struct termios orig, temp;
   ssize_t r;
   size_t n;
-  FILE *fp;
 
   *password = NULL;
 
@@ -448,6 +449,16 @@ nbdkit_read_password (const char *value, char **password)
       (*password)[r-1] = '\0';
   }
 
+  /* Read from numbered file descriptor. */
+  else if (value[0] == '-') {
+    int fd;
+
+    if (nbdkit_parse_int ("password file descriptor", &value[1], &fd) == -1)
+      return -1;
+    if (read_password_from_fd (&value[1], fd, password) == -1)
+      return -1;
+  }
+
   /* Read password from a file. */
   else if (value[0] == '+') {
     int fd;
@@ -457,22 +468,8 @@ nbdkit_read_password (const char *value, char **password)
       nbdkit_error ("open %s: %m", &value[1]);
       return -1;
     }
-    fp = fdopen (fd, "r");
-    if (fp == NULL) {
-      nbdkit_error ("fdopen %s: %m", &value[1]);
-      close (fd);
+    if (read_password_from_fd (&value[1], fd, password) == -1)
       return -1;
-    }
-    r = getline (password, &n, fp);
-    err = errno;
-    fclose (fp);
-    if (r == -1) {
-      errno = err;
-      nbdkit_error ("could not read password from file %s: %m", &value[1]);
-      return -1;
-    }
-    if (*password && r > 0 && (*password)[r-1] == '\n')
-      (*password)[r-1] = '\0';
   }
 
   /* Parameter is the password. */
@@ -483,6 +480,35 @@ nbdkit_read_password (const char *value, char **password)
       return -1;
     }
   }
+
+  return 0;
+}
+
+static int
+read_password_from_fd (const char *what, int fd, char **password)
+{
+  FILE *fp;
+  size_t n;
+  ssize_t r;
+  int err;
+
+  fp = fdopen (fd, "r");
+  if (fp == NULL) {
+    nbdkit_error ("fdopen %s: %m", what);
+    close (fd);
+    return -1;
+  }
+  r = getline (password, &n, fp);
+  err = errno;
+  fclose (fp);
+  if (r == -1) {
+    errno = err;
+    nbdkit_error ("could not read password from %s: %m", what);
+    return -1;
+  }
+
+  if (*password && r > 0 && (*password)[r-1] == '\n')
+    (*password)[r-1] = '\0';
 
   return 0;
 }
