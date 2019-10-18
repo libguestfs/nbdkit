@@ -444,6 +444,11 @@ into the background (but not required).
 
 Print the version number of nbdkit and exit.
 
+=item B<--vsock>
+
+Use the AF_VSOCK protocol (instead of TCP/IP).  You must use this in
+conjunction with I<-p>/I<--port>.  See L<nbdkit-service(1)/AF_VSOCK>.
+
 =back
 
 =head1 PLUGIN NAME

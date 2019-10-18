@@ -454,6 +454,8 @@ extern int *bind_unix_socket (size_t *)
   __attribute__((__nonnull__ (1)));
 extern int *bind_tcpip_socket (size_t *)
   __attribute__((__nonnull__ (1)));
+extern int *bind_vsock (size_t *)
+  __attribute__((__nonnull__ (1)));
 extern void accept_incoming_connections (int *socks, size_t nr_socks)
   __attribute__((__nonnull__ (1)));
 extern void free_listening_sockets (int *socks, size_t nr_socks)

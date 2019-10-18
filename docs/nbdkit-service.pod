@@ -82,6 +82,50 @@ Using I<--log=syslog> forces all messages to go to the system log.
 Debug messages (I<-v>/I<--verbose>) always go to standard error and
 are never sent to the system log.
 
+=head1 AF_VSOCK
+
+On Linux nbdkit supports the C<AF_VSOCK> address family / protocol.
+This allows you to serve NBD devices into virtual machines without
+using a regular network connection.
+
+B<Note> that this is different from the usual case where you present
+NBD as a virtual block device to a guest (which the guest sees as
+something like a SATA or virtio-scsi disk).  With C<AF_VSOCK> the
+virtual machine sees a raw NBD socket which it can connect to by
+opening an C<AF_VSOCK> connection.  Only libnbd supports C<AF_VSOCK>
+NBD client connections at the time of writing (2019).  For more about
+this protocol, see L<https://wiki.qemu.org/Features/VirtioVsock>
+
+=head2 AF_VSOCK example
+
+To set up an C<AF_VSOCK> server, use for example:
+
+ nbdkit --vsock [--port PORT] memory 1G
+
+The optional I<-p>/I<--port> argument is used to change the
+C<AF_VSOCK> port number.  These port numbers exist in a different
+namespace from TCP/IP port numbers.  Also unlike TCP, the port numbers
+are 32 bit.  The default port is 10809.
+
+The guest that wishes to access nbdkit must be configured for
+virtio-vsock.  On the qemu command line use:
+
+ qemu ... -device vhost-vsock-pci,id=vhost-vsock-pci0
+
+For libvirt add this element to the C<<< <devices> >>> section:
+
+ <vsock/>
+
+If you see the error C<unable to open vhost-vsock device> then you may
+have to unload the VMCI transport on the host:
+
+ modprobe -r vmw_vsock_vmci_transport
+
+Once nbdkit and the guest are running, from inside the guest you can
+connect to nbdkit on the host using libnbd:
+
+ nbdsh -c 'h.connect_vsock(2, 10809)' -c 'print(h.get_size())'
+
 =head1 ENVIRONMENT VARIABLES
 
 =over 4
@@ -102,7 +146,8 @@ L<systemd(1)>,
 L<systemd.socket(5)>,
 L<syslog(3)>,
 L<rsyslogd(8)>,
-L<journalctl(1)>.
+L<journalctl(1)>,
+L<nbdsh(1)>.
 
 =head1 AUTHORS
 

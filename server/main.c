@@ -45,6 +45,11 @@
 #include <syslog.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
+
+#ifdef HAVE_LINUX_VM_SOCKETS_H
+#include <linux/vm_sockets.h>
+#endif
 
 #include <pthread.h>
 
@@ -85,6 +90,7 @@ bool tls_verify_peer;           /* --tls-verify-peer */
 char *unixsocket;               /* -U */
 const char *user, *group;       /* -u & -g */
 bool verbose;                   /* -v */
+bool vsock;                     /* --vsock */
 unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
 
 /* The currently loaded plugin. */
@@ -328,6 +334,16 @@ main (int argc, char *argv[])
     case TLS_VERIFY_PEER_OPTION:
       tls_verify_peer = true;
       break;
+
+    case VSOCK_OPTION:
+#ifdef AF_VSOCK
+      vsock = true;
+      break;
+#else
+      fprintf (stderr, "%s: AF_VSOCK is not supported on this platform\n",
+               program_name);
+      exit (EXIT_FAILURE);
+#endif
 
     case 'e':
       exportname = optarg;
@@ -826,15 +842,22 @@ start_serving (void)
   size_t nr_socks;
   size_t i;
 
-  /* If the user has mixed up -p/-U/-s options, then give an error.
+  /* If the user has mixed up -p/--run/-s/-U/--vsock options, then
+   * give an error.
    *
    * XXX Actually the server could easily be extended to handle both
    * TCP/IP and Unix sockets, or even multiple TCP/IP ports.
    */
-  if ((port && unixsocket) || (port && listen_stdin) ||
-      (unixsocket && listen_stdin) || (listen_stdin && run)) {
+  if ((port && unixsocket) ||
+      (port && listen_stdin) ||
+      (unixsocket && listen_stdin) ||
+      (listen_stdin && run) ||
+      (vsock && unixsocket) ||
+      (vsock && listen_stdin) ||
+      (vsock && run)) {
     fprintf (stderr,
-             "%s: -p, -U and -s options cannot appear at the same time\n",
+             "%s: -p, --run, -s, -U or --vsock options cannot be used"
+             "in this combination\n",
              program_name);
     exit (EXIT_FAILURE);
   }
@@ -873,9 +896,13 @@ start_serving (void)
     return;
   }
 
-  /* Handling multiple connections on TCP/IP or a Unix domain socket. */
+  /* Handling multiple connections on TCP/IP, Unix domain socket or
+   * AF_VSOCK.
+   */
   if (unixsocket)
     socks = bind_unix_socket (&nr_socks);
+  else if (vsock)
+    socks = bind_vsock (&nr_socks);
   else
     socks = bind_tcpip_socket (&nr_socks);
 

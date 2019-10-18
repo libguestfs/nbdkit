@@ -55,6 +55,7 @@ enum {
   TLS_CERTIFICATES_OPTION,
   TLS_PSK_OPTION,
   TLS_VERIFY_PEER_OPTION,
+  VSOCK_OPTION,
 };
 
 static const char *short_options = "D:e:fg:i:nop:P:rst:u:U:vV";
@@ -100,6 +101,7 @@ static const struct option long_options[] = {
   { "user",             required_argument, NULL, 'u' },
   { "verbose",          no_argument,       NULL, 'v' },
   { "version",          no_argument,       NULL, 'V' },
+  { "vsock",            no_argument,       NULL, VSOCK_OPTION },
   { NULL },
 };
 

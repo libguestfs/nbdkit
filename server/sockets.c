@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
 #include <poll.h>
@@ -46,6 +47,10 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
+
+#ifdef HAVE_LINUX_VM_SOCKETS_H
+#include <linux/vm_sockets.h>
+#endif
 
 #ifdef HAVE_LIBSELINUX
 #include <selinux/selinux.h>
@@ -245,6 +250,76 @@ bind_tcpip_socket (size_t *nr_socks)
          ipaddr ? ipaddr : "<any>", port, *nr_socks);
 
   return socks;
+}
+
+int *
+bind_vsock (size_t *nr_socks)
+{
+#ifdef AF_VSOCK
+  uint32_t vsock_port;
+  int sock;
+  int *ret;
+  struct sockaddr_vm addr;
+
+  if (port == NULL)
+    vsock_port = 10809;
+  else {
+    /* --port parameter must be numeric for vsock, unless
+     * /etc/services is extended but that seems unlikely. XXX
+     */
+    if (nbdkit_parse_uint32_t ("port", port, &vsock_port) == -1)
+      exit (EXIT_FAILURE);
+  }
+
+  /* Any platform with AF_VSOCK also supports SOCK_CLOEXEC so there is
+   * no fallback path.
+   */
+  sock = socket (AF_VSOCK, SOCK_STREAM|SOCK_CLOEXEC, 0);
+  if (sock == -1) {
+    perror ("bind_vsock: socket");
+    exit (EXIT_FAILURE);
+  }
+
+  memset (&addr, 0, sizeof addr);
+  addr.svm_family = AF_VSOCK;
+  addr.svm_cid = VMADDR_CID_ANY;
+  addr.svm_port = vsock_port;
+
+  if (bind (sock, (struct sockaddr *) &addr, sizeof addr) == -1) {
+    perror (unixsocket);
+    exit (EXIT_FAILURE);
+  }
+
+  if (listen (sock, SOMAXCONN) == -1) {
+    perror ("listen");
+    exit (EXIT_FAILURE);
+  }
+
+  ret = malloc (sizeof (int));
+  if (!ret) {
+    perror ("malloc");
+    exit (EXIT_FAILURE);
+  }
+  ret[0] = sock;
+  *nr_socks = 1;
+
+  /* It's not easy to get the actual CID here.
+   * IOCTL_VM_SOCKETS_GET_LOCAL_CID is documented, but requires
+   * opening /dev/vsock which is not accessible to non-root users.
+   * bind above doesn't update the sockaddr.  Using getsockname
+   * doesn't work.
+   */
+  debug ("bound to vsock any:%" PRIu32, addr.svm_port);
+
+  return ret;
+
+#else
+  /* Can't happen because main() checks if AF_VSOCK is defined and
+   * prevents vsock from being set, so this function can never be
+   * called.
+   */
+  abort ();
+#endif
 }
 
 void

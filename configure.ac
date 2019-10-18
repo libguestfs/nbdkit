@@ -203,6 +203,8 @@ AC_CHECK_HEADERS([\
 	sys/prctl.h \
 	sys/procctl.h])
 
+AC_CHECK_HEADERS([linux/vm_sockets.h], [], [], [#include <sys/socket.h>])
+
 dnl Check for functions in libc, all optional.
 AC_CHECK_FUNCS([\
 	accept4 \
