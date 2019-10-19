@@ -44,7 +44,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 nbdkit -U $sock example1 --run '
-    sleep 1; echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
+    echo nbd=$nbd; echo port=$port; echo socket=$unixsocket
   ' > captive.out
 
 # Check the output.
