@@ -90,12 +90,12 @@ start_nbdkit ()
 
     # Wait for the pidfile to appear.
     for i in {1..60}; do
-        if test -f "$pidfile"; then
+        if test -s "$pidfile"; then
             break
         fi
         sleep 1
     done
-    if ! test -f "$pidfile"; then
+    if ! test -s "$pidfile"; then
         echo "$0: start_nbdkit: PID file $pidfile was not created"
         exit 1
     fi
