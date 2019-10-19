@@ -86,31 +86,8 @@ static pid_t pid = 0;
 static void
 cleanup (void)
 {
-  int status;
-
-  if (pid > 0) {
+  if (pid > 0)
     kill (pid, SIGTERM);
-
-    /* Check the status of nbdkit is normal on exit. */
-    if (waitpid (pid, &status, 0) == -1) {
-      perror ("waitpid");
-      _exit (EXIT_FAILURE);
-    }
-    if (WIFEXITED (status) && WEXITSTATUS (status) != 0) {
-      _exit (WEXITSTATUS (status));
-    }
-    if (WIFSIGNALED (status)) {
-      /* Note that nbdkit is supposed to catch the signal we send and
-       * exit cleanly, so the following shouldn't happen.
-       */
-      fprintf (stderr, "nbdkit terminated by signal %d\n", WTERMSIG (status));
-      _exit (EXIT_FAILURE);
-    }
-    if (WIFSTOPPED (status)) {
-      fprintf (stderr, "nbdkit stopped by signal %d\n", WSTOPSIG (status));
-      _exit (EXIT_FAILURE);
-    }
-  }
 
   unlink (pidpath);
   unlink (sockpath);
