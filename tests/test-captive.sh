@@ -72,10 +72,13 @@ fi
 # Check that nbdkit death from unhandled signal affects exit status
 status=0
 nbdkit -U - -P captive.pid example1 --run '
-test ! -s captive.pid || sleep 5
-if test ! -s captive.pid; then
-  echo "no pidfile yet"
-  exit 10
+for i in {1..60}; do
+    if test -s captive.pid; then break; fi
+    sleep 1
+done
+if ! test -s captive.pid; then
+    echo "$0: no pidfile yet"
+    exit 10
 fi
 kill -s ABRT $(cat captive.pid) || exit 10
 sleep 5
