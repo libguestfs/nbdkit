@@ -267,6 +267,9 @@ Use level 2 to diagnose SSH protocol or server problems.  Levels 3 and
 4 are extremely verbose and probably only useful if you are debugging
 libssh itself.
 
+If diagnosing SSH problems it is also useful to look at server-side
+logs, eg. F</var/log/secure> or C<journalctl -u sshd>
+
 =head1 FILES
 
 =over 4
