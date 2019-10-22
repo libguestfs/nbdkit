@@ -4,14 +4,14 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
 
 =head1 SYNOPSIS
 
- nbdkit vddk file=FILENAME [config=FILENAME] [libdir=LIBRARY]
-             [vm=moref=ID] [server=HOSTNAME] [user=USERNAME]
-             [password=PASSWORD | password=- | password=+FILENAME |
-              password=-FD]
-             [cookie=COOKIE] [thumbprint=THUMBPRINT]
-             [port=PORT] [nfchostport=PORT] [single-link=true]
-             [snapshot=MOREF] [transports=MODE:MODE:...]
-             [unbuffered=true]
+ nbdkit vddk file=FILENAME
+             [config=FILENAME] [cookie=COOKIE] [libdir=LIBRARY]
+             [nfchostport=PORT] [single-link=true]
+             [password=PASSWORD | password=- | password=+FILENAME
+             | password=-FD]
+             [port=PORT] [server=HOSTNAME] [snapshot=MOREF]
+             [thumbprint=THUMBPRINT] [transports=MODE:MODE:...]
+             [unbuffered=true] [user=USERNAME] [vm=moref=ID]
  nbdkit vddk --dump-plugin
 
 =head1 DESCRIPTION
@@ -24,33 +24,66 @@ you must download yourself separately.
 The plugin can serve read-only (if the I<-r> option is used) or
 read/write.
 
-=head1 LIBRARY AND CONFIG FILE LOCATIONS
+=head1 EXAMPLES
 
-If the VDDK library (F<libvixDiskLib.so.I<N>>) is located on a
-non-standard path, you may need to set C<LD_LIBRARY_PATH> or modify
-F</etc/ld.so.conf> before this plugin will work.  In addition you may
-want to set the C<libdir> parameter so that the VDDK library can load
-plugins like Advanced Transport.
+=head2 Open a local VMDK file
 
-For 64 bit platforms pass the F<lib64> subdirectory:
+ nbdkit vddk file=/absolute/path/to/file.vmdk
 
- export LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib64
+Note that when opening local files the C<file=> parameter B<must> be
+an absolute path.
 
-For 32 bit platforms pass the F<lib32> subdirectory:
+Because VDDK needs to take a lock on this file, the file must be on a
+writable filesystem (unless you use the I<-r> option).
 
- export LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib32
+=head2 Open a file on a remote VMware ESXi hypervisor
 
-Then pass the VDDK distribution directory as C<libdir> along with
-other parameters as required:
+Connect directly to a VMware ESXi hypervisor and export a particular
+file:
 
- nbdkit vddk \
-     libdir=/path/to/vmware-vix-disklib-distrib \
-     file=file.vmdk
+ nbdkit vddk user=root password=+/tmp/rootpw \
+             server=esxi.example.com thumbprint=xx:xx:xx:... \
+             vm=moref=2 \
+             file="[datastore1] Fedora/Fedora.vmdk"
 
-VDDK itself looks in a few default locations for the optional
-configuration file, usually including F</etc/vmware/config> and
-F<$HOME/.vmware/config>, but you can override this using the C<config>
-parameter.
+C<user> and C<password> must be specified.  Use C<password=+FILENAME>
+to provide the password securely in a file.
+
+C<server> is the hostname of the ESXi server.
+
+C<thumbprint> is the thumb print for validating the SSL certificate.
+How to find the thumb print of a server is described in
+L</THUMBPRINTS> below.
+
+C<vm> is the Managed Object Reference ("moref") of the virtual
+machine.  See L</MANAGED OBJECT REFERENCE> below.
+
+C<file> is the file you want to open, usually in the form
+S<C<"[datastore] vmname/vmname.vmdk">>.  See L</FILE PARAMETER> below.
+
+=head2 Open a file on a remote VMware vCenter server
+
+Connect via VMware vCenter and export a particular file:
+
+ nbdkit vddk user=root password=vmware \
+             server=vcenter.example.com thumbprint=xx:xx:xx:... \
+             vm=moref=vm-16 \
+             file="[datastore1] Fedora/Fedora.vmdk"
+
+C<user> and C<password> must be specified.  Use C<password=+FILENAME>
+to provide the password securely in a file.
+
+C<server> is the hostname of the vCenter server.
+
+C<thumbprint> is the thumb print for validating the SSL certificate.
+How to find the thumb print of a server is described in
+L</THUMBPRINTS> below.
+
+C<vm> is the Managed Object Reference ("moref") of the virtual
+machine.  See L</MANAGED OBJECT REFERENCE> below.
+
+C<file> is the file you want to open, usually in the form
+S<C<"[datastore] vmname/vmname.vmdk">>.  See L</FILE PARAMETER> below.
 
 =head1 PARAMETERS
 
@@ -62,6 +95,8 @@ All parameters are optional except:
 
 is required for opening a local VMDK file.
 
+=item C<file>
+
 =item C<server>
 
 =item C<thumbprint>
@@ -72,14 +107,10 @@ is required for opening a local VMDK file.
 
 =item C<vm>
 
-=item C<file>
-
-When making a remote connection you must supply all 6 of these
+When making a remote connection you must supply all of these
 parameters.
 
 =back
-
-See the L</EXAMPLES> section below for local and remote command lines.
 
 =over 4
 
@@ -93,20 +124,12 @@ Cookie from existing authenticated session on the host.
 
 =item B<file=>FILENAME
 
+=item B<file=[>datastoreB<] >vmname/vmnameB<.vmdk>
+
 Set the name of the VMDK file to serve.
 
 For local files you B<must> supply an absolute path.
-
-For remote files this is usually a path on the VMware server with the
-format C<"[datastore] path/to/file.vmdk">.  You can find the path
-using L<virsh(1)>.  For ESXi:
-
- virsh -c 'esx://esxi.example.com?no_verify=1' dumpxml guestname
-
-For vCenter:
-
- virsh -c 'vpx://vcenter.example.com/Datacenter/esxi.example.com?no_verify=1' \
-       dumpxml guestname
+For remote files see L</FILE PARAMETER> section below.
 
 If a VM has multiple disks, nbdkit can only serve one at a time.  To
 serve more than one you must run multiple copies of nbdkit.  (See
@@ -167,6 +190,7 @@ C<VIXDISKLIB_FLAG_OPEN_SINGLE_LINK> flag.
 =item B<snapshot=>MOREF
 
 The Managed Object Reference of the snapshot.
+See L</MANAGED OBJECT REFERENCE> below.
 
 =item B<thumbprint=>THUMBPRINT
 
@@ -196,32 +220,7 @@ The username to connect to the remote server as.
 =item B<vm=moref=>ID
 
 The Managed Object Reference ("moref") of the virtual machine.
-
-For VMware ESXi hypervisors, this is a number (eg. C<vm=moref=2>).
-For VMware VCenter, this is a string beginning with C<"vm-">)
-(eg. C<vm=moref=vm-16>).  Across ESXi and vCenter the numbers are
-different even for the same virtual machine.
-
-If you have libvirt E<ge> 3.7, the moref is available in the
-L<virsh(1)> C<dumpxml> output:
-
- $ virsh -c 'esx://esxi.example.com?no_verify=1' dumpxml guestname
- ...
- <vmware:moref>2</vmware:moref>
- ...
-
-or:
-
- $ virsh -c 'vpx://vcenter.example.com/Datacenter/esxi.example.com?no_verify=1' \
-       dumpxml guestname
- ...
- <vmware:moref>vm-16</vmware:moref>
- ...
-
-An alternative way to find the moref of a VM is using the
-C<moRefFinder.pl> script written by William Lam
-(L<http://www.virtuallyghetto.com/2011/11/vsphere-moref-managed-object-reference.html>
-L<https://blogs.vmware.com/vsphere/2012/02/uniquely-identifying-virtual-machines-in-vsphere-and-vcloud-part-2-technical.html>).
+See L</MANAGED OBJECT REFERENCE> below.
 
 =item B<vimapiver=>APIVER
 
@@ -229,68 +228,48 @@ This parameter is ignored for backwards compatibility.
 
 =back
 
-=head1 EXAMPLES
+=head1 LIBRARY AND CONFIG FILE LOCATIONS
 
-=head2 Open a local VMDK file
+If the VDDK library (F<libvixDiskLib.so.I<N>>) is located on a
+non-standard path, you may need to set C<LD_LIBRARY_PATH> or modify
+F</etc/ld.so.conf> before this plugin will work.  In addition you may
+want to set the C<libdir> parameter so that the VDDK library can load
+plugins like Advanced Transport.
 
- nbdkit vddk file=/absolute/path/to/file.vmdk
+For 64 bit platforms pass the F<lib64> subdirectory:
 
-Note that when opening local files the C<file=> parameter B<must> be
-an absolute path.
+ export LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib64
 
-Because VDDK needs to take a lock on this file, the file must be on a
-writable filesystem (unless you use the I<-r> option).
+For 32 bit platforms pass the F<lib32> subdirectory:
 
-=head2 Open a file on a remote VMware ESXi hypervisor
+ export LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib32
 
-Connect directly to a VMware ESXi hypervisor and export a particular
-file:
+Then pass the VDDK distribution directory as C<libdir> along with
+other parameters as required:
 
- nbdkit vddk user=root password=+/tmp/rootpw \
-             server=esxi.example.com thumbprint=xx:xx:xx:... \
-             vm=moref=2 \
-             file="[datastore1] Fedora/Fedora.vmdk"
+ nbdkit vddk \
+     libdir=/path/to/vmware-vix-disklib-distrib \
+     file=file.vmdk
 
-C<user> and C<password> must be specified.  Use C<password=+FILENAME>
-to provide the password securely in a file.
+VDDK itself looks in a few default locations for the optional
+configuration file, usually including F</etc/vmware/config> and
+F<$HOME/.vmware/config>, but you can override this using the C<config>
+parameter.
 
-C<server> is the hostname of the ESXi server.  C<thumbprint> is the
-thumb print for validating the SSL certificate.  How to find the thumb
-print of a server is described in L</THUMBPRINTS> below.
+=head1 FILE PARAMETER
 
-C<vm> is the Managed Object Reference ("moref") of the virtual
-machine.  To find this using L<virsh(1)> or the C<moRefFinder.pl>
-script, see L</PARAMETERS> above.  Note that it is different from the
-moref used by vCenter, and is just a single number.
+The C<file> parameter can either be a local file, in which case it
+must be the absolute path.  Or it can refer to a remote file on the
+VMware server in the format S<C<"[datastore] vmname/vmname.vmdk">>.
 
-C<file> is the actual file you want to open, usually in the form
-C<"[datastore] vmname/vmname.vmdk">.  You can find this from
-L<virsh(1)> as described in L</PARAMETERS> above.
+For remote files you can find the path using L<virsh(1)>.  For ESXi:
 
-=head2 Open a file on a remote VMware vCenter server
+ virsh -c 'esx://esxi.example.com?no_verify=1' dumpxml guestname
 
-Connect via VMware vCenter and export a particular file:
+For vCenter:
 
- nbdkit vddk user=root password=vmware \
-             server=vcenter.example.com thumbprint=xx:xx:xx:... \
-             vm=moref=vm-16 \
-             file="[datastore1] Fedora/Fedora.vmdk"
-
-C<user> and C<password> must be specified.  Use C<password=+FILENAME>
-to provide the password securely in a file.
-
-C<server> is the hostname of the vCenter server.  C<thumbprint> is the
-thumb print for validating the SSL certificate.  How to find the thumb
-print of a server is described in L</THUMBPRINTS> below.
-
-C<vm> is the Managed Object Reference ("moref") of the virtual
-machine.  To find this using L<virsh(1)> or the C<moRefFinder.pl>
-script, see L</PARAMETERS> above.  Note that it is different from the
-moref used by ESXi, and always begins with the prefix C<"vm-">.
-
-C<file> is the actual file you want to open, usually in the form
-C<"[datastore] vmname/vmname.vmdk">.  You can find this from
-L<virsh(1)> as described in L</PARAMETERS> above.
+ virsh -c 'vpx://vcenter.example.com/Datacenter/esxi.example.com?no_verify=1' \
+       dumpxml guestname
 
 =head1 THUMBPRINTS
 
@@ -327,6 +306,37 @@ such as this:
 
 This gives you the server’s real thumbprint.  Of course this method is
 not secure since it allows a Man-in-the-Middle (MITM) attack.
+
+=head1 MANAGED OBJECT REFERENCE
+
+Some parameters require you to pass in the Managed Object Reference
+("moref") of an object on the VMware server.
+
+For VMware ESXi hypervisors, the C<vm> moref is a number
+(eg. C<vm=moref=2>).  For VMware VCenter it is a string beginning with
+C<"vm-">) (eg. C<vm=moref=vm-16>).  Across ESXi and vCenter the
+numbers are different even for the same virtual machine.
+
+If you have libvirt E<ge> 3.7, the moref is available in the
+L<virsh(1)> C<dumpxml> output:
+
+ $ virsh -c 'esx://esxi.example.com?no_verify=1' dumpxml guestname
+ ...
+ <vmware:moref>2</vmware:moref>
+ ...
+
+or:
+
+ $ virsh -c 'vpx://vcenter.example.com/Datacenter/esxi.example.com?no_verify=1' \
+       dumpxml guestname
+ ...
+ <vmware:moref>vm-16</vmware:moref>
+ ...
+
+An alternative way to find the moref of a VM is using the
+C<moRefFinder.pl> script written by William Lam
+(L<http://www.virtuallyghetto.com/2011/11/vsphere-moref-managed-object-reference.html>
+L<https://blogs.vmware.com/vsphere/2012/02/uniquely-identifying-virtual-machines-in-vsphere-and-vcloud-part-2-technical.html>).
 
 =head1 DUMP-PLUGIN OUTPUT
 
@@ -465,4 +475,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2018 Red Hat Inc.
+Copyright (C) 2013-2019 Red Hat Inc.
