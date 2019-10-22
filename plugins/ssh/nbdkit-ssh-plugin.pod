@@ -5,7 +5,7 @@ nbdkit-ssh-plugin - access disk images over the SSH protocol
 =head1 SYNOPSIS
 
  nbdkit ssh host=HOST [path=]PATH
-            [config=CONFIG_FILE] [identity=FILENAME]
+            [compression=true] [config=CONFIG_FILE] [identity=FILENAME]
             [known-hosts=FILENAME] [password=PASSWORD|-|+FILENAME]
             [port=PORT] [timeout=SECS] [user=USER]
             [verify-remote-host=false]
@@ -40,6 +40,12 @@ username).
 =head1 PARAMETERS
 
 =over 4
+
+=item B<compression=true>
+
+Enable compression.  You should only use this on slow or
+bandwidth-limited connections.  On fast connections it will slow
+things down.
 
 =item B<config=>CONFIG_FILE
 

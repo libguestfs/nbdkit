@@ -61,6 +61,7 @@ static const char *known_hosts = NULL;
 static const char **identity = NULL;
 static size_t nr_identities = 0;
 static uint32_t timeout = 0;
+static bool compression = false;
 
 /* config can be:
  * NULL => parse options from default file
@@ -162,6 +163,12 @@ ssh_config (const char *key, const char *value)
       return -1;
     }
   }
+  else if (strcmp (key, "compression") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    compression = r;
+  }
 
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -194,7 +201,8 @@ ssh_config_complete (void)
   "known-hosts=<FILENAME>     Set location of known_hosts file.\n" \
   "identity=<FILENAME>        Prepend private key (identity) file.\n" \
   "timeout=SECS               Set SSH connection timeout.\n" \
-  "verify-remote-host=false   Ignore known_hosts."
+  "verify-remote-host=false   Ignore known_hosts.\n" \
+  "compression=true           Enable compression."
 
 /* The per-connection handle. */
 struct ssh_handle {
@@ -414,6 +422,15 @@ ssh_open (int readonly)
     if (r != SSH_OK) {
       nbdkit_error ("failed to set timeout in libssh session: %" PRIu32 ": %s",
                     timeout, ssh_get_error (h->session));
+      goto err;
+    }
+  }
+
+  if (compression) {
+    r = ssh_options_set (h->session, SSH_OPTIONS_COMPRESSION, "yes");
+    if (r != SSH_OK) {
+      nbdkit_error ("failed to enable compression in libssh session: %s",
+                    ssh_get_error (h->session));
       goto err;
     }
   }
