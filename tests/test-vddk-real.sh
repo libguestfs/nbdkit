@@ -39,14 +39,11 @@ requires test -d "$vddkdir"
 requires test -f "$vddkdir/lib64/libvixDiskLib.so"
 requires qemu-img --version
 
-# VMware only supports i686 or x86_64 so this is fine:
-case `uname -m` in
-    i?86) lib=lib32 ;;
-    x86_64) lib=lib64 ;;
-    *)
-        echo "$0: unsupported architecture"
-        exit 77
-esac
+# VDDK > 5.1.1 only supports x86_64.
+if [ `uname -m` != "x86_64" ]; then
+    echo "$0: unsupported architecture"
+    exit 77
+fi
 
 files="test-vddk-real.vmdk test-vddk-real.out"
 rm -f $files
@@ -55,7 +52,7 @@ cleanup_fn rm -f $files
 qemu-img create -f vmdk test-vddk-real.vmdk 100M
 
 export old_ld_library_path="$LD_LIBRARY_PATH"
-export LD_LIBRARY_PATH="$vddkdir/$lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$vddkdir/lib64:$LD_LIBRARY_PATH"
 
 nbdkit -f -v -U - \
        --filter=readahead \

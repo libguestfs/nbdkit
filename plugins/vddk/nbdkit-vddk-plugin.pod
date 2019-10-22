@@ -236,17 +236,11 @@ F</etc/ld.so.conf> before this plugin will work.  In addition you may
 want to set the C<libdir> parameter so that the VDDK library can load
 plugins like Advanced Transport.
 
-For 64 bit platforms pass the F<lib64> subdirectory:
+Usually the VDDK distribution directory should be passed as the
+C<libdir> parameter and set C<LD_LIBRARY_PATH> to the F<lib64>
+subdirectory:
 
- export LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib64
-
-For 32 bit platforms pass the F<lib32> subdirectory:
-
- export LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib32
-
-Then pass the VDDK distribution directory as C<libdir> along with
-other parameters as required:
-
+ LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib64 \
  nbdkit vddk \
      libdir=/path/to/vmware-vix-disklib-distrib \
      file=file.vmdk
