@@ -162,12 +162,14 @@ check-valgrind:
 check-root:
 	$(MAKE) check TESTS="test-file-block"
 
+if HAVE_VDDK
 # Run a basic check against a real copy of VDDK.  You must set
 # vddkdir to point to the library location, eg:
 #
 #   make check-vddk vddkdir=vmware-vix-disklib-distrib
 check-vddk:
 	$(MAKE) check TESTS=test-vddk-real.sh
+endif HAVE_VDDK
 
 #----------------------------------------------------------------------
 # Basic server command line and start-up tests.
@@ -713,6 +715,7 @@ test_streaming_SOURCES = test-streaming.c test.h
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
+if HAVE_VDDK
 # VDDK plugin test.
 # This only tests that the plugin can be loaded against a
 # dummy VDDK library, it is not a detailed test.
@@ -737,6 +740,7 @@ libvixDiskLib_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 libvixDiskLib_la_LDFLAGS = \
 	-shared -version-number 6:0:0 -rpath /nowhere \
 	$(NULL)
+endif HAVE_VDDK
 
 # zero plugin test.
 TESTS += test-zero.sh
