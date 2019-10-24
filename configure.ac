@@ -812,7 +812,18 @@ AC_ARG_ENABLE([vddk],
     [AS_HELP_STRING([--disable-vddk],
                     [disable VMware VDDK plugin])],
     [],
-    [enable_vddk=yes])
+    [
+     dnl VDDK is only available on i686 up to 5.1.1, and only x86-64
+     dnl after that.  Don't compile on other platforms.
+     AC_MSG_CHECKING([if the host CPU is compatible with VDDK])
+     AS_IF([test "$host_cpu" = "x86_64" || test "$host_cpu" = "i686"],[
+        AC_MSG_RESULT([yes ($host_cpu)])
+        enable_vddk=yes
+     ],[
+        AC_MSG_RESULT([no ($host_cpu)])
+        enable_vddk=no
+     ])
+    ])
 AM_CONDITIONAL([HAVE_VDDK], [test "x$enable_vddk" = "xyes"])
 
 dnl List of plugins and filters.
