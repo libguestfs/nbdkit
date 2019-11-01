@@ -51,6 +51,7 @@
 
 char tmpdir[] = "/tmp/nbdkitshXXXXXX";
 char *script;
+static char *magic_config_key;
 
 static void
 sh_load (void)
@@ -88,6 +89,7 @@ sh_unload (void)
     system (cmd);
 
   free (script);
+  free (magic_config_key);
 }
 #pragma GCC diagnostic pop
 
@@ -204,10 +206,57 @@ sh_config (const char *key, const char *value)
 
     default: abort ();
     }
+
+    /* Call the magic_config_key method if it exists. */
+    const char *args2[] = { script, "magic_config_key", NULL };
+    CLEANUP_FREE char *s = NULL;
+    size_t slen;
+    switch (call_read (&s, &slen, args2)) {
+    case OK:
+      if (slen > 0 && s[slen-1] == '\n')
+        s[slen-1] = '\0';
+      magic_config_key = strdup (s);
+      if (magic_config_key == NULL) {
+        nbdkit_error ("strdup: %m");
+        return -1;
+      }
+      break;
+
+    case MISSING:
+      break;
+
+    case ERROR:
+      return -1;
+
+    case RET_FALSE:
+      nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                    script, "magic_config_key");
+      errno = EIO;
+      return -1;
+
+    default: abort ();
+    }
   }
   else {
-    const char *args[] = { script, "config", key, value, NULL };
+    /* If the script sets a magic_config_key then it's possible that
+     * we will be called here with key == "script" (which is the
+     * plugin.magic_config_key).  If that happens then swap in the
+     * script magic_config_key as the key.  However if the script
+     * didn't define a magic_config_key then it's an error, emulating
+     * the behaviour of the core server.
+     */
+    if (strcmp (key, "script") == 0) {
+      if (magic_config_key)
+        key = magic_config_key;
+      else {
+        nbdkit_error ("%s: expecting key=value on the command line but got: "
+                      "%s\n",
+                      script, value);
+        return -1;
+      }
+    }
 
+    const char *args[] = { script, "config", key, value, NULL };
     switch (call (args)) {
     case OK:
       return 0;
@@ -968,6 +1017,7 @@ static struct nbdkit_plugin plugin = {
   .config            = sh_config,
   .config_complete   = sh_config_complete,
   .config_help       = sh_config_help,
+  .magic_config_key  = "script",
   .thread_model      = sh_thread_model,
 
   .open              = sh_open,

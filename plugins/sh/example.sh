@@ -12,6 +12,9 @@
 #
 #   nbdkit -f -v sh ./plugins/sh/example.sh file=disk.img
 #
+# The file= prefix is optional: see nbdkit(1) section "Magic
+# parameters" and the magic_config_key setting below.
+#
 # The -f -v arguments are optional.  They cause the server to stay in
 # the foreground and print debugging, which is useful when testing.
 #
@@ -174,6 +177,11 @@ case "$1" in
 
     can_extents)
         # Similar to can_write
+        ;;
+
+    magic_config_key)
+        # See nbdkit(1) section "Magic parameters" for what this does.
+        echo "file"
         ;;
 
     *)
