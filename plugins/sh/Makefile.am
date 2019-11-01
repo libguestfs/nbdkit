@@ -33,6 +33,7 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	nbdkit-sh-plugin.pod \
+	assemble.sh \
 	example.sh \
 	$(NULL)
 
