@@ -6,7 +6,9 @@ General ideas for improvements
 
 * Listen on specific interfaces or protocols (eg. only IPv6).
 
-* Performance - measure and improve it.
+* Performance - measure and improve it.  Chart it over various buffer
+  sizes and threads, as that should make it easier to identify
+  systematic issues.
 
 * Exit on last connection (the default behaviour of qemu-nbd unless
   you use -t).
@@ -101,6 +103,20 @@ General ideas for improvements
   that the NBD clients will eventually read all of the device.  RWMJ
   wrote an implementation of this but it doesn't work well without a
   background thread.
+
+* "nbdkit.so": nbdkit as a loadable shared library.  The aim of nbdkit
+  is to make it reusable from other programs (see nbdkit-captive(1)).
+  If it was a loadable shared library it would be even more reusable.
+  API would allow you to create an nbdkit instance, configure it (same
+  as the current command line), start it serving on a socket, etc.
+  However perhaps the current ability to work well as a subprocess is
+  good enough?  Also allowing multiple instances of nbdkit to be
+  loaded in the same process is probably impossible.
+
+* Examine other fuzzers: oss-fuzz, libfuzzer, fuzzit, and whatever it
+  is that syzkaller uses.
+
+* Analyze code with Coverity.
 
 Suggestions for plugins
 -----------------------
