@@ -52,8 +52,9 @@ L<http://0pointer.de/blog/projects/socket-activation.html>
 
 =head1 LOGGING
 
-Error messages from nbdkit can be sent to either standard error
-(I<--log=stderr>) or to the system log (I<--log=syslog>).
+Error messages from nbdkit can be sent to standard error
+(I<--log=stderr>), or to the system log (I<--log=syslog>), or can be
+discarded completely (I<--log=null>, not recommended for normal use).
 
 The default, if I<--log> is not specified on the command line, is to
 send error messages to stderr, unless nbdkit forks into the background

@@ -59,6 +59,9 @@ nbdkit_verror (const char *fs, va_list args)
   case LOG_TO_STDERR:
     log_stderr_verror (fs, args);
     break;
+  case LOG_TO_NULL:
+    /* nothing */
+    break;
   }
 }
 

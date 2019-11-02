@@ -95,6 +95,7 @@ enum log_to {
                             case log to syslog */
   LOG_TO_STDERR,         /* --log=stderr forced on the command line */
   LOG_TO_SYSLOG,         /* --log=syslog forced on the command line */
+  LOG_TO_NULL,           /* --log=null forced on the command line */
 };
 
 extern struct debug_flag *debug_flags;

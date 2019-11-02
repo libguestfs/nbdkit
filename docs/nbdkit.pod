@@ -250,8 +250,11 @@ interfaces.  See also I<-p>.
 
 =item B<--log=syslog>
 
-Send error messages to either standard error (I<--log=stderr>) or to
-the system log (I<--log=syslog>).
+=item B<--log=null>
+
+Send error messages to standard error (I<--log=stderr>), or to the
+system log (I<--log=syslog>), or discard them completely
+(I<--log=null>, not recommended for normal use).
 
 The default is to send error messages to stderr, unless nbdkit
 forks into the background in which case they are sent to syslog.

@@ -274,8 +274,11 @@ main (int argc, char *argv[])
         log_to = LOG_TO_STDERR;
       else if (strcmp (optarg, "syslog") == 0)
         log_to = LOG_TO_SYSLOG;
+      else if (strcmp (optarg, "null") == 0)
+        log_to = LOG_TO_NULL;
       else {
-        fprintf (stderr, "%s: --log must be \"stderr\" or \"syslog\"\n",
+        fprintf (stderr, "%s: "
+                 "--log must be \"stderr\", \"syslog\" or \"null\"\n",
                  program_name);
         exit (EXIT_FAILURE);
       }
