@@ -216,6 +216,13 @@ ignored.
 
  /path/to/script config_complete
 
+=item C<magic_config_key>
+
+ /path/to/script magic_config_key
+
+If a magic config key is needed, this should echo it to stdout.
+See L<nbdkit(1)/Magic parameters>.
+
 =item C<thread_model>
 
  /path/to/script thread_model
