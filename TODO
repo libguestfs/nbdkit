@@ -113,8 +113,7 @@ General ideas for improvements
   good enough?  Also allowing multiple instances of nbdkit to be
   loaded in the same process is probably impossible.
 
-* Examine other fuzzers: oss-fuzz, libfuzzer, fuzzit, and whatever it
-  is that syzkaller uses.
+* Examine other fuzzers: https://gitlab.com/akihe/radamsa
 
 * Analyze code with Coverity.
 

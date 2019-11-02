@@ -1,5 +1,7 @@
+To report security bugs, see ‘SECURITY’ in the top source directory.
+
 Fuzzing nbdkit using the American Fuzzy Lop (afl) fuzzer
---------------------------------------------------------
+========================================================
 
 We can fuzz nbdkit using the -s (read from stdin) option, and feeding
 in a file of "network" input.  The stdout from nbdkit (ie. data that
@@ -57,8 +59,6 @@ This will create an HTML test coverage report in
 Notes
 -----
 
-To report security bugs, see ‘SECURITY’ in the top source directory.
-
 We only have testcases for the newstyle fixed protocol so far, but if
 people report that they are exposing the oldstyle protocol to the
 internet / untrusted clients then we could extend the testing for
@@ -68,3 +68,40 @@ We have only fuzzed the memory plugin, which is convenient because it
 stores everything in memory and throws it away when nbdkit exits.
 Since plugins can have bugs as well as the core server, it may be
 productive to test other plugins and filters.
+
+Fuzzing nbdkit using Clang + libFuzzer
+======================================
+
+Recompile nbdkit with libFuzzer enabled and build the libFuzzer test
+binary:
+
+  ./configure \
+      CC=clang \
+      CFLAGS="-g -O1 -fPIC" \
+      --enable-libfuzzer \
+      --disable-perl
+  make clean
+  make CFLAGS="-g -O1 -fPIC -fsanitize=fuzzer,address"
+
+(The awkward CFLAGS on the make command line are necessary because
+./configure attempts to test that the compiler works, but this test
+fails when -fsanitize=fuzzer is used as that option adds an extra
+main() definition.)
+
+",address" enables the Clang Address Sanitizer, and can be omitted for
+faster fuzzing.
+
+This builds a specialized version of nbdkit which is the fuzzer test
+program (testing only nbdkit-memory-plugin unless you modify the
+source).  You can run it like this on the input corpus:
+
+  ./server/nbdkit fuzzing/testcase_dir
+
+New test inputs are written to fuzzing/testcase_dir and will be used
+on subsequent runs.  If this is undesirable then delete
+fuzzing/testcase_dir/[0-f]* before the run.
+
+There are various extra command line options supported by libFuzzer.
+For more details see:
+
+  https://llvm.org/docs/LibFuzzer.html

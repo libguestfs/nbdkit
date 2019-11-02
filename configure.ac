@@ -391,6 +391,18 @@ AS_IF([test "x$enable_valgrind" = "xyes"],[
     ])
 ])
 
+dnl Build the special libFuzzer version of nbdkit.  DO NOT USE THIS for
+dnl normal builds.  See fuzzing/README.
+AC_ARG_ENABLE([libfuzzer],
+    [AS_HELP_STRING([--enable-libfuzzer],
+                    [build libFuzzer test binary (developers only)])],
+    [enable_libfuzzer=yes],
+    [enable_libfuzzer=no])
+AS_IF([test "x$enable_libfuzzer" = "xyes"],[
+    AC_DEFINE([ENABLE_LIBFUZZER],[1],[Enable special libFuzzer binary])
+])
+AM_CONDITIONAL([ENABLE_LIBFUZZER],[test "x$enable_libfuzzer" = "xyes"])
+
 dnl Bash completion.
 PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0], [
     bash_completion=yes

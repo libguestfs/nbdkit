@@ -51,6 +51,7 @@ Makefile.in
 /docs/lang-plugin-links.pod
 /docs/plugin-links.pod
 /fuzzing/sync_dir/
+/fuzzing/testcase_dir/[0-f]*
 /html/*.html
 /include/nbdkit-version.h
 /INSTALL

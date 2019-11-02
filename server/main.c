@@ -60,6 +60,10 @@
 #include "options.h"
 #include "exit-with-parent.h"
 
+#ifdef ENABLE_LIBFUZZER
+#define main fuzzer_main
+#endif
+
 static char *make_random_fifo (void);
 static struct backend *open_plugin_so (size_t i, const char *filename, int short_name);
 static struct backend *open_filter_so (struct backend *next, size_t i, const char *filename, int short_name);
@@ -168,7 +172,15 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
+#if !ENABLE_LIBFUZZER
   threadlocal_init ();
+#else
+  static bool main_called = false;
+  if (!main_called) {
+    threadlocal_init ();
+    main_called = true;
+  }
+#endif
 
   /* The default setting for TLS depends on whether we were
    * compiled with GnuTLS.
@@ -683,7 +695,9 @@ main (int argc, char *argv[])
   lock_init_thread_model ();
 
   set_up_quit_pipe ();
+#if !ENABLE_LIBFUZZER
   set_up_signals ();
+#endif
 
   start_serving ();
 
@@ -706,7 +720,10 @@ main (int argc, char *argv[])
   crypto_free ();
   close_quit_pipe ();
 
-  exit (EXIT_SUCCESS);
+  /* Note: Don't exit here, otherwise this won't work when compiled
+   * for libFuzzer.
+   */
+  return EXIT_SUCCESS;
 }
 
 /* Implementation of '-U -' */

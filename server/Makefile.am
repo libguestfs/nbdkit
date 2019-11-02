@@ -66,6 +66,9 @@ nbdkit_SOURCES = \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
+if ENABLE_LIBFUZZER
+nbdkit_SOURCES += fuzzer.c
+endif
 
 nbdkit_CPPFLAGS = \
 	-Dbindir=\"$(bindir)\" \
@@ -99,7 +102,12 @@ nbdkit_LDFLAGS = \
 	$(DL_LDFLAGS) \
 	$(NULL)
 if USE_LINKER_SCRIPT_FOR_SERVER
+# We have to disable the linker script for libFuzzer because Clang
+# adds loads of fuzzer and ASAN-related symbols that are required by
+# the plugins but which our linker script tries to hide.
+if !ENABLE_LIBFUZZER
 nbdkit_LDFLAGS += -Wl,--version-script=$(srcdir)/nbdkit.syms
+endif
 endif
 
 # synopsis.c is generated from docs/synopsis.txt where it is also

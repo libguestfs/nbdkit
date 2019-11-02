@@ -68,6 +68,12 @@
 # define DO_DLCLOSE !RUNNING_ON_VALGRIND
 #elif defined(__SANITIZE_ADDRESS__)
 # define DO_DLCLOSE 0
+#elif ENABLE_LIBFUZZER
+/* XXX This causes dlopen in the server to leak during fuzzing.
+ * However it is necessary because of
+ * https://bugs.llvm.org/show_bug.cgi?id=43917
+ */
+# define DO_DLCLOSE 0
 #else
 # define DO_DLCLOSE 1
 #endif

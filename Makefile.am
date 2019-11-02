@@ -47,6 +47,7 @@ EXTRA_DIST = \
 
 CLEANFILES += html/*.html
 
+if !ENABLE_LIBFUZZER
 # NB: This is not the real nbdkit binary.  It's a wrapper that allows
 # you to run nbdkit from the build directory before it is installed.
 noinst_PROGRAMS = nbdkit
@@ -63,6 +64,7 @@ nbdkit_LDADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 nbdkit_DEPENDENCIES = config.status
+endif !ENABLE_LIBFUZZER
 
 SUBDIRS = \
 	bash \
