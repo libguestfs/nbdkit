@@ -365,7 +365,7 @@ accept_connection (int listen_sock)
   const int flag = 1;
 
   thread_data = malloc (sizeof *thread_data);
-  if (!thread_data) {
+  if (unlikely (!thread_data)) {
     perror ("malloc");
     return;
   }
@@ -409,7 +409,7 @@ accept_connection (int listen_sock)
   pthread_attr_setdetachstate (&attrs, PTHREAD_CREATE_DETACHED);
   err = pthread_create (&thread, &attrs, start_thread, thread_data);
   pthread_attr_destroy (&attrs);
-  if (err != 0) {
+  if (unlikely (err != 0)) {
     fprintf (stderr, "%s: pthread_create: %s\n", program_name, strerror (err));
     close (thread_data->sock);
     free (thread_data);

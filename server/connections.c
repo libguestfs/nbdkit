@@ -97,7 +97,7 @@ connection_set_status (struct connection *conn, int value)
 
       assert (conn->status_pipe[1] >= 0);
       if (write (conn->status_pipe[1], &c, 1) != 1 && errno != EAGAIN)
-        nbdkit_debug ("failed to notify pipe-to-self: %m");
+        debug ("failed to notify pipe-to-self: %m");
     }
     conn->status = value;
   }
@@ -176,7 +176,7 @@ _handle_single_connection (int sockin, int sockout)
     debug ("handshake complete, processing requests with %d threads",
            nworkers);
     workers = calloc (nworkers, sizeof *workers);
-    if (!workers) {
+    if (unlikely (!workers)) {
       perror ("malloc");
       goto done;
     }
@@ -185,12 +185,13 @@ _handle_single_connection (int sockin, int sockout)
       struct worker_data *worker = malloc (sizeof *worker);
       int err;
 
-      if (!worker) {
+      if (unlikely (!worker)) {
         perror ("malloc");
         connection_set_status (conn, -1);
         goto wait;
       }
-      if (asprintf (&worker->name, "%s.%d", plugin_name, nworkers) < 0) {
+      if (unlikely (asprintf (&worker->name, "%s.%d", plugin_name, nworkers)
+                    < 0)) {
         perror ("asprintf");
         connection_set_status (conn, -1);
         free (worker);
@@ -199,7 +200,7 @@ _handle_single_connection (int sockin, int sockout)
       worker->conn = conn;
       err = pthread_create (&workers[nworkers], NULL, connection_worker,
                             worker);
-      if (err) {
+      if (unlikely (err)) {
         errno = err;
         perror ("pthread_create");
         connection_set_status (conn, -1);

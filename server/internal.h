@@ -45,6 +45,17 @@
 #include "cleanup.h"
 #include "nbd-protocol.h"
 
+/* Define unlikely macro, but only for GCC.  These are used to move
+ * debug and error handling code out of hot paths.
+ */
+#if defined(__GNUC__)
+#define unlikely(x) __builtin_expect (!!(x), 0)
+#define if_verbose if (unlikely (verbose))
+#else
+#define unlikely(x) (x)
+#define if_verbose if (verbose)
+#endif
+
 #ifdef __APPLE__
 #define UNIX_PATH_MAX 104
 #else
@@ -262,7 +273,11 @@ extern int crypto_negotiate_tls (struct connection *conn,
   __attribute__((__nonnull__ (1)));
 
 /* debug.c */
-#define debug nbdkit_debug
+#define debug(fs, ...)                                   \
+  do {                                                   \
+    if_verbose                                           \
+      nbdkit_debug ((fs), ##__VA_ARGS__);                \
+  } while (0)
 
 /* log-*.c */
 #if !HAVE_VFPRINTF_PERCENT_M

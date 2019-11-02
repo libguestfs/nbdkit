@@ -71,7 +71,7 @@ plugin_thread_model (struct backend *b)
 #if !(defined SOCK_CLOEXEC && defined HAVE_MKOSTEMP && defined HAVE_PIPE2 && \
       defined HAVE_ACCEPT4)
   if (thread_model > NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
-    nbdkit_debug ("system lacks atomic CLOEXEC, serializing to avoid fd leaks");
+    debug ("system lacks atomic CLOEXEC, serializing to avoid fd leaks");
     thread_model = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
   }
 #endif

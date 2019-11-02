@@ -508,8 +508,8 @@ extents_to_block_descriptors (struct nbdkit_extents *extents,
 
 #if 0
   for (i = 0; i < *nr_blocks; ++i)
-    nbdkit_debug ("block status: sending block %" PRIu32 " type %" PRIu32,
-                  blocks[i].length, blocks[i].status_flags);
+    debug ("block status: sending block %" PRIu32 " type %" PRIu32,
+           blocks[i].length, blocks[i].status_flags);
 #endif
 
   /* Convert to big endian for the protocol. */
