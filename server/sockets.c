@@ -322,16 +322,6 @@ bind_vsock (size_t *nr_socks)
 #endif
 }
 
-void
-free_listening_sockets (int *socks, size_t nr_socks)
-{
-  size_t i;
-
-  for (i = 0; i < nr_socks; ++i)
-    close (socks[i]);
-  free (socks);
-}
-
 struct thread_data {
   int sock;
   size_t instance_num;
@@ -476,6 +466,12 @@ check_sockets_and_quit_fd (int *socks, size_t nr_socks)
 void
 accept_incoming_connections (int *socks, size_t nr_socks)
 {
+  size_t i;
+
   while (!quit)
     check_sockets_and_quit_fd (socks, nr_socks);
+
+  for (i = 0; i < nr_socks; ++i)
+    close (socks[i]);
+  free (socks);
 }
