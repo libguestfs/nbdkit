@@ -81,6 +81,13 @@ set_up_quit_pipe (void)
 }
 
 void
+close_quit_pipe (void)
+{
+  close (quit_fd);
+  close (write_quit_fd);
+}
+
+void
 handle_quit (int sig)
 {
   set_quit ();

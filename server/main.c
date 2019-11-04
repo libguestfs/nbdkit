@@ -682,6 +682,9 @@ main (int argc, char *argv[])
   /* Select the correct thread model based on config. */
   lock_init_thread_model ();
 
+  set_up_quit_pipe ();
+  set_up_signals ();
+
   start_serving ();
 
   backend->free (backend);
@@ -701,6 +704,7 @@ main (int argc, char *argv[])
   }
 
   crypto_free ();
+  close_quit_pipe ();
 
   exit (EXIT_SUCCESS);
 }
@@ -864,9 +868,6 @@ start_serving (void)
              program_name);
     exit (EXIT_FAILURE);
   }
-
-  set_up_quit_pipe ();
-  set_up_signals ();
 
   /* Socket activation -- we are handling connections on pre-opened
    * file descriptors [FIRST_SOCKET_ACTIVATION_FD ..

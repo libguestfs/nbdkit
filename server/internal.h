@@ -127,6 +127,7 @@ extern struct backend *backend;
 extern volatile int quit;
 extern int quit_fd;
 extern void set_up_quit_pipe (void);
+extern void close_quit_pipe (void);
 extern void handle_quit (int sig);
 extern void set_quit (void);
 
