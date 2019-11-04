@@ -234,7 +234,7 @@ struct connection {
   connection_close_function close;
 };
 
-extern int handle_single_connection (int sockin, int sockout);
+extern void handle_single_connection (int sockin, int sockout);
 extern int connection_get_status (struct connection *conn)
   __attribute__((__nonnull__ (1)));
 extern int connection_set_status (struct connection *conn, int value)

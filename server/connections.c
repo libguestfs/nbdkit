@@ -132,14 +132,16 @@ connection_worker (void *data)
   return NULL;
 }
 
-static int
-_handle_single_connection (int sockin, int sockout)
+void
+handle_single_connection (int sockin, int sockout)
 {
   const char *plugin_name;
-  int ret = -1, r;
+  int r;
   struct connection *conn;
   int nworkers = threads ? threads : DEFAULT_PARALLEL_REQUESTS;
   pthread_t *workers = NULL;
+
+  lock_connection ();
 
   if (backend->thread_model (backend) < NBDKIT_THREAD_MODEL_PARALLEL ||
       nworkers == 1)
@@ -222,22 +224,9 @@ _handle_single_connection (int sockin, int sockout)
   if (r == -1)
     goto done;
 
-  ret = connection_get_status (conn);
  done:
   free_connection (conn);
-  return ret;
-}
-
-int
-handle_single_connection (int sockin, int sockout)
-{
-  int r;
-
-  lock_connection ();
-  r = _handle_single_connection (sockin, sockout);
   unlock_connection ();
-
-  return r;
 }
 
 static struct connection *

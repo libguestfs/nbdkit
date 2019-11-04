@@ -894,8 +894,7 @@ start_serving (void)
     change_user ();
     write_pidfile ();
     threadlocal_new_server_thread ();
-    if (handle_single_connection (0, 1) == -1)
-      exit (EXIT_FAILURE);
+    handle_single_connection (0, 1);
     return;
   }
 
