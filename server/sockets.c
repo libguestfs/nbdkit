@@ -322,6 +322,17 @@ bind_vsock (size_t *nr_socks)
 #endif
 }
 
+/* This counts the number of connection threads running (note: not the
+ * number of worker threads, each connection thread will start many
+ * worker independent threads in the current implementation).  The
+ * purpose of this is so we can wait for all the connection threads to
+ * exit before we return from accept_incoming_connections, so that
+ * unload-time actions happen with no connections open.
+ */
+static pthread_mutex_t count_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t count_cond = PTHREAD_COND_INITIALIZER;
+static unsigned count = 0;
+
 struct thread_data {
   int sock;
   size_t instance_num;
@@ -334,6 +345,10 @@ start_thread (void *datav)
 
   debug ("accepted connection");
 
+  pthread_mutex_lock (&count_mutex);
+  count++;
+  pthread_mutex_unlock (&count_mutex);
+
   /* Set thread-local data. */
   threadlocal_new_server_thread ();
   threadlocal_set_instance_num (data->instance_num);
@@ -341,6 +356,12 @@ start_thread (void *datav)
   handle_single_connection (data->sock, data->sock);
 
   free (data);
+
+  pthread_mutex_lock (&count_mutex);
+  count--;
+  pthread_cond_signal (&count_cond);
+  pthread_mutex_unlock (&count_mutex);
+
   return NULL;
 }
 
@@ -467,9 +488,23 @@ void
 accept_incoming_connections (int *socks, size_t nr_socks)
 {
   size_t i;
+  int err;
 
   while (!quit)
     check_sockets_and_quit_fd (socks, nr_socks);
+
+  /* Wait for all threads to exit. */
+  pthread_mutex_lock (&count_mutex);
+  for (;;) {
+    if (count == 0)
+      break;
+    err = pthread_cond_wait (&count_cond, &count_mutex);
+    if (err != 0) {
+      errno = err;
+      perror ("pthread_cond_wait");
+    }
+  }
+  pthread_mutex_unlock (&count_mutex);
 
   for (i = 0; i < nr_socks; ++i)
     close (socks[i]);
