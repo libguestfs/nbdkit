@@ -155,6 +155,7 @@ ssh_config (const char *key, const char *value)
   else if (strcmp (key, "timeout") == 0) {
     if (nbdkit_parse_uint32_t ("timeout", value, &timeout) == -1)
       return -1;
+#if LONG_MAX < UINT32_MAX
     /* C17 5.2.4.2.1 requires that LONG_MAX is at least 2^31 - 1.
      * However a large positive number might still exceed the limit.
      */
@@ -162,6 +163,7 @@ ssh_config (const char *key, const char *value)
       nbdkit_error ("timeout is too large");
       return -1;
     }
+#endif
   }
   else if (strcmp (key, "compression") == 0) {
     r = nbdkit_parse_bool (value);
