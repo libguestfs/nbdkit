@@ -73,6 +73,15 @@ get_socket_activation (void)
   if (nbdkit_parse_unsigned ("LISTEN_FDS", s, &nr_fds) == -1)
     return 0;
 
+  /* Limit the number of fds that may be passed in to something
+   * reasonable.
+   */
+  if (nr_fds == 0 || nr_fds > 16) {
+    fprintf (stderr, "%s: socket activation: LISTEN_FDS=%s out of range\n",
+             program_name, s);
+    exit (EXIT_FAILURE);
+  }
+
   /* So these are not passed to any child processes we might start. */
   unsetenv ("LISTEN_FDS");
   unsetenv ("LISTEN_PID");
