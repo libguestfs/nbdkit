@@ -122,11 +122,8 @@ xz_close (void *handle)
   struct xz_handle *h = handle;
   blkcache_stats stats;
 
-  if (h->c) {
-    blkcache_get_stats (h->c, &stats);
-
-    nbdkit_debug ("cache: hits = %zu, misses = %zu", stats.hits, stats.misses);
-  }
+  blkcache_get_stats (h->c, &stats);
+  nbdkit_debug ("cache: hits = %zu, misses = %zu", stats.hits, stats.misses);
 
   xzfile_close (h->xz);
   free_blkcache (h->c);
