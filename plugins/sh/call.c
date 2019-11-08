@@ -325,6 +325,11 @@ handle_script_error (char *ebuf, size_t len)
   size_t skip = 0;
   char *p;
 
+  if (len == 0) {
+    err = EIO;
+    goto no_error_message;
+  }
+
   /* Recognize the errno values that match NBD protocol errors */
   if (strncasecmp (ebuf, "EPERM", 5) == 0) {
     err = EPERM;
@@ -411,9 +416,11 @@ handle_script_error (char *ebuf, size_t len)
     ebuf += skip;
     nbdkit_error ("%s: %s", script, ebuf);
   }
-  else
+  else {
+  no_error_message:
     nbdkit_error ("%s: script exited with error, "
                   "but did not print an error message on stderr", script);
+  }
 
   /* Set errno. */
   errno = err;
