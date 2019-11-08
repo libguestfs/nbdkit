@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <assert.h>
 
 #include "utils.h"
 
@@ -60,6 +61,8 @@ run_command (void)
   if (!run)
     return;
 
+  assert (exportname != NULL);
+
   fp = open_memstream (&cmd, &len);
   if (fp == NULL) {
     perror ("open_memstream");
@@ -71,14 +74,14 @@ run_command (void)
   if (port) {
     fprintf (fp, "nbd://localhost:");
     shell_quote (port, fp);
-    if (exportname) {
+    if (strcmp (exportname, "") != 0) {
       putc ('/', fp);
       uri_quote (exportname, fp);
     }
   }
   else if (unixsocket) {
     fprintf (fp, "nbd+unix://");
-    if (exportname) {
+    if (strcmp (exportname, "") != 0) {
       putc ('/', fp);
       uri_quote (exportname, fp);
     }
