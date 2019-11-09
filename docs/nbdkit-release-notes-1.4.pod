@@ -1,0 +1,107 @@
+=head1 NAME
+
+nbdkit-release-notes-1.4 - release notes for nbdkit 1.4
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.4.
+This describes the major changes since 1.2.
+
+nbdkit 1.4.0 was released on 6th July 2018.
+
+=head2 New features
+
+=over 4
+
+=item *
+
+You can write plugins in Tcl, see
+L<nbdkit-tcl-plugin(3)>.
+
+=item *
+
+Other new plugins:
+L<nbdkit-ext2-plugin(1)>,
+L<nbdkit-random-plugin(1)>,
+L<nbdkit-zero-plugin(1)>.
+
+=item *
+
+New filters:
+L<nbdkit-blocksize-filter(1)>,
+L<nbdkit-fua-filter(1)>,
+L<nbdkit-log-filter(1)>,
+L<nbdkit-nozero-filter(1)>.
+
+=item *
+
+Bash tab completion of nbdkit commands.
+
+=item *
+
+TLS Pre-Shared Keys (PSK) authentication.
+
+=item *
+
+We now default to the newstyle protocol, use -o to select oldstyle.
+
+=item *
+
+On-demand ramping of thread pool.
+
+=item *
+
+TRIM support in the file plugin.
+
+=item *
+
+Reworked error handling.
+
+=item *
+
+New C<can_zero>, C<can_fua> methods and better handling of FUA.
+
+=item *
+
+New C<nbdkit_realpath> function.
+
+=item *
+
+C<nbdkit_parse_size> rewritten.
+
+=item *
+
+Better handling of shutdown path to ensure plugins can do long cleanups.
+
+=item *
+
+New C<PKG_CHECK_VAR> variables.
+
+=item *
+
+Regression test for IPv6 connections.
+
+=item *
+
+Of course numerous smaller bug fixes and improvements.
+
+=back
+
+=head2 Acknowledgements
+
+Thanks in particular to Eric Blake and Pino Toscano.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<https://www.redhat.com/archives/libguestfs/2018-July/msg00023.html>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

@@ -1,0 +1,131 @@
+=head1 NAME
+
+nbdkit-release-notes-1.10 - release notes for nbdkit 1.10
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.10.
+This describes the major changes since 1.8.
+
+nbdkit 1.10.0 was released on 18th January 2019.
+
+=head2 New features
+
+=over 4
+
+=item *
+
+Implemented C<NBD_FLAG_CAN_MULTI_CONN> which greatly improves
+performance for clients that support it.
+
+=item *
+
+Implemented C<NBD_OPT_INFO> (Eric Blake).
+
+=item *
+
+L<nbdkit-data-plugin(1)> and L<nbdkit-memory-plugin(1)>: By adding
+fine-grained locking, these plugins now use the fully parallel thread
+model.
+
+=item *
+
+L<nbdkit-cache-filter(1)>: The size of the cache can now be limited,
+and the cache reclaims space using an LRU algorithm.  It has also been
+enhanced to support cache-on-read mode.  The filter now uses a fully
+parallel thread model.
+
+=item *
+
+L<nbdkit-cow-filter(1)>: Use a fully parallel thread model.
+
+=item *
+
+L<nbdkit-sh-plugin(1)>: Inline scripts:
+L<https://rwmj.wordpress.com/2018/12/15/nbdkit-inline-scripts/>
+
+=item *
+
+L<nbdkit-sh-plugin(1)>: Full API version 2 is now supported.
+
+=item *
+
+L<nbdkit-ocaml-plugin(3)>: Full API version 2 is now supported.
+
+=item *
+
+L<nbdkit-delay-filter(1)> allows you to specify the read, write, zero
+and trim delays individually.
+
+=item *
+
+L<nbdkit-curl-plugin(1)>: Add support for connecting to servers over
+Unix domain sockets.
+
+=item *
+
+Bash tab completion has been improved: Partial plugin names are
+expanded correctly, and plugin parameters containing C<-> work.
+
+=item *
+
+Public header files can now be consumed by ISO C90 compilers (but
+GCC or Clang is still required to compile nbdkit itself).
+
+=item *
+
+A better non-cryptographically secure pseudo-random number generator
+(xoshiro256** 1.0) is now used on all platforms, replacing previous
+uses of L<random(3)>.
+
+=item *
+
+Fuzzing using American Fuzzy Lop is now supported, and was carried
+out, resulting in one error being found in the server (not security
+related).
+
+=item *
+
+New L<nbdkit-xz-filter(1)>: This replaces nbdkit-xz-plugin which will
+be removed in nbdkit 1.12.
+
+=item *
+
+New L<nbdkit-loop(1)> man page documenting how to use nbdkit for loop
+mounts.  See also: L<https://fosdem.org/2019/schedule/event/nbdkit/>
+
+=item *
+
+New L<nbdkit-full-plugin(1)>: Returns C<ENOSPC> on every request.
+
+=item *
+
+C<attribute((format))>, C<attribute((nonnull))> and
+C<attribute((sentinel))> are used in internal header files to improve
+code quality.
+
+=item *
+
+Logging using C<%m> now works on all platforms, not just on Linux with
+glibc (Eric Blake).
+
+=item *
+
+VPATH builds partially supported (Eric Blake).
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<https://www.redhat.com/archives/libguestfs/2019-January/msg00135.html>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

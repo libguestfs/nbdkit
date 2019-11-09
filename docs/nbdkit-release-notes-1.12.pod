@@ -1,0 +1,105 @@
+=head1 NAME
+
+nbdkit-release-notes-1.12 - release notes for nbdkit 1.12
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.12.
+This describes the major changes since 1.10.
+
+nbdkit 1.12.0 was released on 10th April 2019.
+
+=head2 New features
+
+New L<nbdkit-ssh-plugin(1)> which lets you turn any disk image on a
+remote Unix server accessible by ssh into an NBD source.
+
+New L<nbdkit-rate-filter(1)> for bandwidth-limiting connections.
+Either single connections or the whole server can be
+bandwidth-limited, and the limit can be dynamically changed at
+runtime.
+
+New L<nbdkit-readahead-filter(1)> improves performance when reading
+sequentially from plugins with a high request overhead like curl.
+
+New L<nbdkit-linuxdisk-plugin(1)> lets you create complete ext2, ext3
+or ext4 filesystems in a GPT partitioned disk image, from a local
+directory.  This can be attached to existing Linux VMs or used to
+create new ones from scratch.
+
+New L<nbdkit-noextents-filter(1)> can make sparse disks appear fully
+allocated.
+
+Plugins can now be written in the Rust programming language, see
+L<nbdkit-rust-plugin(3)>.
+
+The old L<nbdkit-xz-plugin(1)> has been removed.  Use
+
+ nbdkit --filter=xz file file.xz
+
+as a replacement.  This filter can be placed on top of other plugins
+such as curl (for decompressing a remote web URL).
+
+C<NBD_CMD_BLOCK_STATUS> has been implemented allowing clients to query
+which parts of the disk are allocated, holes or zeroes.  Plugins and
+filters have been extended to supply this information in many cases.
+This required adding minimal support for NBD protocol Structured
+Replies, C<NBD_CMD_FLAG_REQ_ONE> and C<NBD_CMD_FLAG_DF>.  (Thanks to
+Eric Blake for extensive help with this one.)
+
+L<nbdkit-vddk-plugin(1)> has been updated to VDDK 6.7, but now also
+works back as far as VDDK 5.1.1.  It supports extents, flush and FUA.
+Also added: new flags C<single-link> and C<unbuffered>.  (Thanks to
+Martin Kletzander).
+
+The line "All rights reserved." was removed from the license, with the
+agreement of all nbdkit contributors.  Note this does not change the
+license.
+
+C<nbdkit_error> errors are printed in red when writing to the
+terminal, making them much easier to see.
+
+C<nbdkit_parse_size> rejects negative values, eg.
+S<C<nbdkit memory size=-100>> (Nikolay Ivanets).
+
+L<nbdkit-curl-plugin(1)> now supports cookies, password auth and
+proxies.  It can also limit URLs to whitelisted protocols.  This makes
+it broadly feature equivalent to and a replacement for the qemu curl
+block driver.
+
+L<nbdkit-partitioning-plugin(1)> can now create MBR logical
+partitions.  Previously it only supported 4 MBR primary partitions and
+if you wanted more than that you had to use GPT.
+
+L<nbdkit-partition-filter(1)> also supports MBR logical partitions.
+
+L<nbdkit-python-plugin(3)> creates plugins which are compatible with
+Python >= 3.7.
+
+Tests are now run under C<MALLOC_CHECK_=1> and
+C<MALLOC_PERTURB_=I<random>>.  This causes some tests to crash
+(silently) because of a shutdown race which needs to be fixed.
+
+Test shell scripts now have a generic C<requires> function to skip
+tests if features are not present.
+
+C99 type C<bool> is now used in most places where appropriate.
+
+The protocol and connections code in the server has been split up
+because the single file had grown very large.  (Thanks to Eric Blake
+for helping with protocol issues).
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<https://www.redhat.com/archives/virt-tools-list/2019-April/msg00045.html>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

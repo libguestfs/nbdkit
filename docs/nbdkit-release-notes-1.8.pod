@@ -1,0 +1,118 @@
+=head1 NAME
+
+nbdkit-release-notes-1.8 - release notes for nbdkit 1.8
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.8.
+This describes the major changes since 1.6.
+
+nbdkit 1.8.0 was released on 12th November 2018.
+
+=head2 New features
+
+=over 4
+
+=item *
+
+New plugin: L<nbdkit-sh-plugin(1)> for running shell scripts and other
+external programs.  See:
+L<https://rwmj.wordpress.com/2018/09/09/write-nbdkit-plugins-in-shell-script/>
+
+=item *
+
+New plugin: L<nbdkit-partitioning-plugin(1)> which creates a
+partitioned disk from a list of partitions in files.
+
+=item *
+
+New plugin: L<nbdkit-iso-plugin(1)> which creates an ISO (CD-ROM)
+image on the fly from a directory of files.  See:
+L<https://rwmj.wordpress.com/2018/10/18/new-in-nbdkit-create-an-iso-image-on-the-fly/>
+
+=item *
+
+New plugin: L<nbdkit-floppy-plugin(1)> which creates a virtual
+FAT-formatted floppy disk from a directory of files.
+L<https://rwmj.wordpress.com/2018/10/29/new-in-nbdkit-create-a-virtual-floppy-disk/>
+
+=item *
+
+Magic config key allows simpler invocation of many plugins, eg:
+
+ nbdkit file file=foo
+
+becomes:
+
+ nbdkit file foo
+
+=item *
+
+L<nbdkit-data-plugin(1)>: Add F<disk2data.pl> script to generate data
+parameters.
+
+=item *
+
+L<nbdkit-data-plugin(1)> Use C<<< <file >>> to inline a file.
+
+=item *
+
+L<nbdkit-vddk-plugin(1)>: Use S<C<-D vddk.diskinfo=1>> to enable extra
+debug information.
+
+=item *
+
+tests: Use a helper function to refactor and simplify most tests.
+
+=item *
+
+L<nbdkit-partition-filter(1)>: Can handle E<gt> 128 GPT partitions.
+
+=item *
+
+nbdkit can be compiled on the Haiku operating system
+(François Revol).
+
+=item *
+
+New C<nbdkit_parse_bool> API for parsing boolean parameters
+(Eric Blake).
+
+=item *
+
+L<nbdkit-log-filter(1)>: Add C<logappend=[true|false]>
+(Eric Blake).
+
+=item *
+
+L<nbdkit-ocaml-plugin(3)>: New C<set_error> and C<debug> calls.
+
+=item *
+
+Analyze code under AddressSanitizer and ThreadSanitizer and fix bugs
+(Eric Blake).
+
+=item *
+
+Analyze code under Coverity and fix bugs.
+
+=item *
+
+Tests now run more quickly.
+
+=back
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<https://www.redhat.com/archives/libguestfs/2018-November/msg00111.html>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

@@ -38,6 +38,12 @@ EXTRA_DIST = \
 	nbdkit-loop.pod \
 	nbdkit-probing.pod \
 	nbdkit-protocol.pod \
+	nbdkit-release-notes-1.4.pod \
+	nbdkit-release-notes-1.6.pod \
+	nbdkit-release-notes-1.8.pod \
+	nbdkit-release-notes-1.10.pod \
+	nbdkit-release-notes-1.12.pod \
+	nbdkit-release-notes-1.14.pod \
 	nbdkit-security.pod \
 	nbdkit-service.pod \
 	nbdkit-tls.pod \
@@ -54,6 +60,12 @@ man_MANS = \
 	nbdkit-loop.1 \
 	nbdkit-probing.1 \
 	nbdkit-protocol.1 \
+	nbdkit-release-notes-1.4.1 \
+	nbdkit-release-notes-1.6.1 \
+	nbdkit-release-notes-1.8.1 \
+	nbdkit-release-notes-1.10.1 \
+	nbdkit-release-notes-1.12.1 \
+	nbdkit-release-notes-1.14.1 \
 	nbdkit-security.1 \
 	nbdkit-service.1 \
 	nbdkit-tls.1 \
@@ -88,6 +100,36 @@ nbdkit-probing.1: nbdkit-probing.pod
 	    $<
 
 nbdkit-protocol.1: nbdkit-protocol.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-release-notes-1.4.1: nbdkit-release-notes-1.4.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-release-notes-1.6.1: nbdkit-release-notes-1.6.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-release-notes-1.8.1: nbdkit-release-notes-1.8.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-release-notes-1.10.1: nbdkit-release-notes-1.10.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-release-notes-1.12.1: nbdkit-release-notes-1.12.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-release-notes-1.14.1: nbdkit-release-notes-1.14.pod
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

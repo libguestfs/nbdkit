@@ -1,0 +1,112 @@
+=head1 NAME
+
+nbdkit-release-notes-1.6 - release notes for nbdkit 1.6
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.6.
+This describes the major changes since 1.4.
+
+nbdkit 1.6.0 was released on 28th August 2018.
+
+=head2 New features
+
+=over 4
+
+=item *
+
+You can now write plugins in the Lua scripting language, see
+L<nbdkit-lua-plugin(3)>.
+
+=item *
+
+nbdkit and common plugins are now "63 bit clean": the maximum disk
+size supported is 2⁶³-1 bytes, and the core server and plugins now
+have additional tests to check this works, even on 32 bit machines.
+
+=item *
+
+Multiple improvements to the L<nbdkit-file-plugin(1)> to make zeroing
+and trimming perform better, work correctly with block devices, and
+work on older Linux kernels [Nir Soffer, Eric Blake].
+
+=item *
+
+New L<nbdkit-pattern-plugin(1)> generates a simple, fixed test pattern
+for testing nbdkit filters and NBD clients.
+
+=item *
+
+New L<nbdkit-truncate-filter(1)> can: truncate or extend the size of
+plugins, or round up or down the size to next multiple of a power of
+2.  Useful for NBD clients like qemu which can only handle NBD sizes
+which are a multiple of 512 bytes.
+
+=item *
+
+New L<nbdkit-error-filter(1)> which can be used to inject errors into
+the protocol for testing how clients can handle and recover from
+errors.
+
+=item *
+
+New L<nbdkit-data-plugin(1)> allows you to specify (small) disk images
+directly on the command line.
+
+=item *
+
+Enhanced error reporting in the Python plugin so full tracebacks
+from errors are now displayed instead of being lost as before.
+
+=item *
+
+C<NBD_OPT_GO> now supported, so we can return errors when negotiating
+the export name.
+
+=item *
+
+Support for logging error messages to syslog.
+
+=item *
+
+nbdkit can now be compiled with Clang (as well as GCC).
+
+=item *
+
+nbdkit can now be compiled on FreeBSD.
+
+=item *
+
+L<nbdkit-vddk-plugin(1)> is compiled unconditionally.  You no longer
+need to install the proprietary VDDK to compile it.
+
+=item *
+
+Debug messages now include the name of the filter when invoked from
+a filter context.
+
+=item *
+
+Debug flags (I<-D> option) provides lightweight debugging for plugin
+authors.
+
+=back
+
+=head2 Acknowledgements
+
+Thanks to all who contributed, especially Nir Soffer and Eric Blake.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<https://www.redhat.com/archives/libguestfs/2018-August/msg00279.html>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.

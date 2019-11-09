@@ -1,0 +1,145 @@
+=head1 NAME
+
+nbdkit-release-notes-1.14 - release notes for nbdkit 1.14
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.14.
+This describes the major changes since 1.12.
+
+nbdkit 1.14.0 was released on 28th August 2019.
+
+=head2 New features
+
+Server performance improvements: Nagle’s algorithm is disabled;
+instead C<MSG_MORE> is used to control when outgoing packets are sent.
+Ramdisk plugins now support more efficient zeroing.  (Eric Blake).
+
+Plugins can now select their thread model at run time.  Thread model
+selection is not finalized until after the config stage (Eric Blake).
+
+The server supports C<NBD_CMD_CACHE> for prefetching.  Plugins and
+filters have been updated to implement this where it makes sense (Eric
+Blake).
+
+Low level pthread lock failures now call L<abort(3)>.  This should
+never happen in real situations (Eric Blake).
+
+The server will not advertize multi-conn support if the internal
+thread model is serialized, avoiding a possible deadlock in some
+clients (Eric Blake).
+
+New server option I<--no-sr> can be used to disable structured replies
+(Eric Blake).
+
+The server will now refuse to start if stdin/stdout/stderr are closed,
+to avoid potential issues with file descriptor handling in plugins
+(Eric Blake).
+
+C<$uri> can be used to specify an NBD URI in I<--run> parameters (Eric
+Blake).
+
+New L<nbdkit-stats-filter(1)> displays elapsed statistics about NBD
+operations, such as the number of bytes read and written.
+
+New L<nbdkit-nocache-filter(1)> which disables cache requests, used to
+determine how effective they are (Eric Blake).
+
+New L<nbdkit-noparallel-filter(1)> which can be used to override the
+plugin’s own choice of thread model.  Used to determine how the thread
+model affects performance, or to serialize plugins if required (Eric
+Blake).
+
+New L<nbdkit-cacheextents-filter(1)> to cache extents requests,
+especially useful with VDDK which has a slow implementation of extents
+(Martin Kletzander).
+
+In L<nbdkit-full-plugin(1)>, L<nbdkit-memory-plugin(1)>,
+L<nbdkit-null-plugin(1)>, L<nbdkit-pattern-plugin(1)> and
+L<nbdkit-random-plugin(1)>, the C<size=> prefix can be omitted, ie:
+S<C<nbdkit memory 1G>> (instead of C<size=1G>).
+
+L<nbdkit-nbd-plugin(1)> has multiple enhancements (all added by Eric
+Blake):
+
+=over 4
+
+=item *
+
+It may be built using libnbd instead of constructing raw NBD packets.
+
+=item *
+
+C<NBD_OPT_GO> is supported.
+
+=item *
+
+Add structured reads.
+
+=item *
+
+Implement C<NBD_CMD_BLOCK_STATUS>.
+
+=item *
+
+Supports TCP sockets.
+
+=item *
+
+Forwards C<NBD_CMD_CACHE>.
+
+=item *
+
+Retry connections.
+
+=item *
+
+Shared connections.
+
+=item *
+
+Magic C<uri> parameter.
+
+=item *
+
+TLS support.
+
+=back
+
+L<nbdkit-vddk-plugin(1)> now reports hole extents correctly when using
+the C<single-link> flag (Martin Kletzander).
+
+L<nbdkit-cache-filter(1)> and L<nbdkit-cow-filter(1)> now avoid
+copying data through a bounce buffer when it is already sufficiently
+aligned (Eric Blake).
+
+Filters (such as L<nbdkit-delay-filter(1)> and
+L<nbdkit-rate-filter(1)>) which sleep no longer cause long delays when
+the server is shut down (Eric Blake).
+
+Multiple fixes to L<nbdkit-rust-plugin(1)> (Martin Kletzander).
+
+Multiple enhancements and clean ups to the test suite which should
+make tests better and more reliable.
+
+OCaml plugins can now use C<parse_size>, C<parse_bool>,
+C<read_password> calls, and there is also a new example plugin.
+
+On platforms which lack atomic C<O_CLOEXEC> support the most
+serialized thread model is always selected to avoid leaking file
+descriptors (Eric Blake).
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<https://www.redhat.com/archives/libguestfs/2019-August/msg00375.html>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.
