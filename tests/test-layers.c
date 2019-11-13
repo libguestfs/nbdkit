@@ -77,6 +77,12 @@ static void log_verify_seen_in_order (const char *msg, ...)
   __attribute__((sentinel));
 static void log_free (void);
 
+static inline void
+short_sleep (void)
+{
+  sleep (2);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -246,7 +252,7 @@ main (int argc, char *argv[])
   }
 
   /* Sleep briefly to allow the log to catch up. */
-  sleep (1);
+  short_sleep ();
 
   /* Verify expected log messages were seen during the handshake and
    * option negotiation phases.
@@ -399,7 +405,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  sleep (1);
+  short_sleep ();
   log_verify_seen_in_order
     ("testlayersfilter3: pread count=512 offset=0",
      "filter3: test_layers_filter_pread",
@@ -433,7 +439,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  sleep (1);
+  short_sleep ();
   log_verify_seen_in_order
     ("testlayersfilter3: pwrite count=512 offset=0 fua=0",
      "filter3: test_layers_filter_pwrite",
@@ -463,7 +469,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  sleep (1);
+  short_sleep ();
   log_verify_seen_in_order
     ("testlayersfilter3: flush",
      "filter3: test_layers_filter_flush",
@@ -493,7 +499,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  sleep (1);
+  short_sleep ();
   log_verify_seen_in_order
     ("testlayersfilter3: trim count=512 offset=0 fua=0",
      "filter3: test_layers_filter_trim",
@@ -523,7 +529,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  sleep (1);
+  short_sleep ();
   log_verify_seen_in_order
     ("testlayersfilter3: zero count=512 offset=0 may_trim=1 fua=0 fast=0",
      "filter3: test_layers_filter_zero",
@@ -553,7 +559,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  sleep (1);
+  short_sleep ();
   log_verify_seen_in_order
     ("testlayersfilter3: cache count=512 offset=0",
      "filter3: test_layers_filter_cache",
@@ -589,7 +595,7 @@ main (int argc, char *argv[])
     perror ("waitpid");
 
   /* finalize methods called in reverse order of prepare */
-  sleep (1);
+  short_sleep ();
   log_verify_seen_in_order
     ("filter3: test_layers_filter_finalize",
      "filter2: test_layers_filter_finalize",
