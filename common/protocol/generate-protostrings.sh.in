@@ -65,7 +65,8 @@ for fn in $keys; do
     # line up to the next blank line.
     symbol="${functions[$fn]}"
     @SED@ -n "/^#define $symbol/,/^$/p" nbd-protocol.h |
-        @SED@ 's/^#define \([_A-Z]*\).*/  case \1:\n    return "\1\";/'
+        @SED@ 's/^#define \([_A-Z]*\).*/  case \1:\
+    return "\1\";/'
 
     echo '  default: return "unknown";'
     echo '  }'
