@@ -311,7 +311,7 @@ nbd_request_raw (struct handle *h, uint16_t flags, uint16_t type,
                  uint64_t offset, uint32_t count, uint64_t cookie,
                  const void *buf)
 {
-  struct request req = {
+  struct nbd_request req = {
     .magic = htobe32 (NBD_REQUEST_MAGIC),
     .flags = htobe16 (flags),
     .type = htobe16 (type),
@@ -397,15 +397,15 @@ static int
 nbd_reply_raw (struct handle *h, struct transaction **trans_out)
 {
   union {
-    struct simple_reply simple;
-    struct structured_reply structured;
+    struct nbd_simple_reply simple;
+    struct nbd_structured_reply structured;
   } rep;
   struct transaction *trans;
   void *buf = NULL;
   CLEANUP_FREE char *payload = NULL;
   uint32_t count;
   uint32_t id;
-  struct block_descriptor *extents = NULL;
+  struct nbd_block_descriptor *extents = NULL;
   size_t nextents = 0;
   int error = NBD_SUCCESS;
   bool more = false;
@@ -508,7 +508,7 @@ nbd_reply_raw (struct handle *h, struct transaction **trans_out)
         return nbd_mark_dead (h);
       }
       nextents = rep.structured.length / sizeof *extents;
-      extents = (struct block_descriptor *) &payload[sizeof id];
+      extents = (struct nbd_block_descriptor *) &payload[sizeof id];
       memcpy (&id, payload, sizeof id);
       id = be32toh (id);
       nbdkit_debug ("parsing %zu extents for context id %" PRId32,
@@ -713,7 +713,7 @@ nbd_reply (struct handle *h, struct transaction *trans)
    possible. */
 static int
 nbd_newstyle_recv_option_reply (struct handle *h, uint32_t option,
-                                struct fixed_new_option_reply *reply,
+                                struct nbd_fixed_new_option_reply *reply,
                                 void **payload)
 {
   CLEANUP_FREE char *buffer = NULL;
@@ -773,7 +773,7 @@ static int
 nbd_newstyle_haggle (struct handle *h)
 {
   const char *const query = "base:allocation";
-  struct new_option opt;
+  struct nbd_new_option opt;
   uint32_t exportnamelen = htobe32 (strlen (export));
   uint32_t nrqueries = htobe32 (1);
   uint32_t querylen = htobe32 (strlen (query));
@@ -782,10 +782,10 @@ nbd_newstyle_haggle (struct handle *h)
      sizes, at which point we should request NBD_INFO_BLOCK_SIZE and
      obey any sizes set by server. */
   uint16_t nrinfos = htobe16 (0);
-  struct fixed_new_option_reply reply;
+  struct nbd_fixed_new_option_reply reply;
 
   nbdkit_debug ("trying NBD_OPT_STRUCTURED_REPLY");
-  opt.version = htobe64 (NEW_VERSION);
+  opt.version = htobe64 (NBD_NEW_VERSION);
   opt.option = htobe32 (NBD_OPT_STRUCTURED_REPLY);
   opt.optlen = htobe32 (0);
   if (write_full (h->fd, &opt, sizeof opt)) {
@@ -799,7 +799,7 @@ nbd_newstyle_haggle (struct handle *h)
     nbdkit_debug ("structured replies enabled, trying NBD_OPT_SET_META_CONTEXT");
     h->structured = true;
 
-    opt.version = htobe64 (NEW_VERSION);
+    opt.version = htobe64 (NBD_NEW_VERSION);
     opt.option = htobe32 (NBD_OPT_SET_META_CONTEXT);
     opt.optlen = htobe32 (sizeof exportnamelen + strlen (export) +
                           sizeof nrqueries + sizeof querylen + strlen (query));
@@ -844,7 +844,7 @@ nbd_newstyle_haggle (struct handle *h)
 
   /* Try NBD_OPT_GO */
   nbdkit_debug ("trying NBD_OPT_GO");
-  opt.version = htobe64 (NEW_VERSION);
+  opt.version = htobe64 (NBD_NEW_VERSION);
   opt.option = htobe32 (NBD_OPT_GO);
   opt.optlen = htobe32 (sizeof exportnamelen + strlen (export) +
                         sizeof nrinfos);
@@ -857,7 +857,7 @@ nbd_newstyle_haggle (struct handle *h)
   }
   while (1) {
     CLEANUP_FREE void *buffer;
-    struct fixed_new_option_reply_info_export *reply_export;
+    struct nbd_fixed_new_option_reply_info_export *reply_export;
     uint16_t info;
 
     if (nbd_newstyle_recv_option_reply (h, NBD_OPT_GO, &reply, &buffer) < 0)
@@ -990,7 +990,7 @@ static struct handle *
 nbd_open_handle (int readonly)
 {
   struct handle *h;
-  struct old_handshake old;
+  struct nbd_old_handshake old;
   uint64_t version;
   unsigned long retries = retry;
 
@@ -1014,7 +1014,8 @@ nbd_open_handle (int readonly)
   }
 
   /* old and new handshake share same meaning of first 16 bytes */
-  if (read_full (h->fd, &old, offsetof (struct old_handshake, exportsize))) {
+  if (read_full (h->fd, &old,
+                 offsetof (struct nbd_old_handshake, exportsize))) {
     nbdkit_error ("unable to read magic: %m");
     goto err;
   }
@@ -1023,22 +1024,22 @@ nbd_open_handle (int readonly)
     goto err;
   }
   version = be64toh (old.version);
-  if (version == OLD_VERSION) {
+  if (version == NBD_OLD_VERSION) {
     nbdkit_debug ("trying oldstyle connection");
     if (read_full (h->fd,
-                   (char *) &old + offsetof (struct old_handshake, exportsize),
-                   sizeof old - offsetof (struct old_handshake, exportsize))) {
+                   (char *) &old + offsetof (struct nbd_old_handshake, exportsize),
+                   sizeof old - offsetof (struct nbd_old_handshake, exportsize))) {
       nbdkit_error ("unable to read old handshake: %m");
       goto err;
     }
     h->size = be64toh (old.exportsize);
     h->flags = be16toh (old.eflags);
   }
-  else if (version == NEW_VERSION) {
+  else if (version == NBD_NEW_VERSION) {
     uint16_t gflags;
     uint32_t cflags;
-    struct new_option opt;
-    struct new_handshake_finish finish;
+    struct nbd_new_option opt;
+    struct nbd_export_name_option_reply finish;
     size_t expect;
 
     nbdkit_debug ("trying newstyle connection");
@@ -1065,7 +1066,7 @@ nbd_open_handle (int readonly)
     export_name:
       /* Option haggling untried or failed, use older NBD_OPT_EXPORT_NAME */
       nbdkit_debug ("trying NBD_OPT_EXPORT_NAME");
-      opt.version = htobe64 (NEW_VERSION);
+      opt.version = htobe64 (NBD_NEW_VERSION);
       opt.option = htobe32 (NBD_OPT_EXPORT_NAME);
       opt.optlen = htobe32 (strlen (export));
       if (write_full (h->fd, &opt, sizeof opt) ||
