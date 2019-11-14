@@ -44,6 +44,7 @@ EXTRA_DIST = \
 	nbdkit-release-notes-1.10.pod \
 	nbdkit-release-notes-1.12.pod \
 	nbdkit-release-notes-1.14.pod \
+	nbdkit-release-notes-1.16.pod \
 	nbdkit-security.pod \
 	nbdkit-service.pod \
 	nbdkit-tls.pod \
@@ -66,6 +67,7 @@ man_MANS = \
 	nbdkit-release-notes-1.10.1 \
 	nbdkit-release-notes-1.12.1 \
 	nbdkit-release-notes-1.14.1 \
+	nbdkit-release-notes-1.16.1 \
 	nbdkit-security.1 \
 	nbdkit-service.1 \
 	nbdkit-tls.1 \
@@ -130,6 +132,11 @@ nbdkit-release-notes-1.12.1: nbdkit-release-notes-1.12.pod
 	    $<
 
 nbdkit-release-notes-1.14.1: nbdkit-release-notes-1.14.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+nbdkit-release-notes-1.16.1: nbdkit-release-notes-1.16.pod
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

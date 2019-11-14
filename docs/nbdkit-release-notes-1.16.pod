@@ -1,0 +1,172 @@
+=head1 NAME
+
+nbdkit-release-notes-1.16 - release notes for nbdkit 1.16
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.16.
+This describes the major changes since 1.14.
+
+nbdkit 1.16.0 was released on 14th November 2019.
+
+=head2 Security
+
+Two security issues were found during development of nbdkit 1.16.
+Fixes for these were backported to older stable branches.  Upgrading
+to the fixed versions is highly recommended.  The new
+L<nbdkit-security(1)> man page contains an up to date list of past
+security issues.
+
+=head3 CVE-2019-14850 
+denial of service due to premature opening of back-end connection
+
+See the full announcement and links to mitigation, tests and fixes
+here:
+https://www.redhat.com/archives/libguestfs/2019-September/msg00084.html
+
+=head3 CVE-2019-14851
+assertion failure by issuing commands in the wrong order
+
+This CVE was caused by the fix to the previous issue.
+
+See the full announcement and links to mitigation, tests and fixes
+here:
+https://www.redhat.com/archives/libguestfs/2019-September/msg00272.html
+
+=head2 New features
+
+Add support for fast zeroing.  Plugins can expose this using the new
+C<.can_fast_zero> method (Eric Blake).
+
+L<nbdkit-partitioning-plugin(1)> allows use of C<mbr-id=default> or
+C<type-guid=default> to go back to the default MBR byte or partition
+type GUID.
+
+New I<--mask-handshake> server flag can be used for testing client
+feature negotiation (Eric Blake).
+
+The client export name is passed to L<nbdkit-captive(1)> I<--run>
+parameter as C<$exportname> (Eric Blake).
+
+Captive I<--run> commands which fail (eg. aborting) now cause nbdkit
+to exit with an error instead of errors being silently ignored (Eric
+Blake).
+
+File descriptors can be passed to password parameters, eg:
+C<password=-3> which means that the password should be read from file
+descriptor 3.
+
+nbdkit can now serve over the C<AF_VSOCK> protocol (thanks Stefan
+Hajnoczi).
+
+New I<--log=null> option discards error messages.
+
+=head2 Plugins
+
+Python 2 support has been B<dropped> from L<nbdkit-python-plugin(3)>
+in line with Python 2 end of life at the beginning of 2020.  Python
+E<ge> 3.3 is required by this plugin.  If you wish to continue to use
+Python 2 then you will need to use nbdkit 1.14.
+
+New L<nbdkit-info-plugin(1)> which returns various server information
+back to the client.  It can be used for testing server latency amongst
+other things.
+
+L<nbdkit-data-plugin(1)> now allows you to write C<BYTE*N> to get
+repeated bytes (eg. S<C<nbdkit data data="0x55*4096">>).
+
+L<nbdkit-ssh-plugin(1)> new parameter C<compression=true|false> to
+control transport compression.
+
+L<nbdkit-vddk-plugin(1)> is no longer compiled on non-x86 platforms
+since VMware has only ever shipped VDDK on x86.
+
+L<nbdkit-sh-plugin(1)> scripts can now see the client exportname and
+can use the C<magic_config_key> feature.
+
+=head2 Filters
+
+New L<nbdkit-retry-filter(1)> which can reopen the plugin
+transparently on certain types of failures (lots of help from Eric
+Blake).
+
+=head2 API
+
+Macros C<NBDKIT_VERSION_MAJOR>, C<NBDKIT_VERSION_MINOR>,
+C<NBDKIT_VERSION_MICRO> expose the compile-time version of nbdkit to
+plugins and filters (Eric Blake).
+
+Filters (which unlike plugins do I<not> have a public stable API) must
+now exactly match the version of nbdkit when loaded (Eric Blake).
+
+New C<.can_fast_zero> method (Eric Blake).
+
+New C<nbdkit_export_name> server function for reading the export name
+passed by the client.
+
+New C<nbdkit_peer_name> server function to return the client address
+(like L<getpeername(2)>).
+
+New server functions for safely parsing integers: C<nbdkit_parse_int>,
+C<nbdkit_parse_unsigned>, C<nbdkit_parse_int8_t>,
+C<nbdkit_parse_uint8_t>, C<nbdkit_parse_int16_t>,
+C<nbdkit_parse_uint16_t>, C<nbdkit_parse_int32_t>,
+C<nbdkit_parse_uint32_t>, C<nbdkit_parse_int64_t>,
+C<nbdkit_parse_uint64_t>.
+
+=head2 Bug fixes
+
+C<.trim> with FUA flag set now works (Eric Blake).
+
+=head2 Documentation
+
+The previous release notes have been turned into man pages.
+
+=head2 Tests
+
+Several tests now optionally use L<nbdsh(1)> instead of qemu-io.
+
+You can now fuzz nbdkit using either American Fuzzy Lop or clang’s
+libFuzzer.
+
+Several tests have had sleep times increased to make them more stable
+when run on slow or heavily loaded machines.
+
+=head2 Internals
+
+Reproducible builds (Chris Lamb).
+
+Compile code with I<-Wshadow> warning (Eric Blake).
+
+The internal backend system has been extensively overhauled.  In
+particular this means that we now validate request ranges as requests
+are passed between filters and down to the plugin, making it easier to
+find bugs in filters early (Eric Blake).
+
+Plugin size and C<can_*> flags are cached more aggressively by the
+server (Eric Blake).
+
+Variable Length Arrays (VLAs) on stack are now banned throughout the
+code.
+
+The F<nbd-protocol.h> header describing the NBD protocol is now shared
+with L<libnbd(3)>.
+
+Plugin C<.unload> method is now called after all worker threads have
+exited, avoiding races at server shutdown.
+
+Code was audited using Coverity and various problems were fixed.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.
