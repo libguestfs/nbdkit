@@ -33,6 +33,8 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-nbd-plugin.pod
 
+if HAVE_NBD_PLUGIN
+
 plugin_LTLIBRARIES = nbdkit-nbd-plugin.la
 
 nbdkit_nbd_plugin_la_SOURCES = \
@@ -91,3 +93,5 @@ nbdkit-nbd-plugin.1: nbdkit-nbd-plugin.pod
 	    $<
 
 endif HAVE_POD
+
+endif HAVE_NBD_PLUGIN

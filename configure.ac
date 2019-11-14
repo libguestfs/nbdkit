@@ -735,7 +735,7 @@ AM_CONDITIONAL([HAVE_ZLIB],[test "x$ZLIB_LIBS" != "x"])
 dnl Check for libnbd (only if you want to compile the full nbd plugin).
 AC_ARG_WITH([libnbd],
     [AS_HELP_STRING([--without-libnbd],
-                    [disable nbd plugin @<:@default=check@:>@])],
+                    [disable full nbd plugin @<:@default=check@:>@])],
     [],
     [with_libnbd=check])
 AS_IF([test "$with_libnbd" != "no"],[
@@ -747,6 +747,13 @@ AS_IF([test "$with_libnbd" != "no"],[
     [AC_MSG_WARN([libnbd >= 0.9.8 not found, nbd plugin will be crippled])])
 ])
 AM_CONDITIONAL([HAVE_LIBNBD], [test "x$LIBNBD_LIBS" != "x"])
+
+dnl Also you can disable the whole nbd plugin.
+AC_ARG_ENABLE([nbd-plugin],
+    [AS_HELP_STRING([--disable-nbd-plugin], [disable nbd plugin])],
+    [],
+    [enable_nbd_plugin=yes])
+AM_CONDITIONAL([HAVE_NBD_PLUGIN],[test "x$enable_nbd_plugin" = "xyes"])
 
 dnl Check for liblzma (only if you want to compile the xz filter).
 AC_ARG_WITH([liblzma],
@@ -1040,7 +1047,7 @@ feature "iso .................................... " \
 feature "libvirt ................................ " \
         test "x$HAVE_LIBVIRT_TRUE" = "x"
 feature "nbd .................................... " \
-        test "x$HAVE_LIBNBD_TRUE" = "x"
+        test "x$HAVE_NBD_PLUGIN_TRUE" = "x"
 feature "ssh .................................... " \
         test "x$HAVE_SSH_TRUE" = "x"
 feature "tar .................................... " \
