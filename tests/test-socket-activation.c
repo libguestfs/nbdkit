@@ -58,6 +58,7 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 
+#include "byte-swapping.h"
 #include "nbd-protocol.h"
 
 #ifndef SOCK_CLOEXEC

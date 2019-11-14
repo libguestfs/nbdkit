@@ -217,6 +217,7 @@ check_PROGRAMS += \
 
 test_socket_activation_SOURCES = test-socket-activation.c
 test_socket_activation_CPPFLAGS = \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/protocol \
 	$(NULL)
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
