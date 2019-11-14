@@ -81,7 +81,7 @@ if ! test -s captive.pid; then
     exit 10
 fi
 kill -s ABRT $(cat captive.pid) || exit 10
-sleep 5
+sleep 10
 ' > captive.out || status=$?
 if test $status != $(( 128 + $(kill -l ABRT) )); then
     echo "$0: unexpected exit status $status"
