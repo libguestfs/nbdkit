@@ -176,6 +176,9 @@ endif HAVE_VDDK
 #
 # TESTS: Tests that don't have any special requirements.
 #
+# LIBNBD_TESTS: Tests that link to the libnbd C library should be
+# added to this variable.
+#
 # LIBGUESTFS_TESTS: Tests that link to libguestfs C library should be
 # added to this variable.
 #
@@ -183,6 +186,7 @@ endif HAVE_VDDK
 # Consult the automake manual for the meaning of these.
 
 TESTS =
+LIBNBD_TESTS =
 LIBGUESTFS_TESTS =
 
 check_PROGRAMS =
@@ -1111,6 +1115,11 @@ endif HAVE_LIBLZMA
 endif HAVE_PLUGINS
 
 #----------------------------------------------------------------------
+
+if HAVE_LIBNBD
+check_PROGRAMS += $(LIBNBD_TESTS)
+TESTS += $(LIBNBD_TESTS)
+endif HAVE_LIBNBD
 
 if HAVE_LIBGUESTFS
 check_PROGRAMS += $(LIBGUESTFS_TESTS)
