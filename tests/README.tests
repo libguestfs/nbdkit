@@ -1,7 +1,5 @@
-The real tests use libguestfs as a convenient way to control the qemu
-NBD client.
-
-To test a plugin using libguestfs:
+To test a plugin using libguestfs
+=================================
 
   - #include <test.h>
 
@@ -28,4 +26,17 @@ To test a plugin using libguestfs:
   - Close the handle and exit.  An 'atexit' handler installed by
     'test_start_nbdkit' cleans up the server automatically.
 
-For an example, see 'test-file.c'.
+For an example, see 'test-data.c'.
+
+To test a plugin using libnbd
+=============================
+
+  - Open a libnbd handle, and configure it using:
+
+    char *args[] = { "nbdkit", "-s", "--exit-with-parent",
+                     "plugin", <plugin args ...>, NULL };
+    nbd_connect_command (nbd, args);
+
+  - Perform tests via libnbd.
+
+For an example, see 'test-delay.c'.
