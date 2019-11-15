@@ -172,19 +172,49 @@ check-vddk:
 endif HAVE_VDDK
 
 #----------------------------------------------------------------------
-# Basic server command line and start-up tests.
+# Basic test variables.
+#
+# TESTS: Tests that don't have any special requirements.
+#
+# LIBGUESTFS_TESTS: Tests that link to libguestfs C library should be
+# added to this variable.
+#
+# GUESTFISH_TESTS: Tests that use guestfish command line tool should
+# be added to this variable.
+#
+# check_*, noinst_*, EXTRA_PROGRAMS: Usual automake variables.
+# Consult the automake manual for the meaning of these.
+
+TESTS =
+LIBGUESTFS_TESTS =
+GUESTFISH_TESTS =
 
 check_PROGRAMS =
 check_DATA =
 check_SCRIPTS =
 check_LTLIBRARIES =
 noinst_LTLIBRARIES =
+EXTRA_PROGRAMS =
 
 # Ensure we're testing the local copy by running everything through
 # the nbdkit helper script in the top build directory.
-TESTS_ENVIRONMENT = PATH=$(abs_top_builddir):$(PATH) SRCDIR=$(srcdir)
+#
+# Use the 'direct' backend, and ensure maximum libguestfs debugging.
+#
+# Enable libnbd debugging.
+TESTS_ENVIRONMENT = \
+	PATH=$(abs_top_builddir):$(PATH) \
+	SRCDIR=$(srcdir) \
+	LIBGUESTFS_ATTACH_METHOD=appliance \
+	LIBGUESTFS_DEBUG=1 \
+	LIBGUESTFS_TRACE=1 \
+	LIBNBD_DEBUG=1 \
+	$(NULL)
 
-TESTS = \
+#----------------------------------------------------------------------
+# Basic server command line and start-up tests.
+
+TESTS += \
 	test-help.sh \
 	test-version.sh \
 	test-dump-config.sh \
@@ -369,23 +399,6 @@ TESTS += \
 	test-parallel-sh.sh \
 	$(NULL)
 
-# Most in-depth tests need libguestfs, since that is a convenient way to
-# drive qemu.
-LIBGUESTFS_TESTS =
-EXTRA_PROGRAMS =
-if HAVE_LIBGUESTFS
-check_PROGRAMS += $(LIBGUESTFS_TESTS)
-TESTS += $(LIBGUESTFS_TESTS)
-
-# Use the 'direct' backend, and ensure maximum libguestfs and libnbd
-# debugging is written to the *.log files in case there is a problem.
-TESTS_ENVIRONMENT += \
-	LIBGUESTFS_ATTACH_METHOD=appliance \
-	LIBGUESTFS_DEBUG=1 \
-	LIBGUESTFS_TRACE=1 \
-	LIBNBD_DEBUG=1 \
-	$(NULL)
-
 # Common test library.
 check_LTLIBRARIES += libtest.la
 libtest_la_SOURCES = test.c test.h
@@ -411,8 +424,6 @@ LIBGUESTFS_TESTS += test-oldstyle
 test_oldstyle_SOURCES = test-oldstyle.c test.h
 test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-endif HAVE_LIBGUESTFS
 
 # Test export flags.
 TESTS += test-eflags.sh
@@ -523,9 +534,7 @@ TESTS += test-file-extents.sh
 endif HAVE_GUESTFISH
 
 # floppy plugin test.
-if HAVE_GUESTFISH
-TESTS += test-floppy.sh
-endif HAVE_GUESTFISH
+GUESTFISH_TESTS += test-floppy.sh
 
 # full plugin test.
 TESTS += test-full.sh
@@ -561,20 +570,14 @@ TESTS += \
 
 # iso plugin test.
 if HAVE_ISO
-if HAVE_GUESTFISH
-
-TESTS += test-iso.sh
-
-endif HAVE_GUESTFISH
+GUESTFISH_TESTS += test-iso.sh
 endif HAVE_ISO
 
 # linuxdisk plugin test.
-if HAVE_GUESTFISH
-TESTS += \
+GUESTFISH_TESTS += \
 	test-linuxdisk.sh \
 	test-linuxdisk-copy-out.sh \
 	$(NULL)
-endif HAVE_GUESTFISH
 
 # memory plugin test.
 LIBGUESTFS_TESTS += test-memory
@@ -590,13 +593,11 @@ TESTS += \
 	test-partitioning4.sh \
 	test-partitioning6.sh \
 	$(NULL)
-if HAVE_GUESTFISH
-TESTS += \
+GUESTFISH_TESTS += \
 	test-partitioning2.sh \
 	test-partitioning3.sh \
 	test-partitioning5.sh \
 	$(NULL)
-endif HAVE_GUESTFISH
 
 # pattern plugin test.
 TESTS += \
@@ -981,21 +982,17 @@ test_layers_filter3_la_LDFLAGS = \
 TESTS += test-blocksize.sh
 
 # cache filter test.
-if HAVE_GUESTFISH
-TESTS += \
+GUESTFISH_TESTS += \
 	test-cache.sh \
 	test-cache-on-read.sh \
 	$(NULL)
-endif HAVE_GUESTFISH
 TESTS += test-cache-max-size.sh
 
 # cacheextents filter test.
 TESTS += test-cacheextents.sh
 
 # cow filter test.
-if HAVE_GUESTFISH
-TESTS += test-cow.sh
-endif HAVE_GUESTFISH
+GUESTFISH_TESTS += test-cow.sh
 TESTS += test-cow-null.sh
 
 # delay filter tests.
@@ -1137,3 +1134,14 @@ endif HAVE_GUESTFISH
 endif HAVE_LIBLZMA
 
 endif HAVE_PLUGINS
+
+#----------------------------------------------------------------------
+
+if HAVE_LIBGUESTFS
+check_PROGRAMS += $(LIBGUESTFS_TESTS)
+TESTS += $(LIBGUESTFS_TESTS)
+endif HAVE_LIBGUESTFS
+
+if HAVE_GUESTFISH
+TESTS += $(GUESTFISH_TESTS)
+endif HAVE_GUESTFISH
