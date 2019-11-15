@@ -35,6 +35,8 @@
 source ./functions.sh
 set -e
 
+requires guestfish --version
+
 sock=`mktemp -u`
 files="iso.pid $sock"
 rm -f $files

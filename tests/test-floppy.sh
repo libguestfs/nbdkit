@@ -35,6 +35,8 @@
 source ./functions.sh
 set -e
 
+requires guestfish --version
+
 sock=`mktemp -u`
 files="floppy.pid $sock floppy.test1 floppy.test2"
 rm -f $files

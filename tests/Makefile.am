@@ -179,15 +179,11 @@ endif HAVE_VDDK
 # LIBGUESTFS_TESTS: Tests that link to libguestfs C library should be
 # added to this variable.
 #
-# GUESTFISH_TESTS: Tests that use guestfish command line tool should
-# be added to this variable.
-#
 # check_*, noinst_*, EXTRA_PROGRAMS: Usual automake variables.
 # Consult the automake manual for the meaning of these.
 
 TESTS =
 LIBGUESTFS_TESTS =
-GUESTFISH_TESTS =
 
 check_PROGRAMS =
 check_DATA =
@@ -534,7 +530,7 @@ TESTS += test-file-extents.sh
 endif HAVE_GUESTFISH
 
 # floppy plugin test.
-GUESTFISH_TESTS += test-floppy.sh
+TESTS += test-floppy.sh
 
 # full plugin test.
 TESTS += test-full.sh
@@ -570,11 +566,11 @@ TESTS += \
 
 # iso plugin test.
 if HAVE_ISO
-GUESTFISH_TESTS += test-iso.sh
+TESTS += test-iso.sh
 endif HAVE_ISO
 
 # linuxdisk plugin test.
-GUESTFISH_TESTS += \
+TESTS += \
 	test-linuxdisk.sh \
 	test-linuxdisk-copy-out.sh \
 	$(NULL)
@@ -590,13 +586,11 @@ test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # partitioning plugin test.
 TESTS += \
 	test-partitioning1.sh \
-	test-partitioning4.sh \
-	test-partitioning6.sh \
-	$(NULL)
-GUESTFISH_TESTS += \
 	test-partitioning2.sh \
 	test-partitioning3.sh \
+	test-partitioning4.sh \
 	test-partitioning5.sh \
+	test-partitioning6.sh \
 	$(NULL)
 
 # pattern plugin test.
@@ -982,7 +976,7 @@ test_layers_filter3_la_LDFLAGS = \
 TESTS += test-blocksize.sh
 
 # cache filter test.
-GUESTFISH_TESTS += \
+TESTS += \
 	test-cache.sh \
 	test-cache-on-read.sh \
 	$(NULL)
@@ -992,8 +986,10 @@ TESTS += test-cache-max-size.sh
 TESTS += test-cacheextents.sh
 
 # cow filter test.
-GUESTFISH_TESTS += test-cow.sh
-TESTS += test-cow-null.sh
+TESTS += \
+	test-cow.sh \
+	test-cow-null.sh \
+	$(NULL)
 
 # delay filter tests.
 TESTS += test-shutdown.sh
@@ -1141,7 +1137,3 @@ if HAVE_LIBGUESTFS
 check_PROGRAMS += $(LIBGUESTFS_TESTS)
 TESTS += $(LIBGUESTFS_TESTS)
 endif HAVE_LIBGUESTFS
-
-if HAVE_GUESTFISH
-TESTS += $(GUESTFISH_TESTS)
-endif HAVE_GUESTFISH

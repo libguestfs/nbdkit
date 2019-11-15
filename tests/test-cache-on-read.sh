@@ -38,6 +38,8 @@ source ./functions.sh
 set -e
 set -x
 
+requires guestfish --version
+
 sock=`mktemp -u`
 files="cache-on-read.img $sock cache-on-read.pid"
 rm -f $files
