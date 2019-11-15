@@ -608,12 +608,12 @@ test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 endif HAVE_NBD_PLUGIN
 
 # null plugin test.
-LIBGUESTFS_TESTS += test-null
+LIBNBD_TESTS += test-null
 TESTS += test-null-extents.sh
 
-test_null_SOURCES = test-null.c test.h
-test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_null_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_null_SOURCES = test-null.c
+test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_null_LDADD = $(LIBNBD_LIBS)
 
 # random plugin test.
 LIBNBD_TESTS += test-random
