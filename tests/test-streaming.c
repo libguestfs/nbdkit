@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014 Red Hat Inc.
+ * Copyright (C) 2014-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -34,8 +34,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -43,9 +41,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include <guestfs.h>
-
-#include "test.h"
+#include <libnbd.h>
 
 static char data[65536];
 
@@ -53,8 +49,7 @@ int
 main (int argc, char *argv[])
 {
   pid_t md5pid;
-  guestfs_h *g;
-  int r;
+  struct nbd_handle *nbd;
   size_t i;
   int pipefd[2];
   char md5[33];
@@ -66,9 +61,20 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  if (test_start_nbdkit ("streaming", "pipe=streaming.fifo", "size=640k",
-                         NULL) == -1)
+  nbd = nbd_create ();
+  if (nbd == NULL) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
+  }
+
+  char *args[] = {
+    "nbdkit", "-s", "--exit-with-parent",
+    "streaming", "pipe=streaming.fifo", "size=640k", NULL
+  };
+  if (nbd_connect_command (nbd, args) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
 
   /* Fork to run a second process which reads from streaming.fifo and
    * checks that the content is correct.  The test doesn't care about
@@ -87,7 +93,7 @@ main (int argc, char *argv[])
 
   if (md5pid == 0) {
     /* Child: run md5sum on the pipe. */
-    char *argv[] = { "md5sum", NULL };
+    char *exec_argv[] = { "md5sum", NULL };
 
     close (0);
     open ("streaming.fifo", O_RDONLY);
@@ -95,46 +101,26 @@ main (int argc, char *argv[])
     dup2 (pipefd[1], 1);
     close (pipefd[0]);
 
-    execvp ("md5sum", argv);
+    execvp ("md5sum", exec_argv);
     perror ("md5sum");
     _exit (EXIT_FAILURE);
   }
 
   close (pipefd[1]);
 
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
-    exit (EXIT_FAILURE);
-  }
-
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
-    exit (EXIT_FAILURE);
-
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
-
   /* Write linearly to the virtual disk. */
   memset (data, 1, sizeof data);
   for (i = 0; i < 10; ++i) {
-    guestfs_pwrite_device (g, "/dev/sda", data, sizeof data,
-                           i * sizeof data);
+    if (nbd_pwrite (nbd, data, sizeof data, i * sizeof data, 0) == -1) {
+      fprintf (stderr, "%s\n", nbd_get_error ());
+      exit (EXIT_FAILURE);
+    }
   }
 
-  if (guestfs_shutdown (g) == -1)
-    exit (EXIT_FAILURE);
-
-  guestfs_close (g);
-
-  /* We have to explicitly kill nbdkit here so that it closes the
+  /* This kills the nbdkit subprocess, which implicitly closes the
    * pipe.
    */
-  kill (pid, SIGINT);
+  nbd_close (nbd);
 
   /* Check the hash computed by the child process. */
   if (read (pipefd[0], md5, 32) != 32) {
@@ -143,6 +129,7 @@ main (int argc, char *argv[])
   }
   md5[32] = '\0';
 
+  printf ("md5 = %s\n", md5);
   if (strcmp (md5, "2c7f81c580f7f9eb52c1bd2f6f493b6f") != 0) {
     fprintf (stderr, "unexpected hash: %s\n", md5);
     exit (EXIT_FAILURE);

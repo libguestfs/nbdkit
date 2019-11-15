@@ -697,12 +697,11 @@ endif HAVE_SSH
 
 # streaming plugin test.
 # Doesn't work:
-#LIBGUESTFS_TESTS += test-streaming
-EXTRA_PROGRAMS += test-streaming
+LIBNBD_TESTS += test-streaming
 
-test_streaming_SOURCES = test-streaming.c test.h
-test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_streaming_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_streaming_SOURCES = test-streaming.c
+test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_streaming_LDADD = $(LIBNBD_LIBS)
 
 if HAVE_VDDK
 # VDDK plugin test.
