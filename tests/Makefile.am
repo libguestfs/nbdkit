@@ -405,25 +405,25 @@ libtest_la_SOURCES = test.c test.h
 libtest_la_CFLAGS = $(WARNINGS_CFLAGS)
 
 # Basic connection test.
-LIBGUESTFS_TESTS += test-connect
+LIBNBD_TESTS += test-connect
 
-test_connect_SOURCES = test-connect.c test.h
-test_connect_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_connect_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_connect_SOURCES = test-connect.c
+test_connect_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_connect_LDADD = $(LIBNBD_LIBS)
 
 # newstyle protocol test.
-LIBGUESTFS_TESTS += test-newstyle
+LIBNBD_TESTS += test-newstyle
 
-test_newstyle_SOURCES = test-newstyle.c test.h
-test_newstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_newstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_newstyle_SOURCES = test-newstyle.c
+test_newstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_newstyle_LDADD = $(LIBNBD_LIBS)
 
 # oldstyle protocol test.
-LIBGUESTFS_TESTS += test-oldstyle
+LIBNBD_TESTS += test-oldstyle
 
-test_oldstyle_SOURCES = test-oldstyle.c test.h
-test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_oldstyle_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_oldstyle_SOURCES = test-oldstyle.c
+test_oldstyle_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_oldstyle_LDADD = $(LIBNBD_LIBS)
 
 # Test export flags.
 TESTS += test-eflags.sh
@@ -513,11 +513,12 @@ endif HAVE_GUESTFISH
 endif HAVE_EXT2
 
 # file plugin test.
-LIBGUESTFS_TESTS += test-file test-file-block
+LIBNBD_TESTS += test-file
+LIBGUESTFS_TESTS += test-file-block
 
-test_file_SOURCES = test-file.c test.h
-test_file_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_file_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_file_SOURCES = test-file.c
+test_file_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_file_LDADD = $(LIBNBD_LIBS)
 
 test_file_block_SOURCES = test-file-block.c test.h
 test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -615,12 +616,12 @@ test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_null_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # random plugin test.
-LIBGUESTFS_TESTS += test-random
+LIBNBD_TESTS += test-random
 
-test_random_SOURCES = test-random.c test.h
+test_random_SOURCES = test-random.c
 test_random_CPPFLAGS = -I $(top_srcdir)/common/include
-test_random_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_random_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_random_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_random_LDADD = $(LIBNBD_LIBS)
 
 # split files plugin test.
 check_DATA += split1 split2 split3
@@ -637,11 +638,11 @@ split3: file-data
 	rm -f $@ $@-t
 	dd if=$< of=$@-t bs=1 skip=200
 	mv $@-t $@
-LIBGUESTFS_TESTS += test-split
+LIBNBD_TESTS += test-split
 
-test_split_SOURCES = test-split.c test.h
-test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_split_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_split_SOURCES = test-split.c
+test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_split_LDADD = $(LIBNBD_LIBS)
 
 # ssh plugin test.
 if HAVE_SSH
@@ -983,11 +984,11 @@ TESTS += \
 
 # delay filter tests.
 TESTS += test-shutdown.sh
-LIBGUESTFS_TESTS += test-delay
+LIBNBD_TESTS += test-delay
 
-test_delay_SOURCES = test-delay.c test.h
-test_delay_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_delay_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+test_delay_SOURCES = test-delay.c
+test_delay_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_delay_LDADD = $(LIBNBD_LIBS)
 
 # error filter test.
 LIBGUESTFS_TESTS += test-error

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -40,65 +40,56 @@
 #include <unistd.h>
 #include <time.h>
 
-#include <guestfs.h>
-
-#include "test.h"
+#include <libnbd.h>
 
 int
 main (int argc, char *argv[])
 {
-  guestfs_h *g;
-  int i, r;
+  struct nbd_handle *nbd;
+  int i;
   time_t start_t, end_t;
+  char data[512];
 
-  if (test_start_nbdkit ("--filter", "delay",
-                         "memory", "1M",
-                         "wdelay=10", NULL) == -1)
-    exit (EXIT_FAILURE);
-
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
+  nbd = nbd_create ();
+  if (nbd == NULL) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
+  char *args[] = {
+    "nbdkit", "-s", "--exit-with-parent",
+    "--filter", "delay",
+    "memory", "1M",
+    "wdelay=10", NULL
+  };
+  if (nbd_connect_command (nbd, args) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
-
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
+  }
 
   /* Reads should work as normal.  Do lots of small reads here so
    * we will notice if they are being delayed.
    */
   for (i = 0; i < 100; ++i) {
-    char *data;
-    size_t n;
-
-    data = guestfs_pread_device (g, "/dev/sda", 512, 51200-512*i, &n);
-    if (data == NULL)
+    if (nbd_pread (nbd, data, sizeof data, 51200-512*i, 0) == -1) {
+      fprintf (stderr, "%s\n", nbd_get_error ());
       exit (EXIT_FAILURE);
-    free (data);
+    }
   }
 
   /* Writes should be delayed by >= 10 seconds. */
   time (&start_t);
-  if (guestfs_pwrite_device (g, "/dev/sda", "hello", 5, 100000) == -1)
+  if (nbd_pwrite (nbd, "hello", 5, 100000, 0) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
-  if (guestfs_sync (g) == -1)
-    exit (EXIT_FAILURE);
+  }
   time (&end_t);
 
   if (end_t - start_t < 10) {
-    fprintf (stderr, "%s FAILED: no write delay detected\n", program_name);
+    fprintf (stderr, "%s FAILED: no write delay detected\n", argv[0]);
     exit (EXIT_FAILURE);
   }
 
-  guestfs_close (g);
+  nbd_close (nbd);
   exit (EXIT_SUCCESS);
 }

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -39,68 +39,43 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <guestfs.h>
-
-#include "test.h"
+#include <libnbd.h>
 
 int
 main (int argc, char *argv[])
 {
-  guestfs_h *g;
-  int r;
+  struct nbd_handle *nbd;
   int64_t size;
-  char **parts;
-  size_t i;
 
-  if (test_start_nbdkit ("example1", NULL) == -1)
-    exit (EXIT_FAILURE);
-
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
+  nbd = nbd_create ();
+  if (nbd == NULL) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_READONLY, 1,
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
+  char *args[] = {
+    "nbdkit", "-s", "--exit-with-parent", "example1", NULL
+  };
+  if (nbd_connect_command (nbd, args) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
-
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
+  }
 
   /* The example1 plugin makes a static virtual disk which is 100 MB
-   * in size and has one empty partition.  Check this.
+   * in size.
    */
-  size = guestfs_blockdev_getsize64 (g, "/dev/sda");
-  if (size == -1)
+  size = nbd_get_size (nbd);
+  if (size == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
+  }
   if (size != 104857600) {
     fprintf (stderr,
              "%s FAILED: incorrect disk size (actual: %" PRIi64
-             ", expected: 104857600)\n", program_name, size);
+             ", expected: 104857600)\n", argv[0], size);
     exit (EXIT_FAILURE);
   }
 
-  parts = guestfs_list_partitions (g);
-  if (!parts)
-    exit (EXIT_FAILURE);
-  if (parts[0] == NULL || parts[1] != NULL ||
-      strcmp (parts[0], "/dev/sda1") != 0) {
-    fprintf (stderr,
-             "%s FAILED: incorrect result from guestfs_list_partitions\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-
-  for (i = 0; parts[i] != NULL; ++i)
-    free (parts[i]);
-  free (parts);
-
-  guestfs_close (g);
+  nbd_close (nbd);
   exit (EXIT_SUCCESS);
 }

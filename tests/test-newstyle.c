@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -34,71 +34,46 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
 #include <string.h>
-#include <unistd.h>
 
-#include <guestfs.h>
-
-#include "test.h"
-
-#define EXPORTNAME "/"
+#include <libnbd.h>
 
 int
 main (int argc, char *argv[])
 {
-  guestfs_h *g;
-  int r;
-  char *data;
-  size_t i, size;
+  struct nbd_handle *nbd;
 
-  if (test_start_nbdkit ("-e", EXPORTNAME,
-                         "-n", "file", "file-data", NULL) == -1)
-    exit (EXIT_FAILURE);
-
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
+  nbd = nbd_create ();
+  if (nbd == NULL) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
-  /* Using any exportname causes qemu to use the newstyle protocol. */
-  r = guestfs_add_drive_opts (g, EXPORTNAME,
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
-    exit (EXIT_FAILURE);
-
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
-
-  /* Check the data in the file is \x01-\x08 repeated 512 times. */
-  data = guestfs_pread_device (g, "/dev/sda", 8 * 512, 0, &size);
-  if (!data)
-    exit (EXIT_FAILURE);
-  if (size != 8 * 512) {
-    fprintf (stderr,
-             "%s FAILED: unexpected size (actual: %zu, expected: 512)\n",
-             program_name, size);
+  char *args[] = {
+    "nbdkit", "-s", "--exit-with-parent",
+    "--newstyle", "file", "file-data", NULL
+  };
+  if (nbd_connect_command (nbd, args) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
-  for (i = 0; i < 512 * 8; i += 8) {
-    if (data[i] != 1 || data[i+1] != 2 ||
-        data[i+2] != 3 || data[i+3] != 4 ||
-        data[i+4] != 5 || data[i+5] != 6 ||
-        data[i+6] != 7 || data[i+7] != 8) {
-      fprintf (stderr, "%s FAILED: unexpected data returned at offset %zu\n",
-               program_name, i);
-      exit (EXIT_FAILURE);
-    }
+  /* Simply connecting successfully is enough, but with libnbd 1.2 we
+   * can also check that the protocol being used is the expected one.
+   */
+#ifdef LIBNBD_HAVE_NBD_GET_PROTOCOL
+  const char *s = nbd_get_protocol (nbd);
+  if (s == NULL) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
+    exit (EXIT_FAILURE);
   }
+  if (strcmp (s, "newstyle-fixed") != 0) {
+    fprintf (stderr, "%s: FAILED incorrect protocol used: %s\n",
+             argv[0], s);
+    exit (EXIT_FAILURE);
+  }
+#endif
 
-  free (data);
-
-  guestfs_close (g);
+  nbd_close (nbd);
   exit (EXIT_SUCCESS);
 }
