@@ -428,24 +428,20 @@ TESTS += test-eflags.sh
 TESTS += test-export-name.sh
 
 # common disk image shared with several tests
-if HAVE_GUESTFISH
 check_DATA += disk
 CLEANFILES += disk
 
 disk:
-	rm -f $@ $@-t
-	guestfish -N $@-t=fs:ext4:100M -m /dev/sda1 \
-	    write /hello.txt "hello,world"
+	rm -rf disk.tmp $@ $@-t
+	mkdir disk.tmp
+	echo -n "hello,world" > disk.tmp/hello.txt
+	nbdkit -fv -U - linuxdisk disk.tmp size=100M \
+	    --run 'qemu-img convert $$nbd $@-t'
+	rm -rf disk.tmp
 	mv $@-t $@
 
-endif HAVE_GUESTFISH
-
 # curl plugin test.
-
 if HAVE_CURL
-if HAVE_GUESTFISH
-
-# curl plugin test.
 LIBGUESTFS_TESTS += test-curl
 
 test_curl_SOURCES = \
@@ -469,8 +465,6 @@ test_curl_LDADD = \
 	libtest.la \
 	$(LIBGUESTFS_LIBS) \
 	$(NULL)
-
-endif HAVE_GUESTFISH
 endif HAVE_CURL
 
 # data plugin test.
@@ -525,9 +519,7 @@ test_file_block_SOURCES = test-file-block.c test.h
 test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_file_block_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-if HAVE_GUESTFISH
 TESTS += test-file-extents.sh
-endif HAVE_GUESTFISH
 
 # floppy plugin test.
 TESTS += test-floppy.sh
@@ -537,8 +529,6 @@ TESTS += test-full.sh
 
 # gzip plugin test.
 if HAVE_ZLIB
-if HAVE_GUESTFISH
-
 LIBGUESTFS_TESTS += test-gzip
 check_DATA += disk.gz
 CLEANFILES += disk.gz
@@ -550,8 +540,6 @@ test_gzip_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 disk.gz: disk
 	rm -f $@
 	gzip -9 -c disk > $@
-
-endif HAVE_GUESTFISH
 endif HAVE_ZLIB
 
 # info plugin test.
@@ -654,9 +642,7 @@ test_split_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # ssh plugin test.
 if HAVE_SSH
 # Uses ‘disk’ so we have to make it conditional on guestfish.
-if HAVE_GUESTFISH
 TESTS += test-ssh.sh
-endif HAVE_GUESTFISH
 check_DATA += \
 	ssh/sshd_config \
 	ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub \
@@ -1042,9 +1028,7 @@ TESTS += \
 
 # partition filter test.
 TESTS += test-partition1.sh
-if HAVE_GUESTFISH
 TESTS += test-partition2.sh
-endif HAVE_GUESTFISH
 
 # rate filter test.
 TESTS += \
@@ -1081,8 +1065,6 @@ TESTS += \
 
 # xz filter test.
 if HAVE_LIBLZMA
-if HAVE_GUESTFISH
-
 LIBGUESTFS_TESTS += test-xz
 check_DATA += disk.xz
 CLEANFILES += disk.xz
@@ -1097,9 +1079,8 @@ disk.xz: disk
 # you should choose a 16M block size.
 	xz --best --block-size=32768 -c disk > $@
 
-if HAVE_CURL
-
 # xz filter + curl.
+if HAVE_CURL
 LIBGUESTFS_TESTS += test-xz-curl
 
 test_xz_curl_SOURCES = \
@@ -1125,8 +1106,6 @@ test_xz_curl_LDADD = \
 	$(NULL)
 
 endif HAVE_CURL
-
-endif HAVE_GUESTFISH
 endif HAVE_LIBLZMA
 
 endif HAVE_PLUGINS
