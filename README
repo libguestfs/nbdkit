@@ -111,7 +111,8 @@ For the linuxdisk plugin:
 
  - mke2fs >= 1.42.10 (from e2fsprogs)
 
-For the nbd plugin, to get URI and TLS support:
+For the nbd plugin, to get URI and TLS support, and also to run parts
+of the test suite:
 
  - libnbd >= 0.9.8
 
