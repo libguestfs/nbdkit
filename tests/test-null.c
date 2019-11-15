@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -34,98 +34,52 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
 #include <string.h>
-#include <unistd.h>
 
-#include <guestfs.h>
-
-#include "test.h"
-
-static char data[257] =
-  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+#include <libnbd.h>
 
 int
 main (int argc, char *argv[])
 {
-  guestfs_h *g;
-  int r;
-  char *rdata;
-  size_t rsize;
+  struct nbd_handle *nbd;
+  char wdata[256];
+  char rdata[2048];
   size_t i;
 
-  if (test_start_nbdkit ("null", "100M", NULL) == -1)
-    exit (EXIT_FAILURE);
-
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
+  nbd = nbd_create ();
+  if (nbd == NULL) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
-    exit (EXIT_FAILURE);
-
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
-
-  /* All writes should read back as zeroes.  However we have to
-   * reopen the handle to stop the libguestfs kernel from caching
-   * the written data.
-   */
-  if (guestfs_pwrite_device (g, "/dev/sda", data, 256, 1024) == -1)
-    exit (EXIT_FAILURE);
-
-  if (guestfs_shutdown (g) == -1)
-    exit (EXIT_FAILURE);
-
-  guestfs_close (g);
-
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
+  char *args[] =
+    { "nbdkit", "-s", "--exit-with-parent", "null", "100M", NULL };
+  if (nbd_connect_command (nbd, args) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
-    exit (EXIT_FAILURE);
+  /* The device is writable ... */
+  memset (wdata, 'x', sizeof wdata);
 
-  if (guestfs_launch (g) == -1)
+  if (nbd_pwrite (nbd, wdata, sizeof wdata, 1024, 0) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
+  }
 
-  rdata = guestfs_pread_device (g, "/dev/sda", 2048, 0, &rsize);
-  if (rdata == NULL)
-    exit (EXIT_FAILURE);
-  if (rsize != 2048) {
-    fprintf (stderr, "test-null: short read\n");
+  /* ... but everything should read back as zeroes. */
+  if (nbd_pread (nbd, rdata, sizeof rdata, 0, 0) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
   for (i = 0; i < 2048; ++i) {
     if (rdata[i] != 0) {
-      fprintf (stderr, "test-null: unexpected non-zero data read\n");
+      fprintf (stderr, "%s: unexpected non-zero data read\n", argv[0]);
       exit (EXIT_FAILURE);
     }
   }
-  free (rdata);
 
-  if (guestfs_shutdown (g) == -1)
-    exit (EXIT_FAILURE);
-
-  guestfs_close (g);
+  nbd_close (nbd);
   exit (EXIT_SUCCESS);
 }
