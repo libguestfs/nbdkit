@@ -34,6 +34,8 @@ source ./functions.sh
 set -e
 set -x
 
+requires guestfish --version
+
 sock=`mktemp -u`
 files="cache.img $sock cache.pid"
 rm -f $files

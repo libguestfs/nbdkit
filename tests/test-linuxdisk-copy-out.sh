@@ -37,6 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires guestfish --version
 requires qemu-img --version
 
 files="linuxdisk-copy-out.img

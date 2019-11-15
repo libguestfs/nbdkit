@@ -40,6 +40,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires guestfish --version
 requires mke2fs -V
 
 sock=`mktemp -u`

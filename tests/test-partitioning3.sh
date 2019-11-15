@@ -38,6 +38,8 @@ source ./functions.sh
 set -e
 set -x
 
+requires guestfish --version
+
 sock=`mktemp -u`
 files="partitioning3.pid $sock partitioning3.p1 partitioning3.p2 partitioning3.p3 partitioning3.out"
 rm -f $files

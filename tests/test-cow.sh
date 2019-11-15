@@ -34,6 +34,8 @@ source ./functions.sh
 set -e
 set -x
 
+requires guestfish --version
+
 sock=`mktemp -u`
 files="cow-base.img cow-diff.qcow2 $sock cow.pid"
 rm -f $files

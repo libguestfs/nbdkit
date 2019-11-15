@@ -36,6 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires guestfish --version
 requires mkfifo --version
 
 sock=`mktemp -u`
