@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2018 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -40,11 +40,9 @@
 #include <unistd.h>
 #include <time.h>
 
-#include <guestfs.h>
+#include <libnbd.h>
 
 #include "random.h"
-
-#include "test.h"
 
 #define SIZE 1024*1024
 static char data[SIZE];
@@ -56,51 +54,37 @@ static unsigned histogram[256];
  */
 #define RSIZE 10240
 #define NR_READS 50
+static char rdata[RSIZE];
 
 int
 main (int argc, char *argv[])
 {
-  guestfs_h *g;
-  int r, i;
+  struct nbd_handle *nbd;
   struct random_state random_state;
+  int i;
   unsigned offset;
   char sizearg[32];
-  char *rdata;
-  size_t rsize;
+
+  nbd = nbd_create ();
+  if (nbd == NULL) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
 
   snprintf (sizearg, sizeof sizearg, "%d", SIZE);
-
-  if (test_start_nbdkit ("random", sizearg, NULL) == -1)
-    exit (EXIT_FAILURE);
-
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
+  char *args[] = {
+    "nbdkit", "-s", "--exit-with-parent", "random", sizearg, NULL
+  };
+  if (nbd_connect_command (nbd, args) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
-
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_READONLY, 1,
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
-    exit (EXIT_FAILURE);
-
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
 
   /* Read the whole device. */
-  rdata = guestfs_pread_device (g, "/dev/sda", SIZE, 0, &rsize);
-  if (rdata == NULL)
-    exit (EXIT_FAILURE);
-  if (rsize != SIZE) {
-    fprintf (stderr, "test-random: short read\n");
+  if (nbd_pread (nbd, data, sizeof data, 0, 0) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
-  memcpy (data, rdata, SIZE);
-  free (rdata);
 
   /* Test that the data is sufficiently random using a simple
    * histogram.  This just tests for gross errors and is not a
@@ -127,23 +111,16 @@ main (int argc, char *argv[])
   for (i = 0; i < NR_READS; ++i) {
     offset = xrandom (&random_state);
     offset %= SIZE - RSIZE;
-    rdata = guestfs_pread_device (g, "/dev/sda", RSIZE, offset, &rsize);
-    if (rdata == NULL)
-      exit (EXIT_FAILURE);
-    if (rsize != RSIZE) {
-      fprintf (stderr, "test-random: short read\n");
+    if (nbd_pread (nbd, rdata, sizeof rdata, offset, 0) == -1) {
+      fprintf (stderr, "%s\n", nbd_get_error ());
       exit (EXIT_FAILURE);
     }
-    if (memcmp (&data[offset], rdata, rsize) != 0) {
+    if (memcmp (&data[offset], rdata, RSIZE) != 0) {
       fprintf (stderr, "test-random: returned different data\n");
       exit (EXIT_FAILURE);
     }
-    free (rdata);
   }
 
-  if (guestfs_shutdown (g) == -1)
-    exit (EXIT_FAILURE);
-
-  guestfs_close (g);
+  nbd_close (nbd);
   exit (EXIT_SUCCESS);
 }

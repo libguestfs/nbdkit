@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017 Red Hat Inc.
+ * Copyright (C) 2017-2019 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -34,55 +34,36 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
 #include <string.h>
-#include <unistd.h>
 
-#include <guestfs.h>
-
-#include "test.h"
+#include <libnbd.h>
 
 int
 main (int argc, char *argv[])
 {
-  guestfs_h *g;
-  int r;
-  char *data;
-  size_t i, size;
+  struct nbd_handle *nbd;
+  char data[8*512];
+  size_t i;
 
-  if (test_start_nbdkit ("split",
-                         "split1", "split2",
-                         "file=split3" /* leave file= to test */,
-                         NULL) == -1)
-    exit (EXIT_FAILURE);
-
-  g = guestfs_create ();
-  if (g == NULL) {
-    perror ("guestfs_create");
+  nbd = nbd_create ();
+  if (nbd == NULL) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
-  r = guestfs_add_drive_opts (g, "",
-                              GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                              GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                              GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                              -1);
-  if (r == -1)
+  char *args[] = {
+    "nbdkit", "-s", "--exit-with-parent",
+    "split", "split1", "split2", "file=split3" /* leave file= to test */,
+    NULL
+  };
+  if (nbd_connect_command (nbd, args) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
-
-  if (guestfs_launch (g) == -1)
-    exit (EXIT_FAILURE);
+  }
 
   /* Check the data in the file is \x01-\x08 repeated 512 times. */
-  data = guestfs_pread_device (g, "/dev/sda", 8 * 512, 0, &size);
-  if (!data)
-    exit (EXIT_FAILURE);
-  if (size != 8 * 512) {
-    fprintf (stderr,
-             "%s FAILED: unexpected size "
-             "(actual: %zu, expected: 512)\n",
-             program_name, size);
+  if (nbd_pread (nbd, data, sizeof data, 0, 0) == -1) {
+    fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
@@ -92,13 +73,11 @@ main (int argc, char *argv[])
         data[i+4] != 5 || data[i+5] != 6 ||
         data[i+6] != 7 || data[i+7] != 8) {
       fprintf (stderr, "%s FAILED: unexpected data returned at offset %zu\n",
-               program_name, i);
+               argv[0], i);
       exit (EXIT_FAILURE);
     }
   }
 
-  free (data);
-
-  guestfs_close (g);
+  nbd_close (nbd);
   exit (EXIT_SUCCESS);
 }
