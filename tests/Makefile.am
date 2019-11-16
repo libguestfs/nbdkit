@@ -128,6 +128,7 @@ EXTRA_DIST = \
 	test-retry-zero-flags.sh \
 	test-shutdown.sh \
 	test-ssh.sh \
+	test-swap.sh \
 	test.tcl \
 	test-shebang-perl.sh \
 	test-shebang-python.sh \
@@ -161,7 +162,7 @@ check-valgrind:
 
 # To run only tests which require root, use:
 check-root:
-	$(MAKE) check TESTS="test-file-block"
+	$(MAKE) check TESTS="test-file-block test-swap.sh"
 
 if HAVE_VDDK
 # Run a basic check against a real copy of VDDK.  You must set
@@ -240,6 +241,7 @@ TESTS += \
 	test-foreground.sh \
 	test-debug-flags.sh \
 	test-long-name.sh \
+	test-swap.sh \
 	$(NULL)
 
 check_PROGRAMS += \

@@ -360,6 +360,15 @@ Unix domain sockets:
 
  nbdkit --selinux-label system_u:object_r:svirt_t:s0 ...
 
+=item B<--swap>
+
+Specifies that the NBD device will be used as swap space loop mounted
+on the same machine which is running nbdkit.  To avoid deadlocks this
+locks the whole nbdkit process into memory using L<mlockall(2)>.  This
+may require additional permissions, such as starting the server as
+root or raising the C<RLIMIT_MEMLOCK> (L<ulimit(1)> I<-l>) limit on
+the process.
+
 =item B<-t> THREADS
 
 =item B<--threads> THREADS

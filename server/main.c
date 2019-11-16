@@ -47,6 +47,10 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
 #ifdef HAVE_LINUX_VM_SOCKETS_H
 #include <linux/vm_sockets.h>
 #endif
@@ -86,6 +90,7 @@ bool read_only;                 /* -r */
 const char *run;                /* --run */
 bool listen_stdin;              /* -s */
 const char *selinux_label;      /* --selinux-label */
+bool swap;                      /* --swap */
 unsigned threads;               /* -t */
 int tls;                        /* --tls : 0=off 1=on 2=require */
 const char *tls_certificates_dir; /* --tls-certificates */
@@ -324,6 +329,10 @@ main (int argc, char *argv[])
           printf ("-%c\n", short_options[i]);
       }
       exit (EXIT_SUCCESS);
+
+    case SWAP_OPTION:
+      swap = 1;
+      break;
 
     case TLS_OPTION:
       tls_set_on_cli = true;
@@ -884,6 +893,21 @@ start_serving (void)
              "in this combination\n",
              program_name);
     exit (EXIT_FAILURE);
+  }
+
+  /* Lock the process into memory if requested. */
+  if (swap) {
+#ifdef HAVE_MLOCKALL
+    if (mlockall (MCL_CURRENT | MCL_FUTURE) == -1) {
+      fprintf (stderr, "%s: --swap: mlockall: %m\n", program_name);
+      exit (EXIT_FAILURE);
+    }
+    debug ("mlockall done");
+#else
+    fprintf (stderr, "%s: mlockall (--swap option) "
+             "is not supported on this platform\n");
+    exit (EXIT_FAILURE);
+#endif
   }
 
   /* Socket activation -- we are handling connections on pre-opened

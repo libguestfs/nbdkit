@@ -200,6 +200,7 @@ AC_CHECK_HEADERS([\
 	byteswap.h \
 	endian.h \
 	sys/endian.h \
+	sys/mman.h \
 	sys/prctl.h \
 	sys/procctl.h])
 
@@ -211,6 +212,7 @@ AC_CHECK_FUNCS([\
 	fdatasync \
 	get_current_dir_name \
 	mkostemp \
+	mlockall \
 	pipe2 \
 	ppoll \
 	posix_fadvise])
