@@ -65,6 +65,7 @@ EXTRA_DIST = \
 	test-error0.sh \
 	test-error10.sh \
 	test-error100.sh \
+	test-error-triggered.sh \
 	test-export-name.sh \
 	test-file-extents.sh \
 	test-floppy.sh \
@@ -990,16 +991,11 @@ test_delay_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_delay_LDADD = $(LIBNBD_LIBS)
 
 # error filter test.
-LIBGUESTFS_TESTS += test-error
-
-test_error_SOURCES = test-error.c test.h
-test_error_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_error_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
 TESTS += \
 	test-error0.sh \
 	test-error10.sh \
 	test-error100.sh \
+	test-error-triggered.sh \
 	$(NULL)
 
 # fua filter test.

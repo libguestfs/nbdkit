@@ -96,7 +96,6 @@ Makefile.in
 /tests/test-curl
 /tests/test-data
 /tests/test-delay
-/tests/test-error
 /tests/test-exit-with-parent
 /tests/test-ext2
 /tests/test-file
