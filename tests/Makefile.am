@@ -1010,12 +1010,7 @@ TESTS += test-nozero.sh
 endif HAVE_NBD_PLUGIN
 
 # offset filter test.
-check_DATA += offset-data
-CLEANFILES += offset-data
 LIBGUESTFS_TESTS += test-offset
-
-offset-data: generate-offset-data.sh
-	$(srcdir)/generate-offset-data.sh $@
 
 test_offset_SOURCES = test-offset.c test.h
 test_offset_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
