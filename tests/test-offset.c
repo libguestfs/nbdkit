@@ -47,6 +47,40 @@
 
 #include "test.h"
 
+#define FILENAME "offset-data"
+#define FILESIZE (10 * 1024 * 1024)
+
+static void
+create_file (void)
+{
+  FILE *fp;
+  char pattern[512];
+  size_t i;
+
+  for (i = 0; i < sizeof pattern; i += 2) {
+    pattern[i] = 0x55;
+    pattern[i+1] = 0xAA;
+  }
+
+  fp = fopen (FILENAME, "w");
+  if (fp == NULL) {
+    perror (FILENAME);
+    exit (EXIT_FAILURE);
+  }
+
+  for (i = 0; i < FILESIZE; i += sizeof pattern) {
+    if (fwrite (pattern, sizeof pattern, 1, fp) != 1) {
+      perror (FILENAME ": write");
+      exit (EXIT_FAILURE);
+    }
+  }
+
+  if (fclose (fp) == EOF) {
+    perror (FILENAME);
+    exit (EXIT_FAILURE);
+  }
+}
+
 static uint8_t buf[1024*1024];
 
 static void
@@ -70,14 +104,15 @@ main (int argc, char *argv[])
   int r, fd;
   char *data;
 
-  /* offset-data (created by tests/Makefile.am) is a 10 MB file
-   * containing test pattern data 0x55AA repeated.  We use the middle
-   * 8 MB to create a partition table and filesystem, and check
-   * afterwards that the test pattern in the first and final megabyte
-   * has not been overwritten.
+  /* FILENAME is a 10 MB file containing test pattern data 0x55AA
+   * repeated.  We use the middle 8 MB to create a partition table and
+   * filesystem, and check afterwards that the test pattern in the
+   * first and final megabyte has not been overwritten.
    */
+  create_file ();
+
   if (test_start_nbdkit ("--filter", "offset",
-                         "file", "offset-data",
+                         "file", FILENAME,
                          "offset=1M", "range=8M",
                          NULL) == -1)
     exit (EXIT_FAILURE);
@@ -136,22 +171,26 @@ main (int argc, char *argv[])
   /* Check the first and final megabyte of test patterns has not been
    * overwritten in the underlying file.
    */
-  fd = open ("offset-data", O_RDONLY|O_CLOEXEC);
+  fd = open (FILENAME, O_RDONLY|O_CLOEXEC);
   if (fd == -1) {
-    perror ("open: offset-data");
+    perror (FILENAME ": open");
     exit (EXIT_FAILURE);
   }
   if (pread (fd, buf, sizeof buf, 0) != sizeof buf) {
-    fprintf (stderr, "pread: short read or error (%d)\n", errno);
+    fprintf (stderr, "%s: pread: short read or error (%d)\n",
+             FILENAME, errno);
     exit (EXIT_FAILURE);
   }
   check_buf ();
   if (pread (fd, buf, sizeof buf, 9*1024*1024) != sizeof buf) {
-    fprintf (stderr, "pread: short read or error (%d)\n", errno);
+    fprintf (stderr, "%s: pread: short read or error (%d)\n",
+             FILENAME, errno);
     exit (EXIT_FAILURE);
   }
   check_buf ();
   close (fd);
+
+  unlink (FILENAME);
 
   exit (EXIT_SUCCESS);
 }

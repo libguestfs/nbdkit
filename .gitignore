@@ -78,7 +78,6 @@ Makefile.in
 /tests/file-data
 /tests/functions.sh
 /tests/keys.psk
-/tests/offset-data
 /tests/partition-disk
 /tests/pki
 /tests/split1
