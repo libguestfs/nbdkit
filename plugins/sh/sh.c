@@ -532,7 +532,7 @@ flags_string (uint32_t flags, char *buf, size_t len)
     flag_append ("req_one", &comma, &buf, &len);
 
   if (flags & NBDKIT_FLAG_FAST_ZERO)
-    flag_append("fast", &comma, &buf, &len);
+    flag_append ("fast", &comma, &buf, &len);
 }
 
 static void
