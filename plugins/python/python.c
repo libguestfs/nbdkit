@@ -589,56 +589,29 @@ py_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 }
 
 static int
-py_can_write (void *handle)
+boolean_callback (void *handle, const char *can_fn, const char *plain_fn)
 {
   PyObject *obj = handle;
   PyObject *fn;
   PyObject *r;
   int ret;
 
-  if (callback_defined ("can_write", &fn)) {
+  if (callback_defined (can_fn, &fn)) {
     PyErr_Clear ();
 
     r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
     Py_DECREF (fn);
-    if (check_python_failure ("can_write") == -1)
+    if (check_python_failure (can_fn) == -1)
       return -1;
     ret = r == Py_True;
     Py_DECREF (r);
     return ret;
   }
-  /* No Python can_write callback, but there's a Python pwrite callback
-   * defined, so return 1.  (In C modules, nbdkit would do this).
+  /* No Python ‘can_fn’ (eg. ‘can_write’), but if there's a Python
+   * ‘plain_fn’ (eg. ‘pwrite’) callback defined, return 1.  (In C
+   * modules, nbdkit would do this).
    */
-  else if (callback_defined ("pwrite", NULL))
-    return 1;
-  else
-    return 0;
-}
-
-static int
-py_can_flush (void *handle)
-{
-  PyObject *obj = handle;
-  PyObject *fn;
-  PyObject *r;
-  int ret;
-
-  if (callback_defined ("can_flush", &fn)) {
-    PyErr_Clear ();
-
-    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
-    Py_DECREF (fn);
-    if (check_python_failure ("can_flush") == -1)
-      return -1;
-    ret = r == Py_True;
-    Py_DECREF (r);
-    return ret;
-  }
-  /* No Python can_flush callback, but there's a Python flush callback
-   * defined, so return 1.  (In C modules, nbdkit would do this).
-   */
-  else if (callback_defined ("flush", NULL))
+  else if (plain_fn && callback_defined (plain_fn, NULL))
     return 1;
   else
     return 0;
@@ -647,52 +620,25 @@ py_can_flush (void *handle)
 static int
 py_is_rotational (void *handle)
 {
-  PyObject *obj = handle;
-  PyObject *fn;
-  PyObject *r;
-  int ret;
+  return boolean_callback (handle, "is_rotational", NULL);
+}
 
-  if (callback_defined ("is_rotational", &fn)) {
-    PyErr_Clear ();
+static int
+py_can_write (void *handle)
+{
+  return boolean_callback (handle, "can_write", "pwrite");
+}
 
-    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
-    Py_DECREF (fn);
-    if (check_python_failure ("is_rotational") == -1)
-      return -1;
-    ret = r == Py_True;
-    Py_DECREF (r);
-    return ret;
-  }
-  else
-    return 0;
+static int
+py_can_flush (void *handle)
+{
+  return boolean_callback (handle, "can_flush", "flush");
 }
 
 static int
 py_can_trim (void *handle)
 {
-  PyObject *obj = handle;
-  PyObject *fn;
-  PyObject *r;
-  int ret;
-
-  if (callback_defined ("can_trim", &fn)) {
-    PyErr_Clear ();
-
-    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
-    Py_DECREF (fn);
-    if (check_python_failure ("can_trim") == -1)
-      return -1;
-    ret = r == Py_True;
-    Py_DECREF (r);
-    return ret;
-  }
-  /* No Python can_trim callback, but there's a Python trim callback
-   * defined, so return 1.  (In C modules, nbdkit would do this).
-   */
-  else if (callback_defined ("trim", NULL))
-    return 1;
-  else
-    return 0;
+  return boolean_callback (handle, "can_trim", "trim");
 }
 
 #define py_config_help \
@@ -717,9 +663,9 @@ static struct nbdkit_plugin plugin = {
   .close             = py_close,
 
   .get_size          = py_get_size,
+  .is_rotational     = py_is_rotational,
   .can_write         = py_can_write,
   .can_flush         = py_can_flush,
-  .is_rotational     = py_is_rotational,
   .can_trim          = py_can_trim,
 
   .pread             = py_pread,
