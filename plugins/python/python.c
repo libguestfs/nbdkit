@@ -797,6 +797,18 @@ py_can_trim (void *handle)
   return boolean_callback (handle, "can_trim", "trim");
 }
 
+static int
+py_can_zero (void *handle)
+{
+  return boolean_callback (handle, "can_zero", "zero");
+}
+
+static int
+py_can_fast_zero (void *handle)
+{
+  return boolean_callback (handle, "can_fast_zero", NULL);
+}
+
 #define py_config_help \
   "script=<FILENAME>     (required) The Python plugin to run.\n" \
   "[other arguments may be used by the plugin that you load]"
@@ -823,6 +835,8 @@ static struct nbdkit_plugin plugin = {
   .can_write         = py_can_write,
   .can_flush         = py_can_flush,
   .can_trim          = py_can_trim,
+  .can_zero          = py_can_zero,
+  .can_fast_zero     = py_can_fast_zero,
 
   .pread             = py_pread,
   .pwrite            = py_pwrite,
