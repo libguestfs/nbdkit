@@ -208,6 +208,20 @@ contents will be garbage collected.
  def can_trim(h):
    # return a boolean
 
+=item C<can_zero>
+
+(Optional)
+
+ def can_zero(h):
+   # return a boolean
+
+=item C<can_fast_zero>
+
+(Optional)
+
+ def can_fast_zero(h):
+   # return a boolean
+
 =item C<pread>
 
 (Required)
@@ -326,8 +340,6 @@ C<config_help>,
 C<magic_config_key>,
 C<can_fua>,
 C<can_cache>,
-C<can_zero>,
-C<can_fast_zero>,
 C<can_extents>,
 C<can_multi_conn>,
 C<extents>.
