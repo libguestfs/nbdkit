@@ -715,6 +715,36 @@ py_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 }
 
 static int
+py_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
+{
+  PyObject *obj = handle;
+  PyObject *fn;
+  PyObject *r;
+
+  if (callback_defined ("cache", &fn)) {
+    PyErr_Clear ();
+
+    switch (py_api_version) {
+    case 1:
+    case 2:
+      r = PyObject_CallFunction (fn, "OiLI", obj, count, offset, flags, NULL);
+      break;
+    default: abort ();
+    }
+    Py_DECREF (fn);
+    if (check_python_failure ("cache") == -1)
+      return -1;
+    Py_DECREF (r);
+  }
+  else {
+    nbdkit_error ("%s not implemented", "cache");
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
 boolean_callback (void *handle, const char *can_fn, const char *plain_fn)
 {
   PyObject *obj = handle;
@@ -799,6 +829,7 @@ static struct nbdkit_plugin plugin = {
   .flush             = py_flush,
   .trim              = py_trim,
   .zero              = py_zero,
+  .cache             = py_cache,
 };
 
 NBDKIT_REGISTER_PLUGIN (plugin)
