@@ -780,6 +780,12 @@ py_is_rotational (void *handle)
 }
 
 static int
+py_can_multi_conn (void *handle)
+{
+  return boolean_callback (handle, "can_multi_conn", NULL);
+}
+
+static int
 py_can_write (void *handle)
 {
   return boolean_callback (handle, "can_write", "pwrite");
@@ -832,6 +838,7 @@ static struct nbdkit_plugin plugin = {
 
   .get_size          = py_get_size,
   .is_rotational     = py_is_rotational,
+  .can_multi_conn    = py_can_multi_conn,
   .can_write         = py_can_write,
   .can_flush         = py_can_flush,
   .can_trim          = py_can_trim,

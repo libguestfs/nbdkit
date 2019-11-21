@@ -187,6 +187,13 @@ contents will be garbage collected.
  def is_rotational(h):
    # return a boolean
 
+=item C<can_multi_conn>
+
+(Optional)
+
+ def can_multi_conn(h):
+   # return a boolean
+
 =item C<can_write>
 
 (Optional)
@@ -341,7 +348,6 @@ C<magic_config_key>,
 C<can_fua>,
 C<can_cache>,
 C<can_extents>,
-C<can_multi_conn>,
 C<extents>.
 
 These are not yet supported.
