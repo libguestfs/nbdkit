@@ -67,6 +67,7 @@ EXTRA_PROGRAMS =
 TESTS_ENVIRONMENT = \
 	PATH=$(abs_top_builddir):$(PATH) \
 	SRCDIR=$(srcdir) \
+	PYTHON=$(PYTHON) \
 	LIBGUESTFS_ATTACH_METHOD=appliance \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
@@ -159,7 +160,9 @@ EXTRA_DIST = \
 	test-pattern-largest-for-qemu.sh \
 	test-python-exception.sh \
 	test.pl \
-	test.py \
+	test_python.py \
+	test-python-plugin.py \
+	test-python.sh \
 	test-rate.sh \
 	test-rate-dynamic.sh \
 	test.rb \
@@ -797,18 +800,10 @@ endif HAVE_PERL
 if HAVE_PYTHON
 
 TESTS += \
+	test-python.sh \
 	test-python-exception.sh \
 	test-shebang-python.sh \
 	$(NULL)
-LIBGUESTFS_TESTS += test-python
-
-test_python_SOURCES = test-lang-plugins.c test.h
-test_python_CFLAGS = \
-	-DLANG='"python"' -DSCRIPT='"$(srcdir)/test.py"' \
-	$(WARNINGS_CFLAGS) \
-	$(LIBGUESTFS_CFLAGS) \
-	$(NULL)
-test_python_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_PYTHON
 

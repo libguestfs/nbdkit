@@ -72,6 +72,7 @@ Makefile.in
 /server/synopsis.c
 /server/test-public
 /stamp-h1
+/tests/__pycache__/
 /tests/disk
 /tests/disk.gz
 /tests/disk.xz
