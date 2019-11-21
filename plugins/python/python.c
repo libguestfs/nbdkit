@@ -557,26 +557,21 @@ py_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 {
   PyObject *obj = handle;
   PyObject *fn;
-  PyObject *args;
   PyObject *r;
 
   if (callback_defined ("zero", &fn)) {
     PyErr_Clear ();
 
     last_error = 0;
-    args = PyTuple_New (4);
-    Py_INCREF (obj); /* decremented by Py_DECREF (args) */
-    PyTuple_SetItem (args, 0, obj);
-    PyTuple_SetItem (args, 1, PyLong_FromUnsignedLongLong (count));
-    PyTuple_SetItem (args, 2, PyLong_FromUnsignedLongLong (offset));
-    PyTuple_SetItem (args, 3, PyBool_FromLong (may_trim));
-    r = PyObject_CallObject (fn, args);
+    r = PyObject_CallFunction (fn, "OiLO",
+                               obj, count, offset,
+                               may_trim ? Py_True : Py_False, NULL);
     Py_DECREF (fn);
-    Py_DECREF (args);
     if (last_error == EOPNOTSUPP || last_error == ENOTSUP) {
       /* When user requests this particular error, we want to
-         gracefully fall back, and to accomodate both a normal return
-         and an exception. */
+       * gracefully fall back, and to accommodate both a normal return
+       * and an exception.
+       */
       nbdkit_debug ("zero requested falling back to pwrite");
       Py_XDECREF (r);
       PyErr_Clear ();
