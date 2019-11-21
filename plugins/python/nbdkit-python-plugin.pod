@@ -289,6 +289,19 @@ because there is nothing to optimize if
 S<C<flags & nbdkit.FLAG_MAY_TRIM>> is false), use
 S<C<nbdkit.set_error (errno.EOPNOTSUPP)>>.
 
+=item C<cache>
+
+(Optional)
+
+ def cache(h, count, offset, flags):
+   # no return value
+
+The body of your C<cache> function should prefetch data in the
+indicated range.
+
+If the cache operation fails, your function should throw an exception,
+optionally using C<nbdkit.set_error> first.
+
 =back
 
 =head2 Missing callbacks
@@ -317,7 +330,6 @@ C<can_zero>,
 C<can_fast_zero>,
 C<can_extents>,
 C<can_multi_conn>,
-C<cache>,
 C<extents>.
 
 These are not yet supported.
