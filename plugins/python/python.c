@@ -30,12 +30,6 @@
  * SUCH DAMAGE.
  */
 
-/* This has to be included first, else definitions conflict with
- * glibc header files.  Python is broken.
- */
-#define PY_SSIZE_T_CLEAN 1
-#include <Python.h>
-
 #include <config.h>
 
 #include <fcntl.h>
@@ -48,6 +42,9 @@
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
+
+#define PY_SSIZE_T_CLEAN 1
+#include <Python.h>
 
 #include <nbdkit-plugin.h>
 
