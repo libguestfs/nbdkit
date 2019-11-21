@@ -130,6 +130,8 @@ For the Python plugin:
 
  - python development libraries
 
+ - python unittest to run the test suite
+
 For the OCaml plugin:
 
  - OCaml >= 4.02.2
