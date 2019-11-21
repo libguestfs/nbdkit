@@ -231,6 +231,36 @@ create_nbdkit_module (void)
     nbdkit_error ("could not create the nbdkit API module");
     exit (EXIT_FAILURE);
   }
+
+  /* Constants corresponding to various flags. */
+#define ADD_INT_CONSTANT(name)                                      \
+  if (PyModule_AddIntConstant (m, #name, NBDKIT_##name) == -1) {    \
+    nbdkit_error ("could not add constant %s to nbdkit API module", \
+                  #name);                                           \
+    exit (EXIT_FAILURE);                                            \
+  }
+  ADD_INT_CONSTANT (THREAD_MODEL_SERIALIZE_CONNECTIONS);
+  ADD_INT_CONSTANT (THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
+  ADD_INT_CONSTANT (THREAD_MODEL_SERIALIZE_REQUESTS);
+  ADD_INT_CONSTANT (THREAD_MODEL_PARALLEL);
+
+  ADD_INT_CONSTANT (FLAG_MAY_TRIM);
+  ADD_INT_CONSTANT (FLAG_FUA);
+  ADD_INT_CONSTANT (FLAG_REQ_ONE);
+  ADD_INT_CONSTANT (FLAG_FAST_ZERO);
+
+  ADD_INT_CONSTANT (FUA_NONE);
+  ADD_INT_CONSTANT (FUA_EMULATE);
+  ADD_INT_CONSTANT (FUA_NATIVE);
+
+  ADD_INT_CONSTANT (CACHE_NONE);
+  ADD_INT_CONSTANT (CACHE_EMULATE);
+  ADD_INT_CONSTANT (CACHE_NATIVE);
+
+  ADD_INT_CONSTANT (EXTENT_HOLE);
+  ADD_INT_CONSTANT (EXTENT_ZERO);
+#undef ADD_INT_CONSTANT
+
   return m;
 }
 
