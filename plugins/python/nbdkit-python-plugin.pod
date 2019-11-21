@@ -167,6 +167,13 @@ contents will be garbage collected.
  def get_size(h):
    # return the size of the disk
 
+=item C<is_rotational>
+
+(Optional)
+
+ def is_rotational(h):
+   # return a boolean
+
 =item C<can_write>
 
 (Optional)
@@ -179,13 +186,6 @@ contents will be garbage collected.
 (Optional)
 
  def can_flush(h):
-   # return a boolean
-
-=item C<is_rotational>
-
-(Optional)
-
- def is_rotational(h):
    # return a boolean
 
 =item C<can_trim>
