@@ -46,6 +46,8 @@
 #define PY_SSIZE_T_CLEAN 1
 #include <Python.h>
 
+#define NBDKIT_API_VERSION 2
+
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
@@ -60,6 +62,7 @@
  */
 static const char *script;
 static PyObject *module;
+static int py_api_version = 1;
 
 static int last_error;
 
@@ -285,9 +288,14 @@ py_dump_plugin (void)
   PyObject *fn;
   PyObject *r;
 
+  /* Python version and ABI. */
   printf ("python_version=%s\n", PY_VERSION);
   printf ("python_pep_384_abi_version=%d\n", PYTHON_ABI_VERSION);
 
+  /* Maximum nbdkit API version supported. */
+  printf ("nbdkit_python_maximum_api_version=%d\n", NBDKIT_API_VERSION);
+
+  /* If the script has a dump_plugin function, call it. */
   if (script && callback_defined ("dump_plugin", &fn)) {
     PyErr_Clear ();
 
@@ -295,6 +303,30 @@ py_dump_plugin (void)
     Py_DECREF (fn);
     Py_DECREF (r);
   }
+}
+
+static int
+get_py_api_version (void)
+{
+  PyObject *obj;
+  long value;
+
+  obj = PyObject_GetAttrString (module, "API_VERSION");
+  if (obj == NULL)
+    return 1;                   /* Default to API version 1. */
+
+  value = PyLong_AsLong (obj);
+  Py_DECREF (obj);
+
+  if (value < 1 || value > NBDKIT_API_VERSION) {
+    nbdkit_error ("%s: API_VERSION requested unknown version: %ld.  "
+                  "This plugin supports API versions between 1 and %d.",
+                  script, value, NBDKIT_API_VERSION);
+    return -1;
+  }
+
+  nbdkit_debug ("module requested API_VERSION %ld", value);
+  return (int) value;
 }
 
 static int
@@ -359,6 +391,11 @@ py_config (const char *key, const char *value)
                     "nbdkit requires these callbacks.", script);
       return -1;
     }
+
+    /* Get the API version. */
+    py_api_version = get_py_api_version ();
+    if (py_api_version == -1)
+      return -1;
   }
   else if (callback_defined ("config", &fn)) {
     /* Other parameters are passed to the Python .config callback. */
@@ -469,8 +506,8 @@ py_get_size (void *handle)
 }
 
 static int
-py_pread (void *handle, void *buf,
-          uint32_t count, uint64_t offset)
+py_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+          uint32_t flags)
 {
   PyObject *obj = handle;
   PyObject *fn;
@@ -485,24 +522,40 @@ py_pread (void *handle, void *buf,
 
   PyErr_Clear ();
 
-  r = PyObject_CallFunction (fn, "OiL", obj, count, offset);
+  switch (py_api_version) {
+  case 1:
+    r = PyObject_CallFunction (fn, "OiL", obj, count, offset);
+    break;
+  case 2:
+    r = PyObject_CallFunction (fn, "ONLI", obj,
+          PyMemoryView_FromMemory ((char *)buf, count, PyBUF_WRITE),
+          offset, flags);
+    break;
+  default: abort ();
+  }
   Py_DECREF (fn);
   if (check_python_failure ("pread") == -1)
     return ret;
 
-  if (PyObject_GetBuffer (r, &view, PyBUF_SIMPLE) == -1) {
-    nbdkit_error ("%s: value returned from pread does not support the "
-                  "buffer protocol",
-                  script);
-    goto out;
-  }
+  if (py_api_version == 1) {
+    /* In API v1 the Python pread function had to return a buffer
+     * protocol compatible function.  In API v2+ it writes directly to
+     * the C buffer so this code is not used.
+     */
+    if (PyObject_GetBuffer (r, &view, PyBUF_SIMPLE) == -1) {
+      nbdkit_error ("%s: value returned from pread does not support the "
+                    "buffer protocol",
+                    script);
+      goto out;
+    }
 
-  if (view.len < count) {
-    nbdkit_error ("%s: buffer returned from pread is too small", script);
-    goto out;
-  }
+    if (view.len < count) {
+      nbdkit_error ("%s: buffer returned from pread is too small", script);
+      goto out;
+    }
 
-  memcpy (buf, view.buf, count);
+    memcpy (buf, view.buf, count);
+  }
   ret = 0;
 
 out:
@@ -515,8 +568,8 @@ out:
 }
 
 static int
-py_pwrite (void *handle, const void *buf,
-           uint32_t count, uint64_t offset)
+py_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+           uint32_t flags)
 {
   PyObject *obj = handle;
   PyObject *fn;
@@ -525,9 +578,19 @@ py_pwrite (void *handle, const void *buf,
   if (callback_defined ("pwrite", &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunction (fn, "ONL", obj,
+    switch (py_api_version) {
+    case 1:
+      r = PyObject_CallFunction (fn, "ONL", obj,
             PyMemoryView_FromMemory ((char *)buf, count, PyBUF_READ),
             offset);
+      break;
+    case 2:
+      r = PyObject_CallFunction (fn, "ONLI", obj,
+            PyMemoryView_FromMemory ((char *)buf, count, PyBUF_READ),
+            offset, flags);
+      break;
+    default: abort ();
+    }
     Py_DECREF (fn);
     if (check_python_failure ("pwrite") == -1)
       return -1;
@@ -542,7 +605,7 @@ py_pwrite (void *handle, const void *buf,
 }
 
 static int
-py_flush (void *handle)
+py_flush (void *handle, uint32_t flags)
 {
   PyObject *obj = handle;
   PyObject *fn;
@@ -551,7 +614,15 @@ py_flush (void *handle)
   if (callback_defined ("flush", &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+    switch (py_api_version) {
+    case 1:
+      r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+      break;
+    case 2:
+      r = PyObject_CallFunction (fn, "OI", obj, flags);
+      break;
+    default: abort ();
+    }
     Py_DECREF (fn);
     if (check_python_failure ("flush") == -1)
       return -1;
@@ -566,7 +637,7 @@ py_flush (void *handle)
 }
 
 static int
-py_trim (void *handle, uint32_t count, uint64_t offset)
+py_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   PyObject *obj = handle;
   PyObject *fn;
@@ -575,7 +646,15 @@ py_trim (void *handle, uint32_t count, uint64_t offset)
   if (callback_defined ("trim", &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunction (fn, "OiL", obj, count, offset);
+    switch (py_api_version) {
+    case 1:
+      r = PyObject_CallFunction (fn, "OiL", obj, count, offset);
+      break;
+    case 2:
+      r = PyObject_CallFunction (fn, "OiLI", obj, count, offset, flags);
+      break;
+    default: abort ();
+    }
     Py_DECREF (fn);
     if (check_python_failure ("trim") == -1)
       return -1;
@@ -590,7 +669,7 @@ py_trim (void *handle, uint32_t count, uint64_t offset)
 }
 
 static int
-py_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+py_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   PyObject *obj = handle;
   PyObject *fn;
@@ -600,9 +679,19 @@ py_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     PyErr_Clear ();
 
     last_error = 0;
-    r = PyObject_CallFunction (fn, "OiLO",
-                               obj, count, offset,
-                               may_trim ? Py_True : Py_False);
+    switch (py_api_version) {
+    case 1: {
+      int may_trim = flags & NBDKIT_FLAG_MAY_TRIM;
+      r = PyObject_CallFunction (fn, "OiLO",
+                                 obj, count, offset,
+                                 may_trim ? Py_True : Py_False);
+      break;
+    }
+    case 2:
+      r = PyObject_CallFunction (fn, "OiLI", obj, count, offset, flags);
+      break;
+    default: abort ();
+    }
     Py_DECREF (fn);
     if (last_error == EOPNOTSUPP || last_error == ENOTSUP) {
       /* When user requests this particular error, we want to

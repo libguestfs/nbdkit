@@ -13,6 +13,7 @@ def get_size(h):
     return len(disk)
 
 
-def pread(h, count, offset):
+def pread(h, buf, offset):
     global disk
-    return disk[offset:offset+count]
+    end = offset + len(buf)
+    buf[:] = disk[offset:end]

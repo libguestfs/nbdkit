@@ -34,6 +34,12 @@ import errno
 disk = bytearray(1024 * 1024)
 
 
+# There are several variants of the API.  nbdkit will call this
+# function first to determine which one you want to use.  This is the
+# latest version at the time this example was written.
+API_VERSION = 2
+
+
 # This just prints the extra command line parameters, but real plugins
 # should parse them and reject any unknown parameters.
 def config(key, value):
@@ -54,20 +60,22 @@ def get_size(h):
     return len(disk)
 
 
-def pread(h, count, offset):
+def pread(h, buf, offset, flags):
     global disk
-    return disk[offset:offset+count]
+    end = offset + len(buf)
+    buf[:] = disk[offset:end]
+    # or if reading from a file you can use:
+    #f.readinto(buf)
 
-
-def pwrite(h, buf, offset):
+def pwrite(h, buf, offset, flags):
     global disk
     end = offset + len(buf)
     disk[offset:end] = buf
 
 
-def zero(h, count, offset, may_trim):
+def zero(h, count, offset, flags):
     global disk
-    if may_trim:
+    if flags & nbdkit.FLAG_MAY_TRIM:
         disk[offset:offset+count] = bytearray(count)
     else:
         nbdkit.set_error(errno.EOPNOTSUPP)

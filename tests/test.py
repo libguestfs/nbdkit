@@ -3,6 +3,9 @@ import nbdkit
 disk = bytearray(1024*1024)
 
 
+API_VERSION = 2
+
+
 def config_complete():
     print ("set_error = %r" % nbdkit.set_error)
 
@@ -32,25 +35,26 @@ def can_trim(h):
     return True
 
 
-def pread(h, count, offset):
+def pread(h, buf, offset, flags):
     global disk
-    return disk[offset:offset+count]
+    end = offset + len(buf)
+    buf[:] = disk[offset:end]
 
 
-def pwrite(h, buf, offset):
+def pwrite(h, buf, offset, flags):
     global disk
     end = offset + len(buf)
     disk[offset:end] = buf
 
 
-def zero(h, count, offset, may_trim=False):
+def flush(h, flags):
+    pass
+
+
+def trim(h, count, offset, flags):
+    pass
+
+
+def zero(h, count, offset, flags):
     global disk
     disk[offset:offset+count] = bytearray(count)
-
-
-def flush(h):
-    pass
-
-
-def trim(h, count, offset):
-    pass

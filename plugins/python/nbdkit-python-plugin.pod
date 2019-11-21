@@ -33,11 +33,12 @@ To write a Python nbdkit plugin, you create a Python file which
 contains at least the following required functions (in the top level
 C<__main__> module):
 
+ API_VERSION = 2
  def open(readonly):
    # see below
  def get_size(h):
    # see below
- def pread(h, count, offset):
+ def pread(h, buf, offset, flags):
    # see below
 
 Note that the subroutines must have those literal names (like C<open>),
@@ -81,6 +82,18 @@ I<--dump-plugin> option, eg:
  ...
  python_version=3.7.0
  python_pep_384_abi_version=3
+
+=head2 API versions
+
+The nbdkit API has evolved and new versions are released periodically.
+To ensure backwards compatibility plugins have to opt in to the new
+version.  From Python you do this by declaring a constant in your
+module:
+
+ API_VERSION = 2
+
+(where 2 is the latest version at the time this documentation was
+written).  All newly written Python modules must have this constant.
 
 =head2 Executable script
 
@@ -199,16 +212,12 @@ contents will be garbage collected.
 
 (Required)
 
- def pread(h, count, offset):
-   # construct a buffer of length count bytes and return it
+ def pread(h, buf, offset, flags):
+   # read into the buffer
 
-The body of your C<pread> function should construct a buffer of length
-(at least) C<count> bytes.  You should read C<count> bytes from the
-disk starting at C<offset>.
-
-The returned buffer can be any type compatible with the Python 3
-buffer protocol, such as bytearray, bytes or memoryview
-(L<https://docs.python.org/3/c-api/buffer.html>)
+The body of your C<pread> function should read exactly C<len(buf)>
+bytes of data starting at disk C<offset> and write it into the buffer
+C<buf>.  C<flags> is always 0.
 
 NBD only supports whole reads, so your function should try to read
 the whole region (perhaps requiring a loop).  If the read fails or
@@ -219,13 +228,13 @@ C<nbdkit.set_error> first.
 
 (Optional)
 
- def pwrite(h, buf, offset):
+ def pwrite(h, buf, offset, flags):
    length = len (buf)
    # no return value
 
 The body of your C<pwrite> function should write the buffer C<buf> to
 the disk.  You should write C<count> bytes to the disk starting at
-C<offset>.
+C<offset>.  C<flags> may contain C<nbdkit.FLAG_FUA>.
 
 NBD only supports whole writes, so your function should try to
 write the whole region (perhaps requiring a loop).  If the write
@@ -236,11 +245,12 @@ fails or is partial, your function should throw an exception,
 
 (Optional)
 
- def flush(h):
+ def flush(h, flags):
    # no return value
 
 The body of your C<flush> function should do a L<sync(2)> or
 L<fdatasync(2)> or equivalent on the backing store.
+C<flags> is always 0.
 
 If the flush fails, your function should throw an exception, optionally
 using C<nbdkit.set_error> first.
@@ -249,32 +259,35 @@ using C<nbdkit.set_error> first.
 
 (Optional)
 
- def trim(h, count, offset):
+ def trim(h, count, offset, flags):
    # no return value
 
-The body of your C<trim> function should "punch a hole" in the
-backing store.  If the trim fails, your function should throw an
-exception, optionally using C<nbdkit.set_error> first.
+The body of your C<trim> function should "punch a hole" in the backing
+store.  C<flags> may contain C<nbdkit.FLAG_FUA>.  If the trim fails,
+your function should throw an exception, optionally using
+C<nbdkit.set_error> first.
 
 =item C<zero>
 
 (Optional)
 
- def zero(h, count, offset, may_trim):
+ def zero(h, count, offset, flags):
    # no return value
 
-The body of your C<zero> function should ensure that C<count> bytes
-of the disk, starting at C<offset>, will read back as zero.  If
-C<may_trim> is true, the operation may be optimized as a trim as long
-as subsequent reads see zeroes.
+The body of your C<zero> function should ensure that C<count> bytes of
+the disk, starting at C<offset>, will read back as zero.  C<flags> is
+a bitmask which may include C<nbdkit.FLAG_MAY_TRIM>,
+C<nbdkit.FLAG_FUA>, C<nbdkit.FLAG_FAST_ZERO>.
 
 NBD only supports whole writes, so your function should try to
-write the whole region (perhaps requiring a loop).  If the write
-fails or is partial, your function should throw an exception,
-optionally using C<nbdkit.set_error> first.  In particular, if
-you would like to automatically fall back to C<pwrite> (perhaps
-because there is nothing to optimize if C<may_trim> is false),
-use C<nbdkit.set_error(errno.EOPNOTSUPP)>.
+write the whole region (perhaps requiring a loop).
+
+If the write fails or is partial, your function should throw an
+exception, optionally using C<nbdkit.set_error> first.  In particular,
+if you would like to automatically fall back to C<pwrite> (perhaps
+because there is nothing to optimize if
+S<C<flags & nbdkit.FLAG_MAY_TRIM>> is false), use
+S<C<nbdkit.set_error (errno.EOPNOTSUPP)>>.
 
 =back
 
