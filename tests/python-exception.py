@@ -62,5 +62,5 @@ def get_size(h):
     return 0
 
 
-def pread(h, count, offset):
-    return ""
+def pread(h, buf, offset):
+    buf[:] = bytearray(len(buf))
