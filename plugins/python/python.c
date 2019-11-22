@@ -815,6 +815,62 @@ py_can_fast_zero (void *handle)
   return boolean_callback (handle, "can_fast_zero", NULL);
 }
 
+static int
+py_can_fua (void *handle)
+{
+  PyObject *obj = handle;
+  PyObject *fn;
+  PyObject *r;
+  int ret;
+
+  if (callback_defined ("can_fua", &fn)) {
+    PyErr_Clear ();
+
+    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+    Py_DECREF (fn);
+    if (check_python_failure ("can_fua") == -1)
+      return -1;
+    ret = PyLong_AsLong (r);
+    Py_DECREF (r);
+    return ret;
+  }
+  /* No Python ‘can_fua’, but check if there's a Python ‘flush’
+   * callback defined.  (In C modules, nbdkit would do this).
+   */
+  else if (callback_defined ("flush", NULL))
+    return NBDKIT_FUA_EMULATE;
+  else
+    return NBDKIT_FUA_NONE;
+}
+
+static int
+py_can_cache (void *handle)
+{
+  PyObject *obj = handle;
+  PyObject *fn;
+  PyObject *r;
+  int ret;
+
+  if (callback_defined ("can_cache", &fn)) {
+    PyErr_Clear ();
+
+    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+    Py_DECREF (fn);
+    if (check_python_failure ("can_cache") == -1)
+      return -1;
+    ret = PyLong_AsLong (r);
+    Py_DECREF (r);
+    return ret;
+  }
+  /* No Python ‘can_cache’, but check if there's a Python ‘cache’
+   * callback defined.  (In C modules, nbdkit would do this).
+   */
+  else if (callback_defined ("cache", NULL))
+    return NBDKIT_CACHE_NATIVE;
+  else
+    return NBDKIT_CACHE_NONE;
+}
+
 #define py_config_help \
   "script=<FILENAME>     (required) The Python plugin to run.\n" \
   "[other arguments may be used by the plugin that you load]"
@@ -844,6 +900,8 @@ static struct nbdkit_plugin plugin = {
   .can_trim          = py_can_trim,
   .can_zero          = py_can_zero,
   .can_fast_zero     = py_can_fast_zero,
+  .can_fua           = py_can_fua,
+  .can_cache         = py_can_cache,
 
   .pread             = py_pread,
   .pwrite            = py_pwrite,
