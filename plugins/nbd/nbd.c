@@ -222,6 +222,10 @@ nbdplug_config_complete (void)
   else if (uri) {
     struct nbd_handle *nbd = nbd_create ();
 
+    if (port) {
+      nbdkit_error ("cannot mix TCP hostname/port and URI parameters");
+      return -1;
+    }
     if (!nbd) {
       nbdkit_error ("unable to query libnbd details: %s", nbd_get_error ());
       return -1;
