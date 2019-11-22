@@ -46,6 +46,7 @@
 #include <semaphore.h>
 #include <poll.h>
 #include <fcntl.h>
+#include <sys/socket.h>
 
 #include <libnbd.h>
 
@@ -60,6 +61,12 @@
 #include "vector.h"
 
 DEFINE_VECTOR_TYPE(string_vector, const char *);
+
+#if !defined AF_VSOCK || !LIBNBD_HAVE_NBD_CONNECT_VSOCK
+#define USE_VSOCK 0
+#else
+#define USE_VSOCK 1
+#endif
 
 /* The per-transaction details */
 struct transaction {
@@ -87,7 +94,14 @@ static char *sockname;
 
 /* Connect to server via TCP socket */
 static const char *hostname;
+
+/* Valid with TCP or VSOCK */
 static const char *port;
+
+/* Connect to server via AF_VSOCK socket */
+static const char *raw_cid;
+static uint32_t cid;
+static uint32_t vport;
 
 /* Connect to a command. */
 static string_vector command = empty_vector;
@@ -126,11 +140,8 @@ nbdplug_unload (void)
   free (command.ptr); /* the strings are statically allocated */
 }
 
-/* Called for each key=value passed on the command line.  This plugin
- * accepts socket=<sockname>, hostname=<hostname>/port=<port>, or
- * [uri=]<uri> (exactly one connection required), and optional
- * parameters export=<name>, retry=<n>, shared=<bool> and various
- * tls settings.
+/* Called for each key=value passed on the command line.  See
+ * nbdplug_config_help for the various keys recognized.
  */
 static int
 nbdplug_config (const char *key, const char *value)
@@ -148,6 +159,9 @@ nbdplug_config (const char *key, const char *value)
     hostname = value;
   else if (strcmp (key, "port") == 0)
     port = value;
+  else if (strcmp (key, "vsock") == 0 ||
+           strcmp (key, "cid") == 0)
+    raw_cid = value;
   else if (strcmp (key, "uri") == 0)
     uri = value;
   else if (strcmp (key, "command") == 0 || strcmp (key, "arg") == 0) {
@@ -220,23 +234,24 @@ static int
 nbdplug_config_complete (void)
 {
   int c = !!sockname + !!hostname + !!uri +
-    (command.size > 0) + (socket_fd >= 0);
+    (command.size > 0) + (socket_fd >= 0) + !!raw_cid;
 
   /* Check the user passed exactly one connection parameter. */
   if (c > 1) {
-    nbdkit_error ("cannot mix Unix ‘socket’, TCP ‘hostname’/‘port’, "
+    nbdkit_error ("cannot mix Unix ‘socket’, TCP ‘hostname’/‘port’, ‘vsock’, "
                   "‘command’, ‘socket-fd’ and ‘uri’ parameters");
     return -1;
   }
   if (c == 0) {
-    nbdkit_error ("exactly one of ‘socket’, ‘hostname’, ‘command’, ‘socket-fd’ "
-                  "and ‘uri’ parameters must be specified");
+    nbdkit_error ("exactly one of ‘socket’, ‘hostname’, ‘vsock’, ‘command’, "
+                  "‘socket-fd’ and ‘uri’ parameters must be specified");
     return -1;
   }
 
-  /* Port, if present, should only be used with hostname. */
-  if (port && !hostname) {
-    nbdkit_error ("‘port’ parameter should only be used with ‘hostname’");
+  /* Port, if present, should only be used with hostname or vsock. */
+  if (port && !(hostname || raw_cid)) {
+    nbdkit_error ("‘port’ parameter should only be used with ‘hostname’ or "
+                  "‘vsock’");
     return -1;
   }
 
@@ -265,6 +280,18 @@ nbdplug_config_complete (void)
   else if (hostname) {
     if (!port)
       port = "10809";
+  }
+  else if (raw_cid) {
+#if !USE_VSOCK
+    nbdkit_error ("libnbd was compiled without vsock support");
+    return -1;
+#else
+    if (!port)
+      port = "10809";
+    if (nbdkit_parse_uint32_t ("vsock_cid", raw_cid, &cid) == -1 ||
+        nbdkit_parse_uint32_t ("port", port, &vport) == -1)
+      return -1;
+#endif
   }
   else if (command.size > 0) {
     /* Add NULL sentinel to the command. */
@@ -320,7 +347,8 @@ nbdplug_after_fork (void)
   "[uri=]<URI>            URI of an NBD socket to connect to (if supported).\n" \
   "socket=<SOCKNAME>      The Unix socket to connect to.\n" \
   "hostname=<HOST>        The hostname for the TCP socket to connect to.\n" \
-  "port=<PORT>            TCP port or service name to use (default 10809).\n" \
+  "port=<PORT>            TCP/VSOCK port or service name to use (default 10809).\n" \
+  "vsock=<CID>            The cid for the VSOCK socket to connect to.\n" \
   "command=<COMMAND>      Command to run.\n" \
   "arg=<ARG>              Parameters for command.\n" \
   "socket-fd=<FD>         Socket file descriptor to connect to.\n" \
@@ -346,6 +374,7 @@ nbdplug_dump_plugin (void)
   printf ("libnbd_version=%s\n", nbd_get_version (nbd));
   printf ("libnbd_tls=%d\n", nbd_supports_tls (nbd));
   printf ("libnbd_uri=%d\n", nbd_supports_uri (nbd));
+  printf ("libnbd_vsock=%d\n", USE_VSOCK);
   nbd_close (nbd);
 }
 
@@ -546,6 +575,12 @@ nbdplug_open_handle (int readonly)
     r = nbd_connect_unix (h->nbd, sockname);
   else if (hostname)
     r = nbd_connect_tcp (h->nbd, hostname, port);
+  else if (raw_cid)
+#if !USE_VSOCK
+    abort ();
+#else
+    r = nbd_connect_vsock (h->nbd, cid, vport);
+#endif
   else if (command.size > 0)
     r = nbd_connect_systemd_socket_activation (h->nbd, (char **) command.ptr);
   else if (socket_fd >= 0)

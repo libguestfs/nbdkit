@@ -6,6 +6,7 @@ nbdkit-nbd-plugin - proxy / forward to another NBD server
 
  nbdkit nbd { command=COMMAND [arg=ARG [...]] |
               hostname=HOST [port=PORT] |
+              vhost-cid=CID [port=PORT] |
               socket=SOCKNAME |
               socket-fd=FD |
               [uri=]URI }
@@ -40,9 +41,9 @@ With L<qemu-nbd(8)>, read and write qcow2 files with nbdkit.
 
 =head1 PARAMETERS
 
-One of B<socket>, B<hostname> (optionally with B<port>), B<uri>,
-B<socket-fd> or B<command> must be given to specify which NBD server
-to forward to:
+One of B<socket>, B<hostname> (optionally with B<port>), B<vsock>
+(optionally with B<port>), B<uri>, B<socket-fd> or B<command> must be
+given to specify which NBD server to forward to:
 
 =over 4
 
@@ -71,7 +72,22 @@ This option implies C<shared=true>.
 =item B<port=>PORT
 
 Connect to the NBD server at the remote C<HOST> using a TCP socket.
-The optional port parameter overrides the default port (10809).
+The optional port parameter overrides the default port (10809), and
+may be a 16-bit number or a non-numeric string to look up the
+well-known port for a service name.
+
+=item B<vsock=>CID
+
+=item B<port=>PORT
+
+Connect to the NBD server at the given vsock C<CID> (for example, in a
+guest VM, using the cid 2 will connect to a server in the host).  The
+optional port parameter overrides the default port (10809), and must
+be a 32-bit number.  This only works for platforms with the
+C<AF_VSOCK> family of sockets and libnbd new enough to use it;
+C<nbdkit --dump-plugin nbd> will contain C<libnbd_vsock=1> if this is
+the case.  For more details on AF_VSOCK, see
+L<nbdkit-service(1)/AF_VSOCK>.
 
 =item B<socket=>SOCKNAME
 
@@ -87,8 +103,9 @@ option implies C<shared=true>.
 
 When C<uri> is supplied, decode C<URI> to determine the address to
 connect to.  A URI can specify a TCP connection (such as
-C<nbd://localhost:10809/export>) or a Unix socket (such as
-C<nbd+unix:///export?socket=/path/to/sock>).  Remember you may need to
+C<nbd://localhost:10809/export>), a Unix socket (such as
+C<nbd+unix:///export?socket=/path/to/sock>), or a vsock connection
+(such as C<nbd+vsock:///2:10809/export>).  Remember you may need to
 quote the parameter to protect it from the shell.
 
 The C<uri> parameter is only available when the plugin was compiled
