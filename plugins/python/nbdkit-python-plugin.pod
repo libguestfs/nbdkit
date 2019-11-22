@@ -229,6 +229,22 @@ contents will be garbage collected.
  def can_fast_zero(h):
    # return a boolean
 
+=item C<can_fua>
+
+(Optional)
+
+ def can_fua(h):
+   # return nbdkit.FUA_NONE or nbdkit.FUA_EMULATE
+   # or nbdkit.FUA_NATIVE
+
+=item C<can_cache>
+
+(Optional)
+
+ def can_cache(h):
+   # return nbdkit.CACHE_NONE or nbdkit.CACHE_EMULATE
+   # or nbdkit.CACHE_NATIVE
+
 =item C<pread>
 
 (Required)
@@ -345,8 +361,6 @@ C<longname>,
 C<description>,
 C<config_help>,
 C<magic_config_key>,
-C<can_fua>,
-C<can_cache>,
 C<can_extents>,
 C<extents>.
 
