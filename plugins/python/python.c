@@ -496,8 +496,8 @@ py_pwrite (void *handle, const void *buf,
     PyErr_Clear ();
 
     r = PyObject_CallFunction (fn, "ONL", obj,
-                               PyByteArray_FromStringAndSize (buf, count),
-                               offset, NULL);
+            PyMemoryView_FromMemory ((char *)buf, count, PyBUF_READ),
+            offset, NULL);
     Py_DECREF (fn);
     if (check_python_failure ("pwrite") == -1)
       return -1;
