@@ -445,10 +445,12 @@ py_pread (void *handle, void *buf,
   PyObject *obj = handle;
   PyObject *fn;
   PyObject *r;
+  Py_buffer view = {0};
+  int ret = -1;
 
   if (!callback_defined ("pread", &fn)) {
     nbdkit_error ("%s: missing callback: %s", script, "pread");
-    return -1;
+    return ret;
   }
 
   PyErr_Clear ();
@@ -456,25 +458,30 @@ py_pread (void *handle, void *buf,
   r = PyObject_CallFunction (fn, "OiL", obj, count, offset, NULL);
   Py_DECREF (fn);
   if (check_python_failure ("pread") == -1)
-    return -1;
+    return ret;
 
-  if (!PyByteArray_Check (r)) {
-    nbdkit_error ("%s: value returned from pread method is not a byte array",
+  if (PyObject_GetBuffer (r, &view, PyBUF_SIMPLE) == -1) {
+    nbdkit_error ("%s: value returned from pread does not support the "
+                  "buffer protocol",
                   script);
-    Py_DECREF (r);
-    return -1;
+    goto out;
   }
 
-  if (PyByteArray_Size (r) < count) {
-    nbdkit_error ("%s: byte array returned from pread is too small", script);
-    Py_DECREF (r);
-    return -1;
+  if (view.len < count) {
+    nbdkit_error ("%s: buffer returned from pread is too small", script);
+    goto out;
   }
 
-  memcpy (buf, PyByteArray_AsString (r), count);
+  memcpy (buf, view.buf, count);
+  ret = 0;
+
+out:
+  if (view.obj)
+    PyBuffer_Release (&view);
+
   Py_DECREF (r);
 
-  return 0;
+  return ret;
 }
 
 static int
