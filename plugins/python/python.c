@@ -167,7 +167,7 @@ print_python_traceback (const char *callback,
                                      type, error, traceback, NULL);
   if (rv == NULL)
     return -1;
-  traceback_str = PyObject_Str (rv);
+  traceback_str = PyUnicode_Join (NULL, rv);
   Py_DECREF (rv);
   traceback_cstr = python_to_string (traceback_str);
   if (traceback_cstr == NULL) {
