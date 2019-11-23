@@ -289,7 +289,7 @@ constructs.
 
 =item Missing: C<thread_model>
 
-Probably not implementable while Python has a global interpreter lock.
+See L</Threads> below.
 
 =item Missing:
 C<name>,
