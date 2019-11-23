@@ -200,11 +200,15 @@ contents will be garbage collected.
 (Required)
 
  def pread(h, count, offset):
-   # construct a bytearray of length count bytes and return it
+   # construct a buffer of length count bytes and return it
 
 The body of your C<pread> function should construct a buffer of length
 (at least) C<count> bytes.  You should read C<count> bytes from the
 disk starting at C<offset>.
+
+The returned buffer can be any type compatible with the Python 3
+buffer protocol, such as bytearray, bytes or memoryview
+(L<https://docs.python.org/3/c-api/buffer.html>)
 
 NBD only supports whole reads, so your function should try to read
 the whole region (perhaps requiring a loop).  If the read fails or
@@ -342,6 +346,8 @@ Eric Blake
 
 Richard W.M. Jones
 
+Nir Soffer
+
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2018 Red Hat Inc.
+Copyright (C) 2013-2019 Red Hat Inc.
