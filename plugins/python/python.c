@@ -455,7 +455,7 @@ py_pread (void *handle, void *buf,
 
   PyErr_Clear ();
 
-  r = PyObject_CallFunction (fn, "OiL", obj, count, offset, NULL);
+  r = PyObject_CallFunction (fn, "OiL", obj, count, offset);
   Py_DECREF (fn);
   if (check_python_failure ("pread") == -1)
     return ret;
@@ -497,7 +497,7 @@ py_pwrite (void *handle, const void *buf,
 
     r = PyObject_CallFunction (fn, "ONL", obj,
             PyMemoryView_FromMemory ((char *)buf, count, PyBUF_READ),
-            offset, NULL);
+            offset);
     Py_DECREF (fn);
     if (check_python_failure ("pwrite") == -1)
       return -1;
@@ -545,7 +545,7 @@ py_trim (void *handle, uint32_t count, uint64_t offset)
   if (callback_defined ("trim", &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunction (fn, "OiL", obj, count, offset, NULL);
+    r = PyObject_CallFunction (fn, "OiL", obj, count, offset);
     Py_DECREF (fn);
     if (check_python_failure ("trim") == -1)
       return -1;
@@ -572,7 +572,7 @@ py_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     last_error = 0;
     r = PyObject_CallFunction (fn, "OiLO",
                                obj, count, offset,
-                               may_trim ? Py_True : Py_False, NULL);
+                               may_trim ? Py_True : Py_False);
     Py_DECREF (fn);
     if (last_error == EOPNOTSUPP || last_error == ENOTSUP) {
       /* When user requests this particular error, we want to
