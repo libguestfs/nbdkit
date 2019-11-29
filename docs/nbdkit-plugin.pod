@@ -144,7 +144,8 @@ script must be prepared for a missing script).
 
 =item C<.open>
 
-A new client has connected.
+A new client has connected and finished the NBD handshake.  TLS
+negotiation (if required) has been completed successfully.
 
 =item C<.can_write>, C<.get_size> and other option negotiation callbacks
 
@@ -450,12 +451,15 @@ Note that the handle is completely opaque to nbdkit, but it must not
 be NULL.  If you don't need to use a handle, return
 C<NBDKIT_HANDLE_NOT_NEEDED> which is a static non-NULL pointer.
 
-The C<readonly> flag informs the plugin that the user requested a
-read-only connection using the I<-r> flag on the command line.  Note
-that the plugin may I<additionally> force the connection to be
-readonly (even if this flag is false) by returning false from the
-C<.can_write> callback.  So if your plugin can only serve read-only,
-you can ignore this parameter.
+The C<readonly> flag informs the plugin that the server was started
+with the I<-r> flag on the command line which forces connections to be
+read-only.  Note that the plugin may I<additionally> force the
+connection to be readonly (even if this flag is false) by returning
+false from the C<.can_write> callback.  So if your plugin can only
+serve read-only, you can ignore this parameter.
+
+This callback is called after the NBD handshake has completed, which
+includes TLS authentication (if required).
 
 If there is an error, C<.open> should call C<nbdkit_error> with an
 error message and return C<NULL>.
