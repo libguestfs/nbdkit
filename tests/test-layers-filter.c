@@ -74,6 +74,14 @@ test_layers_filter_config_complete (nbdkit_next_config_complete *next,
 #define test_layers_filter_config_help          \
   "test_layers_" layer "_config_help"
 
+static int
+test_layers_filter_preconnect (nbdkit_next_preconnect *next,
+                               void *nxdata, int readonly)
+{
+  DEBUG_FUNCTION;
+  return next (nxdata, readonly);
+}
+
 static void *
 test_layers_filter_open (nbdkit_next_open *next, void *nxdata, int readonly)
 {
@@ -267,6 +275,7 @@ static struct nbdkit_filter filter = {
   .config            = test_layers_filter_config,
   .config_complete   = test_layers_filter_config_complete,
   .config_help       = test_layers_filter_config_help,
+  .preconnect        = test_layers_filter_preconnect,
   .open              = test_layers_filter_open,
   .close             = test_layers_filter_close,
   .prepare           = test_layers_filter_prepare,

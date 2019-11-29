@@ -288,6 +288,20 @@ main (int argc, char *argv[])
      "test_layers_plugin_config_complete",
      NULL);
 
+  /* preconnect methods called in outer-to-inner order, complete
+   * in inner-to-outer order.
+   */
+  log_verify_seen_in_order
+    ("testlayersfilter3: preconnect",
+     "filter3: test_layers_filter_preconnect",
+     "testlayersfilter2: preconnect",
+     "filter2: test_layers_filter_preconnect",
+     "testlayersfilter1: preconnect",
+     "filter1: test_layers_filter_preconnect",
+     "testlayersplugin: preconnect",
+     "test_layers_plugin_preconnect",
+     NULL);
+
   /* open methods called in outer-to-inner order, but thanks to next
    * pointer, complete in inner-to-outer order. */
   log_verify_seen_in_order

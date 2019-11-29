@@ -181,6 +181,27 @@ filter_config_complete (struct backend *b)
     b->next->config_complete (b->next);
 }
 
+static int
+next_preconnect (void *nxdata, int readonly)
+{
+  struct b_conn *b_conn = nxdata;
+  return b_conn->b->preconnect (b_conn->b, b_conn->conn, readonly);
+}
+
+static int
+filter_preconnect (struct backend *b, struct connection *conn, int readonly)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct b_conn nxdata = { .b = b->next, .conn = conn };
+
+  debug ("%s: preconnect", b->name);
+
+  if (f->filter.preconnect)
+    return f->filter.preconnect (next_preconnect, &nxdata, readonly);
+  else
+    return b->next->preconnect (b->next, conn, readonly);
+}
+
 /* magic_config_key only applies to plugins, so this passes the
  * request through to the plugin (hence the name).
  */
@@ -668,6 +689,7 @@ static struct backend filter_functions = {
   .config = filter_config,
   .config_complete = filter_config_complete,
   .magic_config_key = plugin_magic_config_key,
+  .preconnect = filter_preconnect,
   .open = filter_open,
   .prepare = filter_prepare,
   .finalize = filter_finalize,

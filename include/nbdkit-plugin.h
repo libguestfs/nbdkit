@@ -134,6 +134,8 @@ struct nbdkit_plugin {
   int (*thread_model) (void);
 
   int (*can_fast_zero) (void *handle);
+
+  int (*preconnect) (int readonly);
 };
 
 extern void nbdkit_set_error (int err);

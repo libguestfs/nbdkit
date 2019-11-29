@@ -159,6 +159,9 @@ handle_single_connection (int sockin, int sockout)
     plugin_name = "(unknown)";
   threadlocal_set_name (plugin_name);
 
+  if (backend && backend->preconnect (backend, conn, read_only) == -1)
+    goto done;
+
   /* NBD handshake.
    *
    * Note that this calls the backend .open callback when it is safe

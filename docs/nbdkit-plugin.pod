@@ -142,6 +142,11 @@ before any connections are accepted.  However, during C<nbdkit
 C<.config_complete> (so a plugin which determines the results from a
 script must be prepared for a missing script).
 
+=item C<.preconnect>
+
+Called when a TCP connection has been made to the server.  This
+happens early, before NBD or TLS negotiation.
+
 =item C<.open>
 
 A new client has connected and finished the NBD handshake.  TLS
@@ -166,11 +171,11 @@ whether particular flags will ever be passed to a data callback.
 
 The client has disconnected.
 
-=item C<.open> ... C<.close>
+=item C<.preconnect>, C<.open> ... C<.close>
 
-The sequence C<.open> ... C<.close> can be called repeatedly over the
-lifetime of the plugin, and can be called in parallel (depending on
-the thread model).
+The sequence C<.preconnect>, C<.open> ... C<.close> can be called
+repeatedly over the lifetime of the plugin, and can be called in
+parallel (depending on the thread model).
 
 =item C<.unload>
 
@@ -438,6 +443,29 @@ are silently ignored.
 If there is an error, C<.thread_model> should call C<nbdkit_error>
 with an error message and return C<-1>.
 
+=head2 C<.preconnect>
+
+ int preconnect (int readonly);
+
+This optional callback is called when a TCP connection has been made
+to the server.  This happens early, before NBD or TLS negotiation.  If
+TLS authentication is required to access the server, then it has
+B<not> been negotiated at this point.
+
+For security reasons (to avoid denial of service attacks) this
+callback should be written to be as fast and take as few resources as
+possible.  If you use this callback, only use it to do basic access
+control, such as checking C<nbdkit_peer_name> against a whitelist (see
+L</PEER NAME>).  It may be better to do access control outside the
+server, for example using TCP wrappers or a firewall.
+
+The C<readonly> flag informs the plugin that the server was started
+with the I<-r> flag on the command line.
+
+Returning C<0> will allow the connection to continue.  If there is an
+error or you want to deny the connection, call C<nbdkit_error> with an
+error message and return C<-1>.
+
 =head2 C<.open>
 
  void *open (int readonly);
@@ -459,7 +487,9 @@ false from the C<.can_write> callback.  So if your plugin can only
 serve read-only, you can ignore this parameter.
 
 This callback is called after the NBD handshake has completed, which
-includes TLS authentication (if required).
+includes TLS authentication (if required).  If the plugin defines a
+C<.preconnect> callback, then it must be called and return with
+success before C<.open> is called.
 
 If there is an error, C<.open> should call C<nbdkit_error> with an
 error message and return C<NULL>.

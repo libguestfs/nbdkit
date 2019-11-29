@@ -64,8 +64,8 @@ extern struct nbdkit_extent nbdkit_get_extent (const struct nbdkit_extents *,
 typedef int nbdkit_next_config (void *nxdata,
                                 const char *key, const char *value);
 typedef int nbdkit_next_config_complete (void *nxdata);
-typedef int nbdkit_next_open (void *nxdata,
-                              int readonly);
+typedef int nbdkit_next_preconnect (void *nxdata, int readonly);
+typedef int nbdkit_next_open (void *nxdata, int readonly);
 
 struct nbdkit_next_ops {
   /* Performs close + open on the underlying chain.
@@ -129,6 +129,7 @@ struct nbdkit_filter {
   int (*config_complete) (nbdkit_next_config_complete *next, void *nxdata);
   const char *config_help;
   int (*thread_model) (void);
+  int (*preconnect) (nbdkit_next_preconnect *next, void *nxdata, int readonly);
 
   void * (*open) (nbdkit_next_open *next, void *nxdata,
                   int readonly);
