@@ -69,6 +69,7 @@ static stat trim_st    = { "trim" };
 static stat zero_st    = { "zero" };
 static stat extents_st = { "extents" };
 static stat cache_st   = { "cache" };
+static stat flush_st   = { "flush" };
 
 static inline double
 calc_bps (uint64_t bytes, int64_t usecs)
@@ -94,6 +95,7 @@ print_stats (int64_t usecs)
   print_stat (&zero_st,    usecs);
   print_stat (&extents_st, usecs);
   print_stat (&cache_st,   usecs);
+  print_stat (&flush_st,   usecs);
   fflush (fp);
 }
 
@@ -239,6 +241,21 @@ stats_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   return r;
 }
 
+/* Flush. */
+static int
+stats_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+             void *handle, uint32_t flags,
+             int *err)
+{
+  struct timeval start;
+  int r;
+
+  gettimeofday (&start, NULL);
+  r = next_ops->flush (nxdata, flags, err);
+  if (r == 0) record_stat (&flush_st, 0, &start);
+  return r;
+}
+
 /* Zero. */
 static int
 stats_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -301,6 +318,7 @@ static struct nbdkit_filter filter = {
   .pread             = stats_pread,
   .pwrite            = stats_pwrite,
   .trim              = stats_trim,
+  .flush             = stats_flush,
   .zero              = stats_zero,
   .extents           = stats_extents,
   .cache             = stats_cache,
