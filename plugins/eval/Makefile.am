@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2017-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -31,43 +31,42 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = \
-	nbdkit-sh-plugin.pod \
-	assemble.sh \
-	example.sh \
-	$(NULL)
+EXTRA_DIST = nbdkit-eval-plugin.pod
 
-plugin_LTLIBRARIES = nbdkit-sh-plugin.la
+plugin_LTLIBRARIES = nbdkit-eval-plugin.la
 
-nbdkit_sh_plugin_la_SOURCES = \
-	call.c \
-	call.h \
-	methods.c \
-	methods.h \
-	sh.c \
+# This plugin shares most of the same sources as nbdkit-sh-plugin.
+
+nbdkit_eval_plugin_la_SOURCES = \
+	$(srcdir)/../sh/call.c \
+	$(srcdir)/../sh/call.h \
+	$(srcdir)/../sh/methods.c \
+	$(srcdir)/../sh/methods.h \
+	eval.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
-
-nbdkit_sh_plugin_la_CPPFLAGS = \
+nbdkit_eval_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/plugins/sh \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
-nbdkit_sh_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
-nbdkit_sh_plugin_la_LIBADD = \
+nbdkit_eval_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+nbdkit_eval_plugin_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
-nbdkit_sh_plugin_la_LDFLAGS = \
+nbdkit_eval_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 
 if HAVE_POD
 
-man_MANS = nbdkit-sh-plugin.3
+man_MANS = nbdkit-eval-plugin.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-sh-plugin.3: nbdkit-sh-plugin.pod
-	$(PODWRAPPER) --section=3 --man $@ \
+nbdkit-eval-plugin.1: nbdkit-eval-plugin.pod
+	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 

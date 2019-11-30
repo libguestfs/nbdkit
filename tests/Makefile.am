@@ -65,6 +65,7 @@ EXTRA_DIST = \
 	test-error10.sh \
 	test-error100.sh \
 	test-error-triggered.sh \
+	test-eval.sh \
 	test-export-name.sh \
 	test-file-extents.sh \
 	test-floppy.sh \
@@ -488,6 +489,9 @@ test_data_SOURCES = test-data.c test.h
 test_data_CPPFLAGS = -I$(top_srcdir)/common/include
 test_data_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_data_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+# eval plugin test.
+TESTS += test-eval.sh
 
 # ext2 plugin test.
 if HAVE_EXT2

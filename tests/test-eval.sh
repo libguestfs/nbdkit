@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2019 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -29,46 +30,19 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+source ./functions.sh
+set -e
+set -x
 
-EXTRA_DIST = \
-	nbdkit-sh-plugin.pod \
-	assemble.sh \
-	example.sh \
-	$(NULL)
+requires qemu-img --version
 
-plugin_LTLIBRARIES = nbdkit-sh-plugin.la
+files="eval.out"
+cleanup_fn rm -f $files
 
-nbdkit_sh_plugin_la_SOURCES = \
-	call.c \
-	call.h \
-	methods.c \
-	methods.h \
-	sh.c \
-	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(NULL)
+nbdkit eval \
+       get_size='echo 64M' \
+       pread='dd if=/dev/zero count=$3 iflag=count_bytes' \
+       --run 'qemu-img info $nbd' > eval.out
 
-nbdkit_sh_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/utils \
-	$(NULL)
-nbdkit_sh_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
-nbdkit_sh_plugin_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la \
-	$(NULL)
-nbdkit_sh_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(NULL)
-
-if HAVE_POD
-
-man_MANS = nbdkit-sh-plugin.3
-CLEANFILES += $(man_MANS)
-
-nbdkit-sh-plugin.3: nbdkit-sh-plugin.pod
-	$(PODWRAPPER) --section=3 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+cat eval.out
+grep '67108864 bytes' eval.out

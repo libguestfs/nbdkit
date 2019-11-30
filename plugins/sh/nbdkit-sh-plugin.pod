@@ -15,10 +15,14 @@ nbdkit-sh-plugin - nbdkit shell, script or executable plugin
 C<nbdkit-sh-plugin> allows you to write plugins for L<nbdkit(1)> using
 arbitrary scripting languages, including shells like L<bash(1)>,
 L<dash(1)>, L<csh(1)>, L<zsh(1)> etc., other scripting environments,
-or any executable.  Note if you want to use an established scripting
-language like Perl or Python, then nbdkit has specific plugins to
-handle those languages and those will be more efficient (see
-L<nbdkit(1)> for a complete list).
+or any executable.
+
+Note if you want to use an established scripting language like Perl or
+Python, then nbdkit has specific plugins to handle those languages and
+those will be more efficient (see L<nbdkit(1)> for a complete list).
+
+To use shell script fragments from the nbdkit command line (rather
+than a separate script) see L<nbdkit-eval-plugin(1)>.
 
 =head2 If you have been given an nbdkit sh plugin
 
@@ -454,7 +458,8 @@ C<nbdkit-sh-plugin> first appeared in nbdkit 1.8.
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
-L<nbdkit-plugin(3)>.
+L<nbdkit-plugin(3)>,
+L<nbdkit-eval-plugin(1)>.
 
 =head1 AUTHORS
 

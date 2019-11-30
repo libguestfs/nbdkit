@@ -41,7 +41,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_SYS_LARGEFILE
 
 dnl NB: Do not [quote] this parameter.
-AM_INIT_AUTOMAKE(foreign)
+AM_INIT_AUTOMAKE(foreign subdir-objects)
 AC_PROG_LIBTOOL
 LT_INIT
 
@@ -861,6 +861,7 @@ lang_plugins="\
 non_lang_plugins="\
         curl \
         data \
+        eval \
         example1 \
         example2 \
         example3 \
@@ -938,6 +939,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/Makefile
                  plugins/curl/Makefile
                  plugins/data/Makefile
+                 plugins/eval/Makefile
                  plugins/example1/Makefile
                  plugins/example2/Makefile
                  plugins/example3/Makefile
