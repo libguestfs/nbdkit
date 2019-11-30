@@ -897,6 +897,7 @@ filters="\
         delay \
         error \
         fua \
+        ip \
         log \
         nocache \
         noextents \
@@ -980,6 +981,7 @@ AC_CONFIG_FILES([Makefile
                  filters/delay/Makefile
                  filters/error/Makefile
                  filters/fua/Makefile
+                 filters/ip/Makefile
                  filters/log/Makefile
                  filters/nocache/Makefile
                  filters/noextents/Makefile

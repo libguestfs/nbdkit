@@ -143,6 +143,7 @@ L</SOCKET ACTIVATION>.
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
+L<nbdkit-ip-filter(1)>,
 L<systemd(1)>,
 L<systemd.socket(5)>,
 L<syslog(3)>,

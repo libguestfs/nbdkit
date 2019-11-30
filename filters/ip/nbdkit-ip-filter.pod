@@ -1,0 +1,156 @@
+=head1 NAME
+
+nbdkit-ip-filter - filter clients by IP address
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=ip PLUGIN [allow=addr[,addr...]]
+                           [deny=addr[,addr...]]
+
+=head1 DESCRIPTION
+
+C<nbdkit-ip-filter> can whitelist or blacklist clients by their IP
+address.  Usually it is better to control this outside nbdkit, for
+example using TCP wrappers or a firewall, but this filter can be used
+if these are not available.
+
+=head1 EXAMPLES
+
+ nbdkit --filter=ip [...] allow=127.0.0.1,::1 deny=all
+
+Allow clients to connect on the loopback IPv4 or loopback IPv6
+address, deny all other clients.
+
+ nbdkit --filter=ip [...] deny=8.0.0.0/8
+
+Allow any client except connections from the IPv4 C<8.0.0.0/8>
+network.
+
+ nbdkit --filter=ip [...] allow=anyipv6 deny=all
+
+Allow IPv6 clients to connect from anywhere, deny all IPv4
+connections.
+
+=head1 RULES
+
+When a client connects, this filter checks its IP address against the
+allow and deny lists as follows:
+
+=over 4
+
+=item 1
+
+If the address matches any in the allow list, permission is granted.
+
+=item 2
+
+If the address matches any in the deny list, permission is denied.
+
+=item 3
+
+Otherwise permission is granted.
+
+=back
+
+If either the C<allow> or C<deny> parameter is not present then it is
+assumed to be an empty list.  The order in which the parameters appear
+on the command line does not matter; the allow list is always
+processed first and the deny list second.
+
+The C<allow> and C<deny> parameters each contain a comma-separated
+list of any of the following:
+
+=over 4
+
+=item B<all>
+
+=item B<any>
+
+These keywords (which both have the same meaning) match any IP
+address.
+
+=item B<allipv4>
+
+=item B<anyipv4>
+
+These keywords match any IPv4 address.
+
+=item B<allipv6>
+
+=item B<anyipv6>
+
+These keywords match any IPv6 address.
+
+=item AB<.>BB<.>CB<.>D
+
+This matches the single IPv4 address C<A.B.C.D>, for example
+C<127.0.0.1>.
+
+=item AB<.>BB<.>CB<.>DB</>NN
+
+This matches the range of IPv4 addresses C<A.B.C.D/NN>, for example
+C<192.168.2.0/24> or C<10.0.0.0/8>.
+
+=item AB<:>BB<:>...
+
+This matches the single IPv6 address C<A:B:...>.  The usual IPv6
+address representations can be used (see S<RFC 5952>).
+
+=item AB<:>BB<:>...B</>NN
+
+This matches a range of IPv6 addresses C<A:B:.../NN>.
+
+=back
+
+=head2 Not filtered
+
+If neither the C<allow> nor the C<deny> parameter is given the filter
+does nothing.
+
+The filter permits non-IP connections, such as Unix domain sockets or
+AF_VSOCK.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<allow=>addr[B<,>...]
+
+Set list of allow rules.  This parameter is optional, if omitted the
+allow list is empty.
+
+=item B<deny=>addr[B<,>...]
+
+Set list of deny rules.  This parameter is optional, if omitted the
+deny list is empty.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-ip-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-ip-filter> first appeared in nbdkit 1.18.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-filter(3)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019 Red Hat Inc.

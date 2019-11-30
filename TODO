@@ -4,7 +4,7 @@ To-do list for nbdkit
 General ideas for improvements
 ------------------------------
 
-* Listen on specific interfaces or protocols (eg. only IPv6).
+* Listen on specific interfaces or protocols.
 
 * Performance - measure and improve it.  Chart it over various buffer
   sizes and threads, as that should make it easier to identify
@@ -200,11 +200,19 @@ nbdkit-retry-filter:
 
 * subsecond times
 
+nbdkit-ip-filter:
+
+* permit hostnames and hostname wildcards to be used in the
+  allow and deny lists
+
+* the allow and deny lists should be updatable while nbdkit is
+  running, for example by storing them in a database file
+
 Filters for security
 --------------------
 
 Things like blacklisting or whitelisting IP addresses can be done
-using external wrappers (TCP wrappers, systemd).
+using external wrappers (TCP wrappers, systemd), or nbdkit-ip-filter.
 
 However it might be nice to have a configurable filter for preventing
 valid but not sensible requests.  The server already filters invalid

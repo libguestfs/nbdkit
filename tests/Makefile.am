@@ -81,6 +81,7 @@ EXTRA_DIST = \
 	test-info-uptime.sh \
 	test-info-conntime.sh \
 	test-ip.sh \
+	test-ip-filter.sh \
 	test-iso.sh \
 	test-layers.sh \
 	test-linuxdisk.sh \
@@ -1002,6 +1003,9 @@ TESTS += \
 
 # fua filter test.
 TESTS += test-fua.sh
+
+# ip filter test.
+TESTS += test-ip-filter.sh
 
 # log filter test.
 TESTS += test-log.sh
