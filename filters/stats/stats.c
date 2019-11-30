@@ -58,6 +58,7 @@ typedef struct {
   const char *name;
   uint64_t ops;
   uint64_t bytes;
+  uint64_t usecs;
 } stat;
 
 /* This lock protects all the stats. */
@@ -177,11 +178,18 @@ stats_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   "statsappend=<BOOL>  True to append to the log (default false).\n"
 
 static inline void
-record_stat (stat *st, uint32_t count)
+record_stat (stat *st, uint32_t count, const struct timeval *start)
 {
+  struct timeval end;
+  uint64_t usecs;
+
+  gettimeofday (&end, NULL);
+  usecs = tvdiff_usec (start, &end);
+
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   st->ops++;
   st->bytes += count;
+  st->usecs += usecs;
 }
 
 /* Read. */
@@ -190,10 +198,12 @@ stats_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
+  struct timeval start;
   int r;
 
+  gettimeofday (&start, NULL);
   r = next_ops->pread (nxdata, buf, count, offset, flags, err);
-  if (r == 0) record_stat (&pread_st, count);
+  if (r == 0) record_stat (&pread_st, count, &start);
   return r;
 }
 
@@ -204,10 +214,12 @@ stats_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
               const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
+  struct timeval start;
   int r;
 
+  gettimeofday (&start, NULL);
   r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
-  if (r == 0) record_stat (&pwrite_st, count);
+  if (r == 0) record_stat (&pwrite_st, count, &start);
   return r;
 }
 
@@ -218,10 +230,12 @@ stats_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
+  struct timeval start;
   int r;
 
+  gettimeofday (&start, NULL);
   r = next_ops->trim (nxdata, count, offset, flags, err);
-  if (r == 0) record_stat (&trim_st, count);
+  if (r == 0) record_stat (&trim_st, count, &start);
   return r;
 }
 
@@ -232,10 +246,12 @@ stats_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
+  struct timeval start;
   int r;
 
+  gettimeofday (&start, NULL);
   r = next_ops->zero (nxdata, count, offset, flags, err);
-  if (r == 0) record_stat (&zero_st, count);
+  if (r == 0) record_stat (&zero_st, count, &start);
   return r;
 }
 
@@ -246,14 +262,16 @@ stats_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
                uint32_t count, uint64_t offset, uint32_t flags,
                struct nbdkit_extents *extents, int *err)
 {
+  struct timeval start;
   int r;
 
+  gettimeofday (&start, NULL);
   r = next_ops->extents (nxdata, count, offset, flags, extents, err);
   /* XXX There's a case for trying to determine how long the extents
    * will be that are returned to the client (instead of simply using
    * count), given the flags and the complex rules in the protocol.
    */
-  if (r == 0) record_stat (&extents_st, count);
+  if (r == 0) record_stat (&extents_st, count, &start);
   return r;
 }
 
@@ -264,10 +282,12 @@ stats_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
              uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
 {
+  struct timeval start;
   int r;
 
+  gettimeofday (&start, NULL);
   r = next_ops->cache (nxdata, count, offset, flags, err);
-  if (r == 0) record_stat (&cache_st, count);
+  if (r == 0) record_stat (&cache_st, count, &start);
   return r;
 }
 
