@@ -54,14 +54,20 @@ static bool append;
 static FILE *fp;
 static struct timeval start_t;
 
+typedef struct {
+  const char *name;
+  uint64_t ops;
+  uint64_t bytes;
+} stat;
+
 /* This lock protects all the stats. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-static uint64_t pread_ops, pread_bytes;
-static uint64_t pwrite_ops, pwrite_bytes;
-static uint64_t trim_ops, trim_bytes;
-static uint64_t zero_ops, zero_bytes;
-static uint64_t extents_ops, extents_bytes;
-static uint64_t cache_ops, cache_bytes;
+static stat pread_st   = { "read" };
+static stat pwrite_st  = { "write" };
+static stat trim_st    = { "trim" };
+static stat zero_st    = { "zero" };
+static stat extents_st = { "extents" };
+static stat cache_st   = { "cache" };
 
 static inline double
 calc_bps (uint64_t bytes, int64_t usecs)
@@ -70,29 +76,23 @@ calc_bps (uint64_t bytes, int64_t usecs)
 }
 
 static inline void
+print_stat (const stat *st, int64_t usecs)
+{
+  if (st->ops > 0)
+    fprintf (fp, "%s: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
+             st->name, st->ops, st->bytes, calc_bps (st->bytes, usecs));
+}
+
+static inline void
 print_stats (int64_t usecs)
 {
   fprintf (fp, "elapsed time: %g s\n", usecs / 1000000.);
-
-  if (pread_ops > 0)
-    fprintf (fp, "read: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
-             pread_ops, pread_bytes, calc_bps (pread_bytes, usecs));
-  if (pwrite_ops > 0)
-    fprintf (fp, "write: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
-             pwrite_ops, pwrite_bytes, calc_bps (pwrite_bytes, usecs));
-  if (trim_ops > 0)
-    fprintf (fp, "trim: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
-             trim_ops, trim_bytes, calc_bps (trim_bytes, usecs));
-  if (zero_ops > 0)
-    fprintf (fp, "zero: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
-             zero_ops, zero_bytes, calc_bps (zero_bytes, usecs));
-  if (extents_ops > 0)
-    fprintf (fp, "extents: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
-             extents_ops, extents_bytes, calc_bps (extents_bytes, usecs));
-  if (cache_ops > 0)
-    fprintf (fp, "cache: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
-             cache_ops, cache_bytes, calc_bps (cache_bytes, usecs));
-
+  print_stat (&pread_st,   usecs);
+  print_stat (&pwrite_st,  usecs);
+  print_stat (&trim_st,    usecs);
+  print_stat (&zero_st,    usecs);
+  print_stat (&extents_st, usecs);
+  print_stat (&cache_st,   usecs);
   fflush (fp);
 }
 
@@ -176,6 +176,14 @@ stats_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   "statsfile=<FILE>    (required) The file to place the log in.\n" \
   "statsappend=<BOOL>  True to append to the log (default false).\n"
 
+static inline void
+record_stat (stat *st, uint32_t count)
+{
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+  st->ops++;
+  st->bytes += count;
+}
+
 /* Read. */
 static int
 stats_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -185,11 +193,7 @@ stats_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   r = next_ops->pread (nxdata, buf, count, offset, flags, err);
-  if (r == 0) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    pread_ops++;
-    pread_bytes += count;
-  }
+  if (r == 0) record_stat (&pread_st, count);
   return r;
 }
 
@@ -203,11 +207,7 @@ stats_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
-  if (r == 0) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    pwrite_ops++;
-    pwrite_bytes += count;
-  }
+  if (r == 0) record_stat (&pwrite_st, count);
   return r;
 }
 
@@ -221,11 +221,7 @@ stats_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   r = next_ops->trim (nxdata, count, offset, flags, err);
-  if (r == 0) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    trim_ops++;
-    trim_bytes += count;
-  }
+  if (r == 0) record_stat (&trim_st, count);
   return r;
 }
 
@@ -239,11 +235,7 @@ stats_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   r = next_ops->zero (nxdata, count, offset, flags, err);
-  if (r == 0) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    zero_ops++;
-    zero_bytes += count;
-  }
+  if (r == 0) record_stat (&zero_st, count);
   return r;
 }
 
@@ -257,15 +249,11 @@ stats_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   r = next_ops->extents (nxdata, count, offset, flags, extents, err);
-  if (r == 0) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    extents_ops++;
-    /* XXX There's a case for trying to determine how long the extents
-     * will be that are returned to the client, given the flags and
-     * the complex rules in the protocol.
-     */
-    extents_bytes += count;
-  }
+  /* XXX There's a case for trying to determine how long the extents
+   * will be that are returned to the client (instead of simply using
+   * count), given the flags and the complex rules in the protocol.
+   */
+  if (r == 0) record_stat (&extents_st, count);
   return r;
 }
 
@@ -279,11 +267,7 @@ stats_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   r = next_ops->cache (nxdata, count, offset, flags, err);
-  if (r == 0) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    cache_ops++;
-    cache_bytes += count;
-  }
+  if (r == 0) record_stat (&cache_st, count);
   return r;
 }
 
