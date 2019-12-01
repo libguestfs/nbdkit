@@ -49,7 +49,4 @@ extern exit_code call_write (const char *wbuf, size_t wbuflen,
                              const char **argv)
   __attribute__((__nonnull__ (1, 3)));
 
-extern char tmpdir[];
-extern char *script;
-
 #endif /* NBDKIT_CALL_H */
