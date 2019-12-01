@@ -33,7 +33,6 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	generate-file-data.sh \
-	generate-offset-data.sh \
 	make-pki.sh \
 	make-psk.sh \
 	python-exception.py \
