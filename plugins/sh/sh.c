@@ -49,8 +49,8 @@
 
 #include "call.h"
 
-char tmpdir[] = "/tmp/nbdkitshXXXXXX";
-char *script;
+static char tmpdir[] = "/tmp/nbdkitshXXXXXX";
+static char *script;
 static char *magic_config_key;
 
 static void

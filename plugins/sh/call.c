@@ -55,7 +55,7 @@
 
 /* Ensure there is at least 1 byte of space in the buffer. */
 static int
-expand_buf (char **buf, size_t *buflen, size_t *bufalloc)
+expand_buf (const char *argv0, char **buf, size_t *buflen, size_t *bufalloc)
 {
   char *nb;
 
@@ -65,7 +65,7 @@ expand_buf (char **buf, size_t *buflen, size_t *bufalloc)
   *bufalloc = *bufalloc == 0 ? 64 : *bufalloc * 2;
   nb = realloc (*buf, *bufalloc);
   if (nb == NULL) {
-    nbdkit_error ("%s: malloc: %m", script);
+    nbdkit_error ("%s: malloc: %m", argv0);
     return -1;
   }
   *buf = nb;
@@ -105,6 +105,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
        char **ebuf, size_t *ebuflen,     /* read from stderr */
        const char **argv)                /* script + parameters */
 {
+  const char *argv0 = argv[0]; /* script name, used in error messages */
   pid_t pid = -1;
   int status;
   int ret = ERROR;
@@ -123,15 +124,15 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 
 #ifdef HAVE_PIPE2
   if (pipe2 (in_fd, O_CLOEXEC) == -1) {
-    nbdkit_error ("%s: pipe2: %m", script);
+    nbdkit_error ("%s: pipe2: %m", argv0);
     goto error;
   }
   if (pipe2 (out_fd, O_CLOEXEC) == -1) {
-    nbdkit_error ("%s: pipe2: %m", script);
+    nbdkit_error ("%s: pipe2: %m", argv0);
     goto error;
   }
   if (pipe2 (err_fd, O_CLOEXEC) == -1) {
-    nbdkit_error ("%s: pipe2: %m", script);
+    nbdkit_error ("%s: pipe2: %m", argv0);
     goto error;
   }
 #else
@@ -142,15 +143,15 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
    * loop after fork to close unexpected fds.
    */
   if (pipe (in_fd) == -1) {
-    nbdkit_error ("%s: pipe: %m", script);
+    nbdkit_error ("%s: pipe: %m", argv0);
     goto error;
   }
   if (pipe (out_fd) == -1) {
-    nbdkit_error ("%s: pipe: %m", script);
+    nbdkit_error ("%s: pipe: %m", argv0);
     goto error;
   }
   if (pipe (err_fd) == -1) {
-    nbdkit_error ("%s: pipe: %m", script);
+    nbdkit_error ("%s: pipe: %m", argv0);
     goto error;
   }
 #endif
@@ -165,7 +166,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 
   pid = fork ();
   if (pid == -1) {
-    nbdkit_error ("%s: fork: %m", script);
+    nbdkit_error ("%s: fork: %m", argv0);
     goto error;
   }
 
@@ -204,7 +205,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
     if (poll (pfds, 3, -1) == -1) {
       if (errno == EINTR || errno == EAGAIN)
         continue;
-      nbdkit_error ("%s: poll: %m", script);
+      nbdkit_error ("%s: poll: %m", argv0);
       goto error;
     }
 
@@ -212,7 +213,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
     if (pfds[0].revents & POLLOUT) {
       r = write (pfds[0].fd, wbuf, wbuflen);
       if (r == -1) {
-        nbdkit_error ("%s: write: %m", script);
+        nbdkit_error ("%s: write: %m", argv0);
         goto error;
       }
       wbuf += r;
@@ -228,11 +229,11 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 
     /* Check stdout. */
     if (pfds[1].revents & POLLIN) {
-      if (expand_buf (rbuf, rbuflen, &rbufalloc) == -1)
+      if (expand_buf (argv0, rbuf, rbuflen, &rbufalloc) == -1)
         goto error;
       r = read (pfds[1].fd, *rbuf + *rbuflen, rbufalloc - *rbuflen);
       if (r == -1) {
-        nbdkit_error ("%s: read: %m", script);
+        nbdkit_error ("%s: read: %m", argv0);
         goto error;
       }
       else if (r == 0) {
@@ -249,11 +250,11 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 
     /* Check stderr. */
     if (pfds[2].revents & POLLIN) {
-      if (expand_buf (ebuf, ebuflen, &ebufalloc) == -1)
+      if (expand_buf (argv0, ebuf, ebuflen, &ebufalloc) == -1)
         goto error;
       r = read (pfds[2].fd, *ebuf + *ebuflen, ebufalloc - *ebuflen);
       if (r == -1) {
-        nbdkit_error ("%s: read: %m", script);
+        nbdkit_error ("%s: read: %m", argv0);
         goto error;
       }
       else if (r == 0) {
@@ -270,7 +271,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
   }
 
   if (waitpid (pid, &status, 0) == -1) {
-    nbdkit_error ("%s: waitpid: %m", script);
+    nbdkit_error ("%s: waitpid: %m", argv0);
     pid = -1;
     goto error;
   }
@@ -278,26 +279,26 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 
   if (WIFSIGNALED (status)) {
     nbdkit_error ("%s: script terminated by signal %d",
-                  script, WTERMSIG (status));
+                  argv0, WTERMSIG (status));
     goto error;
   }
 
   if (WIFSTOPPED (status)) {
     nbdkit_error ("%s: script stopped by signal %d",
-                  script, WTERMSIG (status));
+                  argv0, WTERMSIG (status));
     goto error;
   }
 
   /* \0-terminate both read buffers (for convenience). */
-  if (expand_buf (rbuf, rbuflen, &rbufalloc) == -1)
+  if (expand_buf (argv0, rbuf, rbuflen, &rbufalloc) == -1)
     goto error;
-  if (expand_buf (ebuf, ebuflen, &ebufalloc) == -1)
+  if (expand_buf (argv0, ebuf, ebuflen, &ebufalloc) == -1)
     goto error;
   (*rbuf)[*rbuflen] = '\0';
   (*ebuf)[*ebuflen] = '\0';
 
   ret = WEXITSTATUS (status);
-  nbdkit_debug ("completed: %s %s: status %d", script, argv[1], ret);
+  nbdkit_debug ("completed: %s %s: status %d", argv0, argv[1], ret);
 
  error:
   if (in_fd[0] >= 0)
@@ -319,7 +320,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 }
 
 static void
-handle_script_error (char *ebuf, size_t len)
+handle_script_error (const char *argv0, char *ebuf, size_t len)
 {
   int err;
   size_t skip = 0;
@@ -409,17 +410,17 @@ handle_script_error (char *ebuf, size_t len)
     p = strchr (ebuf + skip, '\n');
     if (p) {
       /* More than one line, so write the whole message to debug ... */
-      nbdkit_debug ("%s: %s", script, ebuf);
+      nbdkit_debug ("%s: %s", argv0, ebuf);
       /* ... but truncate it for the error message below. */
       *p = '\0';
     }
     ebuf += skip;
-    nbdkit_error ("%s: %s", script, ebuf);
+    nbdkit_error ("%s: %s", argv0, ebuf);
   }
   else {
   no_error_message:
     nbdkit_error ("%s: script exited with error, "
-                  "but did not print an error message on stderr", script);
+                  "but did not print an error message on stderr", argv0);
   }
 
   /* Set errno. */
@@ -450,7 +451,7 @@ call (const char **argv)
   case ERROR:
   default:
     /* Error case. */
-    handle_script_error (ebuf, ebuflen);
+    handle_script_error (argv[0], ebuf, ebuflen);
     return ERROR;
   }
 }
@@ -478,7 +479,7 @@ call_read (char **rbuf, size_t *rbuflen, const char **argv)
     /* Error case. */
     free (*rbuf);
     *rbuf = NULL;
-    handle_script_error (ebuf, ebuflen);
+    handle_script_error (argv[0], ebuf, ebuflen);
     return ERROR;
   }
 }
@@ -506,7 +507,7 @@ call_write (const char *wbuf, size_t wbuflen, const char **argv)
   case ERROR:
   default:
     /* Error case. */
-    handle_script_error (ebuf, ebuflen);
+    handle_script_error (argv[0], ebuf, ebuflen);
     return ERROR;
   }
 }
