@@ -439,7 +439,7 @@ disk:
 	rm -rf disk.tmp $@ $@-t
 	mkdir disk.tmp
 	echo -n "hello,world" > disk.tmp/hello.txt
-	nbdkit -fv -U - linuxdisk disk.tmp size=100M \
+	$(top_builddir)/nbdkit -fv -U - linuxdisk disk.tmp size=100M \
 	    --run 'qemu-img convert $$nbd $@-t'
 	rm -rf disk.tmp
 	mv $@-t $@
