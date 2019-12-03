@@ -71,18 +71,45 @@ static stat extents_st = { "extents" };
 static stat cache_st   = { "cache" };
 static stat flush_st   = { "flush" };
 
-static inline double
-calc_bps (uint64_t bytes, int64_t usecs)
+#define KiB 1024
+#define MiB 1048576
+#define GiB 1073741824
+
+static char *
+humansize (uint64_t bytes)
 {
-  return 8.0 * bytes / usecs * 1000000.;
+  int r;
+  char *ret;
+
+  if (bytes < KiB)
+    r = asprintf (&ret, "%" PRIu64 " bytes", bytes);
+  else if (bytes < MiB)
+    r = asprintf (&ret, "%.2f KiB", bytes / (double)KiB);
+  else if (bytes < GiB)
+    r = asprintf (&ret, "%.2f MiB", bytes / (double)MiB);
+  else
+    r = asprintf (&ret, "%.2f GiB", bytes / (double)GiB);
+  if (r == -1)
+    ret = NULL;
+  return ret;
 }
 
-static inline void
+static void
 print_stat (const stat *st, int64_t usecs)
 {
-  if (st->ops > 0)
-    fprintf (fp, "%s: %" PRIu64 " ops, %" PRIu64 " bytes, %g bits/s\n",
-             st->name, st->ops, st->bytes, calc_bps (st->bytes, usecs));
+  if (st->ops > 0) {
+    char *size = humansize (st->bytes);
+    char *rate =
+      usecs / 1000000.0 != 0 ?
+      humansize (st->bytes / (usecs / 1000000.0)) : NULL;
+
+    fprintf (fp, "%s: %" PRIu64 " ops, %s, %s/s\n",
+             st->name, st->ops,
+             size ? size : "(n/a)", rate ? rate : "(n/a)");
+
+    free (size);
+    free (rate);
+  }
 }
 
 static inline void
