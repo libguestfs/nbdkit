@@ -94,6 +94,12 @@ humansize (uint64_t bytes)
   return ret;
 }
 
+static inline const char *
+maybe (char *s)
+{
+  return s ? s : "(n/a)";
+}
+
 static void
 print_stat (const stat *st, int64_t usecs)
 {
@@ -104,8 +110,7 @@ print_stat (const stat *st, int64_t usecs)
       humansize (st->bytes / (usecs / 1000000.0)) : NULL;
 
     fprintf (fp, "%s: %" PRIu64 " ops, %s, %s/s\n",
-             st->name, st->ops,
-             size ? size : "(n/a)", rate ? rate : "(n/a)");
+             st->name, st->ops, maybe (size), maybe (rate));
 
     free (size);
     free (rate);
