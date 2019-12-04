@@ -25,11 +25,11 @@ number of read, write and trim operations involved:
                  run : \
                  mkfs ext4 /dev/sda
  '
- elapsed time: 1.184586 s
- read: 253 ops, 0.000342 s, 4.77 MiB, 4.03 MiB/s
- write: 78 ops, 0.152594 s, 32.64 MiB, 27.56 MiB/s
- trim: 33 ops, 0.000214 s, 1.00 GiB, 864.44 MiB/s
- flush: 9 ops, 0.000003 s, 0 bytes, 0 bytes/s
+ elapsed time: 1.258933 s
+ read: 254 ops, 0.000326 s, 4.78 MiB, 14.31 GiB/s op, 3.80 MiB/s total
+ write: 78 ops, 0.167061 s, 32.64 MiB, 195.40 MiB/s op, 25.93 MiB/s total
+ trim: 33 ops, 0.000304 s, 1.00 GiB, 3289.47 GiB/s op, 813.39 MiB/s total
+ flush: 9 ops, 0.000002 s, 0 bytes, 0 bytes/s op, 0 bytes/s total
 
 =head1 PARAMETERS
 

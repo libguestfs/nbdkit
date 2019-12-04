@@ -112,14 +112,16 @@ print_stat (const stat *st, int64_t usecs)
 {
   if (st->ops > 0) {
     char *size = humansize (st->bytes);
-    char *rate = humanrate (st->bytes, usecs);
+    char *op_rate = humanrate (st->bytes, st->usecs);
+    char *total_rate = humanrate (st->bytes, usecs);
 
-    fprintf (fp, "%s: %" PRIu64 " ops, %.6f s, %s, %s/s\n",
+    fprintf (fp, "%s: %" PRIu64 " ops, %.6f s, %s, %s/s op, %s/s total\n",
              st->name, st->ops, st->usecs / 1000000.0, maybe (size),
-             maybe (rate));
+             maybe (op_rate), maybe (total_rate));
 
     free (size);
-    free (rate);
+    free (op_rate);
+    free (total_rate);
   }
 }
 
