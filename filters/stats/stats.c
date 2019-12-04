@@ -125,10 +125,27 @@ print_stat (const stat *st, int64_t usecs)
   }
 }
 
+static void
+print_totals (uint64_t usecs)
+{
+  uint64_t ops = pread_st.ops + pwrite_st.ops + trim_st.ops + zero_st.ops +
+    extents_st.ops + flush_st.ops;
+  uint64_t bytes = pread_st.bytes + pwrite_st.bytes + trim_st.bytes +
+    zero_st.bytes;
+  char *size = humansize (bytes);
+  char *rate = humanrate (bytes, usecs);
+
+  fprintf (fp, "total: %" PRIu64 " ops, %.6f s, %s, %s/s\n",
+           ops, usecs / 1000000.0, maybe (size), maybe (rate));
+
+  free (size);
+  free (rate);
+}
+
 static inline void
 print_stats (int64_t usecs)
 {
-  fprintf (fp, "elapsed time: %.6f s\n", usecs / 1000000.);
+  print_totals (usecs);
   print_stat (&pread_st,   usecs);
   print_stat (&pwrite_st,  usecs);
   print_stat (&trim_st,    usecs);
