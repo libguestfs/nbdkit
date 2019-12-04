@@ -94,6 +94,13 @@ humansize (uint64_t bytes)
   return ret;
 }
 
+static char *
+humanrate (uint64_t bytes, uint64_t usecs)
+{
+  double secs = usecs / 1000000.0;
+  return secs != 0.0 ? humansize (bytes / secs) : NULL;
+}
+
 static inline const char *
 maybe (char *s)
 {
@@ -105,9 +112,7 @@ print_stat (const stat *st, int64_t usecs)
 {
   if (st->ops > 0) {
     char *size = humansize (st->bytes);
-    char *rate =
-      usecs / 1000000.0 != 0 ?
-      humansize (st->bytes / (usecs / 1000000.0)) : NULL;
+    char *rate = humanrate (st->bytes, usecs);
 
     fprintf (fp, "%s: %" PRIu64 " ops, %s, %s/s\n",
              st->name, st->ops, maybe (size), maybe (rate));
