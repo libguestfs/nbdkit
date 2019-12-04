@@ -114,8 +114,9 @@ print_stat (const stat *st, int64_t usecs)
     char *size = humansize (st->bytes);
     char *rate = humanrate (st->bytes, usecs);
 
-    fprintf (fp, "%s: %" PRIu64 " ops, %s, %s/s\n",
-             st->name, st->ops, maybe (size), maybe (rate));
+    fprintf (fp, "%s: %" PRIu64 " ops, %.6f s, %s, %s/s\n",
+             st->name, st->ops, st->usecs / 1000000.0, maybe (size),
+             maybe (rate));
 
     free (size);
     free (rate);
@@ -125,7 +126,7 @@ print_stat (const stat *st, int64_t usecs)
 static inline void
 print_stats (int64_t usecs)
 {
-  fprintf (fp, "elapsed time: %g s\n", usecs / 1000000.);
+  fprintf (fp, "elapsed time: %.6f s\n", usecs / 1000000.);
   print_stat (&pread_st,   usecs);
   print_stat (&pwrite_st,  usecs);
   print_stat (&trim_st,    usecs);
