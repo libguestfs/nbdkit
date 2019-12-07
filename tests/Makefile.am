@@ -31,6 +31,49 @@
 
 include $(top_srcdir)/common-rules.mk
 
+#----------------------------------------------------------------------
+# This directory contains most of the nbdkit tests.
+#
+# Test variables:
+#
+#   TESTS            Tests that don't have any special requirements.
+#
+#   LIBNBD_TESTS     Tests that link to the libnbd C library should be
+#                    added to this variable.
+#
+#   LIBGUESTFS_TESTS Tests that link to libguestfs C library should be
+#                    added to this variable.
+#
+# check_*, noinst_*, EXTRA_PROGRAMS: These are the usual automake
+# variables.  Consult the automake manual for the meaning of these.
+
+TESTS =
+LIBNBD_TESTS =
+LIBGUESTFS_TESTS =
+
+check_PROGRAMS =
+check_DATA =
+check_SCRIPTS =
+check_LTLIBRARIES =
+noinst_LTLIBRARIES =
+EXTRA_PROGRAMS =
+
+# Ensure we're testing the local copy by running everything through
+# the nbdkit helper script in the top build directory.
+#
+# Use the 'direct' backend, and ensure maximum libguestfs debugging.
+#
+# Enable libnbd debugging.
+TESTS_ENVIRONMENT = \
+	PATH=$(abs_top_builddir):$(PATH) \
+	SRCDIR=$(srcdir) \
+	LIBGUESTFS_ATTACH_METHOD=appliance \
+	LIBGUESTFS_DEBUG=1 \
+	LIBGUESTFS_TRACE=1 \
+	LIBNBD_DEBUG=1 \
+	$(NULL)
+
+# All files that need to go into the tarball must be added here.
 EXTRA_DIST = \
 	generate-file-data.sh \
 	make-pki.sh \
@@ -153,8 +196,11 @@ EXTRA_DIST = \
 	test-zero.sh \
 	$(NULL)
 
-# Use 'make check' to run the ordinary tests.  To run all the tests
-# under valgrind, use the following rule:
+#----------------------------------------------------------------------
+# Use 'make check' to run the ordinary tests as non-root.  The
+# following are special commands for particular scenarios:
+
+# To run all the tests under valgrind, use the following rule:
 check-valgrind:
 	NBDKIT_VALGRIND=1 $(MAKE) check
 
@@ -170,46 +216,6 @@ if HAVE_VDDK
 check-vddk:
 	$(MAKE) check TESTS=test-vddk-real.sh
 endif HAVE_VDDK
-
-#----------------------------------------------------------------------
-# Basic test variables.
-#
-# TESTS: Tests that don't have any special requirements.
-#
-# LIBNBD_TESTS: Tests that link to the libnbd C library should be
-# added to this variable.
-#
-# LIBGUESTFS_TESTS: Tests that link to libguestfs C library should be
-# added to this variable.
-#
-# check_*, noinst_*, EXTRA_PROGRAMS: Usual automake variables.
-# Consult the automake manual for the meaning of these.
-
-TESTS =
-LIBNBD_TESTS =
-LIBGUESTFS_TESTS =
-
-check_PROGRAMS =
-check_DATA =
-check_SCRIPTS =
-check_LTLIBRARIES =
-noinst_LTLIBRARIES =
-EXTRA_PROGRAMS =
-
-# Ensure we're testing the local copy by running everything through
-# the nbdkit helper script in the top build directory.
-#
-# Use the 'direct' backend, and ensure maximum libguestfs debugging.
-#
-# Enable libnbd debugging.
-TESTS_ENVIRONMENT = \
-	PATH=$(abs_top_builddir):$(PATH) \
-	SRCDIR=$(srcdir) \
-	LIBGUESTFS_ATTACH_METHOD=appliance \
-	LIBGUESTFS_DEBUG=1 \
-	LIBGUESTFS_TRACE=1 \
-	LIBNBD_DEBUG=1 \
-	$(NULL)
 
 #----------------------------------------------------------------------
 # Basic server command line and start-up tests.
