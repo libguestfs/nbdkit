@@ -38,10 +38,7 @@ set -e
 
 requires ip -V
 requires qemu-img --version
-
-# Check we have IPv4 and IPv6, skip the test otherwise.
-requires ip -o -4 addr show scope host
-requires ip -o -6 addr show scope host
+requires_ipv6_loopback
 
 rm -f ip-filter.pid
 cleanup_fn rm -f ip-filter.pid

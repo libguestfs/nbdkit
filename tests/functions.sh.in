@@ -71,6 +71,24 @@ requires ()
     }
 }
 
+# qemu cannot connect to ::1 if IPv6 is disabled because of
+# the way it uses getaddrinfo.  See:
+# https://bugzilla.redhat.com/show_bug.cgi?id=808147
+# https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/SXDLSZ3GKXL6NDAKP4MPJ25IMHKN67X3/
+requires_ipv6_loopback ()
+{
+    requires qemu-img --version
+
+    # This should fail with "Connection refused".  If IPv6 is broken
+    # then it fails with "Address family for hostname not supported"
+    # instead.  It's very unlikely that port 1 is open.
+    if LANG=C qemu-img info "nbd:[::1]:1" |& \
+       grep -sq "Address family for hostname not supported"; then
+	echo "$0: IPv6 loopback is not available, skipping this test"
+	exit 77
+    fi
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to

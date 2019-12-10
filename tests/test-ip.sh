@@ -39,6 +39,7 @@ set -e
 requires ip -V
 requires qemu-img --version
 requires qemu-img info --image-opts driver=file,filename=functions.sh
+requires_ipv6_loopback
 
 rm -f ip.pid ipv4.out ipv6.out
 cleanup_fn rm -f ip.pid ipv4.out ipv6.out
