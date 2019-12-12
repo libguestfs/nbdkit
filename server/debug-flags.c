@@ -47,10 +47,18 @@ static char *
 name_of_debug_flag (const char *name, const char *flag)
 {
   char *var;
+  size_t i;
+  int len;
 
-  if (asprintf (&var, "%s_debug_%s", name, flag) == -1) {
+  if ((len = asprintf (&var, "%s_debug_%s", name, flag)) == -1) {
     perror ("asprintf");
     exit (EXIT_FAILURE);
+  }
+
+  /* If there are any '.'s remaining in the name, convert them to '_'. */
+  for (i = 0; i < (size_t) len; ++i) {
+    if (var[i] == '.')
+      var[i] = '_';
   }
 
   return var;                   /* caller frees */

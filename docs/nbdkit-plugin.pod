@@ -1329,6 +1329,14 @@ You should only use this feature for debug settings.  For general
 settings use ordinary plugin parameters.  Debug Flags can only be C
 ints.  They are not supported by non-C language plugins.
 
+For convenience C<'.'> characters are replaced with C<'_'> characters
+in the variable name, so both of these parameters:
+
+ -D myplugin.foo_bar=1
+ -D myplugin.foo.bar=1
+
+correspond to the plugin variable C<myplugin_debug_foo_bar>.
+
 =head1 INSTALLING THE PLUGIN
 
 The plugin is a C<*.so> file and possibly a manual page.  You can of
