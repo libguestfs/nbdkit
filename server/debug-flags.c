@@ -40,6 +40,22 @@
 
 #include "internal.h"
 
+/* Synthesize the name of the *_debug_* variable from the plugin name
+ * and flag.
+ */
+static char *
+name_of_debug_flag (const char *name, const char *flag)
+{
+  char *var;
+
+  if (asprintf (&var, "%s_debug_%s", name, flag) == -1) {
+    perror ("asprintf");
+    exit (EXIT_FAILURE);
+  }
+
+  return var;                   /* caller frees */
+}
+
 /* Apply all debug flags applicable to this backend. */
 void
 apply_debug_flags (void *dl, const char *name)
@@ -48,14 +64,8 @@ apply_debug_flags (void *dl, const char *name)
 
   for (flag = debug_flags; flag != NULL; flag = flag->next) {
     if (!flag->used && strcmp (name, flag->name) == 0) {
-      CLEANUP_FREE char *var = NULL;
       int *sym;
-
-      /* Synthesize the name of the variable. */
-      if (asprintf (&var, "%s_debug_%s", name, flag->flag) == -1) {
-        perror ("asprintf");
-        exit (EXIT_FAILURE);
-      }
+      CLEANUP_FREE char *var = name_of_debug_flag (name, flag->flag);
 
       /* Find the symbol. */
       sym = dlsym (dl, var);
