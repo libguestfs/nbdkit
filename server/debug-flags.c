@@ -59,16 +59,16 @@ apply_debug_flags (void *dl, const char *name)
 
       /* Find the symbol. */
       sym = dlsym (dl, var);
-      if (sym == NULL) {
+      if (sym) {
+        /* Set the flag. */
+        *sym = flag->value;
+      }
+      else {
         fprintf (stderr,
-                 "%s: -D %s.%s: %s does not contain a "
+                 "%s: warning: -D %s.%s: %s does not contain a "
                  "global variable called %s\n",
                  program_name, name, flag->flag, name, var);
-        exit (EXIT_FAILURE);
       }
-
-      /* Set the flag. */
-      *sym = flag->value;
 
       /* Mark this flag as used. */
       flag->used = true;
@@ -82,11 +82,9 @@ free_debug_flags (void)
   while (debug_flags != NULL) {
     struct debug_flag *next = debug_flags->next;
 
-    if (!debug_flags->used) {
+    if (!debug_flags->used)
       fprintf (stderr, "%s: warning: debug flag -D %s.%s was not used\n",
                program_name, debug_flags->name, debug_flags->flag);
-      exit (EXIT_FAILURE);
-    }
     free (debug_flags->name);
     free (debug_flags->flag);
     free (debug_flags);
