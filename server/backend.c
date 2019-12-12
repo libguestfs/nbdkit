@@ -46,42 +46,6 @@
 
 /* Helpers for registering a new backend. */
 
-/* Set all debug flags which apply to this backend. */
-static void
-set_debug_flags (void *dl, const char *name)
-{
-  struct debug_flag *flag;
-
-  for (flag = debug_flags; flag != NULL; flag = flag->next) {
-    if (!flag->used && strcmp (name, flag->name) == 0) {
-      CLEANUP_FREE char *var = NULL;
-      int *sym;
-
-      /* Synthesize the name of the variable. */
-      if (asprintf (&var, "%s_debug_%s", name, flag->flag) == -1) {
-        perror ("asprintf");
-        exit (EXIT_FAILURE);
-      }
-
-      /* Find the symbol. */
-      sym = dlsym (dl, var);
-      if (sym == NULL) {
-        fprintf (stderr,
-                 "%s: -D %s.%s: %s does not contain a "
-                 "global variable called %s\n",
-                 program_name, name, flag->flag, name, var);
-        exit (EXIT_FAILURE);
-      }
-
-      /* Set the flag. */
-      *sym = flag->value;
-
-      /* Mark this flag as used. */
-      flag->used = true;
-    }
-  }
-}
-
 void
 backend_init (struct backend *b, struct backend *next, size_t index,
               const char *filename, void *dl, const char *type)
@@ -140,8 +104,8 @@ backend_load (struct backend *b, const char *name, void (*load) (void))
 
   debug ("registered %s %s (name %s)", b->type, b->filename, b->name);
 
-  /* Set debug flags before calling load. */
-  set_debug_flags (b->dl, name);
+  /* Apply debug flags before calling load. */
+  apply_debug_flags (b->dl, name);
 
   /* Call the on-load callback if it exists. */
   debug ("%s: load", name);

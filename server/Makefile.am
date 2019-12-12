@@ -42,6 +42,7 @@ nbdkit_SOURCES = \
 	connections.c \
 	crypto.c \
 	debug.c \
+	debug-flags.c \
 	extents.c \
 	filters.c \
 	internal.h \

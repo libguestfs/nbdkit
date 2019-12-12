@@ -605,19 +605,7 @@ main (int argc, char *argv[])
   }
 
   /* Check all debug flags were used, and free them. */
-  while (debug_flags != NULL) {
-    struct debug_flag *next = debug_flags->next;
-
-    if (!debug_flags->used) {
-      fprintf (stderr, "%s: debug flag -D %s.%s was not used\n",
-               program_name, debug_flags->name, debug_flags->flag);
-      exit (EXIT_FAILURE);
-    }
-    free (debug_flags->name);
-    free (debug_flags->flag);
-    free (debug_flags);
-    debug_flags = next;
-  }
+  free_debug_flags ();
 
   if (help) {
     struct backend *b;
