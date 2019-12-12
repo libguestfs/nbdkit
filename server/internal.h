@@ -287,6 +287,10 @@ extern int crypto_negotiate_tls (struct connection *conn,
       nbdkit_debug ((fs), ##__VA_ARGS__);                \
   } while (0)
 
+/* debug-flags.c */
+extern void apply_debug_flags (void *dl, const char *name);
+extern void free_debug_flags (void);
+
 /* log-*.c */
 #if !HAVE_VFPRINTF_PERCENT_M
 #include <stdio.h>
