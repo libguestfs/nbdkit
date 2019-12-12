@@ -32,12 +32,14 @@
 
 #include <config.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <inttypes.h>
+#include <string.h>
 #include <assert.h>
 #include <ctype.h>
+
 #include <dlfcn.h>
-#include <inttypes.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "internal.h"
 #include "minmax.h"
