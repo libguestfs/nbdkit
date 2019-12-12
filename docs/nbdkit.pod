@@ -177,6 +177,13 @@ Display brief command line usage information and exit.
 Set the plugin or filter Debug Flag called C<FLAG> to the integer
 value C<N>.  See L<nbdkit-plugin(3)/Debug Flags>.
 
+=item B<-D> nbdkit.FLAG=N
+
+=item B<--debug> nbdkit.FLAG=N
+
+Set the nbdkit server Debug Flag called C<FLAG> to the integer value
+C<N>.
+
 =item B<--dump-config>
 
 Dump out the compile-time configuration values and exit.
