@@ -56,19 +56,31 @@ check_error ()
     fi
 }
 
+check_warning ()
+{
+    cat debug-flags.out
+    if ! grep -sq "warning.*$1" debug-flags.out; then
+        echo "$0: expected warning message not present in above output: '$1'"
+        exit 1
+    fi
+}
+
 # This is expected to fail because we didn't set the file= parameter,
 # but it should not fail because of the debug flag.
 nbdkit -f -D example2.extra=1 example2 2>debug-flags.out && expected_failure
 check_error "you must supply the file="
 
-# This should fail because the -D flag refers to an unknown global in
-# a known plugin.
+# This should fail because we didn't set the file= parameter, but it
+# should also print a warning about the unknown -D flag.
 nbdkit -f -D example2.unknown=1 example2 2>debug-flags.out && expected_failure
-check_error "does not contain a global variable called example2_debug_unknown"
+check_error "you must supply the file="
+check_warning "does not contain a global variable called example2_debug_unknown"
 
-# This should fail because the -D flag is unused.
+# This should fail because we didn't set the file= parameter, but it
+# should also print a warning because the -D flag is unused.
 nbdkit -f -D example1.foo=1 example2 2>debug-flags.out && expected_failure
-check_error "was not used"
+check_error "you must supply the file="
+check_warning "was not used"
 
 # These should fail because the -D flag has a bad format.
 nbdkit -f -D = example2 2>debug-flags.out && expected_failure
