@@ -49,10 +49,9 @@ expected_failure ()
 
 check_error ()
 {
+    cat debug-flags.out
     if ! grep -sq "$1" debug-flags.out; then
-        echo "unexpected error message containing: $1"
-        echo "actual output:"
-        cat debug-flags.out
+        echo "$0: expected error message not present in above output: '$1'"
         exit 1
     fi
 }
