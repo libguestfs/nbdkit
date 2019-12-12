@@ -67,6 +67,8 @@
     nbdkit_vdebug;
     nbdkit_verror;
 
+    nbdkit_debug_*;
+
   # Everything else is hidden.
   local: *;
 };
