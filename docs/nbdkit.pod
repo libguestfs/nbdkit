@@ -182,7 +182,7 @@ value C<N>.  See L<nbdkit-plugin(3)/Debug Flags>.
 =item B<--debug> nbdkit.FLAG=N
 
 Set the nbdkit server Debug Flag called C<FLAG> to the integer value
-C<N>.
+C<N>.  See L</SERVER DEBUG FLAGS> below.
 
 =item B<--dump-config>
 
@@ -535,6 +535,39 @@ languages.  The file should be executable.  For example:
  }
 
 (see L<nbdkit-perl-plugin(3)> for a full example).
+
+=head1 SERVER DEBUG FLAGS
+
+As well as enabling or disabling debugging in the server using
+I<--verbose> you can control extra debugging in the server using the
+C<-D nbdkit.*> flags listed in this section.  Note these flags are an
+internal implementation detail of the server and may be changed or
+removed at any time in the future.
+
+=over 4
+
+=item B<-D nbdkit.backend.controlpath=0>
+
+=item B<-D nbdkit.backend.controlpath=1>
+
+=item B<-D nbdkit.backend.datapath=0>
+
+=item B<-D nbdkit.backend.datapath=1>
+
+These flags control the verbosity of nbdkit backend debugging messages
+(the ones which show every request processed by the server).  The
+default for both settings is C<1> (normal debugging) but you can set
+them to C<0> to suppress these messages.
+
+C<-D nbdkit.backend.datapath=0> is the more useful setting which lets you
+suppress messages about pread, pwrite, zero, trim, etc. commands.
+When transferring large amounts of data these messages are numerous
+and not usually very interesting.
+
+C<-D nbdkit.backend.controlpath=0> suppresses the non-datapath
+commands (config, open, close, can_write, etc.)
+
+=back
 
 =head1 SIGNALS
 

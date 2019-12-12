@@ -138,6 +138,7 @@ EXTRA_DIST = \
 	test-nbd-extents.sh \
 	test-nbd-tls.sh \
 	test-nbd-tls-psk.sh \
+	test-nbdkit-backend-debug.sh \
 	test-nofilter.sh \
 	test-nozero.sh \
 	test-null-extents.sh \
@@ -749,6 +750,9 @@ endif HAVE_VDDK
 
 # zero plugin test.
 TESTS += test-zero.sh
+
+# -D nbdkit.backend.* settings.
+TESTS += test-nbdkit-backend-debug.sh
 
 #----------------------------------------------------------------------
 # Tests of language plugins.
