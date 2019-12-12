@@ -902,6 +902,7 @@ filters="\
         log \
         nocache \
         noextents \
+        nofilter \
         noparallel \
         nozero \
         offset \
@@ -987,6 +988,7 @@ AC_CONFIG_FILES([Makefile
                  filters/log/Makefile
                  filters/nocache/Makefile
                  filters/noextents/Makefile
+                 filters/nofilter/Makefile
                  filters/noparallel/Makefile
                  filters/nozero/Makefile
                  filters/offset/Makefile

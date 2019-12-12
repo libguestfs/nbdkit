@@ -138,6 +138,7 @@ EXTRA_DIST = \
 	test-nbd-extents.sh \
 	test-nbd-tls.sh \
 	test-nbd-tls-psk.sh \
+	test-nofilter.sh \
 	test-nozero.sh \
 	test-null-extents.sh \
 	test_ocaml_plugin.ml \
@@ -1013,6 +1014,9 @@ TESTS += test-ip-filter.sh
 
 # log filter test.
 TESTS += test-log.sh
+
+# nofilter test.
+TESTS += test-nofilter.sh
 
 if HAVE_NBD_PLUGIN
 # nozero filter test.
