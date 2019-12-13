@@ -42,7 +42,11 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create a base image which is partitioned with an empty filesystem.
-guestfish -N cow-base.img=fs exit
+rm -rf cow.d
+mkdir cow.d
+cleanup_fn rm -rf cow.d
+nbdkit -fv -U - linuxdisk cow.d size=100M \
+       --run 'qemu-img convert $nbd cow-base.img'
 lastmod="$(stat -c "%y" cow-base.img)"
 
 # Run nbdkit with a COW overlay.
@@ -50,8 +54,7 @@ start_nbdkit -P cow.pid -U $sock --filter=cow file cow-base.img
 
 # Write some data into the overlay.
 guestfish --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
-  fill-dir / 10000
-  fill-pattern "abcde" 5M /large
+  fill-pattern "abcde" 128K /large
   write /hello "hello, world"
 EOF
 

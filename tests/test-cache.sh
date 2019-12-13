@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires guestfish --version
+requires nbdsh --version
 
 sock=`mktemp -u`
 files="cache.img $sock cache.pid"
@@ -42,24 +42,27 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create an empty base image.
-truncate -s 1G cache.img
+truncate -s 128K cache.img
 
 # Run nbdkit with the caching filter.
 start_nbdkit -P cache.pid -U $sock --filter=cache file cache.img
 
-# Open the overlay and perform some operations.
-guestfish --format=raw -a "nbd://?socket=$sock" <<'EOF'
-  run
-  part-disk /dev/sda gpt
-  mkfs ext4 /dev/sda1
-  mount /dev/sda1 /
-  fill-dir / 10000
-  fill-pattern "abcde" 5M /large
-  write /hello "hello, world"
-EOF
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+# Write some pattern data to the overlay and check it reads back OK.
+buf = b"abcd" * 16384
+h.pwrite (buf, 32768)
+zero = h.pread (32768, 0)
+assert zero == bytearray (32768)
+buf2 = h.pread (65536, 32768)
+assert buf == buf2
 
-# Check the last files we created exist.
-guestfish --ro -a cache.img -m /dev/sda1 <<'EOF'
-  cat /hello
-  cat /large | cat >/dev/null
-EOF
+# Flushing should write through to the underlying file.
+h.flush ()
+
+with open ("cache.img", "rb") as file:
+    zero = file.read (32768)
+    assert zero == bytearray (32768)
+    buf2 = file.read (65536)
+    assert buf == buf2
+'
