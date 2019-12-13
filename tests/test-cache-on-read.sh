@@ -30,15 +30,11 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# XXX Suggestion to improve this test: Use the delay filter below the
-# cache filter, and time reads to prove that the second read is faster
-# because it isn't going through the delay filter and plugin.
-
 source ./functions.sh
 set -e
 set -x
 
-requires guestfish --version
+requires nbdsh --version
 
 sock=`mktemp -u`
 files="cache-on-read.img $sock cache-on-read.pid"
@@ -46,7 +42,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create an empty base image.
-truncate -s 1G cache-on-read.img
+truncate -s 128K cache-on-read.img
 
 # Run nbdkit with the caching filter and cache-on-read set.
 start_nbdkit -P cache-on-read.pid -U $sock \
@@ -54,19 +50,18 @@ start_nbdkit -P cache-on-read.pid -U $sock \
              file cache-on-read.img \
              cache-on-read=true
 
-# Open the overlay and perform some operations.
-guestfish --format=raw -a "nbd://?socket=$sock" <<'EOF'
-  run
-  part-disk /dev/sda gpt
-  mkfs ext4 /dev/sda1
-  mount /dev/sda1 /
-  fill-dir / 10000
-  fill-pattern "abcde" 5M /large
-  write /hello "hello, world"
-EOF
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+# Write some pattern data to the overlay and check it reads back OK.
+buf = b"abcd" * 16384
+h.pwrite (buf, 32768)
+zero = h.pread (32768, 0)
+assert zero == bytearray (32768)
+buf2 = h.pread (65536, 32768)
+assert buf == buf2
 
-# Check the last files we created exist.
-guestfish --ro -a cache-on-read.img -m /dev/sda1 <<'EOF'
-  cat /hello
-  cat /large | cat >/dev/null
-EOF
+# XXX Suggestion to improve this test: Use the delay filter below the
+# cache filter, and time reads to prove that the second read is faster
+# because it is not going through the delay filter and plugin.
+# XXX second h.pread here ...
+'
