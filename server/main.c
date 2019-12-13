@@ -158,7 +158,7 @@ main (int argc, char *argv[])
   int tls_set_on_cli = false;
   bool short_name;
   const char *filename;
-  char *p, *q;
+  char *p;
   static struct filter_filename {
     struct filter_filename *next;
     const char *filename;
@@ -205,51 +205,6 @@ main (int argc, char *argv[])
       break;
 
     switch (c) {
-    case 'D':
-      {
-        struct debug_flag *flag;
-
-        /* Debug Flag must be "NAME.FLAG=N".
-         *                     ^    ^    ^
-         *                optarg    p    q  (after +1 adjustment below)
-         */
-        p = strchr (optarg, '.');
-        q = strchr (optarg, '=');
-        if (p == NULL || q == NULL) {
-        bad_debug_flag:
-          fprintf (stderr,
-                   "%s: -D (Debug Flag) must have the format NAME.FLAG=N\n",
-                   program_name);
-          exit (EXIT_FAILURE);
-        }
-        p++;                    /* +1 adjustment */
-        q++;
-
-        if (p - optarg <= 1) goto bad_debug_flag; /* NAME too short */
-        if (p > q) goto bad_debug_flag;
-        if (q - p <= 1) goto bad_debug_flag; /* FLAG too short */
-        if (*q == '\0') goto bad_debug_flag; /* N too short */
-
-        flag = malloc (sizeof *flag);
-        if (flag == NULL) {
-        debug_flag_perror:
-          perror ("malloc");
-          exit (EXIT_FAILURE);
-        }
-        flag->name = strndup (optarg, p-optarg-1);
-        if (!flag->name) goto debug_flag_perror;
-        flag->flag = strndup (p, q-p-1);
-        if (!flag->flag) goto debug_flag_perror;
-        if (nbdkit_parse_int ("flag", q, &flag->value) == -1)
-          goto bad_debug_flag;
-        flag->used = false;
-
-        /* Add flag to the linked list. */
-        flag->next = debug_flags;
-        debug_flags = flag;
-      }
-      break;
-
     case DUMP_CONFIG_OPTION:
       dump_config ();
       exit (EXIT_SUCCESS);
@@ -368,6 +323,10 @@ main (int argc, char *argv[])
                program_name);
       exit (EXIT_FAILURE);
 #endif
+
+    case 'D':
+      add_debug_flag (optarg);
+      break;
 
     case 'e':
       exportname = optarg;
