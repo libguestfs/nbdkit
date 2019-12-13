@@ -40,11 +40,20 @@
 
 #include "internal.h"
 
+struct debug_flag {
+  struct debug_flag *next;
+  char *name;                   /* plugin or filter name */
+  char *flag;                   /* flag name */
+  char *symbol;                 /* symbol, eg. "myplugin_debug_foo" */
+  int value;                    /* value of flag */
+  bool used;                    /* if flag was successfully set */
+};
+
 /* Synthesize the name of the *_debug_* variable from the plugin name
  * and flag.
  */
 static char *
-name_of_debug_flag (const char *name, const char *flag)
+symbol_of_debug_flag (const char *name, const char *flag)
 {
   char *var;
 
@@ -56,6 +65,56 @@ name_of_debug_flag (const char *name, const char *flag)
   return var;                   /* caller frees */
 }
 
+/* Parse and add a single -D flag from the command line.
+ *
+ * Debug Flag must be "NAME.FLAG=N".
+ *                     ^    ^    ^
+ *                   arg    p    q  (after +1 adjustment below)
+ */
+void
+add_debug_flag (const char *arg)
+{
+  struct debug_flag *flag;
+  char *p, *q;
+
+  p = strchr (arg, '.');
+  q = strchr (arg, '=');
+  if (p == NULL || q == NULL) {
+  bad_debug_flag:
+    fprintf (stderr,
+             "%s: -D (Debug Flag) must have the format NAME.FLAG=N\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+  p++;                          /* +1 adjustment */
+  q++;
+
+  if (p - arg <= 1) goto bad_debug_flag; /* NAME too short */
+  if (p > q) goto bad_debug_flag;
+  if (q - p <= 1) goto bad_debug_flag;   /* FLAG too short */
+  if (*q == '\0') goto bad_debug_flag;   /* N too short */
+
+  flag = malloc (sizeof *flag);
+  if (flag == NULL) {
+  debug_flag_perror:
+    perror ("malloc");
+    exit (EXIT_FAILURE);
+  }
+
+  flag->name = strndup (arg, p-arg-1);
+  if (!flag->name) goto debug_flag_perror;
+  flag->flag = strndup (p, q-p-1);
+  if (!flag->flag) goto debug_flag_perror;
+  if (nbdkit_parse_int ("flag", q, &flag->value) == -1)
+    goto bad_debug_flag;
+  flag->used = false;
+  flag->symbol = symbol_of_debug_flag (flag->name, flag->flag);
+
+  /* Add flag to the linked list. */
+  flag->next = debug_flags;
+  debug_flags = flag;
+}
+
 /* Apply all debug flags applicable to this backend. */
 void
 apply_debug_flags (void *dl, const char *name)
@@ -65,10 +124,9 @@ apply_debug_flags (void *dl, const char *name)
   for (flag = debug_flags; flag != NULL; flag = flag->next) {
     if (!flag->used && strcmp (name, flag->name) == 0) {
       int *sym;
-      CLEANUP_FREE char *var = name_of_debug_flag (name, flag->flag);
 
       /* Find the symbol. */
-      sym = dlsym (dl, var);
+      sym = dlsym (dl, flag->symbol);
       if (sym) {
         /* Set the flag. */
         *sym = flag->value;
@@ -77,7 +135,7 @@ apply_debug_flags (void *dl, const char *name)
         fprintf (stderr,
                  "%s: warning: -D %s.%s: %s does not contain a "
                  "global variable called %s\n",
-                 program_name, name, flag->flag, name, var);
+                 program_name, name, flag->flag, name, flag->symbol);
       }
 
       /* Mark this flag as used. */
@@ -97,6 +155,7 @@ free_debug_flags (void)
                program_name, debug_flags->name, debug_flags->flag);
     free (debug_flags->name);
     free (debug_flags->flag);
+    free (debug_flags->symbol);
     free (debug_flags);
     debug_flags = next;
   }

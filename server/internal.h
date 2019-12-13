@@ -87,14 +87,6 @@
 #define MAX_REQUEST_SIZE (64 * 1024 * 1024)
 
 /* main.c */
-struct debug_flag {
-  struct debug_flag *next;
-  char *name;                   /* plugin or filter name */
-  char *flag;                   /* flag name */
-  int value;                    /* value of flag */
-  bool used;                    /* if flag was successfully set */
-};
-
 enum log_to {
   LOG_TO_DEFAULT,        /* --log not specified: log to stderr, unless
                             we forked into the background in which
@@ -288,6 +280,7 @@ extern int crypto_negotiate_tls (struct connection *conn,
   } while (0)
 
 /* debug-flags.c */
+extern void add_debug_flag (const char *arg);
 extern void apply_debug_flags (void *dl, const char *name);
 extern void free_debug_flags (void);
 
