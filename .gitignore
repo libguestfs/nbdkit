@@ -1,8 +1,4 @@
 *~
-*.1
-*.1.t
-*.3
-*.3.t
 *.bak
 *.cmi
 *.cmx
@@ -10,7 +6,6 @@
 *.lo
 *.log
 *.o
-*.so
 *.trs
 
 .deps
@@ -23,6 +18,15 @@ Makefile.in
 /local*
 /nbdkit-*.tar.gz
 /nbdkit-*.*/
+
+docs/*.1
+docs/*.3
+filters/*/*.1
+plugins/*/*.1
+plugins/*/*.3
+
+.libs/*.so
+/tests/*.so
 
 /aclocal.m4
 /autom4te.cache
@@ -62,6 +66,7 @@ Makefile.in
 /missing
 /nbdkit
 /plugins/example4/nbdkit-example4-plugin
+/plugins/ocaml/nbdkit-ocamlexample-plugin.so
 /plugins/rust/Cargo.lock
 /plugins/rust/Cargo.toml
 /plugins/rust/target
@@ -113,6 +118,7 @@ Makefile.in
 /tests/test-ocaml
 /tests/test-offset
 /tests/test-oldstyle
+/tests/test-old-plugins-*.sh
 /tests/test-partition
 /tests/test-perl
 /tests/test-python

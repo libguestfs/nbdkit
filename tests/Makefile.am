@@ -1125,6 +1125,32 @@ endif HAVE_LIBLZMA
 endif HAVE_PLUGINS
 
 #----------------------------------------------------------------------
+# Tests of old plugins.
+
+TESTS += \
+	test-old-plugins-x86_64-Linux-v1.0.0.sh \
+	test-old-plugins-x86_64-Linux-v1.2.8.sh \
+	test-old-plugins-x86_64-Linux-v1.8.4.sh \
+	test-old-plugins-x86_64-Linux-v1.12.8.sh \
+	$(NULL)
+
+test-old-plugins-%.sh:
+	rm -f $@ $@-t
+	f=`echo "$@" | $(SED) 's/test-old-plugins-\(.*\).sh/\1/'`; \
+	echo 'script=$@ exec $$srcdir/test-old-plugins.sh' "$$f" > $@-t
+	chmod 0755 $@-t
+	mv $@-t $@
+
+EXTRA_DIST += \
+	old-plugins/README \
+	old-plugins/*/*/*/nbdkit-file-plugin.so \
+	test-old-plugins.sh \
+	$(NULL)
+CLEANFILES += \
+	test-old-plugins-*.sh \
+	$(NULL)
+
+#----------------------------------------------------------------------
 
 if HAVE_LIBNBD
 check_PROGRAMS += $(LIBNBD_TESTS)

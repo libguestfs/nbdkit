@@ -1,0 +1,25 @@
+nbdkit has strict ABI guarantees: we don't break old plugins written
+in C and distributed as binaries.  But to actually test that we need
+to run old plugins against the current nbdkit.  This directory
+contains old binary plugins and is used to test that we don't break
+the ABI unintentionally.
+
+The binary plugins were prepared by compiling old versions of nbdkit
+and copying plugins/file/.libs/nbdkit-file-plugin.so.  Therefore the
+source of these files is simply the older versions of nbdkit itself.
+
+If there is a problem with using/distributing binaries with your free
+software distribution then you can simply do:
+
+  rm -rf tests/old-plugins/
+
+and the ABI tests will be skipped.
+
+The old plugins are of course architecture specific.  They will only
+be tested if there is a matching
+
+  `uname -m`/`uname -s`
+
+directory here.
+
+- RWMJ December 2019
