@@ -168,7 +168,10 @@ EXTRA_DIST = \
 	test-rate.sh \
 	test-rate-dynamic.sh \
 	test.rb \
+	test-readahead.sh \
 	test-readahead-copy.sh \
+	test-readahead-test-plugin.sh \
+	test-readahead-test-request.py \
 	test-retry.sh \
 	test-retry-extents.sh \
 	test-retry-size.sh \
@@ -1050,12 +1053,10 @@ TESTS += \
 	$(NULL)
 
 # readahead filter test.
-LIBGUESTFS_TESTS += test-readahead
-TESTS += test-readahead-copy.sh
-
-test_readahead_SOURCES = test-readahead.c test.h
-test_readahead_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_readahead_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+TESTS += \
+	test-readahead.sh \
+	test-readahead-copy.sh \
+	$(NULL)
 
 # retry filter test.
 TESTS += \
