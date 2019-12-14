@@ -91,6 +91,7 @@ Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
 =head1 VERSION
 
 C<nbdkit-xz-filter> first appeared in nbdkit 1.10.
+It is derived from an earlier plugin that first appeared in nbdkit 1.0.
 
 =head1 SEE ALSO
 
