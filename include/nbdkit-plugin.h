@@ -92,11 +92,11 @@ struct nbdkit_plugin {
   int (*trim) (void *handle, uint32_t count, uint64_t offset);
   int (*zero) (void *handle, uint32_t count, uint64_t offset, int may_trim);
 #else
-  int (*_pread_old) (void *, void *, uint32_t, uint64_t);
-  int (*_pwrite_old) (void *, const void *, uint32_t, uint64_t);
-  int (*_flush_old) (void *);
-  int (*_trim_old) (void *, uint32_t, uint64_t);
-  int (*_zero_old) (void *, uint32_t, uint64_t, int);
+  int (*_pread_v1) (void *, void *, uint32_t, uint64_t);
+  int (*_pwrite_v1) (void *, const void *, uint32_t, uint64_t);
+  int (*_flush_v1) (void *);
+  int (*_trim_v1) (void *, uint32_t, uint64_t);
+  int (*_zero_v1) (void *, uint32_t, uint64_t, int);
 #endif
 
   int errno_is_preserved;

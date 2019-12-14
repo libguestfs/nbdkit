@@ -64,11 +64,11 @@ pub struct Plugin {
     pub can_trim: Option<extern fn (*mut c_void) -> c_int>,
 
     // Slots for old v1 API functions.
-    _pread_old: Option<extern fn ()>,
-    _pwrite_old: Option<extern fn ()>,
-    _flush_old: Option<extern fn ()>,
-    _trim_old: Option<extern fn ()>,
-    _zero_old: Option<extern fn ()>,
+    _pread_v1: Option<extern fn ()>,
+    _pwrite_v1: Option<extern fn ()>,
+    _flush_v1: Option<extern fn ()>,
+    _trim_v1: Option<extern fn ()>,
+    _zero_v1: Option<extern fn ()>,
 
     errno_is_preserved: c_int,
 
@@ -144,11 +144,11 @@ impl Plugin {
             can_flush: None,
             is_rotational: None,
             can_trim: None,
-            _pread_old: None,
-            _pwrite_old: None,
-            _flush_old: None,
-            _trim_old: None,
-            _zero_old: None,
+            _pread_v1: None,
+            _pwrite_v1: None,
+            _flush_v1: None,
+            _trim_v1: None,
+            _zero_v1: None,
             errno_is_preserved: 0,
             dump_plugin: None,
             can_zero: None,

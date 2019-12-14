@@ -166,11 +166,11 @@ plugin_dump_fields (struct backend *b)
   HAS (can_flush);
   HAS (is_rotational);
   HAS (can_trim);
-  HAS (_pread_old);
-  HAS (_pwrite_old);
-  HAS (_flush_old);
-  HAS (_trim_old);
-  HAS (_zero_old);
+  HAS (_pread_v1);
+  HAS (_pwrite_v1);
+  HAS (_flush_v1);
+  HAS (_trim_v1);
+  HAS (_zero_v1);
   HAS (can_zero);
   HAS (can_fua);
   HAS (pread);
@@ -301,7 +301,7 @@ plugin_can_write (struct backend *b, struct connection *conn, void *handle)
   if (p->plugin.can_write)
     return p->plugin.can_write (handle);
   else
-    return p->plugin.pwrite || p->plugin._pwrite_old;
+    return p->plugin.pwrite || p->plugin._pwrite_v1;
 }
 
 static int
@@ -312,7 +312,7 @@ plugin_can_flush (struct backend *b, struct connection *conn, void *handle)
   if (p->plugin.can_flush)
     return p->plugin.can_flush (handle);
   else
-    return p->plugin.flush || p->plugin._flush_old;
+    return p->plugin.flush || p->plugin._flush_v1;
 }
 
 static int
@@ -334,7 +334,7 @@ plugin_can_trim (struct backend *b, struct connection *conn, void *handle)
   if (p->plugin.can_trim)
     return p->plugin.can_trim (handle);
   else
-    return p->plugin.trim || p->plugin._trim_old;
+    return p->plugin.trim || p->plugin._trim_v1;
 }
 
 static int
@@ -353,7 +353,7 @@ plugin_can_zero (struct backend *b, struct connection *conn, void *handle)
       return -1;
     return r ? NBDKIT_ZERO_NATIVE : NBDKIT_ZERO_EMULATE;
   }
-  if (p->plugin.zero || p->plugin._zero_old)
+  if (p->plugin.zero || p->plugin._zero_v1)
     return NBDKIT_ZERO_NATIVE;
   return NBDKIT_ZERO_EMULATE;
 }
@@ -368,7 +368,7 @@ plugin_can_fast_zero (struct backend *b, struct connection *conn, void *handle)
     return p->plugin.can_fast_zero (handle);
   /* Advertise support for fast zeroes if no .zero or .can_zero is
    * false: in those cases, we fail fast instead of using .pwrite.
-   * This also works when v1 plugin has only ._zero_old.
+   * This also works when v1 plugin has only ._zero_v1.
    */
   if (p->plugin.zero == NULL)
     return 1;
@@ -404,7 +404,7 @@ plugin_can_fua (struct backend *b, struct connection *conn, void *handle)
     return r;
   }
   /* We intend to call .flush even if .can_flush returns false. */
-  if (p->plugin.flush || p->plugin._flush_old)
+  if (p->plugin.flush || p->plugin._flush_v1)
     return NBDKIT_FUA_EMULATE;
   return NBDKIT_FUA_NONE;
 }
@@ -461,12 +461,12 @@ plugin_pread (struct backend *b, struct connection *conn, void *handle,
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
-  assert (p->plugin.pread || p->plugin._pread_old);
+  assert (p->plugin.pread || p->plugin._pread_v1);
 
   if (p->plugin.pread)
     r = p->plugin.pread (handle, buf, count, offset, 0);
   else
-    r = p->plugin._pread_old (handle, buf, count, offset);
+    r = p->plugin._pread_v1 (handle, buf, count, offset);
   if (r == -1)
     *err = get_error (p);
   return r;
@@ -481,8 +481,8 @@ plugin_flush (struct backend *b, struct connection *conn, void *handle,
 
   if (p->plugin.flush)
     r = p->plugin.flush (handle, 0);
-  else if (p->plugin._flush_old)
-    r = p->plugin._flush_old (handle);
+  else if (p->plugin._flush_v1)
+    r = p->plugin._flush_v1 (handle);
   else {
     *err = EINVAL;
     return -1;
@@ -508,8 +508,8 @@ plugin_pwrite (struct backend *b, struct connection *conn, void *handle,
   }
   if (p->plugin.pwrite)
     r = p->plugin.pwrite (handle, buf, count, offset, flags);
-  else if (p->plugin._pwrite_old)
-    r = p->plugin._pwrite_old (handle, buf, count, offset);
+  else if (p->plugin._pwrite_v1)
+    r = p->plugin._pwrite_v1 (handle, buf, count, offset);
   else {
     *err = EROFS;
     return -1;
@@ -536,8 +536,8 @@ plugin_trim (struct backend *b, struct connection *conn, void *handle,
   }
   if (p->plugin.trim)
     r = p->plugin.trim (handle, count, offset, flags);
-  else if (p->plugin._trim_old)
-    r = p->plugin._trim_old (handle, count, offset);
+  else if (p->plugin._trim_v1)
+    r = p->plugin._trim_v1 (handle, count, offset);
   else {
     *err = EINVAL;
     return -1;
@@ -572,12 +572,12 @@ plugin_zero (struct backend *b, struct connection *conn, void *handle,
     errno = 0;
     if (p->plugin.zero)
       r = p->plugin.zero (handle, count, offset, flags);
-    else if (p->plugin._zero_old) {
+    else if (p->plugin._zero_v1) {
       if (fast_zero) {
         *err = EOPNOTSUPP;
         return -1;
       }
-      r = p->plugin._zero_old (handle, count, offset, may_trim);
+      r = p->plugin._zero_v1 (handle, count, offset, may_trim);
     }
     else
       emulate = true;
@@ -593,7 +593,7 @@ plugin_zero (struct backend *b, struct connection *conn, void *handle,
     goto done;
   }
 
-  assert (p->plugin.pwrite || p->plugin._pwrite_old);
+  assert (p->plugin.pwrite || p->plugin._pwrite_v1);
   flags &= ~NBDKIT_FLAG_MAY_TRIM;
   threadlocal_set_error (0);
   *err = 0;
@@ -756,7 +756,7 @@ plugin_register (size_t index, const char *filename,
              program_name, filename);
     exit (EXIT_FAILURE);
   }
-  if (p->plugin.pread == NULL && p->plugin._pread_old == NULL) {
+  if (p->plugin.pread == NULL && p->plugin._pread_v1 == NULL) {
     fprintf (stderr, "%s: %s: plugin must have a .pread callback\n",
              program_name, filename);
     exit (EXIT_FAILURE);
