@@ -412,7 +412,7 @@ curl_open (int readonly)
     goto err;
   }
 
-  h->exportsize = (size_t) d;
+  h->exportsize = d;
 #endif
   nbdkit_debug ("content length: %" PRIi64, h->exportsize);
 
