@@ -70,6 +70,10 @@ static long protocols = CURLPROTO_ALL;
 /* Use '-D curl.verbose=1' to set. */
 int curl_debug_verbose = 0;
 
+#if CURL_AT_LEAST_VERSION(7, 55, 0)
+#define HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+#endif
+
 static void
 curl_load (void)
 {
@@ -289,7 +293,11 @@ curl_open (int readonly)
 {
   struct curl_handle *h;
   CURLcode r;
+#ifdef HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+  curl_off_t o;
+#else
   double d;
+#endif
 
   h = calloc (1, sizeof *h);
   if (h == NULL) {
@@ -377,6 +385,21 @@ curl_open (int readonly)
     goto err;
   }
 
+#ifdef HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+  r = curl_easy_getinfo (h->c, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &o);
+  if (r != CURLE_OK) {
+    display_curl_error (h, r, "could not get length of remote file [%s]", url);
+    goto err;
+  }
+
+  if (o == -1) {
+    nbdkit_error ("could not get length of remote file [%s], "
+                  "is the URL correct?", url);
+    goto err;
+  }
+
+  h->exportsize = o;
+#else
   r = curl_easy_getinfo (h->c, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &d);
   if (r != CURLE_OK) {
     display_curl_error (h, r, "could not get length of remote file [%s]", url);
@@ -390,6 +413,7 @@ curl_open (int readonly)
   }
 
   h->exportsize = (size_t) d;
+#endif
   nbdkit_debug ("content length: %" PRIi64, h->exportsize);
 
   if (strncasecmp (url, "http://", strlen ("http://")) == 0 ||
