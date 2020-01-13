@@ -1,0 +1,282 @@
+=head1 NAME
+
+nbdkit-ddrescue-plugin - nbdkit plugin for serving from ddrescue dump
+
+=head1 SYNOPSIS
+
+ nbdkit ddrescue ddrescue="0 1 2 3 @0x1fe 0x55 0xaa" [size=size]
+
+ nbdkit ddrescue base64="aGVsbG8gbmJka2l0IHVzZXI=" [size=size]
+
+ nbdkit ddrescue raw="binary_ddrescue" [size=size]
+
+=head1 DESCRIPTION
+
+C<nbdkit-ddrescue-plugin> is a plugin for L<nbdkit(1)> which serves a
+small amount of data specified directly on the command line.  The
+plugin gets its name from the C<data:> URI scheme used by web
+browsers.  This is mainly useful for testing NBD clients.
+
+You can serve data read-only using the I<-r> flag, or read-write.  Any
+writes are thrown away when nbdkit exits.
+
+Most operating systems have command line size limits which are quite a
+lot smaller than any desirable disk image, so specifying a large,
+fully populated disk image on the command line would not be possible.
+However you can specify a small amount of data at the beginning of the
+image, possibly followed by zeroes (using the C<size> parameter to pad
+the image to the full size), or use the C<data> parameter creatively
+to make mostly sparse disk images.
+
+The C<size> parameter can specify any virtual size up to the maximum
+supported by nbdkit (S<2⁶³-1 bytes>).
+
+=head1 EXAMPLES
+
+=over 4
+
+=item Create a 1 MB empty disk:
+
+ nbdkit ddrescue raw= size=1M
+
+(This is a contrived example, it is better to use
+L<nbdkit-memory-plugin(1)> for real applications.)
+
+=item Create a 1 MB disk with some nonsense data at the beginning:
+
+ nbdkit ddrescue base64=MTIz size=1M
+
+The above command serves the bytes C<0x31 0x32 0x33> (which is the
+base64 decoding of C<MTIz>), followed by S<1M - 3 bytes> of zeroes.
+
+=item Create a 1 MB disk with one empty MBR-formatted partition:
+
+ nbdkit ddrescue data="
+   @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
+   @0x1fe 85 170
+   " size=1048576
+
+This example was created by running:
+
+ $ rm -f disk
+ $ truncate -s 1M disk
+ $ echo start=1 | sfdisk disk
+ Device Boot Start   End Sectors    Size Id Type
+ disk1           1  2047    2047 1023.5K 83 Linux
+ $ ./disk2data.pl disk
+
+The C<disk2data.pl> script is provided in the nbdkit sources
+(L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>).
+
+=item Create a disk with a partition from another file:
+
+ nbdkit ddrescue data="
+   @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
+   @0x1fe 85 170
+   @0x200 <partition-data
+   " size=1048576
+
+The C<E<lt>FILE> syntax is used to include a file of binary data.
+Note that L<nbdkit-partitioning-plugin(1)> is easier to use and more
+flexible.
+
+=item Create a small disk filled with a test pattern
+
+ nbdkit ddrescue data="0x55*4096"
+
+This creates a disk containing 4096 0x55 bytes.  See also
+L<nbdkit-pattern-plugin(3)>.
+
+=item Create a 7 EB (exabyte) disk with one empty GPT-formatted partition:
+
+The ddrescue plugin supports huge sparse virtual disks, up to the maximum
+size supported by nbdkit itself (S<2⁶³-1 bytes> =
+S<8 exabytes - 1 byte>).  These cause all sorts of problems for
+software and so make excellent test cases.  To partition such a huge
+disk requires the GPT (GUID Partition Table) format since MBR is
+limited to just 2 TB.
+
+ nbdkit ddrescue data="
+   @0x1c0 2 0 0xee 0xfe 0xff 0xff 0x01 0  0 0 0xff 0xff 0xff 0xff
+   @0x1fe 0x55 0xaa
+   @0x200 0x45 0x46 0x49 0x20 0x50 0x41 0x52 0x54
+                 0 0 1 0 0x5c 0 0 0
+          0x9b 0xe5 0x6a 0xc5 0 0 0 0  1 0 0 0 0 0 0 0
+          0xff 0xff 0xff 0xff 0xff 0xff 0x37 0  0x22 0 0 0 0 0 0 0
+          0xde 0xff 0xff 0xff 0xff 0xff 0x37 0
+                 0x72 0xb6 0x9e 0x0c 0x6b 0x76 0xb0 0x4f
+          0xb3 0x94 0xb2 0xf1 0x61 0xec 0xdd 0x3c  2 0 0 0 0 0 0 0
+          0x80 0 0 0 0x80 0 0 0  0x79 0x8a 0xd0 0x7e 0 0 0 0
+   @0x400 0xaf 0x3d 0xc6 0x0f 0x83 0x84 0x72 0x47
+                 0x8e 0x79 0x3d 0x69 0xd8 0x47 0x7d 0xe4
+          0xd5 0x19 0x46 0x95 0xe3 0x82 0xa8 0x4c
+                 0x95 0x82 0x7a 0xbe 0x1c 0xfc 0x62 0x90
+          0x80 0 0 0 0 0 0 0  0x80 0xff 0xff 0xff 0xff 0xff 0x37 0
+          0 0 0 0 0 0 0 0  0x70 0 0x31 0 0 0 0 0
+   @0x6fffffffffffbe00
+          0xaf 0x3d 0xc6 0x0f 0x83 0x84 0x72 0x47
+                 0x8e 0x79 0x3d 0x69 0xd8 0x47 0x7d 0xe4
+          0xd5 0x19 0x46 0x95 0xe3 0x82 0xa8 0x4c
+                 0x95 0x82 0x7a 0xbe 0x1c 0xfc 0x62 0x90
+          0x80 0 0 0 0 0 0 0  0x80 0xff 0xff 0xff 0xff 0xff 0x37 0
+          0 0 0 0 0 0 0 0  0x70 0 0x31 0 0 0 0 0
+   @0x6ffffffffffffe00
+          0x45 0x46 0x49 0x20 0x50 0x41 0x52 0x54
+                 0 0 1 0 0x5c 0 0 0
+          0x6c 0x76 0xa1 0xa0 0 0 0 0
+                 0xff 0xff 0xff 0xff 0xff 0xff 0x37 0
+          1 0 0 0 0 0 0 0  0x22 0 0 0 0 0 0 0
+          0xde 0xff 0xff 0xff 0xff 0xff 0x37 0
+                 0x72 0xb6 0x9e 0x0c 0x6b 0x76 0xb0 0x4f
+          0xb3 0x94 0xb2 0xf1 0x61 0xec 0xdd 0x3c
+                 0xdf 0xff 0xff 0xff 0xff 0xff 0x37 0
+          0x80 0 0 0 0x80 0 0 0  0x79 0x8a 0xd0 0x7e 0 0 0 0
+   " size=7E
+
+=back
+
+=head1 PARAMETERS
+
+Exactly one of the C<data>, C<base64> or C<raw> parameters must be
+supplied.
+
+=over 4
+
+=item B<data=>DATA
+
+Specify the disk data using a simple compact format.  See
+L</DATA FORMAT> below.
+
+=item B<base64=>BASE64
+
+The C<base64> parameter can be used to supply binary data encoded in
+base64 on the command line.
+
+This is only supported if nbdkit was compiled with GnuTLS E<ge> 3.6.0.
+You can find out by checking if:
+
+ $ nbdkit ddrescue --dump-plugin
+
+contains:
+
+ data_base64=yes
+
+=item B<raw=>BINARY
+
+The C<raw> parameter can be used to supply raw binary data directly on
+the command line.
+
+It is usually quite difficult to do this unless you are running nbdkit
+from another program (see L<nbdkit-captive(1)>).  One particular
+problem is that the data must not contain zero bytes (ie. C<\0>) since
+those will be processed in C to mean the end of the string.  In almost
+all cases it is better to use base64 encoding or the custom C<data>
+format.
+
+=item B<size=>SIZE
+
+The data is truncated or extended to the size specified.
+
+This parameter is optional: If omitted the size is defined by the size
+of the C<data>, C<raw> or C<base64> parameter.
+
+=back
+
+=head1 DATA FORMAT
+
+The C<data> parameter lets you specify small disk images in a simple,
+compact format.  It is a string containing a list of bytes which are
+written into the disk image sequentially.  You can move the virtual
+offset where bytes are written using C<@offset>.
+
+For example:
+
+ nbdkit ddrescue data="0 1 2 3 @0x1fe 0x55 0xaa"
+
+creates a 0x200 = 512 byte (1 sector) image containing the four bytes
+C<0 1 2 3> at the start, and the two bytes C<0x55 0xaa> at the end of
+the sector, with the remaining 506 bytes in the middle being all
+zeroes.
+
+Fields in the string can be:
+
+=over 4
+
+=item B<@>OFFSET
+
+Moves the current offset to C<OFFSET>.  The offset may be specified as
+either decimal, octal (prefixed by C<0>) or hexadecimal (prefixed by
+C<0x>).
+
+=item B<E<lt>>FILE
+
+Read the contents of F<FILE> into the disk image at the current
+offset.  The offset is incremented by the size of the file.  The
+filename can be a relative or absolute path, but cannot contain
+whitespace in the name.
+
+=item BYTE
+
+Write C<BYTE> at the current offset and advance the offset by 1 byte.
+The byte may be specified as either decimal, octal (prefixed by C<0>)
+or hexadecimal (prefixed by C<0x>).
+
+=item BYTE*N
+
+Repeat C<BYTE> C<N> times (where C<N> is a number).  Note there must
+not be any whitespace around the C<*> character.
+
+=back
+
+Whitespace between fields in the string is ignored.
+
+In the example above the size (512 bytes) is implied by the data.  But
+you could additionally use the C<size> parameter to either truncate or
+extend (with zeroes) the disk image.
+
+=head2 disk2data.pl script
+
+This script can convert from small disk images into the data format
+described above.
+
+It is provided in the nbdkit sources.  See
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>
+
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-data-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-ddrescue-plugin> first appeared in nbdkit 1.6.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-captive(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-info-plugin(1)>,
+L<nbdkit-memory-plugin(1)>,
+L<nbdkit-null-plugin(1)>,
+L<nbdkit-partitioning-plugin(1)>,
+L<nbdkit-pattern-plugin(1)>,
+L<nbdkit-random-plugin(1)>,
+L<nbdkit-zero-plugin(1)>,
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/ddrescue/disk2data.pl>,
+L<https://en.wikipedia.org/wiki/Base64>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 Red Hat Inc.
