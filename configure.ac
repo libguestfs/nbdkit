@@ -47,6 +47,78 @@ AM_INIT_AUTOMAKE(foreign subdir-objects)
 AC_PROG_LIBTOOL
 LT_INIT
 
+dnl List of plugins and filters.
+lang_plugins="\
+        lua \
+        ocaml \
+        perl \
+        python \
+        ruby \
+        rust \
+        sh \
+        tcl \
+        "
+non_lang_plugins="\
+        curl \
+        data \
+        eval \
+        example1 \
+        example2 \
+        example3 \
+        example4 \
+        ext2 \
+        file \
+        floppy \
+        full \
+        guestfs \
+        gzip \
+        info \
+        iso \
+        libvirt \
+        linuxdisk \
+        memory \
+        nbd \
+        null \
+        partitioning \
+        pattern \
+        random \
+        split \
+        ssh \
+        streaming \
+        tar \
+        vddk \
+        zero \
+        "
+plugins="$(echo $(printf %s\\n $lang_plugins $non_lang_plugins | sort -u))"
+filters="\
+        blocksize \
+        cache \
+        cacheextents \
+        cow \
+        delay \
+        error \
+        fua \
+        ip \
+        log \
+        nocache \
+        noextents \
+        nofilter \
+        noparallel \
+        nozero \
+        offset \
+        partition \
+        rate \
+        readahead \
+        retry \
+        stats \
+        truncate \
+        xz \
+        "
+AC_SUBST([plugins])
+AC_SUBST([lang_plugins])
+AC_SUBST([non_lang_plugins])
+AC_SUBST([filters])
+
 dnl Some very basic tools.
 AC_PROG_SED
 
@@ -848,78 +920,6 @@ dnl Expose version information to the public headers
 AC_SUBST([NBDKIT_VERSION_MAJOR])
 AC_SUBST([NBDKIT_VERSION_MINOR])
 AC_SUBST([NBDKIT_VERSION_MICRO])
-
-dnl List of plugins and filters.
-lang_plugins="\
-        lua \
-        ocaml \
-        perl \
-        python \
-        ruby \
-        rust \
-        sh \
-        tcl \
-        "
-non_lang_plugins="\
-        curl \
-        data \
-        eval \
-        example1 \
-        example2 \
-        example3 \
-        example4 \
-        ext2 \
-        file \
-        floppy \
-        full \
-        guestfs \
-        gzip \
-        info \
-        iso \
-        libvirt \
-        linuxdisk \
-        memory \
-        nbd \
-        null \
-        partitioning \
-        pattern \
-        random \
-        split \
-        ssh \
-        streaming \
-        tar \
-        vddk \
-        zero \
-        "
-plugins="$(echo $(printf %s\\n $lang_plugins $non_lang_plugins | sort -u))"
-filters="\
-        blocksize \
-        cache \
-        cacheextents \
-        cow \
-        delay \
-        error \
-        fua \
-        ip \
-        log \
-        nocache \
-        noextents \
-        nofilter \
-        noparallel \
-        nozero \
-        offset \
-        partition \
-        rate \
-        readahead \
-        retry \
-        stats \
-        truncate \
-        xz \
-        "
-AC_SUBST([plugins])
-AC_SUBST([lang_plugins])
-AC_SUBST([non_lang_plugins])
-AC_SUBST([filters])
 
 dnl Produce output files.
 AC_CONFIG_HEADERS([config.h])
