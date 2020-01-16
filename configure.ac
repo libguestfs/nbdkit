@@ -37,31 +37,25 @@ AC_INIT([nbdkit],
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],[],
          [m4_define([AC_USE_SYSTEM_EXTENSIONS],[])])
+
+dnl This must be used very early else you will get
+dnl "warning: AC_RUN_IFELSE was called before AC_USE_SYSTEM_EXTENSIONS"
 AC_USE_SYSTEM_EXTENSIONS
-AC_SYS_LARGEFILE
 
 dnl NB: Do not [quote] this parameter.
 AM_INIT_AUTOMAKE(foreign)
 AC_PROG_LIBTOOL
 LT_INIT
 
-AC_CANONICAL_HOST
-
+dnl Some very basic tools.
 AC_PROG_SED
-
-dnl Expose version information to the public headers
-[NBDKIT_]VERSION_MAJOR=NBDKIT_VERSION_MAJOR
-[NBDKIT_]VERSION_MINOR=NBDKIT_VERSION_MINOR
-[NBDKIT_]VERSION_MICRO=NBDKIT_VERSION_MICRO
-AC_SUBST([NBDKIT_VERSION_MAJOR])
-AC_SUBST([NBDKIT_VERSION_MINOR])
-AC_SUBST([NBDKIT_VERSION_MICRO])
 
 dnl Check for basic C environment.
 AC_PROG_CC_STDC
 AC_PROG_INSTALL
 AC_PROG_CPP
 AC_CANONICAL_HOST
+AC_SYS_LARGEFILE
 
 AC_C_PROTOTYPES
 test "x$U" != "x" && AC_MSG_ERROR([Compiler not ANSI compliant])
@@ -844,6 +838,14 @@ AC_ARG_ENABLE([vddk],
      ])
     ])
 AM_CONDITIONAL([HAVE_VDDK], [test "x$enable_vddk" = "xyes"])
+
+dnl Expose version information to the public headers
+[NBDKIT_]VERSION_MAJOR=NBDKIT_VERSION_MAJOR
+[NBDKIT_]VERSION_MINOR=NBDKIT_VERSION_MINOR
+[NBDKIT_]VERSION_MICRO=NBDKIT_VERSION_MICRO
+AC_SUBST([NBDKIT_VERSION_MAJOR])
+AC_SUBST([NBDKIT_VERSION_MINOR])
+AC_SUBST([NBDKIT_VERSION_MICRO])
 
 dnl List of plugins and filters.
 lang_plugins="\
