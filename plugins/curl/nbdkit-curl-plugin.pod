@@ -34,6 +34,15 @@ ports and protocols used to serve NBD see L<nbdkit(1)>).
 
 =over 4
 
+=item B<cainfo=>FILENAME
+
+Configure CA bundle for libcurl. See L<CURLOPT_CAINFO(3)> for details.
+
+=item B<capath=>PATH
+
+Set CA certificates directory location for libcurl. See
+L<CURLOPT_CAPATH(3)> for more information.
+
 =item B<cookie=>COOKIE
 
 =item B<cookie=+>FILENAME

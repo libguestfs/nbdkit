@@ -66,6 +66,8 @@ static bool sslverify = true;
 static uint32_t timeout = 0;
 static const char *unix_socket_path = NULL;
 static long protocols = CURLPROTO_ALL;
+static const char *cainfo = NULL;
+static const char *capath = NULL;
 
 /* Use '-D curl.verbose=1' to set. */
 int curl_debug_verbose = 0;
@@ -231,6 +233,14 @@ curl_config (const char *key, const char *value)
       return -1;
   }
 
+  else if (strcmp (key, "cainfo") == 0) {
+    cainfo = value;
+  }
+
+  else if (strcmp (key, "capath") == 0) {
+    capath =  value;
+  }
+
   else {
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
@@ -253,6 +263,8 @@ curl_config_complete (void)
 }
 
 #define curl_config_help \
+  "cainfo=<CAINFO>            Path to Certificate Authority file.\n" \
+  "capath=<CAPATH>            Path to directory with CA certificates.\n" \
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
   "protocols=PROTO,PROTO,..   Limit protocols allowed.\n" \
@@ -369,6 +381,10 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_PROXYPASSWORD, proxy_password);
   if (cookie)
     curl_easy_setopt (h->c, CURLOPT_COOKIE, cookie);
+  if (cainfo)
+    curl_easy_setopt (h->c, CURLOPT_CAINFO, cainfo);
+  if (capath)
+    curl_easy_setopt (h->c, CURLOPT_CAPATH, capath);
 
   /* Get the file size and also whether the remote HTTP server
    * supports byte ranges.
