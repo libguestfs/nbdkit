@@ -215,14 +215,12 @@ the PYTHON variable when configuring.  For example:
 Running the tests
 -----------------
 
-You will need to install libguestfs to run most of the test suite:
+To run the test suite:
 
     make check
 
-The test suite is fairly comprehensive.  It runs the newly built
-nbdkit + plugins as a captive process, and tests them using
-libguestfs.  If there is a failure, look at the corresponding
-‘tests/*.log’ file for debug information.
+If there is a failure, look at the corresponding ‘tests/*.log’ file
+for debug information.
 
 A few tests require root privileges, and are skipped by default.  To
 run them you must do:
