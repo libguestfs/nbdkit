@@ -8,10 +8,26 @@ nbdkit-probing - how to probe for nbdkit configuration and plugins
 
  nbdkit PLUGIN --dump-plugin
 
+ nbdkit --version
+
+ nbdkit PLUGIN --version
+
+ nbdkit --filter=FILTER null --version
+
 =head1 DESCRIPTION
 
-You can query information about nbdkit and available plugins from the
-nbdkit binary.
+You can query information about nbdkit and available plugins and
+filters using the nbdkit binary.  This can include whether nbdkit is
+installed, and whether plugins or filters and installed.
+
+=head2 Query if nbdkit is installed
+
+Use this command to see if the nbdkit program is installed:
+
+ nbdkit --version
+
+This will fail with an error and non-zero exit code if the nbdkit is
+not installed or not working.
 
 =head2 Query basic configuration
 
@@ -51,11 +67,14 @@ C<NBDKIT_API_VERSION> 1).
 =head2 Detect if a plugin is installed
 
 To find out if a plugin is installed (and working) in the plugin
-directory, use I<--dump-plugin> as above:
+directory, use:
 
- $ nbdkit foo --dump-plugin
+ $ nbdkit foo --version
  nbdkit: error: cannot open plugin 'foo': /usr/lib64/nbdkit/plugins/nbdkit-foo-plugin.so: cannot open shared object file: No such file or directory
  Use 'nbdkit --help' or read the nbdkit(1) manual page for documentation.
+
+This will fail with an error and non-zero exit code if the C<foo>
+plugin cannot be loaded.
 
 Note it is better to test for the existence of plugins this way rather
 than just seeing if the F<.so> file exists, because nbdkit will load
@@ -74,7 +93,7 @@ installed.  A complete shell script which does this is:
  #!/bin/sh -
  plugindir=`nbdkit --dump-config | grep ^plugindir= | sed 's/[^=]*=//'`
  for f in $plugindir/nbdkit-*-plugin.so; do
-     if nbdkit "$f" --dump-plugin >/dev/null 2>&1; then
+     if nbdkit "$f" --version >/dev/null 2>&1; then
          b=`echo "$f" | sed 's,.*/nbdkit-\(.*\)-plugin.so$,\1,'`
          echo "$b ($f)"
      fi
@@ -82,11 +101,10 @@ installed.  A complete shell script which does this is:
 
 =head2 Detect if a filter is installed
 
-To find out if a filter is installed (and working) use
-I<--dump-plugin> with the C<null> plugin and the name of the filter to
-test:
+To find out if a filter is installed (and working) use I<--version>
+with the C<null> plugin and the name of the filter to test:
 
- nbdkit --dump-plugin --filter=foo null
+ nbdkit --version --filter=foo null
 
 This will fail with an error and non-zero exit code if the C<foo>
 filter cannot be loaded.
@@ -105,4 +123,4 @@ Pino Toscano
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2018 Red Hat Inc.
+Copyright (C) 2013-2020 Red Hat Inc.

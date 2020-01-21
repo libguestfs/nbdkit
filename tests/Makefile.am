@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2019 Red Hat Inc.
+# Copyright (C) 2013-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -155,6 +155,8 @@ EXTRA_DIST = \
 	test-pattern.sh \
 	test-pattern-largest.sh \
 	test-pattern-largest-for-qemu.sh \
+	test-probe-filter.sh \
+	test-probe-plugin.sh \
 	test-python-exception.sh \
 	test.pl \
 	test.py \
@@ -235,6 +237,8 @@ TESTS += \
 	test-help-plugin.sh \
 	test-version-plugin.sh \
 	test-version-filter.sh \
+	test-probe-filter.sh \
+	test-probe-plugin.sh \
 	test-dump-plugin.sh \
 	test-start.sh \
 	test-single.sh \
