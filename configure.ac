@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2019 Red Hat Inc.
+# Copyright (C) 2013-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -31,7 +31,7 @@
 
 m4_define([NBDKIT_VERSION_MAJOR], [1])
 m4_define([NBDKIT_VERSION_MINOR], [17])
-m4_define([NBDKIT_VERSION_MICRO], [5])
+m4_define([NBDKIT_VERSION_MICRO], [6])
 AC_INIT([nbdkit],
         NBDKIT_VERSION_MAJOR.NBDKIT_VERSION_MINOR.NBDKIT_VERSION_MICRO)
 AC_CONFIG_MACRO_DIR([m4])
