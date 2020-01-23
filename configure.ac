@@ -896,6 +896,7 @@ filters="\
         cow \
         delay \
         error \
+        extentlist \
         fua \
         log \
         nocache \
@@ -979,6 +980,7 @@ AC_CONFIG_FILES([Makefile
                  filters/cow/Makefile
                  filters/delay/Makefile
                  filters/error/Makefile
+                 filters/extentlist/Makefile
                  filters/fua/Makefile
                  filters/log/Makefile
                  filters/nocache/Makefile

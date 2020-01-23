@@ -110,6 +110,7 @@ EXTRA_DIST = \
 	test-error100.sh \
 	test-error-triggered.sh \
 	test-export-name.sh \
+	test-extentlist.sh \
 	test-file-extents.sh \
 	test-floppy.sh \
 	test-foreground.sh \
@@ -1008,6 +1009,9 @@ TESTS += \
 	test-error100.sh \
 	test-error-triggered.sh \
 	$(NULL)
+
+# extentlist filter test.
+TESTS += test-extentlist.sh
 
 # fua filter test.
 TESTS += test-fua.sh
