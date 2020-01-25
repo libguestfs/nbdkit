@@ -182,6 +182,7 @@ L<libcurl(3)>,
 L<CURLOPT_COOKIE(3)>
 L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
+L<nbdkit-extentlist-filter(1)>,
 L<nbdkit-readahead-filter(1)>,
 L<nbdkit-retry-filter(1)>,
 L<nbdkit-ssh-plugin(1)>,
