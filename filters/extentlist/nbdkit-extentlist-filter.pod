@@ -4,7 +4,7 @@ nbdkit-extentlist-filter - place extent list over a plugin
 
 =head1 SYNOPSIS
 
- nbdkit --filter=extentlist plugin extentlist=FILENAME
+ nbdkit -r --filter=extentlist plugin extentlist=FILENAME
 
 =head1 DESCRIPTION
 
@@ -13,11 +13,20 @@ static list of extents on top of an existing plugin.  Extents record
 whether or not specific parts of the disk are allocated or sparse.
 
 You can use this with plugins which cannot get extent information
-themselves, but you can get this information from another source.  One
-place where it is useful is with L<nbdkit-ssh-plugin(1)> because the
-sftp protocol does not support reading sparseness information, but you
-may be able to get this information directly from the source disk on
-the remote server.
+themselves, but where you can get this information from another
+source.  One place where it is useful is with L<nbdkit-ssh-plugin(1)>
+because the sftp protocol does not support reading sparseness
+information, but you may be able to get this information directly from
+the source disk on the remote server using commands such as
+L<xfs_bmap(8)>.  A similar situation applies to
+L<nbdkit-curl-plugin(1)>.
+
+Note that the extent list is read-only.  This filter does not monitor
+writes and trims in order to update the extent list.  What can happen
+is that you would write to a “hole” in the disk, but would not be able
+to read it back because the NBD client would still think that part of
+the disk is a hole.  So it is generally only safe to use this filter
+in read-only mode (I<-r> option).
 
 =head1 FILE FORMAT
 

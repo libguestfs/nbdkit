@@ -50,7 +50,7 @@ cleanup_fn rm $files
 test ()
 {
     nbdkit -v -D extentlist.lookup=1 \
-           -U - \
+           -r -U - \
            --filter=extentlist \
            null size=$1 extentlist=$input \
            --run 'qemu-img map -f raw --output=json $nbd' |
