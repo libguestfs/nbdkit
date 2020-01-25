@@ -383,7 +383,7 @@ pwrite_wrapper (void *h, const void *buf, uint32_t count, uint64_t offset)
   caml_leave_blocking_section ();
 
   strv = caml_alloc_string (count);
-  memcpy (String_val (strv), buf, count);
+  memcpy (&Byte_u (strv, 0), buf, count);
   offsetv = caml_copy_int64 (offset);
 
   rv = caml_callback3_exn (pwrite_fn, *(value *) h, strv, offsetv);
