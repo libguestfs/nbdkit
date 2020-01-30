@@ -49,6 +49,19 @@
 
 #include <nbdkit-plugin.h>
 
+/* Replacement if caml_alloc_initialized_string is missing, added
+ * to OCaml runtime in 2017.
+ */
+#ifndef HAVE_CAML_ALLOC_INITIALIZED_STRING
+static inline value
+caml_alloc_initialized_string (mlsize_t len, const char *p)
+{
+  value sv = caml_alloc_string (len);
+  memcpy ((char *) String_val (sv), p, len);
+  return sv;
+}
+#endif
+
 /* This constructor runs when the plugin loads, and initializes the
  * OCaml runtime, and lets the plugin set up its callbacks.
  */
@@ -589,8 +602,7 @@ pwrite_wrapper (void *h, const void *buf, uint32_t count, uint64_t offset,
 
   caml_leave_blocking_section ();
 
-  strv = caml_alloc_string (count);
-  memcpy (&Byte_u (strv, 0), buf, count);
+  strv = caml_alloc_initialized_string (count, buf);
   offsetv = caml_copy_int64 (offset);
   flagsv = Val_flags (flags);
 
