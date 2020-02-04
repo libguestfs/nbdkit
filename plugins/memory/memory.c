@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2019 Red Hat Inc.
+ * Copyright (C) 2017-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -51,7 +51,7 @@
 #include "sparse.h"
 
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
-static int64_t size = 0;
+static int64_t size = -1;
 
 /* Debug directory operations (-D memory.dir=1). */
 int memory_debug_dir;
@@ -97,7 +97,7 @@ memory_config (const char *key, const char *value)
 static int
 memory_config_complete (void)
 {
-  if (size == 0) {
+  if (size == -1) {
     nbdkit_error ("you must specify size=<SIZE> on the command line");
     return -1;
   }
@@ -120,7 +120,7 @@ memory_open (int readonly)
 static int64_t
 memory_get_size (void *handle)
 {
-  return (int64_t) size;
+  return size;
 }
 
 /* Flush is a no-op, so advertise native FUA support */
