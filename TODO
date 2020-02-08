@@ -155,6 +155,11 @@ Rust:
 Suggestions for filters
 -----------------------
 
+* ext2 plugin should really be a filter, with a custom io_manager.
+  Needed so we can support:
+   nbdkit --filter=ext2 --filter=partition file disk.img partition=1 \
+       ext2file=/path/to/embedded
+
 * tar plugin should really be a filter
 
 * gzip plugin should really be a filter

@@ -7,10 +7,6 @@ ext4 filesystems
 
  nbdkit ext2 disk=fs.img file=/disks/disk.raw
 
- nbdkit --filter=partition ext2 \
-                           disk=disk.img file=/disks/disk.raw \
-                           partition=1
-
 =head1 DESCRIPTION
 
 C<nbdkit-ext2-plugin> is an nbdkit plugin which can read and
@@ -22,11 +18,6 @@ inside a directory on the filesystem called F</disks>, then
 you could serve that file over NBD using:
 
  nbdkit ext2 disk=fs.img file=/disks/disk.raw
-
-Commonly disk images are partitioned.  In that case you must
-use L<nbdkit-partition-filter(1)> to select the partition:
-
- nbdkit --filter=partition ext2 disk=.. file=.. partition=1
 
 This plugin can both read and write to the file inside the filesystem.
 Use the I<-r> flag to force a readonly connection, but note this does
