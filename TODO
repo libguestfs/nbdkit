@@ -103,8 +103,6 @@ General ideas for improvements
 
 * Examine other fuzzers: https://gitlab.com/akihe/radamsa
 
-* Analyze code with Coverity.
-
 Suggestions for plugins
 -----------------------
 
