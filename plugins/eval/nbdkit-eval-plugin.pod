@@ -140,6 +140,12 @@ no longer see that key.
 
 All of these parameters are optional.
 
+=item B<missing=>SCRIPT
+
+The parameter C<missing> defines a script that will be called in place
+of any other callback not explicitly provided.  If omitted, this
+defaults to the script "exit 2".
+
 =back
 
 =head1 ENVIRONMENT VARIABLES

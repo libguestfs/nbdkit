@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2019 Red Hat Inc.
+ * Copyright (C) 2018-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -72,6 +72,7 @@ static const char *known_methods[] = {
   "flush",
   "get_size",
   "is_rotational",
+  "missing",
   "open",
   "pread",
   "pwrite",
@@ -168,6 +169,12 @@ create_script (const char *method, const char *value)
     return NULL;
   }
 
+  /* Special case for user override of missing */
+  if (missing && strcmp (script, missing) == 0 && unlink (script) == -1) {
+    nbdkit_error ("unlink: %m");
+    return NULL;
+  }
+
   fp = fopen (script, "w");
   if (fp == NULL) {
     nbdkit_error ("fopen: %s: %m", script);
@@ -215,7 +222,7 @@ eval_load (void)
 
   /* To make things easier, create a "missing" script which always
    * exits with code 2.  If a method is missing we call this script
-   * instead.  It could even be overridden by the user.
+   * instead.  It can even be overridden by the user.
    */
   missing = create_script ("missing", "exit 2\n");
   if (!missing)
@@ -254,11 +261,15 @@ static int
 add_method (const char *key, const char *value)
 {
   char *script;
+  char *tmp = missing; /* Needed to allow user override of missing */
 
-  if (get_script (key) != missing) {
+  missing = NULL;
+  if (get_script (key) != NULL) {
+    missing = tmp;
     nbdkit_error ("method %s defined more than once on the command line", key);
     return -1;
   }
+  missing = tmp;
 
   /* Do a bit of checking to make sure the key isn't malicious.  This
    * duplicates work already done by nbdkit, but better safe than
