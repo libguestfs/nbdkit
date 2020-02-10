@@ -132,6 +132,12 @@ C<$tmpdir> is present and used in the same way, the exit code must be
 one of the valid exit codes described in that manual page, and error
 handling works the same way too.
 
+Note that a C<config> callback will only handle keys not recognized as
+callback names; when picking key=value pairs that you want your script
+fragment to understand, be aware that if a future nbdkit release
+creates a callback by that name, your C<config> script fragment will
+no longer see that key.
+
 All of these parameters are optional.
 
 =back

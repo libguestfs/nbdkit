@@ -302,8 +302,8 @@ eval_config (const char *key, const char *value)
 
   case MISSING:
     /* Emulate what core nbdkit does if a config callback is NULL. */
-    nbdkit_error ("%s: this plugin does not need command line configuration",
-                  script);
+    nbdkit_error ("%s: callback '%s' is unknown, and there is no 'config' "
+                  "callback to handle it", script, key);
     return -1;
 
   case ERROR:
