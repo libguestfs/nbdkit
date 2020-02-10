@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2019 Red Hat Inc.
+ * Copyright (C) 2017-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -42,12 +42,18 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 
 #include <nbdkit-plugin.h>
+
+#include "cleanup.h"
 
 /* The files. */
 static char **filenames = NULL;
 static size_t nr_files = 0;
+
+/* Any callbacks using lseek must be protected by this lock. */
+static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void
 split_unload (void)
@@ -96,6 +102,7 @@ struct handle {
 struct file {
   uint64_t offset, size;
   int fd;
+  bool can_extents;
 };
 
 /* Create the per-connection handle. */
@@ -107,6 +114,7 @@ split_open (int readonly)
   size_t i;
   uint64_t offset;
   struct stat statbuf;
+  off_t r;
 
   h = malloc (sizeof *h);
   if (h == NULL) {
@@ -151,6 +159,20 @@ split_open (int readonly)
 
     nbdkit_debug ("file[%zu]=%s: offset=%" PRIu64 ", size=%" PRIu64,
                   i, filenames[i], h->files[i].offset, h->files[i].size);
+
+#ifdef SEEK_HOLE
+    /* Test if this file supports extents. */
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lseek_lock);
+    r = lseek (h->files[i].fd, 0, SEEK_DATA);
+    if (r == -1 && errno != ENXIO) {
+      nbdkit_debug ("disabling extents: lseek on %s: %m", filenames[i]);
+      h->files[i].can_extents = false;
+    }
+    else
+      h->files[i].can_extents = true;
+#else
+    h->files[i].can_extents = false;
+#endif
   }
   h->size = offset;
   nbdkit_debug ("total size=%" PRIu64, h->size);
@@ -319,6 +341,104 @@ split_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 }
 #endif /* HAVE_POSIX_FADVISE */
 
+#ifdef SEEK_HOLE
+static int64_t
+do_extents (struct file *file, uint32_t count, uint64_t offset,
+            bool req_one, struct nbdkit_extents *extents)
+{
+  int64_t r = 0;
+  uint64_t end = offset + count;
+
+  do {
+    off_t pos;
+
+    pos = lseek (file->fd, offset, SEEK_DATA);
+    if (pos == -1) {
+      if (errno == ENXIO) {
+        /* The current man page does not describe this situation well,
+         * but a proposed change to POSIX adds these words for ENXIO:
+         * "or the whence argument is SEEK_DATA and the offset falls
+         * within the final hole of the file."
+         */
+        pos = end;
+      }
+      else {
+        nbdkit_error ("lseek: SEEK_DATA: %" PRIu64 ": %m", offset);
+        return -1;
+      }
+    }
+
+    /* We know there is a hole from offset to pos-1. */
+    if (pos > offset) {
+      if (nbdkit_add_extent (extents, offset + file->offset, pos - offset,
+                             NBDKIT_EXTENT_HOLE | NBDKIT_EXTENT_ZERO) == -1)
+        return -1;
+      r += pos - offset;
+      if (req_one)
+        break;
+    }
+
+    offset = pos;
+    if (offset >= end)
+      break;
+
+    pos = lseek (file->fd, offset, SEEK_HOLE);
+    if (pos == -1) {
+      nbdkit_error ("lseek: SEEK_HOLE: %" PRIu64 ": %m", offset);
+      return -1;
+    }
+
+    /* We know there is data from offset to pos-1. */
+    if (pos > offset) {
+      if (nbdkit_add_extent (extents, offset + file->offset, pos - offset,
+                             0 /* allocated data */) == -1)
+        return -1;
+      r += pos - offset;
+      if (req_one)
+        break;
+    }
+
+    offset = pos;
+  } while (offset < end);
+
+  return r;
+}
+
+static int
+split_extents (void *handle, uint32_t count, uint64_t offset,
+               uint32_t flags, struct nbdkit_extents *extents)
+{
+  struct handle *h = handle;
+  const bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
+
+  while (count > 0) {
+    struct file *file = get_file (h, offset);
+    uint64_t foffs = offset - file->offset;
+    uint64_t max;
+    int64_t r;
+
+    max = file->size - foffs;
+    if (max > count)
+      max = count;
+
+    if (file->can_extents) {
+      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lseek_lock);
+      max = r = do_extents (file, max, foffs, req_one, extents);
+    }
+    else
+      r = nbdkit_add_extent (extents, offset, max, 0 /* allocated data */);
+    if (r == -1)
+      return -1;
+    count -= max;
+    offset += max;
+    if (req_one)
+      break;
+  }
+
+  return 0;
+}
+#endif /* SEEK_HOLE */
+
 static struct nbdkit_plugin plugin = {
   .name              = "split",
   .version           = PACKAGE_VERSION,
@@ -334,6 +454,9 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = split_pwrite,
 #if HAVE_POSIX_FADVISE
   .cache             = split_cache,
+#endif
+#ifdef SEEK_HOLE
+  .extents           = split_extents,
 #endif
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.

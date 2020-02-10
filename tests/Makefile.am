@@ -193,6 +193,7 @@ EXTRA_DIST = \
 	test-sh-extents.sh \
 	test-single.sh \
 	test-single-from-file.sh \
+	test-split-extents.sh \
 	test-start.sh \
 	test-random-sock.sh \
 	test-tls.sh \
@@ -671,6 +672,8 @@ LIBNBD_TESTS += test-split
 test_split_SOURCES = test-split.c
 test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_split_LDADD = $(LIBNBD_LIBS)
+
+TESTS += test-split-extents.sh
 
 # ssh plugin test.
 if HAVE_SSH

@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2017-2020 Red Hat Inc.
+# Copyright (C) 2018-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -29,38 +30,45 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Concatenating sparse and data files should have observable extents.
 
-EXTRA_DIST = nbdkit-split-plugin.pod
+source ./functions.sh
+set -e
+set -x
 
-plugin_LTLIBRARIES = nbdkit-split-plugin.la
+requires nbdsh --base-allocation -c 'exit(not h.supports_uri())'
+requires truncate --help
+requires stat --help
 
-nbdkit_split_plugin_la_SOURCES = \
-	split.c \
-	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(NULL)
+files="test-split-extents.1 test-split-extents.2"
+rm -f $files
+cleanup_fn rm -f $files
 
-nbdkit_split_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/utils \
-	$(NULL)
-nbdkit_split_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
-nbdkit_split_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(NULL)
-nbdkit_split_plugin_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la \
-	$(NULL)
+# Create two files, each half data and half sparse
+truncate --size=512k test-split-extents.1
+if test "$(stat -c %b test-split-extents.1)" != 0; then
+    echo "$0: unable to create sparse file, skipping this test"
+    exit 77
+fi
+printf %$((512*1024))d 1 >> test-split-extents.1
+printf %$((512*1024))d 1 >> test-split-extents.2
+truncate --size=1M test-split-extents.2
 
-if HAVE_POD
-
-man_MANS = nbdkit-split-plugin.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-split-plugin.1: nbdkit-split-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+# Test the split plugin
+nbdkit -v -U - split test-split-extents.1 test-split-extents.2 \
+       --run 'nbdsh --base-allocation --uri $uri -c "
+entries = []
+def f (metacontext, offset, e, err):
+    global entries
+    assert err.value == 0
+    assert metacontext == nbd.CONTEXT_BASE_ALLOCATION
+    entries = e
+h.block_status (2 * 1024 * 1024, 0, f)
+assert entries == [ 512 * 1024, 3,
+                    1024 * 1024, 0,
+                    512 * 1024, 3 ]
+entries = []
+# With req one, extents stop at file boundaries
+h.block_status (1024 * 1024, 768 * 1024, f, nbd.CMD_FLAG_REQ_ONE)
+assert entries == [ 256 * 1024, 0 ]
+       "'
