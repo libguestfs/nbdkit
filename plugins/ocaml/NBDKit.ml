@@ -1,6 +1,6 @@
 (* hey emacs, this is OCaml code: -*- tuareg -*- *)
 (* nbdkit OCaml interface
- * Copyright (C) 2014-2019 Red Hat Inc.
+ * Copyright (C) 2014-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -98,6 +98,8 @@ type 'a plugin = {
   thread_model : (unit -> thread_model) option;
 
   can_fast_zero : ('a -> bool) option;
+
+  preconnect : (bool -> unit) option;
 }
 
 let default_callbacks = {
@@ -145,6 +147,8 @@ let default_callbacks = {
   thread_model = None;
 
   can_fast_zero = None;
+
+  preconnect = None;
 }
 
 external set_name : string -> unit = "ocaml_nbdkit_set_name" "noalloc"
@@ -191,6 +195,8 @@ external set_cache : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nb
 external set_thread_model : (unit -> thread_model) -> unit = "ocaml_nbdkit_set_thread_model"
 
 external set_can_fast_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_fast_zero"
+
+external set_preconnect : (bool -> unit) -> unit = "ocaml_nbdkit_set_preconnect"
 
 let may f = function None -> () | Some a -> f a
 
@@ -257,7 +263,9 @@ let register_plugin plugin =
 
   may set_thread_model plugin.thread_model;
 
-  may set_can_fast_zero plugin.can_fast_zero
+  may set_can_fast_zero plugin.can_fast_zero;
+
+  may set_preconnect plugin.preconnect
 
 external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
 

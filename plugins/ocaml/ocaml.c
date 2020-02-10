@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014-2019 Red Hat Inc.
+ * Copyright (C) 2014-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -135,6 +135,8 @@ static value cache_fn;
 static value thread_model_fn;
 
 static value can_fast_zero_fn;
+
+static value preconnect_fn;
 
 /*----------------------------------------------------------------------*/
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
@@ -726,6 +728,25 @@ can_fast_zero_wrapper (void *h)
   CAMLreturnT (int, Bool_val (rv));
 }
 
+static int
+preconnect_wrapper (int readonly)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (preconnect_fn, Val_bool (readonly));
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, 0);
+}
+
 /*----------------------------------------------------------------------*/
 /* set_* functions called from OCaml code at load time to initialize
  * fields in the plugin struct.
@@ -815,6 +836,8 @@ SET(thread_model)
 
 SET(can_fast_zero)
 
+SET(preconnect)
+
 #undef SET
 
 static void
@@ -860,6 +883,8 @@ remove_roots (void)
   REMOVE (thread_model);
 
   REMOVE (can_fast_zero);
+
+  REMOVE (preconnect);
 
 #undef REMOVE
 }

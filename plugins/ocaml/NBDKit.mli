@@ -1,6 +1,6 @@
 (* hey emacs, this is OCaml code: -*- tuareg -*- *)
 (* nbdkit OCaml interface
- * Copyright (C) 2014-2019 Red Hat Inc.
+ * Copyright (C) 2014-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -103,6 +103,8 @@ type 'a plugin = {
   thread_model : (unit -> thread_model) option;
 
   can_fast_zero : ('a -> bool) option;
+
+  preconnect : (bool -> unit) option;
 }
 (** The plugin fields and callbacks.  ['a] is the handle type. *)
 
