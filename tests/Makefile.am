@@ -207,6 +207,7 @@ EXTRA_DIST = \
 	test-version.sh \
 	test-version-filter.sh \
 	test-version-plugin.sh \
+	test-vsock.sh \
 	test-zero.sh \
 	$(NULL)
 
@@ -257,6 +258,7 @@ TESTS += \
 	test-tls.sh \
 	test-tls-psk.sh \
 	test-ip.sh \
+	test-vsock.sh \
 	test-socket-activation \
 	test-foreground.sh \
 	test-debug-flags.sh \

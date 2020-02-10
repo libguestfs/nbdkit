@@ -89,6 +89,21 @@ requires_ipv6_loopback ()
     fi
 }
 
+# Test host kernel is Linux and minimum version.  It's usually better
+# to test features rather than using this, but there are cases where
+# testing features of the current kernel is too hard.
+requires_linux_kernel_version ()
+{
+    # Test the kernel is Linux.
+    requires test "$(uname -s)" = "Linux"
+
+    # Test that it's the minimum version.
+    requires cut --version
+    requires bc --version
+    kver=$(uname -r | cut -d. -f1-2)
+    requires test "$(echo "$kver >= $1" | bc -l)" = "1"
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to
