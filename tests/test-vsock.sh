@@ -64,7 +64,8 @@ export port
 nbdsh -c - <<'EOF'
 import os
 
-h.connect_vsock (2, int (os.environ["port"]))
+# 1 = VMADDR_CID_LOCAL
+h.connect_vsock (1, int (os.environ["port"]))
 
 size = h.get_size ()
 assert size == 1048576
