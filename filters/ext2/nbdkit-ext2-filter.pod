@@ -7,6 +7,9 @@ ext4 filesystems
 
  nbdkit --filter=ext2 file fs.img ext2file=/disks/disk.raw
 
+ nbdkit --filter=ext2 --filter=partition file fs.img \
+    partition=1 ext2file=exportname
+
 =head1 DESCRIPTION
 
 C<nbdkit-ext2-filter> is an nbdkit filter which can read and
@@ -54,6 +57,13 @@ e2fsprogs.
 
 The full path of the file within the filesystem that will be exposed
 over NBD.  The path must be absolute (starts with C</>).
+
+=item B<ext2file=exportname>
+
+The plugin will expose the path within the filesystem chosen by the
+exportname passed by the client.  Note that this mode allows the
+client to deduce which files exist within the disk image, which may be
+a security risk in some situations.
 
 =back
 

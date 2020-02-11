@@ -50,7 +50,7 @@
 #include "cleanup.h"
 #include "io.h"
 
-/* Filename parameter. */
+/* Filename parameter, or NULL to honor export name. */
 static char *file;
 
 static void
@@ -94,7 +94,11 @@ ext2_config_complete (nbdkit_next_config_complete *next, void *nxdata)
     return -1;
   }
 
-  if (file[0] != '/') {
+  if (strcmp (file, "exportname") == 0) {
+    free (file);
+    file = NULL;
+  }
+  else if (file[0] != '/') {
     nbdkit_error ("the file parameter must refer to an absolute path");
     return -1;
   }
@@ -103,7 +107,8 @@ ext2_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 }
 
 #define ext2_config_help \
-  "ext2file=<FILENAME>  (required) File to serve inside the disk image."
+  "ext2file=<FILENAME>  (required) Absolute name of file to serve inside the\n" \
+  "                     disk image, or 'exportname' for client choice."
 
 /* The per-connection handle. */
 struct handle {
@@ -143,6 +148,8 @@ ext2_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   struct ext2_inode inode;
   int64_t r;
   CLEANUP_FREE char *name = NULL;
+  const char *fname = file ?: nbdkit_export_name ();
+  CLEANUP_FREE char *absname = NULL;
 
   fs_flags = 0;
 #ifdef EXT2_FLAG_64BITS
@@ -168,34 +175,42 @@ ext2_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
     return -1;
   }
 
+  if (fname[0] != '/') {
+    if (asprintf (&absname, "/%s", fname) < 0) {
+      nbdkit_error ("asprintf: %m");
+      return -1;
+    }
+    fname = absname;
+  }
+
   err = ext2fs_open (name, fs_flags, 0, 0, nbdkit_io_manager, &h->fs);
   if (err != 0) {
     nbdkit_error ("open: %s", error_message (err));
     goto err0;
   }
 
-  if (strcmp (file, "/") == 0)
+  if (strcmp (fname, "/") == 0)
     /* probably gonna fail, but we'll catch it later */
     h->ino = EXT2_ROOT_INO;
   else {
     err = ext2fs_namei (h->fs, EXT2_ROOT_INO, EXT2_ROOT_INO,
-                        &file[1], &h->ino);
+                        &fname[1], &h->ino);
     if (err != 0) {
-      nbdkit_error ("%s: namei: %s", file, error_message (err));
+      nbdkit_error ("%s: namei: %s", fname, error_message (err));
       goto err1;
     }
   }
 
-  /* Check the file is a regular file.
+  /* Check that fname is a regular file.
    * XXX This won't follow symlinks, we'd have to do that manually.
    */
   err = ext2fs_read_inode (h->fs, h->ino, &inode);
   if (err != 0) {
-    nbdkit_error ("%s: inode: %s", file, error_message (err));
+    nbdkit_error ("%s: inode: %s", fname, error_message (err));
     goto err1;
   }
   if (!LINUX_S_ISREG (inode.i_mode)) {
-    nbdkit_error ("%s: must be a regular file in the disk image", file);
+    nbdkit_error ("%s: must be a regular file in the disk image", fname);
     goto err1;
   }
 
@@ -204,7 +219,7 @@ ext2_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
     file_flags |= EXT2_FILE_WRITE;
   err = ext2fs_file_open2 (h->fs, h->ino, NULL, file_flags, &h->file);
   if (err != 0) {
-    nbdkit_error ("%s: open: %s", file, error_message (err));
+    nbdkit_error ("%s: open: %s", fname, error_message (err));
     goto err1;
   }
 
