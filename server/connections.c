@@ -331,7 +331,6 @@ free_connection (struct connection *conn)
   if (!conn)
     return;
 
-  threadlocal_set_conn (NULL);
   conn->close (conn);
   if (listen_stdin) {
     int fd;
@@ -368,6 +367,7 @@ free_connection (struct connection *conn)
 
   free (conn->handles);
   free (conn);
+  threadlocal_set_conn (NULL);
 }
 
 /* Write buffer to conn->sockout with send() and either succeed completely
