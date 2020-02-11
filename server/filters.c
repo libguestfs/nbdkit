@@ -671,7 +671,6 @@ filter_cache (struct backend *b, struct connection *conn, void *handle,
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   struct b_conn nxdata = { .b = b->next, .conn = conn };
 
-
   if (f->filter.cache)
     return f->filter.cache (&next_ops, &nxdata, handle,
                             count, offset, flags, err);
