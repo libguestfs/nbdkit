@@ -49,18 +49,7 @@ extern "C" {
 #define NBDKIT_ZERO_EMULATE  1
 #define NBDKIT_ZERO_NATIVE   2
 
-struct nbdkit_extent {
-  uint64_t offset;
-  uint64_t length;
-  uint32_t type;
-};
-
-extern struct nbdkit_extents *nbdkit_extents_new (uint64_t start, uint64_t end);
-extern void nbdkit_extents_free (struct nbdkit_extents *);
-extern size_t nbdkit_extents_count (const struct nbdkit_extents *);
-extern struct nbdkit_extent nbdkit_get_extent (const struct nbdkit_extents *,
-                                               size_t);
-
+/* Next ops. */
 typedef int nbdkit_next_config (void *nxdata,
                                 const char *key, const char *value);
 typedef int nbdkit_next_config_complete (void *nxdata);
@@ -103,6 +92,20 @@ struct nbdkit_next_ops {
                 int *err);
 };
 
+/* Extent functions. */
+struct nbdkit_extent {
+  uint64_t offset;
+  uint64_t length;
+  uint32_t type;
+};
+
+extern struct nbdkit_extents *nbdkit_extents_new (uint64_t start, uint64_t end);
+extern void nbdkit_extents_free (struct nbdkit_extents *);
+extern size_t nbdkit_extents_count (const struct nbdkit_extents *);
+extern struct nbdkit_extent nbdkit_get_extent (const struct nbdkit_extents *,
+                                               size_t);
+
+/* Filter struct. */
 struct nbdkit_filter {
   /* Do not set these fields directly; use NBDKIT_REGISTER_FILTER.
    * They exist so that we can diagnose filters compiled against one
