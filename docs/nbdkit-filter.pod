@@ -132,8 +132,8 @@ C<nbdkit_next_open>) and a structure called C<struct nbdkit_next_ops>.
 These abstract the next plugin or filter in the chain.  There is also
 an opaque pointer C<nxdata> which must be passed along when calling
 these functions.  The value of C<nxdata> passed to C<.open> has a
-stable lifetime that lasts to the corresponding C<.close>; with all
-intermediate functions (such ase C<.pread>) receiving the same value
+stable lifetime that lasts to the corresponding C<.close>, with all
+intermediate functions (such as C<.pread>) receiving the same value
 for convenience; the only exceptions where C<nxdata> is not reused are
 C<.config>, C<.config_complete>, and C<.preconnect>, which are called
 outside the lifetime of a connection.
@@ -154,6 +154,9 @@ The filter’s other methods like C<.prepare>, C<.get_size>, C<.pread>
 etc ― always called in the context of a connection ― are passed a
 pointer to C<struct nbdkit_next_ops> which contains a comparable set
 of accessors to plugin methods that can be called during a connection.
+The C<next_ops> parameter is stable between C<.prepare> and
+C<.finalize>; intermediate functions (such as C<.pread>) receive the
+same value for convenience.
 
 It is possible for a filter to issue (for example) extra
 C<next_ops-E<gt>pread> calls in response to a single C<.pwrite> call.
