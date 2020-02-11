@@ -494,6 +494,15 @@ extern void *threadlocal_buffer (size_t size);
 extern void threadlocal_set_conn (struct connection *conn);
 extern struct connection *threadlocal_get_conn (void);
 
+/* Macro which sets local variable struct connection *conn from
+ * thread-local storage, asserting that it is non-NULL.  If you want
+ * to check if conn could be NULL (eg. outside a connection context)
+ * then call threadlocal_get_conn instead.
+ */
+#define GET_CONN                                        \
+  struct connection *conn = threadlocal_get_conn ();    \
+  assert (conn != NULL)
+
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
 #include <errno.h>
