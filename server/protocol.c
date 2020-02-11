@@ -49,10 +49,11 @@
 #include "protostrings.h"
 
 static bool
-validate_request (struct connection *conn,
-                  uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
+validate_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                   uint32_t *error)
 {
+  GET_CONN;
+
   /* Readonly connection? */
   if (conn->eflags & NBD_FLAG_READ_ONLY &&
       (cmd == NBD_CMD_WRITE || cmd == NBD_CMD_TRIM ||
@@ -71,7 +72,7 @@ validate_request (struct connection *conn,
   case NBD_CMD_TRIM:
   case NBD_CMD_WRITE_ZEROES:
   case NBD_CMD_BLOCK_STATUS:
-    if (!backend_valid_range (backend, conn, offset, count)) {
+    if (!backend_valid_range (backend, offset, count)) {
       /* XXX Allow writes to extend the disk? */
       nbdkit_error ("invalid request: %s: offset and count are out of range: "
                     "offset=%" PRIu64 " count=%" PRIu32,
@@ -225,8 +226,7 @@ validate_request (struct connection *conn,
  * for success).
  */
 static uint32_t
-handle_request (struct connection *conn,
-                uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
+handle_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                 void *buf, struct nbdkit_extents *extents)
 {
   uint32_t f = 0;
@@ -238,31 +238,31 @@ handle_request (struct connection *conn,
 
   switch (cmd) {
   case NBD_CMD_READ:
-    if (backend_pread (backend, conn, buf, count, offset, 0, &err) == -1)
+    if (backend_pread (backend, buf, count, offset, 0, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_WRITE:
     if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
-    if (backend_pwrite (backend, conn, buf, count, offset, f, &err) == -1)
+    if (backend_pwrite (backend, buf, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_FLUSH:
-    if (backend_flush (backend, conn, 0, &err) == -1)
+    if (backend_flush (backend, 0, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_TRIM:
     if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
-    if (backend_trim (backend, conn, count, offset, f, &err) == -1)
+    if (backend_trim (backend, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_CACHE:
-    if (backend_cache (backend, conn, count, offset, 0, &err) == -1)
+    if (backend_cache (backend, count, offset, 0, &err) == -1)
       return err;
     break;
 
@@ -273,14 +273,14 @@ handle_request (struct connection *conn,
       f |= NBDKIT_FLAG_FUA;
     if (flags & NBD_CMD_FLAG_FAST_ZERO)
       f |= NBDKIT_FLAG_FAST_ZERO;
-    if (backend_zero (backend, conn, count, offset, f, &err) == -1)
+    if (backend_zero (backend, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_BLOCK_STATUS:
     if (flags & NBD_CMD_FLAG_REQ_ONE)
       f |= NBDKIT_FLAG_REQ_ONE;
-    if (backend_extents (backend, conn, count, offset, f,
+    if (backend_extents (backend, count, offset, f,
                          extents, &err) == -1)
       return err;
     break;
@@ -361,11 +361,11 @@ nbd_errno (int error, uint16_t flags)
 }
 
 static int
-send_simple_reply (struct connection *conn,
-                   uint64_t handle, uint16_t cmd, uint16_t flags,
+send_simple_reply (uint64_t handle, uint16_t cmd, uint16_t flags,
                    const char *buf, uint32_t count,
                    uint32_t error)
 {
+  GET_CONN;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
   struct nbd_simple_reply reply;
   int r;
@@ -375,18 +375,18 @@ send_simple_reply (struct connection *conn,
   reply.handle = handle;
   reply.error = htobe32 (nbd_errno (error, flags));
 
-  r = conn->send (conn, &reply, sizeof reply, f);
+  r = conn->send (&reply, sizeof reply, f);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
   }
 
   /* Send the read data buffer. */
   if (cmd == NBD_CMD_READ && !error) {
-    r = conn->send (conn, buf, count, 0);
+    r = conn->send (buf, count, 0);
     if (r == -1) {
       nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-      return connection_set_status (conn, -1);
+      return connection_set_status (-1);
     }
   }
 
@@ -394,10 +394,10 @@ send_simple_reply (struct connection *conn,
 }
 
 static int
-send_structured_reply_read (struct connection *conn,
-                            uint64_t handle, uint16_t cmd,
+send_structured_reply_read (uint64_t handle, uint16_t cmd,
                             const char *buf, uint32_t count, uint64_t offset)
 {
+  GET_CONN;
   /* Once we are really using structured replies and sending data back
    * in chunks, we'll be able to grab the write lock for each chunk,
    * allowing other threads to interleave replies.  As we're not doing
@@ -416,24 +416,24 @@ send_structured_reply_read (struct connection *conn,
   reply.type = htobe16 (NBD_REPLY_TYPE_OFFSET_DATA);
   reply.length = htobe32 (count + sizeof offset_data);
 
-  r = conn->send (conn, &reply, sizeof reply, SEND_MORE);
+  r = conn->send (&reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
   }
 
   /* Send the offset + read data buffer. */
   offset_data.offset = htobe64 (offset);
-  r = conn->send (conn, &offset_data, sizeof offset_data, SEND_MORE);
+  r = conn->send (&offset_data, sizeof offset_data, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
   }
 
-  r = conn->send (conn, buf, count, 0);
+  r = conn->send (buf, count, 0);
   if (r == -1) {
     nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
   }
 
   return 1;                     /* command processed ok */
@@ -522,12 +522,12 @@ extents_to_block_descriptors (struct nbdkit_extents *extents,
 }
 
 static int
-send_structured_reply_block_status (struct connection *conn,
-                                    uint64_t handle,
+send_structured_reply_block_status (uint64_t handle,
                                     uint16_t cmd, uint16_t flags,
                                     uint32_t count, uint64_t offset,
                                     struct nbdkit_extents *extents)
 {
+  GET_CONN;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
   struct nbd_structured_reply reply;
   CLEANUP_FREE struct nbd_block_descriptor *blocks = NULL;
@@ -542,7 +542,7 @@ send_structured_reply_block_status (struct connection *conn,
   blocks = extents_to_block_descriptors (extents, flags, count, offset,
                                          &nr_blocks);
   if (blocks == NULL)
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
 
   reply.magic = htobe32 (NBD_STRUCTURED_REPLY_MAGIC);
   reply.handle = handle;
@@ -551,27 +551,27 @@ send_structured_reply_block_status (struct connection *conn,
   reply.length = htobe32 (sizeof context_id +
                           nr_blocks * sizeof (struct nbd_block_descriptor));
 
-  r = conn->send (conn, &reply, sizeof reply, SEND_MORE);
+  r = conn->send (&reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
   }
 
   /* Send the base:allocation context ID. */
   context_id = htobe32 (base_allocation_id);
-  r = conn->send (conn, &context_id, sizeof context_id, SEND_MORE);
+  r = conn->send (&context_id, sizeof context_id, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
   }
 
   /* Send each block descriptor. */
   for (i = 0; i < nr_blocks; ++i) {
-    r = conn->send (conn, &blocks[i], sizeof blocks[i],
+    r = conn->send (&blocks[i], sizeof blocks[i],
                     i == nr_blocks - 1 ? 0 : SEND_MORE);
     if (r == -1) {
       nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-      return connection_set_status (conn, -1);
+      return connection_set_status (-1);
     }
   }
 
@@ -579,10 +579,10 @@ send_structured_reply_block_status (struct connection *conn,
 }
 
 static int
-send_structured_reply_error (struct connection *conn,
-                             uint64_t handle, uint16_t cmd, uint16_t flags,
+send_structured_reply_error (uint64_t handle, uint16_t cmd, uint16_t flags,
                              uint32_t error)
 {
+  GET_CONN;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
   struct nbd_structured_reply reply;
   struct nbd_structured_reply_error error_data;
@@ -594,19 +594,19 @@ send_structured_reply_error (struct connection *conn,
   reply.type = htobe16 (NBD_REPLY_TYPE_ERROR);
   reply.length = htobe32 (0 /* no human readable error */ + sizeof error_data);
 
-  r = conn->send (conn, &reply, sizeof reply, SEND_MORE);
+  r = conn->send (&reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write error reply: %m");
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
   }
 
   /* Send the error. */
   error_data.error = htobe32 (nbd_errno (error, flags));
   error_data.len = htobe16 (0);
-  r = conn->send (conn, &error_data, sizeof error_data, 0);
+  r = conn->send (&error_data, sizeof error_data, 0);
   if (r == -1) {
     nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (conn, -1);
+    return connection_set_status (-1);
   }
   /* No human readable error message at the moment. */
 
@@ -614,8 +614,9 @@ send_structured_reply_error (struct connection *conn,
 }
 
 int
-protocol_recv_request_send_reply (struct connection *conn)
+protocol_recv_request_send_reply (void)
 {
+  GET_CONN;
   int r;
   struct nbd_request request;
   uint16_t cmd, flags;
@@ -627,24 +628,24 @@ protocol_recv_request_send_reply (struct connection *conn)
   /* Read the request packet. */
   {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->read_lock);
-    r = connection_get_status (conn);
+    r = connection_get_status ();
     if (r <= 0)
       return r;
-    r = conn->recv (conn, &request, sizeof request);
+    r = conn->recv (&request, sizeof request);
     if (r == -1) {
       nbdkit_error ("read request: %m");
-      return connection_set_status (conn, -1);
+      return connection_set_status (-1);
     }
     if (r == 0) {
       debug ("client closed input socket, closing connection");
-      return connection_set_status (conn, 0); /* disconnect */
+      return connection_set_status (0); /* disconnect */
     }
 
     magic = be32toh (request.magic);
     if (magic != NBD_REQUEST_MAGIC) {
       nbdkit_error ("invalid request: 'magic' field is incorrect (0x%x)",
                     magic);
-      return connection_set_status (conn, -1);
+      return connection_set_status (-1);
     }
 
     flags = be16toh (request.flags);
@@ -655,14 +656,14 @@ protocol_recv_request_send_reply (struct connection *conn)
 
     if (cmd == NBD_CMD_DISC) {
       debug ("client sent %s, closing connection", name_of_nbd_cmd (cmd));
-      return connection_set_status (conn, 0); /* disconnect */
+      return connection_set_status (0); /* disconnect */
     }
 
     /* Validate the request. */
-    if (!validate_request (conn, cmd, flags, offset, count, &error)) {
+    if (!validate_request (cmd, flags, offset, count, &error)) {
       if (cmd == NBD_CMD_WRITE &&
           skip_over_write_buffer (conn->sockin, count) < 0)
-        return connection_set_status (conn, -1);
+        return connection_set_status (-1);
       goto send_reply;
     }
 
@@ -675,14 +676,14 @@ protocol_recv_request_send_reply (struct connection *conn)
         error = ENOMEM;
         if (cmd == NBD_CMD_WRITE &&
             skip_over_write_buffer (conn->sockin, count) < 0)
-          return connection_set_status (conn, -1);
+          return connection_set_status (-1);
         goto send_reply;
       }
     }
 
     /* Allocate the extents list for block status only. */
     if (cmd == NBD_CMD_BLOCK_STATUS) {
-      extents = nbdkit_extents_new (offset, backend_get_size (backend, conn));
+      extents = nbdkit_extents_new (offset, backend_get_size (backend));
       if (extents == NULL) {
         error = ENOMEM;
         goto send_reply;
@@ -691,32 +692,32 @@ protocol_recv_request_send_reply (struct connection *conn)
 
     /* Receive the write data buffer. */
     if (cmd == NBD_CMD_WRITE) {
-      r = conn->recv (conn, buf, count);
+      r = conn->recv (buf, count);
       if (r == 0) {
         errno = EBADMSG;
         r = -1;
       }
       if (r == -1) {
         nbdkit_error ("read data: %s: %m", name_of_nbd_cmd (cmd));
-        return connection_set_status (conn, -1);
+        return connection_set_status (-1);
       }
     }
   }
 
   /* Perform the request.  Only this part happens inside the request lock. */
-  if (quit || !connection_get_status (conn)) {
+  if (quit || !connection_get_status ()) {
     error = ESHUTDOWN;
   }
   else {
-    lock_request (conn);
-    error = handle_request (conn, cmd, flags, offset, count, buf, extents);
+    lock_request ();
+    error = handle_request (cmd, flags, offset, count, buf, extents);
     assert ((int) error >= 0);
-    unlock_request (conn);
+    unlock_request ();
   }
 
   /* Send the reply packet. */
  send_reply:
-  if (connection_get_status (conn) < 0)
+  if (connection_get_status () < 0)
     return -1;
 
   if (error != 0) {
@@ -738,19 +739,19 @@ protocol_recv_request_send_reply (struct connection *conn)
       (cmd == NBD_CMD_READ || cmd == NBD_CMD_BLOCK_STATUS)) {
     if (!error) {
       if (cmd == NBD_CMD_READ)
-        return send_structured_reply_read (conn, request.handle, cmd,
+        return send_structured_reply_read (request.handle, cmd,
                                            buf, count, offset);
       else /* NBD_CMD_BLOCK_STATUS */
-        return send_structured_reply_block_status (conn, request.handle,
+        return send_structured_reply_block_status (request.handle,
                                                    cmd, flags,
                                                    count, offset,
                                                    extents);
     }
     else
-      return send_structured_reply_error (conn, request.handle, cmd, flags,
+      return send_structured_reply_error (request.handle, cmd, flags,
                                           error);
   }
   else
-    return send_simple_reply (conn, request.handle, cmd, flags, buf, count,
+    return send_simple_reply (request.handle, cmd, flags, buf, count,
                               error);
 }

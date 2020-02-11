@@ -62,7 +62,7 @@ threadlocal_get_conn (void)
   abort ();
 }
 
-int connection_get_status (struct connection *conn)
+int connection_get_status (void)
 {
   abort ();
 }

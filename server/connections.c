@@ -53,23 +53,24 @@ static struct connection *new_connection (int sockin, int sockout,
 static void free_connection (struct connection *conn);
 
 /* Don't call these raw socket functions directly.  Use conn->recv etc. */
-static int raw_recv (struct connection *, void *buf, size_t len);
-static int raw_send_socket (struct connection *, const void *buf, size_t len,
-                            int flags);
-static int raw_send_other (struct connection *, const void *buf, size_t len,
-                           int flags);
-static void raw_close (struct connection *);
+static int raw_recv ( void *buf, size_t len);
+static int raw_send_socket (const void *buf, size_t len, int flags);
+static int raw_send_other (const void *buf, size_t len, int flags);
+static void raw_close (void);
 
 void *
-connection_get_handle (struct connection *conn, size_t i)
+connection_get_handle (size_t i)
 {
+  GET_CONN;
+
   assert (i < conn->nr_handles);
   return conn->handles[i].handle;
 }
 
 int
-connection_get_status (struct connection *conn)
+connection_get_status (void)
 {
+  GET_CONN;
   int r;
 
   if (conn->nworkers &&
@@ -86,8 +87,10 @@ connection_get_status (struct connection *conn)
  * For convenience, return the incoming value.
  */
 int
-connection_set_status (struct connection *conn, int value)
+connection_set_status (int value)
 {
+  GET_CONN;
+
   if (conn->nworkers &&
       pthread_mutex_lock (&conn->status_lock))
     abort ();
@@ -125,8 +128,8 @@ connection_worker (void *data)
   threadlocal_set_conn (conn);
   free (worker);
 
-  while (!quit && connection_get_status (conn) > 0)
-    protocol_recv_request_send_reply (conn);
+  while (!quit && connection_get_status () > 0)
+    protocol_recv_request_send_reply ();
   debug ("exiting worker thread %s", threadlocal_get_name ());
   free (name);
   return NULL;
@@ -159,7 +162,7 @@ handle_single_connection (int sockin, int sockout)
     plugin_name = "(unknown)";
   threadlocal_set_name (plugin_name);
 
-  if (backend && backend->preconnect (backend, conn, read_only) == -1)
+  if (backend && backend->preconnect (backend, read_only) == -1)
     goto done;
 
   /* NBD handshake.
@@ -167,14 +170,14 @@ handle_single_connection (int sockin, int sockout)
    * Note that this calls the backend .open callback when it is safe
    * to do so (eg. after TLS authentication).
    */
-  if (protocol_handshake (conn) == -1)
+  if (protocol_handshake () == -1)
     goto done;
 
   if (!nworkers) {
     /* No need for a separate thread. */
     debug ("handshake complete, processing requests serially");
-    while (!quit && connection_get_status (conn) > 0)
-      protocol_recv_request_send_reply (conn);
+    while (!quit && connection_get_status () > 0)
+      protocol_recv_request_send_reply ();
   }
   else {
     /* Create thread pool to process requests. */
@@ -192,13 +195,13 @@ handle_single_connection (int sockin, int sockout)
 
       if (unlikely (!worker)) {
         perror ("malloc");
-        connection_set_status (conn, -1);
+        connection_set_status (-1);
         goto wait;
       }
       if (unlikely (asprintf (&worker->name, "%s.%d", plugin_name, nworkers)
                     < 0)) {
         perror ("asprintf");
-        connection_set_status (conn, -1);
+        connection_set_status (-1);
         free (worker);
         goto wait;
       }
@@ -208,7 +211,7 @@ handle_single_connection (int sockin, int sockout)
       if (unlikely (err)) {
         errno = err;
         perror ("pthread_create");
-        connection_set_status (conn, -1);
+        connection_set_status (-1);
         free (worker);
         goto wait;
       }
@@ -221,9 +224,9 @@ handle_single_connection (int sockin, int sockout)
   }
 
   /* Finalize (for filters), called just before close. */
-  lock_request (conn);
-  r = backend_finalize (backend, conn);
-  unlock_request (conn);
+  lock_request ();
+  r = backend_finalize (backend);
+  unlock_request ();
   if (r == -1)
     goto done;
 
@@ -331,7 +334,7 @@ free_connection (struct connection *conn)
   if (!conn)
     return;
 
-  conn->close (conn);
+  conn->close ();
   if (listen_stdin) {
     int fd;
 
@@ -350,9 +353,9 @@ free_connection (struct connection *conn)
    * callback should always be called.
    */
   if (!quit) {
-    lock_request (conn);
-    backend_close (backend, conn);
-    unlock_request (conn);
+    lock_request ();
+    backend_close (backend);
+    unlock_request ();
   }
 
   if (conn->status_pipe[0] >= 0) {
@@ -375,9 +378,9 @@ free_connection (struct connection *conn)
  * that this send will be followed by related data.
  */
 static int
-raw_send_socket (struct connection *conn, const void *vbuf, size_t len,
-                 int flags)
+raw_send_socket (const void *vbuf, size_t len, int flags)
 {
+  GET_CONN;
   int sock = conn->sockout;
   const char *buf = vbuf;
   ssize_t r;
@@ -405,9 +408,9 @@ raw_send_socket (struct connection *conn, const void *vbuf, size_t len,
  * (returns 0) or fail (returns -1). flags is ignored.
  */
 static int
-raw_send_other (struct connection *conn, const void *vbuf, size_t len,
-                int flags)
+raw_send_other (const void *vbuf, size_t len, int flags)
 {
+  GET_CONN;
   int sock = conn->sockout;
   const char *buf = vbuf;
   ssize_t r;
@@ -430,8 +433,9 @@ raw_send_other (struct connection *conn, const void *vbuf, size_t len,
  * (returns > 0), read an EOF (returns 0), or fail (returns -1).
  */
 static int
-raw_recv (struct connection *conn, void *vbuf, size_t len)
+raw_recv (void *vbuf, size_t len)
 {
+  GET_CONN;
   int sock = conn->sockin;
   char *buf = vbuf;
   ssize_t r;
@@ -463,8 +467,10 @@ raw_recv (struct connection *conn, void *vbuf, size_t len)
  * close, so this function ignores errors.
  */
 static void
-raw_close (struct connection *conn)
+raw_close (void)
 {
+  GET_CONN;
+
   if (conn->sockin >= 0)
     close (conn->sockin);
   if (conn->sockout >= 0 && conn->sockin != conn->sockout)

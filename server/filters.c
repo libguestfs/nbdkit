@@ -49,13 +49,13 @@ struct backend_filter {
   struct nbdkit_filter filter;
 };
 
-/* Literally a backend, a connection pointer, and the filter's handle.
+/* Literally a backend and the filter's handle.
+ *
  * This is the implementation of our handle in .open, and serves as
  * a stable ‘void *nxdata’ in the filter API.
  */
-struct b_conn {
+struct b_h {
   struct backend *b;
-  struct connection *conn;
   void *handle;
 };
 
@@ -186,22 +186,22 @@ filter_config_complete (struct backend *b)
 static int
 next_preconnect (void *nxdata, int readonly)
 {
-  struct b_conn *b_conn = nxdata;
-  return b_conn->b->preconnect (b_conn->b, b_conn->conn, readonly);
+  struct b_h *b_h = nxdata;
+  return b_h->b->preconnect (b_h->b, readonly);
 }
 
 static int
-filter_preconnect (struct backend *b, struct connection *conn, int readonly)
+filter_preconnect (struct backend *b, int readonly)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn nxdata = { .b = b->next, .conn = conn };
+  struct b_h nxdata = { .b = b->next };
 
   debug ("%s: preconnect", b->name);
 
   if (f->filter.preconnect)
     return f->filter.preconnect (next_preconnect, &nxdata, readonly);
   else
-    return b->next->preconnect (b->next, conn, readonly);
+    return b->next->preconnect (b->next, readonly);
 }
 
 /* magic_config_key only applies to plugins, so this passes the
@@ -216,16 +216,16 @@ plugin_magic_config_key (struct backend *b)
 static int
 next_open (void *nxdata, int readonly)
 {
-  struct b_conn *b_conn = nxdata;
+  struct b_h *b_h = nxdata;
 
-  return backend_open (b_conn->b, b_conn->conn, readonly);
+  return backend_open (b_h->b, readonly);
 }
 
 static void *
-filter_open (struct backend *b, struct connection *conn, int readonly)
+filter_open (struct backend *b, int readonly)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = malloc (sizeof *nxdata);
+  struct b_h *nxdata = malloc (sizeof *nxdata);
 
   if (!nxdata) {
     nbdkit_error ("malloc: %m");
@@ -233,7 +233,6 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
   }
 
   nxdata->b = b->next;
-  nxdata->conn = conn;
   nxdata->handle = NULL;
 
   /* Most filters will call next_open first, resulting in
@@ -241,7 +240,7 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
    */
   if (f->filter.open)
     nxdata->handle = f->filter.open (next_open, nxdata, readonly);
-  else if (backend_open (b->next, conn, readonly) == -1)
+  else if (backend_open (b->next, readonly) == -1)
     nxdata->handle = NULL;
   else
     nxdata->handle = NBDKIT_HANDLE_NOT_NEEDED;
@@ -253,13 +252,13 @@ filter_open (struct backend *b, struct connection *conn, int readonly)
 }
 
 static void
-filter_close (struct backend *b, struct connection *conn, void *handle)
+filter_close (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
   if (handle && f->filter.close) {
-    assert (nxdata->b == b->next && nxdata->conn == conn);
+    assert (nxdata->b == b->next);
     f->filter.close (nxdata->handle);
     free (nxdata);
   }
@@ -267,101 +266,101 @@ filter_close (struct backend *b, struct connection *conn, void *handle)
 
 /* The next_functions structure contains pointers to backend
  * functions.  However because these functions are all expecting a
- * backend and a connection, we cannot call them directly, but must
+ * backend and a handle, we cannot call them directly, but must
  * write some next_* functions that unpack the two parameters from a
- * single ‘void *nxdata’ struct pointer (‘b_conn’).
+ * single ‘void *nxdata’ struct pointer (‘b_h’).
  */
 
 static int
 next_reopen (void *nxdata, int readonly)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_reopen (b_conn->b, b_conn->conn, readonly);
+  struct b_h *b_h = nxdata;
+  return backend_reopen (b_h->b, readonly);
 }
 
 static int64_t
 next_get_size (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_get_size (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_get_size (b_h->b);
 }
 
 static int
 next_can_write (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_write (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_write (b_h->b);
 }
 
 static int
 next_can_flush (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_flush (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_flush (b_h->b);
 }
 
 static int
 next_is_rotational (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_is_rotational (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_is_rotational (b_h->b);
 }
 
 static int
 next_can_trim (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_trim (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_trim (b_h->b);
 }
 
 static int
 next_can_zero (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_zero (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_zero (b_h->b);
 }
 
 static int
 next_can_fast_zero (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_fast_zero (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_fast_zero (b_h->b);
 }
 
 static int
 next_can_extents (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_extents (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_extents (b_h->b);
 }
 
 static int
 next_can_fua (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_fua (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_fua (b_h->b);
 }
 
 static int
 next_can_multi_conn (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_multi_conn (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_multi_conn (b_h->b);
 }
 
 static int
 next_can_cache (void *nxdata)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_can_cache (b_conn->b, b_conn->conn);
+  struct b_h *b_h = nxdata;
+  return backend_can_cache (b_h->b);
 }
 
 static int
 next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_pread (b_conn->b, b_conn->conn, buf, count, offset, flags,
+  struct b_h *b_h = nxdata;
+  return backend_pread (b_h->b, buf, count, offset, flags,
                         err);
 }
 
@@ -369,40 +368,40 @@ static int
 next_pwrite (void *nxdata, const void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_pwrite (b_conn->b, b_conn->conn, buf, count, offset, flags,
+  struct b_h *b_h = nxdata;
+  return backend_pwrite (b_h->b, buf, count, offset, flags,
                          err);
 }
 
 static int
 next_flush (void *nxdata, uint32_t flags, int *err)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_flush (b_conn->b, b_conn->conn, flags, err);
+  struct b_h *b_h = nxdata;
+  return backend_flush (b_h->b, flags, err);
 }
 
 static int
 next_trim (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_trim (b_conn->b, b_conn->conn, count, offset, flags, err);
+  struct b_h *b_h = nxdata;
+  return backend_trim (b_h->b, count, offset, flags, err);
 }
 
 static int
 next_zero (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_zero (b_conn->b, b_conn->conn, count, offset, flags, err);
+  struct b_h *b_h = nxdata;
+  return backend_zero (b_h->b, count, offset, flags, err);
 }
 
 static int
 next_extents (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
               struct nbdkit_extents *extents, int *err)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_extents (b_conn->b, b_conn->conn, count, offset, flags,
+  struct b_h *b_h = nxdata;
+  return backend_extents (b_h->b, count, offset, flags,
                           extents, err);
 }
 
@@ -410,8 +409,8 @@ static int
 next_cache (void *nxdata, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
-  struct b_conn *b_conn = nxdata;
-  return backend_cache (b_conn->b, b_conn->conn, count, offset, flags, err);
+  struct b_h *b_h = nxdata;
+  return backend_cache (b_h->b, count, offset, flags, err);
 }
 
 static struct nbdkit_next_ops next_ops = {
@@ -437,13 +436,12 @@ static struct nbdkit_next_ops next_ops = {
 };
 
 static int
-filter_prepare (struct backend *b, struct connection *conn, void *handle,
-                int readonly)
+filter_prepare (struct backend *b, void *handle, int readonly)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.prepare &&
       f->filter.prepare (&next_ops, nxdata, nxdata->handle, readonly) == -1)
     return -1;
@@ -452,12 +450,12 @@ filter_prepare (struct backend *b, struct connection *conn, void *handle,
 }
 
 static int
-filter_finalize (struct backend *b, struct connection *conn, void *handle)
+filter_finalize (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.finalize &&
       f->filter.finalize (&next_ops, nxdata, nxdata->handle) == -1)
     return -1;
@@ -465,257 +463,257 @@ filter_finalize (struct backend *b, struct connection *conn, void *handle)
 }
 
 static int64_t
-filter_get_size (struct backend *b, struct connection *conn, void *handle)
+filter_get_size (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.get_size)
     return f->filter.get_size (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_get_size (b->next, conn);
+    return backend_get_size (b->next);
 }
 
 static int
-filter_can_write (struct backend *b, struct connection *conn, void *handle)
+filter_can_write (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_write)
     return f->filter.can_write (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_write (b->next, conn);
+    return backend_can_write (b->next);
 }
 
 static int
-filter_can_flush (struct backend *b, struct connection *conn, void *handle)
+filter_can_flush (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_flush)
     return f->filter.can_flush (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_flush (b->next, conn);
+    return backend_can_flush (b->next);
 }
 
 static int
-filter_is_rotational (struct backend *b, struct connection *conn, void *handle)
+filter_is_rotational (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.is_rotational)
     return f->filter.is_rotational (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_is_rotational (b->next, conn);
+    return backend_is_rotational (b->next);
 }
 
 static int
-filter_can_trim (struct backend *b, struct connection *conn, void *handle)
+filter_can_trim (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_trim)
     return f->filter.can_trim (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_trim (b->next, conn);
+    return backend_can_trim (b->next);
 }
 
 static int
-filter_can_zero (struct backend *b, struct connection *conn, void *handle)
+filter_can_zero (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_zero)
     return f->filter.can_zero (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_zero (b->next, conn);
+    return backend_can_zero (b->next);
 }
 
 static int
-filter_can_fast_zero (struct backend *b, struct connection *conn, void *handle)
+filter_can_fast_zero (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_fast_zero)
     return f->filter.can_fast_zero (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_fast_zero (b->next, conn);
+    return backend_can_fast_zero (b->next);
 }
 
 static int
-filter_can_extents (struct backend *b, struct connection *conn, void *handle)
+filter_can_extents (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_extents)
     return f->filter.can_extents (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_extents (b->next, conn);
+    return backend_can_extents (b->next);
 }
 
 static int
-filter_can_fua (struct backend *b, struct connection *conn, void *handle)
+filter_can_fua (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_fua)
     return f->filter.can_fua (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_fua (b->next, conn);
+    return backend_can_fua (b->next);
 }
 
 static int
-filter_can_multi_conn (struct backend *b, struct connection *conn, void *handle)
+filter_can_multi_conn (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_multi_conn)
     return f->filter.can_multi_conn (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_multi_conn (b->next, conn);
+    return backend_can_multi_conn (b->next);
 }
 
 static int
-filter_can_cache (struct backend *b, struct connection *conn, void *handle)
+filter_can_cache (struct backend *b, void *handle)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.can_cache)
     return f->filter.can_cache (&next_ops, nxdata, nxdata->handle);
   else
-    return backend_can_cache (b->next, conn);
+    return backend_can_cache (b->next);
 }
 
 static int
-filter_pread (struct backend *b, struct connection *conn, void *handle,
+filter_pread (struct backend *b, void *handle,
               void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.pread)
     return f->filter.pread (&next_ops, nxdata, nxdata->handle,
                             buf, count, offset, flags, err);
   else
-    return backend_pread (b->next, conn, buf, count, offset, flags, err);
+    return backend_pread (b->next, buf, count, offset, flags, err);
 }
 
 static int
-filter_pwrite (struct backend *b, struct connection *conn, void *handle,
+filter_pwrite (struct backend *b, void *handle,
                const void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.pwrite)
     return f->filter.pwrite (&next_ops, nxdata, nxdata->handle,
                              buf, count, offset, flags, err);
   else
-    return backend_pwrite (b->next, conn, buf, count, offset, flags, err);
+    return backend_pwrite (b->next, buf, count, offset, flags, err);
 }
 
 static int
-filter_flush (struct backend *b, struct connection *conn, void *handle,
+filter_flush (struct backend *b, void *handle,
               uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.flush)
     return f->filter.flush (&next_ops, nxdata, nxdata->handle, flags, err);
   else
-    return backend_flush (b->next, conn, flags, err);
+    return backend_flush (b->next, flags, err);
 }
 
 static int
-filter_trim (struct backend *b, struct connection *conn, void *handle,
+filter_trim (struct backend *b, void *handle,
              uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.trim)
     return f->filter.trim (&next_ops, nxdata, nxdata->handle, count, offset,
                            flags, err);
   else
-    return backend_trim (b->next, conn, count, offset, flags, err);
+    return backend_trim (b->next, count, offset, flags, err);
 }
 
 static int
-filter_zero (struct backend *b, struct connection *conn, void *handle,
+filter_zero (struct backend *b, void *handle,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.zero)
     return f->filter.zero (&next_ops, nxdata, nxdata->handle,
                            count, offset, flags, err);
   else
-    return backend_zero (b->next, conn, count, offset, flags, err);
+    return backend_zero (b->next, count, offset, flags, err);
 }
 
 static int
-filter_extents (struct backend *b, struct connection *conn, void *handle,
+filter_extents (struct backend *b, void *handle,
                 uint32_t count, uint64_t offset, uint32_t flags,
                 struct nbdkit_extents *extents, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.extents)
     return f->filter.extents (&next_ops, nxdata, nxdata->handle,
                               count, offset, flags,
                               extents, err);
   else
-    return backend_extents (b->next, conn, count, offset, flags,
+    return backend_extents (b->next, count, offset, flags,
                             extents, err);
 }
 
 static int
-filter_cache (struct backend *b, struct connection *conn, void *handle,
+filter_cache (struct backend *b, void *handle,
               uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct b_conn *nxdata = handle;
+  struct b_h *nxdata = handle;
 
-  assert (nxdata->b == b->next && nxdata->conn == conn);
+  assert (nxdata->b == b->next);
   if (f->filter.cache)
     return f->filter.cache (&next_ops, nxdata, nxdata->handle,
                             count, offset, flags, err);
   else
-    return backend_cache (b->next, conn, count, offset, flags, err);
+    return backend_cache (b->next, count, offset, flags, err);
 }
 
 static struct backend filter_functions = {

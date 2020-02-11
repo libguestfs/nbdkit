@@ -44,16 +44,16 @@
 #include "nbd-protocol.h"
 
 int
-protocol_handshake (struct connection *conn)
+protocol_handshake ()
 {
   int r;
 
-  lock_request (conn);
+  lock_request ();
   if (!newstyle)
-    r = protocol_handshake_oldstyle (conn);
+    r = protocol_handshake_oldstyle ();
   else
-    r = protocol_handshake_newstyle (conn);
-  unlock_request (conn);
+    r = protocol_handshake_newstyle ();
+  unlock_request ();
 
   return r;
 }
@@ -72,21 +72,21 @@ protocol_handshake (struct connection *conn)
  * simply opening a TCP connection.
  */
 int
-protocol_common_open (struct connection *conn,
-                      uint64_t *exportsize, uint16_t *flags)
+protocol_common_open (uint64_t *exportsize, uint16_t *flags)
 {
+  GET_CONN;
   int64_t size;
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
 
-  if (backend_open (backend, conn, read_only) == -1)
+  if (backend_open (backend, read_only) == -1)
     return -1;
 
   /* Prepare (for filters), called just after open. */
-  if (backend_prepare (backend, conn) == -1)
+  if (backend_prepare (backend) == -1)
     return -1;
 
-  size = backend_get_size (backend, conn);
+  size = backend_get_size (backend);
   if (size == -1)
     return -1;
   if (size < 0) {
@@ -98,57 +98,57 @@ protocol_common_open (struct connection *conn,
   /* Check all flags even if they won't be advertised, to prime the
    * cache and make later request validation easier.
    */
-  fl = backend_can_write (backend, conn);
+  fl = backend_can_write (backend);
   if (fl == -1)
     return -1;
   if (!fl)
     eflags |= NBD_FLAG_READ_ONLY;
 
-  fl = backend_can_zero (backend, conn);
+  fl = backend_can_zero (backend);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
 
-  fl = backend_can_fast_zero (backend, conn);
+  fl = backend_can_fast_zero (backend);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FAST_ZERO;
 
-  fl = backend_can_trim (backend, conn);
+  fl = backend_can_trim (backend);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_TRIM;
 
-  fl = backend_can_fua (backend, conn);
+  fl = backend_can_fua (backend);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FUA;
 
-  fl = backend_can_flush (backend, conn);
+  fl = backend_can_flush (backend);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FLUSH;
 
-  fl = backend_is_rotational (backend, conn);
+  fl = backend_is_rotational (backend);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_ROTATIONAL;
 
   /* multi-conn is useless if parallel connections are not allowed. */
-  fl = backend_can_multi_conn (backend, conn);
+  fl = backend_can_multi_conn (backend);
   if (fl == -1)
     return -1;
   if (fl && (backend->thread_model (backend) >
              NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS))
     eflags |= NBD_FLAG_CAN_MULTI_CONN;
 
-  fl = backend_can_cache (backend, conn);
+  fl = backend_can_cache (backend);
   if (fl == -1)
     return -1;
   if (fl)
@@ -159,7 +159,7 @@ protocol_common_open (struct connection *conn,
    * not have to worry about errors, and makes test-layers easier to
    * write.
    */
-  fl = backend_can_extents (backend, conn);
+  fl = backend_can_extents (backend);
   if (fl == -1)
     return -1;
 

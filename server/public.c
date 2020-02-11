@@ -562,7 +562,7 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
    * event, we know the connection should be shutting down.
    */
   assert (quit ||
-          (conn && conn->nworkers > 0 && connection_get_status (conn) < 1) ||
+          (conn && conn->nworkers > 0 && connection_get_status () < 1) ||
           (conn && (fds[2].revents & (POLLRDHUP | POLLHUP | POLLERR))));
   nbdkit_error ("aborting sleep to shut down");
   errno = ESHUTDOWN;

@@ -312,8 +312,9 @@ crypto_free (void)
  * (returns > 0), read an EOF (returns 0), or fail (returns -1).
  */
 static int
-crypto_recv (struct connection *conn, void *vbuf, size_t len)
+crypto_recv (void *vbuf, size_t len)
 {
+  GET_CONN;
   gnutls_session_t session = conn->crypto_session;
   char *buf = vbuf;
   ssize_t r;
@@ -355,8 +356,9 @@ crypto_recv (struct connection *conn, void *vbuf, size_t len)
  * (returns 0) or fail (returns -1). flags is ignored for now.
  */
 static int
-crypto_send (struct connection *conn, const void *vbuf, size_t len, int flags)
+crypto_send (const void *vbuf, size_t len, int flags)
 {
+  GET_CONN;
   gnutls_session_t session = conn->crypto_session;
   const char *buf = vbuf;
   ssize_t r;
@@ -392,8 +394,9 @@ crypto_send (struct connection *conn, const void *vbuf, size_t len, int flags)
  * close, so this function ignores errors.
  */
 static void
-crypto_close (struct connection *conn)
+crypto_close (void)
 {
+  GET_CONN;
   gnutls_session_t session = conn->crypto_session;
   int sockin, sockout;
 
@@ -417,8 +420,9 @@ crypto_close (struct connection *conn)
  * only be called once per connection.
  */
 int
-crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
+crypto_negotiate_tls (int sockin, int sockout)
 {
+  GET_CONN;
   gnutls_session_t session;
   CLEANUP_FREE char *priority = NULL;
   int err;
@@ -559,7 +563,7 @@ crypto_free (void)
 }
 
 int
-crypto_negotiate_tls (struct connection *conn, int sockin, int sockout)
+crypto_negotiate_tls (int sockin, int sockout)
 {
   /* Should never be called because tls == 0. */
   abort ();

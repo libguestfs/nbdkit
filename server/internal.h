@@ -154,15 +154,12 @@ enum {
   SEND_MORE = 1, /* Hint to use MSG_MORE/corking to group send()s */
 };
 
-typedef int (*connection_recv_function) (struct connection *,
-                                         void *buf, size_t len)
-  __attribute__((__nonnull__ (1, 2)));
-typedef int (*connection_send_function) (struct connection *,
-                                         const void *buf, size_t len,
-                                         int flags)
-  __attribute__((__nonnull__ (1, 2)));
-typedef void (*connection_close_function) (struct connection *)
+typedef int (*connection_recv_function) (void *buf, size_t len)
   __attribute__((__nonnull__ (1)));
+typedef int (*connection_send_function) (const void *buf, size_t len,
+                                         int flags)
+  __attribute__((__nonnull__ (1)));
+typedef void (*connection_close_function) (void);
 
 enum {
   HANDLE_OPEN = 1,      /* Set if .open passed, so .close is needed */
@@ -234,29 +231,22 @@ struct connection {
 };
 
 extern void handle_single_connection (int sockin, int sockout);
-extern int connection_get_status (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
-extern int connection_set_status (struct connection *conn, int value)
-  __attribute__((__nonnull__ (1)));
+extern int connection_get_status (void);
+extern int connection_set_status (int value);
 
 /* protocol-handshake.c */
-extern int protocol_handshake (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
-extern int protocol_common_open (struct connection *conn,
-                                 uint64_t *exportsize, uint16_t *flags)
-  __attribute__((__nonnull__ (1, 2, 3)));
+extern int protocol_handshake (void);
+extern int protocol_common_open (uint64_t *exportsize, uint16_t *flags)
+  __attribute__((__nonnull__ (1, 2)));
 
 /* protocol-handshake-oldstyle.c */
-extern int protocol_handshake_oldstyle (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
+extern int protocol_handshake_oldstyle (void);
 
 /* protocol-handshake-newstyle.c */
-extern int protocol_handshake_newstyle (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
+extern int protocol_handshake_newstyle (void);
 
 /* protocol.c */
-extern int protocol_recv_request_send_reply (struct connection *conn)
-  __attribute__((__nonnull__ (1)));
+extern int protocol_recv_request_send_reply (void);
 
 /* The context ID of base:allocation.  As far as I can tell it doesn't
  * matter what this is as long as nbdkit always returns the same
@@ -268,9 +258,7 @@ extern int protocol_recv_request_send_reply (struct connection *conn)
 #define root_tls_certificates_dir sysconfdir "/pki/" PACKAGE_NAME
 extern void crypto_init (bool tls_set_on_cli);
 extern void crypto_free (void);
-extern int crypto_negotiate_tls (struct connection *conn,
-                                 int sockin, int sockout)
-  __attribute__((__nonnull__ (1)));
+extern int crypto_negotiate_tls (int sockin, int sockout);
 
 /* debug.c */
 #define debug(fs, ...)                                   \
@@ -332,44 +320,39 @@ struct backend {
   void (*config) (struct backend *, const char *key, const char *value);
   void (*config_complete) (struct backend *);
   const char *(*magic_config_key) (struct backend *);
-  int (*preconnect) (struct backend *, struct connection *conn, int readonly);
-  void *(*open) (struct backend *, struct connection *conn, int readonly);
-  int (*prepare) (struct backend *, struct connection *conn, void *handle,
-                  int readonly);
-  int (*finalize) (struct backend *, struct connection *conn, void *handle);
-  void (*close) (struct backend *, struct connection *conn, void *handle);
+  int (*preconnect) (struct backend *, int readonly);
+  void *(*open) (struct backend *, int readonly);
+  int (*prepare) (struct backend *, void *handle, int readonly);
+  int (*finalize) (struct backend *, void *handle);
+  void (*close) (struct backend *, void *handle);
 
-  int64_t (*get_size) (struct backend *, struct connection *conn, void *handle);
-  int (*can_write) (struct backend *, struct connection *conn, void *handle);
-  int (*can_flush) (struct backend *, struct connection *conn, void *handle);
-  int (*is_rotational) (struct backend *, struct connection *conn,
-                        void *handle);
-  int (*can_trim) (struct backend *, struct connection *conn, void *handle);
-  int (*can_zero) (struct backend *, struct connection *conn, void *handle);
-  int (*can_fast_zero) (struct backend *, struct connection *conn,
-                        void *handle);
-  int (*can_extents) (struct backend *, struct connection *conn, void *handle);
-  int (*can_fua) (struct backend *, struct connection *conn, void *handle);
-  int (*can_multi_conn) (struct backend *, struct connection *conn,
-                         void *handle);
-  int (*can_cache) (struct backend *, struct connection *conn, void *handle);
+  int64_t (*get_size) (struct backend *, void *handle);
+  int (*can_write) (struct backend *, void *handle);
+  int (*can_flush) (struct backend *, void *handle);
+  int (*is_rotational) (struct backend *, void *handle);
+  int (*can_trim) (struct backend *, void *handle);
+  int (*can_zero) (struct backend *, void *handle);
+  int (*can_fast_zero) (struct backend *, void *handle);
+  int (*can_extents) (struct backend *, void *handle);
+  int (*can_fua) (struct backend *, void *handle);
+  int (*can_multi_conn) (struct backend *, void *handle);
+  int (*can_cache) (struct backend *, void *handle);
 
-  int (*pread) (struct backend *, struct connection *conn, void *handle,
+  int (*pread) (struct backend *, void *handle,
                 void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err);
-  int (*pwrite) (struct backend *, struct connection *conn, void *handle,
+  int (*pwrite) (struct backend *, void *handle,
                  const void *buf, uint32_t count, uint64_t offset,
                  uint32_t flags, int *err);
-  int (*flush) (struct backend *, struct connection *conn, void *handle,
-                uint32_t flags, int *err);
-  int (*trim) (struct backend *, struct connection *conn, void *handle,
+  int (*flush) (struct backend *, void *handle, uint32_t flags, int *err);
+  int (*trim) (struct backend *, void *handle,
                uint32_t count, uint64_t offset, uint32_t flags, int *err);
-  int (*zero) (struct backend *, struct connection *conn, void *handle,
+  int (*zero) (struct backend *, void *handle,
                uint32_t count, uint64_t offset, uint32_t flags, int *err);
-  int (*extents) (struct backend *, struct connection *conn, void *handle,
+  int (*extents) (struct backend *, void *handle,
                   uint32_t count, uint64_t offset, uint32_t flags,
                   struct nbdkit_extents *extents, int *err);
-  int (*cache) (struct backend *, struct connection *conn, void *handle,
+  int (*cache) (struct backend *, void *handle,
                 uint32_t count, uint64_t offset, uint32_t flags, int *err);
 };
 
@@ -382,72 +365,70 @@ extern void backend_load (struct backend *b, const char *name,
 extern void backend_unload (struct backend *b, void (*unload) (void))
   __attribute__((__nonnull__ (1)));
 
-extern int backend_open (struct backend *b, struct connection *conn,
-                         int readonly)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_prepare (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_finalize (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern void backend_close (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern bool backend_valid_range (struct backend *b, struct connection *conn,
+extern int backend_open (struct backend *b, int readonly)
+  __attribute__((__nonnull__ (1)));
+extern int backend_prepare (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_finalize (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern void backend_close (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern bool backend_valid_range (struct backend *b,
                                  uint64_t offset, uint32_t count)
-  __attribute__((__nonnull__ (1, 2)));
+  __attribute__((__nonnull__ (1)));
 
-extern int backend_reopen (struct backend *b, struct connection *conn,
-                           int readonly)
-  __attribute__((__nonnull__ (1, 2)));
-extern int64_t backend_get_size (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_write (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_flush (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_is_rotational (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_trim (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_zero (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_fast_zero (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_extents (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_fua (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_multi_conn (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
-extern int backend_can_cache (struct backend *b, struct connection *conn)
-  __attribute__((__nonnull__ (1, 2)));
+extern int backend_reopen (struct backend *b, int readonly)
+  __attribute__((__nonnull__ (1)));
+extern int64_t backend_get_size (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_write (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_flush (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_is_rotational (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_trim (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_zero (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_fast_zero (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_extents (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_fua (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_multi_conn (struct backend *b)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_cache (struct backend *b)
+  __attribute__((__nonnull__ (1)));
 
-extern int backend_pread (struct backend *b, struct connection *conn,
+extern int backend_pread (struct backend *b,
                           void *buf, uint32_t count, uint64_t offset,
                           uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 2, 3, 7)));
-extern int backend_pwrite (struct backend *b, struct connection *conn,
+  __attribute__((__nonnull__ (1, 2, 6)));
+extern int backend_pwrite (struct backend *b,
                            const void *buf, uint32_t count, uint64_t offset,
                            uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 2, 3, 7)));
-extern int backend_flush (struct backend *b, struct connection *conn,
+  __attribute__((__nonnull__ (1, 2, 6)));
+extern int backend_flush (struct backend *b,
                           uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 2, 4)));
-extern int backend_trim (struct backend *b, struct connection *conn,
+  __attribute__((__nonnull__ (1, 3)));
+extern int backend_trim (struct backend *b,
                          uint32_t count, uint64_t offset, uint32_t flags,
                          int *err)
-  __attribute__((__nonnull__ (1, 2, 6)));
-extern int backend_zero (struct backend *b, struct connection *conn,
+  __attribute__((__nonnull__ (1, 5)));
+extern int backend_zero (struct backend *b,
                          uint32_t count, uint64_t offset, uint32_t flags,
                          int *err)
-  __attribute__((__nonnull__ (1, 2, 6)));
-extern int backend_extents (struct backend *b, struct connection *conn,
+  __attribute__((__nonnull__ (1, 5)));
+extern int backend_extents (struct backend *b,
                             uint32_t count, uint64_t offset, uint32_t flags,
                             struct nbdkit_extents *extents, int *err)
-  __attribute__((__nonnull__ (1, 2, 6, 7)));
-extern int backend_cache (struct backend *b, struct connection *conn,
+  __attribute__((__nonnull__ (1, 5, 6)));
+extern int backend_cache (struct backend *b,
                           uint32_t count, uint64_t offset,
                           uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 2, 6)));
+  __attribute__((__nonnull__ (1, 5)));
 
 /* plugins.c */
 extern struct backend *plugin_register (size_t index, const char *filename,
@@ -465,8 +446,8 @@ extern void lock_init_thread_model (void);
 extern const char *name_of_thread_model (int model);
 extern void lock_connection (void);
 extern void unlock_connection (void);
-extern void lock_request (struct connection *conn);
-extern void unlock_request (struct connection *conn);
+extern void lock_request (void);
+extern void unlock_request (void);
 extern void lock_unload (void);
 extern void unlock_unload (void);
 

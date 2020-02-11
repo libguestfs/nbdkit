@@ -49,9 +49,9 @@
 
 /* Receive newstyle options. */
 static int
-send_newstyle_option_reply (struct connection *conn,
-                            uint32_t option, uint32_t reply)
+send_newstyle_option_reply (uint32_t option, uint32_t reply)
 {
+  GET_CONN;
   struct nbd_fixed_new_option_reply fixed_new_option_reply;
 
   fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
@@ -59,8 +59,7 @@ send_newstyle_option_reply (struct connection *conn,
   fixed_new_option_reply.reply = htobe32 (reply);
   fixed_new_option_reply.replylen = htobe32 (0);
 
-  if (conn->send (conn,
-                  &fixed_new_option_reply,
+  if (conn->send (&fixed_new_option_reply,
                   sizeof fixed_new_option_reply, 0) == -1) {
     /* The protocol document says that the client is allowed to simply
      * drop the connection after sending NBD_OPT_ABORT, or may read
@@ -77,9 +76,9 @@ send_newstyle_option_reply (struct connection *conn,
 }
 
 static int
-send_newstyle_option_reply_exportname (struct connection *conn,
-                                       uint32_t option, uint32_t reply)
+send_newstyle_option_reply_exportname (uint32_t option, uint32_t reply)
 {
+  GET_CONN;
   struct nbd_fixed_new_option_reply fixed_new_option_reply;
   size_t name_len = strlen (exportname);
   uint32_t len;
@@ -89,20 +88,19 @@ send_newstyle_option_reply_exportname (struct connection *conn,
   fixed_new_option_reply.reply = htobe32 (reply);
   fixed_new_option_reply.replylen = htobe32 (name_len + sizeof (len));
 
-  if (conn->send (conn,
-                  &fixed_new_option_reply,
+  if (conn->send (&fixed_new_option_reply,
                   sizeof fixed_new_option_reply, SEND_MORE) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
 
   len = htobe32 (name_len);
-  if (conn->send (conn, &len, sizeof len, SEND_MORE) == -1) {
+  if (conn->send (&len, sizeof len, SEND_MORE) == -1) {
     nbdkit_error ("write: %s: %s: %m",
                   name_of_nbd_opt (option), "sending length");
     return -1;
   }
-  if (conn->send (conn, exportname, name_len, 0) == -1) {
+  if (conn->send (exportname, name_len, 0) == -1) {
     nbdkit_error ("write: %s: %s: %m",
                   name_of_nbd_opt (option), "sending export name");
     return -1;
@@ -112,10 +110,10 @@ send_newstyle_option_reply_exportname (struct connection *conn,
 }
 
 static int
-send_newstyle_option_reply_info_export (struct connection *conn,
-                                        uint32_t option, uint32_t reply,
+send_newstyle_option_reply_info_export (uint32_t option, uint32_t reply,
                                         uint16_t info, uint64_t exportsize)
 {
+  GET_CONN;
   struct nbd_fixed_new_option_reply fixed_new_option_reply;
   struct nbd_fixed_new_option_reply_info_export export;
 
@@ -127,10 +125,9 @@ send_newstyle_option_reply_info_export (struct connection *conn,
   export.exportsize = htobe64 (exportsize);
   export.eflags = htobe16 (conn->eflags);
 
-  if (conn->send (conn,
-                  &fixed_new_option_reply,
+  if (conn->send (&fixed_new_option_reply,
                   sizeof fixed_new_option_reply, SEND_MORE) == -1 ||
-      conn->send (conn, &export, sizeof export, 0) == -1) {
+      conn->send (&export, sizeof export, 0) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
@@ -139,11 +136,11 @@ send_newstyle_option_reply_info_export (struct connection *conn,
 }
 
 static int
-send_newstyle_option_reply_meta_context (struct connection *conn,
-                                         uint32_t option, uint32_t reply,
+send_newstyle_option_reply_meta_context (uint32_t option, uint32_t reply,
                                          uint32_t context_id,
                                          const char *name)
 {
+  GET_CONN;
   struct nbd_fixed_new_option_reply fixed_new_option_reply;
   struct nbd_fixed_new_option_reply_meta_context context;
   const size_t namelen = strlen (name);
@@ -156,11 +153,10 @@ send_newstyle_option_reply_meta_context (struct connection *conn,
   fixed_new_option_reply.replylen = htobe32 (sizeof context + namelen);
   context.context_id = htobe32 (context_id);
 
-  if (conn->send (conn,
-                  &fixed_new_option_reply,
+  if (conn->send (&fixed_new_option_reply,
                   sizeof fixed_new_option_reply, SEND_MORE) == -1 ||
-      conn->send (conn, &context, sizeof context, SEND_MORE) == -1 ||
-      conn->send (conn, name, namelen, 0) == -1) {
+      conn->send (&context, sizeof context, SEND_MORE) == -1 ||
+      conn->send (name, namelen, 0) == -1) {
     nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
     return -1;
   }
@@ -171,11 +167,11 @@ send_newstyle_option_reply_meta_context (struct connection *conn,
 /* Sub-function during negotiate_handshake_newstyle, to uniformly handle
  * a client hanging up on a message boundary.
  */
-static int __attribute__ ((format (printf, 4, 5)))
-conn_recv_full (struct connection *conn, void *buf, size_t len,
-                const char *fmt, ...)
+static int __attribute__ ((format (printf, 3, 4)))
+conn_recv_full (void *buf, size_t len, const char *fmt, ...)
 {
-  int r = conn->recv (conn, buf, len);
+  GET_CONN;
+  int r = conn->recv (buf, len);
   va_list args;
 
   if (r == -1) {
@@ -198,9 +194,11 @@ conn_recv_full (struct connection *conn, void *buf, size_t len,
  * in that function, and must not cause any wire traffic.
  */
 static int
-finish_newstyle_options (struct connection *conn, uint64_t *exportsize)
+finish_newstyle_options (uint64_t *exportsize)
 {
-  if (protocol_common_open (conn, exportsize, &conn->eflags) == -1)
+  GET_CONN;
+
+  if (protocol_common_open (exportsize, &conn->eflags) == -1)
     return -1;
 
   debug ("newstyle negotiation: flags: export 0x%x", conn->eflags);
@@ -233,9 +231,11 @@ check_string (uint32_t option, char *buf, uint32_t len, uint32_t maxlen,
  * validate an export name.
  */
 static int
-check_export_name (struct connection *conn, uint32_t option, char *buf,
+check_export_name (uint32_t option, char *buf,
                    uint32_t exportnamelen, uint32_t maxlen, bool save)
 {
+  GET_CONN;
+
   if (check_string (option, buf, exportnamelen, maxlen, "export name") == -1)
     return -1;
 
@@ -254,8 +254,9 @@ check_export_name (struct connection *conn, uint32_t option, char *buf,
 }
 
 static int
-negotiate_handshake_newstyle_options (struct connection *conn)
+negotiate_handshake_newstyle_options (void)
 {
+  GET_CONN;
   struct nbd_new_option new_option;
   size_t nr_options;
   uint64_t version;
@@ -268,7 +269,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
     CLEANUP_FREE char *data = NULL;
 
-    if (conn_recv_full (conn, &new_option, sizeof new_option,
+    if (conn_recv_full (&new_option, sizeof new_option,
                         "reading option: conn->recv: %m") == -1)
       return -1;
 
@@ -302,7 +303,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
      */
     if (!(conn->cflags & NBD_FLAG_FIXED_NEWSTYLE) &&
         option != NBD_OPT_EXPORT_NAME) {
-      if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID))
+      if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID))
         return -1;
       continue;
     }
@@ -312,31 +313,30 @@ negotiate_handshake_newstyle_options (struct connection *conn)
      */
     if (tls == 2 && !conn->using_tls &&
         !(option == NBD_OPT_ABORT || option == NBD_OPT_STARTTLS)) {
-      if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_TLS_REQD))
+      if (send_newstyle_option_reply (option, NBD_REP_ERR_TLS_REQD))
         return -1;
       continue;
     }
 
     switch (option) {
     case NBD_OPT_EXPORT_NAME:
-      if (conn_recv_full (conn, data, optlen,
+      if (conn_recv_full (data, optlen,
                           "read: %s: %m", name_of_nbd_opt (option)) == -1)
         return -1;
-      if (check_export_name (conn, option, data, optlen, optlen, true) == -1)
+      if (check_export_name (option, data, optlen, optlen, true) == -1)
         return -1;
 
       /* We have to finish the handshake by sending handshake_finish.
        * On failure, we have to disconnect.
        */
-      if (finish_newstyle_options (conn, &exportsize) == -1)
+      if (finish_newstyle_options (&exportsize) == -1)
         return -1;
 
       memset (&handshake_finish, 0, sizeof handshake_finish);
       handshake_finish.exportsize = htobe64 (exportsize);
       handshake_finish.eflags = htobe16 (conn->eflags);
 
-      if (conn->send (conn,
-                      &handshake_finish,
+      if (conn->send (&handshake_finish,
                       (conn->cflags & NBD_FLAG_NO_ZEROES)
                       ? offsetof (struct nbd_export_name_option_reply, zeroes)
                       : sizeof handshake_finish, 0) == -1) {
@@ -346,7 +346,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       break;
 
     case NBD_OPT_ABORT:
-      if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+      if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
         return -1;
       debug ("client sent %s to abort the connection",
              name_of_nbd_opt (option));
@@ -354,10 +354,10 @@ negotiate_handshake_newstyle_options (struct connection *conn)
 
     case NBD_OPT_LIST:
       if (optlen != 0) {
-        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+        if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
-        if (conn_recv_full (conn, data, optlen,
+        if (conn_recv_full (data, optlen,
                             "read: %s: %m", name_of_nbd_opt (option)) == -1)
           return -1;
         continue;
@@ -366,20 +366,19 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       /* Send back the exportname. */
       debug ("newstyle negotiation: %s: advertising export '%s'",
              name_of_nbd_opt (option), exportname);
-      if (send_newstyle_option_reply_exportname (conn, option,
-                                                 NBD_REP_SERVER) == -1)
+      if (send_newstyle_option_reply_exportname (option, NBD_REP_SERVER) == -1)
         return -1;
 
-      if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+      if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
         return -1;
       break;
 
     case NBD_OPT_STARTTLS:
       if (optlen != 0) {
-        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+        if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
-        if (conn_recv_full (conn, data, optlen,
+        if (conn_recv_full (data, optlen,
                             "read: %s: %m", name_of_nbd_opt (option)) == -1)
           return -1;
         continue;
@@ -391,14 +390,13 @@ negotiate_handshake_newstyle_options (struct connection *conn)
 #else
 #define NO_TLS_REPLY NBD_REP_ERR_UNSUP
 #endif
-        if (send_newstyle_option_reply (conn, option, NO_TLS_REPLY) == -1)
+        if (send_newstyle_option_reply (option, NO_TLS_REPLY) == -1)
           return -1;
       }
       else /* --tls=on or --tls=require */ {
         /* We can't upgrade to TLS twice on the same connection. */
         if (conn->using_tls) {
-          if (send_newstyle_option_reply (conn, option,
-                                          NBD_REP_ERR_INVALID) == -1)
+          if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID) == -1)
             return -1;
           continue;
         }
@@ -406,11 +404,11 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         /* We have to send the (unencrypted) reply before starting
          * the handshake.
          */
-        if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+        if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
           return -1;
 
         /* Upgrade the connection to TLS.  Also performs access control. */
-        if (crypto_negotiate_tls (conn, conn->sockin, conn->sockout) == -1)
+        if (crypto_negotiate_tls (conn->sockin, conn->sockout) == -1)
           return -1;
         conn->using_tls = true;
         debug ("using TLS on this connection");
@@ -419,14 +417,13 @@ negotiate_handshake_newstyle_options (struct connection *conn)
 
     case NBD_OPT_INFO:
     case NBD_OPT_GO:
-      if (conn_recv_full (conn, data, optlen,
-                          "read: %s: %m", optname) == -1)
+      if (conn_recv_full (data, optlen, "read: %s: %m", optname) == -1)
         return -1;
 
       if (optlen < 6) { /* 32 bit export length + 16 bit nr info */
         debug ("newstyle negotiation: %s option length < 6", optname);
 
-        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+        if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
         continue;
@@ -443,7 +440,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         exportnamelen = be32toh (exportnamelen);
         if (exportnamelen > optlen-6 /* NB optlen >= 6, see above */) {
           debug ("newstyle negotiation: %s: export name too long", optname);
-          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+          if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
           continue;
@@ -453,7 +450,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         if (optlen != 4 + exportnamelen + 2 + 2*nrinfos) {
           debug ("newstyle negotiation: %s: "
                  "number of information requests incorrect", optname);
-          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+          if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
           continue;
@@ -464,9 +461,9 @@ negotiate_handshake_newstyle_options (struct connection *conn)
          * NBD_OPT_SET_META_CONTEXT used an export name, it must match
          * or else we drop the support for that context.
          */
-        if (check_export_name (conn, option, &data[4], exportnamelen,
+        if (check_export_name (option, &data[4], exportnamelen,
                                optlen - 6, true) == -1) {
-          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+          if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
           continue;
@@ -480,17 +477,16 @@ negotiate_handshake_newstyle_options (struct connection *conn)
          * client and let them try another NBD_OPT, rather than
          * disconnecting.
          */
-        if (finish_newstyle_options (conn, &exportsize) == -1) {
-          if (backend_finalize (backend, conn) == -1)
+        if (finish_newstyle_options (&exportsize) == -1) {
+          if (backend_finalize (backend) == -1)
             return -1;
-          backend_close (backend, conn);
-          if (send_newstyle_option_reply (conn, option,
-                                          NBD_REP_ERR_UNKNOWN) == -1)
+          backend_close (backend);
+          if (send_newstyle_option_reply (option, NBD_REP_ERR_UNKNOWN) == -1)
             return -1;
           continue;
         }
 
-        if (send_newstyle_option_reply_info_export (conn, option,
+        if (send_newstyle_option_reply_info_export (option,
                                                     NBD_REP_INFO,
                                                     NBD_INFO_EXPORT,
                                                     exportsize) == -1)
@@ -518,23 +514,23 @@ negotiate_handshake_newstyle_options (struct connection *conn)
       /* Unlike NBD_OPT_EXPORT_NAME, NBD_OPT_GO sends back an ACK
        * or ERROR packet.  If this was NBD_OPT_LIST, call .close.
        */
-      if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+      if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
         return -1;
 
       if (option == NBD_OPT_INFO) {
-        if (backend_finalize (backend, conn) == -1)
+        if (backend_finalize (backend) == -1)
           return -1;
-        backend_close (backend, conn);
+        backend_close (backend);
       }
 
       break;
 
     case NBD_OPT_STRUCTURED_REPLY:
       if (optlen != 0) {
-        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+        if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
-        if (conn_recv_full (conn, data, optlen,
+        if (conn_recv_full (data, optlen,
                             "read: %s: %m", name_of_nbd_opt (option)) == -1)
           return -1;
         continue;
@@ -547,14 +543,14 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         /* Must fail with ERR_UNSUP for qemu 4.2 to remain happy;
          * but failing with ERR_POLICY would have been nicer.
          */
-        if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
+        if (send_newstyle_option_reply (option, NBD_REP_ERR_UNSUP) == -1)
           return -1;
         debug ("newstyle negotiation: %s: structured replies are disabled",
                name_of_nbd_opt (option));
         break;
       }
 
-      if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+      if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
         return -1;
 
       conn->structured_replies = true;
@@ -569,14 +565,14 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         uint32_t querylen;
         const char *what;
 
-        if (conn_recv_full (conn, data, optlen, "read: %s: %m", optname) == -1)
+        if (conn_recv_full (data, optlen, "read: %s: %m", optname) == -1)
           return -1;
 
         /* Note that we support base:allocation whether or not the plugin
          * supports can_extents.
          */
         if (!conn->structured_replies) {
-          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+          if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
           continue;
@@ -593,7 +589,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
           debug ("newstyle negotiation: %s: invalid option length: %s",
                  optname, what);
 
-          if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_INVALID)
+          if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
           continue;
@@ -606,7 +602,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
         memcpy (&exportnamelen, &data[0], 4);
         exportnamelen = be32toh (exportnamelen);
         what = "validating export name";
-        if (check_export_name (conn, option, &data[4], exportnamelen,
+        if (check_export_name (option, &data[4], exportnamelen,
                                optlen - 8,
                                option == NBD_OPT_SET_META_CONTEXT) == -1)
           goto opt_meta_invalid_option_len;
@@ -630,13 +626,14 @@ negotiate_handshake_newstyle_options (struct connection *conn)
           conn->meta_context_base_allocation = false;
         if (nr_queries == 0) {
           if (option == NBD_OPT_LIST_META_CONTEXT) {
-            if (send_newstyle_option_reply_meta_context
-                (conn, option, NBD_REP_META_CONTEXT,
-                 0, "base:allocation") == -1)
+            if (send_newstyle_option_reply_meta_context (option,
+                                                         NBD_REP_META_CONTEXT,
+                                                         0, "base:allocation")
+                == -1)
               return -1;
           }
 
-          if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+          if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
             return -1;
         }
         else {
@@ -665,7 +662,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
                 querylen == 5 &&
                 strncmp (&data[opt_index], "base:", 5) == 0) {
               if (send_newstyle_option_reply_meta_context
-                  (conn, option, NBD_REP_META_CONTEXT,
+                  (option, NBD_REP_META_CONTEXT,
                    0, "base:allocation") == -1)
                 return -1;
             }
@@ -673,7 +670,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
             else if (querylen == 15 &&
                      strncmp (&data[opt_index], "base:allocation", 15) == 0) {
               if (send_newstyle_option_reply_meta_context
-                  (conn, option, NBD_REP_META_CONTEXT,
+                  (option, NBD_REP_META_CONTEXT,
                    option == NBD_OPT_SET_META_CONTEXT
                    ? base_allocation_id : 0,
                    "base:allocation") == -1)
@@ -686,7 +683,7 @@ negotiate_handshake_newstyle_options (struct connection *conn)
             opt_index += querylen;
             nr_queries--;
           }
-          if (send_newstyle_option_reply (conn, option, NBD_REP_ACK) == -1)
+          if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
             return -1;
         }
         debug ("newstyle negotiation: %s: reply complete", optname);
@@ -695,9 +692,9 @@ negotiate_handshake_newstyle_options (struct connection *conn)
 
     default:
       /* Unknown option. */
-      if (send_newstyle_option_reply (conn, option, NBD_REP_ERR_UNSUP) == -1)
+      if (send_newstyle_option_reply (option, NBD_REP_ERR_UNSUP) == -1)
         return -1;
-      if (conn_recv_full (conn, data, optlen,
+      if (conn_recv_full (data, optlen,
                           "reading unknown option data: conn->recv: %m") == -1)
         return -1;
     }
@@ -728,8 +725,9 @@ negotiate_handshake_newstyle_options (struct connection *conn)
 }
 
 int
-protocol_handshake_newstyle (struct connection *conn)
+protocol_handshake_newstyle (void)
 {
+  GET_CONN;
   struct nbd_new_handshake handshake;
   uint16_t gflags;
 
@@ -741,13 +739,13 @@ protocol_handshake_newstyle (struct connection *conn)
   handshake.version = htobe64 (NBD_NEW_VERSION);
   handshake.gflags = htobe16 (gflags);
 
-  if (conn->send (conn, &handshake, sizeof handshake, 0) == -1) {
+  if (conn->send (&handshake, sizeof handshake, 0) == -1) {
     nbdkit_error ("write: %s: %m", "sending newstyle handshake");
     return -1;
   }
 
   /* Client now sends us its 32 bit flags word ... */
-  if (conn_recv_full (conn, &conn->cflags, sizeof conn->cflags,
+  if (conn_recv_full (&conn->cflags, sizeof conn->cflags,
                       "reading initial client flags: conn->recv: %m") == -1)
     return -1;
   conn->cflags = be32toh (conn->cflags);
@@ -759,7 +757,7 @@ protocol_handshake_newstyle (struct connection *conn)
   }
 
   /* Receive newstyle options. */
-  if (negotiate_handshake_newstyle_options (conn) == -1)
+  if (negotiate_handshake_newstyle_options () == -1)
     return -1;
 
   return 0;

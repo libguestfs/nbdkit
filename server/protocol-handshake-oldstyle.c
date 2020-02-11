@@ -44,8 +44,9 @@
 #include "nbd-protocol.h"
 
 int
-protocol_handshake_oldstyle (struct connection *conn)
+protocol_handshake_oldstyle (void)
 {
+  GET_CONN;
   struct nbd_old_handshake handshake;
   uint64_t exportsize;
   uint16_t gflags, eflags;
@@ -55,7 +56,7 @@ protocol_handshake_oldstyle (struct connection *conn)
   /* With oldstyle, our only option if .open or friends fail is to
    * disconnect, as we cannot report the problem to the client.
    */
-  if (protocol_common_open (conn, &exportsize, &eflags) == -1)
+  if (protocol_common_open (&exportsize, &eflags) == -1)
     return -1;
 
   gflags = 0;
@@ -69,7 +70,7 @@ protocol_handshake_oldstyle (struct connection *conn)
   handshake.gflags = htobe16 (gflags);
   handshake.eflags = htobe16 (eflags);
 
-  if (conn->send (conn, &handshake, sizeof handshake, 0) == -1) {
+  if (conn->send (&handshake, sizeof handshake, 0) == -1) {
     nbdkit_error ("write: %m");
     return -1;
   }
