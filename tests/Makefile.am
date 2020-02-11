@@ -515,7 +515,7 @@ test_data_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # eval plugin test.
 TESTS += test-eval.sh
 
-# ext2 plugin test.
+# ext2 filter and plugin test.
 if HAVE_EXT2
 if HAVE_GUESTFISH
 

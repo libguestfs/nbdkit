@@ -1,0 +1,92 @@
+=head1 NAME
+
+nbdkit-ext2-filter - read and write files inside ext2, ext3 or
+ext4 filesystems
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=ext2 file fs.img ext2file=/disks/disk.raw
+
+=head1 DESCRIPTION
+
+C<nbdkit-ext2-filter> is an nbdkit filter which can read and
+write files inside ext2, ext3 or ext4 filesystem images.
+
+Suppose you have an ext2/3/4 filesystem image called F<fs.img>
+which contains inside itself a file called F<disk.raw>
+inside a directory on the filesystem called F</disks>, then
+you could serve that file over NBD using:
+
+ nbdkit --filter=ext2 file fs.img ext2file=/disks/disk.raw
+
+Commonly disk images are partitioned.  In that case, you must select
+just the partition of a disk image that contains an ext2 filesystem,
+by using L<nbdkit-partition-filter(1)>:
+
+ nbdkit --filter=ext2 --filter=partition file fs.img \
+    partition=1 ext2file=/disks/disk.raw
+
+This filter can both read and write to the file inside the filesystem.
+Use the I<-r> flag to force a readonly connection, but note this does
+I<not> guarantee that no writes are made to the filesystem.  In
+particular we may have to replay the ext3 journal in order to open a
+filesystem even read-only.
+
+The filter does I<not> support multiple parallel connections, because
+there is a risk of corrupting the filesystem (as if the filesystem was
+mounted by multiple machines).  If a second connection is made to
+nbdkit, it will block until the first connection closes.
+
+The filter is implemented using the ext2fs library which is provided
+in most Linux distros, and also available as part of the e2fsprogs
+project.
+
+L<nbdkit-guestfs-plugin(1)> is a more generic plugin which can read
+files from all kinds of different filesystem types, even if they are
+partitioned or use logical volumes.  It uses libguestfs instead of
+e2fsprogs.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<ext2file=>PATH
+
+The full path of the file within the filesystem that will be exposed
+over NBD.  The path must be absolute (starts with C</>).
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-ext2-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-ext2-filter> first appeared in nbdkit 1.18, replacing an older
+C<nbdkit-ext2-plugin> from nbdkit 1.4.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-partition-filter(1)>,
+L<nbdkit-guestfs-plugin(1)>,
+L<http://e2fsprogs.sourceforge.net/>,
+L<fuse2fs(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018-2020 Red Hat Inc.

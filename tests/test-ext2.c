@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -43,16 +43,12 @@
 
 #include "test.h"
 
-int
-main (int argc, char *argv[])
+static int
+do_test (void)
 {
   guestfs_h *g;
   int r;
   char *data;
-
-  if (test_start_nbdkit ("ext2", "-r", "disk=ext2.img", "file=/disks/disk.img",
-                         NULL) == -1)
-    exit (EXIT_FAILURE);
 
   g = guestfs_create ();
   if (g == NULL) {
@@ -89,5 +85,21 @@ main (int argc, char *argv[])
   }
 
   guestfs_close (g);
-  exit (EXIT_SUCCESS);
+  return 0;
+}
+
+int
+main (int argc, char *argv[])
+{
+  /* Older plugin */
+  if (test_start_nbdkit ("ext2", "-r", "disk=ext2.img", "file=/disks/disk.img",
+                         NULL) == -1)
+  do_test ();
+
+  /* Newer filter */
+  if (test_start_nbdkit ("--filter", "ext2", "-r", "file", "ext2.img",
+                         "ext2file=/disks/disk.img", NULL) == -1)
+    exit (EXIT_FAILURE);
+  do_test ();
+  return 0;
 }

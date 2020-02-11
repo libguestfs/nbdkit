@@ -97,6 +97,7 @@ filters="\
         cow \
         delay \
         error \
+	ext2 \
         extentlist \
         fua \
         ip \
@@ -871,10 +872,10 @@ dnl Check for guestfish (only needed for some of the tests).
 AC_CHECK_PROG([GUESTFISH], [guestfish], [guestfish], [no])
 AM_CONDITIONAL([HAVE_GUESTFISH], [test "x$GUESTFISH" != "xno"])
 
-dnl Check for ext2fs and com_err, for the ext2 plugin.
+dnl Check for ext2fs and com_err, for the ext2 filter and plugin.
 AC_ARG_WITH([ext2],
     [AS_HELP_STRING([--without-ext2],
-                    [disable ext2 plugin @<:@default=check@:>@])],
+                    [disable ext2 filter @<:@default=check@:>@])],
     [],
     [with_ext2=check])
 AS_IF([test "$with_ext2" != "no"], [
@@ -986,6 +987,7 @@ AC_CONFIG_FILES([Makefile
                  filters/cow/Makefile
                  filters/delay/Makefile
                  filters/error/Makefile
+                 filters/ext2/Makefile
                  filters/extentlist/Makefile
                  filters/fua/Makefile
                  filters/ip/Makefile
@@ -1090,6 +1092,8 @@ feature "tcl .................................... " \
 echo
 echo "Optional filters:"
 echo
+feature "ext2 ................................... " \
+        test "x$HAVE_EXT2_TRUE" = "x"
 feature "xz ..................................... " \
         test "x$HAVE_LIBLZMA_TRUE" = "x"
 
