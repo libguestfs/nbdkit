@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -855,7 +855,7 @@ start_serving (void)
     debug ("mlockall done");
 #else
     fprintf (stderr, "%s: mlockall (--swap option) "
-             "is not supported on this platform\n");
+             "is not supported on this platform\n", program_name);
     exit (EXIT_FAILURE);
 #endif
   }
