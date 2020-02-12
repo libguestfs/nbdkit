@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -40,6 +40,7 @@
 #include <pthread.h>
 
 #define NBDKIT_API_VERSION 2
+#define NBDKIT_INTERNAL
 #include "nbdkit-plugin.h"
 #include "nbdkit-filter.h"
 #include "cleanup.h"

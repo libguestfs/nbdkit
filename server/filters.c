@@ -127,9 +127,8 @@ filter_dump_fields (struct backend *b)
 }
 
 static int
-next_config (void *nxdata, const char *key, const char *value)
+next_config (struct backend *b, const char *key, const char *value)
 {
-  struct backend *b = nxdata;
   b->config (b, key, value);
   return 0;
 }
@@ -151,9 +150,8 @@ filter_config (struct backend *b, const char *key, const char *value)
 }
 
 static int
-next_config_complete (void *nxdata)
+next_config_complete (struct backend *b)
 {
-  struct backend *b = nxdata;
   b->config_complete (b);
   return 0;
 }
@@ -174,13 +172,6 @@ filter_config_complete (struct backend *b)
 }
 
 static int
-next_preconnect (void *nxdata, int readonly)
-{
-  struct backend *b_next = nxdata;
-  return b_next->preconnect (b_next, readonly);
-}
-
-static int
 filter_preconnect (struct backend *b, int readonly)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
@@ -188,7 +179,7 @@ filter_preconnect (struct backend *b, int readonly)
   debug ("%s: preconnect", b->name);
 
   if (f->filter.preconnect)
-    return f->filter.preconnect (next_preconnect, b->next, readonly);
+    return f->filter.preconnect (b->next->preconnect, b->next, readonly);
   else
     return b->next->preconnect (b->next, readonly);
 }
@@ -202,14 +193,6 @@ plugin_magic_config_key (struct backend *b)
   return b->next->magic_config_key (b->next);
 }
 
-static int
-next_open (void *nxdata, int readonly)
-{
-  struct backend *b_next = nxdata;
-
-  return backend_open (b_next, readonly);
-}
-
 static void *
 filter_open (struct backend *b, int readonly)
 {
@@ -220,7 +203,7 @@ filter_open (struct backend *b, int readonly)
    * inner-to-outer ordering.
    */
   if (f->filter.open)
-    handle = f->filter.open (next_open, b->next, readonly);
+    handle = f->filter.open (backend_open, b->next, readonly);
   else if (backend_open (b->next, readonly) == -1)
     handle = NULL;
   else
@@ -237,171 +220,26 @@ filter_close (struct backend *b, void *handle)
     f->filter.close (handle);
 }
 
-/* The next_functions structure contains pointers to backend
- * functions.  These are only needed for type safety (nxdata is void
- * pointer, backend_* functions expect a struct backend * parameter).
- * nxdata is a pointer to the next backend in the linked list.
- */
-
-static int
-next_reopen (void *nxdata, int readonly)
-{
-  struct backend *b_next = nxdata;
-  return backend_reopen (b_next, readonly);
-}
-
-static int64_t
-next_get_size (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_get_size (b_next);
-}
-
-static int
-next_can_write (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_write (b_next);
-}
-
-static int
-next_can_flush (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_flush (b_next);
-}
-
-static int
-next_is_rotational (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_is_rotational (b_next);
-}
-
-static int
-next_can_trim (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_trim (b_next);
-}
-
-static int
-next_can_zero (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_zero (b_next);
-}
-
-static int
-next_can_fast_zero (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_fast_zero (b_next);
-}
-
-static int
-next_can_extents (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_extents (b_next);
-}
-
-static int
-next_can_fua (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_fua (b_next);
-}
-
-static int
-next_can_multi_conn (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_multi_conn (b_next);
-}
-
-static int
-next_can_cache (void *nxdata)
-{
-  struct backend *b_next = nxdata;
-  return backend_can_cache (b_next);
-}
-
-static int
-next_pread (void *nxdata, void *buf, uint32_t count, uint64_t offset,
-            uint32_t flags, int *err)
-{
-  struct backend *b_next = nxdata;
-  return backend_pread (b_next, buf, count, offset, flags, err);
-}
-
-static int
-next_pwrite (void *nxdata, const void *buf, uint32_t count, uint64_t offset,
-             uint32_t flags, int *err)
-{
-  struct backend *b_next = nxdata;
-  return backend_pwrite (b_next, buf, count, offset, flags, err);
-}
-
-static int
-next_flush (void *nxdata, uint32_t flags, int *err)
-{
-  struct backend *b_next = nxdata;
-  return backend_flush (b_next, flags, err);
-}
-
-static int
-next_trim (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
-           int *err)
-{
-  struct backend *b_next = nxdata;
-  return backend_trim (b_next, count, offset, flags, err);
-}
-
-static int
-next_zero (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
-           int *err)
-{
-  struct backend *b_next = nxdata;
-  return backend_zero (b_next, count, offset, flags, err);
-}
-
-static int
-next_extents (void *nxdata, uint32_t count, uint64_t offset, uint32_t flags,
-              struct nbdkit_extents *extents, int *err)
-{
-  struct backend *b_next = nxdata;
-  return backend_extents (b_next, count, offset, flags, extents, err);
-}
-
-static int
-next_cache (void *nxdata, uint32_t count, uint64_t offset,
-            uint32_t flags, int *err)
-{
-  struct backend *b_next = nxdata;
-  return backend_cache (b_next, count, offset, flags, err);
-}
-
 static struct nbdkit_next_ops next_ops = {
-  .reopen = next_reopen,
-  .get_size = next_get_size,
-  .can_write = next_can_write,
-  .can_flush = next_can_flush,
-  .is_rotational = next_is_rotational,
-  .can_trim = next_can_trim,
-  .can_zero = next_can_zero,
-  .can_fast_zero = next_can_fast_zero,
-  .can_extents = next_can_extents,
-  .can_fua = next_can_fua,
-  .can_multi_conn = next_can_multi_conn,
-  .can_cache = next_can_cache,
-  .pread = next_pread,
-  .pwrite = next_pwrite,
-  .flush = next_flush,
-  .trim = next_trim,
-  .zero = next_zero,
-  .extents = next_extents,
-  .cache = next_cache,
+  .reopen = backend_reopen,
+  .get_size = backend_get_size,
+  .can_write = backend_can_write,
+  .can_flush = backend_can_flush,
+  .is_rotational = backend_is_rotational,
+  .can_trim = backend_can_trim,
+  .can_zero = backend_can_zero,
+  .can_fast_zero = backend_can_fast_zero,
+  .can_extents = backend_can_extents,
+  .can_fua = backend_can_fua,
+  .can_multi_conn = backend_can_multi_conn,
+  .can_cache = backend_can_cache,
+  .pread = backend_pread,
+  .pwrite = backend_pwrite,
+  .flush = backend_flush,
+  .trim = backend_trim,
+  .zero = backend_zero,
+  .extents = backend_extents,
+  .cache = backend_cache,
 };
 
 static int
