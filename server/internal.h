@@ -147,7 +147,6 @@ extern unsigned int get_socket_activation (void);
 extern void change_user (void);
 
 /* connections.c */
-struct connection;
 
 /* Flags for connection_send_function */
 enum {
