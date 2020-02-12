@@ -106,9 +106,10 @@ raw_read_blk (io_channel channel,
   if (data->next_ops->pread (data->nxdata, buf, size, location, 0, &errno) == 0)
     return 0;
 
+  retval = errno;
   if (channel->read_error)
     retval = (channel->read_error)(channel, block, count, buf,
-                 size, actual, errno);
+                 size, actual, retval);
   return retval;
 }
 
@@ -141,9 +142,10 @@ raw_write_blk (io_channel channel,
                               &errno) == 0)
     return 0;
 
+  retval = errno;
   if (channel->write_error)
     retval = (channel->write_error)(channel, block, count, buf,
-                                    size, actual, errno);
+                                    size, actual, retval);
   return retval;
 }
 
