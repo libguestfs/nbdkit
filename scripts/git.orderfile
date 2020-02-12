@@ -41,6 +41,7 @@
 # Documentation.
 docs/*
 *.pod
+include/*.h
 
 # Build files.
 configure.ac
