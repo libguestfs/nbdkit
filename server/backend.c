@@ -202,15 +202,13 @@ backend_finalize (struct backend *b, struct connection *conn)
   if (h->state & HANDLE_FAILED)
     return -1;
 
-  if (h->handle) {
-    assert (h->state & HANDLE_CONNECTED);
+  assert (h->state & HANDLE_OPEN);
+  if (h->state & HANDLE_CONNECTED) {
     if (b->finalize (b, conn, h->handle) == -1) {
       h->state |= HANDLE_FAILED;
       return -1;
     }
   }
-  else
-    assert (! (h->state & HANDLE_CONNECTED));
 
   if (b->i)
     return backend_finalize (b->next, conn);
