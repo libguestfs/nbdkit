@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -202,8 +202,8 @@ backend_finalize (struct backend *b, struct connection *conn)
   if (h->state & HANDLE_FAILED)
     return -1;
 
-  assert (h->state & HANDLE_OPEN);
   if (h->state & HANDLE_CONNECTED) {
+    assert (h->state & HANDLE_OPEN && h->handle);
     if (b->finalize (b, conn, h->handle) == -1) {
       h->state |= HANDLE_FAILED;
       return -1;
