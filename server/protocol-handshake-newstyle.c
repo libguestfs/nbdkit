@@ -478,9 +478,9 @@ negotiate_handshake_newstyle_options (void)
          * disconnecting.
          */
         if (finish_newstyle_options (&exportsize) == -1) {
-          if (backend_finalize (backend) == -1)
+          if (backend_finalize (top) == -1)
             return -1;
-          backend_close (backend);
+          backend_close (top);
           if (send_newstyle_option_reply (option, NBD_REP_ERR_UNKNOWN) == -1)
             return -1;
           continue;
@@ -518,9 +518,9 @@ negotiate_handshake_newstyle_options (void)
         return -1;
 
       if (option == NBD_OPT_INFO) {
-        if (backend_finalize (backend) == -1)
+        if (backend_finalize (top) == -1)
           return -1;
-        backend_close (backend);
+        backend_close (top);
       }
 
       break;

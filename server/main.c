@@ -102,8 +102,8 @@ bool verbose;                   /* -v */
 bool vsock;                     /* --vsock */
 unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
 
-/* The currently loaded plugin. */
-struct backend *backend;
+/* The linked list of zero or more filters, and one plugin. */
+struct backend *top;
 
 static char *random_fifo_dir = NULL;
 static char *random_fifo = NULL;
@@ -555,10 +555,10 @@ main (int argc, char *argv[])
 
   /* Open the plugin (first) and then wrap the plugin with the
    * filters.  The filters are wrapped in reverse order that they
-   * appear on the command line so that in the end ‘backend’ points to
+   * appear on the command line so that in the end ‘top’ points to
    * the first filter on the command line.
    */
-  backend = open_plugin_so (0, filename, short_name);
+  top = open_plugin_so (0, filename, short_name);
   i = 1;
   while (filter_filenames) {
     struct filter_filename *t = filter_filenames;
@@ -566,7 +566,7 @@ main (int argc, char *argv[])
     filename = t->filename;
     short_name = is_short_name (filename);
 
-    backend = open_filter_so (backend, i++, filename, short_name);
+    top = open_filter_so (top, i++, filename, short_name);
 
     filter_filenames = t->next;
     free (t);
@@ -586,7 +586,7 @@ main (int argc, char *argv[])
       printf ("\n");
       b->usage (b);
     }
-    backend->free (backend);
+    top->free (top);
     exit (EXIT_SUCCESS);
   }
 
@@ -601,7 +601,7 @@ main (int argc, char *argv[])
         printf (" %s", v);
       printf ("\n");
     }
-    backend->free (backend);
+    top->free (top);
     exit (EXIT_SUCCESS);
   }
 
@@ -615,16 +615,16 @@ main (int argc, char *argv[])
    * first parameter is bare it is prefixed with the key "script", and
    * any other bare parameters are errors.
    */
-  magic_config_key = backend->magic_config_key (backend);
+  magic_config_key = top->magic_config_key (top);
   for (i = 0; optind < argc; ++i, ++optind) {
     p = strchr (argv[optind], '=');
     if (p && is_config_key (argv[optind], p - argv[optind])) { /* key=value */
       *p = '\0';
-      backend->config (backend, argv[optind], p+1);
+      top->config (top, argv[optind], p+1);
     }
     else if (magic_config_key == NULL) {
       if (i == 0)               /* magic script parameter */
-        backend->config (backend, "script", argv[optind]);
+        top->config (top, "script", argv[optind]);
       else {
         fprintf (stderr,
                  "%s: expecting key=value on the command line but got: %s\n",
@@ -633,7 +633,7 @@ main (int argc, char *argv[])
       }
     }
     else {                      /* magic config key */
-      backend->config (backend, magic_config_key, argv[optind]);
+      top->config (top, magic_config_key, argv[optind]);
     }
   }
 
@@ -643,12 +643,12 @@ main (int argc, char *argv[])
    * parameters.
    */
   if (dump_plugin) {
-    backend->dump_fields (backend);
-    backend->free (backend);
+    top->dump_fields (top);
+    top->free (top);
     exit (EXIT_SUCCESS);
   }
 
-  backend->config_complete (backend);
+  top->config_complete (top);
 
   /* Select the correct thread model based on config. */
   lock_init_thread_model ();
@@ -660,8 +660,8 @@ main (int argc, char *argv[])
 
   start_serving ();
 
-  backend->free (backend);
-  backend = NULL;
+  top->free (top);
+  top = NULL;
 
   free (unixsocket);
   free (pidfile);

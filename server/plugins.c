@@ -144,7 +144,7 @@ plugin_dump_fields (struct backend *b)
   printf ("max_thread_model=%s\n",
           name_of_thread_model (p->plugin._thread_model));
   printf ("thread_model=%s\n",
-          name_of_thread_model (backend->thread_model (backend)));
+          name_of_thread_model (top->thread_model (top)));
   printf ("errno_is_preserved=%d\n", !!p->plugin.errno_is_preserved);
   if (p->plugin.magic_config_key)
     printf ("magic_config_key=%s\n", p->plugin.magic_config_key);

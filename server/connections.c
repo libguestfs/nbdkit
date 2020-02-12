@@ -146,23 +146,23 @@ handle_single_connection (int sockin, int sockout)
 
   lock_connection ();
 
-  if (backend->thread_model (backend) < NBDKIT_THREAD_MODEL_PARALLEL ||
+  if (top->thread_model (top) < NBDKIT_THREAD_MODEL_PARALLEL ||
       nworkers == 1)
     nworkers = 0;
   conn = new_connection (sockin, sockout, nworkers);
   if (!conn)
     goto done;
 
-  /* NB: because of an asynchronous exit backend can be set to NULL at
+  /* NB: because of an asynchronous exit top can be set to NULL at
    * just about any time.
    */
-  if (backend)
-    plugin_name = backend->plugin_name (backend);
+  if (top)
+    plugin_name = top->plugin_name (top);
   else
     plugin_name = "(unknown)";
   threadlocal_set_name (plugin_name);
 
-  if (backend && backend->preconnect (backend, read_only) == -1)
+  if (top && top->preconnect (top, read_only) == -1)
     goto done;
 
   /* NBD handshake.
@@ -225,7 +225,7 @@ handle_single_connection (int sockin, int sockout)
 
   /* Finalize (for filters), called just before close. */
   lock_request ();
-  r = backend_finalize (backend);
+  r = backend_finalize (top);
   unlock_request ();
   if (r == -1)
     goto done;
@@ -251,12 +251,12 @@ new_connection (int sockin, int sockout, int nworkers)
 
   conn->status_pipe[0] = conn->status_pipe[1] = -1;
 
-  conn->handles = calloc (backend->i + 1, sizeof *conn->handles);
+  conn->handles = calloc (top->i + 1, sizeof *conn->handles);
   if (conn->handles == NULL) {
     perror ("malloc");
     goto error;
   }
-  conn->nr_handles = backend->i + 1;
+  conn->nr_handles = top->i + 1;
   for_each_backend (b)
     reset_b_conn_handle (&conn->handles[b->i]);
 
@@ -277,7 +277,7 @@ new_connection (int sockin, int sockout, int nworkers)
      * we aren't accepting until the plugin is not running, making
      * non-atomicity okay.
      */
-    assert (backend->thread_model (backend) <=
+    assert (top->thread_model (top) <=
             NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
     lock_request (NULL);
     if (pipe (conn->status_pipe)) {
@@ -354,7 +354,7 @@ free_connection (struct connection *conn)
    */
   if (!quit) {
     lock_request ();
-    backend_close (backend);
+    backend_close (top);
     unlock_request ();
   }
 

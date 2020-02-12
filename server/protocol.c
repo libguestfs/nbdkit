@@ -72,7 +72,7 @@ validate_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
   case NBD_CMD_TRIM:
   case NBD_CMD_WRITE_ZEROES:
   case NBD_CMD_BLOCK_STATUS:
-    if (!backend_valid_range (backend, offset, count)) {
+    if (!backend_valid_range (top, offset, count)) {
       /* XXX Allow writes to extend the disk? */
       nbdkit_error ("invalid request: %s: offset and count are out of range: "
                     "offset=%" PRIu64 " count=%" PRIu32,
@@ -238,31 +238,31 @@ handle_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
 
   switch (cmd) {
   case NBD_CMD_READ:
-    if (backend_pread (backend, buf, count, offset, 0, &err) == -1)
+    if (backend_pread (top, buf, count, offset, 0, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_WRITE:
     if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
-    if (backend_pwrite (backend, buf, count, offset, f, &err) == -1)
+    if (backend_pwrite (top, buf, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_FLUSH:
-    if (backend_flush (backend, 0, &err) == -1)
+    if (backend_flush (top, 0, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_TRIM:
     if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
-    if (backend_trim (backend, count, offset, f, &err) == -1)
+    if (backend_trim (top, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_CACHE:
-    if (backend_cache (backend, count, offset, 0, &err) == -1)
+    if (backend_cache (top, count, offset, 0, &err) == -1)
       return err;
     break;
 
@@ -273,14 +273,14 @@ handle_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
       f |= NBDKIT_FLAG_FUA;
     if (flags & NBD_CMD_FLAG_FAST_ZERO)
       f |= NBDKIT_FLAG_FAST_ZERO;
-    if (backend_zero (backend, count, offset, f, &err) == -1)
+    if (backend_zero (top, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_BLOCK_STATUS:
     if (flags & NBD_CMD_FLAG_REQ_ONE)
       f |= NBDKIT_FLAG_REQ_ONE;
-    if (backend_extents (backend, count, offset, f,
+    if (backend_extents (top, count, offset, f,
                          extents, &err) == -1)
       return err;
     break;
@@ -683,7 +683,7 @@ protocol_recv_request_send_reply (void)
 
     /* Allocate the extents list for block status only. */
     if (cmd == NBD_CMD_BLOCK_STATUS) {
-      extents = nbdkit_extents_new (offset, backend_get_size (backend));
+      extents = nbdkit_extents_new (offset, backend_get_size (top));
       if (extents == NULL) {
         error = ENOMEM;
         goto send_reply;

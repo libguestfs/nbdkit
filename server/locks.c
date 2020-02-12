@@ -69,7 +69,7 @@ name_of_thread_model (int model)
 void
 lock_init_thread_model (void)
 {
-  thread_model = backend->thread_model (backend);
+  thread_model = top->thread_model (top);
   debug ("using thread model: %s", name_of_thread_model (thread_model));
 }
 
