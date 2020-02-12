@@ -154,7 +154,7 @@ int
 backend_open (struct backend *b, int readonly)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   controlpath_debug ("%s: open readonly=%d", b->name, readonly);
 
@@ -178,7 +178,7 @@ backend_open (struct backend *b, int readonly)
 
   h->state |= HANDLE_OPEN;
   if (b->i) /* A filter must not succeed unless its backend did also */
-    assert (conn->handles[b->i - 1].handle);
+    assert (get_handle (conn, b->i-1)->handle != NULL);
   return 0;
 }
 
@@ -186,7 +186,7 @@ int
 backend_prepare (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   assert (h->handle);
   assert ((h->state & (HANDLE_OPEN | HANDLE_CONNECTED)) == HANDLE_OPEN);
@@ -209,7 +209,7 @@ int
 backend_finalize (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   /* Call these in reverse order to .prepare above, starting from the
    * filter furthest away from the plugin, and matching .close order.
@@ -238,7 +238,7 @@ void
 backend_close (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   /* outer-to-inner order, opposite .open */
   controlpath_debug ("%s: close", b->name);
@@ -249,7 +249,7 @@ backend_close (struct backend *b)
   }
   else
     assert (! (h->state & HANDLE_OPEN));
-  reset_b_conn_handle (h);
+  reset_handle (h);
   if (b->i)
     backend_close (b->next);
 }
@@ -258,7 +258,7 @@ bool
 backend_valid_range (struct backend *b, uint64_t offset, uint32_t count)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   assert (h->exportsize <= INT64_MAX); /* Guaranteed by negotiation phase */
   return count > 0 && offset <= h->exportsize &&
@@ -291,7 +291,7 @@ int64_t
 backend_get_size (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   controlpath_debug ("%s: get_size", b->name);
 
@@ -305,7 +305,7 @@ int
 backend_can_write (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   controlpath_debug ("%s: can_write", b->name);
 
@@ -319,7 +319,7 @@ int
 backend_can_flush (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   controlpath_debug ("%s: can_flush", b->name);
 
@@ -333,7 +333,7 @@ int
 backend_is_rotational (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   controlpath_debug ("%s: is_rotational", b->name);
 
@@ -347,7 +347,7 @@ int
 backend_can_trim (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   int r;
 
   controlpath_debug ("%s: can_trim", b->name);
@@ -368,7 +368,7 @@ int
 backend_can_zero (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   int r;
 
   controlpath_debug ("%s: can_zero", b->name);
@@ -389,7 +389,7 @@ int
 backend_can_fast_zero (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   int r;
 
   controlpath_debug ("%s: can_fast_zero", b->name);
@@ -410,7 +410,7 @@ int
 backend_can_extents (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   controlpath_debug ("%s: can_extents", b->name);
 
@@ -424,7 +424,7 @@ int
 backend_can_fua (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   int r;
 
   controlpath_debug ("%s: can_fua", b->name);
@@ -445,7 +445,7 @@ int
 backend_can_multi_conn (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   assert (h->handle && (h->state & HANDLE_CONNECTED));
   controlpath_debug ("%s: can_multi_conn", b->name);
@@ -459,7 +459,7 @@ int
 backend_can_cache (struct backend *b)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
 
   controlpath_debug ("%s: can_cache", b->name);
 
@@ -475,7 +475,7 @@ backend_pread (struct backend *b,
                uint32_t flags, int *err)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   int r;
 
   assert (h->handle && (h->state & HANDLE_CONNECTED));
@@ -496,7 +496,7 @@ backend_pwrite (struct backend *b,
                 uint32_t flags, int *err)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
@@ -520,7 +520,7 @@ backend_flush (struct backend *b,
                uint32_t flags, int *err)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   int r;
 
   assert (h->handle && (h->state & HANDLE_CONNECTED));
@@ -540,7 +540,7 @@ backend_trim (struct backend *b,
               int *err)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
@@ -566,7 +566,7 @@ backend_zero (struct backend *b,
               int *err)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   bool fast = !!(flags & NBDKIT_FLAG_FAST_ZERO);
   int r;
@@ -601,7 +601,7 @@ backend_extents (struct backend *b,
                  struct nbdkit_extents *extents, int *err)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   int r;
 
   assert (h->handle && (h->state & HANDLE_CONNECTED));
@@ -632,7 +632,7 @@ backend_cache (struct backend *b,
                uint32_t flags, int *err)
 {
   GET_CONN;
-  struct b_conn_handle *h = &conn->handles[b->i];
+  struct handle *h = get_handle (conn, b->i);
   int r;
 
   assert (h->handle && (h->state & HANDLE_CONNECTED));

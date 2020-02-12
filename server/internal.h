@@ -170,16 +170,24 @@ typedef int (*connection_send_function) (const void *buf, size_t len,
   __attribute__((__nonnull__ (1)));
 typedef void (*connection_close_function) (void);
 
+/* struct handle stores data per connection and backend.  Primarily
+ * this is the filter or plugin handle, but other state is also stored
+ * here.
+ *
+ * Use get_handle (conn, 0) to return the struct handle for the
+ * plugin, and get_handle (conn, b->i) to return the struct handle for
+ * the i'th backend (if b->i >= 1 then for a filter).
+ */
 enum {
   HANDLE_OPEN = 1,      /* Set if .open passed, so .close is needed */
   HANDLE_CONNECTED = 2, /* Set if .prepare passed, so .finalize is needed */
   HANDLE_FAILED = 4,    /* Set if .finalize failed */
 };
 
-struct b_conn_handle {
-  void *handle;
+struct handle {
+  void *handle;         /* Plugin or filter handle. */
 
-  unsigned char state; /* Bitmask of HANDLE_* values */
+  unsigned char state;  /* Bitmask of HANDLE_* values */
 
   uint64_t exportsize;
   int can_write;
@@ -195,7 +203,7 @@ struct b_conn_handle {
 };
 
 static inline void
-reset_b_conn_handle (struct b_conn_handle *h)
+reset_handle (struct handle *h)
 {
   h->handle = NULL;
   h->state = 0;
@@ -222,7 +230,7 @@ struct connection {
   void *crypto_session;
   int nworkers;
 
-  struct b_conn_handle *handles;
+  struct handle *handles;       /* One per plugin and filter. */
   size_t nr_handles;
 
   char exportname[NBD_MAX_STRING + 1];
@@ -238,6 +246,12 @@ struct connection {
   connection_send_function send;
   connection_close_function close;
 };
+
+static inline struct handle *
+get_handle (struct connection *conn, int i)
+{
+  return &conn->handles[i];
+}
 
 extern void handle_single_connection (int sockin, int sockout);
 extern int connection_get_status (void);

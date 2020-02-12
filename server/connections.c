@@ -58,15 +58,6 @@ static int raw_send_socket (const void *buf, size_t len, int flags);
 static int raw_send_other (const void *buf, size_t len, int flags);
 static void raw_close (void);
 
-void *
-connection_get_handle (size_t i)
-{
-  GET_CONN;
-
-  assert (i < conn->nr_handles);
-  return conn->handles[i].handle;
-}
-
 int
 connection_get_status (void)
 {
@@ -258,7 +249,7 @@ new_connection (int sockin, int sockout, int nworkers)
   }
   conn->nr_handles = top->i + 1;
   for_each_backend (b)
-    reset_b_conn_handle (&conn->handles[b->i]);
+    reset_handle (get_handle (conn, b->i));
 
   conn->status = 1;
   conn->nworkers = nworkers;
