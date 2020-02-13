@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <libgen.h>
 
 #define NBDKIT_API_VERSION 2
 
@@ -254,10 +255,9 @@ vddk_config (const char *key, const char *value)
  * Thus, no return value is needed.
  */
 static void
-perform_reexec (const char *prepend)
+perform_reexec (const char *env, const char *prepend)
 {
   CLEANUP_FREE char *library = NULL;
-  const char *env = getenv ("LD_LIBRARY_PATH");
   int argc = 0;
   CLEANUP_FREE char **argv = NULL;
   int fd;
@@ -334,13 +334,39 @@ perform_reexec (const char *prepend)
   nbdkit_debug ("failure to execvp: %m");
 }
 
+/* See if prepend is already in LD_LIBRARY_PATH; if not, re-exec. */
+static void
+check_reexec (const char *prepend)
+{
+  const char *env = getenv ("LD_LIBRARY_PATH");
+  CLEANUP_FREE char *haystack = NULL;
+  CLEANUP_FREE char *needle = NULL;
+
+  if (reexeced)
+    return;
+  if (env && asprintf (&haystack, ":%s:", env) >= 0 &&
+      asprintf (&needle, ":%s:", prepend) >= 0 &&
+      strstr (haystack, needle) != NULL)
+    return;
+
+  perform_reexec (env, prepend);
+}
+
 /* Load the VDDK library. */
 static void
 load_library (void)
 {
   static const char *sonames[] = {
-    /* Prefer the newest library in case multiple exist. */
+    /* Prefer the newest library in case multiple exist.  Check two
+     * possible directories: the usual VDDK installation puts .so
+     * files in an arch-specific subdirectory of $libdir (although
+     * only VDDK 5 supported 32-bit); but our testsuite is easier
+     * to write if we point libdir directly to a stub .so.
+     */
+    "lib64/libvixDiskLib.so.6",
     "libvixDiskLib.so.6",
+    "lib64/libvixDiskLib.so.5",
+    "lib32/libvixDiskLib.so.5",
     "libvixDiskLib.so.5",
   };
   size_t i;
@@ -348,9 +374,25 @@ load_library (void)
 
   /* Load the library. */
   for (i = 0; i < sizeof sonames / sizeof sonames[0]; ++i) {
-    dl = dlopen (sonames[i], RTLD_NOW);
-    if (dl != NULL)
+    CLEANUP_FREE char *path;
+
+    /* Set the full path so that dlopen will preferentially load the
+     * system libraries from the same directory.
+     */
+    if (asprintf (&path, "%s/%s", libdir, sonames[i]) == -1) {
+      nbdkit_error ("asprintf: %m");
+      exit (EXIT_FAILURE);
+    }
+
+    dl = dlopen (path, RTLD_NOW);
+    if (dl != NULL) {
+      /* Now that we found the library, ensure that LD_LIBRARY_PATH
+       * includes its directory for all future loads.  This may modify
+       * path in-place and/or re-exec nbdkit, but that's okay.
+       */
+      check_reexec (dirname (path));
       break;
+    }
     if (i == 0) {
       orig_error = dlerror ();
       if (orig_error)
@@ -358,11 +400,9 @@ load_library (void)
     }
   }
   if (dl == NULL) {
-    if (!reexeced && libdir)
-      perform_reexec (libdir); /* TODO: Use correct dir */
     nbdkit_error ("%s\n\n"
                   "If '%s' is located on a non-standard path you may need to\n"
-                  "set $LD_LIBRARY_PATH or edit /etc/ld.so.conf.\n\n"
+                  "set libdir=/path/to/vmware-vix-disklib-distrib.\n\n"
                   "See the nbdkit-vddk-plugin(1) man page for details.",
                   orig_error ? : "(unknown error)", sonames[0]);
     exit (EXIT_FAILURE);
@@ -453,18 +493,26 @@ vddk_config_complete (void)
 #undef missing
   }
 
+  if (!libdir) {
+    libdir = strdup (VDDK_LIBDIR);
+    if (!libdir) {
+      nbdkit_error ("strdup: %m");
+      return -1;
+    }
+  }
+
   load_library ();
 
   /* Initialize VDDK library. */
   DEBUG_CALL ("VixDiskLib_InitEx",
               "%d, %d, &debug_fn, &error_fn, &error_fn, %s, %s",
               VDDK_MAJOR, VDDK_MINOR,
-              libdir ? : VDDK_LIBDIR, config ? : "NULL");
+              libdir, config ? : "NULL");
   err = VixDiskLib_InitEx (VDDK_MAJOR, VDDK_MINOR,
                            &debug_function, /* log function */
                            &error_function, /* warn function */
                            &error_function, /* panic function */
-                           libdir ? : VDDK_LIBDIR, config);
+                           libdir, config);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_InitEx");
     exit (EXIT_FAILURE);

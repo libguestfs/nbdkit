@@ -233,25 +233,46 @@ This parameter is ignored for backwards compatibility.
 
 =head1 LIBRARY AND CONFIG FILE LOCATIONS
 
-If the VDDK library (F<libvixDiskLib.so.I<N>>) is located on a
-non-standard path, you may need to set C<LD_LIBRARY_PATH> or modify
-F</etc/ld.so.conf> before this plugin will work.  In addition you may
-want to set the C<libdir> parameter so that the VDDK library can load
-plugins like Advanced Transport.
+The VDDK library should not be placed on a system library path such as
+F</usr/lib>.  The reason for this is that the VDDK library is shipped
+with recompiled libraries like F<libcrypto.so> and F<libstdc++.so>
+that can conflict with system libraries.
 
-Usually the VDDK distribution directory should be passed as the
-C<libdir> parameter and set C<LD_LIBRARY_PATH> to the F<lib64>
-subdirectory:
+You have two choices:
 
- LD_LIBRARY_PATH=/path/to/vmware-vix-disklib-distrib/lib64 \
+=over 4
+
+=item *
+
+Place VDDK in the default libdir which is compiled into this plugin,
+for example:
+
+ $ nbdkit vddk --dump-plugin | grep ^vddk_default_libdir
+ vddk_default_libdir=/usr/lib64/vmware-vix-disklib
+
+=item *
+
+But the most common way is to set the C<libdir> parameter to point to
+F<vmware-vix-disklib-distrib/> (which you can unpack anywhere you
+like), and this plugin will find the VDDK library from there.  For
+example:
+
  nbdkit vddk \
      libdir=/path/to/vmware-vix-disklib-distrib \
      file=file.vmdk
+
+=back
 
 VDDK itself looks in a few default locations for the optional
 configuration file, usually including F</etc/vmware/config> and
 F<$HOME/.vmware/config>, but you can override this using the C<config>
 parameter.
+
+=head2 No need to set C<LD_LIBRARY_PATH>
+
+In nbdkit E<le> 1.16 you had to set the environment variable
+C<LD_LIBRARY_PATH> when using this plugin.  In nbdkit E<ge> 1.18 this
+is I<not> recommended.
 
 =head1 FILE PARAMETER
 

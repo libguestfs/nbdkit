@@ -55,22 +55,16 @@ qemu-img create -f vmdk test-vddk-real.vmdk 100M
 # not translating errors.
 export LANG=C
 
-export old_ld_library_path="$LD_LIBRARY_PATH"
-export LD_LIBRARY_PATH="$vddkdir/lib64:$LD_LIBRARY_PATH"
-
+fail=0
 nbdkit -f -v -U - \
        --filter=readahead \
        vddk libdir="$vddkdir" test-vddk-real.vmdk \
-       --run '
-       # VDDK library path breaks qemu-img, we must restore the
-       # original path here.
-       export LD_LIBRARY_PATH="$old_ld_library_path"
-       qemu-img convert $nbd -O raw test-vddk-real.out
-' \
-       > test-vddk-real.log 2>&1
+       --run 'qemu-img convert $nbd -O raw test-vddk-real.out' \
+       > test-vddk-real.log 2>&1 || fail=1
 
 # Check the log for missing modules
 cat test-vddk-real.log
 if grep 'cannot open shared object file' test-vddk-real.log; then
    exit 1
 fi
+exit $fail
