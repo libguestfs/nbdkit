@@ -350,7 +350,7 @@ vddk_config_complete (void)
 }
 
 #define vddk_config_help \
-  "file=<FILENAME>     (required) The filename (eg. VMDK file) to serve.\n" \
+  "[file=]<FILENAME>   (required) The filename (eg. VMDK file) to serve.\n" \
   "Many optional parameters are supported, see nbdkit-vddk-plugin(3)."
 
 static void
@@ -836,6 +836,7 @@ static struct nbdkit_plugin plugin = {
   .config            = vddk_config,
   .config_complete   = vddk_config_complete,
   .config_help       = vddk_config_help,
+  .magic_config_key  = "file",
   .dump_plugin       = vddk_dump_plugin,
   .open              = vddk_open,
   .close             = vddk_close,

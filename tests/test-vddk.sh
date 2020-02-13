@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -43,3 +43,9 @@ nbdkit vddk --dump-plugin > test-vddk.out
 cat test-vddk.out
 
 grep ^vddk_default_libdir= test-vddk.out
+
+# Also test our magic file= handling, even though the dummy driver doesn't
+# really open a file.
+LD_LIBRARY_PATH=.libs:$LD_LIBRARY_PATH \
+LIBRARY_PATH=.libs:$LIBRARY_PATH \
+nbdkit -U - vddk libdir=.libs /dev/null --run true
