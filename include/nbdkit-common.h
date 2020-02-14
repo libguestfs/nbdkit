@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -77,9 +77,11 @@ extern "C" {
 #define NBDKIT_EXTENT_ZERO    (1<<1) /* Same as NBD_STATE_ZERO */
 
 extern void nbdkit_error (const char *msg, ...) ATTRIBUTE_FORMAT_PRINTF (1, 2);
-extern void nbdkit_verror (const char *msg, va_list args);
+extern void nbdkit_verror (const char *msg, va_list args)
+  ATTRIBUTE_FORMAT_PRINTF (1, 0);
 extern void nbdkit_debug (const char *msg, ...) ATTRIBUTE_FORMAT_PRINTF (1, 2);
-extern void nbdkit_vdebug (const char *msg, va_list args);
+extern void nbdkit_vdebug (const char *msg, va_list args)
+  ATTRIBUTE_FORMAT_PRINTF (1, 0);
 
 extern char *nbdkit_absolute_path (const char *path);
 extern int64_t nbdkit_parse_size (const char *str);
