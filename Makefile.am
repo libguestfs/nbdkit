@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2018 Red Hat Inc.
+# Copyright (C) 2013-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -63,7 +63,7 @@ nbdkit_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_LDADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
-nbdkit_DEPENDENCIES = config.status
+EXTRA_nbdkit_DEPENDENCIES = config.status
 endif !ENABLE_LIBFUZZER
 
 SUBDIRS = \

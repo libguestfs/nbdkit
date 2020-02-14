@@ -924,7 +924,7 @@ test_layers_LDFLAGS = \
 test_layers_LDADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
-test_layers_DEPENDENCIES = \
+EXTRA_test_layers_DEPENDENCIES = \
 	test-layers-plugin.la \
 	test-layers-filter1.la \
 	test-layers-filter2.la \
