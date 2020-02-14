@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2019 Red Hat Inc.
+# Copyright (C) 2013-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -116,7 +116,7 @@ endif
 
 BUILT_SOURCES = synopsis.c
 EXTRA_DIST += synopsis.c
-nbdkit_DEPENDENCIES = synopsis.c
+EXTRA_nbdkit_DEPENDENCIES = synopsis.c
 CLEANFILES += synopsis.c
 main.c: synopsis.c
 synopsis.c: $(top_srcdir)/docs/synopsis.txt
