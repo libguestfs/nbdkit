@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -40,6 +40,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dlfcn.h>
+#include <fcntl.h>
 
 #define NBDKIT_API_VERSION 2
 
@@ -71,25 +72,26 @@ int vddk_debug_extents;
 #define VDDK_MAJOR 5
 #define VDDK_MINOR 1
 
-static void *dl = NULL;                    /* dlopen handle */
-static int init_called = 0;                /* was InitEx called */
+static void *dl;                           /* dlopen handle */
+static bool init_called;                   /* was InitEx called */
+static char *reexeced;                     /* orig LD_LIBRARY_PATH on reexec */
 
-static char *config = NULL;                /* config */
-static const char *cookie = NULL;          /* cookie */
-static const char *filename = NULL;        /* file */
-static char *libdir = NULL;                /* libdir */
-static uint16_t nfc_host_port = 0;         /* nfchostport */
-static char *password = NULL;              /* password */
-static uint16_t port = 0;                  /* port */
-static const char *server_name = NULL;     /* server */
-static bool single_link = false;           /* single-link */
-static const char *snapshot_moref = NULL;  /* snapshot */
-static const char *thumb_print = NULL;     /* thumbprint */
-static const char *transport_modes = NULL; /* transports */
-static bool unbuffered = false;            /* unbuffered */
-static const char *username = NULL;        /* user */
-static const char *vmx_spec = NULL;        /* vm */
-static bool is_remote = false;
+static char *config;                       /* config */
+static const char *cookie;                 /* cookie */
+static const char *filename;               /* file */
+static char *libdir;                       /* libdir */
+static uint16_t nfc_host_port;             /* nfchostport */
+static char *password;                     /* password */
+static uint16_t port;                      /* port */
+static const char *server_name;            /* server */
+static bool single_link;                   /* single-link */
+static const char *snapshot_moref;         /* snapshot */
+static const char *thumb_print;            /* thumbprint */
+static const char *transport_modes;        /* transports */
+static bool unbuffered;                    /* unbuffered */
+static const char *username;               /* user */
+static const char *vmx_spec;               /* vm */
+static bool is_remote;
 
 #define VDDK_ERROR(err, fs, ...)                                \
   do {                                                          \
@@ -162,6 +164,8 @@ vddk_unload (void)
 static int
 vddk_config (const char *key, const char *value)
 {
+  int r;
+
   if (strcmp (key, "config") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
     free (config);
@@ -199,12 +203,15 @@ vddk_config (const char *key, const char *value)
     if (nbdkit_parse_uint16_t ("port", value, &port) == -1)
       return -1;
   }
+  else if (strcmp (key, "reexeced_") == 0) {
+    /* Special name because it is only for internal use. */
+    reexeced = (char *)value;
+  }
   else if (strcmp (key, "server") == 0) {
     server_name = value;
   }
   else if (strcmp (key, "single-link") == 0) {
-    int r = nbdkit_parse_bool (value);
-
+    r = nbdkit_parse_bool (value);
     if (r == -1)
       return -1;
     single_link = r;
@@ -219,8 +226,7 @@ vddk_config (const char *key, const char *value)
     transport_modes = value;
   }
   else if (strcmp (key, "unbuffered") == 0) {
-    int r = nbdkit_parse_bool (value);
-
+    r = nbdkit_parse_bool (value);
     if (r == -1)
       return -1;
     unbuffered = r;
@@ -240,6 +246,92 @@ vddk_config (const char *key, const char *value)
   }
 
   return 0;
+}
+
+/* Perform a re-exec that temporarily modifies LD_LIBRARY_PATH.  Does
+ * not return on success; on failure, problems have been logged, but
+ * the caller prefers to proceed as if this had not been attempted.
+ * Thus, no return value is needed.
+ */
+static void
+perform_reexec (const char *prepend)
+{
+  CLEANUP_FREE char *library = NULL;
+  const char *env = getenv ("LD_LIBRARY_PATH");
+  int argc = 0;
+  CLEANUP_FREE char **argv = NULL;
+  int fd;
+  size_t len = 0, buflen = 512;
+  CLEANUP_FREE char *buf = NULL;
+
+  /* In order to re-exec, we need our original command line.  The
+   * Linux kernel does not make it easy to know in advance how large
+   * it was, so we just slurp in the whole file, doubling our reads
+   * until we get a short read.  This assumes nbdkit did not alter its
+   * original argv[].
+   */
+  fd = open ("/proc/self/cmdline", O_RDONLY);
+  if (fd == -1) {
+    nbdkit_debug ("failure to parse original argv: %m");
+    return;
+  }
+
+  do {
+    char *p = realloc (buf, buflen * 2);
+    ssize_t r;
+
+    if (!p) {
+      nbdkit_debug ("failure to parse original argv: %m");
+      return;
+    }
+    buf = p;
+    buflen *= 2;
+    r = read (fd, buf + len, buflen - len);
+    if (r == -1) {
+      nbdkit_debug ("failure to parse original argv: %m");
+      return;
+    }
+    len += r;
+  } while (len == buflen);
+  nbdkit_debug ("original command line occupies %zu bytes", len);
+
+  /* Split cmdline into argv, then append one more arg. */
+  buflen = len;
+  len = 0;
+  while (len < buflen) {
+    char **tmp = realloc (argv, sizeof *argv * (argc + 2));
+
+    if (!tmp) {
+      nbdkit_debug ("failure to parse original argv: %m");
+      return;
+    }
+    argv = tmp;
+    argv[argc++] = buf + len;
+    len += strlen (buf + len) + 1;
+  }
+  if (!env)
+    env = "";
+  nbdkit_debug ("original argc == %d, adding reexeced_=%s", argc, env);
+  if (asprintf (&reexeced, "reexeced_=%s", env) == -1) {
+    nbdkit_debug ("failure to re-exec: %m");
+    return;
+  }
+  argv[argc++] = reexeced;
+  argv[argc] = NULL;
+
+  if (env[0])
+    asprintf (&library, "%s:%s", prepend, env);
+  else
+    library = strdup (prepend);
+  if (!library || setenv ("LD_LIBRARY_PATH", library, 1) == -1) {
+    nbdkit_debug ("failure to set LD_LIBRARY_PATH: %m");
+    return;
+  }
+
+  nbdkit_debug ("re-executing with updated LD_LIBRARY_PATH=%s", library);
+  fflush (NULL);
+  execvp ("/proc/self/exe", argv);
+  nbdkit_debug ("failure to execvp: %m");
 }
 
 /* Load the VDDK library. */
@@ -266,6 +358,8 @@ load_library (void)
     }
   }
   if (dl == NULL) {
+    if (!reexeced && libdir)
+      perform_reexec (libdir); /* TODO: Use correct dir */
     nbdkit_error ("%s\n\n"
                   "If '%s' is located on a non-standard path you may need to\n"
                   "set $LD_LIBRARY_PATH or edit /etc/ld.so.conf.\n\n"
@@ -299,6 +393,34 @@ vddk_config_complete (void)
     nbdkit_error ("you must supply the file=<FILENAME> parameter "
                   "after the plugin name on the command line");
     return -1;
+  }
+
+  /* If load_library caused a re-execution with an expanded
+   * LD_LIBRARY_PATH, restore it back to its original contents, passed
+   * as the value of "reexeced_".  dlopen uses the value of
+   * LD_LIBRARY_PATH cached at program startup; our change is for the
+   * sake of child processes (such as --run) to see the same
+   * environment as the original nbdkit saw before re-exec.
+   */
+  if (reexeced) {
+    char *env = getenv ("LD_LIBRARY_PATH");
+
+    nbdkit_debug ("cleaning up after re-exec");
+    if (!env || strstr (env, reexeced) == NULL ||
+        (libdir && strncmp (env, libdir, strlen (libdir)) != 0)) {
+      nbdkit_error ("'reexeced_' set with garbled environment");
+      return -1;
+    }
+    if (reexeced[0]) {
+      if (setenv ("LD_LIBRARY_PATH", reexeced, 1) == -1) {
+        nbdkit_error ("setenv: %m");
+        return -1;
+      }
+    }
+    else if (unsetenv ("LD_LIBRARY_PATH") == -1) {
+      nbdkit_error ("unsetenv: %m");
+      return -1;
+    }
   }
 
   /* For remote connections, check all the parameters have been
@@ -347,7 +469,7 @@ vddk_config_complete (void)
     VDDK_ERROR (err, "VixDiskLib_InitEx");
     exit (EXIT_FAILURE);
   }
-  init_called = 1;
+  init_called = true;
 
   return 0;
 }
