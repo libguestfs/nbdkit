@@ -143,54 +143,7 @@ error_function (const char *fs, va_list args)
   nbdkit_error ("%s", str);
 }
 
-/* Load and unload the plugin. */
-static void
-vddk_load (void)
-{
-  static const char *sonames[] = {
-    /* Prefer the newest library in case multiple exist. */
-    "libvixDiskLib.so.6",
-    "libvixDiskLib.so.5",
-  };
-  size_t i;
-  CLEANUP_FREE char *orig_error = NULL;
-
-  /* Load the library. */
-  for (i = 0; i < sizeof sonames / sizeof sonames[0]; ++i) {
-    dl = dlopen (sonames[i], RTLD_NOW);
-    if (dl != NULL)
-      break;
-    if (i == 0) {
-      orig_error = dlerror ();
-      if (orig_error)
-        orig_error = strdup (orig_error);
-    }
-  }
-  if (dl == NULL) {
-    nbdkit_error ("%s\n\n"
-                  "If '%s' is located on a non-standard path you may need to\n"
-                  "set $LD_LIBRARY_PATH or edit /etc/ld.so.conf.\n\n"
-                  "See the nbdkit-vddk-plugin(1) man page for details.",
-                  orig_error ? : "(unknown error)", sonames[0]);
-    exit (EXIT_FAILURE);
-  }
-
-  /* Load symbols. */
-#define STUB(fn,ret,args)                                         \
-  do {                                                            \
-    fn = dlsym (dl, #fn);                                         \
-    if (fn == NULL) {                                             \
-      nbdkit_error ("required VDDK symbol \"%s\" is missing: %s", \
-                    #fn, dlerror ());                             \
-      exit (EXIT_FAILURE);                                        \
-    }                                                             \
-  } while (0)
-#define OPTIONAL_STUB(fn,ret,args) fn = dlsym (dl, #fn)
-#include "vddk-stubs.h"
-#undef STUB
-#undef OPTIONAL_STUB
-}
-
+/* Unload the plugin. */
 static void
 vddk_unload (void)
 {
@@ -289,6 +242,54 @@ vddk_config (const char *key, const char *value)
   return 0;
 }
 
+/* Load the VDDK library. */
+static void
+load_library (void)
+{
+  static const char *sonames[] = {
+    /* Prefer the newest library in case multiple exist. */
+    "libvixDiskLib.so.6",
+    "libvixDiskLib.so.5",
+  };
+  size_t i;
+  CLEANUP_FREE char *orig_error = NULL;
+
+  /* Load the library. */
+  for (i = 0; i < sizeof sonames / sizeof sonames[0]; ++i) {
+    dl = dlopen (sonames[i], RTLD_NOW);
+    if (dl != NULL)
+      break;
+    if (i == 0) {
+      orig_error = dlerror ();
+      if (orig_error)
+        orig_error = strdup (orig_error);
+    }
+  }
+  if (dl == NULL) {
+    nbdkit_error ("%s\n\n"
+                  "If '%s' is located on a non-standard path you may need to\n"
+                  "set $LD_LIBRARY_PATH or edit /etc/ld.so.conf.\n\n"
+                  "See the nbdkit-vddk-plugin(1) man page for details.",
+                  orig_error ? : "(unknown error)", sonames[0]);
+    exit (EXIT_FAILURE);
+  }
+
+  /* Load symbols. */
+#define STUB(fn,ret,args)                                         \
+  do {                                                            \
+    fn = dlsym (dl, #fn);                                         \
+    if (fn == NULL) {                                             \
+      nbdkit_error ("required VDDK symbol \"%s\" is missing: %s", \
+                    #fn, dlerror ());                             \
+      exit (EXIT_FAILURE);                                        \
+    }                                                             \
+  } while (0)
+#define OPTIONAL_STUB(fn,ret,args) fn = dlsym (dl, #fn)
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
+}
+
 static int
 vddk_config_complete (void)
 {
@@ -329,6 +330,8 @@ vddk_config_complete (void)
     missing (!vmx_spec, "vm");
 #undef missing
   }
+
+  load_library ();
 
   /* Initialize VDDK library. */
   DEBUG_CALL ("VixDiskLib_InitEx",
@@ -831,7 +834,6 @@ static struct nbdkit_plugin plugin = {
   .name              = "vddk",
   .longname          = "VMware VDDK plugin",
   .version           = PACKAGE_VERSION,
-  .load              = vddk_load,
   .unload            = vddk_unload,
   .config            = vddk_config,
   .config_complete   = vddk_config_complete,
