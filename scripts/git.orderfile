@@ -46,6 +46,7 @@ include/*.h
 # Build files.
 configure.ac
 Makefile.am
+**/Makefile.am
 
 # Server and common files.
 server/*.h
@@ -53,6 +54,18 @@ common/include
 common/*/*.h
 server/*
 common/*
+
+# Plugins and filters.
+plugins/*/*.h
+plugins/*/*.c
+plugins/*
+filters/*/*.h
+filters/*/*.c
+filters/*
+
+# Tests.
+tests/*.sh
+tests/*
 
 # Remaining Header files.
 *.h
