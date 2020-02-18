@@ -13,8 +13,10 @@ export VMDK files and VMware disks over NBD.
 
 You do NOT require VDDK to compile the plugin, and the plugin does not
 contain any VMware code.  You only need VDDK at runtime.  The plugin
-uses dlopen to load the library from LD_LIBRARY_PATH (or else the
-standard shared library paths).
+uses dlopen to load the library from a directory determined by the
+configuration parameter libdir (LD_LIBRARY_PATH or the standard shared
+library locations can also be used, although that approach is not
+recommended).
 
 After building nbdkit-vddk-plugin.so, read the man page to find out
 how to use it (nbdkit-vddk-plugin(1)).  You'll probably also want to
