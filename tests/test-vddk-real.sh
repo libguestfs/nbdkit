@@ -45,11 +45,15 @@ if [ `uname -m` != "x86_64" ]; then
     exit 77
 fi
 
-files="test-vddk-real.vmdk test-vddk-real.out"
+files="test-vddk-real.vmdk test-vddk-real.out test-vddk-real.log"
 rm -f $files
 cleanup_fn rm -f $files
 
 qemu-img create -f vmdk test-vddk-real.vmdk 100M
+
+# Since we are comparing error messages below, let's make sure we're
+# not translating errors.
+export LANG=C
 
 export old_ld_library_path="$LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH="$vddkdir/lib64:$LD_LIBRARY_PATH"
@@ -62,4 +66,11 @@ nbdkit -f -v -U - \
        # original path here.
        export LD_LIBRARY_PATH="$old_ld_library_path"
        qemu-img convert $nbd -O raw test-vddk-real.out
-'
+' \
+       > test-vddk-real.log 2>&1
+
+# Check the log for missing modules
+cat test-vddk-real.log
+if grep 'cannot open shared object file' test-vddk-real.log; then
+   exit 1
+fi
