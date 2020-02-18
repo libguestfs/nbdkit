@@ -37,12 +37,14 @@ set -x
 requires qemu-img --version
 
 files="eval.out"
+rm -f $files
 cleanup_fn rm -f $files
 
 nbdkit -U - eval \
        get_size='echo 64M' \
        pread='dd if=/dev/zero count=$3 iflag=count_bytes' \
        missing='echo "in missing: $@" >> eval.out; exit 2' \
+       unload='' \
        --run 'qemu-img info $nbd' > eval.out
 
 cat eval.out
