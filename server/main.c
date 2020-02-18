@@ -614,13 +614,31 @@ main (int argc, char *argv[])
    * scripting languages, if magic_config_key == NULL then if the
    * first parameter is bare it is prefixed with the key "script", and
    * any other bare parameters are errors.
+   *
+   * Keys must live for the life of nbdkit.  Since we want to avoid
+   * modifying argv (so that /proc/PID/cmdline remains sane) but we
+   * need to create a key from argv[i] = "key=value" we must save the
+   * keys in an array which is freed at the end of main().
    */
+  char **keys = calloc (argc, sizeof (char *));
+  if (keys == NULL) {
+    perror ("calloc");
+    exit (EXIT_FAILURE);
+  }
+
   magic_config_key = top->magic_config_key (top);
   for (i = 0; optind < argc; ++i, ++optind) {
+    size_t n;
+
     p = strchr (argv[optind], '=');
-    if (p && is_config_key (argv[optind], p - argv[optind])) { /* key=value */
-      *p = '\0';
-      top->config (top, argv[optind], p+1);
+    n = p - argv[optind];
+    if (p && is_config_key (argv[optind], n)) { /* Is it key=value? */
+      keys[optind] = strndup (argv[optind], n);
+      if (keys[optind] == NULL) {
+        perror ("strndup");
+        exit (EXIT_FAILURE);
+      }
+      top->config (top, keys[optind], p+1);
     }
     else if (magic_config_key == NULL) {
       if (i == 0)               /* magic script parameter */
@@ -678,6 +696,10 @@ main (int argc, char *argv[])
 
   crypto_free ();
   close_quit_pipe ();
+
+  for (i = 1; i < argc; ++i)
+    free (keys[i]);
+  free (keys);
 
   /* Note: Don't exit here, otherwise this won't work when compiled
    * for libFuzzer.
