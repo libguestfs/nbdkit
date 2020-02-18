@@ -319,8 +319,10 @@ perform_reexec (const char *env, const char *prepend)
   argv[argc++] = reexeced;
   argv[argc] = NULL;
 
-  if (env[0])
-    asprintf (&library, "%s:%s", prepend, env);
+  if (env[0]) {
+    if (asprintf (&library, "%s:%s", prepend, env) == -1)
+      assert (library == NULL);
+  }
   else
     library = strdup (prepend);
   if (!library || setenv ("LD_LIBRARY_PATH", library, 1) == -1) {
