@@ -40,7 +40,7 @@
  */
 
 /* Required stubs, present in all versions of VDDK that we support.  I
- * have checked that all these exist in at least VDDK 5.1.1 (2011)
+ * have checked that all these exist in at least VDDK 5.5.5 (2015)
  * which is the earliest version of VDDK that we support.
  */
 

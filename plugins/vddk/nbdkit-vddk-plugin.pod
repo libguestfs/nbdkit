@@ -152,8 +152,6 @@ compile time is used, see L</DUMP-PLUGIN OUTPUT> below.
 
 Port used to establish an NFC connection to ESXi.  Defaults to 902.
 
-(Only supported in VDDK ≥ 5.5.5 and ≥ 6.0.1)
-
 =item B<password=>PASSWORD
 
 Set the password to use when connecting to the remote server.
@@ -435,7 +433,8 @@ For more information see L<https://bugzilla.redhat.com/1614276>.
 
 =head1 SUPPORTED VERSIONS OF VDDK
 
-This plugin requires VDDK E<ge> 5.1.1.
+This plugin requires VDDK E<ge> 5.5.5, which in turn means that it
+is only supported on x64-64 platforms.
 
 It has been tested with all versions up to 6.7 (but should work with
 future versions).

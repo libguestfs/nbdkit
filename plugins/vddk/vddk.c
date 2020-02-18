@@ -70,7 +70,7 @@ int vddk_debug_datapath = 1;
 
 /* Parameters passed to InitEx. */
 #define VDDK_MAJOR 5
-#define VDDK_MINOR 1
+#define VDDK_MINOR 5
 
 static void *dl;                           /* dlopen handle */
 static bool init_called;                   /* was InitEx called */
@@ -363,14 +363,14 @@ load_library (void)
   static const char *sonames[] = {
     /* Prefer the newest library in case multiple exist.  Check two
      * possible directories: the usual VDDK installation puts .so
-     * files in an arch-specific subdirectory of $libdir (although
-     * only VDDK 5 supported 32-bit); but our testsuite is easier
-     * to write if we point libdir directly to a stub .so.
+     * files in an arch-specific subdirectory of $libdir (our minimum
+     * supported version is VDDK 5.5.5, which only supports x64-64);
+     * but our testsuite is easier to write if we point libdir
+     * directly to a stub .so.
      */
     "lib64/libvixDiskLib.so.6",
     "libvixDiskLib.so.6",
     "lib64/libvixDiskLib.so.5",
-    "lib32/libvixDiskLib.so.5",
     "libvixDiskLib.so.5",
   };
   size_t i;
