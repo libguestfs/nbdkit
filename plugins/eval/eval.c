@@ -163,6 +163,7 @@ create_script (const char *method, const char *value)
 {
   FILE *fp;
   char *script;
+  size_t len;
 
   if (asprintf (&script, "%s/%s", tmpdir, method) == -1) {
     nbdkit_error ("asprintf: %m");
@@ -181,11 +182,14 @@ create_script (const char *method, const char *value)
     free (script);
     return NULL;
   }
-  if (fwrite (value, strlen (value), 1, fp) != 1) {
-    nbdkit_error ("fwrite: %s: %m", script);
-    fclose (fp);
-    free (script);
-    return NULL;
+  len = strlen (value);
+  if (len > 0) {
+    if (fwrite (value, strlen (value), 1, fp) != 1) {
+      nbdkit_error ("fwrite: %s: %m", script);
+      fclose (fp);
+      free (script);
+      return NULL;
+    }
   }
 
   if (fchmod (fileno (fp), 0500) == -1) {
