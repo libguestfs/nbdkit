@@ -621,6 +621,7 @@ main (int argc, char *argv[])
     if (p && is_config_key (argv[optind], p - argv[optind])) { /* key=value */
       *p = '\0';
       top->config (top, argv[optind], p+1);
+      *p = '=';
     }
     else if (magic_config_key == NULL) {
       if (i == 0)               /* magic script parameter */
