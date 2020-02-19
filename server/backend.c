@@ -293,11 +293,11 @@ backend_get_size (struct backend *b)
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
 
-  controlpath_debug ("%s: get_size", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
-  if (h->exportsize == -1)
+  if (h->exportsize == -1) {
+    controlpath_debug ("%s: get_size", b->name);
     h->exportsize = b->get_size (b, h->handle);
+  }
   return h->exportsize;
 }
 
@@ -307,11 +307,11 @@ backend_can_write (struct backend *b)
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
 
-  controlpath_debug ("%s: can_write", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
-  if (h->can_write == -1)
+  if (h->can_write == -1) {
+    controlpath_debug ("%s: can_write", b->name);
     h->can_write = b->can_write (b, h->handle);
+  }
   return h->can_write;
 }
 
@@ -321,11 +321,11 @@ backend_can_flush (struct backend *b)
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
 
-  controlpath_debug ("%s: can_flush", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
-  if (h->can_flush == -1)
+  if (h->can_flush == -1) {
+    controlpath_debug ("%s: can_flush", b->name);
     h->can_flush = b->can_flush (b, h->handle);
+  }
   return h->can_flush;
 }
 
@@ -335,11 +335,11 @@ backend_is_rotational (struct backend *b)
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
 
-  controlpath_debug ("%s: is_rotational", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
-  if (h->is_rotational == -1)
+  if (h->is_rotational == -1) {
+    controlpath_debug ("%s: is_rotational", b->name);
     h->is_rotational = b->is_rotational (b, h->handle);
+  }
   return h->is_rotational;
 }
 
@@ -350,10 +350,9 @@ backend_can_trim (struct backend *b)
   struct handle *h = get_handle (conn, b->i);
   int r;
 
-  controlpath_debug ("%s: can_trim", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
   if (h->can_trim == -1) {
+    controlpath_debug ("%s: can_trim", b->name);
     r = backend_can_write (b);
     if (r != 1) {
       h->can_trim = 0;
@@ -371,10 +370,9 @@ backend_can_zero (struct backend *b)
   struct handle *h = get_handle (conn, b->i);
   int r;
 
-  controlpath_debug ("%s: can_zero", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
   if (h->can_zero == -1) {
+    controlpath_debug ("%s: can_zero", b->name);
     r = backend_can_write (b);
     if (r != 1) {
       h->can_zero = NBDKIT_ZERO_NONE;
@@ -392,10 +390,9 @@ backend_can_fast_zero (struct backend *b)
   struct handle *h = get_handle (conn, b->i);
   int r;
 
-  controlpath_debug ("%s: can_fast_zero", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
   if (h->can_fast_zero == -1) {
+    controlpath_debug ("%s: can_fast_zero", b->name);
     r = backend_can_zero (b);
     if (r < NBDKIT_ZERO_EMULATE) {
       h->can_fast_zero = 0;
@@ -412,11 +409,11 @@ backend_can_extents (struct backend *b)
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
 
-  controlpath_debug ("%s: can_extents", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
-  if (h->can_extents == -1)
+  if (h->can_extents == -1) {
+    controlpath_debug ("%s: can_extents", b->name);
     h->can_extents = b->can_extents (b, h->handle);
+  }
   return h->can_extents;
 }
 
@@ -427,10 +424,9 @@ backend_can_fua (struct backend *b)
   struct handle *h = get_handle (conn, b->i);
   int r;
 
-  controlpath_debug ("%s: can_fua", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
   if (h->can_fua == -1) {
+    controlpath_debug ("%s: can_fua", b->name);
     r = backend_can_write (b);
     if (r != 1) {
       h->can_fua = NBDKIT_FUA_NONE;
@@ -448,10 +444,10 @@ backend_can_multi_conn (struct backend *b)
   struct handle *h = get_handle (conn, b->i);
 
   assert (h->handle && (h->state & HANDLE_CONNECTED));
-  controlpath_debug ("%s: can_multi_conn", b->name);
-
-  if (h->can_multi_conn == -1)
+  if (h->can_multi_conn == -1) {
+    controlpath_debug ("%s: can_multi_conn", b->name);
     h->can_multi_conn = b->can_multi_conn (b, h->handle);
+  }
   return h->can_multi_conn;
 }
 
@@ -461,11 +457,11 @@ backend_can_cache (struct backend *b)
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
 
-  controlpath_debug ("%s: can_cache", b->name);
-
   assert (h->handle && (h->state & HANDLE_CONNECTED));
-  if (h->can_cache == -1)
+  if (h->can_cache == -1) {
+    controlpath_debug ("%s: can_cache", b->name);
     h->can_cache = b->can_cache (b, h->handle);
+  }
   return h->can_cache;
 }
 
