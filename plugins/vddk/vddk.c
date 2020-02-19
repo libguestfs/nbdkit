@@ -60,6 +60,9 @@ int vddk_debug_diskinfo;
 /* Enable debugging of extents code with: -D vddk.extents=1 */
 int vddk_debug_extents;
 
+/* Suppress debugging of datapath calls (Read and Write): -D vddk.datapath=0 */
+int vddk_debug_datapath = 1;
+
 /* For each VDDK API define a static global variable.  These globals
  * are initialized when the plugin is loaded (by vddk_load).
  */
@@ -104,6 +107,9 @@ static bool is_remote;
 
 #define DEBUG_CALL(fn, fs, ...)                                 \
   nbdkit_debug ("VDDK call: %s (" fs ")", fn, ##__VA_ARGS__)
+#define DEBUG_CALL_DATAPATH(fn, fs, ...)                        \
+  if (vddk_debug_datapath)                                      \
+    nbdkit_debug ("VDDK call: %s (" fs ")", fn, ##__VA_ARGS__)
 
 static void
 trim (char *str)
@@ -765,9 +771,10 @@ vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
   offset /= VIXDISKLIB_SECTOR_SIZE;
   count /= VIXDISKLIB_SECTOR_SIZE;
 
-  DEBUG_CALL ("VixDiskLib_Read",
-              "handle, %" PRIu64 " sectors, %" PRIu32 " sectors, buffer",
-              offset, count);
+  DEBUG_CALL_DATAPATH ("VixDiskLib_Read",
+                       "handle, %" PRIu64 " sectors, "
+                       "%" PRIu32 " sectors, buffer",
+                       offset, count);
   err = VixDiskLib_Read (h->handle, offset, count, buf);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Read");
@@ -803,9 +810,10 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   offset /= VIXDISKLIB_SECTOR_SIZE;
   count /= VIXDISKLIB_SECTOR_SIZE;
 
-  DEBUG_CALL ("VixDiskLib_Write",
-              "handle, %" PRIu64 " sectors, %" PRIu32 " sectors, buffer",
-              offset, count);
+  DEBUG_CALL_DATAPATH ("VixDiskLib_Write",
+                       "handle, %" PRIu64 " sectors, "
+                       "%" PRIu32 " sectors, buffer",
+                       offset, count);
   err = VixDiskLib_Write (h->handle, offset, count, buf);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Write");
