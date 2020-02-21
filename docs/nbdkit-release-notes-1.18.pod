@@ -1,0 +1,172 @@
+=head1 NAME
+
+nbdkit-release-notes-1.18 - release notes for nbdkit 1.18
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.18.
+This describes the major changes since 1.16.
+
+nbdkit 1.18.0 was released on B<XXX DATE TO BE DECIDED> 2020.
+
+=head2 Security
+
+There were no security issues found.  All past security issues and
+information about how to report new ones can be found in
+L<nbdkit-security(1)>.
+
+=head2 Plugins
+
+New L<nbdkit-eval-plugin(1)> lets you write a plugin entirely on a
+single command line.  It is similar to L<nbdkit-sh-plugin(3)>.
+
+L<nbdkit-ext2-plugin(1)> is deprecated and will be removed in the next
+release after this one (S<nbdkit 1.20>).  As a replacement use
+L<nbdkit-ext2-filter(1)> like this:
+
+ nbdkit --filter=ext2 file fs.img ext2file=/disks/disk.raw
+
+L<nbdkit-python-plugin(3)> now offers a version 2 API which avoids
+copying the data buffer, improving performance.  The original (now
+called version 1) protocol is still supported for backwards
+compatibility.  The version 1 protocol was also enhanced to support
+the buffer protocol for the pread method, and memoryview for pwrite,
+improving performance by reducing copies (Nir Soffer).
+
+The Python plugin now prints readable stack traces when an exception
+is thrown (Nir Soffer).
+
+New methods implemented in the Python plugin: cache, can_cache,
+can_zero, can_fast_zero, can_multi_conn, can_fua.
+
+In L<nbdkit-curl-plugin(1)>, new options C<cainfo> and C<capath>
+(Wiktor Gołgowski).
+
+L<nbdkit-split-plugin(1)> now supports extents (Eric Blake).
+
+In L<nbdkit-vddk-plugin(1)>, C<file=> is now a magic config key,
+meaning it can be omitted in most circumstances (Eric Blake).
+
+The VDDK plugin now no longer needs C<$LD_LIBRARY_PATH> to be set.
+The correct library load path is automatically inferred from the
+C<libdir> parameter (Eric Blake).
+
+Verbose messages about calls to Read and Write functions in VDDK can
+now be suppressed by setting S<I<-D vddk.datapath=0>>.
+
+=head2 Filters
+
+New L<nbdkit-ext2-filter(1)>, which replaces the deprecated
+nbdkit-ext2-plugin.  This filter allows you to read and write files
+inside ext2, ext3 or ext4 filesystems.  The new filter has the same
+features as the plugin, and one enhancement: optionally the name of
+the file to serve can be picked from the client-supplied exportname.
+The old plugin will be removed in S<nbdkit 1.20> (Eric Blake).
+
+New L<nbdkit-extentlist-filter(1)> lets you specify a static list of
+extents from a file which can be placed on top of plugins which don't
+export extent information.
+
+New L<nbdkit-ip-filter(1)> lets you allow and deny incoming
+connections by client IP address, similar to TCP wrappers or a
+firewall.
+
+New L<nbdkit-nofilter-filter(1)> is a null filter, used for testing.
+
+The stats filter now collects time elapsed per operation, per
+operation and total rates, and adds stats for the flush method.  The
+output is shown in human sizes making it easier to understand.  (Nir
+Soffer).
+
+=head2 Server
+
+New I<--swap> option which allows nbdkit to be safely used to serve
+swap space to the same machine.
+
+Debug flags (I<-D>) can now be applied to the server core (using
+S<I<-D nbdkit.*>>).  Underscores in debug flags can now be replaced by
+dots, allowing a kind of namespacing.  Debug flags which are not
+consumed now no longer give an error, so you can use them without
+needing to detect if the plugin supports them.  New server debug flags
+S<I<-D nbdkit.backend.controlpath=0>> and
+S<I<-D nbdkit.backend.datapath=0>> were added to suppress some very
+verbose messages when verbose mode is enabled.
+
+=head2 API
+
+There is a new C<.preconnect> method available which is called just
+after the client makes a connection but before any NBD negotiation or
+TLS authentication is done.  It can be used for early whitelisting or
+rate limiting of connections, and is in particular used by the new
+L<nbdkit-ip-filter(1)>.
+
+=head2 Bug fixes
+
+In L<nbdkit-curl-plugin(1)>, C<CURLINFO_CONTENT_LENGTH_DOWNLOAD_T> is
+used (if available) so that file sizes up to 63 bits should now work
+on all platforms (Pino Toscano and Adrian Ambrożewicz).
+
+nbdkit is now compatible with OCaml 4.10.
+
+L<nbdkit-memory-plugin(1)> now supports C<size=0> (Eric Blake).
+
+=head2 Documentation
+
+Plugins which were actually added in S<nbdkit 1.0.0> are now
+documented as such properly.
+
+Improved methods for probing plugins and filters are documented in
+L<nbdkit-probing(1)>.
+
+=head2 Tests
+
+Old plugins from nbdkit 1.0, 1.2, 1.8 and 1.12 are now bundled with
+the nbdkit sources and tested to try to ensure that they do not
+accidentally regress.  Note these are included as binary blobs.  See
+F<tests/old-plugins/README> for more information about this, including
+how to delete these tests.
+
+Various tests, especially ones which rely on timeouts, have been made
+more stable so they should not fail on slow or overloaded machines.
+
+Many tests now use libnbd and nbdsh (instead of libguestfs and
+guestfish) as the test client.  This should improve the performance of
+the tests for most people.
+
+The I<--vsock> option (added in nbdkit 1.16) can now be tested if the
+host is running Linux E<ge> 5.6 (Stefano Garzarella).
+
+=head2 Build
+
+You can use C<./configure --disable-nbd-plugin> to completely
+disable the NBD plugin.
+
+=head2 Internals
+
+The explicit connection parameter passed around many functions in the
+server is now fetched from thread-local storage.
+
+The server no longer calls the finalize method if prepare fails.  Also
+failing to reopen the plugin from L<nbdkit-retry-filter(1)> no longer
+hangs (Eric Blake).
+
+C<git.orderfile> was enhanced to make patches easier to read (Eric
+Blake).
+
+Internal calls to methods like get_size, can_write will now no longer
+produce debug messages I<if> the data is simply being returned from
+the internal cache (but calls into the plugin are still logged).
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.
