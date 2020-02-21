@@ -460,6 +460,24 @@ VDDK E<ge> 6.0 should be used if possible.  This is the first version
 which added Flush support which is crucial for data integrity when
 writing.
 
+=head1 DEBUG FLAGS
+
+=over 4
+
+=item B<-D vddk.diskinfo=1>
+
+Debug disk information returned by C<GetInfo>.
+
+=item B<-D vddk.extents=1>
+
+Debug extents returned by C<QueryAllocatedBlocks>.
+
+=item B<-D vddk.datapath=0>
+
+Suppress debugging of datapath calls (C<Read> and C<Write>).
+
+=back
+
 =head1 FILES
 
 =over 4

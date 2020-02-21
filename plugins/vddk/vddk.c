@@ -54,13 +54,9 @@
 
 #include "vddk-structs.h"
 
-/* Enable extra disk info debugging with: -D vddk.diskinfo=1 */
+/* Debug flags. */
 int vddk_debug_diskinfo;
-
-/* Enable debugging of extents code with: -D vddk.extents=1 */
 int vddk_debug_extents;
-
-/* Suppress debugging of datapath calls (Read and Write): -D vddk.datapath=0 */
 int vddk_debug_datapath = 1;
 
 /* For each VDDK API define a static global variable.  These globals
