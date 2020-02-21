@@ -45,6 +45,9 @@
 
 #include "cleanup.h"
 
+/* -D cacheextents.cache=1: Debug cache operations. */
+int cacheextents_debug_cache = 0;
+
 /* This lock protects the global state. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -95,11 +98,14 @@ fill (struct nbdkit_extents *extents, int *err)
 
   for (i = 0; i < count; i++) {
     struct nbdkit_extent ex = nbdkit_get_extent (extents, i);
-    nbdkit_debug ("cacheextents: updating cache with:"
-                  " offset=%" PRIu64
-                  " length=%" PRIu64
-                  " type=%x",
-                  ex.offset, ex.length, ex.type);
+
+    if (cacheextents_debug_cache)
+      nbdkit_debug ("cacheextents: updating cache with:"
+                    " offset=%" PRIu64
+                    " length=%" PRIu64
+                    " type=%x",
+                    ex.offset, ex.length, ex.type);
+
     if (nbdkit_add_extent (cache_extents, ex.offset, ex.length,
                            ex.type) == -1) {
       *err = errno;
@@ -121,19 +127,23 @@ cacheextents_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
 
-  nbdkit_debug ("cacheextents:"
-                " cache_start=%" PRIu64
-                " cache_end=%" PRIu64
-                " cache_extents=%p",
-                cache_start, cache_end, cache_extents);
+  if (cacheextents_debug_cache)
+    nbdkit_debug ("cacheextents:"
+                  " cache_start=%" PRIu64
+                  " cache_end=%" PRIu64
+                  " cache_extents=%p",
+                  cache_start, cache_end, cache_extents);
 
   if (cache_extents &&
       offset >= cache_start && offset < cache_end) {
-    nbdkit_debug ("cacheextents: returning from cache");
+    if (cacheextents_debug_cache)
+      nbdkit_debug ("cacheextents: returning from cache");
     return cacheextents_add (extents, err);
   }
 
-  nbdkit_debug ("cacheextents: cache miss");
+  if (cacheextents_debug_cache)
+    nbdkit_debug ("cacheextents: cache miss");
+
   /* Clear REQ_ONE to ask the plugin for as much information as it is
    * willing to return (the plugin may still truncate if it is too
    * costly to provide everything).
