@@ -78,7 +78,7 @@ cacheextents_add (struct nbdkit_extents *extents, int *err)
 }
 
 static int
-cacheextents_fill (struct nbdkit_extents *extents, int *err)
+fill (struct nbdkit_extents *extents, int *err)
 {
   size_t i = 0;
   size_t count = nbdkit_extents_count (extents);
@@ -142,7 +142,7 @@ cacheextents_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (next_ops->extents (nxdata, count, offset, flags, extents, err) == -1)
     return -1;
 
-  return cacheextents_fill (extents, err);
+  return fill (extents, err);
 }
 
 /* Any changes to the data needs to clean the cache.
