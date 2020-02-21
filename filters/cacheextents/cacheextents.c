@@ -48,8 +48,8 @@
 /* This lock protects the global state. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-/* Cached extents from the last extents () call and its start and end for the
- * sake of simplicity.
+/* Cached extents from the last extents () call and its start and end
+ * for the sake of simplicity.
  */
 struct nbdkit_extents *cache_extents;
 static uint64_t cache_start;
@@ -100,7 +100,8 @@ cacheextents_fill (struct nbdkit_extents *extents, int *err)
                   " length=%" PRIu64
                   " type=%x",
                   ex.offset, ex.length, ex.type);
-    if (nbdkit_add_extent (cache_extents, ex.offset, ex.length, ex.type) == -1) {
+    if (nbdkit_add_extent (cache_extents, ex.offset, ex.length,
+                           ex.type) == -1) {
       *err = errno;
       nbdkit_extents_free (cache_extents);
       cache_extents = NULL;
@@ -113,7 +114,8 @@ cacheextents_fill (struct nbdkit_extents *extents, int *err)
 
 static int
 cacheextents_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
-                      void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+                      void *handle, uint32_t count, uint64_t offset,
+                      uint32_t flags,
                       struct nbdkit_extents *extents,
                       int *err)
 {
