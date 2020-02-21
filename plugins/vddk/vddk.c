@@ -64,7 +64,8 @@ int vddk_debug_extents;
 int vddk_debug_datapath = 1;
 
 /* For each VDDK API define a static global variable.  These globals
- * are initialized when the plugin is loaded (by vddk_load).
+ * are initialized when the plugin is loaded (by
+ * vddk_config_complete).
  */
 #define STUB(fn,ret,args) static ret (*fn) args
 #define OPTIONAL_STUB(fn,ret,args) static ret (*fn) args
