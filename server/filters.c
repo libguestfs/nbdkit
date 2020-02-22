@@ -172,6 +172,28 @@ filter_config_complete (struct backend *b)
 }
 
 static int
+next_get_ready (struct backend *b)
+{
+  b->get_ready (b);
+  return 0;
+}
+
+static void
+filter_get_ready (struct backend *b)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  debug ("%s: get_ready", b->name);
+
+  if (f->filter.get_ready) {
+    if (f->filter.get_ready (next_get_ready, b->next) == -1)
+      exit (EXIT_FAILURE);
+  }
+  else
+    b->next->get_ready (b->next);
+}
+
+static int
 filter_preconnect (struct backend *b, int readonly)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
@@ -493,6 +515,7 @@ static struct backend filter_functions = {
   .config = filter_config,
   .config_complete = filter_config_complete,
   .magic_config_key = plugin_magic_config_key,
+  .get_ready = filter_get_ready,
   .preconnect = filter_preconnect,
   .open = filter_open,
   .prepare = filter_prepare,

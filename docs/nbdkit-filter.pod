@@ -127,22 +127,24 @@ which is required.
 =head1 NEXT PLUGIN
 
 F<nbdkit-filter.h> defines some function types (C<nbdkit_next_config>,
-C<nbdkit_next_config_complete>, C<nbdkit_next_preconnect>,
-C<nbdkit_next_open>) and a structure called C<struct nbdkit_next_ops>.
-These abstract the next plugin or filter in the chain.  There is also
-an opaque pointer C<nxdata> which must be passed along when calling
-these functions.  The value of C<nxdata> passed to C<.open> has a
-stable lifetime that lasts to the corresponding C<.close>, with all
-intermediate functions (such as C<.pread>) receiving the same value
-for convenience; the only exceptions where C<nxdata> is not reused are
-C<.config>, C<.config_complete>, and C<.preconnect>, which are called
-outside the lifetime of a connection.
+C<nbdkit_next_config_complete>, C<nbdkit_next_get_ready>,
+C<nbdkit_next_preconnect>, C<nbdkit_next_open>) and a structure called
+C<struct nbdkit_next_ops>.  These abstract the next plugin or filter
+in the chain.  There is also an opaque pointer C<nxdata> which must be
+passed along when calling these functions.  The value of C<nxdata>
+passed to C<.open> has a stable lifetime that lasts to the
+corresponding C<.close>, with all intermediate functions (such as
+C<.pread>) receiving the same value for convenience; the only
+exceptions where C<nxdata> is not reused are C<.config>,
+C<.config_complete>, C<.get_ready>, and C<.preconnect>, which are
+called outside the lifetime of a connection.
 
 =head2 Next config, open and close
 
-The filter’s C<.config>, C<.config_complete> and C<.open> methods may
-only call the next C<.config>, C<.config_complete> and C<.open> method
-in the chain (optionally for C<.config>).
+The filter’s C<.config>, C<.config_complete>, C<.get_ready> and
+C<.open> methods may only call the next C<.config>,
+C<.config_complete>, C<.get_ready> and C<.open> method in the chain
+(optionally for C<.config>).
 
 The filter’s C<.close> method is called when an old connection closed,
 and this has no C<next> parameter because it cannot be
@@ -291,6 +293,16 @@ filter doesn't slow down other filters or plugins.
 
 If there is an error, C<.thread_model> should call C<nbdkit_error>
 with an error message and return C<-1>.
+
+=head2 C<.get_ready>
+
+ int (*get_ready) (nbdkit_next_get_ready *next, void *nxdata);
+
+This intercepts the plugin C<.get_ready> method and can be used by the
+filter to get ready to serve requests.
+
+If there is an error, C<.get_ready> should call C<nbdkit_error> with
+an error message and return C<-1>.
 
 =head2 C<.preconnect>
 

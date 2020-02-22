@@ -443,6 +443,18 @@ are silently ignored.
 If there is an error, C<.thread_model> should call C<nbdkit_error>
 with an error message and return C<-1>.
 
+=head2 C<.get_ready>
+
+ int get_ready (void);
+
+This optional callback is called before the server starts serving.  It
+is called before the server forks or changes directory.  It is the
+last chance to do any global preparation that is needed to serve
+connections.
+
+If there is an error, C<.get_ready> should call C<nbdkit_error> with
+an error message and return C<-1>.
+
 =head2 C<.preconnect>
 
  int preconnect (int readonly);
@@ -1182,8 +1194,8 @@ absolute path: if it is relative, then all this function does is
 prepend the current working directory to the path, with no extra
 checks.
 
-Note that this function works I<only> when used in the C<.config>, and
-C<.config_complete> callbacks.
+Note that this function works I<only> when used in the C<.config>,
+C<.config_complete> and C<.get_ready> callbacks.
 
 If conversion was not possible, this calls C<nbdkit_error> and returns
 C<NULL>.  Note that this function does not check that the file exists.
@@ -1199,8 +1211,8 @@ absolute path, resolving symlinks.  Under the hood it uses the
 C<realpath> function, and thus it fails if the path does not exist,
 or it is not possible to access to any of the components of the path.
 
-Note that this function works I<only> when used in the C<.config>, and
-C<.config_complete> callbacks.
+Note that this function works I<only> when used in the C<.config>,
+C<.config_complete> and C<.get_ready> callbacks.
 
 If the path resolution was not possible, this calls C<nbdkit_error>
 and returns C<NULL>.

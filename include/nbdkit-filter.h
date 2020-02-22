@@ -62,6 +62,7 @@ typedef void nbdkit_backend;
 typedef int nbdkit_next_config (nbdkit_backend *nxdata,
                                 const char *key, const char *value);
 typedef int nbdkit_next_config_complete (nbdkit_backend *nxdata);
+typedef int nbdkit_next_get_ready (nbdkit_backend *nxdata);
 typedef int nbdkit_next_preconnect (nbdkit_backend *nxdata, int readonly);
 typedef int nbdkit_next_open (nbdkit_backend *nxdata, int readonly);
 
@@ -143,6 +144,7 @@ struct nbdkit_filter {
                           nbdkit_backend *nxdata);
   const char *config_help;
   int (*thread_model) (void);
+  int (*get_ready) (nbdkit_next_get_ready *next, nbdkit_backend *nxdata);
   int (*preconnect) (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
                      int readonly);
 

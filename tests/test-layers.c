@@ -288,6 +288,18 @@ main (int argc, char *argv[])
      "test_layers_plugin_config_complete",
      NULL);
 
+  /* get_ready methods called in order. */
+  log_verify_seen_in_order
+    ("testlayersfilter3: get_ready",
+     "filter3: test_layers_filter_get_ready",
+     "testlayersfilter2: get_ready",
+     "filter2: test_layers_filter_get_ready",
+     "testlayersfilter1: get_ready",
+     "filter1: test_layers_filter_get_ready",
+     "testlayersplugin: get_ready",
+     "test_layers_plugin_get_ready",
+     NULL);
+
   /* preconnect methods called in outer-to-inner order, complete
    * in inner-to-outer order.
    */

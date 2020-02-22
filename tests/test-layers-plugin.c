@@ -73,6 +73,13 @@ test_layers_plugin_config_complete (void)
 #define test_layers_plugin_config_help "test_layers_plugin_config_help"
 
 static int
+test_layers_plugin_get_ready (void)
+{
+  DEBUG_FUNCTION;
+  return 0;
+}
+
+static int
 test_layers_plugin_preconnect (int readonly)
 {
   DEBUG_FUNCTION;
@@ -231,6 +238,7 @@ static struct nbdkit_plugin plugin = {
   .config            = test_layers_plugin_config,
   .config_complete   = test_layers_plugin_config_complete,
   .config_help       = test_layers_plugin_config_help,
+  .get_ready         = test_layers_plugin_get_ready,
   .preconnect        = test_layers_plugin_preconnect,
   .open              = test_layers_plugin_open,
   .close             = test_layers_plugin_close,

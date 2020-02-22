@@ -694,6 +694,11 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
+  /* Tell the plugin that we are about to start serving.  This must be
+   * called before we change user, fork, or open any sockets.
+   */
+  top->get_ready (top);
+
   start_serving ();
 
   top->free (top);

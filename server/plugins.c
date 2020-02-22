@@ -158,6 +158,7 @@ plugin_dump_fields (struct backend *b)
   HAS (config);
   HAS (config_complete);
   HAS (config_help);
+  HAS (get_ready);
   HAS (preconnect);
   HAS (open);
   HAS (close);
@@ -232,6 +233,20 @@ plugin_magic_config_key (struct backend *b)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   return p->plugin.magic_config_key;
+}
+
+static void
+plugin_get_ready (struct backend *b)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
+  debug ("%s: get_ready", b->name);
+
+  if (!p->plugin.get_ready)
+    return;
+
+  if (p->plugin.get_ready () == -1)
+    exit (EXIT_FAILURE);
 }
 
 static int
@@ -670,6 +685,7 @@ static struct backend plugin_functions = {
   .config = plugin_config,
   .config_complete = plugin_config_complete,
   .magic_config_key = plugin_magic_config_key,
+  .get_ready = plugin_get_ready,
   .preconnect = plugin_preconnect,
   .open = plugin_open,
   .prepare = plugin_prepare,
