@@ -86,16 +86,23 @@ log_config (nbdkit_next_config *next, void *nxdata,
   return next (nxdata, key, value);
 }
 
-/* Open the logfile. */
 static int
 log_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 {
-  int fd;
-
   if (!logfilename) {
     nbdkit_error ("missing logfile= parameter for the log filter");
     return -1;
   }
+
+  return next (nxdata);
+}
+
+/* Open the logfile. */
+static int
+log_get_ready (nbdkit_next_get_ready *next, void *nxdata)
+{
+  int fd;
+
   /* Using fopen("ae"/"we") would be more convenient, but as Haiku
    * still lacks that, use this instead. Atomicity is not essential
    * here since .config completes before threads that might fork, if
@@ -444,6 +451,7 @@ static struct nbdkit_filter filter = {
   .config_complete   = log_config_complete,
   .config_help       = log_config_help,
   .unload            = log_unload,
+  .get_ready         = log_get_ready,
   .open              = log_open,
   .close             = log_close,
   .prepare           = log_prepare,

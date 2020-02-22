@@ -99,12 +99,18 @@ floppy_config_complete (void)
     return -1;
   }
 
-  return create_virtual_floppy (dir, label, &floppy);
+  return 0;
 }
 
 #define floppy_config_help \
   "dir=<DIRECTORY>     (required) The directory to serve.\n" \
   "label=<LABEL>                  The volume label." \
+
+static int
+floppy_get_ready (void)
+{
+  return create_virtual_floppy (dir, label, &floppy);
+}
 
 static void *
 floppy_open (int readonly)
@@ -204,6 +210,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = floppy_config_complete,
   .config_help       = floppy_config_help,
   .magic_config_key  = "dir",
+  .get_ready         = floppy_get_ready,
   .open              = floppy_open,
   .get_size          = floppy_get_size,
   .can_multi_conn    = floppy_can_multi_conn,

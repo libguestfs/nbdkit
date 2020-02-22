@@ -60,8 +60,7 @@ int vddk_debug_extents;
 int vddk_debug_datapath = 1;
 
 /* For each VDDK API define a static global variable.  These globals
- * are initialized when the plugin is loaded (by
- * vddk_config_complete).
+ * are initialized when the plugin is loaded (by vddk_get_ready).
  */
 #define STUB(fn,ret,args) static ret (*fn) args
 #define OPTIONAL_STUB(fn,ret,args) static ret (*fn) args
@@ -432,8 +431,6 @@ load_library (void)
 static int
 vddk_config_complete (void)
 {
-  VixError err;
-
   if (filename == NULL) {
     nbdkit_error ("you must supply the file=<FILENAME> parameter "
                   "after the plugin name on the command line");
@@ -505,6 +502,14 @@ vddk_config_complete (void)
       return -1;
     }
   }
+
+  return 0;
+}
+
+static int
+vddk_get_ready (void)
+{
+  VixError err;
 
   load_library ();
 
@@ -1017,6 +1022,7 @@ static struct nbdkit_plugin plugin = {
   .config_help       = vddk_config_help,
   .magic_config_key  = "file",
   .dump_plugin       = vddk_dump_plugin,
+  .get_ready         = vddk_get_ready,
   .open              = vddk_open,
   .close             = vddk_close,
   .get_size          = vddk_get_size,

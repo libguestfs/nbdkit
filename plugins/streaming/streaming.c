@@ -90,6 +90,12 @@ streaming_config_complete (void)
     return -1;
   }
 
+  return 0;
+}
+
+static int
+streaming_get_ready (void)
+{
   /* Open the file blindly.  If this fails with ENOENT then we create a
    * FIFO and try again.
    */
@@ -248,6 +254,7 @@ static struct nbdkit_plugin plugin = {
   .config            = streaming_config,
   .config_complete   = streaming_config_complete,
   .config_help       = streaming_config_help,
+  .get_ready         = streaming_get_ready,
   .open              = streaming_open,
   .close             = streaming_close,
   .get_size          = streaming_get_size,

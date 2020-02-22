@@ -269,12 +269,18 @@ partitioning_config_complete (void)
     return -1;
   }
 
-  return create_virtual_disk_layout ();
+  return 0;
 }
 
 #define partitioning_config_help \
   "file=<FILENAME>  (required) File(s) containing partitions\n" \
   "partition-type=mbr|gpt      Partition type"
+
+static int
+partitioning_get_ready (void)
+{
+  return create_virtual_disk_layout ();
+}
 
 /* Create the per-connection handle. */
 static void *
@@ -433,6 +439,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = partitioning_config_complete,
   .config_help       = partitioning_config_help,
   .magic_config_key = "file",
+  .get_ready         = partitioning_get_ready,
   .open              = partitioning_open,
   .get_size          = partitioning_get_size,
   .can_multi_conn    = partitioning_can_multi_conn,

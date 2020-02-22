@@ -201,12 +201,18 @@ stats_config (nbdkit_next_config *next, void *nxdata,
 static int
 stats_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 {
-  int fd;
-
   if (filename == NULL) {
     nbdkit_error ("stats filter requires statsfile parameter");
     return -1;
   }
+
+  return next (nxdata);
+}
+
+static int
+stats_get_ready (nbdkit_next_get_ready *next, void *nxdata)
+{
+  int fd;
 
   /* Using fopen("ae"/"we") would be more convenient, but as Haiku
    * still lacks that, use this instead. Atomicity is not essential
@@ -372,6 +378,7 @@ static struct nbdkit_filter filter = {
   .config            = stats_config,
   .config_complete   = stats_config_complete,
   .config_help       = stats_config_help,
+  .get_ready         = stats_get_ready,
   .pread             = stats_pread,
   .pwrite            = stats_pwrite,
   .trim              = stats_trim,

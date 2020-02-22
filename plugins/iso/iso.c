@@ -176,9 +176,6 @@ iso_config_complete (void)
     return -1;
   }
 
-  if (make_iso () == -1)
-    return -1;
-
   return 0;
 }
 
@@ -186,6 +183,12 @@ iso_config_complete (void)
   "dir=<DIRECTORY>     (required) The directory to serve.\n" \
   "params='<PARAMS>'              Extra parameters to pass.\n" \
   "prog=<ISOPROG>                 The program used to make ISOs." \
+
+static int
+iso_get_ready (void)
+{
+  return make_iso ();
+}
 
 static void *
 iso_open (int readonly)
@@ -254,6 +257,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = iso_config_complete,
   .config_help       = iso_config_help,
   .magic_config_key  = "dir",
+  .get_ready         = iso_get_ready,
   .open              = iso_open,
   .get_size          = iso_get_size,
   .can_multi_conn    = iso_can_multi_conn,

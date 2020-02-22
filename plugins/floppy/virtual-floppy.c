@@ -256,10 +256,10 @@ visit (const char *dir, struct virtual_floppy *floppy)
   floppy->nr_dirs++;
   memset (&floppy->dirs[di], 0, sizeof (struct dir));
 
-  /* Because this is called from config_complete, before nbdkit
-   * daemonizes or starts any threads, it's safe to use chdir here and
-   * greatly simplifies the code.  However we must chdir back to the
-   * original directory at the end.
+  /* Because this is called from get_ready, before nbdkit daemonizes
+   * or starts any threads, it's safe to use chdir here and greatly
+   * simplifies the code.  However we must chdir back to the original
+   * directory at the end.
    */
   origdir = get_current_dir_name ();
   if (origdir == NULL) {

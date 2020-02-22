@@ -128,7 +128,7 @@ linuxdisk_config_complete (void)
     return -1;
   }
 
-  return create_virtual_disk (&disk);
+  return 0;
 }
 
 #define linuxdisk_config_help \
@@ -136,6 +136,12 @@ linuxdisk_config_complete (void)
   "label=<LABEL>               The filesystem label.\n" \
   "type=ext2|ext3|ext4         The filesystem type.\n" \
   "size=[+]<SIZE>              The virtual filesystem size."
+
+static int
+linuxdisk_get_ready (void)
+{
+  return create_virtual_disk (&disk);
+}
 
 static void *
 linuxdisk_open (int readonly)
@@ -226,6 +232,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = linuxdisk_config_complete,
   .config_help       = linuxdisk_config_help,
   .magic_config_key  = "dir",
+  .get_ready         = linuxdisk_get_ready,
   .open              = linuxdisk_open,
   .get_size          = linuxdisk_get_size,
   .can_multi_conn    = linuxdisk_can_multi_conn,

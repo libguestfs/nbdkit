@@ -145,7 +145,7 @@ rate_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-rate_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+rate_get_ready (nbdkit_next_get_ready *next, void *nxdata)
 {
   /* Initialize the global buckets. */
   bucket_init (&read_bucket, rate, BUCKET_CAPACITY);
@@ -312,8 +312,8 @@ static struct nbdkit_filter filter = {
   .longname          = "nbdkit rate filter",
   .unload            = rate_unload,
   .config            = rate_config,
-  .config_complete   = rate_config_complete,
   .config_help       = rate_config_help,
+  .get_ready         = rate_get_ready,
   .open              = rate_open,
   .close             = rate_close,
   .pread             = rate_pread,
