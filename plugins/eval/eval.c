@@ -70,6 +70,7 @@ static const char *known_methods[] = {
   "dump_plugin",
   "extents",
   "flush",
+  "get_ready",
   "get_size",
   "is_rotational",
   "missing",
@@ -409,6 +410,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = eval_config_complete,
   .config_help       = eval_config_help,
   .thread_model      = sh_thread_model,
+  .get_ready         = sh_get_ready,
 
   .preconnect        = sh_preconnect,
   .open              = sh_open,

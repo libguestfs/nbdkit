@@ -140,6 +140,31 @@ sh_thread_model (void)
 }
 
 int
+sh_get_ready (void)
+{
+  const char *method = "get_ready";
+  const char *script = get_script (method);
+  const char *args[] = { script, method, NULL };
+
+  switch (call (args)) {
+  case OK:
+  case MISSING:
+    return 0;
+
+  case ERROR:
+    return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, method);
+    errno = EIO;
+    return -1;
+
+  default: abort ();
+  }
+}
+
+int
 sh_preconnect (int readonly)
 {
   const char *method = "preconnect";

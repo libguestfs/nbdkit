@@ -310,6 +310,7 @@ static struct nbdkit_plugin plugin = {
   .config_help       = sh_config_help,
   .magic_config_key  = "script",
   .thread_model      = sh_thread_model,
+  .get_ready         = sh_get_ready,
 
   .preconnect        = sh_preconnect,
   .open              = sh_open,
