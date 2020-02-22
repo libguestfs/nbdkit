@@ -674,10 +674,25 @@ main (int argc, char *argv[])
   /* Select the correct thread model based on config. */
   lock_init_thread_model ();
 
-  set_up_quit_pipe ();
-#if !ENABLE_LIBFUZZER
-  set_up_signals ();
-#endif
+  /* If the user has mixed up -p/--run/-s/-U/--vsock options, then
+   * give an error.
+   *
+   * XXX Actually the server could easily be extended to handle both
+   * TCP/IP and Unix sockets, or even multiple TCP/IP ports.
+   */
+  if ((port && unixsocket) ||
+      (port && listen_stdin) ||
+      (unixsocket && listen_stdin) ||
+      (listen_stdin && run) ||
+      (vsock && unixsocket) ||
+      (vsock && listen_stdin) ||
+      (vsock && run)) {
+    fprintf (stderr,
+             "%s: -p, --run, -s, -U or --vsock options cannot be used"
+             "in this combination\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
 
   start_serving ();
 
@@ -850,25 +865,10 @@ start_serving (void)
   size_t nr_socks;
   size_t i;
 
-  /* If the user has mixed up -p/--run/-s/-U/--vsock options, then
-   * give an error.
-   *
-   * XXX Actually the server could easily be extended to handle both
-   * TCP/IP and Unix sockets, or even multiple TCP/IP ports.
-   */
-  if ((port && unixsocket) ||
-      (port && listen_stdin) ||
-      (unixsocket && listen_stdin) ||
-      (listen_stdin && run) ||
-      (vsock && unixsocket) ||
-      (vsock && listen_stdin) ||
-      (vsock && run)) {
-    fprintf (stderr,
-             "%s: -p, --run, -s, -U or --vsock options cannot be used"
-             "in this combination\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
+  set_up_quit_pipe ();
+#if !ENABLE_LIBFUZZER
+  set_up_signals ();
+#endif
 
   /* Lock the process into memory if requested. */
   if (swap) {
