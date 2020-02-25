@@ -302,7 +302,7 @@ perform_reexec (const char *env, const char *prepend)
   buflen = len;
   len = 0;
   while (len < buflen) {
-    char **tmp = realloc (argv, sizeof *argv * (argc + 2));
+    char **tmp = realloc (argv, sizeof *argv * (argc + 3));
 
     if (!tmp) {
       nbdkit_debug ("failure to parse original argv: %m");
