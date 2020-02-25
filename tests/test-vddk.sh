@@ -42,6 +42,13 @@ cat test-vddk.out
 
 grep ^vddk_default_libdir= test-vddk.out
 
+# Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
+# this test if valgrinding.
+if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
+    echo "$0: skipped LD_LIBRARY_PATH test when doing valgrind"
+    exit 77
+fi
+
 # Also test our magic file= handling, even though the dummy driver doesn't
 # really open a file.
 # really open a file.  We also ensure that LD_LIBRARY_PATH in the child
