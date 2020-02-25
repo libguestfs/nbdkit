@@ -663,6 +663,9 @@ main (int argc, char *argv[])
   if (dump_plugin) {
     top->dump_fields (top);
     top->free (top);
+    for (i = 1; i < argc; ++i)
+      free (keys[i]);
+    free (keys);
     exit (EXIT_SUCCESS);
   }
 
