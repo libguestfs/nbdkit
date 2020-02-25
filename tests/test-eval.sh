@@ -36,17 +36,18 @@ set -x
 
 requires qemu-img --version
 
-files="eval.out"
+files="eval.out eval.missing"
 rm -f $files
 cleanup_fn rm -f $files
 
 nbdkit -U - eval \
        get_size='echo 64M' \
        pread='dd if=/dev/zero count=$3 iflag=count_bytes' \
-       missing='echo "in missing: $@" >> eval.out; exit 2' \
+       missing='echo "in missing: $@" >> eval.missing; exit 2' \
        unload='' \
        --run 'qemu-img info $nbd' > eval.out
 
 cat eval.out
 grep '67108864 bytes' eval.out
-grep 'in missing' eval.out
+cat eval.missing
+grep 'in missing' eval.missing
