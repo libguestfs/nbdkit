@@ -38,6 +38,12 @@ requires sfdisk --help
 requires test -r /dev/urandom
 requires qemu-img --version
 
+# RHEL 7 sfdisk didn't have the -X option, so skip the tests here.
+if LANG=C sfdisk -X |& grep -sq "invalid option"; then
+    echo "$0: skipping test because no sfdisk -X option"
+    exit 77
+fi
+
 d="partition1.d"
 rm -rf $d
 cleanup_fn rm -rf $d
