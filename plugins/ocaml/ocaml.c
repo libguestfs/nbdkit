@@ -119,6 +119,8 @@ static value config_fn;
 static value config_complete_fn;
 static value thread_model_fn;
 
+static value get_ready_fn;
+
 static value preconnect_fn;
 static value open_fn;
 static value close_fn;
@@ -249,6 +251,25 @@ thread_model_wrapper (void)
 
   caml_enter_blocking_section ();
   CAMLreturnT (int, Int_val (rv));
+}
+
+static int
+get_ready_wrapper (void)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (get_ready_fn, Val_unit);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, 0);
 }
 
 static int
@@ -811,6 +832,8 @@ SET(config)
 SET(config_complete)
 SET(thread_model)
 
+SET(get_ready)
+
 SET(preconnect)
 SET(open)
 SET(close)
@@ -851,6 +874,8 @@ remove_roots (void)
   REMOVE (config);
   REMOVE (config_complete);
   REMOVE (thread_model);
+
+  REMOVE (get_ready);
 
   REMOVE (preconnect);
   REMOVE (open);

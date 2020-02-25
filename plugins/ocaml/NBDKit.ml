@@ -69,6 +69,8 @@ type 'a plugin = {
   config_help : string;
   thread_model : (unit -> thread_model) option;
 
+  get_ready : (unit -> unit) option;
+
   preconnect : (bool -> unit) option;
   open_connection : (bool -> 'a) option;
   close : ('a -> unit) option;
@@ -111,6 +113,8 @@ let default_callbacks = {
   config_help = "";
   thread_model = None;
 
+  get_ready = None;
+
   preconnect = None;
   open_connection = None;
   close = None;
@@ -151,6 +155,8 @@ external set_config : (string -> string -> unit) -> unit = "ocaml_nbdkit_set_con
 external set_config_complete : (unit -> unit) -> unit = "ocaml_nbdkit_set_config_complete"
 external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" "noalloc"
 external set_thread_model : (unit -> thread_model) -> unit = "ocaml_nbdkit_set_thread_model"
+
+external set_get_ready : (unit -> unit) -> unit = "ocaml_nbdkit_set_get_ready"
 
 external set_preconnect : (bool -> unit) -> unit = "ocaml_nbdkit_set_preconnect"
 external set_open : (bool -> 'a) -> unit = "ocaml_nbdkit_set_open"
@@ -213,6 +219,8 @@ let register_plugin plugin =
   if plugin.config_help <> "" then
     set_config_help plugin.config_help;
   may set_thread_model plugin.thread_model;
+
+  may set_get_ready plugin.get_ready;
 
   may set_preconnect plugin.preconnect;
   may set_open plugin.open_connection;

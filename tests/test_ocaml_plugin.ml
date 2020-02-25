@@ -19,6 +19,12 @@ let test_config_complete () =
   let params = List.rev !params in
   assert (params = [ "a", "1"; "b", "2"; "c", "3" ])
 
+let test_get_ready () =
+  (* We could allocate the disk here, but it's easier to allocate
+   * it statically above.
+   *)
+  NBDKit.debug "test ocaml plugin getting ready"
+
 let test_open readonly =
   NBDKit.debug "test ocaml plugin handle opened readonly=%b" readonly;
   ()

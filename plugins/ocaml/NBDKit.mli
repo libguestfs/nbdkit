@@ -74,6 +74,8 @@ type 'a plugin = {
   config_help : string;
   thread_model : (unit -> thread_model) option;
 
+  get_ready : (unit -> unit) option;
+
   preconnect : (bool -> unit) option;
   open_connection : (bool -> 'a) option;          (* required *)
   close : ('a -> unit) option;
