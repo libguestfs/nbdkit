@@ -152,6 +152,12 @@ There are no arguments or return value.
 
 There are no arguments or return value.
 
+=item C<get_ready>
+
+(Optional)
+
+There are no arguments or return value.
+
 =item C<open>
 
 (Required)

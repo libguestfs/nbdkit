@@ -436,6 +436,25 @@ py_config_complete (void)
   return 0;
 }
 
+static int
+py_get_ready (void)
+{
+  PyObject *fn;
+  PyObject *r;
+
+  if (callback_defined ("get_ready", &fn)) {
+    PyErr_Clear ();
+
+    r = PyObject_CallObject (fn, NULL);
+    Py_DECREF (fn);
+    if (check_python_failure ("get_ready") == -1)
+      return -1;
+    Py_DECREF (r);
+  }
+
+  return 0;
+}
+
 static void *
 py_open (int readonly)
 {
@@ -888,6 +907,8 @@ static struct nbdkit_plugin plugin = {
   .config            = py_config,
   .config_complete   = py_config_complete,
   .config_help       = py_config_help,
+
+  .get_ready         = py_get_ready,
 
   .open              = py_open,
   .close             = py_close,
