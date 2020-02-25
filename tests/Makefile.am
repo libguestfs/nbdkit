@@ -659,7 +659,6 @@ test_split_LDADD = $(LIBNBD_LIBS)
 
 # ssh plugin test.
 if HAVE_SSH
-# Uses ‘disk’ so we have to make it conditional on guestfish.
 TESTS += test-ssh.sh
 check_DATA += \
 	ssh/sshd_config \
