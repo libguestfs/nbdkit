@@ -909,6 +909,9 @@ AS_IF([test "$with_ext2" != "no"], [
         AC_DEFINE([HAVE_COM_ERR],[1],[com_err found at compile time.])
     ],
     [AC_MSG_WARN([com_err not found, ext2 plugin will be disabled])])
+
+    AC_CHECK_MEMBERS([struct struct_io_manager.cache_readahead,
+                      struct struct_io_manager.zeroout])
 ])
 AM_CONDITIONAL([HAVE_EXT2],
                [test "x$EXT2FS_LIBS" != "x" && test "x$COM_ERR_LIBS" != "x"])

@@ -298,6 +298,7 @@ io_write_blk64 (io_channel channel, unsigned long long block,
   return raw_write_blk (channel, data, block, count, buf);
 }
 
+#ifdef HAVE_STRUCT_STRUCT_IO_MANAGER_CACHE_READAHEAD
 static errcode_t
 io_cache_readahead (io_channel channel,
                     unsigned long long block,
@@ -321,8 +322,8 @@ io_cache_readahead (io_channel channel,
   }
 
   return EXT2_ET_OP_NOT_SUPPORTED;
-
 }
+#endif
 
 static errcode_t
 io_write_blk (io_channel channel, unsigned long block,
@@ -420,6 +421,7 @@ unimplemented:
   return EXT2_ET_UNIMPLEMENTED;
 }
 
+#ifdef HAVE_STRUCT_STRUCT_IO_MANAGER_ZEROOUT
 static errcode_t
 io_zeroout (io_channel channel, unsigned long long block,
             unsigned long long count)
@@ -446,6 +448,7 @@ io_zeroout (io_channel channel, unsigned long long block,
 unimplemented:
   return EXT2_ET_UNIMPLEMENTED;
 }
+#endif
 
 static struct struct_io_manager struct_nbdkit_manager = {
   .magic = EXT2_ET_MAGIC_IO_MANAGER,
@@ -462,8 +465,12 @@ static struct struct_io_manager struct_nbdkit_manager = {
   .read_blk64 = io_read_blk64,
   .write_blk64 = io_write_blk64,
   .discard = io_discard,
+#ifdef HAVE_STRUCT_STRUCT_IO_MANAGER_CACHE_READAHEAD
   .cache_readahead = io_cache_readahead,
+#endif
+#ifdef HAVE_STRUCT_STRUCT_IO_MANAGER_ZEROOUT
   .zeroout = io_zeroout,
+#endif
 };
 
 io_manager nbdkit_io_manager = &struct_nbdkit_manager;
