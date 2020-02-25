@@ -473,6 +473,7 @@ disk:
 endif
 
 # curl plugin test.
+if HAVE_MKE2FS_WITH_D
 if HAVE_CURL
 LIBGUESTFS_TESTS += test-curl
 
@@ -498,6 +499,7 @@ test_curl_LDADD = \
 	$(LIBGUESTFS_LIBS) \
 	$(NULL)
 endif HAVE_CURL
+endif HAVE_MKE2FS_WITH_D
 
 # data plugin test.
 LIBGUESTFS_TESTS += test-data
@@ -1009,10 +1011,10 @@ TESTS += test-cache-max-size.sh
 TESTS += test-cacheextents.sh
 
 # cow filter test.
-TESTS += \
-	test-cow.sh \
-	test-cow-null.sh \
-	$(NULL)
+if HAVE_MKE2FS_WITH_D
+TESTS += test-cow.sh
+endif
+TESTS += test-cow-null.sh
 
 # delay filter tests.
 TESTS += test-shutdown.sh

@@ -37,6 +37,7 @@ set -e
 set -x
 
 requires guestfish --version
+requires test -f disk
 
 # This script is called with one parameter in the form
 # <ARCH>-<OS>-<VERSION> corresponding to a test in
