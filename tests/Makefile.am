@@ -445,6 +445,7 @@ TESTS += test-eflags.sh
 TESTS += test-export-name.sh
 
 # common disk image shared with several tests
+if HAVE_MKE2FS_WITH_D
 check_DATA += disk
 CLEANFILES += disk
 
@@ -456,6 +457,7 @@ disk:
 	    --run 'qemu-img convert $$nbd $@-t'
 	rm -rf disk.tmp
 	mv $@-t $@
+endif
 
 # curl plugin test.
 if HAVE_CURL
@@ -500,6 +502,7 @@ test_data_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_data_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # ext2 plugin test.
+if HAVE_MKE2FS_WITH_D
 if HAVE_EXT2
 if HAVE_GUESTFISH
 
@@ -524,6 +527,7 @@ test_ext2_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_GUESTFISH
 endif HAVE_EXT2
+endif HAVE_MKE2FS_WITH_D
 
 # file plugin test.
 LIBNBD_TESTS += test-file
@@ -546,6 +550,7 @@ TESTS += test-floppy.sh
 TESTS += test-full.sh
 
 # gzip plugin test.
+if HAVE_MKE2FS_WITH_D
 if HAVE_ZLIB
 LIBGUESTFS_TESTS += test-gzip
 check_DATA += disk.gz
@@ -559,6 +564,7 @@ disk.gz: disk
 	rm -f $@
 	gzip -9 -c disk > $@
 endif HAVE_ZLIB
+endif HAVE_MKE2FS_WITH_D
 
 # info plugin test.
 TESTS += \
@@ -576,10 +582,12 @@ TESTS += test-iso.sh
 endif HAVE_ISO
 
 # linuxdisk plugin test.
+if HAVE_MKE2FS_WITH_D
 TESTS += \
 	test-linuxdisk.sh \
 	test-linuxdisk-copy-out.sh \
 	$(NULL)
+endif HAVE_MKE2FS_WITH_D
 
 # memory plugin test.
 LIBGUESTFS_TESTS += test-memory
@@ -1068,6 +1076,7 @@ TESTS += \
 	$(NULL)
 
 # xz filter test.
+if HAVE_MKE2FS_WITH_D
 if HAVE_LIBLZMA
 LIBGUESTFS_TESTS += test-xz
 check_DATA += disk.xz
@@ -1111,6 +1120,7 @@ test_xz_curl_LDADD = \
 
 endif HAVE_CURL
 endif HAVE_LIBLZMA
+endif HAVE_MKE2FS_WITH_D
 
 endif HAVE_PLUGINS
 

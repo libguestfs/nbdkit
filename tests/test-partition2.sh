@@ -35,6 +35,7 @@ set -e
 set -x
 
 requires qemu-img --version
+requires test -f disk
 
 files="partition2.log"
 rm -f $files
