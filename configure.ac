@@ -440,6 +440,20 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
     LIBS="$old_LIBS"
 ])
 
+dnl Check for mke2fs -d (used by linuxdisk plugin).  There are two
+dnl possible outcomes that we care about: (1) We have mke2fs and
+dnl it supports the -d option.  (2) We either don't have mke2fs
+dnl or it's too old to support the -d option (eg. on RHEL 7).
+mke2fs_with_d=no
+AC_MSG_CHECKING([for mke2fs supporting the -d option])
+AS_IF([mke2fs -V >/dev/null 2>&1], [
+    AS_IF([LANG=C mke2fs -d 2>&1 | grep -sq "option requires an argument"], [
+        mke2fs_with_d=yes
+    ])
+])
+AC_MSG_RESULT([$mke2fs_with_d])
+AM_CONDITIONAL([HAVE_MKE2FS_WITH_D],[test "x$mke2fs_with_d" = "xyes"])
+
 dnl Check for valgrind.
 AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
 
