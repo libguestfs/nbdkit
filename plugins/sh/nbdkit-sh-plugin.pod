@@ -246,6 +246,10 @@ actually gets selected.
 If an error occurs, the script should output an error message and exit
 with status C<1>; unrecognized output is ignored.
 
+=item C<preconnect>
+
+ /path/to/script preconnect <readonly> <exportname>
+
 =item C<open>
 
  /path/to/script open <readonly> <exportname>

@@ -75,6 +75,7 @@ static const char *known_methods[] = {
   "missing",
   "open",
   "pread",
+  "preconnect",
   "pwrite",
   "thread_model",
   "trim",
@@ -409,6 +410,7 @@ static struct nbdkit_plugin plugin = {
   .config_help       = eval_config_help,
   .thread_model      = sh_thread_model,
 
+  .preconnect        = sh_preconnect,
   .open              = sh_open,
   .close             = sh_close,
 

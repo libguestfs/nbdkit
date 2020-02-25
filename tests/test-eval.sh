@@ -59,5 +59,6 @@ grep 'in missing: config_complete' eval.missing
 grep 'in missing: thread_model' eval.missing
 grep 'in missing: can_write' eval.missing
 grep 'in missing: is_rotational' eval.missing
+grep 'in missing: preconnect' eval.missing
 grep 'in missing: open' eval.missing
 grep 'in missing: close' eval.missing

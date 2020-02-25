@@ -41,6 +41,7 @@ extern const char *get_script (const char *method);
 
 extern void sh_dump_plugin (void);
 extern int sh_thread_model (void);
+extern int sh_preconnect (int readonly);
 extern void *sh_open (int readonly);
 extern void sh_close (void *handle);
 extern int64_t sh_get_size (void *handle);

@@ -108,6 +108,8 @@ features):
 
 =item B<pread=>SCRIPT
 
+=item B<preconnect=>SCRIPT
+
 =item B<pwrite=>SCRIPT
 
 =item B<thread_model=>SCRIPT
