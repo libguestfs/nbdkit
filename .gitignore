@@ -66,6 +66,8 @@ plugins/*/*.3
 /missing
 /nbdkit
 /plugins/example4/nbdkit-example4-plugin
+/plugins/eval/call.c
+/plugins/eval/methods.c
 /plugins/ocaml/nbdkit-ocamlexample-plugin.so
 /plugins/rust/Cargo.lock
 /plugins/rust/Cargo.toml

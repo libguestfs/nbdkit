@@ -43,7 +43,7 @@ dnl "warning: AC_RUN_IFELSE was called before AC_USE_SYSTEM_EXTENSIONS"
 AC_USE_SYSTEM_EXTENSIONS
 
 dnl NB: Do not [quote] this parameter.
-AM_INIT_AUTOMAKE(foreign subdir-objects)
+AM_INIT_AUTOMAKE(foreign)
 AC_PROG_LIBTOOL
 LT_INIT
 

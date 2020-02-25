@@ -35,14 +35,22 @@ EXTRA_DIST = nbdkit-eval-plugin.pod
 
 plugin_LTLIBRARIES = nbdkit-eval-plugin.la
 
-# This plugin shares most of the same sources as nbdkit-sh-plugin.
+# This plugin shares most of the same sources as nbdkit-sh-plugin.  In
+# RHEL 7 we cannot add the C files from ../sh directly to SOURCES
+# because subdir-objects is broken.  Instead we create hard links to
+# them.
+BUILT_SOURCES = \
+	call.c \
+	methods.c \
+	$(NULL)
+$(BUILT_SOURCES):
+	ln -f ../sh/$@
 
 nbdkit_eval_plugin_la_SOURCES = \
-	$(srcdir)/../sh/call.c \
-	$(srcdir)/../sh/call.h \
-	$(srcdir)/../sh/methods.c \
-	$(srcdir)/../sh/methods.h \
 	eval.c \
+	$(BUILT_SOURCES) \
+	$(srcdir)/../sh/call.h \
+	$(srcdir)/../sh/methods.h \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
 nbdkit_eval_plugin_la_CPPFLAGS = \
