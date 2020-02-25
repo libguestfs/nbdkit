@@ -100,43 +100,36 @@ plugin_init (void)
 static value load_fn;
 static value unload_fn;
 
+static value dump_plugin_fn;
+
 static value config_fn;
 static value config_complete_fn;
+static value thread_model_fn;
 
+static value preconnect_fn;
 static value open_fn;
 static value close_fn;
 
 static value get_size_fn;
 
-static value can_write_fn;
+static value can_cache_fn;
+static value can_extents_fn;
+static value can_fast_zero_fn;
 static value can_flush_fn;
-static value is_rotational_fn;
-static value can_trim_fn;
-
-static value dump_plugin_fn;
-
-static value can_zero_fn;
 static value can_fua_fn;
+static value can_multi_conn_fn;
+static value can_trim_fn;
+static value can_write_fn;
+static value can_zero_fn;
+static value is_rotational_fn;
 
 static value pread_fn;
 static value pwrite_fn;
 static value flush_fn;
 static value trim_fn;
 static value zero_fn;
-
-static value can_multi_conn_fn;
-
-static value can_extents_fn;
 static value extents_fn;
-
-static value can_cache_fn;
 static value cache_fn;
-
-static value thread_model_fn;
-
-static value can_fast_zero_fn;
-
-static value preconnect_fn;
 
 /*----------------------------------------------------------------------*/
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
@@ -170,6 +163,21 @@ unload_wrapper (void)
   remove_roots ();
 }
 
+static void
+dump_plugin_wrapper (void)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (dump_plugin_fn, Val_unit);
+  if (Is_exception_result (rv))
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+  caml_enter_blocking_section ();
+  CAMLreturn0;
+}
+
 static int
 config_wrapper (const char *key, const char *val)
 {
@@ -201,6 +209,44 @@ config_complete_wrapper (void)
   caml_leave_blocking_section ();
 
   rv = caml_callback_exn (config_complete_fn, Val_unit);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, 0);
+}
+
+static int
+thread_model_wrapper (void)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (thread_model_fn, Val_unit);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Int_val (rv));
+}
+
+static int
+preconnect_wrapper (int readonly)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (preconnect_fn, Val_bool (readonly));
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     caml_enter_blocking_section ();
@@ -356,21 +402,6 @@ can_trim_wrapper (void *h)
   CAMLreturnT (int, Bool_val (rv));
 }
 
-static void
-dump_plugin_wrapper (void)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
-
-  rv = caml_callback_exn (dump_plugin_fn, Val_unit);
-  if (Is_exception_result (rv))
-    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-  caml_enter_blocking_section ();
-  CAMLreturn0;
-}
-
 static int
 can_zero_wrapper (void *h)
 {
@@ -407,6 +438,82 @@ can_fua_wrapper (void *h)
 
   caml_enter_blocking_section ();
   CAMLreturnT (int, Int_val (rv));
+}
+
+static int
+can_fast_zero_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_fast_zero_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Bool_val (rv));
+}
+
+static int
+can_cache_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_cache_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Int_val (rv));
+}
+
+static int
+can_extents_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_extents_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Bool_val (rv));
+}
+
+static int
+can_multi_conn_wrapper (void *h)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (can_multi_conn_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, Bool_val (rv));
 }
 
 static value
@@ -566,44 +673,6 @@ zero_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
 }
 
 static int
-can_multi_conn_wrapper (void *h)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
-
-  rv = caml_callback_exn (can_multi_conn_fn, *(value *) h);
-  if (Is_exception_result (rv)) {
-    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
-    CAMLreturnT (int, -1);
-  }
-
-  caml_enter_blocking_section ();
-  CAMLreturnT (int, Bool_val (rv));
-}
-
-static int
-can_extents_wrapper (void *h)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
-
-  rv = caml_callback_exn (can_extents_fn, *(value *) h);
-  if (Is_exception_result (rv)) {
-    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
-    CAMLreturnT (int, -1);
-  }
-
-  caml_enter_blocking_section ();
-  CAMLreturnT (int, Bool_val (rv));
-}
-
-static int
 extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
                  struct nbdkit_extents *extents)
 {
@@ -649,25 +718,6 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
 }
 
 static int
-can_cache_wrapper (void *h)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
-
-  rv = caml_callback_exn (can_cache_fn, *(value *) h);
-  if (Is_exception_result (rv)) {
-    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
-    CAMLreturnT (int, -1);
-  }
-
-  caml_enter_blocking_section ();
-  CAMLreturnT (int, Int_val (rv));
-}
-
-static int
 cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
 {
   CAMLparam0 ();
@@ -683,63 +733,6 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   rv = caml_callbackN_exn (cache_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    CAMLreturnT (int, -1);
-  }
-
-  caml_enter_blocking_section ();
-  CAMLreturnT (int, 0);
-}
-
-static int
-thread_model_wrapper (void)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
-
-  rv = caml_callback_exn (thread_model_fn, Val_unit);
-  if (Is_exception_result (rv)) {
-    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
-    CAMLreturnT (int, -1);
-  }
-
-  caml_enter_blocking_section ();
-  CAMLreturnT (int, Int_val (rv));
-}
-
-static int
-can_fast_zero_wrapper (void *h)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
-
-  rv = caml_callback_exn (can_fast_zero_fn, *(value *) h);
-  if (Is_exception_result (rv)) {
-    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
-    CAMLreturnT (int, -1);
-  }
-
-  caml_enter_blocking_section ();
-  CAMLreturnT (int, Bool_val (rv));
-}
-
-static int
-preconnect_wrapper (int readonly)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
-
-  rv = caml_callback_exn (preconnect_fn, Val_bool (readonly));
-  if (Is_exception_result (rv)) {
-    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
@@ -800,9 +793,13 @@ ocaml_nbdkit_set_config_help (value helpv)
 SET(load)
 SET(unload)
 
+SET(dump_plugin)
+
 SET(config)
 SET(config_complete)
+SET(thread_model)
 
+SET(preconnect)
 SET(open)
 SET(close)
 
@@ -812,31 +809,20 @@ SET(can_write)
 SET(can_flush)
 SET(is_rotational)
 SET(can_trim)
-
-SET(dump_plugin)
-
 SET(can_zero)
 SET(can_fua)
+SET(can_multi_conn)
+SET(can_extents)
+SET(can_cache)
+SET(can_fast_zero)
 
 SET(pread)
 SET(pwrite)
 SET(flush)
 SET(trim)
 SET(zero)
-
-SET(can_multi_conn)
-
-SET(can_extents)
 SET(extents)
-
-SET(can_cache)
 SET(cache)
-
-SET(thread_model)
-
-SET(can_fast_zero)
-
-SET(preconnect)
 
 #undef SET
 
@@ -848,23 +834,28 @@ remove_roots (void)
   REMOVE (load);
   REMOVE (unload);
 
+  REMOVE (dump_plugin);
+
   REMOVE (config);
   REMOVE (config_complete);
+  REMOVE (thread_model);
 
+  REMOVE (preconnect);
   REMOVE (open);
   REMOVE (close);
 
   REMOVE (get_size);
 
-  REMOVE (can_write);
+  REMOVE (can_cache);
+  REMOVE (can_extents);
+  REMOVE (can_fast_zero);
   REMOVE (can_flush);
-  REMOVE (is_rotational);
-  REMOVE (can_trim);
-
-  REMOVE (dump_plugin);
-
-  REMOVE (can_zero);
   REMOVE (can_fua);
+  REMOVE (can_multi_conn);
+  REMOVE (can_trim);
+  REMOVE (can_write);
+  REMOVE (can_zero);
+  REMOVE (is_rotational);
 
   REMOVE (pread);
   REMOVE (pwrite);
@@ -872,19 +863,9 @@ remove_roots (void)
   REMOVE (trim);
   REMOVE (zero);
 
-  REMOVE (can_multi_conn);
-
-  REMOVE (can_extents);
   REMOVE (extents);
 
-  REMOVE (can_cache);
   REMOVE (cache);
-
-  REMOVE (thread_model);
-
-  REMOVE (can_fast_zero);
-
-  REMOVE (preconnect);
 
 #undef REMOVE
 }

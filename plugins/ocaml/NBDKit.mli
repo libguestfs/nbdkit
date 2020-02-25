@@ -67,44 +67,37 @@ type 'a plugin = {
   load : (unit -> unit) option;
   unload : (unit -> unit) option;
 
+  dump_plugin : (unit -> unit) option;
+
   config : (string -> string -> unit) option;
   config_complete : (unit -> unit) option;
   config_help : string;
+  thread_model : (unit -> thread_model) option;
 
+  preconnect : (bool -> unit) option;
   open_connection : (bool -> 'a) option;          (* required *)
   close : ('a -> unit) option;
 
   get_size : ('a -> int64) option;                (* required *)
 
-  can_write : ('a -> bool) option;
+  can_cache : ('a -> cache_flag) option;
+  can_extents : ('a -> bool) option;
+  can_fast_zero : ('a -> bool) option;
   can_flush : ('a -> bool) option;
-  is_rotational : ('a -> bool) option;
-  can_trim : ('a -> bool) option;
-
-  dump_plugin : (unit -> unit) option;
-
-  can_zero : ('a -> bool) option;
   can_fua : ('a -> fua_flag) option;
+  can_multi_conn : ('a -> bool) option;
+  can_trim : ('a -> bool) option;
+  can_write : ('a -> bool) option;
+  can_zero : ('a -> bool) option;
+  is_rotational : ('a -> bool) option;
 
   pread : ('a -> int32 -> int64 -> flags -> string) option;  (* required *)
   pwrite : ('a -> string -> int64 -> flags -> unit) option;
   flush : ('a -> flags -> unit) option;
   trim : ('a -> int32 -> int64 -> flags -> unit) option;
   zero : ('a -> int32 -> int64 -> flags -> unit) option;
-
-  can_multi_conn : ('a -> bool) option;
-
-  can_extents : ('a -> bool) option;
   extents : ('a -> int32 -> int64 -> flags -> extent list) option;
-
-  can_cache : ('a -> cache_flag) option;
   cache : ('a -> int32 -> int64 -> flags -> unit) option;
-
-  thread_model : (unit -> thread_model) option;
-
-  can_fast_zero : ('a -> bool) option;
-
-  preconnect : (bool -> unit) option;
 }
 (** The plugin fields and callbacks.  ['a] is the handle type. *)
 

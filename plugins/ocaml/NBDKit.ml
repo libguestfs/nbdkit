@@ -62,44 +62,37 @@ type 'a plugin = {
   load : (unit -> unit) option;
   unload : (unit -> unit) option;
 
+  dump_plugin : (unit -> unit) option;
+
   config : (string -> string -> unit) option;
   config_complete : (unit -> unit) option;
   config_help : string;
+  thread_model : (unit -> thread_model) option;
 
+  preconnect : (bool -> unit) option;
   open_connection : (bool -> 'a) option;
   close : ('a -> unit) option;
 
   get_size : ('a -> int64) option;
 
-  can_write : ('a -> bool) option;
+  can_cache : ('a -> cache_flag) option;
+  can_extents : ('a -> bool) option;
+  can_fast_zero : ('a -> bool) option;
   can_flush : ('a -> bool) option;
-  is_rotational : ('a -> bool) option;
-  can_trim : ('a -> bool) option;
-
-  dump_plugin : (unit -> unit) option;
-
-  can_zero : ('a -> bool) option;
   can_fua : ('a -> fua_flag) option;
+  can_multi_conn : ('a -> bool) option;
+  can_trim : ('a -> bool) option;
+  can_write : ('a -> bool) option;
+  can_zero : ('a -> bool) option;
+  is_rotational : ('a -> bool) option;
 
   pread : ('a -> int32 -> int64 -> flags -> string) option;
   pwrite : ('a -> string -> int64 -> flags -> unit) option;
   flush : ('a -> flags -> unit) option;
   trim : ('a -> int32 -> int64 -> flags -> unit) option;
   zero : ('a -> int32 -> int64 -> flags -> unit) option;
-
-  can_multi_conn : ('a -> bool) option;
-
-  can_extents : ('a -> bool) option;
   extents : ('a -> int32 -> int64 -> flags -> extent list) option;
-
-  can_cache : ('a -> cache_flag) option;
   cache : ('a -> int32 -> int64 -> flags -> unit) option;
-
-  thread_model : (unit -> thread_model) option;
-
-  can_fast_zero : ('a -> bool) option;
-
-  preconnect : (bool -> unit) option;
 }
 
 let default_callbacks = {
@@ -111,44 +104,37 @@ let default_callbacks = {
   load = None;
   unload = None;
 
+  dump_plugin = None;
+
   config = None;
   config_complete = None;
   config_help = "";
+  thread_model = None;
 
+  preconnect = None;
   open_connection = None;
   close = None;
 
   get_size = None;
 
-  can_write = None;
+  can_cache = None;
+  can_extents = None;
+  can_fast_zero = None;
   can_flush = None;
-  is_rotational = None;
-  can_trim = None;
-
-  dump_plugin = None;
-
-  can_zero = None;
   can_fua = None;
+  can_multi_conn = None;
+  can_trim = None;
+  can_write = None;
+  can_zero = None;
+  is_rotational = None;
 
   pread = None;
   pwrite = None;
   flush = None;
   trim = None;
   zero = None;
-
-  can_multi_conn = None;
-
-  can_extents = None;
   extents = None;
-
-  can_cache = None;
   cache = None;
-
-  thread_model = None;
-
-  can_fast_zero = None;
-
-  preconnect = None;
 }
 
 external set_name : string -> unit = "ocaml_nbdkit_set_name" "noalloc"
@@ -159,44 +145,37 @@ external set_description : string -> unit = "ocaml_nbdkit_set_description" "noal
 external set_load : (unit -> unit) -> unit = "ocaml_nbdkit_set_load"
 external set_unload : (unit -> unit) -> unit = "ocaml_nbdkit_set_unload"
 
+external set_dump_plugin : (unit -> unit) -> unit = "ocaml_nbdkit_set_dump_plugin" "noalloc"
+
 external set_config : (string -> string -> unit) -> unit = "ocaml_nbdkit_set_config"
 external set_config_complete : (unit -> unit) -> unit = "ocaml_nbdkit_set_config_complete"
 external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" "noalloc"
+external set_thread_model : (unit -> thread_model) -> unit = "ocaml_nbdkit_set_thread_model"
 
+external set_preconnect : (bool -> unit) -> unit = "ocaml_nbdkit_set_preconnect"
 external set_open : (bool -> 'a) -> unit = "ocaml_nbdkit_set_open"
 external set_close : ('a -> unit) -> unit = "ocaml_nbdkit_set_close"
 
 external set_get_size : ('a -> int64) -> unit = "ocaml_nbdkit_set_get_size"
 
-external set_can_write : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_write"
+external set_can_cache : ('a -> cache_flag) -> unit = "ocaml_nbdkit_set_can_cache"
+external set_can_extents : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_extents"
+external set_can_fast_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_fast_zero"
 external set_can_flush : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_flush"
-external set_is_rotational : ('a -> bool) -> unit = "ocaml_nbdkit_set_is_rotational"
-external set_can_trim : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_trim"
-
-external set_dump_plugin : (unit -> unit) -> unit = "ocaml_nbdkit_set_dump_plugin" "noalloc"
-
-external set_can_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_zero"
 external set_can_fua : ('a -> fua_flag) -> unit = "ocaml_nbdkit_set_can_fua"
+external set_can_multi_conn : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_multi_conn"
+external set_can_trim : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_trim"
+external set_can_write : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_write"
+external set_can_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_zero"
+external set_is_rotational : ('a -> bool) -> unit = "ocaml_nbdkit_set_is_rotational"
 
 external set_pread : ('a -> int32 -> int64 -> flags -> string) -> unit = "ocaml_nbdkit_set_pread"
 external set_pwrite : ('a -> string -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_pwrite"
 external set_flush : ('a -> flags -> unit) -> unit = "ocaml_nbdkit_set_flush"
 external set_trim : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_trim"
 external set_zero : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_zero"
-
-external set_can_multi_conn : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_multi_conn"
-
-external set_can_extents : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_extents"
 external set_extents : ('a -> int32 -> int64 -> flags -> extent list) -> unit = "ocaml_nbdkit_set_extents"
-
-external set_can_cache : ('a -> cache_flag) -> unit = "ocaml_nbdkit_set_can_cache"
 external set_cache : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_cache"
-
-external set_thread_model : (unit -> thread_model) -> unit = "ocaml_nbdkit_set_thread_model"
-
-external set_can_fast_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_fast_zero"
-
-external set_preconnect : (bool -> unit) -> unit = "ocaml_nbdkit_set_preconnect"
 
 let may f = function None -> () | Some a -> f a
 
@@ -227,45 +206,38 @@ let register_plugin plugin =
   may set_load plugin.load;
   may set_unload plugin.unload;
 
+  may set_dump_plugin plugin.dump_plugin;
+
   may set_config plugin.config;
   may set_config_complete plugin.config_complete;
   if plugin.config_help <> "" then
     set_config_help plugin.config_help;
+  may set_thread_model plugin.thread_model;
 
+  may set_preconnect plugin.preconnect;
   may set_open plugin.open_connection;
   may set_close plugin.close;
 
   may set_get_size plugin.get_size;
 
-  may set_can_write plugin.can_write;
+  may set_can_cache plugin.can_cache;
+  may set_can_extents plugin.can_extents;
+  may set_can_fast_zero plugin.can_fast_zero;
   may set_can_flush plugin.can_flush;
-  may set_is_rotational plugin.is_rotational;
-  may set_can_trim plugin.can_trim;
-
-  may set_dump_plugin plugin.dump_plugin;
-
-  may set_can_zero plugin.can_zero;
   may set_can_fua plugin.can_fua;
+  may set_can_multi_conn plugin.can_multi_conn;
+  may set_can_trim plugin.can_trim;
+  may set_can_write plugin.can_write;
+  may set_can_zero plugin.can_zero;
+  may set_is_rotational plugin.is_rotational;
 
   may set_pread plugin.pread;
   may set_pwrite plugin.pwrite;
   may set_flush plugin.flush;
   may set_trim plugin.trim;
   may set_zero plugin.zero;
-
-  may set_can_multi_conn plugin.can_multi_conn;
-
-  may set_can_extents plugin.can_extents;
   may set_extents plugin.extents;
-
-  may set_can_cache plugin.can_cache;
-  may set_cache plugin.cache;
-
-  may set_thread_model plugin.thread_model;
-
-  may set_can_fast_zero plugin.can_fast_zero;
-
-  may set_preconnect plugin.preconnect
+  may set_cache plugin.cache
 
 external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
 
