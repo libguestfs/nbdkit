@@ -171,12 +171,14 @@ run_command (void)
       r = EXIT_FAILURE;
       break;
     case 0:
-      /* Captive nbdkit still running; kill it, but no need to wait
-       * for it, as the --run program's exit status is good enough (if
-       * the captive nbdkit fails to exit after SIGTERM, we have a
-       * bigger bug to fix).
+      /* Captive nbdkit is still running; kill it.  We want to wait
+       * for nbdkit to exit since that ensures all cleanup is done in
+       * the plugin before we return.  However we don't care if nbdkit
+       * returns an error, the exit code we return always comes from
+       * the --run command.
        */
       kill (pid, SIGTERM);
+      waitpid (pid, NULL, 0);
       break;
     default:
       /* Captive nbdkit exited unexpectedly; update the exit status. */
