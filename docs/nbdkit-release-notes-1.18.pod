@@ -7,7 +7,7 @@ nbdkit-release-notes-1.18 - release notes for nbdkit 1.18
 These are the release notes for nbdkit stable release 1.18.
 This describes the major changes since 1.16.
 
-nbdkit 1.18.0 was released on B<XXX DATE TO BE DECIDED> 2020.
+nbdkit 1.18.0 was released on 27th February 2020.
 
 =head2 Security
 
@@ -27,11 +27,11 @@ L<nbdkit-ext2-filter(1)> like this:
  nbdkit --filter=ext2 file fs.img ext2file=/disks/disk.raw
 
 L<nbdkit-python-plugin(3)> now offers a version 2 API which avoids
-copying the data buffer, improving performance.  The original (now
-called version 1) protocol is still supported for backwards
-compatibility.  The version 1 protocol was also enhanced to support
-the buffer protocol for the pread method, and memoryview for pwrite,
-improving performance by reducing copies (Nir Soffer).
+copying the data buffer, improving performance.  The original protocol
+(now retrospectively called version 1) is still supported for
+backwards compatibility.  The version 1 protocol was also enhanced to
+support the buffer protocol for the pread method, and memoryview for
+pwrite, improving performance by reducing copies (Nir Soffer).
 
 The Python plugin now prints readable stack traces when an exception
 is thrown (Nir Soffer).
@@ -51,8 +51,8 @@ The VDDK plugin now no longer needs C<$LD_LIBRARY_PATH> to be set.
 The correct library load path is automatically inferred from the
 C<libdir> parameter (Eric Blake).
 
-Verbose messages about calls to Read and Write functions in VDDK can
-now be suppressed by setting S<I<-D vddk.datapath=0>>.
+Verbose messages about calls to VDDK functions Read and Write can now
+be suppressed by setting S<I<-D vddk.datapath=0>>.
 
 =head2 Filters
 
@@ -94,10 +94,18 @@ verbose messages when verbose mode is enabled.
 
 =head2 API
 
+There is a new C<.get_ready> method which is called after
+C<.config_complete> and before the server forks or changes directory.
+It is the last chance to do any global preparation that is needed to
+serve connections.  Plugins have previously done this work in
+C<.config_complete>, but by splitting this into a new method it makes
+the API clearer.  (Note that existing plugins may continue to use
+C<.config_complete> for this work if they prefer.)
+
 There is a new C<.preconnect> method available which is called just
 after the client makes a connection but before any NBD negotiation or
 TLS authentication is done.  It can be used for early whitelisting or
-rate limiting of connections, and is in particular used by the new
+rate limiting of connections, and in particular is used by the new
 L<nbdkit-ip-filter(1)>.
 
 =head2 Bug fixes
@@ -141,6 +149,10 @@ host is running Linux E<ge> 5.6 (Stefano Garzarella).
 You can use C<./configure --disable-nbd-plugin> to completely
 disable the NBD plugin.
 
+The automake feature C<subdir-objects> is no longer used, which may
+improve compatibility on platforms with ancient and buggy automake
+(S<RHEL 7> being one such platform).
+
 =head2 Internals
 
 The explicit connection parameter passed around many functions in the
@@ -163,9 +175,35 @@ L<nbdkit(1)>.
 
 =head1 AUTHORS
 
-Eric Blake
+Authors of nbdkit 1.18:
 
-Richard W.M. Jones
+=over 4
+
+=item Adrian Ambrożewicz
+
+(1 commit)
+
+=item Eric Blake
+
+(30 commits)
+
+=item Wiktor Gołgowski
+
+(1 commit)
+
+=item Richard W.M. Jones
+
+(130 commits)
+
+=item Nir Soffer
+
+(11 commits)
+
+=item Pino Toscano
+
+(1 commit)
+
+=back
 
 =head1 COPYRIGHT
 
