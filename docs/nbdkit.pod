@@ -129,14 +129,14 @@ L<nbdkit-error-filter(1)> and L<nbdkit-delay-filter(1)>:
 
 =back
 
-=head2 Writing plugins in scripting languages
+=head2 Writing plugins in shell script
 
 =over 4
 
 =item *
 
-Write a simple, custom plugin entirely on the command line in shell
-script using L<nbdkit-sh-plugin(3)>:
+Write a simple, custom plugin in shell script using
+L<nbdkit-sh-plugin(3)>:
 
  nbdkit sh - <<'EOF'
    case "$1" in
@@ -145,6 +145,14 @@ script using L<nbdkit-sh-plugin(3)>:
      *) exit 2 ;;
    esac
  EOF
+
+=item *
+
+The same example as above can be written entirely on the command line
+using L<nbdkit-eval-plugin(1)>:
+
+ nbdkit eval get_size='echo 1M' \
+             pread='dd if=/dev/zero count=$3 iflag=count_bytes'
 
 =back
 
