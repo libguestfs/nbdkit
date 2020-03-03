@@ -1058,6 +1058,23 @@ before unloading the plugin.
 Note that it's not guaranteed this can always happen (eg. the server
 might be killed by C<SIGKILL> or segfault).
 
+=head2 Requesting asynchronous shutdown
+
+Plugins and filters can call L<exit(3)> in the configuration phase
+(before and including C<.get_ready>, but not in connected callbacks).
+
+Once nbdkit has started serving connections, plugins and filters
+should not call L<exit(3)>.  However they may instruct nbdkit to shut
+down by calling C<nbdkit_shutdown>:
+
+ void nbdkit_shutdown (void);
+
+This function requests an asynchronous shutdown and returns (I<note>
+that it does I<not> exit the process immediately).  It ensures that
+the plugin and all filters are unloaded cleanly which may take some
+time.  Further callbacks from nbdkit into the plugin or filter may
+occur after you have called this.
+
 =head1 PARSING COMMAND LINE PARAMETERS
 
 =head2 Parsing numbers
@@ -1443,4 +1460,4 @@ Pino Toscano
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2018 Red Hat Inc.
+Copyright (C) 2013-2020 Red Hat Inc.

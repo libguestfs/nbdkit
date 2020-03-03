@@ -189,6 +189,7 @@ EXTRA_DIST = \
 	test-shebang-python.sh \
 	test-shebang-ruby.sh \
 	test-shell.sh \
+	test-shutdown.sh \
 	test-sh-errors.sh \
 	test-sh-extents.sh \
 	test-single.sh \
@@ -265,6 +266,7 @@ TESTS += \
 	test-debug-flags.sh \
 	test-long-name.sh \
 	test-swap.sh \
+	test-shutdown.sh \
 	$(NULL)
 
 check_PROGRAMS += \
@@ -277,6 +279,25 @@ test_socket_activation_CPPFLAGS = \
 	-I$(top_srcdir)/common/protocol \
 	$(NULL)
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
+
+# check_LTLIBRARIES won't build a shared library (see automake manual).
+# So we have to do this and add a dependency.
+noinst_LTLIBRARIES += \
+	test-shutdown-plugin.la \
+	$(NULL)
+test-shutdown.sh: test-shutdown-plugin.la
+
+test_shutdown_plugin_la_SOURCES = \
+	test-shutdown-plugin.c \
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
+test_shutdown_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
+test_shutdown_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_shutdown_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 
 endif HAVE_PLUGINS
 

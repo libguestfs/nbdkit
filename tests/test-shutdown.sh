@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2019-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -29,47 +30,42 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# This linker script controls the visibility of symbols in the final
-# nbdkit binary.  We want to export some symbols to plugins, but at
-# the same time we don't want plugins to be able to call arbitrary
-# functions from nbdkit, so this script lists only the symbols we want
-# to export.
+source ./functions.sh
+set -x
 
-{
-  # The functions we want plugins and filters to call.
-  global:
-    nbdkit_absolute_path;
-    nbdkit_add_extent;
-    nbdkit_debug;
-    nbdkit_error;
-    nbdkit_export_name;
-    nbdkit_extents_count;
-    nbdkit_extents_free;
-    nbdkit_extents_new;
-    nbdkit_get_extent;
-    nbdkit_nanosleep;
-    nbdkit_parse_bool;
-    nbdkit_parse_int8_t;
-    nbdkit_parse_int16_t;
-    nbdkit_parse_int32_t;
-    nbdkit_parse_int64_t;
-    nbdkit_parse_int;
-    nbdkit_parse_size;
-    nbdkit_parse_uint8_t;
-    nbdkit_parse_uint16_t;
-    nbdkit_parse_uint32_t;
-    nbdkit_parse_uint64_t;
-    nbdkit_parse_unsigned;
-    nbdkit_peer_name;
-    nbdkit_read_password;
-    nbdkit_realpath;
-    nbdkit_set_error;
-    nbdkit_shutdown;
-    nbdkit_vdebug;
-    nbdkit_verror;
+requires qemu-img --version
+requires qemu-io --version
 
-    nbdkit_debug_*;
+plugin=.libs/test-shutdown-plugin.so
+requires test -f $plugin
 
-  # Everything else is hidden.
-  local: *;
-};
+sock=`mktemp -u`
+files="shutdown.pid $sock"
+cleanup_fn rm -f $files
+
+# Start nbdkit with the shutdown plugin.
+start_nbdkit -P shutdown.pid -U $sock $plugin
+
+pid=`cat shutdown.pid`
+
+# Reads are fine, nbdkit should still be running afterwards.
+for i in 1 2 3; do
+    qemu-img info "nbd+unix:///?socket=$sock"
+    sleep 2
+    kill -s 0 $pid
+done
+
+# Writing should cause nbdkit to exit, although it may take time.
+qemu-io -f raw -c 'w -P 0x55 0 1024' "nbd:unix:$sock"
+
+# Wait for nbdkit process to exit
+for i in {1..60}; do
+    if ! kill -s 0 $pid; then
+        break
+    fi
+    sleep 1
+done
+if kill -s 0 $pid; then
+    echo "$0: nbdkit $plugin did not exit as expected"
+    exit 1
+fi

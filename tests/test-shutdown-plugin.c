@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019-2020 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -32,81 +32,58 @@
 
 #include <config.h>
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
-#include <unistd.h>
 
-#include "internal.h"
-#include "utils.h"
-
-/* Detection of request to exit via signal.  Most places in the code
- * can just poll quit at opportune moments, while sockets.c needs a
- * pipe-to-self through quit_fd in order to break a poll loop without
- * a race.
- */
-volatile int quit;
-int quit_fd;
-static int write_quit_fd;
-
-void
-set_up_quit_pipe (void)
-{
-  int fds[2];
-
-#ifdef HAVE_PIPE2
-  if (pipe2 (fds, O_CLOEXEC) < 0) {
-    perror ("pipe2");
-    exit (EXIT_FAILURE);
-  }
-#else
-  /* This is called early enough that no other thread will be
-   * fork()ing while we create this; but we must set CLOEXEC so that
-   * the fds don't leak into children.
-   */
-  if (pipe (fds) < 0) {
-    perror ("pipe");
-    exit (EXIT_FAILURE);
-  }
-  if (set_cloexec (fds[0]) == -1 ||
-      set_cloexec (fds[1]) == -1) {
-    perror ("fcntl");
-    exit (EXIT_FAILURE);
-  }
-#endif
-  quit_fd = fds[0];
-  write_quit_fd = fds[1];
-}
-
-void
-close_quit_pipe (void)
-{
-  close (quit_fd);
-  close (write_quit_fd);
-}
+#include <nbdkit-plugin.h>
 
 static void
-set_quit (void)
+shutdown_unload (void)
 {
-  char c = 0;
-
-  quit = 1;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-  write (write_quit_fd, &c, 1);
-#pragma GCC diagnostic pop
+  nbdkit_debug ("clean shutdown");
 }
 
-void
-handle_quit (int sig)
+static void *
+shutdown_open (int readonly)
 {
-  set_quit ();
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
-void
-nbdkit_shutdown (void)
+static int64_t
+shutdown_get_size (void *handle)
 {
-  set_quit ();
+  return 1024*1024;
 }
+
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
+
+static int
+shutdown_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+{
+  memset (buf, 0, count);
+  return 0;
+}
+
+/* Writing 0x55 to any location causes a shutdown. */
+static int
+shutdown_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
+{
+  if (memchr (buf, 0x55, count) != NULL) {
+    nbdkit_debug ("shutdown triggered!");
+    nbdkit_shutdown ();
+  }
+  return 0;
+}
+
+static struct nbdkit_plugin plugin = {
+  .name              = "shutdown",
+  .version           = PACKAGE_VERSION,
+  .unload            = shutdown_unload,
+  .open              = shutdown_open,
+  .get_size          = shutdown_get_size,
+  .pread             = shutdown_pread,
+  .pwrite            = shutdown_pwrite,
+};
+
+NBDKIT_REGISTER_PLUGIN(plugin)

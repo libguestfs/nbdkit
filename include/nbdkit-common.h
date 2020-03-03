@@ -111,6 +111,7 @@ extern char *nbdkit_realpath (const char *path);
 extern int nbdkit_nanosleep (unsigned sec, unsigned nsec);
 extern const char *nbdkit_export_name (void);
 extern int nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen);
+extern void nbdkit_shutdown (void);
 
 struct nbdkit_extents;
 extern int nbdkit_add_extent (struct nbdkit_extents *,
