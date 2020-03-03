@@ -101,6 +101,7 @@ EXTRA_DIST = \
 	test-data-file.sh \
 	test-data-raw.sh \
 	test-debug-flags.sh \
+	test-delay-shutdown.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
 	test-dump-plugin-example4.sh \
@@ -181,7 +182,6 @@ EXTRA_DIST = \
 	test-retry-readonly.sh \
 	test-retry-reopen-fail.sh \
 	test-retry-zero-flags.sh \
-	test-shutdown.sh \
 	test-ssh.sh \
 	test-swap.sh \
 	test.tcl \
@@ -1017,7 +1017,7 @@ endif
 TESTS += test-cow-null.sh
 
 # delay filter tests.
-TESTS += test-shutdown.sh
+TESTS += test-delay-shutdown.sh
 LIBNBD_TESTS += test-delay
 
 test_delay_SOURCES = test-delay.c

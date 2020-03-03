@@ -37,7 +37,7 @@ requires qemu-io --version
 requires timeout --version
 
 sock=`mktemp -u`
-files="shutdown.pid $sock"
+files="delay-shutdown.pid $sock"
 cleanup_fn rm -f $files
 fail=0
 
@@ -45,7 +45,7 @@ fail=0
 # This tests that the delay filter's use of nbdkit_nanosleep is able to
 # react to both connection death and server shutdown without finishing
 # the entire delay duration.
-start_nbdkit -P shutdown.pid -U $sock --filter=noparallel --filter=delay \
+start_nbdkit -P delay-shutdown.pid -U $sock --filter=noparallel --filter=delay \
     null 1M serialize=connections rdelay=60
 
 # Early client death should not stall connection of second client.
