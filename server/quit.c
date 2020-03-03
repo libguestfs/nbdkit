@@ -87,13 +87,7 @@ close_quit_pipe (void)
   close (write_quit_fd);
 }
 
-void
-handle_quit (int sig)
-{
-  set_quit ();
-}
-
-void
+static void
 set_quit (void)
 {
   char c = 0;
@@ -103,4 +97,10 @@ set_quit (void)
 #pragma GCC diagnostic ignored "-Wunused-result"
   write (write_quit_fd, &c, 1);
 #pragma GCC diagnostic pop
+}
+
+void
+handle_quit (int sig)
+{
+  set_quit ();
 }
