@@ -215,14 +215,13 @@ backend_finalize (struct backend *b)
    * filter furthest away from the plugin, and matching .close order.
    */
 
-  controlpath_debug ("%s: finalize", b->name);
-
   /* Once finalize fails, we can do nothing further on this connection */
   if (h->state & HANDLE_FAILED)
     return -1;
 
   if (h->state & HANDLE_CONNECTED) {
     assert (h->state & HANDLE_OPEN && h->handle);
+    controlpath_debug ("%s: finalize", b->name);
     if (b->finalize (b, h->handle) == -1) {
       h->state |= HANDLE_FAILED;
       return -1;
@@ -241,10 +240,10 @@ backend_close (struct backend *b)
   struct handle *h = get_handle (conn, b->i);
 
   /* outer-to-inner order, opposite .open */
-  controlpath_debug ("%s: close", b->name);
 
   if (h->handle) {
     assert (h->state & HANDLE_OPEN);
+    controlpath_debug ("%s: close", b->name);
     b->close (b, h->handle);
   }
   else
