@@ -8,7 +8,7 @@ nbdkit-extentlist-filter - place extent list over a plugin
 
 =head1 DESCRIPTION
 
-C<nbdkit-extentlist-filter> is an nbdkit filter lets you place a
+C<nbdkit-extentlist-filter> is an nbdkit filter that lets you place a
 static list of extents on top of an existing plugin.  Extents record
 whether or not specific parts of the disk are allocated or sparse.
 
