@@ -1,0 +1,58 @@
+=head1 NAME
+
+nbdkit-exitlast-filter - exit on last client connection
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=exitlast PLUGIN
+
+=head1 DESCRIPTION
+
+C<nbdkit-exitlast-filter> is an nbdkit filter that causes nbdkit to
+exit when there are no more client connections.  Note that it doesn't
+exit before the first client connection.
+
+One use for this is in combination with a superserver, to save
+resources when nbdkit is not in use (see L<nbdkit-service(1)>).
+Another use is to ensure nbdkit exits after the client has finished
+(but see also nbdkit-captive(1) for other ways to do this).
+
+=head1 PARAMETERS
+
+There are no parameters specific to nbdkit-exitlast-filter.  Any
+parameters are passed through to and processed by the underlying
+plugin in the normal way.
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-exitlast-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-exitlast-filter> first appeared in nbdkit 1.20.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-ip-filter(1)>,
+L<nbdkit-rate-filter(1)>,
+L<nbdkit-captive(1)>,
+L<nbdkit-service(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-plugin(3)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.

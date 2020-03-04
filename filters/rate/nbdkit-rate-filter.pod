@@ -129,6 +129,7 @@ C<nbdkit-rate-filter> first appeared in nbdkit 1.12.
 L<nbdkit(1)>,
 L<nbdkit-blocksize-filter(1)>,
 L<nbdkit-delay-filter(1)>,
+L<nbdkit-exitlast-filter(1)>,
 L<nbdkit-filter(3)>,
 L<iptables(8)>,
 L<tc(8)>.

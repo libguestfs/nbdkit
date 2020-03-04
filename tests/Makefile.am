@@ -111,6 +111,7 @@ EXTRA_DIST = \
 	test-error100.sh \
 	test-error-triggered.sh \
 	test-eval.sh \
+	test-exitlast.sh \
 	test-export-name.sh \
 	test-extentlist.sh \
 	test-file-extents.sh \
@@ -1052,6 +1053,9 @@ TESTS += \
 	test-error100.sh \
 	test-error-triggered.sh \
 	$(NULL)
+
+# exitlast filter test.
+TESTS += test-exitlast.sh
 
 # extentlist filter test.
 TESTS += test-extentlist.sh

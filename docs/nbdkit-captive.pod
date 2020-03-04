@@ -14,7 +14,9 @@ reliably cleaned up
 You can run nbdkit under another process and have nbdkit reliably
 clean up.  There are two techniques depending on whether you want
 nbdkit to start the other process (L</CAPTIVE NBDKIT>), or if you want
-the other process to start nbdkit (L</EXIT WITH PARENT>).
+the other process to start nbdkit (L</EXIT WITH PARENT>).  Another way
+is to have nbdkit exit after the last client connection, see
+L<nbdkit-exitlast-filter(1)>.
 
 =head1 CAPTIVE NBDKIT
 
@@ -141,6 +143,7 @@ reliably on all operating systems).
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
+L<nbdkit-exitlast-filter(1)>,
 L<prctl(2)> (on Linux),
 L<procctl(2)> (on FreeBSD).
 

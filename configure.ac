@@ -97,6 +97,7 @@ filters="\
         cow \
         delay \
         error \
+        exitlast \
         ext2 \
         extentlist \
         fua \
@@ -267,6 +268,7 @@ AC_CHECK_HEADERS([\
 	alloca.h \
 	byteswap.h \
 	endian.h \
+	stdatomic.h \
 	sys/endian.h \
 	sys/mman.h \
 	sys/prctl.h \
@@ -1022,6 +1024,7 @@ AC_CONFIG_FILES([Makefile
                  filters/cow/Makefile
                  filters/delay/Makefile
                  filters/error/Makefile
+                 filters/exitlast/Makefile
                  filters/ext2/Makefile
                  filters/extentlist/Makefile
                  filters/fua/Makefile

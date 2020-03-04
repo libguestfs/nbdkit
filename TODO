@@ -10,9 +10,6 @@ General ideas for improvements
   sizes and threads, as that should make it easier to identify
   systematic issues.
 
-* Exit on last connection (the default behaviour of qemu-nbd unless
-  you use -t).
-
 * Limit number of incoming connections (like qemu-nbd -e).
 
 * For parallel plugins, only create threads on demand from parallel
@@ -172,6 +169,9 @@ Suggestions for filters
   xz but saving many hours on compression (at the cost of hundreds of
   MBs of extra data)
   https://github.com/facebook/zstd/issues/395#issuecomment-535875379
+
+* nbdkit-exitlast-filter could probably use a configurable timeout so
+  that there is a grace period in case another connection comes along.
 
 nbdkit-rate-filter:
 

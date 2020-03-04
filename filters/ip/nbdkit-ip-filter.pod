@@ -145,6 +145,7 @@ C<nbdkit-ip-filter> first appeared in nbdkit 1.18.
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
+L<nbdkit-exitlast-filter(1)>,
 L<nbdkit-filter(3)>.
 
 =head1 AUTHORS
