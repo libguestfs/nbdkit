@@ -10,8 +10,6 @@ General ideas for improvements
   sizes and threads, as that should make it easier to identify
   systematic issues.
 
-* Limit number of incoming connections (like qemu-nbd -e).
-
 * For parallel plugins, only create threads on demand from parallel
   client requests, rather than pre-creating all threads at connection
   time, up to the thread pool size limit.  Of course, once created, a

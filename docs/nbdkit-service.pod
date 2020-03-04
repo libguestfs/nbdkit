@@ -145,6 +145,7 @@ L</SOCKET ACTIVATION>.
 L<nbdkit(1)>,
 L<nbdkit-exitlast-filter(1)>,
 L<nbdkit-ip-filter(1)>,
+L<nbdkit-limit-filter(1)>,
 L<systemd(1)>,
 L<systemd.socket(5)>,
 L<syslog(3)>,

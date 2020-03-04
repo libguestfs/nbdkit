@@ -102,6 +102,7 @@ filters="\
         extentlist \
         fua \
         ip \
+        limit \
         log \
         nocache \
         noextents \
@@ -1029,6 +1030,7 @@ AC_CONFIG_FILES([Makefile
                  filters/extentlist/Makefile
                  filters/fua/Makefile
                  filters/ip/Makefile
+                 filters/limit/Makefile
                  filters/log/Makefile
                  filters/nocache/Makefile
                  filters/noextents/Makefile

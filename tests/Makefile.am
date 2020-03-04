@@ -131,6 +131,7 @@ EXTRA_DIST = \
 	test-ip-filter.sh \
 	test-iso.sh \
 	test-layers.sh \
+	test-limit.sh \
 	test-linuxdisk.sh \
 	test-linuxdisk-copy-out.sh \
 	test-log.sh \
@@ -1065,6 +1066,9 @@ TESTS += test-fua.sh
 
 # ip filter test.
 TESTS += test-ip-filter.sh
+
+# limit filter test.
+TESTS += test-limit.sh
 
 # log filter test.
 TESTS += test-log.sh

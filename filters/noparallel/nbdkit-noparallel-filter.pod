@@ -10,12 +10,14 @@ nbdkit-noparallel-filter - nbdkit noparallel filter
 
 C<nbdkit-noparallel-filter> is a filter that intentionally disables
 parallelism in handling requests from clients. It is mainly useful for
-evaluating timing differences between various levels of
-parallelism. It can also be used as a way to work around any bugs in a
-plugin's claimed level of parallel support, without recompiling the
-plugin, or to ease efforts when connecting with a client that can
-batch up several requests but is not prepared to handle out-of-order
-replies.
+evaluating timing differences between various levels of parallelism.
+It can also be used as a way to work around any bugs in a plugin's
+claimed level of parallel support, without recompiling the plugin, or
+to ease efforts when connecting with a client that can batch up
+several requests but is not prepared to handle out-of-order replies.
+
+To limit the number of concurrent clients it's usually better to use
+L<nbdkit-limit-filter(1)>.
 
 =head1 PARAMETERS
 
@@ -73,6 +75,7 @@ L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-fua-filter(1)>,
+L<nbdkit-limit-filter(1)>,
 L<nbdkit-nocache-filter(1)>,
 L<nbdkit-noextents-filter(1)>,
 L<nbdkit-nozero-filter(1)>.
