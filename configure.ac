@@ -97,7 +97,7 @@ filters="\
         cow \
         delay \
         error \
-	ext2 \
+        ext2 \
         extentlist \
         fua \
         ip \
