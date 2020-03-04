@@ -137,16 +137,16 @@ handle_single_connection (int sockin, int sockout)
 
   lock_connection ();
 
-  if (top->thread_model (top) < NBDKIT_THREAD_MODEL_PARALLEL ||
+  /* NB: because of an asynchronous exit top can be set to NULL at
+   * just about any time.
+   */
+  if ((top && top->thread_model (top) < NBDKIT_THREAD_MODEL_PARALLEL) ||
       nworkers == 1)
     nworkers = 0;
   conn = new_connection (sockin, sockout, nworkers);
   if (!conn)
     goto done;
 
-  /* NB: because of an asynchronous exit top can be set to NULL at
-   * just about any time.
-   */
   if (top)
     plugin_name = top->plugin_name (top);
   else
