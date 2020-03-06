@@ -238,6 +238,7 @@ struct connection {
   uint32_t exportnamelen;
   uint32_t cflags;
   uint16_t eflags;
+  bool handshake_complete;
   bool using_tls;
   bool structured_replies;
   bool meta_context_base_allocation;

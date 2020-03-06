@@ -163,6 +163,7 @@ handle_single_connection (int sockin, int sockout)
    */
   if (protocol_handshake () == -1)
     goto done;
+  conn->handshake_complete = true;
 
   if (!nworkers) {
     /* No need for a separate thread. */
