@@ -225,6 +225,7 @@ struct connection {
   pthread_mutex_t read_lock;
   pthread_mutex_t write_lock;
   pthread_mutex_t status_lock;
+
   int status; /* 1 for more I/O with client, 0 for shutdown, -1 on error */
   int status_pipe[2]; /* track status changes via poll when nworkers > 1 */
   void *crypto_session;

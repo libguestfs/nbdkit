@@ -239,13 +239,17 @@ new_connection (int sockin, int sockout, int nworkers)
     perror ("malloc");
     return NULL;
   }
-
   conn->status_pipe[0] = conn->status_pipe[1] = -1;
+
+  pthread_mutex_init (&conn->request_lock, NULL);
+  pthread_mutex_init (&conn->read_lock, NULL);
+  pthread_mutex_init (&conn->write_lock, NULL);
+  pthread_mutex_init (&conn->status_lock, NULL);
 
   conn->handles = calloc (top->i + 1, sizeof *conn->handles);
   if (conn->handles == NULL) {
     perror ("malloc");
-    goto error;
+    goto error1;
   }
   conn->nr_handles = top->i + 1;
   for_each_backend (b)
@@ -257,7 +261,7 @@ new_connection (int sockin, int sockout, int nworkers)
 #ifdef HAVE_PIPE2
     if (pipe2 (conn->status_pipe, O_NONBLOCK | O_CLOEXEC)) {
       perror ("pipe2");
-      goto error;
+      goto error2;
     }
 #else
     /* If we were fully parallel, then this function could be
@@ -274,30 +278,26 @@ new_connection (int sockin, int sockout, int nworkers)
     if (pipe (conn->status_pipe)) {
       perror ("pipe");
       unlock_request (NULL);
-      goto error;
+      goto error2;
     }
     if (set_nonblock (set_cloexec (conn->status_pipe[0])) == -1) {
       perror ("fcntl");
       close (conn->status_pipe[1]);
       unlock_request (NULL);
-      goto error;
+      goto error2;
     }
     if (set_nonblock (set_cloexec (conn->status_pipe[1])) == -1) {
       perror ("fcntl");
       close (conn->status_pipe[0]);
       unlock_request (NULL);
-      goto error;
+      goto error2;
     }
     unlock_request (NULL);
 #endif
   }
+
   conn->sockin = sockin;
   conn->sockout = sockout;
-  pthread_mutex_init (&conn->request_lock, NULL);
-  pthread_mutex_init (&conn->read_lock, NULL);
-  pthread_mutex_init (&conn->write_lock, NULL);
-  pthread_mutex_init (&conn->status_lock, NULL);
-
   conn->recv = raw_recv;
   if (getsockopt (sockout, SOL_SOCKET, SO_TYPE, &opt, &optlen) == 0)
     conn->send = raw_send_socket;
@@ -309,12 +309,18 @@ new_connection (int sockin, int sockout, int nworkers)
 
   return conn;
 
- error:
+ error2:
   if (conn->status_pipe[0] >= 0)
     close (conn->status_pipe[0]);
   if (conn->status_pipe[1] >= 0)
     close (conn->status_pipe[1]);
   free (conn->handles);
+
+ error1:
+  pthread_mutex_destroy (&conn->request_lock);
+  pthread_mutex_destroy (&conn->read_lock);
+  pthread_mutex_destroy (&conn->write_lock);
+  pthread_mutex_destroy (&conn->status_lock);
   free (conn);
   return NULL;
 }
