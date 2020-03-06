@@ -137,23 +137,27 @@ handle_single_connection (int sockin, int sockout)
 
   lock_connection ();
 
-  /* NB: because of an asynchronous exit top can be set to NULL at
-   * just about any time.
+  /* Because of asynchronous exit it is plausible that a new
+   * connection is started at the same time as the backend is being
+   * shut down.  top may therefore be NULL, and if this happens return
+   * immediately.
    */
-  if ((top && top->thread_model (top) < NBDKIT_THREAD_MODEL_PARALLEL) ||
+  if (!top) {
+    unlock_connection ();
+    return;
+  }
+
+  if (top->thread_model (top) < NBDKIT_THREAD_MODEL_PARALLEL ||
       nworkers == 1)
     nworkers = 0;
   conn = new_connection (sockin, sockout, nworkers);
   if (!conn)
     goto done;
 
-  if (top)
-    plugin_name = top->plugin_name (top);
-  else
-    plugin_name = "(unknown)";
+  plugin_name = top->plugin_name (top);
   threadlocal_set_name (plugin_name);
 
-  if (top && top->preconnect (top, read_only) == -1)
+  if (top->preconnect (top, read_only) == -1)
     goto done;
 
   /* NBD handshake.
