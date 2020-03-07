@@ -187,27 +187,26 @@ let may f = function None -> () | Some a -> f a
 
 let register_plugin plugin =
   (* Check the required fields have been set by the caller. *)
-  if plugin.name = "" then
-    failwith "'.name' field in NBDKit.plugin structure must be set";
-  if plugin.open_connection = None then
-    failwith (sprintf "%s: '.open_connection' field in NBDKit.plugin structure must be set"
-                plugin.name);
-  if plugin.get_size = None then
-    failwith (sprintf "%s: '.get_size' field in NBDKit.plugin structure must be set"
-                plugin.name);
-  if plugin.pread = None then
-    failwith (sprintf "%s: '.pread' field in NBDKit.plugin structure must be set"
-                plugin.name);
+  let required fieldname =
+    function
+    | true -> ()
+    | false ->
+       if plugin.name = "" then
+         failwith (sprintf "NBDKit.plugin.%s field is not set" fieldname)
+       else
+         failwith (sprintf "%s: NBDKit.plugin.%s field is not set"
+                     plugin.name fieldname)
+  in
+  required "name"            (plugin.name <> "");
+  required "open_connection" (plugin.open_connection <> None);
+  required "get_size"        (plugin.get_size <> None);
+  required "pread"           (plugin.pread <> None);
 
   (* Set the fields in the C code. *)
-
   set_name plugin.name;
-  if plugin.longname <> "" then
-    set_longname plugin.longname;
-  if plugin.version <> "" then
-    set_version plugin.version;
-  if plugin.description <> "" then
-    set_description plugin.description;
+  if plugin.longname <> "" then    set_longname plugin.longname;
+  if plugin.version <> "" then     set_version plugin.version;
+  if plugin.description <> "" then set_description plugin.description;
 
   may set_load plugin.load;
   may set_unload plugin.unload;
@@ -216,8 +215,7 @@ let register_plugin plugin =
 
   may set_config plugin.config;
   may set_config_complete plugin.config_complete;
-  if plugin.config_help <> "" then
-    set_config_help plugin.config_help;
+  if plugin.config_help <> "" then set_config_help plugin.config_help;
   may set_thread_model plugin.thread_model;
 
   may set_get_ready plugin.get_ready;
