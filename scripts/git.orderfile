@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -56,10 +56,14 @@ server/*
 common/*
 
 # Plugins and filters.
+plugins/*/*.mli
 plugins/*/*.h
+plugins/*/*.ml
 plugins/*/*.c
 plugins/*
+filters/*/*.mli
 filters/*/*.h
+filters/*/*.ml
 filters/*/*.c
 filters/*
 
@@ -68,7 +72,9 @@ tests/*.sh
 tests/*
 
 # Remaining Header files.
+*.mli
 *.h
 
 # Remaining Source files.
+*.ml
 *.c
