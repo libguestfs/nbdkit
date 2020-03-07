@@ -4,6 +4,12 @@ let nr_sectors = 2048
 let disk = Bytes.make (nr_sectors*sector_size) '\000' (* disk image *)
 let sparse = Bytes.make nr_sectors '\000' (* sparseness bitmap *)
 
+(* Test parse_* functions. *)
+let () =
+  assert (NBDKit.parse_size "1M" = Int64.of_int (1024*1024));
+  assert (NBDKit.parse_bool "true" = true);
+  assert (NBDKit.parse_bool "0" = false)
+
 (* Test the realpath function. *)
 let () =
   let isdir d = try Sys.is_directory d with Sys_error _ -> false in
