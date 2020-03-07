@@ -4,11 +4,23 @@ let nr_sectors = 2048
 let disk = Bytes.make (nr_sectors*sector_size) '\000' (* disk image *)
 let sparse = Bytes.make nr_sectors '\000' (* sparseness bitmap *)
 
+(* Test the realpath function. *)
+let () =
+  let isdir d = try Sys.is_directory d with Sys_error _ -> false in
+  let test_dir = "/usr/bin" in
+  if isdir test_dir then
+    (* We don't know what the answer will be, but it must surely
+     * be a directory.
+     *)
+    assert (isdir (NBDKit.realpath test_dir))
+
 let test_load () =
   NBDKit.debug "test ocaml plugin loaded"
 
 let test_unload () =
-  NBDKit.debug "test ocaml plugin unloaded"
+  NBDKit.debug "test ocaml plugin unloaded";
+  (* A good way to find memory bugs: *)
+  Gc.compact ()
 
 let params = ref []
 
@@ -26,7 +38,9 @@ let test_get_ready () =
   NBDKit.debug "test ocaml plugin getting ready"
 
 let test_open readonly =
-  NBDKit.debug "test ocaml plugin handle opened readonly=%b" readonly;
+  let export_name = NBDKit.export_name () in
+  NBDKit.debug "test ocaml plugin handle opened readonly=%b export=%S"
+    readonly export_name;
   ()
 
 let test_close () =

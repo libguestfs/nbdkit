@@ -117,6 +117,12 @@ val set_error : Unix.error -> unit
     handful of errno values.  Any other errno will be translated
     into [EINVAL]. *)
 
+(* Note OCaml has functions already for parsing other integers, so
+ * there is no need to bind them here.  We only bind the functions
+ * which have special abilities in nbdkit: [parse_size] can parse
+ * human sizes, [parse_bool] parses a range of nbdkit-specific
+ * boolean strings, and [read_password] suppresses echo.
+ *)
 val parse_size : string -> int64
 val parse_bool : string -> bool
 val read_password : string -> string
@@ -128,6 +134,21 @@ val read_password : string -> string
     actual error is sent to the nbdkit error log and is not
     available from the OCaml code.  It is usually best to let
     the exception escape. *)
+
+(* OCaml's [Filename] module can handle [absolute_path]. *)
+val realpath : string -> string
+(** Binding for [nbdkit_realpath].
+    Returns the canonical path from a path parameter. *)
+
+val nanosleep : int -> int -> unit
+(** Binding for [nbdkit_nanosleep].  Sleeps for seconds and nanoseconds. *)
+
+val export_name : unit -> string
+(** Binding for [nbdkit_export_name].  Returns the name of the
+    export as requested by the client. *)
+
+val shutdown : unit -> unit
+(** Binding for [nbdkit_shutdown].  Requests the server shut down. *)
 
 val debug : ('a, unit, string, unit) format4 -> 'a
 (** Print a debug message when nbdkit is in verbose mode. *)

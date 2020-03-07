@@ -52,7 +52,9 @@ type handle = {
 
 let id = ref 0
 let ocamlexample_open readonly =
-  NBDKit.debug "example OCaml plugin handle opened readonly=%b" readonly;
+  let export_name = NBDKit.export_name () in
+  NBDKit.debug "example OCaml plugin handle opened readonly=%b export=%S"
+    readonly export_name;
   incr id;
   { h_id = !id }
 

@@ -984,6 +984,65 @@ ocaml_nbdkit_read_password (value strv)
   CAMLreturn (rv);
 }
 
+value
+ocaml_nbdkit_realpath (value strv)
+{
+  CAMLparam1 (strv);
+  CAMLlocal1 (rv);
+  char *ret;
+
+  ret = nbdkit_realpath (String_val (strv));
+  if (ret == NULL)
+    caml_failwith ("nbdkit_realpath");
+  rv = caml_copy_string (ret);
+  free (ret);
+
+  CAMLreturn (rv);
+}
+
+value
+ocaml_nbdkit_nanosleep (value secv, value nsecv)
+{
+  CAMLparam2 (secv, nsecv);
+  int r;
+
+  caml_enter_blocking_section ();
+  r = nbdkit_nanosleep (Int_val (secv), Int_val (nsecv));
+  caml_leave_blocking_section ();
+  if (r == -1)
+    caml_failwith ("nbdkit_nanosleep");
+
+  CAMLreturn (Val_unit);
+}
+
+value
+ocaml_nbdkit_export_name (value unitv)
+{
+  CAMLparam1 (unitv);
+  CAMLlocal1 (rv);
+  const char *ret;
+
+  ret = nbdkit_export_name ();
+  /* Note that NULL indicates error.  Default export name is [""] even
+   * for oldstyle.
+   */
+  if (ret == NULL)
+    caml_failwith ("nbdkit_export_name");
+  rv = caml_copy_string (ret);
+
+  CAMLreturn (rv);
+}
+
+/* NB: noalloc function. */
+value
+ocaml_nbdkit_shutdown (value unitv)
+{
+  CAMLparam1 (unitv);
+
+  nbdkit_shutdown ();
+  CAMLreturn (Val_unit);
+}
+
 /* NB: noalloc function. */
 value
 ocaml_nbdkit_debug (value strv)
