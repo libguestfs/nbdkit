@@ -16,21 +16,27 @@ are:
 
 =item nbd-client -b 512 localhost /dev/nbd0
 
-which attaches a locally running nbdkit instance to the kernel device
-F</dev/nbd0>.  I<-b 512> can be omitted when using
-S<L<nbd-client(8)> E<ge> 3.19>.
+Attaches a locally running nbdkit instance to the kernel device
+F</dev/nbd0>.  I<-b 512> can be omitted when using S<L<nbd-client(8)>
+E<ge> 3.19>.
+
+=item nbd-client -b 512 -unix /tmp/socket /dev/nbd0
+
+Alternative method using a Unix domain socket instead of a public
+TCP/IP socket.  Use C<nbdkit -U /tmp/socket> to serve.
 
 =item nbd-client -d /dev/nbd0
 
-which detaches F</dev/nbd0>, and:
+Detaches F</dev/nbd0>.
 
 =item nbd-client -c /dev/nbd0
 
-which queries whether F</dev/nbd0> is attached or not.
+Queries whether F</dev/nbd0> is attached or not.
 
 =item modprobe nbd
 
-which may be needed to load the nbd client kernel module.
+You may be need to run this command once to load the nbd client kernel
+module.
 
 =back
 
