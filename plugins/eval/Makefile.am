@@ -45,6 +45,7 @@ BUILT_SOURCES = \
 	$(NULL)
 $(BUILT_SOURCES):
 	ln -f ../sh/$@
+CLEANFILES += $(BUILT_SOURCES)
 
 nbdkit_eval_plugin_la_SOURCES = \
 	eval.c \
