@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2017-2019 Red Hat Inc.
+# Copyright (C) 2017-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -37,14 +37,16 @@ plugin_LTLIBRARIES = nbdkit-eval-plugin.la
 
 # This plugin shares most of the same sources as nbdkit-sh-plugin.  In
 # RHEL 7 we cannot add the C files from ../sh directly to SOURCES
-# because subdir-objects is broken.  Instead we create hard links to
+# because subdir-objects is broken.  Instead we create symlinks to
 # them.
 BUILT_SOURCES = \
 	call.c \
 	methods.c \
 	$(NULL)
-$(BUILT_SOURCES):
-	ln -f ../sh/$@
+call.c: $(srcdir)/../sh/call.c
+	ln -f -s $(srcdir)/../sh/$@
+methods.c: $(srcdir)/../sh/methods.c
+	ln -f -s $(srcdir)/../sh/$@
 CLEANFILES += $(BUILT_SOURCES)
 
 nbdkit_eval_plugin_la_SOURCES = \
