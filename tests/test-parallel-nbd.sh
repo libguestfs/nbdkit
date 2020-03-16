@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2017-2019 Red Hat Inc.
+# Copyright (C) 2017-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,6 +35,7 @@ source ./functions.sh
 # Check file-data was created by Makefile and qemu-io exists.
 requires test -f file-data
 requires qemu-io --version
+requires timeout --version
 
 nbdkit --dump-plugin nbd | grep -q ^thread_model=parallel ||
     { echo "nbdkit lacks support for parallel requests"; exit 77; }
@@ -46,8 +47,8 @@ cleanup_fn rm -f $files
 
 # Populate file, and sanity check that qemu-io can issue parallel requests
 printf '%1024s' . > test-parallel-nbd.data
-qemu-io -f raw -c "aio_write -P 1 0 512" -c "aio_write -P 2 512 512" \
-         -c aio_flush test-parallel-nbd.data ||
+timeout 30s </dev/null qemu-io -f raw -c "aio_write -P 1 0 512" \
+        -c "aio_write -P 2 512 512" -c aio_flush test-parallel-nbd.data ||
     { echo "'qemu-io' can't drive parallel requests"; exit 77; }
 
 # Set up the file plugin to delay both reads and writes (for a good chance
@@ -63,7 +64,8 @@ start_nbdkit -P test-parallel-nbd.pid \
 
 # With --threads=1, the write should complete first because it was issued first
 nbdkit -v -t 1 -U - nbd socket=$sock --run '
-  qemu-io -f raw -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" \
+  timeout 60s </dev/null qemu-io -f raw \
+  -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" \
   -c aio_flush $nbd' | tee test-parallel-nbd.out
 if test "$(grep '512/512' test-parallel-nbd.out)" != \
 "wrote 512/512 bytes at offset 512
@@ -73,7 +75,8 @@ fi
 
 # With default --threads, the faster read should complete first
 nbdkit -v -U - nbd socket=$sock --run '
-  qemu-io -f raw -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" \
+  timeout 60s </dev/null qemu-io -f raw \
+  -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" \
   -c aio_flush $nbd' | tee test-parallel-nbd.out
 if test "$(grep '512/512' test-parallel-nbd.out)" != \
 "read 512/512 bytes at offset 0

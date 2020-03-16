@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2017-2019 Red Hat Inc.
+# Copyright (C) 2017-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,6 +35,7 @@ source ./functions.sh
 # Check file-data was created by Makefile and qemu-io exists.
 requires test -f file-data
 requires qemu-io --version
+requires timeout --version
 
 nbdkit --dump-plugin sh | grep -q ^thread_model=parallel ||
     { echo "nbdkit lacks support for parallel requests"; exit 77; }
@@ -43,8 +44,8 @@ cleanup_fn rm -f test-parallel-sh.data test-parallel-sh.out test-parallel-sh.scr
 
 # Populate file, and sanity check that qemu-io can issue parallel requests
 printf '%1024s' . > test-parallel-sh.data
-qemu-io -f raw -c "aio_write -P 1 0 512" -c "aio_write -P 2 512 512" \
-         -c aio_flush test-parallel-sh.data ||
+timeout 30s </dev/null qemu-io -f raw -c "aio_write -P 1 0 512" \
+        -c "aio_write -P 2 512 512" -c aio_flush test-parallel-sh.data ||
     { echo "'qemu-io' can't drive parallel requests"; exit 77; }
 
 # Set up the sh plugin to delay both reads and writes (for a good
@@ -96,8 +97,8 @@ chmod +x test-parallel-sh.script
 
 # With --threads=1, the write should complete first because it was issued first
 nbdkit -v -t 1 -U - --filter=delay sh test-parallel-sh.script \
-  wdelay=2 rdelay=1 --run 'qemu-io -f raw -c "aio_write -P 2 512 512" \
-                           -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
+  wdelay=2 rdelay=1 --run 'timeout 60s </dev/null qemu-io -f raw \
+    -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
     tee test-parallel-sh.out
 if test "$(grep '512/512' test-parallel-sh.out)" != \
 "wrote 512/512 bytes at offset 512
@@ -107,8 +108,8 @@ fi
 
 # With default --threads, the faster read should complete first
 nbdkit -v -U - --filter=delay sh test-parallel-sh.script \
-  wdelay=2 rdelay=1 --run 'qemu-io -f raw -c "aio_write -P 2 512 512" \
-                           -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
+  wdelay=2 rdelay=1 --run 'timeout 60s </dev/null qemu-io -f raw \
+    -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
     tee test-parallel-sh.out
 if test "$(grep '512/512' test-parallel-sh.out)" != \
 "read 512/512 bytes at offset 0
@@ -120,8 +121,8 @@ fi
 # issued first. Also test that the log filter doesn't leak an fd
 nbdkit -v -U - --filter=noparallel --filter=log --filter=delay \
   sh test-parallel-sh.script logfile=/dev/null \
-  wdelay=2 rdelay=1 --run 'qemu-io -f raw -c "aio_write -P 2 512 512" \
-                           -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
+  wdelay=2 rdelay=1 --run 'timeout 60s </dev/null qemu-io -f raw \
+    -c "aio_write -P 2 512 512" -c "aio_read -P 1 0 512" -c aio_flush $nbd' |
     tee test-parallel-sh.out
 if test "$(grep '512/512' test-parallel-sh.out)" != \
 "wrote 512/512 bytes at offset 512
