@@ -103,7 +103,8 @@ L<nbdkit-plugin(3)>,
 L<nbdkit-loop(1)>,
 L<nbdkit-data-plugin(1)>,
 L<nbdkit-file-plugin(1)>,
-L<nbdkit-info-plugin(1)>.
+L<nbdkit-info-plugin(1)>,
+L<nbdkit-tmpdisk-plugin(1)>.
 
 =head1 AUTHORS
 

@@ -1,0 +1,157 @@
+=head1 NAME
+
+nbdkit-tmpdisk-plugin - create a fresh temporary filesystem for each client
+
+=head1 SYNOPSIS
+
+ nbdkit tmpdisk [size=]SIZE
+                [type=ext4|xfs|vfat|...] [label=LABEL]
+                [command=COMMAND]
+
+=head1 DESCRIPTION
+
+This L<nbdkit(1)> plugin is used for creating temporary filesystems
+for thin clients.  Each time a client connects it will see a fresh,
+empty filesystem for its exclusive use.  B<The filesystem is deleted>
+when the client disconnects.
+
+When a new client connects, a blank, sparse file of the required size
+is created in C<$TMPDIR> (or F</var/tmp>).  L<mkfs(8)> is then run on
+the file to create the empty filesystem, and this filesystem is served
+to the client.  Unlike L<nbdkit-linuxdisk-plugin(1)> each client of
+this plugin sees a different disk.
+
+The size of the disk is chosen using the C<size> parameter.  The
+filesystem type is C<ext4> but this can be changed using the C<type>
+parameter (controlling the I<-t> option of mkfs).
+
+Instead of running mkfs you can run an arbitrary C<command> to create
+the disk.
+
+=head2 Example
+
+One use for this is to create a kind of "remote L<tmpfs(5)>" for thin
+clients.  On the server you would run (see L<nbdkit-service(1)>):
+
+ nbdkit tmpdisk 16G
+
+and each thin client would have a file F</etc/rc.d/rc.local>
+containing:
+
+ nm-online
+ modprobe nbd
+ nbd-client server /dev/nbd0
+ mount /dev/nbd0 /var/scratch
+
+Clients would see a fresh, empty C</var/scratch> directory after boot.
+
+=head2 Security considerations
+
+Because each client gets a new disk, the amount of disk space
+required on the server can be as much as
+S<<< I<number of clients> × I<size parameter> >>>.  It is therefore
+best to limit the number of clients using L<nbdkit-limit-filter(1)> or
+take steps to limit where clients can connect from using
+L<nbdkit-ip-filter(1)>, firewalls, or TLS client certificates.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<command='>COMMANDB<'>
+
+Instead of running L<mkfs(8)> to create the initial filesystem, run
+C<COMMAND> (which usually must be quoted to protect it from the
+shell).  The following shell variables may be used in C<COMMAND>:
+
+=over 4
+
+=item C<$disk>
+
+The absolute path of the file that the command must initialize.  This
+file is created by nbdkit before the command runs.
+
+=item C<$label>
+
+The filesystem label (from the C<label> parameter).
+
+=item C<$size>
+
+The virtual size in bytes, which is the same as the file size.
+
+=item C<$type>
+
+The filesystem type (from the C<type> parameter), defaulting to
+C<ext4>.  (Commands can ignore this if it is not relevant).
+
+=back
+
+=item B<label=>LABEL
+
+Select the filesystem label.  The default is not set.
+
+=item [B<size=>]SIZE
+
+Specify the virtual size of the disk image.
+
+This parameter is required.
+
+C<size=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
+
+=item B<type=>FS
+
+Select the filesystem type.  The default is C<ext4>.  Most
+non-networked, non-cluster filesystem types supported by the
+L<mkfs(8)> command can be used here.
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item C<TMPDIR>
+
+The temporary disks for this plugin are created in this directory, one
+per connected client.  If not set this defaults to F</var/tmp>.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-tmpdisk-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-tmpdisk-plugin> first appeared in nbdkit 1.20.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-data-plugin(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-ip-filter(1)>,
+L<nbdkit-limit-filter(1)>,
+L<nbdkit-linuxdisk-plugin(1)>,
+L<nbdkit-memory-plugin(1)>,
+L<nbdkit-loop(1)>,
+L<nbdkit-tls(1)>,
+L<mkfs(8)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018-2020 Red Hat Inc.

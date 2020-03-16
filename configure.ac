@@ -86,6 +86,7 @@ non_lang_plugins="\
         ssh \
         streaming \
         tar \
+        tmpdisk \
         vddk \
         zero \
         "
@@ -1016,6 +1017,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/streaming/Makefile
                  plugins/tar/Makefile
                  plugins/tcl/Makefile
+                 plugins/tmpdisk/Makefile
                  plugins/vddk/Makefile
                  plugins/zero/Makefile
                  filters/Makefile

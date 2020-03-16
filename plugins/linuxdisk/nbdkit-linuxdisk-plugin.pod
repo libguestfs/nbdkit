@@ -24,7 +24,9 @@ symbolic links, block special devices etc.
 
 To create a FAT-formatted virtual floppy disk, see
 L<nbdkit-floppy-plugin(1)>.  To create a CD/ISO, see
-L<nbdkit-iso-plugin(1)>.
+L<nbdkit-iso-plugin(1)>.  To create an empty filesystem for each
+client that connects (like a "remote tmpfs") use
+L<nbdkit-tmpdisk-plugin(1)>.
 
 =head1 EXAMPLES
 
@@ -184,7 +186,8 @@ L<nbdkit-file-plugin(1)>,
 L<nbdkit-floppy-plugin(1)>,
 L<nbdkit-iso-plugin(1)>,
 L<nbdkit-partition-filter(1)>,
-L<nbdkit-partitioning-plugin(1)>.
+L<nbdkit-partitioning-plugin(1)>,
+L<nbdkit-tmpdisk-plugin(1)>,
 
 =head1 AUTHORS
 

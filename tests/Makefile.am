@@ -766,6 +766,27 @@ test_streaming_SOURCES = test-streaming.c
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_streaming_LDADD = $(LIBNBD_LIBS)
 
+# tmpdisk plugin test.
+LIBGUESTFS_TESTS += test-tmpdisk
+
+test_tmpdisk_SOURCES = \
+	test-tmpdisk.c \
+	test.h \
+	$(NULL)
+test_tmpdisk_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils
+test_tmpdisk_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
+test_tmpdisk_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
+test_tmpdisk_LDADD = \
+	libtest.la \
+	$(LIBGUESTFS_LIBS) \
+	$(NULL)
+
 if HAVE_VDDK
 # VDDK plugin test.
 # This only tests that the plugin can be loaded against a
