@@ -39,6 +39,7 @@ Makefile.in
 /common/protocol/protostrings.c
 /common/utils/test-quotes
 /compile
+/config.cache
 /config.guess
 /config.h
 /config.h.in
