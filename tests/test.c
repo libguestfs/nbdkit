@@ -75,11 +75,21 @@ cleanup (void)
 {
   int status;
   struct test_nbdkit *next;
+  const char *s;
 
   while (head) {
     if (head->pid > 0) {
       assert (!pid || pid == head->pid);
       pid = 0;
+
+      /* This improves the stability when running the tests under
+       * valgrind.  We have to wait a little for nbdkit close
+       * callbacks to run.
+       */
+      s = getenv ("NBDKIT_VALGRIND");
+      if (s && strcmp (s, "1") == 0)
+        sleep (5);
+
       kill (head->pid, SIGTERM);
 
       /* Check the status of nbdkit is normal on exit. */
