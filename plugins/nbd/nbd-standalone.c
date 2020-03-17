@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2019 Red Hat Inc.
+ * Copyright (C) 2017-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -1175,7 +1175,7 @@ nbd_can_flush (void *handle)
 {
   struct handle *h = handle;
 
-  return h->flags & NBD_FLAG_SEND_FLUSH;
+  return !!(h->flags & NBD_FLAG_SEND_FLUSH);
 }
 
 static int
@@ -1183,7 +1183,7 @@ nbd_is_rotational (void *handle)
 {
   struct handle *h = handle;
 
-  return h->flags & NBD_FLAG_ROTATIONAL;
+  return !!(h->flags & NBD_FLAG_ROTATIONAL);
 }
 
 static int
@@ -1191,7 +1191,7 @@ nbd_can_trim (void *handle)
 {
   struct handle *h = handle;
 
-  return h->flags & NBD_FLAG_SEND_TRIM;
+  return !!(h->flags & NBD_FLAG_SEND_TRIM);
 }
 
 static int
@@ -1199,7 +1199,7 @@ nbd_can_zero (void *handle)
 {
   struct handle *h = handle;
 
-  return h->flags & NBD_FLAG_SEND_WRITE_ZEROES;
+  return !!(h->flags & NBD_FLAG_SEND_WRITE_ZEROES);
 }
 
 static int
@@ -1215,7 +1215,7 @@ nbd_can_multi_conn (void *handle)
 {
   struct handle *h = handle;
 
-  return h->flags & NBD_FLAG_CAN_MULTI_CONN;
+  return !!(h->flags & NBD_FLAG_CAN_MULTI_CONN);
 }
 
 static int
