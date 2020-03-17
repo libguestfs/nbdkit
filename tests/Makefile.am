@@ -116,6 +116,7 @@ EXTRA_DIST = \
 	test-extentlist.sh \
 	test-file-extents.sh \
 	test-floppy.sh \
+	test-flush.sh \
 	test-foreground.sh \
 	test-fua.sh \
 	test-full.sh \
@@ -267,6 +268,7 @@ TESTS += \
 	test-foreground.sh \
 	test-debug-flags.sh \
 	test-long-name.sh \
+	test-flush.sh \
 	test-swap.sh \
 	test-shutdown.sh \
 	$(NULL)
@@ -281,6 +283,25 @@ test_socket_activation_CPPFLAGS = \
 	-I$(top_srcdir)/common/protocol \
 	$(NULL)
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
+
+# check_LTLIBRARIES won't build a shared library (see automake manual).
+# So we have to do this and add a dependency.
+noinst_LTLIBRARIES += \
+	test-flush-plugin.la \
+	$(NULL)
+test-flush.sh: test-flush-plugin.la
+
+test_flush_plugin_la_SOURCES = \
+	test-flush-plugin.c \
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
+test_flush_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
+test_flush_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_flush_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared -rpath /nowhere \
+	$(NULL)
 
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
