@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -280,12 +280,21 @@ plugin_get_size (struct backend *b, struct connection *conn, void *handle)
 }
 
 static int
+normalize_bool (int value)
+{
+  if (value == -1 || value == 0)
+    return value;
+  /* Normalize all other non-zero values to true */
+  return 1;
+}
+
+static int
 plugin_can_write (struct backend *b, struct connection *conn, void *handle)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_write)
-    return p->plugin.can_write (handle);
+    return normalize_bool (p->plugin.can_write (handle));
   else
     return p->plugin.pwrite || p->plugin._pwrite_v1;
 }
@@ -296,7 +305,7 @@ plugin_can_flush (struct backend *b, struct connection *conn, void *handle)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_flush)
-    return p->plugin.can_flush (handle);
+    return normalize_bool (p->plugin.can_flush (handle));
   else
     return p->plugin.flush || p->plugin._flush_v1;
 }
@@ -307,7 +316,7 @@ plugin_is_rotational (struct backend *b, struct connection *conn, void *handle)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.is_rotational)
-    return p->plugin.is_rotational (handle);
+    return normalize_bool (p->plugin.is_rotational (handle));
   else
     return 0; /* assume false */
 }
@@ -318,7 +327,7 @@ plugin_can_trim (struct backend *b, struct connection *conn, void *handle)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_trim)
-    return p->plugin.can_trim (handle);
+    return normalize_bool (p->plugin.can_trim (handle));
   else
     return p->plugin.trim || p->plugin._trim_v1;
 }
@@ -351,7 +360,7 @@ plugin_can_fast_zero (struct backend *b, struct connection *conn, void *handle)
   int r;
 
   if (p->plugin.can_fast_zero)
-    return p->plugin.can_fast_zero (handle);
+    return normalize_bool (p->plugin.can_fast_zero (handle));
   /* Advertise support for fast zeroes if no .zero or .can_zero is
    * false: in those cases, we fail fast instead of using .pwrite.
    * This also works when v1 plugin has only ._zero_v1.
@@ -370,7 +379,7 @@ plugin_can_extents (struct backend *b, struct connection *conn, void *handle)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_extents)
-    return p->plugin.can_extents (handle);
+    return normalize_bool (p->plugin.can_extents (handle));
   else
     return p->plugin.extents != NULL;
 }
@@ -401,7 +410,7 @@ plugin_can_multi_conn (struct backend *b, struct connection *conn, void *handle)
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_multi_conn)
-    return p->plugin.can_multi_conn (handle);
+    return normalize_bool (p->plugin.can_multi_conn (handle));
   else
     return 0; /* assume false */
 }
