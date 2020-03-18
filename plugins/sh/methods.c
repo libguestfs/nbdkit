@@ -195,6 +195,8 @@ sh_preconnect (int readonly)
 
 struct sh_handle {
   char *h;
+  int can_flush;
+  int can_zero;
 };
 
 void *
@@ -214,6 +216,8 @@ sh_open (int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
+  h->can_flush = -1;
+  h->can_zero = -1;
 
   /* We store the string returned by open in the handle. */
   switch (call_read (&h->h, &hlen, args)) {
@@ -469,8 +473,14 @@ int
 sh_can_flush (void *handle)
 {
   const char *method = "can_flush";
-  const char *script = get_script (method);
-  return boolean_method (script, method, handle, 0);
+  const char *script;
+  struct sh_handle *h = handle;
+
+  if (h->can_flush >= 0)
+    return h->can_flush;
+
+  script = get_script (method);
+  return h->can_flush = boolean_method (script, method, handle, 0);
 }
 
 int
@@ -493,8 +503,14 @@ int
 sh_can_zero (void *handle)
 {
   const char *method = "can_zero";
-  const char *script = get_script (method);
-  return boolean_method (script, method, handle, 0);
+  const char *script;
+  struct sh_handle *h = handle;
+
+  if (h->can_zero >= 0)
+    return h->can_zero;
+
+  script = get_script (method);
+  return h->can_zero = boolean_method (script, method, handle, 0);
 }
 
 int

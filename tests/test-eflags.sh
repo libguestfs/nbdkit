@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2019 Red Hat Inc.
+# Copyright (C) 2018-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -50,7 +50,7 @@ if ! qemu-nbd --help | grep -sq -- --list; then
     exit 77
 fi
 
-files="eflags.out"
+files="eflags.out eflags.err"
 late_args=
 rm -f $files
 cleanup_fn rm -f $files
@@ -72,12 +72,29 @@ SEND_FAST_ZERO=$((    1 << 11 ))
 
 do_nbdkit ()
 {
-    nbdkit -v -U - "$@" sh - $late_args --run 'qemu-nbd --list -k $unixsocket' |
-        grep -E "flags: 0x" | grep -Eoi '0x[a-f0-9]+' > eflags.out
+    # Prepend a check for internal caching to the script on stdin.
+    { printf %s '
+            if test $1 = thread_model; then
+               :
+            elif test -f $tmpdir/seen_$1; then
+                echo "repeat call to $1" >>'"$PWD/eflags.err"'
+            else
+                touch $tmpdir/seen_$1
+            fi
+            '; cat; } | nbdkit -v -U - "$@" sh - $late_args \
+        --run 'qemu-nbd --list -k $unixsocket' |
+        grep -E "flags: 0x" | grep -Eoi '0x[a-f0-9]+' >eflags.out 2>eflags.err
     printf eflags=; cat eflags.out
 
     # Convert hex flags to decimal and assign it to $eflags.
     eflags=$(printf "%d" $(cat eflags.out))
+
+    # See if nbdkit failed to cache a callback.
+    if test -s eflags.err; then
+        echo "error: nbdkit did not cache callbacks properly"
+        cat eflags.err
+        exit 1
+    fi
 }
 
 fail ()
@@ -326,6 +343,25 @@ EOF
 
 [ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_DF )) ] ||
     fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_DF"
+
+#----------------------------------------------------------------------
+# -r
+# can_write=true
+# can_flush=true
+#
+# Setting read-only does not ignore can_flush.
+
+do_nbdkit -r <<'EOF'
+case "$1" in
+     get_size) echo 1M ;;
+     can_write) exit 0 ;;
+     can_flush) exit 0 ;;
+     *) exit 2 ;;
+esac
+EOF
+
+[ $eflags -eq $(( HAS_FLAGS|READ_ONLY|SEND_FLUSH|SEND_DF )) ] ||
+    fail "$LINENO: expected HAS_FLAGS|READ_ONLY|SEND_FLUSH|SEND_DF"
 
 #----------------------------------------------------------------------
 # can_write=true
