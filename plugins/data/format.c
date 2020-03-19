@@ -100,49 +100,74 @@ read_data_format (const char *value,
   for (i = 0; i < len; ++i) {
     int64_t j, k;
     int n;
-    char c, cc[2];
+    char c;
 
-    /* @OFFSET. */
-    if (sscanf (&value[i], " @%" SCNi64 "%n", &j, &n) == 1) {
-      if (j < 0) {
-        nbdkit_error ("data parameter @OFFSET must not be negative");
-        return -1;
+    switch (value[i]) {
+    case '@':                   /* @OFFSET. */
+      i++;
+      if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
+        if (j < 0) {
+          nbdkit_error ("data parameter @OFFSET must not be negative");
+          return -1;
+        }
+        i += n;
+        offset = j;
       }
-      i += n;
-      offset = j;
-    }
-    /* BYTE*N */
-    else if (sscanf (&value[i], " %" SCNi64 "*%" SCNi64 "%n",
-                     &j, &k, &n) == 2) {
-      if (j < 0 || j > 255) {
-        nbdkit_error ("data parameter BYTE must be in the range 0..255");
-        return -1;
-      }
-      if (k < 0) {
-        nbdkit_error ("data parameter *N must be >= 0");
-        return -1;
-      }
-      i += n;
+      else
+        goto parse_error;
+      break;
 
-      c = j;
-      while (k > 0) {
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+      /* BYTE*N */
+      if (sscanf (&value[i], "%" SCNi64 "*%" SCNi64 "%n",
+                  &j, &k, &n) == 2) {
+        if (j < 0 || j > 255) {
+          nbdkit_error ("data parameter BYTE must be in the range 0..255");
+          return -1;
+        }
+        if (k < 0) {
+          nbdkit_error ("data parameter *N must be >= 0");
+          return -1;
+        }
+        i += n;
+
+        c = j;
+        while (k > 0) {
+          if (sparse_array_write (sa, &c, 1, offset) == -1)
+            return -1;
+          offset++;
+          k--;
+        }
+        if (*size < offset)
+          *size = offset;
+      }
+      /* BYTE */
+      else if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
+        if (j < 0 || j > 255) {
+          nbdkit_error ("data parameter BYTE must be in the range 0..255");
+          return -1;
+        }
+        i += n;
+
+        if (*size < offset+1)
+          *size = offset+1;
+
+        /* Store the byte. */
+        c = j;
         if (sparse_array_write (sa, &c, 1, offset) == -1)
           return -1;
         offset++;
-        k--;
       }
-      if (*size < offset)
-        *size = offset;
-    }
-    /* <FILE
-     * We need %1s for obscure reasons.  sscanf " <%n" can return 0
-     * if nothing is matched, not only if the '<' is matched.
-     */
-    else if (sscanf (&value[i], " <%1s%n", cc, &n) == 1) {
+      else
+        goto parse_error;
+      break;
+
+    case '<': {                 /* <FILE */
       CLEANUP_FREE char *filename = NULL;
       size_t flen;
 
-      i += n-1;
+      i++;
 
       /* The filename follows next in the string. */
       flen = strcspn (&value[i], " \t\n");
@@ -162,35 +187,20 @@ read_data_format (const char *value,
 
       if (*size < offset)
         *size = offset;
-    }
-    /* BYTE */
-    else if (sscanf (&value[i], " %" SCNi64 "%n", &j, &n) == 1) {
-      if (j < 0 || j > 255) {
-        nbdkit_error ("data parameter BYTE must be in the range 0..255");
-        return -1;
-      }
-      i += n;
 
-      if (*size < offset+1)
-        *size = offset+1;
+      break;
+    }
 
-      /* Store the byte. */
-      c = j;
-      if (sparse_array_write (sa, &c, 1, offset) == -1)
-        return -1;
-      offset++;
-    }
-    /* We have to have a rule to skip just whitespace so that
-     * whitespace is permitted at the end of the string.
-     */
-    else if (sscanf (&value[i], " %n", &n) == 0) {
-      i += n;
-    }
-    else {
+    case ' ': case '\t': case '\n': /* Skip whitespace. */
+    case '\f': case '\r': case '\v':
+      break;
+
+    default:
+    parse_error:
       nbdkit_error ("data parameter: parsing error at offset %zu", i);
       return -1;
-    }
-  }
+    } /* switch */
+  } /* for */
 
   return 0;
 }
