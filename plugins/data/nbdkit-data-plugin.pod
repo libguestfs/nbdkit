@@ -82,10 +82,10 @@ flexible.
 
 =item Create a small disk filled with a test pattern
 
- nbdkit data data="0x55*4096"
+ nbdkit data data=' ( 0x55 0xAA )*2048 '
 
-This creates a disk containing 4096 0x55 bytes.  See also
-L<nbdkit-pattern-plugin(3)>.
+This creates a disk containing 4096 bytes filled with the repeating
+pattern 0x55 0xAA.  See also L<nbdkit-pattern-plugin(3)>.
 
 =item Create a 7 EB (exabyte) disk with one empty GPT-formatted partition:
 
@@ -226,6 +226,13 @@ or hexadecimal (prefixed by C<0x>).
 Repeat C<BYTE> C<N> times (where C<N> is a number).  Note there must
 not be any whitespace around the C<*> character.
 
+=item ( ... )*N
+
+Repeat the enclosed pattern C<N> times.  For example to create a
+repeating pattern of bytes 0x55, 0xAA, ... for 512 bytes do:
+
+ data="( 0x55 0xAA )*256"
+
 =back
 
 Whitespace between fields in the string is ignored.
@@ -280,4 +287,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018 Red Hat Inc.
+Copyright (C) 2018-2020 Red Hat Inc.

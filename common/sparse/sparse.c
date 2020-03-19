@@ -432,3 +432,33 @@ sparse_array_extents (struct sparse_array *sa,
 
   return 0;
 }
+
+int
+sparse_array_blit (struct sparse_array *sa1,
+                   struct sparse_array *sa2,
+                   uint32_t count,
+                   uint64_t offset1, uint64_t offset2)
+{
+  uint32_t n;
+  void *p;
+
+  while (count > 0) {
+    p = lookup (sa2, offset2, true, &n, NULL);
+    if (p == NULL)
+      return -1;
+
+    if (n > count)
+      n = count;
+
+    /* Read the source array (sa1) directly to p which points into the
+     * right place in sa2.
+     */
+    sparse_array_read (sa1, p, n, offset1);
+
+    count -= n;
+    offset1 += n;
+    offset2 += n;
+  }
+
+  return 0;
+}

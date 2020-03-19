@@ -10,7 +10,8 @@ nbdkit-pattern-plugin - plugin to serve a fixed pattern of data for testing
 
 C<nbdkit-pattern-plugin> is a plugin for L<nbdkit(1)> which serves a
 fixed pattern of data, read only.  This is used for testing nbdkit
-filters and NBD clients.
+filters and NBD clients.  To create test disks filled with other
+repeated patterns use L<nbdkit-data-plugin(1)> instead.
 
 The fixed pattern is the offset, as a 64 bit big endian integer, every
 8 bytes.  In hexadecimal this looks like:

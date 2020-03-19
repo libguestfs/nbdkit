@@ -102,4 +102,17 @@ extern int sparse_array_extents (struct sparse_array *sa,
                                  uint32_t count, uint64_t offset,
                                  struct nbdkit_extents *extents);
 
+/* Blit (copy) between two sparse arrays.
+ *
+ * Copy count bytes from (sa1, offset1) to (sa2, offset2).
+ *
+ * You may call this with sa1 == sa2, but overlapping ranges are
+ * undefined.
+ */
+extern int sparse_array_blit (struct sparse_array *sa1,
+                              struct sparse_array *sa2,
+                              uint32_t count,
+                              uint64_t offset1, uint64_t offset2)
+  __attribute__((__nonnull__ (1, 2)));
+
 #endif /* NBDKIT_SPARSE_H */

@@ -90,14 +90,15 @@ store_file (struct sparse_array *sa,
 /* Parses the data parameter as described in the man page
  * under "DATA FORMAT".
  */
-int
-read_data_format (const char *value,
-                  struct sparse_array *sa, int64_t *size)
+static int
+parse (int level,
+       const char *value, size_t *start, size_t len,
+       struct sparse_array *sa, int64_t *size)
 {
   int64_t offset = 0;
-  size_t i, len = strlen (value);
+  size_t i = *start;
 
-  for (i = 0; i < len; ++i) {
+  for (; i < len; ++i) {
     int64_t j, k;
     int n;
     char c;
@@ -116,6 +117,54 @@ read_data_format (const char *value,
       else
         goto parse_error;
       break;
+
+    case '(': {               /* ( */
+      CLEANUP_FREE_SPARSE_ARRAY struct sparse_array *sa2;
+      int64_t size2 = 0;
+
+      i++;
+
+      /* Call self recursively to create a new sparse array. */
+      sa2 = alloc_sparse_array (0);
+      if (sa2 == NULL) {
+        nbdkit_error ("malloc: %m");
+        return -1;
+      }
+      if (parse (level+1, value, &i, len, sa2, &size2) == -1)
+        return -1;
+
+      /* ( ... )*N */
+      if (sscanf (&value[i], "*%" SCNi64 "%n", &k, &n) == 1) {
+        if (k < 0) {
+          nbdkit_error ("data parameter *N must be >= 0");
+          return -1;
+        }
+        i += n;
+
+        /* Duplicate the sparse array sa2 N (=k) times. */
+        while (k > 0) {
+          if (sparse_array_blit (sa2, sa, size2, 0, offset) == -1)
+            return -1;
+          offset += size2;
+          k--;
+        }
+        if (*size < offset)
+          *size = offset;
+      } else {
+        nbdkit_error ("')' in data string not followed by '*'");
+        return -1;
+      }
+      break;
+    }
+
+    case ')':                   /* ) */
+      if (level < 1) {
+        nbdkit_error ("unmatched ')' in data string");
+        return -1;
+      }
+      i++;
+      *start = i;
+      return 0;
 
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
@@ -198,5 +247,24 @@ read_data_format (const char *value,
     } /* switch */
   } /* for */
 
+  /* If we reach the end of the string and level != 0 that means
+   * there is an unmatched '(' in the string.
+   */
+  if (level > 0) {
+    nbdkit_error ("unmatched '(' in data string");
+    return -1;
+  }
+
+  *start = i;
   return 0;
+}
+
+int
+read_data_format (const char *value,
+                  struct sparse_array *sa, int64_t *size)
+{
+  size_t i = 0;
+  size_t len = strlen (value);
+
+  return parse (0, value, &i, len, sa, size);
 }

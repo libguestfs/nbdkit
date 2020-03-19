@@ -99,6 +99,7 @@ EXTRA_DIST = \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \
+	test-data-nest.sh \
 	test-data-raw.sh \
 	test-debug-flags.sh \
 	test-delay-shutdown.sh \
@@ -552,6 +553,7 @@ TESTS += \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \
+	test-data-nest.sh \
 	test-data-raw.sh \
 	$(NULL)
 
