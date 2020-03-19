@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -40,6 +40,8 @@ plugin_LTLIBRARIES = nbdkit-data-plugin.la
 
 nbdkit_data_plugin_la_SOURCES = \
 	data.c \
+	format.c \
+	format.h \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
 
