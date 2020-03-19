@@ -456,6 +456,7 @@ py_get_ready (void)
 }
 
 struct handle {
+  int can_zero;
   PyObject *py_h;
 };
 
@@ -475,6 +476,7 @@ py_open (int readonly)
     nbdkit_error ("malloc: %m");
     return NULL;
   }
+  h->can_zero = -1;
 
   PyErr_Clear ();
 
@@ -839,13 +841,28 @@ py_can_trim (void *handle)
 static int
 py_can_zero (void *handle)
 {
-  return boolean_callback (handle, "can_zero", "zero");
+  struct handle *h = handle;
+
+  if (h->can_zero >= 0)
+    return h->can_zero;
+  return h->can_zero = boolean_callback (handle, "can_zero", "zero");
 }
 
 static int
 py_can_fast_zero (void *handle)
 {
-  return boolean_callback (handle, "can_fast_zero", NULL);
+  int r;
+
+  if (callback_defined ("can_fast_zero", NULL))
+    return boolean_callback (handle, "can_fast_zero", NULL);
+
+  /* No Python ‘can_fast_zero’, but we advertise fast fail support when
+   * 'can_zero' is false.  (In C modules, nbdkit would do this).
+   */
+  r = py_can_zero (handle);
+  if (r == -1)
+    return -1;
+  return !r;
 }
 
 static int
