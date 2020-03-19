@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -393,11 +393,11 @@ accept_connection (int listen_sock)
    * at which point, we can use a mutex to ensure we aren't accepting
    * until the plugin is not running, making non-atomicity okay.
    */
-  assert (backend->thread_model (backend) <=
+  assert (top->thread_model (top) <=
           NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
-  lock_request (NULL);
+  lock_request ();
   thread_data->sock = set_cloexec (accept (listen_sock, NULL, NULL));
-  unlock_request (NULL);
+  unlock_request ();
 #endif
   if (thread_data->sock == -1) {
     if (errno == EINTR || errno == EAGAIN)
