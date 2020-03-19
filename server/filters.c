@@ -66,7 +66,7 @@ filter_thread_model (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   int filter_thread_model = NBDKIT_THREAD_MODEL_PARALLEL;
-  int thread_model = b->next->thread_model (b->next);
+  int model = b->next->thread_model (b->next);
 
   if (f->filter.thread_model) {
     filter_thread_model = f->filter.thread_model ();
@@ -74,10 +74,10 @@ filter_thread_model (struct backend *b)
       exit (EXIT_FAILURE);
   }
 
-  if (filter_thread_model < thread_model) /* more serialized */
-    thread_model = filter_thread_model;
+  if (filter_thread_model < model) /* more serialized */
+    model = filter_thread_model;
 
-  return thread_model;
+  return model;
 }
 
 /* This is actually passing the request through to the final plugin,

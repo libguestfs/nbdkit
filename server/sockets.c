@@ -393,8 +393,7 @@ accept_connection (int listen_sock)
    * at which point, we can use a mutex to ensure we aren't accepting
    * until the plugin is not running, making non-atomicity okay.
    */
-  assert (top->thread_model (top) <=
-          NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
+  assert (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
   lock_request ();
   thread_data->sock = set_cloexec (accept (listen_sock, NULL, NULL));
   unlock_request ();

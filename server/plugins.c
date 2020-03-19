@@ -65,14 +65,14 @@ static int
 plugin_thread_model (struct backend *b)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-  int thread_model = p->plugin._thread_model;
+  int model = p->plugin._thread_model;
   int r;
 
 #if !(defined SOCK_CLOEXEC && defined HAVE_MKOSTEMP && defined HAVE_PIPE2 && \
       defined HAVE_ACCEPT4)
-  if (thread_model > NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
+  if (model > NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS) {
     debug ("system lacks atomic CLOEXEC, serializing to avoid fd leaks");
-    thread_model = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
+    model = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
   }
 #endif
 
@@ -80,11 +80,11 @@ plugin_thread_model (struct backend *b)
     r = p->plugin.thread_model ();
     if (r == -1)
       exit (EXIT_FAILURE);
-    if (r < thread_model)
-      thread_model = r;
+    if (r < model)
+      model = r;
   }
 
-  return thread_model;
+  return model;
 }
 
 static const char *

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -144,8 +144,7 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags)
   fl = backend_can_multi_conn (top);
   if (fl == -1)
     return -1;
-  if (fl && (top->thread_model (top) >
-             NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS))
+  if (fl && (thread_model > NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS))
     eflags |= NBD_FLAG_CAN_MULTI_CONN;
 
   fl = backend_can_cache (top);

@@ -74,9 +74,7 @@ do_nbdkit ()
 {
     # Prepend a check for internal caching to the script on stdin.
     { printf %s '
-            if test $1 = thread_model; then
-               :
-            elif test -f $tmpdir/seen_$1; then
+            if test -f $tmpdir/seen_$1; then
                 echo "repeat call to $1" >>'"$PWD/eflags.err"'
             else
                 touch $tmpdir/seen_$1

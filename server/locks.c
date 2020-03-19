@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -40,7 +40,7 @@
 /* Note that the plugin's thread model cannot change after being
  * loaded, so caching it here is safe.
  */
-static int thread_model = -1;
+unsigned thread_model = -1;
 
 static pthread_mutex_t connection_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t all_requests_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -71,12 +71,12 @@ lock_init_thread_model (void)
 {
   thread_model = top->thread_model (top);
   debug ("using thread model: %s", name_of_thread_model (thread_model));
+  assert (thread_model <= NBDKIT_THREAD_MODEL_PARALLEL);
 }
 
 void
 lock_connection (void)
 {
-  assert (thread_model >= 0);
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS &&
       pthread_mutex_lock (&connection_lock))
     abort ();
@@ -95,7 +95,6 @@ lock_request (void)
 {
   GET_CONN;
 
-  assert (thread_model >= 0);
   if (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS &&
       pthread_mutex_lock (&all_requests_lock))
     abort ();

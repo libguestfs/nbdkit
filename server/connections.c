@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -147,8 +147,7 @@ handle_single_connection (int sockin, int sockout)
     return;
   }
 
-  if (top->thread_model (top) < NBDKIT_THREAD_MODEL_PARALLEL ||
-      nworkers == 1)
+  if (thread_model < NBDKIT_THREAD_MODEL_PARALLEL || nworkers == 1)
     nworkers = 0;
   conn = new_connection (sockin, sockout, nworkers);
   if (!conn)
@@ -277,8 +276,7 @@ new_connection (int sockin, int sockout, int nworkers)
      * we aren't accepting until the plugin is not running, making
      * non-atomicity okay.
      */
-    assert (top->thread_model (top) <=
-            NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
+    assert (thread_model <= NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
     lock_request (NULL);
     if (pipe (conn->status_pipe)) {
       perror ("pipe");

@@ -468,6 +468,7 @@ extern struct backend *filter_register (struct backend *next, size_t index,
   __attribute__((__nonnull__ (1, 3, 4, 5)));
 
 /* locks.c */
+extern unsigned thread_model;
 extern void lock_init_thread_model (void);
 extern const char *name_of_thread_model (int model);
 extern void lock_connection (void);
