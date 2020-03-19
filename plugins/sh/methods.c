@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2019 Red Hat Inc.
+ * Copyright (C) 2018-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -193,29 +193,38 @@ sh_preconnect (int readonly)
   }
 }
 
+struct sh_handle {
+  char *h;
+};
+
 void *
 sh_open (int readonly)
 {
   const char *method = "open";
   const char *script = get_script (method);
-  char *h = NULL;
   size_t hlen;
   const char *args[] =
     { script, method,
       readonly ? "true" : "false",
       nbdkit_export_name () ? : "",
       NULL };
+  struct sh_handle *h = malloc (sizeof *h);
+
+  if (!h) {
+    nbdkit_error ("malloc: %m");
+    return NULL;
+  }
 
   /* We store the string returned by open in the handle. */
-  switch (call_read (&h, &hlen, args)) {
+  switch (call_read (&h->h, &hlen, args)) {
   case OK:
     /* Remove final newline if present. */
-    if (hlen > 0 && h[hlen-1] == '\n') {
-      h[hlen-1] = '\0';
+    if (hlen > 0 && h->h[hlen-1] == '\n') {
+      h->h[hlen-1] = '\0';
       hlen--;
     }
     if (hlen > 0)
-      nbdkit_debug ("sh: handle: %s", h);
+      nbdkit_debug ("sh: handle: %s", h->h);
     return h;
 
   case MISSING:
@@ -223,17 +232,19 @@ sh_open (int readonly)
      * missing then we return "" as the handle.  Allocate a new string
      * for it because we don't know what call_read returned here.
      */
-    free (h);
-    h = strdup ("");
-    if (h == NULL)
+    free (h->h);
+    h->h = strdup ("");
+    if (h->h == NULL)
       nbdkit_error ("strdup: %m");
     return h;
 
   case ERROR:
+    free (h->h);
     free (h);
     return NULL;
 
   case RET_FALSE:
+    free (h->h);
     free (h);
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, method);
@@ -249,14 +260,15 @@ sh_close (void *handle)
 {
   const char *method = "close";
   const char *script = get_script (method);
-  char *h = handle;
-  const char *args[] = { script, method, h, NULL };
+  struct sh_handle *h = handle;
+  const char *args[] = { script, method, h->h, NULL };
 
   switch (call (args)) {
   case OK:
   case MISSING:
   case ERROR:
   case RET_FALSE:
+    free (h->h);
     free (h);
     return;
   default: abort ();
@@ -268,8 +280,8 @@ sh_get_size (void *handle)
 {
   const char *method = "get_size";
   const char *script = get_script (method);
-  char *h = handle;
-  const char *args[] = { script, method, h, NULL };
+  struct sh_handle *h = handle;
+  const char *args[] = { script, method, h->h, NULL };
   CLEANUP_FREE char *s = NULL;
   size_t slen;
   int64_t r;
@@ -307,9 +319,9 @@ sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 {
   const char *method = "pread";
   const char *script = get_script (method);
-  char *h = handle;
+  struct sh_handle *h = handle;
   char cbuf[32], obuf[32];
-  const char *args[] = { script, method, h, cbuf, obuf, NULL };
+  const char *args[] = { script, method, h->h, cbuf, obuf, NULL };
   CLEANUP_FREE char *data = NULL;
   size_t len;
 
@@ -395,9 +407,9 @@ sh_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 {
   const char *method = "pwrite";
   const char *script = get_script (method);
-  char *h = handle;
+  struct sh_handle *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
-  const char *args[] = { script, method, h, cbuf, obuf, fbuf, NULL };
+  const char *args[] = { script, method, h->h, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
@@ -429,8 +441,8 @@ static int
 boolean_method (const char *script, const char *method,
                 void *handle, int def)
 {
-  char *h = handle;
-  const char *args[] = { script, method, h, NULL };
+  struct sh_handle *h = handle;
+  const char *args[] = { script, method, h->h, NULL };
 
   switch (call (args)) {
   case OK:                      /* true */
@@ -507,8 +519,8 @@ sh_can_fua (void *handle)
 {
   const char *method = "can_fua";
   const char *script = get_script (method);
-  char *h = handle;
-  const char *args[] = { script, method, h, NULL };
+  struct sh_handle *h = handle;
+  const char *args[] = { script, method, h->h, NULL };
   CLEANUP_FREE char *s = NULL;
   size_t slen;
   int r;
@@ -562,8 +574,8 @@ sh_can_cache (void *handle)
 {
   const char *method = "can_cache";
   const char *script = get_script (method);
-  char *h = handle;
-  const char *args[] = { script, method, h, NULL };
+  struct sh_handle *h = handle;
+  const char *args[] = { script, method, h->h, NULL };
   CLEANUP_FREE char *s = NULL;
   size_t slen;
   int r;
@@ -627,8 +639,8 @@ sh_flush (void *handle, uint32_t flags)
 {
   const char *method = "flush";
   const char *script = get_script (method);
-  char *h = handle;
-  const char *args[] = { script, method, h, NULL };
+  struct sh_handle *h = handle;
+  const char *args[] = { script, method, h->h, NULL };
 
   switch (call (args)) {
   case OK:
@@ -656,9 +668,9 @@ sh_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   const char *method = "trim";
   const char *script = get_script (method);
-  char *h = handle;
+  struct sh_handle *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
-  const char *args[] = { script, method, h, cbuf, obuf, fbuf, NULL };
+  const char *args[] = { script, method, h->h, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
@@ -690,9 +702,9 @@ sh_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   const char *method = "zero";
   const char *script = get_script (method);
-  char *h = handle;
+  struct sh_handle *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
-  const char *args[] = { script, method, h, cbuf, obuf, fbuf, NULL };
+  const char *args[] = { script, method, h->h, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
@@ -795,9 +807,9 @@ sh_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
 {
   const char *method = "extents";
   const char *script = get_script (method);
-  char *h = handle;
+  struct sh_handle *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
-  const char *args[] = { script, method, h, cbuf, obuf, fbuf, NULL };
+  const char *args[] = { script, method, h->h, cbuf, obuf, fbuf, NULL };
   CLEANUP_FREE char *s = NULL;
   size_t slen;
   int r;
@@ -840,9 +852,9 @@ sh_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   const char *method = "cache";
   const char *script = get_script (method);
-  char *h = handle;
+  struct sh_handle *h = handle;
   char cbuf[32], obuf[32];
-  const char *args[] = { script, method, h, cbuf, obuf, NULL };
+  const char *args[] = { script, method, h->h, cbuf, obuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
