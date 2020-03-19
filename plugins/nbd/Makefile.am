@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2017-2019 Red Hat Inc.
+# Copyright (C) 2017-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -33,12 +33,13 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-nbd-plugin.pod
 
-if HAVE_NBD_PLUGIN
+if HAVE_LIBNBD
 
 plugin_LTLIBRARIES = nbdkit-nbd-plugin.la
 
 nbdkit_nbd_plugin_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-plugin.h \
+	nbd.c \
 	$(NULL)
 
 nbdkit_nbd_plugin_la_CPPFLAGS = \
@@ -47,40 +48,18 @@ nbdkit_nbd_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/common/utils \
 	-I$(top_srcdir)/server \
 	$(NULL)
-nbdkit_nbd_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+nbdkit_nbd_plugin_la_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBNBD_CFLAGS) \
+	$(NULL)
 nbdkit_nbd_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 nbdkit_nbd_plugin_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
-	$(NULL)
-
-# TODO: drop standalone version, which is locked at nbdkit 1.13.4 behavior,
-# once libnbd is more commonly available with stable API.
-if HAVE_LIBNBD
-nbdkit_nbd_plugin_la_SOURCES += \
-	nbd.c \
-	$(NULL)
-nbdkit_nbd_plugin_la_CFLAGS += \
-	$(LIBNBD_CFLAGS) \
-	$(NULL)
-nbdkit_nbd_plugin_la_LIBADD += \
 	$(LIBNBD_LIBS) \
 	$(NULL)
-
-else !HAVE_LIBNBD
-nbdkit_nbd_plugin_la_SOURCES += \
-	nbd-standalone.c \
-	$(NULL)
-nbdkit_nbd_plugin_la_CPPFLAGS += \
-	-I$(top_srcdir)/common/protocol \
-	$(NULL)
-nbdkit_nbd_plugin_la_LIBADD += \
-	$(top_builddir)/common/protocol/libprotocol.la \
-	$(NULL)
-
-endif !HAVE_LIBNBD
 
 if HAVE_POD
 
@@ -94,4 +73,4 @@ nbdkit-nbd-plugin.1: nbdkit-nbd-plugin.pod
 
 endif HAVE_POD
 
-endif HAVE_NBD_PLUGIN
+endif HAVE_LIBNBD

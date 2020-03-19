@@ -678,7 +678,7 @@ TESTS += \
 	test-pattern-largest-for-qemu.sh \
 	$(NULL)
 
-if HAVE_NBD_PLUGIN
+if HAVE_LIBNBD
 # nbd plugin test.
 LIBGUESTFS_TESTS += test-nbd
 TESTS += \
@@ -690,7 +690,7 @@ TESTS += \
 test_nbd_SOURCES = test-nbd.c test.h
 test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-endif HAVE_NBD_PLUGIN
+endif HAVE_LIBNBD
 
 # null plugin test.
 LIBNBD_TESTS += test-null
@@ -1120,10 +1120,10 @@ TESTS += test-log.sh
 # nofilter test.
 TESTS += test-nofilter.sh
 
-if HAVE_NBD_PLUGIN
+if HAVE_LIBNBD
 # nozero filter test.
 TESTS += test-nozero.sh
-endif HAVE_NBD_PLUGIN
+endif HAVE_LIBNBD
 
 # offset filter test.
 LIBGUESTFS_TESTS += test-offset
