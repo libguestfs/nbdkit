@@ -70,7 +70,7 @@ start_nbdkit -P "$pid1" -U "$sock1" \
     --tls=require --tls-certificates="$pkidir" example1
 
 # Run nbd plugin as intermediary
-LIBNBD_DEBUG=1 start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
+start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
     nbd tls=require tls-certificates="$pkidir" socket="$sock1"
 
 # Run unencrypted client
