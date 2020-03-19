@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -455,51 +455,65 @@ py_get_ready (void)
   return 0;
 }
 
+struct handle {
+  PyObject *py_h;
+};
+
 static void *
 py_open (int readonly)
 {
   PyObject *fn;
-  PyObject *handle;
+  struct handle *h;
 
   if (!callback_defined ("open", &fn)) {
     nbdkit_error ("%s: missing callback: %s", script, "open");
     return NULL;
   }
 
+  h = malloc (sizeof *h);
+  if (h == NULL) {
+    nbdkit_error ("malloc: %m");
+    return NULL;
+  }
+
   PyErr_Clear ();
 
-  handle = PyObject_CallFunctionObjArgs (fn, readonly ? Py_True : Py_False,
-                                         NULL);
+  h->py_h = PyObject_CallFunctionObjArgs (fn, readonly ? Py_True : Py_False,
+                                          NULL);
   Py_DECREF (fn);
-  if (check_python_failure ("open") == -1)
+  if (check_python_failure ("open") == -1) {
+    free (h);
     return NULL;
+  }
 
-  return handle;
+  assert (h->py_h);
+  return h;
 }
 
 static void
 py_close (void *handle)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
 
   if (callback_defined ("close", &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+    r = PyObject_CallFunctionObjArgs (fn, h->py_h, NULL);
     Py_DECREF (fn);
     check_python_failure ("close");
     Py_XDECREF (r);
   }
 
-  Py_DECREF (obj);
+  Py_DECREF (h->py_h);
+  free (h);
 }
 
 static int64_t
 py_get_size (void *handle)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
   int64_t ret;
@@ -511,7 +525,7 @@ py_get_size (void *handle)
 
   PyErr_Clear ();
 
-  r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+  r = PyObject_CallFunctionObjArgs (fn, h->py_h, NULL);
   Py_DECREF (fn);
   if (check_python_failure ("get_size") == -1)
     return -1;
@@ -528,7 +542,7 @@ static int
 py_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
           uint32_t flags)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
   Py_buffer view = {0};
@@ -543,10 +557,10 @@ py_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 
   switch (py_api_version) {
   case 1:
-    r = PyObject_CallFunction (fn, "OiL", obj, count, offset);
+    r = PyObject_CallFunction (fn, "OiL", h->py_h, count, offset);
     break;
   case 2:
-    r = PyObject_CallFunction (fn, "ONLI", obj,
+    r = PyObject_CallFunction (fn, "ONLI", h->py_h,
           PyMemoryView_FromMemory ((char *)buf, count, PyBUF_WRITE),
           offset, flags);
     break;
@@ -590,7 +604,7 @@ static int
 py_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
            uint32_t flags)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
 
@@ -599,12 +613,12 @@ py_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 
     switch (py_api_version) {
     case 1:
-      r = PyObject_CallFunction (fn, "ONL", obj,
+      r = PyObject_CallFunction (fn, "ONL", h->py_h,
             PyMemoryView_FromMemory ((char *)buf, count, PyBUF_READ),
             offset);
       break;
     case 2:
-      r = PyObject_CallFunction (fn, "ONLI", obj,
+      r = PyObject_CallFunction (fn, "ONLI", h->py_h,
             PyMemoryView_FromMemory ((char *)buf, count, PyBUF_READ),
             offset, flags);
       break;
@@ -626,7 +640,7 @@ py_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 static int
 py_flush (void *handle, uint32_t flags)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
 
@@ -635,10 +649,10 @@ py_flush (void *handle, uint32_t flags)
 
     switch (py_api_version) {
     case 1:
-      r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+      r = PyObject_CallFunctionObjArgs (fn, h->py_h, NULL);
       break;
     case 2:
-      r = PyObject_CallFunction (fn, "OI", obj, flags);
+      r = PyObject_CallFunction (fn, "OI", h->py_h, flags);
       break;
     default: abort ();
     }
@@ -658,7 +672,7 @@ py_flush (void *handle, uint32_t flags)
 static int
 py_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
 
@@ -667,10 +681,10 @@ py_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 
     switch (py_api_version) {
     case 1:
-      r = PyObject_CallFunction (fn, "OiL", obj, count, offset);
+      r = PyObject_CallFunction (fn, "OiL", h->py_h, count, offset);
       break;
     case 2:
-      r = PyObject_CallFunction (fn, "OiLI", obj, count, offset, flags);
+      r = PyObject_CallFunction (fn, "OiLI", h->py_h, count, offset, flags);
       break;
     default: abort ();
     }
@@ -690,7 +704,7 @@ py_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 static int
 py_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
 
@@ -702,12 +716,12 @@ py_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
     case 1: {
       int may_trim = flags & NBDKIT_FLAG_MAY_TRIM;
       r = PyObject_CallFunction (fn, "OiLO",
-                                 obj, count, offset,
+                                 h->py_h, count, offset,
                                  may_trim ? Py_True : Py_False);
       break;
     }
     case 2:
-      r = PyObject_CallFunction (fn, "OiLI", obj, count, offset, flags);
+      r = PyObject_CallFunction (fn, "OiLI", h->py_h, count, offset, flags);
       break;
     default: abort ();
     }
@@ -736,7 +750,7 @@ py_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 static int
 py_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
 
@@ -746,7 +760,7 @@ py_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
     switch (py_api_version) {
     case 1:
     case 2:
-      r = PyObject_CallFunction (fn, "OiLI", obj, count, offset, flags, NULL);
+      r = PyObject_CallFunction (fn, "OiLI", h->py_h, count, offset, flags, NULL);
       break;
     default: abort ();
     }
@@ -766,7 +780,7 @@ py_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 static int
 boolean_callback (void *handle, const char *can_fn, const char *plain_fn)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
   int ret;
@@ -774,7 +788,7 @@ boolean_callback (void *handle, const char *can_fn, const char *plain_fn)
   if (callback_defined (can_fn, &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+    r = PyObject_CallFunctionObjArgs (fn, h->py_h, NULL);
     Py_DECREF (fn);
     if (check_python_failure (can_fn) == -1)
       return -1;
@@ -837,7 +851,7 @@ py_can_fast_zero (void *handle)
 static int
 py_can_fua (void *handle)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
   int ret;
@@ -845,7 +859,7 @@ py_can_fua (void *handle)
   if (callback_defined ("can_fua", &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+    r = PyObject_CallFunctionObjArgs (fn, h->py_h, NULL);
     Py_DECREF (fn);
     if (check_python_failure ("can_fua") == -1)
       return -1;
@@ -865,7 +879,7 @@ py_can_fua (void *handle)
 static int
 py_can_cache (void *handle)
 {
-  PyObject *obj = handle;
+  struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
   int ret;
@@ -873,7 +887,7 @@ py_can_cache (void *handle)
   if (callback_defined ("can_cache", &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunctionObjArgs (fn, obj, NULL);
+    r = PyObject_CallFunctionObjArgs (fn, h->py_h, NULL);
     Py_DECREF (fn);
     if (check_python_failure ("can_cache") == -1)
       return -1;
