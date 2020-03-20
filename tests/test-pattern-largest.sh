@@ -40,7 +40,7 @@ set -e
 requires nbdsh --version
 
 sock=`mktemp -u`
-files="pattern-largest.out pattern-largest.pid $sock"
+files="pattern-largest.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 

@@ -40,7 +40,7 @@ set -x
 requires nbdsh --version
 
 sock=`mktemp -u`
-files="data-7E.out data-7E.pid $sock"
+files="data-7E.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
