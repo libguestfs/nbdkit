@@ -60,6 +60,10 @@ struct sparse_array *alloc_sparse_array (bool debug);
 /* Free sparse array. */
 extern void free_sparse_array (struct sparse_array *sa);
 
+#define CLEANUP_FREE_SPARSE_ARRAY \
+  __attribute__((cleanup (cleanup_free_sparse_array)))
+extern void cleanup_free_sparse_array (struct sparse_array **sa);
+
 /* Read bytes from the sparse array.
  * Note this can never return an error and never allocates.
  */

@@ -130,6 +130,12 @@ free_sparse_array (struct sparse_array *sa)
   }
 }
 
+void
+cleanup_free_sparse_array (struct sparse_array **sa)
+{
+  free_sparse_array (*sa);
+}
+
 struct sparse_array *
 alloc_sparse_array (bool debug)
 {
