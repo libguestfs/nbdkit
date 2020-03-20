@@ -196,7 +196,9 @@ For example:
 creates a 0x200 = 512 byte (1 sector) image containing the four bytes
 C<0 1 2 3> at the start, and the two bytes C<0x55 0xaa> at the end of
 the sector, with the remaining 506 bytes in the middle being all
-zeroes.
+zeroes.  In this example the size (512 bytes) is implied by the data.
+But you could additionally use the C<size> parameter to either
+truncate or extend (with zeroes) the disk image.
 
 Fields in the string can be:
 
@@ -206,14 +208,7 @@ Fields in the string can be:
 
 Moves the current offset to C<OFFSET>.  The offset may be specified as
 either decimal, octal (prefixed by C<0>) or hexadecimal (prefixed by
-C<0x>).
-
-=item B<E<lt>>FILE
-
-Read the contents of F<FILE> into the disk image at the current
-offset.  The offset is incremented by the size of the file.  The
-filename can be a relative or absolute path, but cannot contain
-whitespace in the name.
+C<0x>).  Offset C<@0> is the first byte of the disk.
 
 =item BYTE
 
@@ -224,22 +219,30 @@ or hexadecimal (prefixed by C<0x>).
 =item BYTE*N
 
 Repeat C<BYTE> C<N> times (where C<N> is a number).  Note there must
-not be any whitespace around the C<*> character.
+not be any whitespace around the C<*> character.  Increases the offset
+by C<N>.
+
+=item B<E<lt>>FILE
+
+Read the contents of F<FILE> into the disk image at the current
+offset.  The offset is incremented by the size of the file.  The
+filename can be a relative or absolute path, but cannot contain
+whitespace in the name.
 
 =item ( ... )*N
 
-Repeat the enclosed pattern C<N> times.  For example to create a
-repeating pattern of bytes 0x55, 0xAA, ... for 512 bytes do:
+Repeat the enclosed pattern C<N> times.  The offset is incremented by
+the length of the enclosed pattern × N.  For example to create a
+repeating pattern of 0x55, 0xAA for 512 (2×256) bytes do:
 
  data="( 0x55 0xAA )*256"
+
+The C<( ... )> section recursively creates a new data parser so any of
+the above operators can appear inside, including nested C<(...)*N>.
 
 =back
 
 Whitespace between fields in the string is ignored.
-
-In the example above the size (512 bytes) is implied by the data.  But
-you could additionally use the C<size> parameter to either truncate or
-extend (with zeroes) the disk image.
 
 =head2 disk2data.pl script
 
