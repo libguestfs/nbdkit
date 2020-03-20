@@ -43,7 +43,8 @@ cleanup_fn ()
 
 _run_cleanup_hooks ()
 {
-    status=$?
+    local status=$? i
+
     set +e
     trap '' INT QUIT TERM EXIT ERR
     echo $0: run cleanup hooks: exit code $status
@@ -94,6 +95,8 @@ requires_ipv6_loopback ()
 # testing features of the current kernel is too hard.
 requires_linux_kernel_version ()
 {
+    local kver
+
     # Test the kernel is Linux.
     requires test "$(uname -s)" = "Linux"
 
@@ -111,6 +114,8 @@ requires_linux_kernel_version ()
 # installed automatically which kills nbdkit on exit.
 start_nbdkit ()
 {
+    local pidfile i
+
     # -P <pidfile> must be the first two parameters.
     if [ "$1" != "-P" ]; then
        echo "$0: start_nbdkit: -P <pidfile> option must be first"
@@ -144,6 +149,8 @@ start_nbdkit ()
 # remaining args.
 foreach_plugin ()
 {
+    local f d p
+
     f="$1"
     shift
 
@@ -168,6 +175,8 @@ foreach_plugin ()
 # domain socket).
 pick_unused_port ()
 {
+    local port
+
     requires ss --version
 
     # Start at a random port to make it less likely that two parallel
