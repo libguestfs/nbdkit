@@ -132,13 +132,9 @@ read_data_format (const char *value,
         }
         i += n;
 
-        c = j;
-        while (k > 0) {
-          if (sparse_array_write (sa, &c, 1, offset) == -1)
-            return -1;
-          offset++;
-          k--;
-        }
+        if (sparse_array_fill (sa, j, k, offset) == -1)
+          return -1;
+        offset += k;
         if (*size < offset)
           *size = offset;
       }

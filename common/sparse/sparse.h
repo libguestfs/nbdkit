@@ -78,6 +78,13 @@ extern int sparse_array_write (struct sparse_array *sa, const void *buf,
                                uint32_t count, uint64_t offset)
   __attribute__((__nonnull__ (1, 2)));
 
+/* Fill range with a single byte 'c'.  If c == '\0' then this is the
+ * same as sparse_array_zero below.
+ */
+extern int sparse_array_fill (struct sparse_array *sa, char c,
+                              uint32_t count, uint64_t offset)
+  __attribute__((__nonnull__ (1)));
+
 /* Zero byte range in the sparse array.
  *
  * Zeroing and trimming are the same operation (this implementation

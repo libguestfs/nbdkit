@@ -336,6 +336,34 @@ sparse_array_write (struct sparse_array *sa,
   return 0;
 }
 
+int
+sparse_array_fill (struct sparse_array *sa, char c,
+                   uint32_t count, uint64_t offset)
+{
+  uint32_t n;
+  void *p;
+
+  if (c == 0) {
+    sparse_array_zero (sa, count, offset);
+    return 0;
+  }
+
+  while (count > 0) {
+    p = lookup (sa, offset, true, &n, NULL);
+    if (p == NULL)
+      return -1;
+
+    if (n > count)
+      n = count;
+    memset (p, c, n);
+
+    count -= n;
+    offset += n;
+  }
+
+  return 0;
+}
+
 void
 sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset)
 {
