@@ -2,6 +2,8 @@
 *.bak
 *.cmi
 *.cmx
+*.dll
+*.exe
 *.la
 *.lo
 *.log
