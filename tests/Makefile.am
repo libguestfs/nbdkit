@@ -52,7 +52,7 @@ LIBNBD_TESTS =
 LIBGUESTFS_TESTS =
 
 check_PROGRAMS =
-check_DATA =
+check_DATA = functions.sh
 check_SCRIPTS =
 check_LTLIBRARIES =
 noinst_LTLIBRARIES =
