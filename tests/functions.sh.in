@@ -85,8 +85,8 @@ requires_ipv6_loopback ()
     # instead.  It's very unlikely that port 1 is open.
     if LANG=C qemu-img info "nbd:[::1]:1" |& \
        grep -sq "Address family for hostname not supported"; then
-	echo "$0: IPv6 loopback is not available, skipping this test"
-	exit 77
+        echo "$0: IPv6 loopback is not available, skipping this test"
+        exit 77
     fi
 }
 
@@ -139,7 +139,32 @@ start_nbdkit ()
     fi
 
     # Kill nbdkit on exit.
-    cleanup_fn kill "$(cat "$pidfile")"
+    cleanup_fn kill_nbdkit "$(cat "$pidfile")"
+}
+
+# kill_nbdkit pid
+#
+# End the nbkdit process with the given pid.  Exit this script with an
+# error if nbdkit does not gracefully shutdown in a timely manner.
+kill_nbdkit ()
+{
+    local pid=$1 i
+
+    # Start with SIGTERM, and wait for graceful exit
+    kill $pid
+    for i in {1..60}; do
+        if ! kill -0 $pid 2>/dev/null; then
+            break
+        fi
+        sleep 1
+    done
+    # If nbdkit has not exited, try SIGKILL and fail the test
+    if test $i = 60; then
+        echo "error: nbdkit pid $pid failed to respond to SIGTERM"
+        kill -9 $pid
+        # Append our failure after other cleanups
+        cleanup_fn exit 1
+    fi
 }
 
 # foreach_plugin f [args]
