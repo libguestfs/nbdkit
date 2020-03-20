@@ -39,7 +39,7 @@ set -x
 requires nbdsh --version
 
 sock=`mktemp -u`
-files="data-raw.out data-raw.pid $sock"
+files="data-raw.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
