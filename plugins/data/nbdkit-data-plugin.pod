@@ -80,7 +80,7 @@ The C<E<lt>FILE> syntax is used to include a file of binary data.
 Note that L<nbdkit-partitioning-plugin(1)> is easier to use and more
 flexible.
 
-=item Create a small disk filled with a test pattern
+=item Create a small disk filled with a test pattern:
 
  nbdkit data data=' ( 0x55 0xAA )*2048 '
 
