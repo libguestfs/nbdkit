@@ -53,7 +53,7 @@ nbdkit_curl_plugin_la_LIBADD = \
 	$(CURL_LIBS) \
 	$(NULL)
 nbdkit_curl_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
+	$(SHARED_LDFLAGS) \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 

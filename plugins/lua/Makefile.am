@@ -53,7 +53,7 @@ nbdkit_lua_plugin_la_CFLAGS = \
 	$(LUA_CFLAGS) \
 	$(NULL)
 nbdkit_lua_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
+	$(SHARED_LDFLAGS) \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(LUA_LIBS) \
 	$(NULL)

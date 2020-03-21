@@ -46,7 +46,7 @@ nbdkit_offset_filter_la_CPPFLAGS = \
 	$(NULL)
 nbdkit_offset_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_offset_filter_la_LDFLAGS = \
-	-module -avoid-version -shared \
+	$(SHARED_LDFLAGS) \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
 nbdkit_offset_filter_la_LIBADD = \
