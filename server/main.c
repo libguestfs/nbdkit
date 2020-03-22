@@ -143,6 +143,8 @@ dump_config (void)
   printf ("tls=no\n");
 #endif
   printf ("%s=%s\n", "version", PACKAGE_VERSION);
+  printf ("%s=%d\n", "version_major", NBDKIT_VERSION_MAJOR);
+  printf ("%s=%d\n", "version_minor", NBDKIT_VERSION_MINOR);
 }
 
 int
