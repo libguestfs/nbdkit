@@ -34,8 +34,14 @@ source ./functions.sh
 set -e
 
 output="$(nbdkit --dump-config)"
-if [[ ! ( "$output" =~ ^bindir= ) ]]; then
+if [[ ! ( "$output" =~ bindir= ) ]]; then
     echo "$0: unexpected output from nbdkit --dump-config"
+    echo "$output"
+    exit 1
+fi
+
+if [[ ! ( "$output" =~ version_major=1 ) ]]; then
+    echo "$0: version_major != 1 in nbdkit --dump-config"
     echo "$output"
     exit 1
 fi
