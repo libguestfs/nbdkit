@@ -129,6 +129,11 @@ nbdkit-linuxdisk-plugin:
 
 * Add multiple dir merging (in e2fsprogs mke2fs).
 
+VDDK:
+
+* Map export name to file parameter, allowing clients to access
+  multiple disks from a single VM.
+
 Suggestions for language plugins
 --------------------------------
 
