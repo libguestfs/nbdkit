@@ -392,12 +392,6 @@ L<nbdkit-plugin(3)/THREADS>).  The plugin uses the nbdkit
 C<SERIALIZE_ALL_REQUESTS> model, but technically even this is not
 completely safe.  This is a subject of future work.
 
-=head2 Export names
-
-For VMs with multiple disks, it would be nice to map the disk names to
-NBD export names.  However nbdkit core will need to be extended to
-support this.
-
 =head2 Out of memory errors
 
 In the verbose log you may see errors like:
