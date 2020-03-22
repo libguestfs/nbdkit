@@ -224,7 +224,7 @@ static struct PyModuleDef moduledef = {
   NULL
 };
 
-static PyMODINIT_FUNC
+PyMODINIT_FUNC
 create_nbdkit_module (void)
 {
   PyObject *m;
