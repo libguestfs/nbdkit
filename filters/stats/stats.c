@@ -59,17 +59,17 @@ typedef struct {
   uint64_t ops;
   uint64_t bytes;
   uint64_t usecs;
-} stat;
+} nbdstat;
 
 /* This lock protects all the stats. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-static stat pread_st   = { "read" };
-static stat pwrite_st  = { "write" };
-static stat trim_st    = { "trim" };
-static stat zero_st    = { "zero" };
-static stat extents_st = { "extents" };
-static stat cache_st   = { "cache" };
-static stat flush_st   = { "flush" };
+static nbdstat pread_st   = { "read" };
+static nbdstat pwrite_st  = { "write" };
+static nbdstat trim_st    = { "trim" };
+static nbdstat zero_st    = { "zero" };
+static nbdstat extents_st = { "extents" };
+static nbdstat cache_st   = { "cache" };
+static nbdstat flush_st   = { "flush" };
 
 #define KiB 1024
 #define MiB 1048576
@@ -108,7 +108,7 @@ maybe (char *s)
 }
 
 static void
-print_stat (const stat *st, int64_t usecs)
+print_stat (const nbdstat *st, int64_t usecs)
 {
   if (st->ops > 0) {
     char *size = humansize (st->bytes);
@@ -243,7 +243,7 @@ stats_get_ready (nbdkit_next_get_ready *next, void *nxdata)
   "statsappend=<BOOL>  True to append to the log (default false).\n"
 
 static inline void
-record_stat (stat *st, uint32_t count, const struct timeval *start)
+record_stat (nbdstat *st, uint32_t count, const struct timeval *start)
 {
   struct timeval end;
   uint64_t usecs;
