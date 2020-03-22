@@ -387,16 +387,6 @@ a glibc extension it may not be available in all builds of the plugin.
 
 =back
 
-=head1 DEBUGGING VDDK
-
-Debugging messages can be very helpful if you have problems connecting
-to VMware servers, or to find the list of available transport modes,
-or to diagnose SAN problems.
-
-Run nbdkit like this to see all debugging messages:
-
- nbdkit -f -v vddk file=FILENAME [...]
-
 =head1 NOTES
 
 =head2 Sector size limitation
@@ -461,6 +451,14 @@ which added Flush support which is crucial for data integrity when
 writing.
 
 =head1 DEBUG FLAGS
+
+Debugging messages can be very helpful if you have problems connecting
+to VMware servers, or to find the list of available transport modes,
+or to diagnose SAN problems:
+
+ nbdkit -f -v vddk file=FILENAME [...]
+
+Additional debug flags are available:
 
 =over 4
 
