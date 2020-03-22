@@ -835,6 +835,11 @@ libvixDiskLib_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 libvixDiskLib_la_LDFLAGS = \
 	-shared -version-number 6:0:0 -rpath /nowhere \
 	$(NULL)
+
+if WINDOWS
+libvixDiskLib_la_LDFLAGS += -no-undefined
+endif
+
 endif HAVE_VDDK
 
 # zero plugin test.
