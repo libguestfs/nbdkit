@@ -52,7 +52,7 @@ nbdkit_rate_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 nbdkit_rate_filter_la_LDFLAGS = \
-	-module -avoid-version -shared \
+	-module -avoid-version -shared $(SHARED_LDFLAGS) \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
 

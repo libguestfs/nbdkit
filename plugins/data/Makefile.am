@@ -56,7 +56,7 @@ nbdkit_data_plugin_la_CFLAGS = \
 	$(GNUTLS_CFLAGS) \
 	$(NULL)
 nbdkit_data_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared \
+	-module -avoid-version -shared $(SHARED_LDFLAGS) \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 nbdkit_data_plugin_la_LIBADD = \
