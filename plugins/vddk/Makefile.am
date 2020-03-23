@@ -59,7 +59,7 @@ nbdkit_vddk_plugin_la_LIBADD = \
 	$(DL_LIBS) \
 	$(NULL)
 nbdkit_vddk_plugin_la_LDFLAGS = \
-	$(SHARED_LDFLAGS) \
+	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 

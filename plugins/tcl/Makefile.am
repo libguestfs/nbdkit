@@ -53,7 +53,7 @@ nbdkit_tcl_plugin_la_CFLAGS = \
 	$(TCL_CFLAGS) \
 	$(NULL)
 nbdkit_tcl_plugin_la_LDFLAGS = \
-	$(SHARED_LDFLAGS) \
+	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(TCL_LIBS) \
 	$(NULL)

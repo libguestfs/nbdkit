@@ -53,7 +53,7 @@ nbdkit_ext2_plugin_la_LIBADD = \
 	$(EXT2FS_LIBS) $(COM_ERR_LIBS) \
 	$(NULL)
 nbdkit_ext2_plugin_la_LDFLAGS = \
-	$(SHARED_LDFLAGS) \
+	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 

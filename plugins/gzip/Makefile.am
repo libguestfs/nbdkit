@@ -53,7 +53,7 @@ nbdkit_gzip_plugin_la_LIBADD = \
 	$(ZLIB_LIBS) \
 	$(NULL)
 nbdkit_gzip_plugin_la_LDFLAGS = \
-	$(SHARED_LDFLAGS) \
+	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 

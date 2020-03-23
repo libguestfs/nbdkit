@@ -46,7 +46,7 @@ nbdkit_pattern_plugin_la_CPPFLAGS = \
 	$(NULL)
 nbdkit_pattern_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_pattern_plugin_la_LDFLAGS = \
-	$(SHARED_LDFLAGS) \
+	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 

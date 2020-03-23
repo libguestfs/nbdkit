@@ -46,7 +46,7 @@ nbdkit_limit_filter_la_CPPFLAGS = \
 	$(NULL)
 nbdkit_limit_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_limit_filter_la_LDFLAGS = \
-	$(SHARED_LDFLAGS) \
+	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
 nbdkit_limit_filter_la_LIBADD = \

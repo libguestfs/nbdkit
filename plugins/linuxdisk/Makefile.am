@@ -60,7 +60,7 @@ nbdkit_linuxdisk_plugin_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 nbdkit_linuxdisk_plugin_la_LDFLAGS = \
-	$(SHARED_LDFLAGS) \
+	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 

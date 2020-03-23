@@ -57,7 +57,7 @@ nbdkit_ext2_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 nbdkit_ext2_filter_la_LDFLAGS = \
-	$(SHARED_LDFLAGS) \
+	-module -avoid-version -shared \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
 
