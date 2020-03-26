@@ -40,11 +40,11 @@
 
 #include "internal.h"
 
-/* Call the right nbdkit_verror function depending on log_sink.
+/* Call the right log_*_verror function depending on log_sink.
  * Note: preserves the previous value of errno.
  */
 void
-nbdkit_verror (const char *fs, va_list args)
+log_verror (const char *fs, va_list args)
 {
   switch (log_to) {
   case LOG_TO_DEFAULT:
@@ -65,9 +65,14 @@ nbdkit_verror (const char *fs, va_list args)
   }
 }
 
-/* Wrapper around nbdkit_verror.
- * Note: preserves the previous value of errno.
- */
+/* Note: preserves the previous value of errno. */
+void
+nbdkit_verror (const char *fs, va_list args)
+{
+  log_verror (fs, args);
+}
+
+/* Note: preserves the previous value of errno. */
 void
 nbdkit_error (const char *fs, ...)
 {

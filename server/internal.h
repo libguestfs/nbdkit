@@ -297,6 +297,9 @@ extern void add_debug_flag (const char *arg);
 extern void apply_debug_flags (void *dl, const char *name);
 extern void free_debug_flags (void);
 
+/* log.c */
+extern void log_verror (const char *fs, va_list args);
+
 /* log-*.c */
 extern void log_stderr_verror (const char *fs, va_list args)
   __attribute__((__format__ (printf, 1, 0)));
