@@ -79,10 +79,24 @@
 # define DO_DLCLOSE 1
 #endif
 
+/* Declare program_name. */
+#if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
+#include <errno.h>
+#define program_name program_invocation_short_name
+#else
+#define program_name "nbdkit"
+#endif
+
 #define container_of(ptr, type, member) ({                       \
       const typeof (((type *) 0)->member) *__mptr = (ptr);       \
       (type *) ((char *) __mptr - offsetof(type, member));       \
     })
+
+#define debug(fs, ...)                                   \
+  do {                                                   \
+    if_verbose                                           \
+      nbdkit_debug ((fs), ##__VA_ARGS__);                \
+  } while (0)
 
 /* Maximum read or write request that we will handle. */
 #define MAX_REQUEST_SIZE (64 * 1024 * 1024)
@@ -284,13 +298,6 @@ extern int protocol_recv_request_send_reply (void);
 extern void crypto_init (bool tls_set_on_cli);
 extern void crypto_free (void);
 extern int crypto_negotiate_tls (int sockin, int sockout);
-
-/* debug.c */
-#define debug(fs, ...)                                   \
-  do {                                                   \
-    if_verbose                                           \
-      nbdkit_debug ((fs), ##__VA_ARGS__);                \
-  } while (0)
 
 /* debug-flags.c */
 extern void add_debug_flag (const char *arg);
@@ -515,13 +522,5 @@ extern struct connection *threadlocal_get_conn (void);
 #define GET_CONN                                        \
   struct connection *conn = threadlocal_get_conn ();    \
   assert (conn != NULL)
-
-/* Declare program_name. */
-#if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
-#include <errno.h>
-#define program_name program_invocation_short_name
-#else
-#define program_name "nbdkit"
-#endif
 
 #endif /* NBDKIT_INTERNAL_H */
