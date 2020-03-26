@@ -35,5 +35,4 @@ set -e
 
 # We only really care that the plugin compiled, so we don't
 # need to run it properly.
-libs=./.libs
-nbdkit $libs/test-ansi-c-plugin.so --version
+nbdkit .libs/test-ansi-c-plugin.so --version
