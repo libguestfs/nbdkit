@@ -64,6 +64,7 @@ nbdkit_SOURCES = \
 	sockets.c \
 	threadlocal.c \
 	usergroup.c \
+	vfprintf.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)

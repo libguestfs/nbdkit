@@ -40,40 +40,26 @@
 
 #include "internal.h"
 
-/* Call the right nbdkit_verror function depending on log_sink.
- * Note: preserves the previous value of errno.
- */
-void
-nbdkit_verror (const char *fs, va_list args)
-{
-  switch (log_to) {
-  case LOG_TO_DEFAULT:
-    if (forked_into_background)
-      log_syslog_verror (fs, args);
-    else
-      log_stderr_verror (fs, args);
-    break;
-  case LOG_TO_SYSLOG:
-    log_syslog_verror (fs, args);
-    break;
-  case LOG_TO_STDERR:
-    log_stderr_verror (fs, args);
-    break;
-  case LOG_TO_NULL:
-    /* nothing */
-    break;
-  }
-}
+#if !HAVE_VFPRINTF_PERCENT_M
+/* Work around lack of %m in BSD */
+#undef vfprintf
 
-/* Wrapper around nbdkit_verror.
- * Note: preserves the previous value of errno.
- */
-void
-nbdkit_error (const char *fs, ...)
+/* Call the real vfprintf after first changing %m into strerror(errno). */
+int
+replace_vfprintf (FILE *f, const char *fmt, va_list args)
 {
-  va_list args;
+  char *repl = NULL;
+  char *p = strstr (fmt, "%m"); /* assume strstr doesn't touch errno */
+  int ret;
 
-  va_start (args, fs);
-  nbdkit_verror (fs, args);
-  va_end (args);
+  /* We only handle the first %m; if a user passes more than one, they
+   * deserve broken output.
+   */
+  if (p && asprintf (&repl, "%.*s%s%s", (int) (p - fmt), fmt, strerror (errno),
+                     p + 2) > 0)
+    fmt = repl;
+  ret = vfprintf (f, fmt, args);
+  free (repl);
+  return ret;
 }
+#endif

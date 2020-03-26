@@ -298,16 +298,18 @@ extern void apply_debug_flags (void *dl, const char *name);
 extern void free_debug_flags (void);
 
 /* log-*.c */
-#if !HAVE_VFPRINTF_PERCENT_M
-#include <stdio.h>
-#define vfprintf nbdkit_vfprintf
-extern int nbdkit_vfprintf (FILE *f, const char *fmt, va_list args)
-  __attribute__((__format__ (printf, 2, 0)));
-#endif
 extern void log_stderr_verror (const char *fs, va_list args)
   __attribute__((__format__ (printf, 1, 0)));
 extern void log_syslog_verror (const char *fs, va_list args)
   __attribute__((__format__ (printf, 1, 0)));
+
+/* vfprintf.c */
+#if !HAVE_VFPRINTF_PERCENT_M
+#include <stdio.h>
+#define vfprintf replace_vfprintf
+extern int replace_vfprintf (FILE *f, const char *fmt, va_list args)
+  __attribute__((__format__ (printf, 2, 0)));
+#endif
 
 /* backend.c */
 struct backend {
