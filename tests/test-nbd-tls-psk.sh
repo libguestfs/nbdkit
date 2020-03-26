@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2019 Red Hat Inc.
+# Copyright (C) 2019-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -64,17 +64,26 @@ files="$sock1 $sock2 $pid1 $pid2 nbd-tls-psk.out"
 rm -f $files
 cleanup_fn rm -f $files
 
+# Run nbd plugin as intermediary; also test our retry code.  We start this
+# instance of nbdkit first because the two nbdkit processes will be killed
+# in the same order; and it is easier to kill the nbd client (which is
+# poll()ing on a non-blocking socket) than the example1 server (which is
+# read()ing on a blocking socket) if both sides are waiting for the other
+# to perform gnutls_bye() before closing the socket.
+start_nbdkit -P "$pid2" -U "$sock2" --tls=off nbd retry=10 \
+    tls=require tls-psk=keys.psk tls-username=qemu socket="$sock1"
+
+# Run unencrypted client in background, so that retry will be required
+qemu-img info --output=json -f raw "nbd+unix:///?socket=$sock2" \
+	 > nbd-tls-psk.out &
+info_pid=$!
+sleep 1
+
 # Run encrypted server
 start_nbdkit -P "$pid1" -U "$sock1" \
     --tls=require --tls-psk=keys.psk example1
 
-# Run nbd plugin as intermediary
-start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
-    nbd tls=require tls-psk=keys.psk tls-username=qemu socket="$sock1"
-
-# Run unencrypted client
-qemu-img info --output=json -f raw "nbd+unix:///?socket=$sock2" > nbd-tls-psk.out
-
+wait $info_pid
 cat nbd-tls-psk.out
 
 grep -sq '"format": *"raw"' nbd-tls-psk.out
