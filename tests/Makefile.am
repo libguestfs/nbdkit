@@ -1230,6 +1230,7 @@ TESTS += \
 	test-old-plugins-x86_64-Linux-v1.2.8.sh \
 	test-old-plugins-x86_64-Linux-v1.8.4.sh \
 	test-old-plugins-x86_64-Linux-v1.12.8.sh \
+	test-old-plugins-x86_64-Linux-v1.18.2.sh \
 	$(NULL)
 
 test-old-plugins-%.sh:
