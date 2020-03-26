@@ -833,12 +833,8 @@ libvixDiskLib_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 libvixDiskLib_la_LDFLAGS = \
-	-shared -version-number 6:0:0 -rpath /nowhere \
+	-shared -version-number 6:0:0 -no-undefined -rpath /nowhere \
 	$(NULL)
-
-if WINDOWS
-libvixDiskLib_la_LDFLAGS += -no-undefined
-endif
 
 endif HAVE_VDDK
 

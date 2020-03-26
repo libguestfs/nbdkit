@@ -412,15 +412,6 @@ AS_CASE([$host_os],
 AC_MSG_RESULT([$SHARED_LDFLAGS])
 AC_SUBST([SHARED_LDFLAGS])
 
-AC_MSG_CHECKING([if we are on a windows platform])
-AS_CASE([$host_os],
-  [mingw*|msys*|cygwin*], [is_windows=yes],
-  [is_windows=no]
-)
-AC_MSG_RESULT([$is_windows])
-AM_CONDITIONAL([WINDOWS],
-               [test "x$is_windows" = "xyes"])
-
 AC_SEARCH_LIBS([getaddrinfo], [network socket])
 
 dnl Check for SELinux socket labelling (optional).
