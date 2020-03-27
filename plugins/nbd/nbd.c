@@ -532,7 +532,7 @@ nbdplug_open (int readonly)
 static void
 nbdplug_close_handle (struct handle *h)
 {
-  if (nbd_shutdown (h->nbd, 0) == -1)
+  if (nbd_aio_disconnect (h->nbd, 0) == -1)
     nbdkit_debug ("failed to clean up handle: %s", nbd_get_error ());
   if ((errno = pthread_join (h->reader, NULL)))
     nbdkit_debug ("failed to join reader thread: %m");
