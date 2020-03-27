@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2019 Red Hat Inc.
+ * Copyright (C) 2017-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -312,7 +312,6 @@ nbdplug_reader (void *handle)
       [1].events = POLLIN,
     };
     unsigned dir;
-    char c;
 
     dir = nbd_aio_get_direction (h->nbd);
     nbdkit_debug ("polling, dir=%d", dir);
@@ -332,9 +331,9 @@ nbdplug_reader (void *handle)
 
     /* Check if we were kicked because a command was started */
     if (fds[1].revents & POLLIN) {
-      while (read (h->fds[0], &c, 1) == 1)
-        /* Drain any backlog */;
-      if (errno != EAGAIN) {
+      char buf[10]; /* Larger than 1 to allow reduction of any backlog */
+
+      if (read (h->fds[0], buf, sizeof buf) == -1 && errno != EAGAIN) {
         nbdkit_error ("failed to read pipe: %m");
         break;
       }
@@ -392,7 +391,7 @@ nbdplug_register (struct handle *h, struct transaction *trans, int64_t cookie)
   nbdkit_debug ("cookie %" PRId64 " started by state machine", cookie);
   trans->cookie = cookie;
 
-  if (write (h->fds[1], &c, 1) != 1 && errno != EAGAIN)
+  if (write (h->fds[1], &c, 1) == -1 && errno != EAGAIN)
     nbdkit_debug ("failed to kick reader thread: %m");
 }
 
