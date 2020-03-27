@@ -107,10 +107,11 @@ start_nbdkit -P nozero3.pid -U $sock3 --filter=log --filter=nozero \
        file logfile=nozero3.log nozero3.img zeromode=emulate
 start_nbdkit -P nozero4.pid -U $sock4 --filter=nozero --filter=log \
        file logfile=nozero4.log nozero4.img zeromode=emulate
-start_nbdkit -P nozero5a.pid -U $sock5a --filter=log --filter=nozero \
-       file logfile=nozero5a.log nozero5.img
+# Start 5b before 5a so that cleanup visits the client before the server
 start_nbdkit -P nozero5b.pid -U $sock5b --filter=log \
        nbd logfile=nozero5b.log socket=$sock5a
+start_nbdkit -P nozero5a.pid -U $sock5a --filter=log --filter=nozero \
+       file logfile=nozero5a.log nozero5.img
 start_nbdkit -P nozero6.pid -U $sock6 --filter=nozero --filter=log \
        file logfile=nozero6.log nozero6.img zeromode=notrim
 

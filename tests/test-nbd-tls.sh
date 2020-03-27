@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2019 Red Hat Inc.
+# Copyright (C) 2019-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -65,13 +65,15 @@ files="$sock1 $sock2 $pid1 $pid2 nbd-tls.out"
 rm -f $files
 cleanup_fn rm -f $files
 
+# Run nbd plugin as intermediary. Start this first, so it will be
+# terminated before the encrypted server (terminating a client is
+# easy, while terminating a server waits until there are no clients)
+start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
+    nbd tls=require tls-certificates="$pkidir" socket="$sock1"
+
 # Run encrypted server
 start_nbdkit -P "$pid1" -U "$sock1" \
     --tls=require --tls-certificates="$pkidir" example1
-
-# Run nbd plugin as intermediary
-start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
-    nbd tls=require tls-certificates="$pkidir" socket="$sock1"
 
 # Run unencrypted client
 qemu-img info --output=json -f raw "nbd+unix:///?socket=$sock2" > nbd-tls.out
