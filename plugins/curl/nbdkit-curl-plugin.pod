@@ -141,13 +141,12 @@ Use the default libcurl timeout for requests.
 =item B<unix-socket-path=>PATH
 
 Instead of using a TCP connection, connect to the server over the
-named Unix domain socket.  See
-L<curl_easy_setopt(3)/CURLOPT_UNIX_SOCKET_PATH>.
+named Unix domain socket.  See L<CURLOPT_UNIX_SOCKET_PATH(3)>.
 
 =item [B<url=>]URL
 
 The URL of the remote disk image.  This is passed to libcurl directly
-via L<curl_easy_setopt(3)/CURLOPT_URL>.
+via L<CURLOPT_URL(3)>.
 
 This parameter is required.
 
@@ -193,7 +192,11 @@ C<nbdkit-curl-plugin> first appeared in nbdkit 1.2.
 
 L<curl(1)>,
 L<libcurl(3)>,
-L<CURLOPT_COOKIE(3)>
+L<CURLOPT_CAINFO(3)>,
+L<CURLOPT_CAPATH(3)>,
+L<CURLOPT_COOKIE(3)>,
+L<CURLOPT_URL(3)>,
+L<CURLOPT_UNIX_SOCKET_PATH(3)>,
 L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
 L<nbdkit-extentlist-filter(1)>,
