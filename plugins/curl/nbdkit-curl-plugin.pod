@@ -47,6 +47,10 @@ L<CURLOPT_CAPATH(3)> for more information.
 
 =item B<cookie=+>FILENAME
 
+=item B<cookie=->
+
+=item B<cookie=->FD
+
 Set a cookie in the request header when connecting to the remote
 server.
 
@@ -64,7 +68,8 @@ See L<CURLOPT_COOKIE(3)> for more information about this.
 
 If the cookie is used for authentication then passing it on the
 command line is not secure on shared machines.  Use the alternate
-C<+FILENAME> syntax to pass it in a file.
+C<+FILENAME> syntax to pass it in a file, C<-> to read the cookie
+interactively, or C<-FD> to read it from a file descriptor.
 
 =item B<password=>PASSWORD
 
