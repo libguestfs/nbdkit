@@ -44,6 +44,7 @@ nbdkit_curl_plugin_la_SOURCES = \
 
 nbdkit_curl_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_curl_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
@@ -51,6 +52,7 @@ nbdkit_curl_plugin_la_CFLAGS = \
 	$(NULL)
 nbdkit_curl_plugin_la_LIBADD = \
 	$(CURL_LIBS) \
+	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 nbdkit_curl_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(SHARED_LDFLAGS) \
