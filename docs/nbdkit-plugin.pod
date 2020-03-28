@@ -28,7 +28,11 @@ nbdkit-plugin - how to write nbdkit plugins
  
  NBDKIT_REGISTER_PLUGIN(plugin)
 
-When this has been compiled to a shared library, do:
+Compile the plugin as a shared library:
+
+ gcc -fPIC -shared myplugin.c -o myplugin.so
+
+and load it into nbdkit:
 
  nbdkit [--args ...] ./myplugin.so [key=value ...]
 
@@ -1366,31 +1370,19 @@ in the variable name, so both of these parameters:
 
 correspond to the plugin variable C<myplugin_debug_foo_bar>.
 
-=head1 INSTALLING THE PLUGIN
+=head1 COMPILING THE PLUGIN
 
-The plugin is a C<*.so> file and possibly a manual page.  You can of
-course install the plugin C<*.so> file wherever you want, and users
-will be able to use it by running:
+Plugins should be compiled as shared libraries.  There are various
+ways to achieve this, but most Linux compilers support a I<-shared>
+option to create the shared library directly, for example:
 
- nbdkit /path/to/plugin.so [args]
+ gcc -fPIC -shared myplugin.c -o myplugin.so
 
-However B<if> the shared library has a name of the form
-C<nbdkit-I<name>-plugin.so> B<and if> the library is installed in the
-C<$plugindir> directory, then users can be run it by only typing:
+Note that the shared library will have undefined symbols for functions
+that you call like C<nbdkit_parse_int> or C<nbdkit_error>.  These will
+be resolved by the server binary when nbdkit dlopens the plugin.
 
- nbdkit name [args]
-
-The location of the C<$plugindir> directory is set when nbdkit is
-compiled and can be found by doing:
-
- nbdkit --dump-config
-
-If using the pkg-config/pkgconf system then you can also find the
-plugin directory at compile time by doing:
-
- pkg-config nbdkit --variable=plugindir
-
-=head1 PKG-CONFIG/PKGCONF
+=head2 PKG-CONFIG/PKGCONF
 
 nbdkit provides a pkg-config/pkgconf file called C<nbdkit.pc> which
 should be installed on the correct path when the nbdkit plugin
@@ -1415,6 +1407,36 @@ You can also substitute the plugindir variable by doing:
  PKG_CHECK_VAR([NBDKIT_PLUGINDIR], [nbdkit], [plugindir])
 
 which defines C<$(NBDKIT_PLUGINDIR)> in automake-generated Makefiles.
+
+If nbdkit development headers are installed in a non-standard location
+then you may need to compile plugins using:
+
+ gcc -fPIC -shared myplugin.c -o myplugin.so \
+   `pkg-config nbdkit --cflags --libs`
+
+=head1 INSTALLING THE PLUGIN
+
+The plugin is a C<*.so> file and possibly a manual page.  You can of
+course install the plugin C<*.so> file wherever you want, and users
+will be able to use it by running:
+
+ nbdkit /path/to/plugin.so [args]
+
+However B<if> the shared library has a name of the form
+C<nbdkit-I<name>-plugin.so> B<and if> the library is installed in the
+C<$plugindir> directory, then users can be run it by only typing:
+
+ nbdkit name [args]
+
+The location of the C<$plugindir> directory is set when nbdkit is
+compiled and can be found by doing:
+
+ nbdkit --dump-config
+
+If using the pkg-config/pkgconf system then you can also find the
+plugin directory at compile time by doing:
+
+ pkg-config nbdkit --variable=plugindir
 
 =head1 WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES
 
