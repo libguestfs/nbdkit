@@ -74,9 +74,10 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
   if (test_start_nbdkit ("curl",
+                         "-D", "curl.verbose=1",
+                         "http://localhost/disk",
                          "cookie=foo=bar; baz=1;",
                          usp_param, /* unix-socket-path=... */
-                         "http://localhost/disk",
                          NULL) == -1)
     exit (EXIT_FAILURE);
 
