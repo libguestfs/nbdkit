@@ -94,6 +94,7 @@ EXTRA_DIST = \
 	test-captive.sh \
 	test-cow.sh \
 	test-cow-null.sh \
+	test-curl-file.sh \
 	test-cxx.sh \
 	test-data-7E.sh \
 	test-data-base64.sh \
@@ -520,6 +521,7 @@ endif
 # curl plugin test.
 if HAVE_MKE2FS_WITH_D
 if HAVE_CURL
+TESTS += test-curl-file.sh
 LIBGUESTFS_TESTS += test-curl
 
 test_curl_SOURCES = \
