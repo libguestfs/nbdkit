@@ -329,8 +329,6 @@ curl_open (int readonly)
     goto err;
   }
 
-  nbdkit_debug ("opened libcurl easy handle");
-
   /* Note this writes the output to stderr directly.  We should
    * consider using CURLOPT_DEBUGFUNCTION so we can handle it with
    * nbdkit_debug.
@@ -358,7 +356,6 @@ curl_open (int readonly)
     display_curl_error (h, r, "curl_easy_setopt: CURLOPT_URL [%s]", url);
     goto err;
   }
-  nbdkit_debug ("set libcurl URL: %s", url);
 
   /* Various options we always set. */
   curl_easy_setopt (h->c, CURLOPT_AUTOREFERER, 1);
@@ -462,8 +459,6 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_READFUNCTION, read_cb);
     curl_easy_setopt (h->c, CURLOPT_READDATA, h);
   }
-
-  nbdkit_debug ("returning new handle %p", h);
 
   return h;
 
