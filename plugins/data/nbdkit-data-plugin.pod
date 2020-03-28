@@ -216,7 +216,7 @@ Write C<BYTE> at the current offset and advance the offset by 1 byte.
 The byte may be specified as either decimal, octal (prefixed by C<0>)
 or hexadecimal (prefixed by C<0x>).
 
-=item BYTE*N
+=item BYTEB<*>N
 
 Repeat C<BYTE> C<N> times (where C<N> is a number).  Note there must
 not be any whitespace around the C<*> character.  Increases the offset
@@ -224,12 +224,12 @@ by C<N>.
 
 =item B<E<lt>>FILE
 
-Read the contents of F<FILE> into the disk image at the current
+Read the contents of binary F<FILE> into the disk image at the current
 offset.  The offset is incremented by the size of the file.  The
 filename can be a relative or absolute path, but cannot contain
 whitespace in the name.
 
-=item ( ... )*N
+=item B<(> ... B<)*>N
 
 Repeat the enclosed pattern C<N> times.  The offset is incremented by
 the length of the enclosed pattern × N.  For example to create a
