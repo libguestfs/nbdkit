@@ -114,6 +114,10 @@ B<smtps>, B<telnet>, B<tftp>.
 
 The default is to allow any protocol.
 
+=item B<proxy=>PROXY
+
+Set the proxy.  See L<CURLOPT_PROXY(3)>.
+
 =item B<proxy-password=>PASSWORD
 
 =item B<proxy-password=->
@@ -195,6 +199,7 @@ L<libcurl(3)>,
 L<CURLOPT_CAINFO(3)>,
 L<CURLOPT_CAPATH(3)>,
 L<CURLOPT_COOKIE(3)>,
+L<CURLOPT_PROXY(3)>,
 L<CURLOPT_URL(3)>,
 L<CURLOPT_UNIX_SOCKET_PATH(3)>,
 L<CURLOPT_VERBOSE(3)>,

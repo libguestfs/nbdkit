@@ -63,6 +63,7 @@ static const char *capath = NULL;
 static char *cookie = NULL;
 static char *password = NULL;
 static long protocols = CURLPROTO_ALL;
+static const char *proxy = NULL;
 static char *proxy_password = NULL;
 static const char *proxy_user = NULL;
 static bool sslverify = true;
@@ -207,6 +208,10 @@ curl_config (const char *key, const char *value)
       return -1;
   }
 
+  else if (strcmp (key, "proxy") == 0) {
+    proxy = value;
+  }
+
   else if (strcmp (key, "proxy-password") == 0) {
     free (proxy_password);
     if (nbdkit_read_password (value, &proxy_password) == -1)
@@ -274,6 +279,7 @@ curl_config_complete (void)
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
   "protocols=PROTO,PROTO,..   Limit protocols allowed.\n" \
+  "proxy=<PROXY>              Set proxy URL.\n" \
   "proxy-password=<PASSWORD>  The proxy password.\n" \
   "proxy-user=<USER>          The proxy user.\n" \
   "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
@@ -375,6 +381,8 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_PROTOCOLS, protocols);
     curl_easy_setopt (h->c, CURLOPT_REDIR_PROTOCOLS, protocols);
   }
+  if (proxy)
+    curl_easy_setopt (h->c, CURLOPT_PROXY, proxy);
   if (proxy_password)
     curl_easy_setopt (h->c, CURLOPT_PROXYPASSWORD, proxy_password);
   if (proxy_user)
