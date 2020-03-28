@@ -56,6 +56,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
+
 static const char *url = NULL;
 static const char *user = NULL;
 static char *password = NULL;
@@ -300,6 +302,8 @@ struct curl_handle {
                   curl_easy_strerror ((r)), (h)->errbuf);       \
   } while (0)
 
+static int debug_cb (CURL *handle, curl_infotype type,
+                     const char *data, size_t size, void *);
 static size_t header_cb (void *ptr, size_t size, size_t nmemb, void *opaque);
 static size_t write_cb (char *ptr, size_t size, size_t nmemb, void *opaque);
 static size_t read_cb (void *ptr, size_t size, size_t nmemb, void *opaque);
@@ -330,11 +334,13 @@ curl_open (int readonly)
 
   nbdkit_debug ("opened libcurl easy handle");
 
-  /* Note this writes the output to stderr directly.  We should
-   * consider using CURLOPT_DEBUGFUNCTION so we can handle it with
-   * nbdkit_debug.
-   */
-  curl_easy_setopt (h->c, CURLOPT_VERBOSE, curl_debug_verbose);
+  if (curl_debug_verbose) {
+    /* NB: Constants must be explicitly long because the parameter is
+     * varargs.
+     */
+    curl_easy_setopt (h->c, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt (h->c, CURLOPT_DEBUGFUNCTION, debug_cb);
+  }
 
   curl_easy_setopt (h->c, CURLOPT_ERRORBUFFER, h->errbuf);
 
@@ -468,29 +474,62 @@ curl_open (int readonly)
   return NULL;
 }
 
+/* When using CURLOPT_VERBOSE, this callback is used to redirect
+ * messages to nbdkit_debug (instead of stderr).
+ */
+static int
+debug_cb (CURL *handle, curl_infotype type,
+          const char *data, size_t size, void *opaque)
+{
+  size_t origsize = size;
+  CLEANUP_FREE char *str;
+
+  /* The data parameter passed is NOT \0-terminated, but also it may
+   * have \n or \r\n line endings.  The only sane way to deal with
+   * this is to copy the string.  (The data strings may also be
+   * multi-line, but we don't deal with that here).
+   */
+  str = malloc (size + 1);
+  if (str == NULL)
+    goto out;
+  memcpy (str, data, size);
+  str[size] = '\0';
+
+  while (size > 0 && (str[size-1] == '\n' || str[size-1] == '\r')) {
+    str[size-1] = '\0';
+    size--;
+  }
+
+  switch (type) {
+  case CURLINFO_TEXT:
+    nbdkit_debug ("%s", str);
+    break;
+  case CURLINFO_HEADER_IN:
+    nbdkit_debug ("S: %s", str);
+    break;
+  case CURLINFO_HEADER_OUT:
+    nbdkit_debug ("C: %s", str);
+    break;
+  default:
+    /* Assume everything else is binary data that we cannot print. */
+    nbdkit_debug ("<data with size=%zu>", origsize);
+  }
+
+ out:
+  return 0;
+}
+
 static size_t
 header_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
 {
   struct curl_handle *h = opaque;
   size_t realsize = size * nmemb;
-  size_t len;
   const char *accept_line = "Accept-Ranges: bytes";
   const char *line = ptr;
 
   if (realsize >= strlen (accept_line) &&
       strncmp (line, accept_line, strlen (accept_line)) == 0)
     h->accept_range = true;
-
-  /* Useful to print the server headers when debugging.  However we
-   * must strip off trailing \r?\n from each line.
-   */
-  len = realsize;
-  if (len > 0 && line[len-1] == '\n')
-    len--;
-  if (len > 0 && line[len-1] == '\r')
-    len--;
-  if (len > 0)
-    nbdkit_debug ("S: %.*s", (int) len, line);
 
   return realsize;
 }
