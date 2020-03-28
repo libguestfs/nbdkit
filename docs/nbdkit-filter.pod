@@ -796,7 +796,7 @@ compiled and can be found by doing:
 If using the pkg-config/pkgconf system then you can also find the
 filter directory at compile time by doing:
 
- pkgconf nbdkit --variable=filterdir
+ pkg-config nbdkit --variable=filterdir
 
 =head1 PKG-CONFIG/PKGCONF
 
@@ -813,7 +813,7 @@ appropriately for compiling filters.
 
 You can also run pkg-config/pkgconf directly, for example:
 
- if ! pkgconf nbdkit --exists; then
+ if ! pkg-config nbdkit --exists; then
    echo "you must install the nbdkit development environment"
    exit 1
  fi
