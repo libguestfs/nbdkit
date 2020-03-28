@@ -35,8 +35,27 @@ set -e
 set -x
 
 requires test -f disk
+requires test -r /dev/null
 requires qemu-img --version
 
-nbdkit -fv -U - \
-       curl file:$PWD/disk protocols=file \
-       --run 'qemu-img info $nbd'
+# Although curl won't use these settings because we're using the file:
+# protocol, this still exercises the paths inside the plugin.
+
+for opt in \
+    '' \
+    cainfo=/dev/null \
+    capath=/dev/null \
+    cookie=foo=bar \
+    password=secret \
+    proxy-password=secret \
+    proxy-user=eve \
+    sslverify=false \
+    tcp-keepalive=true \
+    tcp-nodelay=false \
+    timeout=120 \
+    user=alice
+do
+    nbdkit -fv -D curl.verbose=1 -U - \
+           curl file:$PWD/disk protocols=file $opt \
+           --run 'qemu-img info $nbd'
+done
