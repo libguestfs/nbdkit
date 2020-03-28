@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014 Red Hat Inc.
+ * Copyright (C) 2014-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -67,6 +67,8 @@ static const char *proxy = NULL;
 static char *proxy_password = NULL;
 static const char *proxy_user = NULL;
 static bool sslverify = true;
+static bool tcp_keepalive = false;
+static bool tcp_nodelay = true;
 static uint32_t timeout = 0;
 static const char *unix_socket_path = NULL;
 static const char *user = NULL;
@@ -228,6 +230,20 @@ curl_config (const char *key, const char *value)
     sslverify = r;
   }
 
+  else if (strcmp (key, "tcp-keepalive") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    tcp_keepalive = r;
+  }
+
+  else if (strcmp (key, "tcp-nodelay") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    tcp_nodelay = r;
+  }
+
   else if (strcmp (key, "timeout") == 0) {
     if (nbdkit_parse_uint32_t ("timeout", value, &timeout) == -1)
       return -1;
@@ -284,6 +300,8 @@ curl_config_complete (void)
   "proxy-user=<USER>          The proxy user.\n" \
   "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
   "sslverify=false            Do not verify SSL certificate of remote host.\n" \
+  "tcp-keepalive=true         Enable TCP keepalives.\n" \
+  "tcp-nodelay=false          Disable Nagle’s algorithm.\n" \
   "unix-socket-path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
   "url=<URL>       (required) The disk image URL to serve.\n" \
   "user=<USER>                The user to log in as."
@@ -394,6 +412,10 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYHOST, 0L);
   }
+  if (tcp_keepalive)
+    curl_easy_setopt (h->c, CURLOPT_TCP_KEEPALIVE, 1L);
+  if (!tcp_nodelay)
+    curl_easy_setopt (h->c, CURLOPT_TCP_NODELAY, 0L);
   if (timeout > 0)
     /* NB: The cast is required here because the parameter is varargs
      * treated as long, and not type safe.

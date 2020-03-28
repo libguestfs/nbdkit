@@ -134,6 +134,14 @@ Set the proxy username and password.
 
 Don't verify the SSL certificate of the remote host.
 
+=item B<tcp-keepalive=true>
+
+Enable TCP keepalives.
+
+=item B<tcp-nodelay=false>
+
+Disable Nagle’s algorithm.
+
 =item B<timeout=>SECS
 
 Set the timeout for requests.
@@ -200,6 +208,8 @@ L<CURLOPT_CAINFO(3)>,
 L<CURLOPT_CAPATH(3)>,
 L<CURLOPT_COOKIE(3)>,
 L<CURLOPT_PROXY(3)>,
+L<CURLOPT_TCP_KEEPALIVE(3)>,
+L<CURLOPT_TCP_NODELAY(3)>,
 L<CURLOPT_URL(3)>,
 L<CURLOPT_UNIX_SOCKET_PATH(3)>,
 L<CURLOPT_VERBOSE(3)>,
@@ -219,4 +229,4 @@ Parts derived from Alexander Graf's "QEMU Block driver for CURL images".
 
 =head1 COPYRIGHT
 
-Copyright (C) 2014 Red Hat Inc.
+Copyright (C) 2014-2020 Red Hat Inc.
