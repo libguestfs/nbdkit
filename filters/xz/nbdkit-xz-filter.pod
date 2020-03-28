@@ -71,7 +71,7 @@ Maximum number of blocks stored in the LRU block cache.
 This parameter is optional.  If not specified it defaults to 8.
 
 The filter may allocate up to
-S<maximum block size in file * maxdepth>
+S<maximum block size in file × maxdepth>
 bytes of memory I<per connection>.
 
 =back
