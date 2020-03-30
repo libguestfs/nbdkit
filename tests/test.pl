@@ -2,6 +2,18 @@ use strict;
 
 my $disk = "\0" x (1024*1024);
 
+# Check some expected constants are defined.  Since these constants
+# are defined by the nbdkit ABI, they should never change so checking
+# their absolute values here ought to be fine.
+BEGIN {
+    die unless $Nbdkit::FLAG_MAY_TRIM == 1;
+    die unless $Nbdkit::FLAG_FUA      == 2;
+    die unless $Nbdkit::FLAG_REQ_ONE  == 4;
+    die unless $Nbdkit::FUA_NATIVE    == 2;
+    die unless $Nbdkit::CACHE_EMULATE == 1;
+    die unless $Nbdkit::EXTENT_ZERO   == 2;
+}
+
 sub config_complete
 {
 }

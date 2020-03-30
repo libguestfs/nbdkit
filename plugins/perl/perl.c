@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2018 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -46,6 +46,7 @@
 #include <EXTERN.h>
 #include <perl.h>
 
+#define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
@@ -154,8 +155,35 @@ static void
 xs_init (pTHX)
 {
   char *file = __FILE__;
+  GV *gv;
+
   newXS ("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
   newXS ("Nbdkit::set_error", set_error, file);
+
+  /* This macro defines flags such as $Nbdkit::FLAG_MAY_TRIM
+   * See also
+   * https://github.com/Perl/perl5/blob/5de22a40933c620b62e1f431457593777b99793d/os2/os2.c#L4563
+   */
+#define DEFINE_FLAG(n)                           \
+  gv = gv_fetchpv ("Nbdkit::" #n, TRUE, SVt_PV); \
+  GvMULTI_on (gv);                               \
+  sv_setiv (GvSV(gv), NBDKIT_ ## n)
+
+  DEFINE_FLAG(FLAG_MAY_TRIM);
+  DEFINE_FLAG(FLAG_FUA);
+  DEFINE_FLAG(FLAG_REQ_ONE);
+  DEFINE_FLAG(FLAG_FAST_ZERO);
+
+  DEFINE_FLAG(FUA_NONE);
+  DEFINE_FLAG(FUA_EMULATE);
+  DEFINE_FLAG(FUA_NATIVE);
+
+  DEFINE_FLAG(CACHE_NONE);
+  DEFINE_FLAG(CACHE_EMULATE);
+  DEFINE_FLAG(CACHE_NATIVE);
+
+  DEFINE_FLAG(EXTENT_HOLE);
+  DEFINE_FLAG(EXTENT_ZERO);
 }
 
 static void
@@ -421,7 +449,7 @@ perl_is_rotational (void *handle)
 
 static int
 perl_pread (void *handle, void *buf,
-            uint32_t count, uint64_t offset)
+            uint32_t count, uint64_t offset, uint32_t flags)
 {
   dSP;
   SV *sv;
@@ -436,6 +464,7 @@ perl_pread (void *handle, void *buf,
   XPUSHs (handle);
   XPUSHs (sv_2mortal (newSViv (count)));
   XPUSHs (sv_2mortal (newSViv (offset)));
+  XPUSHs (sv_2mortal (newSViv (flags)));
   PUTBACK;
   call_pv ("pread", G_EVAL|G_SCALAR);
   SPAGAIN;
@@ -459,7 +488,7 @@ perl_pread (void *handle, void *buf,
 
 static int
 perl_pwrite (void *handle, const void *buf,
-             uint32_t count, uint64_t offset)
+             uint32_t count, uint64_t offset, uint32_t flags)
 {
   dSP;
 
@@ -470,6 +499,7 @@ perl_pwrite (void *handle, const void *buf,
     XPUSHs (handle);
     XPUSHs (sv_2mortal (newSVpv (buf, count)));
     XPUSHs (sv_2mortal (newSViv (offset)));
+    XPUSHs (sv_2mortal (newSViv (flags)));
     PUTBACK;
     call_pv ("pwrite", G_EVAL|G_VOID|G_DISCARD);
     SPAGAIN;
@@ -488,7 +518,7 @@ perl_pwrite (void *handle, const void *buf,
 }
 
 static int
-perl_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
+perl_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   dSP;
 
@@ -500,7 +530,7 @@ perl_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
     XPUSHs (handle);
     XPUSHs (sv_2mortal (newSViv (count)));
     XPUSHs (sv_2mortal (newSViv (offset)));
-    XPUSHs (sv_2mortal (newSViv (may_trim)));
+    XPUSHs (sv_2mortal (newSViv (flags)));
     PUTBACK;
     call_pv ("zero", G_EVAL|G_SCALAR);
     SPAGAIN;
@@ -527,7 +557,7 @@ perl_zero (void *handle, uint32_t count, uint64_t offset, int may_trim)
 }
 
 static int
-perl_flush (void *handle)
+perl_flush (void *handle, uint32_t flags)
 {
   dSP;
 
@@ -536,6 +566,7 @@ perl_flush (void *handle)
     SAVETMPS;
     PUSHMARK (SP);
     XPUSHs (handle);
+    XPUSHs (sv_2mortal (newSViv (flags)));
     PUTBACK;
     call_pv ("flush", G_EVAL|G_VOID|G_DISCARD);
     SPAGAIN;
@@ -556,7 +587,7 @@ perl_flush (void *handle)
 }
 
 static int
-perl_trim (void *handle, uint32_t count, uint64_t offset)
+perl_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   dSP;
 
@@ -567,6 +598,7 @@ perl_trim (void *handle, uint32_t count, uint64_t offset)
     XPUSHs (handle);
     XPUSHs (sv_2mortal (newSViv (count)));
     XPUSHs (sv_2mortal (newSViv (offset)));
+    XPUSHs (sv_2mortal (newSViv (flags)));
     PUTBACK;
     call_pv ("trim", G_EVAL|G_VOID|G_DISCARD);
     SPAGAIN;

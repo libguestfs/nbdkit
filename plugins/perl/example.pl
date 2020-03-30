@@ -70,6 +70,7 @@ sub pread
     my $h = shift;
     my $count = shift;
     my $offset = shift;
+    my $flags = shift;
 
     return substr ($disk, $offset, $count);
 }
@@ -80,6 +81,7 @@ sub pwrite
     my $buf = shift;
     my $count = length ($buf);
     my $offset = shift;
+    my $flags = shift;
 
     substr ($disk, $offset, $count) = $buf;
 }
@@ -89,9 +91,9 @@ sub zero
     my $h = shift;
     my $count = shift;
     my $offset = shift;
-    my $may_trim = shift;
+    my $flags = shift;
 
-    if ($may_trim) {
+    if ($flags & $Nbdkit::FLAG_MAY_TRIM) {
 	substr ($disk, $offset, $count) = "\0" x $count;
     } else {
 	Nbdkit::set_error(POSIX::EOPNOTSUPP);
