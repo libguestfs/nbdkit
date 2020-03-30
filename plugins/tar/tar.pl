@@ -119,7 +119,7 @@ sub get_ready
             # Add one for the tar header, and multiply by the block size.
             $offset = ($1 + 1) * 512;
             $size = $2;
-            #print STDERR "offset = $offset, size = $size\n";
+            Nbdkit::debug ("tar: file: $file offset: $offset size: $size")
         }
     }
     close ($pipe);

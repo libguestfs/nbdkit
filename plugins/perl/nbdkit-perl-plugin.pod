@@ -64,16 +64,23 @@ See also L<nbdkit(1)/Shebang scripts>.
 These scripts can also be installed in the C<$plugindir>.  See
 L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
-=head2 Methods
+=head2 C<Nbdkit::> functions
 
-Your script has access to the following methods in the C<Nbdkit>
-package (in fact, attempting to C<use Nbdkit> will fail, the methods
-are already available):
+The following functions can be called in a virtual Perl package called
+C<Nbdkit>.  Your script does not need to "use" this package, it is
+already available in all scripts.
+
+=head3 C<Nbdkit::debug ($msg)>
+
+In debugging mode, print C<$msg>.  This is a wrapper around the C
+function C<nbdkit_debug> (see L<nbdkit-plugin(3)>).
+
+=head3 C<Nbdkit::set_error ($err)>
 
  Nbdkit::set_error($err);
 
-Record C<$err> as the reason you are about to throw an exception. C<$err>
-should correspond to usual errno values, where it may help to
+Record C<$err> as the reason you are about to throw an exception.
+C<$err> should correspond to usual errno values, where it may help to
 C<use POSIX()>.
 
 =head2 Exceptions

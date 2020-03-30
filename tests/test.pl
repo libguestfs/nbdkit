@@ -2,10 +2,13 @@ use strict;
 
 my $disk = "\0" x (1024*1024);
 
-# Check some expected constants are defined.  Since these constants
-# are defined by the nbdkit ABI, they should never change so checking
-# their absolute values here ought to be fine.
 BEGIN {
+    # Call the debug function to check it works.
+    Nbdkit::debug ("hello world!");
+
+    # Check some expected constants are defined.  Since these constants
+    # are defined by the nbdkit ABI, they should never change so checking
+    # their absolute values here ought to be fine.
     die unless $Nbdkit::FLAG_MAY_TRIM == 1;
     die unless $Nbdkit::FLAG_FUA      == 2;
     die unless $Nbdkit::FLAG_REQ_ONE  == 4;
@@ -21,6 +24,7 @@ sub config_complete
 sub open
 {
     my $readonly = shift;
+    Nbdkit::debug ("perl plugin opened, readonly=" . $readonly);
     my $h = { readonly => $readonly };
     return $h;
 }

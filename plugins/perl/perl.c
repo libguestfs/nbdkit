@@ -136,9 +136,17 @@ check_perl_failure (void)
   return 0;
 }
 
+XS(xs_debug)
+{
+  dXSARGS;
+  if (items >= 1)
+    nbdkit_debug ("%s", SvPV_nolen (ST (0)));
+  XSRETURN_EMPTY;
+}
+
 static int last_error;
 
-XS(set_error)
+XS(xs_set_error)
 {
   dXSARGS;
   /* Is it worth adding error checking for bad arguments? */
@@ -158,7 +166,8 @@ xs_init (pTHX)
   GV *gv;
 
   newXS ("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
-  newXS ("Nbdkit::set_error", set_error, file);
+  newXS ("Nbdkit::debug", xs_debug, file);
+  newXS ("Nbdkit::set_error", xs_set_error, file);
 
   /* This macro defines flags such as $Nbdkit::FLAG_MAY_TRIM
    * See also
