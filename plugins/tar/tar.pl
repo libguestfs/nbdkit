@@ -78,6 +78,9 @@ Copyright (C) 2017 Red Hat Inc.
 
 use strict;
 
+use Cwd qw(abs_path);
+use IO::File;
+
 my $tar;                        # Tar file.
 my $file;                       # File within the tar file.
 my $offset;                     # Offset within tar file.
@@ -89,7 +92,7 @@ sub config
     my $v = shift;
 
     if ($k eq "tar") {
-        $tar = $v;
+        $tar = abs_path ($v);
     }
     elsif ($k eq "file") {
         $file = $v;
@@ -135,8 +138,9 @@ sub open
     my $readonly = shift;
     my $mode = "<";
     $mode = "+<" unless $readonly;
-    open (my $fh, $mode, $tar) or die "$tar: open: $!";
-    binmode $fh;
+    my $fh = IO::File->new;
+    $fh->open ($tar, $mode) or die "$tar: open: $!";
+    $fh->binmode;
     my $h = { fh => $fh, readonly => $readonly };
     return $h;
 }
@@ -145,7 +149,8 @@ sub open
 sub close
 {
     my $h = shift;
-    close $h->{fh};
+    my $fh = $h->{fh};
+    $fh->close;
 }
 
 # Return the size.
@@ -159,11 +164,12 @@ sub get_size
 sub pread
 {
     my $h = shift;
+    my $fh = $h->{fh};
     my $count = shift;
     my $offs = shift;
-    seek ($h->{fh}, $offset + $offs, 0) or die "seek: $!";
+    $fh->seek ($offset + $offs, 0) or die "seek: $!";
     my $r;
-    read ($h->{fh}, $r, $count) or die "read: $!";
+    $fh->read ($r, $count) or die "read: $!";
     return $r;
 }
 
@@ -175,6 +181,6 @@ sub pwrite
     my $buf = shift;
     my $count = length ($buf);
     my $offs = shift;
-    seek ($fh, $offset + $offs, 0) or die "seek: $!";
+    $fh->seek ($offset + $offs, 0) or die "seek: $!";
     print $fh ($buf);
 }
