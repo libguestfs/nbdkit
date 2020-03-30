@@ -196,6 +196,7 @@ EXTRA_DIST = \
 	test-split-extents.sh \
 	test-start.sh \
 	test-random-sock.sh \
+	test-tar.sh \
 	test-tls.sh \
 	test-tls-psk.sh \
 	test-truncate1.sh \
@@ -742,6 +743,11 @@ LIBNBD_TESTS += test-streaming
 test_streaming_SOURCES = test-streaming.c
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_streaming_LDADD = $(LIBNBD_LIBS)
+
+# tar plugin test (written in perl).
+if HAVE_PERL
+TESTS += test-tar.sh
+endif HAVE_PERL
 
 if HAVE_VDDK
 # VDDK plugin test.
