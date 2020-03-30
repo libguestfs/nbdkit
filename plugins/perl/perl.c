@@ -302,6 +302,28 @@ perl_config_complete (void)
   return 0;
 }
 
+static int
+perl_get_ready (void)
+{
+  dSP;
+
+  if (callback_defined ("get_ready")) {
+    ENTER;
+    SAVETMPS;
+    PUSHMARK (SP);
+    PUTBACK;
+    call_pv ("get_ready", G_EVAL|G_VOID|G_DISCARD);
+    SPAGAIN;
+    PUTBACK;
+    FREETMPS;
+    LEAVE;
+    if (check_perl_failure () == -1)
+      return -1;
+  }
+
+  return 0;
+}
+
 static void *
 perl_open (int readonly)
 {
@@ -635,6 +657,8 @@ static struct nbdkit_plugin plugin = {
   .config            = perl_config,
   .config_complete   = perl_config_complete,
   .config_help       = perl_config_help,
+
+  .get_ready         = perl_get_ready,
 
   .open              = perl_open,
   .close             = perl_close,
