@@ -1,5 +1,6 @@
-# Perl valgrind suppressions
-# Copyright (C) 2018 Red Hat Inc.
+#!/usr/bin/env bash
+# nbdkit
+# Copyright (C) 2017-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -29,29 +30,31 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Perl leaks lots of memory by design.
-{
-  perl_1
-  Memcheck:Leak
-  fun:malloc
-  ...
-  fun:perl_construct
-}
+source ./functions.sh
+set -e
+set -x
 
-{
-  perl_2
-  Memcheck:Leak
-  fun:realloc
-  ...
-  fun:perl_construct
-}
+requires test -f disk
+requires guestfish --version
+requires tar --version
 
-# The perl_parse function which loads the Perl interpreter
-# leaks a lot of memory.
-{
-  perl_3
-  Memcheck:Leak
-  ...
-  fun:Perl_yyparse
-  fun:perl_parse
-}
+# The tar plugin requires some Perl modules, this checks if they are
+# installed.
+requires perl -MCwd -e 1
+requires perl -MIO::File -e 1
+
+sock=`mktemp -u`
+files="tar.pid tar.tar $sock"
+rm -f $files
+cleanup_fn rm -f $files
+
+# Create a tar file containing the disk image.
+tar cf tar.tar disk
+
+# Run nbdkit.
+start_nbdkit -P tar.pid -U $sock tar tar=tar.tar file=disk
+
+# Now see if we can open the disk from the tar file.
+guestfish -x --ro --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
+  cat /hello.txt
+EOF
