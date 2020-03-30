@@ -101,6 +101,18 @@ extentlist_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
+extentlist_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+{
+  if (extentlist == NULL) {
+    nbdkit_error ("you must supply the extentlist parameter "
+                  "on the command line");
+    return -1;
+  }
+
+  return next (nxdata);
+}
+
+static int
 compare_offsets (const void *ev1, const void *ev2)
 {
   const struct extent *e1 = ev1;
@@ -251,14 +263,8 @@ parse_extentlist (void)
 }
 
 static int
-extentlist_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+extentlist_get_ready (nbdkit_next_get_ready *next, void *nxdata)
 {
-  if (extentlist == NULL) {
-    nbdkit_error ("you must supply the extentlist parameter "
-                  "on the command line");
-    return -1;
-  }
-
   parse_extentlist ();
 
   return next (nxdata);
@@ -319,6 +325,7 @@ static struct nbdkit_filter filter = {
   .unload            = extentlist_unload,
   .config            = extentlist_config,
   .config_complete   = extentlist_config_complete,
+  .get_ready         = extentlist_get_ready,
   .can_extents       = extentlist_can_extents,
   .extents           = extentlist_extents,
 };
