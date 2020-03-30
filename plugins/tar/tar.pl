@@ -99,8 +99,7 @@ sub config
     }
 }
 
-# When all config parameters have been seen, find the extent of the
-# file within the tar file.
+# Check all the config parameters were set.
 sub config_complete
 {
     die "tar or file parameter was not set\n"
@@ -108,7 +107,11 @@ sub config_complete
 
     die "$tar: file not found\n"
         unless -f $tar;
+}
 
+# Find the extent of the file within the tar file.
+sub get_ready
+{
     open (my $pipe, "-|", "tar", "--no-auto-compress", "-tRvf", $tar, $file)
         or die "$tar: could not open or parse tar file, see errors above";
     while (<$pipe>) {
