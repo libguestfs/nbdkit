@@ -46,9 +46,8 @@
   fun:perl_construct
 }
 
-# The perl_parse function which loads the Perl interpreter
-# leaks a lot of memory.
-{
+# The perl_parse function which parses the Perl script leaks memory.
+
   perl_3
   Memcheck:Leak
   ...
