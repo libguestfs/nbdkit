@@ -173,7 +173,7 @@ do_retry (struct retry_handle *h,
 
  again:
   /* Log the original errno since it will be lost when we retry. */
-  nbdkit_debug ("retry %d: original errno = %d", data->retry+1, *err);
+  nbdkit_debug ("retry attempt %d: original errno = %d", data->retry, *err);
 
   if (data->retry >= retries) {
     nbdkit_debug ("could not recover after %d retries", retries);
