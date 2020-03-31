@@ -84,6 +84,7 @@ L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-partition-filter(1)>,
+L<nbdkit-tar-plugin(1)>,
 L<nbdkit-truncate-filter(1)>.
 
 =head1 AUTHORS
