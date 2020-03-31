@@ -47,7 +47,7 @@
 }
 
 # The perl_parse function which parses the Perl script leaks memory.
-
+{
   perl_3
   Memcheck:Leak
   ...
