@@ -55,6 +55,39 @@ modified.  Without I<-r> writes will modify the tar file.
 
 The disk image cannot be resized.
 
+=head2 Alternatives to the tar plugin
+
+The tar plugin ought to be a filter so that you can extract files from
+within tarballs hosted elsewhere (eg. using L<nbdkit-curl-plugin(1)>).
+However this is hard to implement given the way that the L<tar(1)>
+command works.
+
+Nevertheless you can apply the same technique even to tarballs hosted
+remotely, provided you can run L<tar(1)> on them first.  The trick is
+to use the S<C<tar -tRvf>> options to find the block number of the
+file of interest.  In tar files, blocks are 512 bytes in size, and
+there is one hidden block used for the header, so you have to take the
+block number, add 1, and multiply by 512.
+
+For example:
+
+ $ tar -tRvf disk.tar
+ block 2: -rw-r--r-- rjones/rjones 105923072 2020-03-28 20:34 disk
+ └──┬──┘                           └───┬───┘
+ offset = (2+1)*512 = 1536           range
+
+You can then apply the offset filter:
+
+ nbdkit --filter=offset \
+          curl https://example.com/disk.tar \
+               offset=1536 range=105923072
+
+If the remote file is compressed then add L<nbdkit-xz-filter(1)>:
+
+ nbdkit --filter=offset --filter=xz \
+          curl https://example.com/disk.tar.xz \
+               offset=1536 range=105923072
+
 =head1 VERSION
 
 C<nbdkit-tar-plugin> first appeared in nbdkit 1.2.
@@ -63,8 +96,10 @@ C<nbdkit-tar-plugin> first appeared in nbdkit 1.2.
 
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/tar/tar.pl>,
 L<nbdkit(1)>,
+L<nbdkit-offset-filter(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-perl-plugin(3)>,
+L<nbdkit-xz-filter(1)>,
 L<tar(1)>.
 
 =head1 AUTHORS
