@@ -11,7 +11,7 @@ nbdkit-tar-plugin - read and write files inside tar files without unpacking
 
  nbdkit tar tar=FILENAME.tar file=PATH_INSIDE_TAR
 
-=head1 EXAMPLE
+=head1 EXAMPLES
 
 =head2 Serve a single file inside a tarball
 
@@ -31,6 +31,13 @@ could access one file in an OVA like this:
  $ nbdkit -r tar tar=rhel.ova file=rhel-disk1.vmdk
  $ guestfish --ro --format=vmdk -a nbd://localhost
 
+In this case the tarball is opened readonly (I<-r> option).  The
+plugin supports write access, but writing to the VMDK file in the
+tarball does not change data checksums stored in other files (the
+C<rhel.mf> file in this example), and as these will become incorrect
+you probably won't be able to open the file with another tool
+afterwards.
+
 =head1 DESCRIPTION
 
 C<nbdkit-tar-plugin> is a plugin which can read and writes files
@@ -46,11 +53,6 @@ Use the nbdkit I<-r> flag to open the file readonly.  This is the
 safest option because it guarantees that the tar file will not be
 modified.  Without I<-r> writes will modify the tar file.
 
-Also writing to the tar file does not change data checksums stored in
-other files (the C<rhel.mf> file in the example above), and as these
-will become incorrect you probably won't be able to open the file with
-another tool afterwards.
-
 The disk image cannot be resized.
 
 =head1 VERSION
@@ -62,7 +64,8 @@ C<nbdkit-tar-plugin> first appeared in nbdkit 1.2.
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/tar/tar.pl>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
-L<nbdkit-perl-plugin(3)>.
+L<nbdkit-perl-plugin(3)>,
+L<tar(1)>.
 
 =head1 AUTHORS
 
@@ -72,7 +75,7 @@ Based on the virt-v2v OVA importer written by Tomáš Golembiovský.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2017 Red Hat Inc.
+Copyright (C) 2017-2020 Red Hat Inc.
 
 =cut
 
