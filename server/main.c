@@ -690,7 +690,7 @@ main (int argc, char *argv[])
       (vsock && listen_stdin) ||
       (vsock && run)) {
     fprintf (stderr,
-             "%s: -p, --run, -s, -U or --vsock options cannot be used"
+             "%s: -p, --run, -s, -U or --vsock options cannot be used "
              "in this combination\n",
              program_name);
     exit (EXIT_FAILURE);
