@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -33,14 +33,13 @@
 source ./functions.sh
 set -e
 
-sock1=`mktemp -u`
 sock2=`mktemp -u`
 sock3=`mktemp -u`
 sock4=`mktemp -u`
 sock5a=`mktemp -u`
 sock5b=`mktemp -u`
 sock6=`mktemp -u`
-files="nozero1.img nozero1.log $sock1 nozero1.pid
+files="nozero1.img nozero1.log
        nozero2.img nozero2.log $sock2 nozero2.pid
        nozero3.img nozero3.log $sock3 nozero3.pid
        nozero4.img nozero4.log $sock4 nozero4.pid
@@ -48,26 +47,6 @@ files="nozero1.img nozero1.log $sock1 nozero1.pid
        nozero5a.pid nozero5b.pid
        nozero6.img nozero6.log $sock6 nozero6.pid"
 rm -f $files
-
-# Prep images, and check that qemu-io understands the actions we plan on
-# doing, and that zero with trim results in a sparse image.
-for f in {0..1023}; do printf '%1024s' . >> nozero1.img; done
-cp nozero1.img nozero2.img
-cp nozero1.img nozero3.img
-cp nozero1.img nozero4.img
-cp nozero1.img nozero5.img
-cp nozero1.img nozero6.img
-if ! qemu-io -f raw -d unmap -c 'w -z -u 0 1M' nozero1.img; then
-    echo "$0: missing or broken qemu-io"
-    rm nozero?.img
-    exit 77
-fi
-if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
-    echo "$0: can't trim file by writing zeroes"
-    rm nozero?.img
-    exit 77
-fi
-cp nozero2.img nozero1.img
 
 # For easier debugging, dump the final log files before removing them
 # on exit.
@@ -91,16 +70,28 @@ cleanup ()
 }
 cleanup_fn cleanup
 
+# Prep images, and check that zero with trim results in a sparse image.
+for f in {0..1023}; do printf '%1024s' . >> nozero1.img; done
+cp nozero1.img nozero2.img
+cp nozero1.img nozero3.img
+cp nozero1.img nozero4.img
+cp nozero1.img nozero5.img
+cp nozero1.img nozero6.img
+requires nbdkit -U - --filter=log file logfile=nozero1.log nozero1.img \
+    --run 'nbdsh -u $uri -c "h.zero (1024*1024, 0)"'
+if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
+    echo "$0: can't trim file by writing zeroes"
+    exit 77
+fi
+
 # Run several parallel nbdkit; to compare the logs and see what changes.
-# 1: unfiltered, to check that qemu-io sends ZERO request and plugin trims
+# 1: unfiltered (above), check that nbdsh sends ZERO request and plugin trims
 # 2: log before filter with zeromode=none (default), to ensure no ZERO request
 # 3: log before filter with zeromode=emulate, to ensure ZERO from client
 # 4: log after filter with zeromode=emulate, to ensure no ZERO to plugin
 # 5a/b: both sides of nbd plugin: even though server side does not advertise
 # ZERO, the client side still exposes it, and just skips calling nbd's .zero
 # 6: log after filter with zeromode=notrim, to ensure plugin does not trim
-start_nbdkit -P nozero1.pid -U $sock1 --filter=log \
-       file logfile=nozero1.log nozero1.img
 start_nbdkit -P nozero2.pid -U $sock2 --filter=log --filter=nozero \
        file logfile=nozero2.log nozero2.img
 start_nbdkit -P nozero3.pid -U $sock3 --filter=log --filter=nozero \
@@ -116,12 +107,14 @@ start_nbdkit -P nozero6.pid -U $sock6 --filter=nozero --filter=log \
        file logfile=nozero6.log nozero6.img zeromode=notrim
 
 # Perform the zero write.
-qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock1"
-qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock2"
-qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock3"
-qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock4"
-qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock5b"
-qemu-io -f raw -c 'w -z -u 0 1M' "nbd+unix://?socket=$sock6"
+nbdsh -u "nbd+unix://?socket=$sock2" -c '
+assert not h.can_zero ()
+h.pwrite (bytearray (1024*1024), 0)
+'
+nbdsh -u "nbd+unix://?socket=$sock3" -c 'h.zero (1024*1024, 0)'
+nbdsh -u "nbd+unix://?socket=$sock4" -c 'h.zero (1024*1024, 0)'
+nbdsh -u "nbd+unix://?socket=$sock5b" -c 'h.zero (1024*1024, 0)'
+nbdsh -u "nbd+unix://?socket=$sock6" -c 'h.zero (1024*1024, 0)'
 
 # Check for expected ZERO vs. WRITE results
 grep 'connection=1 Zero' nozero1.log
@@ -150,7 +143,7 @@ cmp nozero5.img nozero6.img
 
 # Sanity check on sparseness; only image 1 should be sparse
 if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
-    echo "nozero1.img was not trimmed"
+    echo "nozero2.img was trimmed by mistake"
     exit 1
 fi
 for i in 3 4 5 6; do
