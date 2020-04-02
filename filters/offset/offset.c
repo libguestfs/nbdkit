@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 
 #include <nbdkit-filter.h>
@@ -80,15 +81,19 @@ offset_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   if (range >= 0) {
     if (offset > real_size - range) {
-      nbdkit_error ("offset+range is larger than the real size "
-                    "of the underlying file or device");
+      nbdkit_error ("offset+range (%" PRIi64 "+%" PRIi64 ") "
+                    "is larger than the real size (%" PRIi64 ") "
+                    "of the underlying file or device",
+                    offset, range, real_size);
       return -1;
     }
     return range;
   }
   else if (offset > real_size) {
-    nbdkit_error ("offset is larger than the real size "
-                  "of the underlying file or device");
+    nbdkit_error ("offset (%" PRIi64 ") "
+                  "is larger than the real size (%" PRIi64 ") "
+                  "of the underlying file or device",
+                  offset, real_size);
     return -1;
   }
   else
