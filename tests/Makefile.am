@@ -153,6 +153,7 @@ EXTRA_DIST = \
 	test-ocaml.c \
 	test-offset2.sh \
 	test-offset-extents.sh \
+	test-offset-truncate.sh \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
 	test-parallel-sh.sh \
@@ -1145,6 +1146,9 @@ TESTS += \
 	test-offset2.sh \
 	test-offset-extents.sh \
 	$(NULL)
+
+# offset + truncate test.
+TESTS += test-offset-truncate.sh
 
 # partition filter test.
 TESTS += test-partition1.sh
