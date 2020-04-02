@@ -165,22 +165,23 @@ static bool
 do_retry (struct retry_handle *h,
           struct retry_data *data,
           struct nbdkit_next_ops *next_ops, void *nxdata,
-          int *err)
+          const char *method, int *err)
 {
   /* If it's the first retry, initialize the other fields in *data. */
   if (data->retry == 0)
     data->delay = initial_delay;
 
  again:
-  /* Log the original errno since it will be lost when we retry. */
-  nbdkit_debug ("retry attempt %d: original errno = %d", data->retry, *err);
-
   if (data->retry >= retries) {
     nbdkit_debug ("could not recover after %d retries", retries);
     return false;
   }
 
-  nbdkit_debug ("waiting %d seconds before retrying", data->delay);
+  /* Since we will retry, log the original errno otherwise it will be lost. */
+  nbdkit_debug ("%s failed: original errno = %d", method, *err);
+
+  nbdkit_debug ("retry %d: waiting %d seconds before retrying",
+                data->retry+1, data->delay);
   if (nbdkit_nanosleep (data->delay, 0) == -1) {
     /* We could do this but it would overwrite the more important
      * errno from the underlying data call.
@@ -225,7 +226,8 @@ retry_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     r = -1;
   else
     r = next_ops->pread (nxdata, buf, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "pread", err))
+    goto again;
 
   return r;
 }
@@ -259,7 +261,8 @@ retry_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "pwrite", err))
+    goto again;
 
   return r;
 }
@@ -293,7 +296,8 @@ retry_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->trim (nxdata, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "trim", err))
+    goto again;
 
   return r;
 }
@@ -317,7 +321,8 @@ retry_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->flush (nxdata, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "flush", err))
+    goto again;
 
   return r;
 }
@@ -356,7 +361,8 @@ retry_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->zero (nxdata, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "zero", err))
+    goto again;
 
   return r;
 }
@@ -391,7 +397,8 @@ retry_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     }
     r = next_ops->extents (nxdata, count, offset, flags, extents2, err);
   }
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "extents", err))
+    goto again;
 
   if (r == 0) {
     /* Transfer the successful extents back to the caller. */
@@ -428,7 +435,8 @@ retry_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->cache (nxdata, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, err)) goto again;
+  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "cache", err))
+    goto again;
 
   return r;
 }
