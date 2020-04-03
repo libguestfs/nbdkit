@@ -519,6 +519,26 @@ main (int argc, char *argv[])
   }
 #endif
 
+  /* If the user has mixed up -p/--run/-s/-U/--vsock options, then
+   * give an error.
+   *
+   * XXX Actually the server could easily be extended to handle both
+   * TCP/IP and Unix sockets, or even multiple TCP/IP ports.
+   */
+  if ((port && unixsocket) ||
+      (port && listen_stdin) ||
+      (unixsocket && listen_stdin) ||
+      (listen_stdin && run) ||
+      (vsock && unixsocket) ||
+      (vsock && listen_stdin) ||
+      (vsock && run)) {
+    fprintf (stderr,
+             "%s: -p, --run, -s, -U or --vsock options cannot be used "
+             "in this combination\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+
   /* The remaining command line arguments are the plugin name and
    * parameters.  If --help, --version or --dump-plugin were specified
    * then we open the plugin so that we can display the per-plugin
@@ -675,26 +695,6 @@ main (int argc, char *argv[])
 
   /* Select the correct thread model based on config. */
   lock_init_thread_model ();
-
-  /* If the user has mixed up -p/--run/-s/-U/--vsock options, then
-   * give an error.
-   *
-   * XXX Actually the server could easily be extended to handle both
-   * TCP/IP and Unix sockets, or even multiple TCP/IP ports.
-   */
-  if ((port && unixsocket) ||
-      (port && listen_stdin) ||
-      (unixsocket && listen_stdin) ||
-      (listen_stdin && run) ||
-      (vsock && unixsocket) ||
-      (vsock && listen_stdin) ||
-      (vsock && run)) {
-    fprintf (stderr,
-             "%s: -p, --run, -s, -U or --vsock options cannot be used "
-             "in this combination\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
 
   /* Tell the plugin that we are about to start serving.  This must be
    * called before we change user, fork, or open any sockets.
