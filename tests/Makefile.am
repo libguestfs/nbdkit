@@ -189,6 +189,7 @@ EXTRA_DIST = \
 	test-retry-reopen-fail.sh \
 	test-retry-zero-flags.sh \
 	test-ssh.sh \
+	test-stdio.sh \
 	test-swap.sh \
 	test.tcl \
 	test-shebang-perl.sh \
@@ -200,6 +201,7 @@ EXTRA_DIST = \
 	test-sh-extents.sh \
 	test-single.sh \
 	test-single-from-file.sh \
+	test-single-sh.sh \
 	test-split-extents.sh \
 	test-start.sh \
 	test-random-sock.sh \
@@ -263,6 +265,8 @@ TESTS += \
 	test-start.sh \
 	test-single.sh \
 	test-single-from-file.sh \
+	test-single-sh.sh \
+	test-stdio.sh \
 	test-captive.sh \
 	test-random-sock.sh \
 	test-tls.sh \
@@ -288,6 +292,25 @@ test_socket_activation_CPPFLAGS = \
 	-I$(top_srcdir)/common/protocol \
 	$(NULL)
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
+
+# check_LTLIBRARIES won't build a shared library (see automake manual).
+# So we have to do this and add a dependency.
+noinst_LTLIBRARIES += \
+	test-stdio-plugin.la \
+	$(NULL)
+test-stdio.sh: test-stdio-plugin.la
+
+test_stdio_plugin_la_SOURCES = \
+	test-stdio-plugin.c \
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
+test_stdio_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
+test_stdio_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_stdio_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared $(SHARED_LDFLAGS) -rpath /nowhere \
+	$(NULL)
 
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
