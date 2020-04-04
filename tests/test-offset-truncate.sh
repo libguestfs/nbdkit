@@ -38,48 +38,75 @@ set -e
 set -x
 
 requires qemu-img --version
+requires nbdsh -c 'exit (not h.supports_uri ())'
 
-function do_test ()
+function do_test_info ()
 {
     nbdkit -U - --filter=offset --filter=truncate pattern size=1024 \
            "$@" --run 'qemu-img info $nbd'
 }
 
-function expected_fail ()
+function do_test_read512 ()
 {
-    echo "$0: expected this test to fail"
-    exit 1
+    nbdkit -U - --filter=offset --filter=truncate pattern size=1024 \
+           "$@" --run 'nbdsh -u $uri -c "h.pread (512, 0)"'
+}
+
+function do_test_zero512 ()
+{
+    nbdkit -U - --filter=offset --filter=truncate memory size=1024 \
+           "$@" --run 'nbdsh -u $uri -c "h.zero (512, 0)"'
+}
+
+function expect_fail ()
+{
+    if "$@"; then
+        echo "$0: expected this test to fail"
+        exit 1
+    fi
 }
 
 # Not a test, just check we can combine the two filters and the test
 # harness works.
-do_test
-if do_test bleah ; then expected_fail; fi
+do_test_info
+expect_fail do_test_info bleah
 
 # Test a non-sector-aligned offset.  For nbdkit this should
 # not make any difference.
-do_test offset=1 range=512
+do_test_info offset=1 range=512
 
 # Reading beyond the end of the underlying image, even by 1 byte,
 # should fail.
-if do_test offset=513 range=512; then expected_fail; fi
+expect_fail do_test_info offset=513 range=512
 
 # Can we extend the image by 1 byte and use the same offset as the
 # previous test?  This should be fine.
-do_test truncate=1025 offset=513 range=512
+do_test_info truncate=1025 offset=513 range=512
 
 # Truncate the image.  Offsets larger than the truncation should fail,
 # even though the underlying image is big enough.
-if do_test truncate=513 offset=2 range=512; then expected_fail; fi
+expect_fail do_test_info truncate=513 offset=2 range=512
+
+# Both truncation and the offset filter range option should also
+# prevent operations beyond the end of the truncated size even if the
+# underlying image is big enough.
+do_test_read512
+do_test_zero512
+expect_fail do_test_read512 truncate=511
+expect_fail do_test_zero512 truncate=511
+expect_fail do_test_read512 truncate=511 range=512
+expect_fail do_test_zero512 truncate=511 range=512
+expect_fail do_test_read512 range=511
+expect_fail do_test_zero512 range=511
 
 # Reading from an offset much larger than the underlying image should
 # work if we extended it big enough.
-do_test truncate=4096 offset=2047 range=512
+do_test_info truncate=4096 offset=2047 range=512
 
 # But an offset even larger should fail.
-if do_test truncate=4096 offset=$((4096-511)) range=512; then expected_fail; fi
+expect_fail do_test_info truncate=4096 offset=$((4096-511)) range=512
 
 # An offset beyond the end of the disk should fail, whether it's the
 # underlying disk or a truncated disk.
-if do_test offset=1025 range=512; then expected_fail; fi
-if do_test truncate=4096 offset=4098 range=512; then expected_fail; fi
+expect_fail do_test_info offset=1025 range=512
+expect_fail do_test_info truncate=4096 offset=4098 range=512
