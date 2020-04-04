@@ -1,6 +1,6 @@
+#!/usr/bin/env bash
 # nbdkit
-# -*- mode: shell-script -*-
-# Copyright (C) 2017-2020 Red Hat Inc.
+# Copyright (C) 2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -30,28 +30,23 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# If not set, default to ext4.
-type="${type:-ext4}"
+source ./functions.sh
+set -e
+set -x
 
-labelopt='-L'
+requires nbdsh -c 'exit (not h.supports_uri ())'
 
-case "$type" in
-    ext?)
-        extra='-F' ;;
-    *fat|msdos)
-        extra='-I' ;;
-    ntfs)
-        extra='-Q -F'
-        labelopt='-n' ;;
-    xfs)
-        extra='-f' ;;
-esac
-
-# Create the output disk.
-truncate -s $size "$disk"
-
-if [ "x$label" = "x" ]; then
-    mkfs -t "$type" $extra "$disk"
-else
-    mkfs -t "$type" $extra $labelopt "$label" "$disk"
-fi
+# - If multiple parameters appear, last one is used.
+# - Test quoting.
+# - size=0 because we ignore it in the command itself.
+nbdkit -f -v -U - tmpdisk 0 a=2 a=1 b=1024 c="a ' b ' c" \
+       command='
+set -x
+set -e
+if [ $a -ne 1 ]; then exit 1; fi
+if [ "$c" != "a '\'' b '\'' c" ]; then exit 1; fi
+truncate -s $b "$disk"
+' \
+       --run '
+nbdsh -u "$uri" -c "assert h.get_size() == 1024"
+'

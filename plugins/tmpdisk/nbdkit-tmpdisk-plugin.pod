@@ -4,9 +4,9 @@ nbdkit-tmpdisk-plugin - create a fresh temporary filesystem for each client
 
 =head1 SYNOPSIS
 
- nbdkit tmpdisk [size=]SIZE
-                [type=ext4|xfs|vfat|...] [label=LABEL]
-                [command=COMMAND]
+ nbdkit tmpdisk [size=]SIZE [type=ext4|xfs|vfat|...] [label=LABEL]
+
+ nbdkit tmpdisk [size=]SIZE command=COMMAND [VAR=VALUE ...]
 
 =head1 DESCRIPTION
 
@@ -23,21 +23,52 @@ this plugin sees a different disk.
 
 The size of the disk is chosen using the C<size> parameter.  The
 filesystem type is C<ext4> but this can be changed using the C<type>
-parameter (controlling the I<-t> option of mkfs).
+parameter (controlling the I<-t> option of mkfs).  The filesystem
+label may be set using C<label>.
 
-Instead of running mkfs you can run an arbitrary C<command> to create
-the disk.
+=head2 The command parameter
+
+Instead of running mkfs you can run an arbitrary command (a shell
+script fragment) to create the disk.
+
+The other parameters to the plugin are turned into shell variables
+passed to the command.  For example C<type> becomes the shell variable
+C<$type>, etc.  Any parameters you want can be passed to the plugin
+and will be turned into shell variables (not only C<type> and
+C<label>) making this a very flexible method to create temporary disks
+of all kinds.
+
+Two special variables are also passed to the shell script fragment:
+
+=over 4
+
+=item C<$disk>
+
+The absolute path of the disk file.  Note that this is not
+pre-created, you must create it yourself, for example using:
+
+ truncate -s $size "$disk"
+
+C<$disk> is deleted automatically when the client disconnects.
+
+=item C<$size>
+
+The virtual size in bytes.  This is the C<size> parameter, converted
+to bytes.  Note the final size served to the client is whatever disk
+size C<command> creates.
+
+=back
 
 =head2 Security considerations
 
 Because each client gets a new disk, the amount of disk space
 required on the server can be as much as
-S<<< I<number of clients> × I<size parameter> >>>.  It is therefore
-best to limit the number of clients using L<nbdkit-limit-filter(1)> or
-take steps to limit where clients can connect from using
+S<<< I<number of clients> × I<size> >>>.  It is therefore best to
+limit the number of clients using L<nbdkit-limit-filter(1)> or take
+steps to limit where clients can connect from using
 L<nbdkit-ip-filter(1)>, firewalls, or TLS client certificates.
 
-=head1 EXAMPLE
+=head1 EXAMPLES
 
 =head2 Remote tmpfs
 
@@ -56,6 +87,46 @@ containing:
 
 Clients would see a fresh, empty C</var/scratch> directory after boot.
 
+=head2 Overriding mkfs options
+
+Using C<command> allows you to easily override any mkfs option, for
+example:
+
+ nbdkit tmpdisk 16G command='
+     truncate -s $size "$disk"
+     mke2fs -F -N 10000 -t ext4 "$disk"
+ '
+
+=head2 Serve a fresh blank disk to each client
+
+Again using C<command>, this demonstrates serving any file that you
+can create locally to the client.  This is different from
+L<nbdkit-memory-plugin(1)> because the clients all see their own
+private disk (instead of all seeing the same shared disk):
+
+ nbdkit tmpdisk 16G command=' truncate -s $size "$disk" '
+
+=head2 Serve a fresh operating system to each client
+
+ nbdkit tmpdisk 16G os=fedora-31 \
+     command=' virt-builder -o "$disk" --size ${size}b "$os" '
+
+=head2 Serve a throwaway snapshot of a base image to each client
+
+You could create a base image using L<mke2fs(8)> I<-d> option,
+L<virt-builder(1)>, or similar tools.  Then in the command you could
+copy and serve different throwaway snapshots to each client:
+
+ truncate -s 1G base.img
+ mke2fs -d initial-content/ -F -t ext4 base.img
+ nbdkit tmpdisk size=0 base=$PWD/base.img \
+     command=' cp --sparse=always "$base" "$disk" '
+
+The unusual C<size=0> parameter is because when using C<command>,
+C<size> is only a request (but the parameter is required).  In this
+case the command ignores the requested size.  The final size is the
+size of C<$disk> created by the L<cp(1)> command.
+
 =head1 PARAMETERS
 
 =over 4
@@ -63,30 +134,9 @@ Clients would see a fresh, empty C</var/scratch> directory after boot.
 =item B<command='>COMMANDB<'>
 
 Instead of running L<mkfs(8)> to create the initial filesystem, run
-C<COMMAND> (which usually must be quoted to protect it from the
-shell).  The following shell variables may be used in C<COMMAND>:
-
-=over 4
-
-=item C<$disk>
-
-The absolute path of the file that the command must initialize.  This
-file is created by nbdkit before the command runs.
-
-=item C<$label>
-
-The filesystem label (from the C<label> parameter).
-
-=item C<$size>
-
-The virtual size in bytes, which is the same as the file size.
-
-=item C<$type>
-
-The filesystem type (from the C<type> parameter), defaulting to
-C<ext4>.  (Commands can ignore this if it is not relevant).
-
-=back
+C<COMMAND> (a shell script fragment which usually must be quoted to
+protect it from the shell).  See L</The command parameter> and
+L</EXAMPLES> sections above.
 
 =item B<label=>LABEL
 
@@ -95,6 +145,10 @@ Select the filesystem label.  The default is not set.
 =item [B<size=>]SIZE
 
 Specify the virtual size of the disk image.
+
+If using C<command>, this is only a suggested size.  The actual size
+of the resulting disk will be the size of the disk created by
+C<command>.
 
 This parameter is required.
 
@@ -141,14 +195,18 @@ C<nbdkit-tmpdisk-plugin> first appeared in nbdkit 1.20.
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-data-plugin(1)>,
+L<nbdkit-eval-plugin(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-ip-filter(1)>,
 L<nbdkit-limit-filter(1)>,
 L<nbdkit-linuxdisk-plugin(1)>,
 L<nbdkit-memory-plugin(1)>,
+L<nbdkit-sh-plugin(1)>,
 L<nbdkit-loop(1)>,
 L<nbdkit-tls(1)>,
-L<mkfs(8)>.
+L<mkfs(8)>,
+L<mke2fs(8)>,
+L<virt-builder(1)>.
 
 =head1 AUTHORS
 

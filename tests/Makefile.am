@@ -206,6 +206,7 @@ EXTRA_DIST = \
 	test-tar.sh \
 	test-tls.sh \
 	test-tls-psk.sh \
+	test-tmpdisk-command.sh \
 	test-truncate1.sh \
 	test-truncate2.sh \
 	test-truncate3.sh \
@@ -800,6 +801,7 @@ endif HAVE_PERL
 
 # tmpdisk plugin test.
 LIBGUESTFS_TESTS += test-tmpdisk
+TESTS += test-tmpdisk-command.sh
 
 test_tmpdisk_SOURCES = \
 	test-tmpdisk.c \
