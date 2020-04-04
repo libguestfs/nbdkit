@@ -529,12 +529,13 @@ main (int argc, char *argv[])
       (port && listen_stdin) ||
       (unixsocket && listen_stdin) ||
       (listen_stdin && run) ||
+      (listen_stdin && dump_plugin) ||
       (vsock && unixsocket) ||
       (vsock && listen_stdin) ||
       (vsock && run)) {
     fprintf (stderr,
-             "%s: -p, --run, -s, -U or --vsock options cannot be used "
-             "in this combination\n",
+             "%s: --dump-plugin, -p, --run, -s, -U or --vsock options "
+             "cannot be used in this combination\n",
              program_name);
     exit (EXIT_FAILURE);
   }

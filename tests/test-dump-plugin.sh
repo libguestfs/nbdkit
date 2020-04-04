@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2014-2019 Red Hat Inc.
+# Copyright (C) 2014-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -33,6 +33,10 @@
 source ./functions.sh
 set -e
 set -x
+
+files="dump-plugin.out dump-plugin.err"
+rm -f $files
+cleanup_fn rm -f $files
 
 # Basic check that the name field is present.
 output="$(nbdkit example1 --dump-plugin)"
@@ -68,6 +72,28 @@ do_test ()
     esac
 }
 foreach_plugin do_test
+
+# --dump-plugin and -s are incompatible
+if nbdkit --dump-plugin -s null > dump-plugin.out 2> dump-plugin.err; then
+    echo "$0: unexpected success from nbdkit -s --dump-plugin"
+    echo "out:"
+    cat dump-plugin.out
+    echo "err:"
+    cat dump-plugin.err
+    exit 1
+fi
+if test -s dump-plugin.out; then
+    echo "$0: unexpected output during nbdkit -s --dump-plugin"
+    echo "out:"
+    cat dump-plugin.out
+    echo "err:"
+    cat dump-plugin.err
+    exit 1
+fi
+if test ! -s dump-plugin.err; then
+    echo "$0: missing error message during nbdkit -s --dump-plugin"
+    ecit 1
+fi
 
 # Test that --dump-plugin can be used to introspect a resulting dynamic
 # thread model.  First, get a baseline (since a system without atomic
