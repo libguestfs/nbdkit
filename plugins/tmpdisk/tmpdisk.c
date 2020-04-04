@@ -55,24 +55,10 @@ static int64_t size = -1;
 static const char *label = NULL;
 static const char *type = "ext4";
 
-static const char *command =
-  "labelopt='-L'\n"
-  "case \"$type\" in\n"
-  "    ext?)\n"
-  "        extra='-F' ;;\n"
-  "    *fat|msdos)\n"
-  "        extra='-I' ;;\n"
-  "    ntfs)\n"
-  "        extra='-Q -F'\n"
-  "        labelopt='-n' ;;\n"
-  "    xfs)\n"
-  "        extra='-f' ;;\n"
-  "esac\n"
-  "if [ \"x$label\" = \"x\" ]; then\n"
-  "    mkfs -t \"$type\" $extra \"$disk\"\n"
-  "else\n"
-  "    mkfs -t \"$type\" $extra $labelopt \"$label\" \"$disk\"\n"
-  "fi\n";
+/* This comes from default-command.c which is generated from
+ * default-command.sh.in.
+ */
+extern const char *command;
 
 static void
 tmpdisk_load (void)

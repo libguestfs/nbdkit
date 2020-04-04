@@ -1,4 +1,5 @@
 # nbdkit
+# -*- mode: shell-script -*-
 # Copyright (C) 2017-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,53 +30,22 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+labelopt='-L'
 
-EXTRA_DIST = \
-	default-command.sh.in \
-	nbdkit-tmpdisk-plugin.pod \
-	$(NULL)
+case "$type" in
+    ext?)
+        extra='-F' ;;
+    *fat|msdos)
+        extra='-I' ;;
+    ntfs)
+        extra='-Q -F'
+        labelopt='-n' ;;
+    xfs)
+        extra='-f' ;;
+esac
 
-# The default command we use (if we don't use command=) comes from a
-# shell script which is turned into a C source file.
-BUILT_SOURCES = default-command.c
-
-default-command.c: default-command.sh.in Makefile
-	rm -f $@ $@-t
-	echo 'const char *command =' > $@-t
-	$(SED) -e '/^#/d' -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/' < $< >> $@-t
-	echo ';' >> $@-t
-	mv $@-t $@
-
-plugin_LTLIBRARIES = nbdkit-tmpdisk-plugin.la
-
-nbdkit_tmpdisk_plugin_la_SOURCES = \
-	default-command.c \
-	tmpdisk.c \
-	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(NULL)
-
-nbdkit_tmpdisk_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/utils \
-	$(NULL)
-nbdkit_tmpdisk_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
-nbdkit_tmpdisk_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared $(SHARED_LDFLAGS) \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(NULL)
-nbdkit_tmpdisk_plugin_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la \
-	$(NULL)
-
-if HAVE_POD
-
-man_MANS = nbdkit-tmpdisk-plugin.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-tmpdisk-plugin.1: nbdkit-tmpdisk-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+if [ "x$label" = "x" ]; then
+    mkfs -t "$type" $extra "$disk"
+else
+    mkfs -t "$type" $extra $labelopt "$label" "$disk"
+fi
