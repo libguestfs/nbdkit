@@ -123,6 +123,7 @@ extern const char *port;
 extern bool read_only;
 extern const char *run;
 extern bool listen_stdin;
+extern bool configured;
 extern const char *selinux_label;
 extern unsigned threads;
 extern int tls;

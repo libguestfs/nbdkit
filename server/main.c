@@ -100,7 +100,8 @@ char *unixsocket;               /* -U */
 const char *user, *group;       /* -u & -g */
 bool verbose;                   /* -v */
 bool vsock;                     /* --vsock */
-unsigned int socket_activation  /* $LISTEN_FDS and $LISTEN_PID set */;
+unsigned int socket_activation; /* $LISTEN_FDS and $LISTEN_PID set */
+bool configured;                /* .config_complete done */
 
 /* The linked list of zero or more filters, and one plugin. */
 struct backend *top;
@@ -700,6 +701,7 @@ main (int argc, char *argv[])
   /* Tell the plugin that we are about to start serving.  This must be
    * called before we change user, fork, or open any sockets.
    */
+  configured = true;
   top->get_ready (top);
 
   start_serving ();

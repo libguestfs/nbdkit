@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2019 Red Hat Inc.
+ * Copyright (C) 2018-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -52,6 +52,9 @@ nbdkit_error (const char *fs, ...)
 {
   error_flagged = true;
 }
+
+bool listen_stdin;
+bool configured;
 
 volatile int quit;
 int quit_fd = -1;
@@ -427,7 +430,24 @@ test_nbdkit_read_password (void)
     pass = false;
   }
 
-  /* XXX Testing reading from stdin would require setting up a pty */
+  /* XXX Testing reading from stdin would require setting up a pty. But
+   * we can test that it is forbidden with -s.
+   */
+  listen_stdin = true;
+  if (nbdkit_read_password ("-", &pw) != -1) {
+    fprintf (stderr, "Failed to diagnose failed password from stdin with -s\n");
+    pass = false;
+  }
+  else if (pw != NULL) {
+    fprintf (stderr, "Failed to set password to NULL on failure\n");
+    pass = false;
+  }
+  else if (!error_flagged) {
+    fprintf (stderr, "Wrong error message handling\n");
+    pass = false;
+  }
+  error_flagged = false;
+
   return pass;
 }
 

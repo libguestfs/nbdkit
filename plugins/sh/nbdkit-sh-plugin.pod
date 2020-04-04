@@ -48,7 +48,9 @@ as the name of the script, like this:
  EOF
 
 By default the inline script runs under F</bin/sh>.  You can add a
-shebang (C<#!>) to use other scripting languages.
+shebang (C<#!>) to use other scripting languages.  Of course, reading
+an inline script from stdin is incompatible with the C<-s>
+(C<--single>) mode of nbdkit that connects a client on stdin.
 
 =head1 WRITING AN NBDKIT SH PLUGIN
 

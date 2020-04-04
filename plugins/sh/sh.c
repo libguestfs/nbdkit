@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2019 Red Hat Inc.
+ * Copyright (C) 2018-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -115,6 +115,11 @@ inline_script (void)
   const char scriptname[] = "inline-script.sh";
   char *filename = NULL;
   CLEANUP_FREE char *cmd = NULL;
+
+  if (!nbdkit_stdio_safe ()) {
+    nbdkit_error ("inline script is incompatible with -s");
+    return NULL;
+  }
 
   if (asprintf (&filename, "%s/%s", tmpdir, scriptname) == -1) {
     nbdkit_error ("asprintf: %m");

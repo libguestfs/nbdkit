@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -404,6 +404,13 @@ nbdkit_parse_bool (const char *str)
   return -1;
 }
 
+/* Return true if it is safe to read from stdin during configuration. */
+int
+nbdkit_stdio_safe (void)
+{
+  return !listen_stdin && !configured;
+}
+
 /* Read a password from configuration value. */
 static int read_password_from_fd (const char *what, int fd, char **password);
 
@@ -419,6 +426,11 @@ nbdkit_read_password (const char *value, char **password)
 
   /* Read from stdin. */
   if (strcmp (value, "-") == 0) {
+    if (!nbdkit_stdio_safe ()) {
+      nbdkit_error ("stdin is not available for reading password");
+      return -1;
+    }
+
     printf ("password: ");
 
     /* Set no echo. */
@@ -455,6 +467,10 @@ nbdkit_read_password (const char *value, char **password)
 
     if (nbdkit_parse_int ("password file descriptor", &value[1], &fd) == -1)
       return -1;
+    if (fd == STDIN_FILENO && !nbdkit_stdio_safe ()) {
+      nbdkit_error ("stdin is not available for reading password");
+      return -1;
+    }
     if (read_password_from_fd (&value[1], fd, password) == -1)
       return -1;
   }

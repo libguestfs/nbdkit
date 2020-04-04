@@ -388,6 +388,10 @@ should probably look at other plugins and follow the same conventions.
 If the value is a relative path, then note that the server changes
 directory when it starts up.  See L</FILENAMES AND PATHS> above.
 
+If C<nbdkit_stdio_safe> returns 1, the value of the configuration
+parameter may be used to trigger reading additional data through stdin
+(such as a password or inline script).
+
 If the C<.config> callback is not provided by the plugin, and the user
 tries to specify any C<key=value> arguments, then nbdkit will exit
 with an error.
@@ -1148,6 +1152,24 @@ C<str> can be a string containing a case-insensitive form of various
 common toggle values.  The function returns 0 or 1 if the parse was
 successful.  If there was an error, it returns C<-1>.
 
+=head2 Interacting with stdin and stdout
+
+The C<nbdkit_stdio_safe> utility function returns C<1> if it is safe
+to interact with stdin and stdout during C<.config> and
+C<.config_complete>, and C<0> otherwise.  When nbdkit is started under
+the single connection mode (C<-s>), the plugin must not directly
+interact with stdin, because that would interfere with the client.
+The result of this function only matters in callbacks up to
+C<.config_complete>; once nbdkit reaches C<.get_ready>, the plugin
+should assume that nbdkit may have closed the original stdin and
+stdout in order to become a daemon.
+
+ int nbdkit_stdio_safe (void);
+
+As an example, the L<nbdkit-sh-plugin(3)> uses this function to
+determine whether it is safe to support C<script=-> to read a script
+from stdin.
+
 =head2 Reading passwords
 
 The C<nbdkit_read_password> utility function can be used to read
@@ -1180,7 +1202,7 @@ used directly on the command line, eg:
  nbdkit myplugin password=mostsecret
 
 But more securely this function can also read a password
-interactively:
+interactively (if C<nbdkit_stdio_safe> returns non-zero):
 
  nbdkit myplugin password=-
 

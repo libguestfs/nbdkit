@@ -106,6 +106,7 @@ extern int nbdkit_parse_int64_t (const char *what, const char *str,
                                  int64_t *r);
 extern int nbdkit_parse_uint64_t (const char *what, const char *str,
                                   uint64_t *r);
+extern int nbdkit_stdio_safe (void);
 extern int nbdkit_read_password (const char *value, char **password);
 extern char *nbdkit_realpath (const char *path);
 extern int nbdkit_nanosleep (unsigned sec, unsigned nsec);
