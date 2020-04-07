@@ -28,7 +28,18 @@ parameter (controlling the I<-t> option of mkfs).
 Instead of running mkfs you can run an arbitrary C<command> to create
 the disk.
 
-=head2 Example
+=head2 Security considerations
+
+Because each client gets a new disk, the amount of disk space
+required on the server can be as much as
+S<<< I<number of clients> × I<size parameter> >>>.  It is therefore
+best to limit the number of clients using L<nbdkit-limit-filter(1)> or
+take steps to limit where clients can connect from using
+L<nbdkit-ip-filter(1)>, firewalls, or TLS client certificates.
+
+=head1 EXAMPLE
+
+=head2 Remote tmpfs
 
 One use for this is to create a kind of "remote L<tmpfs(5)>" for thin
 clients.  On the server you would run (see L<nbdkit-service(1)>):
@@ -44,15 +55,6 @@ containing:
  mount /dev/nbd0 /var/scratch
 
 Clients would see a fresh, empty C</var/scratch> directory after boot.
-
-=head2 Security considerations
-
-Because each client gets a new disk, the amount of disk space
-required on the server can be as much as
-S<<< I<number of clients> × I<size parameter> >>>.  It is therefore
-best to limit the number of clients using L<nbdkit-limit-filter(1)> or
-take steps to limit where clients can connect from using
-L<nbdkit-ip-filter(1)>, firewalls, or TLS client certificates.
 
 =head1 PARAMETERS
 
