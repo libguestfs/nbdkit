@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2019 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,6 +35,17 @@
 #include <string.h>
 
 #include <nbdkit-plugin.h>
+
+/* C90 lacks <stdbool.h>, and even in C99 and later, we are permitted
+ * to use 'bool', 'true', and 'false' however we want if that header
+ * is not included (although such atypical use is generally a bad
+ * idea).  Prove that nbdkit did not pollute the namespace.
+ */
+#if __bool_true_false_are_defined
+#error nbdkit polluted namespace with stdbool.h
+#else
+extern int true, false;
+#endif
 
 /* This looks like a 100MB disk with one empty partition. */
 static unsigned char bootsector[512] = {
