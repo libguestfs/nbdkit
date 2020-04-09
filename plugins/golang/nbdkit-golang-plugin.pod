@@ -1,0 +1,168 @@
+=head1 NAME
+
+nbdkit-golang-plugin - writing nbdkit plugins in Go
+
+=head1 SYNOPSIS
+
+ nbdkit /path/to/plugin.so [arguments...]
+
+=head1 DESCRIPTION
+
+This manual page describes how to write nbdkit plugins in compiled
+Golang code.  Go plugins are compiled to F<*.so> files (the same as
+plugins written in C) and are used in the same way.
+
+=head1 WRITING A GOLANG NBDKIT PLUGIN
+
+For examples of plugins written in Go, see:
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/golang/examples>
+
+The F<minimal/minimal.go> example is the smallest possible plugin,
+implementing only the required callbacks (C<Open>, C<GetSize> and
+C<PRead>).  Other examples show other nbdkit features.
+
+Broadly speaking, Golang nbdkit plugins work like C ones, so you
+should read L<nbdkit-plugin(3)> first.
+
+To write a Golang nbdkit plugin, you must:
+
+=over 4
+
+=item *
+
+Set the package to C<main>
+
+Plugins should be main packages, because that's how Golang shared
+libraries work.
+
+=item *
+
+Import C<"C">, C<"unsafe"> and C<"libguestfs.org/nbdkit">
+
+=item *
+
+Create plugin and connection structs
+
+Conventionally these are named after the plugin, but you can call them
+whatever you want.  They must derive from the C<nbdkit.Plugin> and
+C<nbdkit.Connection> structs respectively:
+
+ type MyPlugin struct {
+         nbdkit.Plugin
+ }
+ 
+ type MyConnection struct {
+         nbdkit.Connection
+ }
+
+The plugin struct is used to define the global callbacks, like
+C<Load>, C<Config> and C<GetReady>.  The connection struct represents
+a client connection and is used to define connection callbacks like
+C<GetSize> and C<PRead>.  What connects the two is the C<Open>
+callback which is called when the client has connected and where you
+should return a new instance of your connection struct.  For example:
+
+ func (p MyPlugin) Load() {
+         // global callback used for initializing the plugin
+ }
+ 
+ func (p MyPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
+         // new client has connected
+         return &MyConnection{}, nil
+ }
+ 
+ func (c MyConnection) GetSize() (uint64, error) {
+         // called per-client
+         return virtual_size, nil
+ }
+
+You can store per-client data in the connection struct.  Global data
+could be stored as global variables or kept in the plugin struct as
+you wish.
+
+=item *
+
+Include the C<plugin_init> and C<main> boilerplate
+
+See the example plugins for the correct boilerplate to include.
+
+=item *
+
+Compile the plugin to a shared library
+
+ go build -o nbdkit-mygolang-plugin.so -buildmode=c-shared
+
+This builds the shared object (F<*.so>) which is the plugin, and also
+a header file (F<*.h>) which is irrelevant and you can delete.
+
+=back
+
+=head2 C<Can*> callbacks
+
+B<Important:> If you implement C<PWrite> it will I<not> be called
+unless you also implement a C<CanWrite> callback that returns true.
+(This is different from plugins written in C or other languages).
+
+The same applies to C<Flush> (C<CanFlush>), C<Trim> (C<CanTrim>) and
+C<Zero> (C<CanZero>).
+
+ func (c MyConnection) CanWrite() (bool, error) {
+         return true, nil
+ }
+ 
+ func (c MyConnection) PWrite(buf []byte, offset uint64,
+        flags uint32) error {
+         // ...
+}
+
+=head2 Missing callbacks
+
+The following callbacks are not yet implemented:
+
+=over 4
+
+=item C<version>
+
+=item C<longname>
+
+=item C<description>
+
+=item C<magic_config_key>
+
+=item C<config_help>
+
+=item C<thread_model>
+
+At the moment the thread model is always
+C<NBDKIT_THREAD_MODEL_PARALLEL>.
+
+=item C<can_fast_zero>
+
+=item C<can_extents>
+
+=item C<can_fua>
+
+=item C<can_cache>
+
+=item C<extents>
+
+=item C<cache>
+
+=back
+
+=head1 VERSION
+
+Golang plugins first appeared in nbdkit 1.20.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.

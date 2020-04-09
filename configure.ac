@@ -49,6 +49,7 @@ LT_INIT
 
 dnl List of plugins and filters.
 lang_plugins="\
+        golang \
         lua \
         ocaml \
         perl \
@@ -754,6 +755,34 @@ AS_IF([test "x$enable_lua" != "xno"],[
 ])
 AM_CONDITIONAL([HAVE_LUA],[test "x$enable_lua" = "xyes"])
 
+dnl Check for golang.
+AC_ARG_ENABLE([golang],
+    AS_HELP_STRING([--disable-golang], [disable Go language plugin]),
+        [],
+        [enable_golang=yes])
+AS_IF([test "x$enable_golang" != "xno"],[
+    AC_CHECK_PROG([GOLANG],[go],[go],[no])
+    AS_IF([test "x$GOLANG" != "xno"],[
+        AC_MSG_CHECKING([if $GOLANG is usable])
+        AS_IF([$GOLANG run $srcdir/plugins/golang/config-test.go 2>&AS_MESSAGE_LOG_FD],[
+            AC_MSG_RESULT([yes])
+
+            # Substitute some golang environment.
+            GOOS=`$GOLANG env GOOS`
+            GOARCH=`$GOLANG env GOARCH`
+            GOROOT=`$GOLANG env GOROOT`
+            AC_SUBST([GOOS])
+            AC_SUBST([GOARCH])
+            AC_SUBST([GOROOT])
+        ],[
+            AC_MSG_RESULT([no])
+            AC_MSG_WARN([golang ($GOLANG) is installed but not usable])
+            GOLANG=no
+        ])
+    ])
+],[GOLANG=no])
+AM_CONDITIONAL([HAVE_GOLANG],[test "x$GOLANG" != "xno"])
+
 dnl Check for curl (only if you want to compile the curl plugin).
 AC_ARG_WITH([curl],
     [AS_HELP_STRING([--without-curl],
@@ -1002,6 +1031,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/file/Makefile
                  plugins/floppy/Makefile
                  plugins/full/Makefile
+                 plugins/golang/Makefile
                  plugins/guestfs/Makefile
                  plugins/gzip/Makefile
                  plugins/info/Makefile
@@ -1125,6 +1155,8 @@ feature "vddk ................................... " \
 echo
 echo "Languages:"
 echo
+feature "go ..................................... " \
+        test "x$HAVE_GOLANG_TRUE" = "x"
 feature "lua .................................... " \
         test "x$HAVE_LUA_TRUE" = "x"
 feature "ocaml .................................. " \

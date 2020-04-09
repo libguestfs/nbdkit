@@ -15,8 +15,8 @@ The key features are:
  * Well-documented, simple plugin API with a stable ABI guarantee.
    Lets you export “unconventional” block devices easily.
 
- * You can write plugins in C, Lua, Perl, Python, OCaml, Ruby, Rust,
-   shell script or Tcl.
+ * You can write plugins in C, Go, Lua, Perl, Python, OCaml, Ruby,
+   Rust, shell script or Tcl.
 
  * Filters can be stacked in front of plugins to transform the output.
 
@@ -147,6 +147,10 @@ For the Lua plugin:
 For the Rust plugin:
 
  - cargo (other dependencies will be downloaded at build time)
+
+To be able to write plugins in golang:
+
+ - go >= 1.5
 
 For bash tab completion:
 

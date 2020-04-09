@@ -72,6 +72,10 @@ plugins/*/*.3
 /plugins/example4/nbdkit-example4-plugin
 /plugins/eval/call.c
 /plugins/eval/methods.c
+/plugins/golang/examples/*/nbdkit-*-plugin.h
+/plugins/golang/examples/*/nbdkit-*-plugin.so
+/plugins/golang/test/nbdkit-gotest-plugin.h
+/plugins/golang/test/nbdkit-gotest-plugin.so
 /plugins/ocaml/nbdkit-ocamlexample-plugin.so
 /plugins/rust/Cargo.lock
 /plugins/rust/Cargo.toml
