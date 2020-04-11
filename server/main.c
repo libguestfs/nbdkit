@@ -107,9 +107,10 @@ static void
 usage (void)
 {
   /* --{short,long}-options remain undocumented */
-  printf (
+  char const *opt_list =
 #include "synopsis.c"
-  );
+	  ;
+  printf ("%s\n", opt_list);
   printf ("\n"
           "Please read the nbdkit(1) manual page for full usage.\n");
 }
