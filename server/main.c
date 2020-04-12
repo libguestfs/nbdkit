@@ -107,12 +107,11 @@ static void
 usage (void)
 {
   /* --{short,long}-options remain undocumented */
-  char const *opt_list =
+  const char *opt_list =
 #include "synopsis.c"
 	  ;
   printf ("%s\n", opt_list);
-  printf ("\n"
-          "Please read the nbdkit(1) manual page for full usage.\n");
+  printf ("Please read the nbdkit(1) manual page for full usage.\n");
 }
 
 static void
