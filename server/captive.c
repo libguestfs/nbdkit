@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019 Red Hat Inc.
+ * Copyright (C) 2019-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -151,7 +151,13 @@ run_command (void)
   }
 
   if (pid > 0) {              /* Parent process is the run command. */
-    r = system (cmd);
+    /* Restore original stdin/out */
+    if (dup2 (saved_stdin, STDIN_FILENO) == -1 ||
+        dup2 (saved_stdout, STDOUT_FILENO) == -1) {
+      r = -1;
+    }
+    else
+      r = system (cmd);
     if (r == -1) {
       nbdkit_error ("failure to execute external command: %m");
       r = EXIT_FAILURE;

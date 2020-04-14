@@ -133,6 +133,8 @@ extern bool tls_verify_peer;
 extern char *unixsocket;
 extern const char *user, *group;
 extern bool verbose;
+extern int saved_stdin;
+extern int saved_stdout;
 
 /* Linked list of backends.  Each backend struct is followed by either
  * a filter or plugin struct.  "top" points to the first one.  They

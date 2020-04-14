@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019 Red Hat Inc.
+ * Copyright (C) 2019-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -70,15 +70,11 @@ fork_into_background (void)
   chdir ("/");
 #pragma GCC diagnostic pop
 
-  /* Close stdin/stdout and redirect to /dev/null. */
-  close (0);
-  close (1);
-  open ("/dev/null", O_RDONLY);
-  open ("/dev/null", O_WRONLY);
-
-  /* If not verbose, set stderr to the same as stdout as well. */
+  /* By this point, stdin/out have been redirected to /dev/null.
+   * If not verbose, set stderr to the same as stdout as well.
+   */
   if (!verbose)
-    dup2 (1, 2);
+    dup2 (STDOUT_FILENO, STDERR_FILENO);
 
   forked_into_background = true;
   debug ("forked into background (new pid = %d)", getpid ());

@@ -102,6 +102,8 @@ bool verbose;                   /* -v */
 bool vsock;                     /* --vsock */
 unsigned int socket_activation; /* $LISTEN_FDS and $LISTEN_PID set */
 bool configured;                /* .config_complete done */
+int saved_stdin = -1;           /* dup'd stdin during -s/--run */
+int saved_stdout = -1;          /* dup'd stdout during -s/--run */
 
 /* The linked list of zero or more filters, and one plugin. */
 struct backend *top;
@@ -698,6 +700,40 @@ main (int argc, char *argv[])
   /* Select the correct thread model based on config. */
   lock_init_thread_model ();
 
+  /* Sanitize stdin/stdout to /dev/null, after saving the originals
+   * when needed.  We are still single-threaded at this point, and
+   * already checked that stdin/out were open, so we don't have to
+   * worry about other threads accidentally grabbing our intended fds,
+   * or races on FD_CLOEXEC.  POSIX says that 'fflush(NULL)' is
+   * supposed to reset the underlying offset of seekable stdin, but
+   * glibc is buggy and requires an explicit fflush(stdin) as
+   * well. https://sourceware.org/bugzilla/show_bug.cgi?id=12799
+   */
+  fflush (stdin);
+  fflush (NULL);
+  if (listen_stdin || run) {
+#ifndef F_DUPFD_CLOEXEC
+#define F_DUPFD_CLOEXEC F_DUPFD
+#endif
+    saved_stdin = fcntl (STDIN_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
+    saved_stdout = fcntl (STDOUT_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
+#if F_DUPFD == F_DUPFD_CLOEXEC
+    saved_stdin = set_cloexec (saved_stdin);
+    saved_stdout = set_cloexec (saved_stdout);
+#endif
+    if (saved_stdin == -1 || saved_stdout == -1) {
+      perror ("fcntl");
+      exit (EXIT_FAILURE);
+    }
+  }
+  close (STDIN_FILENO);
+  close (STDOUT_FILENO);
+  if (open ("/dev/null", O_RDONLY) != STDIN_FILENO ||
+      open ("/dev/null", O_WRONLY) != STDOUT_FILENO) {
+    perror ("open");
+    exit (EXIT_FAILURE);
+  }
+
   /* Tell the plugin that we are about to start serving.  This must be
    * called before we change user, fork, or open any sockets.
    */
@@ -920,7 +956,7 @@ start_serving (void)
     change_user ();
     write_pidfile ();
     threadlocal_new_server_thread ();
-    handle_single_connection (0, 1);
+    handle_single_connection (saved_stdin, saved_stdout);
     return;
   }
 
