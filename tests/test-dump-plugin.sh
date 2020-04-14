@@ -56,9 +56,6 @@ do_test ()
 {
     vg=; [ "$NBDKIT_VALGRIND" = "1" ] && vg="-valgrind"
     case "$1$vg" in
-        vddk | vddk-valgrind)
-            echo "$0: skipping $1$vg because VDDK cannot run without special environment variables"
-            ;;
         python-valgrind | ruby-valgrind | tcl-valgrind)
             echo "$0: skipping $1$vg because this language doesn't support valgrind"
             ;;
