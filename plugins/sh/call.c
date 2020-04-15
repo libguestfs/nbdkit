@@ -53,6 +53,48 @@
 
 #include "call.h"
 
+/* Temporary directory for scripts to use. */
+char tmpdir[] = "/tmp/nbdkitXXXXXX";
+
+/* Private copy of environ, with $tmpdir added. */
+static char **env;
+
+void
+call_load (void)
+{
+  /* Create the temporary directory for the shell script to use. */
+  if (mkdtemp (tmpdir) == NULL) {
+    nbdkit_error ("mkdtemp: /tmp: %m");
+    exit (EXIT_FAILURE);
+  }
+
+  nbdkit_debug ("load: tmpdir: %s", tmpdir);
+
+  /* Copy the environment, and add $tmpdir. */
+  env = copy_environ (environ, "tmpdir", tmpdir, NULL);
+  if (env == NULL)
+    exit (EXIT_FAILURE);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+void
+call_unload (void)
+{
+  CLEANUP_FREE char *cmd = NULL;
+  size_t i;
+
+  /* Delete the temporary directory.  Ignore all errors. */
+  if (asprintf (&cmd, "rm -rf %s", tmpdir) >= 0)
+    system (cmd);
+
+  /* Free the private copy of environ. */
+  for (i = 0; env[i] != NULL; ++i)
+    free (env[i]);
+  free (env);
+}
+#pragma GCC diagnostic pop
+
 /* Ensure there is at least 1 byte of space in the buffer. */
 static int
 expand_buf (const char *argv0, char **buf, size_t *buflen, size_t *bufalloc)
@@ -184,6 +226,11 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
     /* Restore SIGPIPE back to SIG_DFL, since shell can't undo SIG_IGN */
     signal (SIGPIPE, SIG_DFL);
 
+    /* Note the assignment of environ avoids using execvpe which is a
+     * GNU extension.  See also:
+     * https://github.com/libguestfs/libnbd/commit/dc64ac5cdd0bc80ca4e18935ad0e8801d11a8644
+     */
+    environ = env;
     execvp (argv[0], (char **) argv);
     perror (argv[0]);
     _exit (EXIT_FAILURE);

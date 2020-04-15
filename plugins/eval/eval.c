@@ -50,7 +50,6 @@
 #include "call.h"
 #include "methods.h"
 
-static char tmpdir[] = "/tmp/nbdkitevalXXXXXX";
 static char *missing;
 
 static const char *known_methods[] = {
@@ -213,18 +212,7 @@ create_script (const char *method, const char *value)
 static void
 eval_load (void)
 {
-  /* Create the temporary directory for the shell script to use. */
-  if (mkdtemp (tmpdir) == NULL) {
-    nbdkit_error ("mkdtemp: /tmp: %m");
-    exit (EXIT_FAILURE);
-  }
-  /* Set $tmpdir for the script. */
-  if (setenv ("tmpdir", tmpdir, 1) == -1) {
-    nbdkit_error ("setenv: tmpdir=%s: %m", tmpdir);
-    exit (EXIT_FAILURE);
-  }
-
-  nbdkit_debug ("eval: load: tmpdir: %s", tmpdir);
+  call_load ();
 
   /* To make things easier, create a "missing" script which always
    * exits with code 2.  If a method is missing we call this script
@@ -235,8 +223,6 @@ eval_load (void)
     exit (EXIT_FAILURE);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
 static void
 eval_unload (void)
 {
@@ -252,16 +238,12 @@ eval_unload (void)
     call (args);
   }
 
-  /* Delete the temporary directory.  Ignore all errors. */
-  if (asprintf (&cmd, "rm -rf %s", tmpdir) >= 0)
-    system (cmd);
-
+  call_unload ();
   for (i = 0; i < nr_method_scripts; ++i)
     free (method_scripts[i].script);
   free (method_scripts);
   free (missing);
 }
-#pragma GCC diagnostic pop
 
 static int
 add_method (const char *key, const char *value)

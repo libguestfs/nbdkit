@@ -33,6 +33,17 @@
 #ifndef NBDKIT_CALL_H
 #define NBDKIT_CALL_H
 
+/* eval and sh plugin call this in .load() to initialize some things
+ * in the shared call code.  This also creates the tmpdir[] directory.
+ */
+extern void call_load (void);
+extern char tmpdir[];
+
+/* Similarly the plugins should call this in their .unload()
+ * functions.  It deletes tmpdir amongst other things.
+ */
+extern void call_unload (void);
+
 /* Exit codes. */
 typedef enum exit_code {
   OK = 0,

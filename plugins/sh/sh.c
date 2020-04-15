@@ -50,7 +50,6 @@
 #include "call.h"
 #include "methods.h"
 
-static char tmpdir[] = "/tmp/nbdkitshXXXXXX";
 static char *script;
 static char *magic_config_key;
 
@@ -66,27 +65,13 @@ get_script (const char *method)
 static void
 sh_load (void)
 {
-  /* Create the temporary directory for the shell script to use. */
-  if (mkdtemp (tmpdir) == NULL) {
-    nbdkit_error ("mkdtemp: /tmp: %m");
-    exit (EXIT_FAILURE);
-  }
-  /* Set $tmpdir for the script. */
-  if (setenv ("tmpdir", tmpdir, 1) == -1) {
-    nbdkit_error ("setenv: tmpdir=%s: %m", tmpdir);
-    exit (EXIT_FAILURE);
-  }
-
-  nbdkit_debug ("sh: load: tmpdir: %s", tmpdir);
+  call_load ();
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
 static void
 sh_unload (void)
 {
   const char *method = "unload";
-  CLEANUP_FREE char *cmd = NULL;
 
   /* Run the unload method.  Ignore all errors. */
   if (script) {
@@ -95,14 +80,10 @@ sh_unload (void)
     call (args);
   }
 
-  /* Delete the temporary directory.  Ignore all errors. */
-  if (asprintf (&cmd, "rm -rf %s", tmpdir) >= 0)
-    system (cmd);
-
+  call_unload ();
   free (script);
   free (magic_config_key);
 }
-#pragma GCC diagnostic pop
 
 /* This implements the "inline script" feature.  Read stdin into a
  * temporary file and return the name of the file which the caller

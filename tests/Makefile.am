@@ -199,6 +199,7 @@ EXTRA_DIST = \
 	test-shutdown.sh \
 	test-sh-errors.sh \
 	test-sh-extents.sh \
+	test-sh-tmpdir-leak.sh \
 	test-single.sh \
 	test-single-from-file.sh \
 	test-single-sh.sh \
@@ -977,6 +978,7 @@ test-shell.img:
 TESTS += \
 	test-sh-errors.sh \
 	test-sh-extents.sh \
+	test-sh-tmpdir-leak.sh \
 	$(NULL)
 
 # Tcl plugin test.
