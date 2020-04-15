@@ -37,4 +37,17 @@ set -x
 # Test that $tmpdir doesn't leak into --run parameter when using the
 # sh plugin.
 
-nbdkit sh - --run 'if test -n "$tmpdir"; then exit 1; fi' </dev/null
+unset tmpdir
+nbdkit -U - sh - --run 'if test -n "$tmpdir"; then exit 1; fi' </dev/null
+
+# Meanwhile, the user CAN export $tmpdir for the sake of --run, but
+# the script still gets its own distinct location.
+
+tmpdir=/nowhere nbdkit -U - -v sh - \
+    --run 'if test "$tmpdir" != /nowhere; then exit 1; fi' <<EOF
+if test "$tmpdir" = /nowhere; then
+  echo "$0: unexpected tmpdir" 2>&1
+  exit 1
+fi
+exit 2
+EOF
