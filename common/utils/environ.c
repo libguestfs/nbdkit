@@ -76,6 +76,7 @@ copy_environ (char **env, ...)
     value = va_arg (argp, const char *);
     if (asprintf (&s, "%s=%s", key, value) == -1) {
       nbdkit_error ("asprintf: %m");
+      va_end (argp);
       goto error;
     }
 
@@ -93,6 +94,7 @@ copy_environ (char **env, ...)
     /* Else, append a new key. */
     if (environ_t_append (&ret, s) == -1) {
       nbdkit_error ("realloc: %m");
+      va_end (argp);
       goto error;
     }
 
