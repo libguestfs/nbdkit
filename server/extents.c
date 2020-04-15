@@ -42,6 +42,7 @@
 #include <assert.h>
 
 #include "minmax.h"
+#include "vector.h"
 
 #include "internal.h"
 
@@ -51,9 +52,11 @@
  */
 #define MAX_EXTENTS (1 * 1024 * 1024)
 
+/* Appendable list of extents. */
+DEFINE_VECTOR_TYPE(extents, struct nbdkit_extent);
+
 struct nbdkit_extents {
-  struct nbdkit_extent *extents;
-  size_t nr_extents, allocated;
+  extents extents;
 
   uint64_t start, end; /* end is one byte beyond the end of the range */
 
@@ -92,8 +95,7 @@ nbdkit_extents_new (uint64_t start, uint64_t end)
     nbdkit_error ("nbdkit_extents_new: malloc: %m");
     return NULL;
   }
-  r->extents = NULL;
-  r->nr_extents = r->allocated = 0;
+  r->extents = (extents) empty_vector;
   r->start = start;
   r->end = end;
   r->next = -1;
@@ -104,7 +106,7 @@ void
 nbdkit_extents_free (struct nbdkit_extents *exts)
 {
   if (exts) {
-    free (exts->extents);
+    free (exts->extents.ptr);
     free (exts);
   }
 }
@@ -112,40 +114,25 @@ nbdkit_extents_free (struct nbdkit_extents *exts)
 size_t
 nbdkit_extents_count (const struct nbdkit_extents *exts)
 {
-  return exts->nr_extents;
+  return exts->extents.size;
 }
 
 struct nbdkit_extent
 nbdkit_get_extent (const struct nbdkit_extents *exts, size_t i)
 {
-  assert (i < exts->nr_extents);
-  return exts->extents[i];
+  assert (i < exts->extents.size);
+  return exts->extents.ptr[i];
 }
 
 /* Insert *e in the list at the end. */
 static int
 append_extent (struct nbdkit_extents *exts, const struct nbdkit_extent *e)
 {
-  if (exts->nr_extents >= exts->allocated) {
-    size_t new_allocated;
-    struct nbdkit_extent *new_extents;
-
-    new_allocated = exts->allocated;
-    if (new_allocated == 0)
-      new_allocated = 1;
-    new_allocated *= 2;
-    new_extents =
-      realloc (exts->extents, new_allocated * sizeof (struct nbdkit_extent));
-    if (new_extents == NULL) {
-      nbdkit_error ("nbdkit_add_extent: realloc: %m");
-      return -1;
-    }
-    exts->allocated = new_allocated;
-    exts->extents = new_extents;
+  if (extents_append (&exts->extents, *e) == -1) {
+    nbdkit_error ("nbdkit_add_extent: realloc: %m");
+    return -1;
   }
 
-  exts->extents[exts->nr_extents] = *e;
-  exts->nr_extents++;
   return 0;
 }
 
@@ -170,7 +157,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
     return 0;
 
   /* Ignore extents beyond the end of the range, or if list is full. */
-  if (offset >= exts->end || exts->nr_extents >= MAX_EXTENTS)
+  if (offset >= exts->end || exts->extents.size >= MAX_EXTENTS)
     return 0;
 
   /* Shorten extents that overlap the end of the range. */
@@ -179,7 +166,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
     length -= overlap;
   }
 
-  if (exts->nr_extents == 0) {
+  if (exts->extents.size == 0) {
     /* If there are no existing extents, and the new extent is
      * entirely before start, ignore it.
      */
@@ -206,10 +193,10 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
   }
 
   /* If we get here we are going to either add or extend. */
-  if (exts->nr_extents > 0 &&
-      exts->extents[exts->nr_extents-1].type == type) {
+  if (exts->extents.size > 0 &&
+      exts->extents.ptr[exts->extents.size-1].type == type) {
     /* Coalesce with the last extent. */
-    exts->extents[exts->nr_extents-1].length += length;
+    exts->extents.ptr[exts->extents.size-1].length += length;
     return 0;
   }
   else {
