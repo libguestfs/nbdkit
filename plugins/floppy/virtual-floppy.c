@@ -117,7 +117,7 @@ create_virtual_floppy (const char *dir, const char *label,
   for (i = 0; i < floppy->nr_dirs; ++i) {
     floppy->dirs[i].first_cluster = cluster;
     nr_bytes =
-      ROUND_UP (floppy->dirs[i].table_entries * sizeof (struct dir_entry),
+      ROUND_UP (floppy->dirs[i].table.size * sizeof (struct dir_entry),
                 CLUSTER_SIZE);
     floppy->data_size += nr_bytes;
     nr_clusters = nr_bytes / CLUSTER_SIZE;
@@ -221,7 +221,7 @@ free_virtual_floppy (struct virtual_floppy *floppy)
     free (floppy->dirs[i].name);
     free (floppy->dirs[i].subdirs);
     free (floppy->dirs[i].files);
-    free (floppy->dirs[i].table);
+    free (floppy->dirs[i].table.ptr);
   }
   free (floppy->dirs);
 }
@@ -677,14 +677,15 @@ create_regions (struct virtual_floppy *floppy)
     /* Directories can never be completely empty because of the volume
      * label (root) or "." and ".." entries (non-root).
      */
-    assert (floppy->dirs[i].table_entries > 0);
+    assert (floppy->dirs[i].table.size > 0);
 
     if (append_region_len (&floppy->regions,
                            i == 0 ? "root directory" : floppy->dirs[i].name,
-                           floppy->dirs[i].table_entries *
+                           floppy->dirs[i].table.size *
                            sizeof (struct dir_entry),
                            0, CLUSTER_SIZE,
-                           region_data, (void *) floppy->dirs[i].table) == -1)
+                           region_data,
+                           (void *) floppy->dirs[i].table.ptr) == -1)
       return -1;
   }
 

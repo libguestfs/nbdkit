@@ -37,6 +37,7 @@
 #include <sys/stat.h>
 
 #include "regions.h"
+#include "vector.h"
 
 struct partition_entry {
   uint8_t bootable;             /* 0x00 or 0x80 if bootable */
@@ -130,6 +131,9 @@ struct dir_entry {
   uint32_t size;                /* 0x1C - file size */
 } __attribute__((packed));
 
+/* Appendable list of struct dir_entry. */
+DEFINE_VECTOR_TYPE(dir_entries, struct dir_entry);
+
 /* On disk directory entry (LFN). */
 struct lfn_entry {
   uint8_t seq;                  /* sequence number */
@@ -162,8 +166,7 @@ struct dir {
   size_t nr_files;
 
   /* On disk directory table. */
-  struct dir_entry *table;
-  size_t table_entries;
+  dir_entries table;
 };
 
 struct virtual_floppy {

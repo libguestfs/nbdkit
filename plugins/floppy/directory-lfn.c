@@ -71,7 +71,7 @@ static void set_times (const struct stat *statbuf, struct dir_entry *entry);
 static int convert_long_file_names (struct lfn *lfns, size_t n);
 static int convert_to_utf16le (const char *name, char **out, size_t *output_len);
 static void free_lfns (struct lfn *lfns, size_t n);
-static ssize_t extend_dir_table (size_t di, struct virtual_floppy *floppy);
+static ssize_t append_dir_table (size_t di, const struct dir_entry *entry, struct virtual_floppy *floppy);
 
 /* Create the on disk directory table for dirs[di]. */
 int
@@ -178,10 +178,9 @@ add_volume_label (const char *label, size_t di, struct virtual_floppy *floppy)
   pad_string (label, 11, entry.name);
   entry.attributes = DIR_ENTRY_VOLUME_LABEL; /* Same as dosfstools. */
 
-  i = extend_dir_table (di, floppy);
+  i = append_dir_table (di, &entry, floppy);
   if (i == -1)
     return -1;
-  floppy->dirs[di].table[i] = entry;
   return 0;
 }
 
@@ -199,10 +198,9 @@ add_dot_entries (size_t di, struct virtual_floppy *floppy)
   entry.attributes = DIR_ENTRY_SUBDIRECTORY;
   set_times (&floppy->dirs[di].statbuf, &entry);
 
-  i = extend_dir_table (di, floppy);
+  i = append_dir_table (di, &entry, floppy);
   if (i == -1)
     return -1;
-  floppy->dirs[di].table[i] = entry;
 
   memset (&entry, 0, sizeof entry);
   pad_string ("..", 11, entry.name);
@@ -210,10 +208,9 @@ add_dot_entries (size_t di, struct virtual_floppy *floppy)
   pdi = floppy->dirs[di].pdi;
   set_times (&floppy->dirs[pdi].statbuf, &entry);
 
-  i = extend_dir_table (di, floppy);
+  i = append_dir_table (di, &entry, floppy);
   if (i == -1)
     return -1;
-  floppy->dirs[di].table[i] = entry;
 
   return 0;
 }
@@ -288,10 +285,9 @@ add_directory_entry (const struct lfn *lfn,
     memcpy (lfn_entry.name2, &s[5], 6*2);
     memcpy (lfn_entry.name3, &s[11], 2*2);
 
-    i = extend_dir_table (di, floppy);
+    i = append_dir_table (di, (const struct dir_entry *) &lfn_entry, floppy);
     if (i == -1)
       return -1;
-    memcpy (&floppy->dirs[di].table[i], &lfn_entry, sizeof (struct dir_entry));
   }
 
   /* Create the 8.3 (short name / DOS-compatible) entry. */
@@ -305,10 +301,9 @@ add_directory_entry (const struct lfn *lfn,
    * update_directory_first_cluster.
    */
 
-  i = extend_dir_table (di, floppy);
+  i = append_dir_table (di, &entry, floppy);
   if (i == -1)
     return -1;
-  floppy->dirs[di].table[i] = entry;
 
   return 0;
 }
@@ -530,22 +525,18 @@ free_lfns (struct lfn *lfns, size_t n)
   free (lfns);
 }
 
-/* Extend dirs[di].table by 1 directory entry. */
+/* Append entry to dirs[di].table.  Returns the index of the new entry. */
 static ssize_t
-extend_dir_table (size_t di, struct virtual_floppy *floppy)
+append_dir_table (size_t di, const struct dir_entry *entry,
+                  struct virtual_floppy *floppy)
 {
-  struct dir_entry *p;
   size_t i;
 
-  i = floppy->dirs[di].table_entries;
-  p = realloc (floppy->dirs[di].table, sizeof (struct dir_entry) * (i+1));
-  if (p == NULL) {
+  i = floppy->dirs[di].table.size;
+  if (dir_entries_append (&floppy->dirs[di].table, *entry) == -1) {
     nbdkit_error ("realloc: %m");
     return -1;
   }
-  floppy->dirs[di].table = p;
-  floppy->dirs[di].table_entries++;
-  memset (&floppy->dirs[di].table[i], 0, sizeof (struct dir_entry));
   return i;
 }
 
@@ -570,8 +561,8 @@ update_directory_first_cluster (size_t di, struct virtual_floppy *floppy)
    * table entries.
    */
   i = 0;
-  for (j = 0; j < floppy->dirs[di].table_entries; ++j) {
-    entry = &floppy->dirs[di].table[j];
+  for (j = 0; j < floppy->dirs[di].table.size; ++j) {
+    entry = &floppy->dirs[di].table.ptr[j];
 
     /* Skip LFN entries. */
     if (entry->attributes == 0xf)
