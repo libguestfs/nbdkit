@@ -37,6 +37,8 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#include "vector.h"
+
 /* This defines a very simple structure used to define the virtual
  * disk in the partitioning and floppy plugins.
  *
@@ -70,38 +72,35 @@ struct region {
   const char *description;
 };
 
-/* Array of regions. */
-struct regions {
-  struct region *regions;
-  size_t nr_regions;
-};
+/* Vector of struct region. */
+DEFINE_VECTOR_TYPE(regions, struct region);
 
-extern void init_regions (struct regions *regions)
+extern void init_regions (regions *regions)
   __attribute__((__nonnull__ (1)));
-extern void free_regions (struct regions *regions)
+extern void free_regions (regions *regions)
   __attribute__((__nonnull__ (1)));
 
 /* Return the number of regions. */
 static inline size_t __attribute__((__nonnull__ (1)))
-nr_regions (struct regions *regions)
+nr_regions (regions *rs)
 {
-  return regions->nr_regions;
+  return rs->size;
 }
 
 /* Return the virtual size of the disk. */
 static inline int64_t __attribute__((__nonnull__ (1)))
-virtual_size (struct regions *regions)
+virtual_size (regions *rs)
 {
-  if (regions->nr_regions == 0)
+  if (rs->size == 0)
     return 0;
   else
-    return regions->regions[regions->nr_regions-1].end + 1;
+    return rs->ptr[rs->size-1].end + 1;
 }
 
 /* Look up the region corresponding to the given offset.  If the
  * offset is inside the disk image then this cannot return NULL.
  */
-extern const struct region *find_region (const struct regions *regions,
+extern const struct region *find_region (const regions *regions,
                                          uint64_t offset)
   __attribute__((__nonnull__ (1)));
 
@@ -119,7 +118,7 @@ extern const struct region *find_region (const struct regions *regions,
  * If type == region_file, it must be followed by u.i parameter.
  * If type == region_data, it must be followed by u.data parameter.
  */
-extern int append_region_len (struct regions *regions,
+extern int append_region_len (regions *regions,
                               const char *description, uint64_t len,
                               uint64_t pre_aligment, uint64_t post_alignment,
                               enum region_type type, ...);
@@ -129,18 +128,10 @@ extern int append_region_len (struct regions *regions,
  * size of the main region, specify the end byte as an offset.  Note
  * the end byte is included in the region, it's is NOT the end+1 byte.
  */
-extern int append_region_end (struct regions *regions,
+extern int append_region_end (regions *regions,
                               const char *description, uint64_t end,
                               uint64_t pre_aligment, uint64_t post_alignment,
                               enum region_type type, ...);
 #endif
-
-/* Used when iterating over the list of regions. */
-static inline const struct region * __attribute__((__nonnull__ (1)))
-get_region (const struct regions *regions, size_t i)
-{
-  assert (i < regions->nr_regions);
-  return &regions->regions[i];
-}
 
 #endif /* NBDKIT_REGIONS_H */

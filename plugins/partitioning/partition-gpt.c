@@ -88,7 +88,7 @@ create_gpt_partition_header (const void *pt, bool is_primary,
   uint64_t nr_lbas;
   struct gpt_header *header = (struct gpt_header *) out;
 
-  nr_lbas = virtual_size (&regions) / SECTOR_SIZE;
+  nr_lbas = virtual_size (&the_regions) / SECTOR_SIZE;
 
   memset (header, 0, sizeof *header);
   memcpy (header->signature, GPT_SIGNATURE, sizeof (header->signature));
@@ -122,8 +122,8 @@ create_gpt_partition_table (unsigned char *out)
 {
   size_t i, j;
 
-  for (j = 0; j < nr_regions (&regions); ++j) {
-    const struct region *region = get_region (&regions, j);
+  for (j = 0; j < nr_regions (&the_regions); ++j) {
+    const struct region *region = &the_regions.ptr[j];
 
     if (region->type == region_file) {
       i = region->u.i;
@@ -188,7 +188,7 @@ create_gpt_protective_mbr (unsigned char *out)
    * expressible with MBR.
    */
   region.start = 512;
-  end = virtual_size (&regions) - 1;
+  end = virtual_size (&the_regions) - 1;
   if (end > UINT32_MAX * SECTOR_SIZE)
     end = UINT32_MAX * SECTOR_SIZE;
   region.end = end;

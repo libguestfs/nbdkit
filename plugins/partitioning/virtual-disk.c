@@ -55,7 +55,7 @@ create_virtual_disk_layout (void)
 {
   size_t i;
 
-  assert (nr_regions (&regions) == 0);
+  assert (nr_regions (&the_regions) == 0);
   assert (nr_files > 0);
   assert (primary == NULL);
   assert (secondary == NULL);
@@ -104,13 +104,13 @@ create_virtual_disk_layout (void)
 
   /* Virtual primary partition table region at the start of the disk. */
   if (parttype == PARTTYPE_MBR) {
-    if (append_region_len (&regions, "MBR",
+    if (append_region_len (&the_regions, "MBR",
                            SECTOR_SIZE, 0, 0,
                            region_data, primary) == -1)
       return -1;
   }
   else /* PARTTYPE_GPT */ {
-    if (append_region_len (&regions, "GPT primary",
+    if (append_region_len (&the_regions, "GPT primary",
                            (2+GPT_PTA_LBAs) * SECTOR_SIZE, 0, 0,
                            region_data, primary) == -1)
       return -1;
@@ -120,7 +120,7 @@ create_virtual_disk_layout (void)
   for (i = 0; i < nr_files; ++i) {
     uint64_t offset;
 
-    offset = virtual_size (&regions);
+    offset = virtual_size (&the_regions);
     /* Because we add padding after each partition, this invariant
      * must always be true.
      */
@@ -128,7 +128,7 @@ create_virtual_disk_layout (void)
 
     /* Logical partitions are preceeded by an EBR. */
     if (parttype == PARTTYPE_MBR && nr_files > 4 && i >= 3) {
-      if (append_region_len (&regions, "EBR",
+      if (append_region_len (&the_regions, "EBR",
                              SECTOR_SIZE, 0, 0,
                              region_data, ebr[i-3]) == -1)
         return -1;
@@ -139,7 +139,7 @@ create_virtual_disk_layout (void)
      * If the file size is not a multiple of SECTOR_SIZE then
      * add a padding region at the end to round it up.
      */
-    if (append_region_len (&regions, files[i].filename,
+    if (append_region_len (&the_regions, files[i].filename,
                            files[i].statbuf.st_size,
                            files[i].alignment, SECTOR_SIZE,
                            region_file, i) == -1)
@@ -148,15 +148,15 @@ create_virtual_disk_layout (void)
 
   /* For GPT add the virtual secondary/backup partition table. */
   if (parttype == PARTTYPE_GPT) {
-    if (append_region_len (&regions, "GPT secondary",
+    if (append_region_len (&the_regions, "GPT secondary",
                            (GPT_PTA_LBAs+1) * SECTOR_SIZE, 0, 0,
                            region_data, secondary) == -1)
       return -1;
   }
 
   if (partitioning_debug_regions) {
-    for (i = 0; i < nr_regions (&regions); ++i) {
-      const struct region *region = get_region (&regions, i);
+    for (i = 0; i < nr_regions (&the_regions); ++i) {
+      const struct region *region = &the_regions.ptr[i];
 
       nbdkit_debug ("region[%zu]: %" PRIx64 "-%" PRIx64 " type=%s",
                     i, region->start, region->end,
@@ -168,13 +168,13 @@ create_virtual_disk_layout (void)
   }
 
   /* We must have created some regions. */
-  assert (nr_regions (&regions) > 0);
+  assert (nr_regions (&the_regions) > 0);
 
   /* Check the final alignment of all the partitions is the same as
    * what was requested.
    */
-  for (i = 0; i < nr_regions (&regions); ++i) {
-    const struct region *region = get_region (&regions, i);
+  for (i = 0; i < nr_regions (&the_regions); ++i) {
+    const struct region *region = &the_regions.ptr[i];
 
     if (region->type == region_file)
       assert (IS_ALIGNED (region->start, files[region->u.i].alignment));
@@ -189,7 +189,7 @@ create_partition_table (void)
   /* The caller has already created the disk layout and allocated
    * space in memory for the partition table.
    */
-  assert (nr_regions (&regions) > 0);
+  assert (nr_regions (&the_regions) > 0);
   assert (primary != NULL);
   if (parttype == PARTTYPE_GPT)
     assert (secondary != NULL);

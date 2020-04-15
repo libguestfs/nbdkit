@@ -40,5 +40,6 @@ libregions_la_SOURCES = \
 libregions_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils \
 	$(NULL)
 libregions_la_CFLAGS = $(WARNINGS_CFLAGS)

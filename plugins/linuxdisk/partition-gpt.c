@@ -197,7 +197,7 @@ create_gpt_partition_table (struct virtual_disk *disk, unsigned char *out)
   size_t j;
 
   for (j = 0; j < nr_regions (&disk->regions); ++j) {
-    const struct region *region = get_region (&disk->regions, j);
+    const struct region *region = &disk->regions.ptr[j];
 
     /* Find the (only) partition region, which has type region_file. */
     if (region->type == region_file) {

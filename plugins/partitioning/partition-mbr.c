@@ -90,7 +90,7 @@ create_mbr_layout (void)
      */
     eptr0 = find_ebr_region (3, &j);
     region.start = eptr0->start;
-    region.end = virtual_size (&regions) - 1; /* to end of disk */
+    region.end = virtual_size (&the_regions) - 1; /* to end of disk */
     region.len = region.end - region.start + 1;
     create_mbr_partition_table_entry (&region, false, 0xf, &primary[0x1ee]);
 
@@ -144,8 +144,8 @@ find_file_region (size_t i, size_t *j)
 {
   const struct region *region;
 
-  for (; *j < nr_regions (&regions); ++(*j)) {
-    region = get_region (&regions, *j);
+  for (; *j < nr_regions (&the_regions); ++(*j)) {
+    region = &the_regions.ptr[*j];
     if (region->type == region_file && region->u.i == i)
       return region;
   }
@@ -162,8 +162,8 @@ find_ebr_region (size_t i, size_t *j)
 
   assert (i >= 3);
 
-  for (; *j < nr_regions (&regions); ++(*j)) {
-    region = get_region (&regions, *j);
+  for (; *j < nr_regions (&the_regions); ++(*j)) {
+    region = &the_regions.ptr[*j];
     if (region->type == region_data && region->u.data == ebr[i-3])
       return region;
   }

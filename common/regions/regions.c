@@ -43,19 +43,18 @@
 #include "regions.h"
 
 void
-init_regions (struct regions *regions)
+init_regions (regions *rs)
 {
-  regions->regions = NULL;
-  regions->nr_regions = 0;
+  *rs = (regions) empty_vector;
 }
 
 void
-free_regions (struct regions *regions)
+free_regions (struct regions *rs)
 {
   /* We don't need to free the data since that is not owned by the
    * regions structure.
    */
-  free (regions->regions);
+  free (rs->ptr);
 }
 
 /* Find the region corresponding to the given offset.  Use region->end
@@ -73,9 +72,9 @@ compare_offset (const void *offsetp, const void *regionp)
 }
 
 const struct region *
-find_region (const struct regions *regions, uint64_t offset)
+find_region (const regions *rs, uint64_t offset)
 {
-  return bsearch (&offset, regions->regions, regions->nr_regions,
+  return bsearch (&offset, rs->ptr, rs->size,
                   sizeof (struct region), compare_offset);
 }
 
@@ -86,50 +85,43 @@ find_region (const struct regions *regions, uint64_t offset)
  * construct regions out of order using this function.
  */
 static int __attribute__((__nonnull__ (1)))
-append_one_region (struct regions *regions, struct region region)
+append_one_region (regions *rs, struct region region)
 {
-  struct region *p;
-
   /* The assertions in this function are meant to maintain the
    * invariant about the array as described at the top of this file.
    */
-  assert (region.start == virtual_size (regions));
+  assert (region.start == virtual_size (rs));
   assert (region.len > 0);
   assert (region.end >= region.start);
   assert (region.len == region.end - region.start + 1);
 
-  p = realloc (regions->regions,
-               (regions->nr_regions+1) * sizeof (struct region));
-  if (p == NULL) {
+  if (regions_append (rs, region) == -1) {
     nbdkit_error ("realloc: %m");
     return -1;
   }
-  regions->regions = p;
-  regions->regions[regions->nr_regions] = region;
-  regions->nr_regions++;
 
   return 0;
 }
 
 static int
-append_padding (struct regions *regions, uint64_t alignment)
+append_padding (regions *rs, uint64_t alignment)
 {
   struct region region;
 
   assert (is_power_of_2 (alignment));
 
-  region.start = virtual_size (regions);
+  region.start = virtual_size (rs);
   if (IS_ALIGNED (region.start, alignment))
     return 0;                   /* nothing to do */
   region.end = (region.start & ~(alignment-1)) + alignment - 1;
   region.len = region.end - region.start + 1;
   region.type = region_zero;
   region.description = "padding";
-  return append_one_region (regions, region);
+  return append_one_region (rs, region);
 }
 
 int
-append_region_len (struct regions *regions,
+append_region_len (regions *rs,
                    const char *description, uint64_t len,
                    uint64_t pre_aligment, uint64_t post_alignment,
                    enum region_type type, ...)
@@ -138,14 +130,14 @@ append_region_len (struct regions *regions,
 
   /* Pre-alignment. */
   if (pre_aligment != 0) {
-    if (append_padding (regions, pre_aligment) == -1)
+    if (append_padding (rs, pre_aligment) == -1)
       return -1;
-    assert (IS_ALIGNED (virtual_size (regions), pre_aligment));
+    assert (IS_ALIGNED (virtual_size (rs), pre_aligment));
   }
 
   /* Main region. */
   region.description = description;
-  region.start = virtual_size (regions);
+  region.start = virtual_size (rs);
   region.len = len;
   region.end = region.start + region.len - 1;
   region.type = type;
@@ -167,14 +159,14 @@ append_region_len (struct regions *regions,
     va_end (ap);
     region.u.data = data;
   }
-  if (append_one_region (regions, region) == -1)
+  if (append_one_region (rs, region) == -1)
     return -1;
 
   /* Post-alignment. */
   if (post_alignment != 0) {
-    if (append_padding (regions, post_alignment) == -1)
+    if (append_padding (rs, post_alignment) == -1)
       return -1;
-    assert (IS_ALIGNED (virtual_size (regions), post_alignment));
+    assert (IS_ALIGNED (virtual_size (rs), post_alignment));
   }
 
   return 0;

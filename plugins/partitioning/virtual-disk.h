@@ -91,7 +91,7 @@ struct file {
 extern struct file *files;
 extern size_t nr_files;
 
-extern struct regions regions;
+extern regions the_regions;
 extern unsigned char *primary, *secondary, **ebr;
 
 /* Main entry point called after files array has been populated. */

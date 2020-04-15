@@ -79,7 +79,7 @@ struct file *files = NULL;
 size_t nr_files = 0;
 
 /* Virtual disk layout. */
-struct regions regions;
+regions the_regions;
 
 /* Primary and secondary partition tables and extended boot records.
  * Secondary PT is only used for GPT.  EBR array of sectors is only
@@ -93,7 +93,7 @@ static struct random_state random_state;
 static void
 partitioning_load (void)
 {
-  init_regions (&regions);
+  init_regions (&the_regions);
   parse_guid (DEFAULT_TYPE_GUID, type_guid);
   xsrandom (time (NULL), &random_state);
 }
@@ -110,7 +110,7 @@ partitioning_unload (void)
   /* We don't need to free regions.regions[].u.data because it points
    * to primary, secondary or ebr which we free here.
    */
-  free_regions (&regions);
+  free_regions (&the_regions);
 
   free (primary);
   free (secondary);
@@ -295,7 +295,7 @@ partitioning_open (int readonly)
 static int64_t
 partitioning_get_size (void *handle)
 {
-  return virtual_size (&regions);
+  return virtual_size (&the_regions);
 }
 
 /* Serves the same data over multiple connections. */
@@ -318,7 +318,7 @@ static int
 partitioning_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
   while (count > 0) {
-    const struct region *region = find_region (&regions, offset);
+    const struct region *region = find_region (&the_regions, offset);
     size_t i, len;
     ssize_t r;
 
@@ -366,7 +366,7 @@ partitioning_pwrite (void *handle,
                      const void *buf, uint32_t count, uint64_t offset)
 {
   while (count > 0) {
-    const struct region *region = find_region (&regions, offset);
+    const struct region *region = find_region (&the_regions, offset);
     size_t i, len;
     ssize_t r;
 
