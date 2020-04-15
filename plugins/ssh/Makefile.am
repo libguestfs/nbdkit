@@ -45,6 +45,7 @@ nbdkit_ssh_plugin_la_SOURCES = \
 nbdkit_ssh_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_ssh_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
@@ -52,6 +53,7 @@ nbdkit_ssh_plugin_la_CFLAGS = \
 	$(NULL)
 nbdkit_ssh_plugin_la_LIBADD = \
 	$(SSH_LIBS) \
+	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 nbdkit_ssh_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(SHARED_LDFLAGS) \

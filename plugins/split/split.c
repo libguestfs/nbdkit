@@ -47,10 +47,11 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "vector.h"
 
 /* The files. */
-static char **filenames = NULL;
-static size_t nr_files = 0;
+DEFINE_VECTOR_TYPE(string_vector, char *);
+static string_vector filenames = empty_vector;
 
 /* Any callbacks using lseek must be protected by this lock. */
 static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -58,29 +59,23 @@ static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
 static void
 split_unload (void)
 {
-  size_t i;
-
-  for (i = 0; i < nr_files; ++i)
-    free (filenames[i]);
-  free (filenames);
+  string_vector_iter (&filenames, (void *) free);
+  free (filenames.ptr);
 }
 
 static int
 split_config (const char *key, const char *value)
 {
-  char **new_filenames;
+  char *s;
 
   if (strcmp (key, "file") == 0) {
-    new_filenames = realloc (filenames, (nr_files+1) * sizeof (char *));
-    if (new_filenames == NULL) {
-      nbdkit_error ("malloc: %m");
+    s = nbdkit_realpath (value);
+    if (s == NULL)
+      return -1;
+    if (string_vector_append (&filenames, s) == -1) {
+      nbdkit_error ("realloc: %m");
       return -1;
     }
-    filenames = new_filenames;
-    filenames[nr_files] = nbdkit_realpath (value);
-    if (filenames[nr_files] == NULL)
-      return -1;
-    nr_files++;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -122,13 +117,13 @@ split_open (int readonly)
     return NULL;
   }
 
-  h->files = malloc (nr_files * sizeof (struct file));
+  h->files = malloc (filenames.size * sizeof (struct file));
   if (h->files == NULL) {
     nbdkit_error ("malloc: %m");
     free (h);
     return NULL;
   }
-  for (i = 0; i < nr_files; ++i)
+  for (i = 0; i < filenames.size; ++i)
     h->files[i].fd = -1;
 
   /* Open the files. */
@@ -138,34 +133,34 @@ split_open (int readonly)
   else
     flags |= O_RDWR;
 
-  for (i = 0; i < nr_files; ++i) {
-    h->files[i].fd = open (filenames[i], flags);
+  for (i = 0; i < filenames.size; ++i) {
+    h->files[i].fd = open (filenames.ptr[i], flags);
     if (h->files[i].fd == -1) {
-      nbdkit_error ("open: %s: %m", filenames[i]);
+      nbdkit_error ("open: %s: %m", filenames.ptr[i]);
       goto err;
     }
   }
 
   offset = 0;
-  for (i = 0; i < nr_files; ++i) {
+  for (i = 0; i < filenames.size; ++i) {
     h->files[i].offset = offset;
 
     if (fstat (h->files[i].fd, &statbuf) == -1) {
-      nbdkit_error ("stat: %s: %m", filenames[i]);
+      nbdkit_error ("stat: %s: %m", filenames.ptr[i]);
       goto err;
     }
     h->files[i].size = statbuf.st_size;
     offset += statbuf.st_size;
 
     nbdkit_debug ("file[%zu]=%s: offset=%" PRIu64 ", size=%" PRIu64,
-                  i, filenames[i], h->files[i].offset, h->files[i].size);
+                  i, filenames.ptr[i], h->files[i].offset, h->files[i].size);
 
 #ifdef SEEK_HOLE
     /* Test if this file supports extents. */
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lseek_lock);
     r = lseek (h->files[i].fd, 0, SEEK_DATA);
     if (r == -1 && errno != ENXIO) {
-      nbdkit_debug ("disabling extents: lseek on %s: %m", filenames[i]);
+      nbdkit_debug ("disabling extents: lseek on %s: %m", filenames.ptr[i]);
       h->files[i].can_extents = false;
     }
     else
@@ -180,7 +175,7 @@ split_open (int readonly)
   return h;
 
  err:
-  for (i = 0; i < nr_files; ++i) {
+  for (i = 0; i < filenames.size; ++i) {
     if (h->files[i].fd >= 0)
       close (h->files[i].fd);
   }
@@ -196,7 +191,7 @@ split_close (void *handle)
   struct handle *h = handle;
   size_t i;
 
-  for (i = 0; i < nr_files; ++i)
+  for (i = 0; i < filenames.size; ++i)
     close (h->files[i].fd);
   free (h->files);
   free (h);
@@ -243,7 +238,7 @@ static struct file *
 get_file (struct handle *h, uint64_t offset)
 {
   return bsearch (&offset, h->files,
-                  nr_files, sizeof (struct file),
+                  filenames.size, sizeof (struct file),
                   compare_offset);
 }
 

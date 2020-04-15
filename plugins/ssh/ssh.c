@@ -50,6 +50,9 @@
 #include <nbdkit-plugin.h>
 
 #include "minmax.h"
+#include "vector.h"
+
+DEFINE_VECTOR_TYPE(const_string_vector, const char *);
 
 static const char *host = NULL;
 static const char *path = NULL;
@@ -58,8 +61,7 @@ static const char *user = NULL;
 static char *password = NULL;
 static bool verify_remote_host = true;
 static const char *known_hosts = NULL;
-static const char **identity = NULL;
-static size_t nr_identities = 0;
+static const_string_vector identities = empty_vector;
 static uint32_t timeout = 0;
 static bool compression = false;
 
@@ -98,7 +100,7 @@ log_callback (int priority, const char *function, const char *message, void *vp)
 static void
 ssh_unload (void)
 {
-  free (identity);
+  free (identities.ptr);
   free (password);
 }
 
@@ -133,16 +135,11 @@ ssh_config (const char *key, const char *value)
     known_hosts = value; /* %-expanded, cannot use nbdkit_absolute_path */
 
   else if (strcmp (key, "identity") == 0) {
-    const char **new_identity =
-      realloc (identity, (nr_identities+1) * sizeof (const char *));
-    if (new_identity == NULL) {
+    /* %-expanded, cannot use nbdkit_absolute_path on value */
+    if (const_string_vector_append (&identities, value) == -1) {
       nbdkit_error ("realloc: %m");
       return -1;
     }
-    identity = new_identity;
-    /* %-expanded, cannot use nbdkit_absolute_path */
-    identity[nr_identities] = value;
-    nr_identities++;
   }
 
   else if (strcmp (key, "verify-remote-host") == 0) {
@@ -410,11 +407,12 @@ ssh_open (int readonly)
      * as this file is rarely present.
      */
   }
-  for (i = 0; i < nr_identities; ++i) {
-    r = ssh_options_set (h->session, SSH_OPTIONS_ADD_IDENTITY, identity[i]);
+  for (i = 0; i < identities.size; ++i) {
+    r = ssh_options_set (h->session,
+                         SSH_OPTIONS_ADD_IDENTITY, identities.ptr[i]);
     if (r != SSH_OK) {
       nbdkit_error ("failed to add identity in libssh session: %s: %s",
-                    identity[i], ssh_get_error (h->session));
+                    identities.ptr[i], ssh_get_error (h->session));
       goto err;
     }
   }

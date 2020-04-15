@@ -43,10 +43,11 @@
 
 #include "cleanup.h"
 #include "utils.h"
+#include "vector.h"
 
 /* List of directories parsed from the command line. */
-static char **dirs = NULL;
-static size_t nr_dirs = 0;
+DEFINE_VECTOR_TYPE(string_vector, char *);
+static string_vector dirs = empty_vector;
 
 /* genisoimage or mkisofs program, picked at compile time, but can be
  * overridden at run time.
@@ -98,9 +99,9 @@ make_iso (void)
   fprintf (fp, " -quiet");
   if (params)
     fprintf (fp, " %s", params);
-  for (i = 0; i < nr_dirs; ++i) {
+  for (i = 0; i < dirs.size; ++i) {
     fputc (' ', fp);
-    shell_quote (dirs[i], fp);
+    shell_quote (dirs.ptr[i], fp);
   }
   /* Redirect output to the temporary file. */
   fprintf (fp, " >&%d", fd);
@@ -122,11 +123,8 @@ make_iso (void)
 static void
 iso_unload (void)
 {
-  size_t i;
-
-  for (i = 0; i < nr_dirs; ++i)
-    free (dirs[i]);
-  free (dirs);
+  string_vector_iter (&dirs, (void *) free);
+  free (dirs.ptr);
 
   if (fd >= 0)
     close (fd);
@@ -135,7 +133,6 @@ iso_unload (void)
 static int
 iso_config (const char *key, const char *value)
 {
-  char **new_dirs;
   char *dir;
 
   if (strcmp (key, "dir") == 0) {
@@ -143,15 +140,11 @@ iso_config (const char *key, const char *value)
     if (dir == NULL)
       return -1;
 
-    new_dirs = realloc (dirs, sizeof (char *) * (nr_dirs + 1));
-    if (new_dirs == NULL) {
+    if (string_vector_append (&dirs, dir) == -1) {
       nbdkit_error ("realloc: %m");
       free (dir);
       return -1;
     }
-    dirs = new_dirs;
-    dirs[nr_dirs] = dir;
-    nr_dirs++;
   }
   else if (strcmp (key, "params") == 0) {
     params = value;
@@ -170,7 +163,7 @@ iso_config (const char *key, const char *value)
 static int
 iso_config_complete (void)
 {
-  if (nr_dirs == 0) {
+  if (dirs.size == 0) {
     nbdkit_error ("you must supply the dir=<DIRECTORY> parameter "
                   "after the plugin name on the command line");
     return -1;
