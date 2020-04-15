@@ -98,6 +98,15 @@ General ideas for improvements
 
 * Examine other fuzzers: https://gitlab.com/akihe/radamsa
 
+* common/utils/vector.h could be extended and used in other places:
+  - there are some more possible places in the server (anywhere using
+    realloc is suspect)
+  - nbdkit-vddk-plugin, where it builds the new argv
+  - allow insertion, and use it in nbdkit-extentlist-filter
+  - allow insertion and keep sorted, use it in nbdkit-eval-plugin
+  - same, and use it in common/sparse/sparse.c
+  Also add more iterators, map function, etc, as required.
+
 Suggestions for plugins
 -----------------------
 
