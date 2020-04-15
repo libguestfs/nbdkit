@@ -39,8 +39,10 @@
 /* cleanup.c */
 extern void cleanup_free (void *ptr);
 #define CLEANUP_FREE __attribute__((cleanup (cleanup_free)))
+
 extern void cleanup_unlock (pthread_mutex_t **ptr);
 #define CLEANUP_UNLOCK __attribute__((cleanup (cleanup_unlock)))
+
 #define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex) \
   CLEANUP_UNLOCK pthread_mutex_t *_lock = mutex; \
   do { \
