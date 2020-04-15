@@ -40,6 +40,8 @@ libutils_la_SOURCES = \
 	quote.c \
 	utils.c \
 	utils.h \
+	vector.c \
+	vector.h \
 	$(NULL)
 libutils_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
@@ -48,12 +50,13 @@ libutils_la_CFLAGS = $(WARNINGS_CFLAGS)
 
 # Unit tests.
 
-TESTS = test-quotes
-check_PROGRAMS = test-quotes
+TESTS = test-quotes test-vector
+check_PROGRAMS = test-quotes test-vector
 
 test_quotes_SOURCES = test-quotes.c quote.c utils.h
-test_quotes_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/utils \
-	$(NULL)
+test_quotes_CPPFLAGS = -I$(srcdir)
 test_quotes_CFLAGS = $(WARNINGS_CFLAGS)
+
+test_vector_SOURCES = test-vector.c vector.c vector.h
+test_vector_CPPFLAGS = -I$(srcdir)
+test_vector_CFLAGS = $(WARNINGS_CFLAGS)

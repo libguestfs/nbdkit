@@ -45,6 +45,7 @@ plugins/*/*.3
 /common/protocol/generate-protostrings.sh
 /common/protocol/protostrings.c
 /common/utils/test-quotes
+/common/utils/test-vector
 /compile
 /config.cache
 /config.guess
