@@ -59,7 +59,7 @@ To build the man pages, you will optionally need to install:
 
  - Perl
 
- - Pod::Man and Pod::Simple (Perl library)
+ - Pod::Man and Pod::Simple (Perl libraries)
 
 For SELinux socket labelling support:
 
@@ -101,7 +101,7 @@ For the libguestfs plugin, and to run parts of the test suite:
 
  - guestfish (from libguestfs)
 
-For the ext2 plugin:
+For the ext2 filter:
 
  - ext2fs
 
@@ -122,7 +122,7 @@ For the Perl, example4 and tar plugins:
 
  - perl development libraries
 
- - perl module ExtUtils::Embed
+ - perl modules ExtUtils::Embed, IO::File and Cwd
 
 For the Python plugin:
 
