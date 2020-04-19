@@ -51,6 +51,7 @@
 #include "isaligned.h"
 #include "minmax.h"
 #include "rounding.h"
+#include "vector.h"
 
 #include "vddk-structs.h"
 
@@ -256,12 +257,23 @@ vddk_config (const char *key, const char *value)
  * the caller prefers to proceed as if this had not been attempted.
  * Thus, no return value is needed.
  */
+DEFINE_VECTOR_TYPE(string_vector, char *);
+
+#define CLEANUP_FREE_STRING_VECTOR \
+  __attribute__((cleanup (cleanup_free_string_vector)))
+
+static void
+cleanup_free_string_vector (string_vector *v)
+{
+  string_vector_iter (v, (void *) free);
+  free (v->ptr);
+}
+
 static void
 perform_reexec (const char *env, const char *prepend)
 {
   CLEANUP_FREE char *library = NULL;
-  int argc = 0;
-  CLEANUP_FREE char **argv = NULL;
+  CLEANUP_FREE_STRING_VECTOR string_vector argv = empty_vector;
   int fd;
   size_t len = 0, buflen = 512;
   CLEANUP_FREE char *buf = NULL;
@@ -301,25 +313,22 @@ perform_reexec (const char *env, const char *prepend)
   buflen = len;
   len = 0;
   while (len < buflen) {
-    char **tmp = realloc (argv, sizeof *argv * (argc + 3));
-
-    if (!tmp) {
-      nbdkit_debug ("failure to parse original argv: %m");
+    if (string_vector_append (&argv, buf + len) == -1) {
+    argv_realloc_fail:
+      nbdkit_debug ("argv: realloc: %m");
       return;
     }
-    argv = tmp;
-    argv[argc++] = buf + len;
     len += strlen (buf + len) + 1;
   }
   if (!env)
     env = "";
-  nbdkit_debug ("original argc == %d, adding reexeced_=%s", argc, env);
-  if (asprintf (&reexeced, "reexeced_=%s", env) == -1) {
-    nbdkit_debug ("failure to re-exec: %m");
-    return;
-  }
-  argv[argc++] = reexeced;
-  argv[argc] = NULL;
+  nbdkit_debug ("adding reexeced_=%s", env);
+  if (asprintf (&reexeced, "reexeced_=%s", env) == -1)
+    goto argv_realloc_fail;
+  if (string_vector_append (&argv, reexeced) == -1)
+    goto argv_realloc_fail;
+  if (string_vector_append (&argv, NULL) == -1)
+    goto argv_realloc_fail;
 
   if (env[0]) {
     if (asprintf (&library, "%s:%s", prepend, env) == -1)
@@ -334,7 +343,7 @@ perform_reexec (const char *env, const char *prepend)
 
   nbdkit_debug ("re-executing with updated LD_LIBRARY_PATH=%s", library);
   fflush (NULL);
-  execvp ("/proc/self/exe", argv);
+  execvp ("/proc/self/exe", argv.ptr);
   nbdkit_debug ("failure to execvp: %m");
 }
 
