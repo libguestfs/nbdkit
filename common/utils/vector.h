@@ -30,17 +30,19 @@
  * SUCH DAMAGE.
  */
 
-/* Simple implementation of appendable vector.  There are two main
- * use-cases we consider: lists of strings (either with a defined
- * length, or NULL-terminated), and lists of numbers.  It is generic
- * so could be used for lists of anything (eg. structs) where being
- * able to append easily is important.
+/* Simple implementation of a vector.  It can be cheaply appended, and
+ * more expensively inserted.  There are two main use-cases we
+ * consider: lists of strings (either with a defined length, or
+ * NULL-terminated), and lists of numbers.  It is generic so could be
+ * used for lists of anything (eg. structs) where being able to append
+ * easily is important.
  */
 
 #ifndef NBDKIT_VECTOR_H
 #define NBDKIT_VECTOR_H
 
 #include <assert.h>
+#include <string.h>
 
 #define DEFINE_VECTOR_TYPE(name, type)                                  \
   struct name {                                                         \
@@ -55,14 +57,22 @@
     return generic_vector_extend ((struct generic_vector *)v, n,        \
                                   sizeof (type));                       \
   }                                                                     \
+  /* Insert at i'th element.  i=0 => beginning  i=size => append */     \
   static inline int                                                     \
-  name##_append (name *v, type elem)                                    \
+  name##_insert (name *v, type elem, size_t i)                          \
   {                                                                     \
     if (v->size >= v->alloc) {                                          \
       if (name##_extend (v, 1) == -1) return -1;                        \
     }                                                                   \
-    v->ptr[v->size++] = elem;                                           \
+    memmove (&v->ptr[i+1], &v->ptr[i], (v->size-i) * sizeof (elem));    \
+    v->ptr[i] = elem;                                                   \
+    v->size++;                                                          \
     return 0;                                                           \
+  }                                                                     \
+  static inline int                                                     \
+  name##_append (name *v, type elem)                                    \
+  {                                                                     \
+    return name##_insert (v, elem, v->size);                            \
   }                                                                     \
   static inline void                                                    \
   name##_iter (name *v, void (*f) (type elem))                          \

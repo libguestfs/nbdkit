@@ -45,6 +45,7 @@
 
 #include "iszero.h"
 #include "sparse.h"
+#include "vector.h"
 
 /* Two level directory for the sparse array.
  *
@@ -100,9 +101,10 @@ struct l1_entry {
   void **l2_dir;                /* Pointer to L2 directory. */
 };
 
+DEFINE_VECTOR_TYPE(l1_dir, struct l1_entry);
+
 struct sparse_array {
-  struct l1_entry *l1_dir;      /* L1 directory. */
-  size_t l1_size;               /* Number of entries in L1 directory. */
+  l1_dir l1_dir;                /* L1 directory. */
   bool debug;
 };
 
@@ -123,9 +125,9 @@ free_sparse_array (struct sparse_array *sa)
   size_t i;
 
   if (sa) {
-    for (i = 0; i < sa->l1_size; ++i)
-      free_l2_dir (sa->l1_dir[i].l2_dir);
-    free (sa->l1_dir);
+    for (i = 0; i < sa->l1_dir.size; ++i)
+      free_l2_dir (sa->l1_dir.ptr[i].l2_dir);
+    free (sa->l1_dir.ptr);
     free (sa);
   }
 }
@@ -141,11 +143,9 @@ alloc_sparse_array (bool debug)
 {
   struct sparse_array *sa;
 
-  sa = malloc (sizeof *sa);
+  sa = calloc (1, sizeof *sa);
   if (sa == NULL)
     return NULL;
-  sa->l1_dir = NULL;
-  sa->l1_size = 0;
   sa->debug = debug;
   return sa;
 }
@@ -169,26 +169,17 @@ static int
 insert_l1_entry (struct sparse_array *sa, const struct l1_entry *entry)
 {
   size_t i;
-  struct l1_entry *old_l1_dir = sa->l1_dir;
 
-  /* The l1_dir always ends up one bigger, so reallocate it first. */
-  sa->l1_dir = realloc (sa->l1_dir, (sa->l1_size+1) * sizeof (struct l1_entry));
-  if (sa->l1_dir == NULL) {
-    sa->l1_dir = old_l1_dir;
-    nbdkit_error ("realloc");
-    return -1;
-  }
-
-  for (i = 0; i < sa->l1_size; ++i) {
-    if (entry->offset < sa->l1_dir[i].offset) {
+  for (i = 0; i < sa->l1_dir.size; ++i) {
+    if (entry->offset < sa->l1_dir.ptr[i].offset) {
       /* Insert new entry before i'th directory entry. */
-      memmove (&sa->l1_dir[i+1], &sa->l1_dir[i],
-               (sa->l1_size-i) * sizeof (struct l1_entry));
-      sa->l1_dir[i] = *entry;
-      sa->l1_size++;
+      if (l1_dir_insert (&sa->l1_dir, *entry, i) == -1) {
+        nbdkit_error ("realloc: %m");
+        return -1;
+      }
       if (sa->debug)
         nbdkit_debug ("%s: inserted new L1 entry for %" PRIu64
-                      " at l1_dir[%zu]",
+                      " at l1_dir.ptr[%zu]",
                       __func__, entry->offset, i);
       return 0;
     }
@@ -196,12 +187,14 @@ insert_l1_entry (struct sparse_array *sa, const struct l1_entry *entry)
     /* This should never happens since each entry in the the L1
      * directory is supposed to be unique.
      */
-    assert (entry->offset != sa->l1_dir[i].offset);
+    assert (entry->offset != sa->l1_dir.ptr[i].offset);
   }
 
   /* Insert new entry at the end. */
-  sa->l1_dir[sa->l1_size] = *entry;
-  sa->l1_size++;
+  if (l1_dir_append (&sa->l1_dir, *entry) == -1) {
+    nbdkit_error ("realloc: %m");
+    return -1;
+  }
   if (sa->debug)
     nbdkit_debug ("%s: inserted new L1 entry for %" PRIu64
                   " at end of l1_dir", __func__, entry->offset);
@@ -233,7 +226,8 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
 
  again:
   /* Search the L1 directory. */
-  entry = bsearch (&offset, sa->l1_dir, sa->l1_size, sizeof (struct l1_entry),
+  entry = bsearch (&offset, sa->l1_dir.ptr,
+                   sa->l1_dir.size, sizeof (struct l1_entry),
                    compare_l1_offsets);
 
   if (sa->debug) {

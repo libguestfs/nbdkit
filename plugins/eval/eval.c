@@ -46,6 +46,7 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "vector.h"
 
 #include "call.h"
 #include "methods.h"
@@ -87,11 +88,12 @@ static const char *known_methods[] = {
 /* List of method scripts that we have saved.  This is stored in
  * sorted order of method name.
  */
-static size_t nr_method_scripts;
-static struct method_script {
+struct method_script {
   const char *method;
   char *script;
-} *method_scripts;
+};
+DEFINE_VECTOR_TYPE(method_script_list, struct method_script);
+static method_script_list method_scripts;
 
 static int
 compare_script (const void *methodvp, const void *entryvp)
@@ -104,21 +106,12 @@ compare_script (const void *methodvp, const void *entryvp)
 static int
 insert_method_script (const char *method, char *script)
 {
-  struct method_script *newp;
-  size_t i;
   int r;
+  size_t i;
+  struct method_script new_entry = { .method = method, .script = script };
 
-  newp = realloc (method_scripts,
-                  sizeof (struct method_script) * (nr_method_scripts + 1));
-  if (newp == NULL) {
-    nbdkit_error ("insert_method_script: realloc: %m");
-    return -1;
-  }
-  nr_method_scripts++;
-  method_scripts = newp;
-
-  for (i = 0; i < nr_method_scripts-1; ++i) {
-    r = compare_script (method, &method_scripts[i]);
+  for (i = 0; i < method_scripts.size; ++i) {
+    r = compare_script (method, &method_scripts.ptr[i]);
     /* This shouldn't happen.  insert_method_script() must not be
      * called if the method has already been added.  Call get_script()
      * first to check.
@@ -126,17 +119,19 @@ insert_method_script (const char *method, char *script)
     assert (r != 0);
     if (r < 0) {
       /* Insert before this element. */
-      memmove (&method_scripts[i+1], &method_scripts[i],
-               sizeof (struct method_script) * (nr_method_scripts-i-1));
-      method_scripts[i].method = method;
-      method_scripts[i].script = script;
+      if (method_script_list_insert (&method_scripts, new_entry, i) == -1) {
+        nbdkit_error ("realloc: %m");
+        return -1;
+      }
       return 0;
     }
   }
 
   /* Insert at end of list. */
-  method_scripts[i].method = method;
-  method_scripts[i].script = script;
+  if (method_script_list_append (&method_scripts, new_entry) == -1) {
+    nbdkit_error ("realloc: %m");
+    return -1;
+  }
   return 0;
 }
 
@@ -147,8 +142,8 @@ get_script (const char *method)
   struct method_script *p;
 
   p = bsearch (method,
-               method_scripts,
-               nr_method_scripts, sizeof (struct method_script),
+               method_scripts.ptr,
+               method_scripts.size, sizeof (struct method_script),
                compare_script);
   if (p)
     return p->script;
@@ -229,7 +224,6 @@ eval_unload (void)
   const char *method = "unload";
   const char *script = get_script (method);
   CLEANUP_FREE char *cmd = NULL;
-  size_t i;
 
   /* Run the unload method.  Ignore all errors. */
   if (script) {
@@ -239,9 +233,8 @@ eval_unload (void)
   }
 
   call_unload ();
-  for (i = 0; i < nr_method_scripts; ++i)
-    free (method_scripts[i].script);
-  free (method_scripts);
+  method_script_list_iter (&method_scripts, (void *) free);
+  free (method_scripts.ptr);
   free (missing);
 }
 

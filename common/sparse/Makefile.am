@@ -40,5 +40,6 @@ libsparse_la_SOURCES = \
 libsparse_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils \
 	$(NULL)
 libsparse_la_CFLAGS = $(WARNINGS_CFLAGS)
