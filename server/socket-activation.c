@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019 Red Hat Inc.
+ * Copyright (C) 2019-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -55,6 +55,7 @@ get_socket_activation (void)
   unsigned int nr_fds;
   unsigned int i;
   int fd;
+  int f;
 
   s = getenv ("LISTEN_PID");
   if (s == NULL)
@@ -89,7 +90,8 @@ get_socket_activation (void)
   /* So the file descriptors don't leak into child processes. */
   for (i = 0; i < nr_fds; ++i) {
     fd = FIRST_SOCKET_ACTIVATION_FD + i;
-    if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
+    f = fcntl (fd, F_GETFD);
+    if (f == -1 || fcntl (fd, F_SETFD, f | FD_CLOEXEC) == -1) {
       /* If we cannot set FD_CLOEXEC then it probably means the file
        * descriptor is invalid, so socket activation has gone wrong
        * and we should exit.
