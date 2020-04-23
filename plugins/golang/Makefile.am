@@ -66,18 +66,21 @@ noinst_DATA = \
 examples/dump-plugin/nbdkit-godump-plugin.so: \
 	    $(plugin_sources) examples/dump-plugin/dumpplugin.go
 	cd examples/dump-plugin && \
+	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
 	GOPATH="$(abs_builddir)" \
 	$(GOLANG) build -o nbdkit-godump-plugin.so -buildmode=c-shared
 
 examples/minimal/nbdkit-gominimal-plugin.so: \
 	    $(plugin_sources) examples/minimal/minimal.go
 	cd examples/minimal && \
+	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
 	GOPATH="$(abs_builddir)" \
 	$(GOLANG) build -o nbdkit-gominimal-plugin.so -buildmode=c-shared
 
 examples/ramdisk/nbdkit-goramdisk-plugin.so: \
 	    $(plugin_sources) examples/ramdisk/ramdisk.go
 	cd examples/ramdisk && \
+	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
 	GOPATH="$(abs_builddir)" \
 	$(GOLANG) build -o nbdkit-goramdisk-plugin.so -buildmode=c-shared
 
@@ -87,6 +90,7 @@ check_DATA = test/nbdkit-gotest-plugin.so
 
 test/nbdkit-gotest-plugin.so: $(plugin_sources) test/test.go
 	cd test && \
+	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
 	GOPATH="$(abs_builddir)" \
 	$(GOLANG) build -o nbdkit-gotest-plugin.so -buildmode=c-shared
 
