@@ -146,6 +146,13 @@ before any connections are accepted.  However, during C<nbdkit
 C<.config_complete> (so a plugin which determines the results from a
 script must be prepared for a missing script).
 
+=item C<.get_ready>
+
+In normal operation, C<.get_ready> is called before the server starts
+serving.  It is called before the server forks or changes directory.
+It is the last chance to do any global preparation that is needed to
+serve connections.
+
 =item C<.preconnect>
 
 Called when a TCP connection has been made to the server.  This
