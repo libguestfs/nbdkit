@@ -1088,6 +1088,7 @@ AC_CONFIG_FILES([Makefile
                  filters/truncate/Makefile
                  filters/xz/Makefile
                  fuzzing/Makefile
+                 server/local/nbdkit.pc
                  server/Makefile
                  server/nbdkit.pc
                  tests/functions.sh

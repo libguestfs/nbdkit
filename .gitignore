@@ -83,6 +83,7 @@ plugins/*/*.3
 /plugins/tar/nbdkit-tar-plugin
 /plugins/tmpdisk/default-command.c
 /podwrapper.pl
+/server/local/nbdkit.pc
 /server/nbdkit
 /server/nbdkit.pc
 /server/synopsis.c
