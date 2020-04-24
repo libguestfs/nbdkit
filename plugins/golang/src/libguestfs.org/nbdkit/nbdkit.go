@@ -145,83 +145,83 @@ type ConnectionInterface interface {
 type Plugin struct{}
 type Connection struct{}
 
-func (p Plugin) Load() {
+func (p *Plugin) Load() {
 }
 
-func (p Plugin) Unload() {
+func (p *Plugin) Unload() {
 }
 
-func (p Plugin) DumpPlugin() {
+func (p *Plugin) DumpPlugin() {
 }
 
-func (p Plugin) Config(key string, value string) error {
+func (p *Plugin) Config(key string, value string) error {
 	return nil
 }
 
-func (p Plugin) ConfigComplete() error {
+func (p *Plugin) ConfigComplete() error {
 	return nil
 }
 
-func (p Plugin) GetReady() error {
+func (p *Plugin) GetReady() error {
 	return nil
 }
 
-func (p Plugin) PreConnect(readonly bool) error {
+func (p *Plugin) PreConnect(readonly bool) error {
 	return nil
 }
 
-func (p Plugin) Open(readonly bool) (ConnectionInterface, error) {
+func (p *Plugin) Open(readonly bool) (ConnectionInterface, error) {
 	panic("plugin must implement Open()")
 }
 
-func (c Connection) Close() {
+func (c *Connection) Close() {
 }
 
-func (c Connection) GetSize() (uint64, error) {
+func (c *Connection) GetSize() (uint64, error) {
 	panic("plugin must implement GetSize()")
 }
 
-func (c Connection) CanWrite() (bool, error) {
+func (c *Connection) CanWrite() (bool, error) {
 	return false, nil
 }
 
-func (c Connection) CanFlush() (bool, error) {
+func (c *Connection) CanFlush() (bool, error) {
 	return false, nil
 }
 
-func (c Connection) IsRotational() (bool, error) {
+func (c *Connection) IsRotational() (bool, error) {
 	return false, nil
 }
 
-func (c Connection) CanTrim() (bool, error) {
+func (c *Connection) CanTrim() (bool, error) {
 	return false, nil
 }
 
-func (c Connection) CanZero() (bool, error) {
+func (c *Connection) CanZero() (bool, error) {
 	return false, nil
 }
 
-func (c Connection) CanMultiConn() (bool, error) {
+func (c *Connection) CanMultiConn() (bool, error) {
 	return false, nil
 }
 
-func (c Connection) PRead(buf []byte, offset uint64, flags uint32) error {
+func (c *Connection) PRead(buf []byte, offset uint64, flags uint32) error {
 	panic("plugin must implement PRead()")
 }
 
-func (c Connection) PWrite(buf []byte, offset uint64, flags uint32) error {
+func (c *Connection) PWrite(buf []byte, offset uint64, flags uint32) error {
 	panic("plugin CanWrite returns true, but no PWrite() function")
 }
 
-func (c Connection) Flush(flags uint32) error {
+func (c *Connection) Flush(flags uint32) error {
 	panic("plugin CanFlush returns true, but no Flush() function")
 }
 
-func (c Connection) Trim(count uint32, offset uint64, flags uint32) error {
+func (c *Connection) Trim(count uint32, offset uint64, flags uint32) error {
 	panic("plugin CanTrim returns true, but no Trim() function")
 }
 
-func (c Connection) Zero(count uint32, offset uint64, flags uint32) error {
+func (c *Connection) Zero(count uint32, offset uint64, flags uint32) error {
 	panic("plugin CanZero returns true, but no Zero() function")
 }
 

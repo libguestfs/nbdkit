@@ -51,19 +51,19 @@ type DumpConnection struct {
 
 var size uint64 = 1024 * 1024
 
-func (p DumpPlugin) DumpPlugin() {
+func (p *DumpPlugin) DumpPlugin() {
 	fmt.Println("golang_dump_plugin=1")
 }
 
-func (p DumpPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
+func (p *DumpPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
 	return &DumpConnection{}, nil
 }
 
-func (c DumpConnection) GetSize() (uint64, error) {
+func (c *DumpConnection) GetSize() (uint64, error) {
 	return size, nil
 }
 
-func (c DumpConnection) PRead(buf []byte, offset uint64,
+func (c *DumpConnection) PRead(buf []byte, offset uint64,
 	flags uint32) error {
 	for i := 0; i < len(buf); i++ {
 		buf[i] = 0

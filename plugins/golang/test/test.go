@@ -52,15 +52,15 @@ type TestConnection struct {
 var size uint64
 var size_set = false
 
-func (p TestPlugin) Load() {
+func (p *TestPlugin) Load() {
 	nbdkit.Debug("golang code running in the .load callback")
 }
 
-func (p TestPlugin) Unload() {
+func (p *TestPlugin) Unload() {
 	nbdkit.Debug("golang code running in the .unload callback")
 }
 
-func (p TestPlugin) Config(key string, value string) error {
+func (p *TestPlugin) Config(key string, value string) error {
 	if key == "size" {
 		var err error
 		size, err = strconv.ParseUint(value, 0, 64)
@@ -74,24 +74,24 @@ func (p TestPlugin) Config(key string, value string) error {
 	}
 }
 
-func (p TestPlugin) ConfigComplete() error {
+func (p *TestPlugin) ConfigComplete() error {
 	if !size_set {
 		return nbdkit.PluginError{Errmsg: "size parameter is required"}
 	}
 	return nil
 }
 
-func (p TestPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
+func (p *TestPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
 	nbdkit.Debug("golang code running in the .open callback")
 	return &TestConnection{}, nil
 }
 
-func (c TestConnection) GetSize() (uint64, error) {
+func (c *TestConnection) GetSize() (uint64, error) {
 	nbdkit.Debug("golang code running in the .get_size callback")
 	return size, nil
 }
 
-func (c TestConnection) PRead(buf []byte, offset uint64, flags uint32) error {
+func (c *TestConnection) PRead(buf []byte, offset uint64, flags uint32) error {
 	nbdkit.Debug("golang code running in the .pread callback")
 	for i := 0; i < len(buf); i++ {
 		buf[i] = 0

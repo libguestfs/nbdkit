@@ -42,6 +42,7 @@ EXTRA_DIST = \
 	$(plugin_sources) \
 	config-test.go \
 	dump-plugin-examples.sh \
+	examples/disk/disk.go \
 	examples/dump-plugin/dumpplugin.go \
 	examples/minimal/minimal.go \
 	examples/ramdisk/ramdisk.go \
@@ -58,10 +59,18 @@ if HAVE_GOLANG
 
 # Examples.
 noinst_DATA = \
+	examples/disk/nbdkit-godisk-plugin.so \
 	examples/dump-plugin/nbdkit-godump-plugin.so \
 	examples/minimal/nbdkit-gominimal-plugin.so \
 	examples/ramdisk/nbdkit-goramdisk-plugin.so \
 	$(NULL)
+
+examples/disk/nbdkit-godisk-plugin.so: \
+	    $(plugin_sources) examples/disk/disk.go
+	cd examples/disk && \
+	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
+	GOPATH="$(abs_builddir)" \
+	$(GOLANG) build -o nbdkit-godisk-plugin.so -buildmode=c-shared
 
 examples/dump-plugin/nbdkit-godump-plugin.so: \
 	    $(plugin_sources) examples/dump-plugin/dumpplugin.go

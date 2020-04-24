@@ -50,15 +50,15 @@ type MinimalConnection struct {
 
 var size uint64 = 1024 * 1024
 
-func (p MinimalPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
+func (p *MinimalPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
 	return &MinimalConnection{}, nil
 }
 
-func (c MinimalConnection) GetSize() (uint64, error) {
+func (c *MinimalConnection) GetSize() (uint64, error) {
 	return size, nil
 }
 
-func (c MinimalConnection) PRead(buf []byte, offset uint64,
+func (c *MinimalConnection) PRead(buf []byte, offset uint64,
 	flags uint32) error {
 	for i := 0; i < len(buf); i++ {
 		buf[i] = 0

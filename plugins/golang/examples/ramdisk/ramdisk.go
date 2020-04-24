@@ -53,7 +53,7 @@ var size uint64
 var size_set = false
 var disk []byte
 
-func (p RAMDiskPlugin) Config(key string, value string) error {
+func (p *RAMDiskPlugin) Config(key string, value string) error {
 	if key == "size" {
 		var err error
 		size, err = strconv.ParseUint(value, 0, 64)
@@ -67,33 +67,33 @@ func (p RAMDiskPlugin) Config(key string, value string) error {
 	}
 }
 
-func (p RAMDiskPlugin) ConfigComplete() error {
+func (p *RAMDiskPlugin) ConfigComplete() error {
 	if !size_set {
 		return nbdkit.PluginError{Errmsg: "size parameter is required"}
 	}
 	return nil
 }
 
-func (p RAMDiskPlugin) GetReady() error {
+func (p *RAMDiskPlugin) GetReady() error {
 	// Allocate the RAM disk.
 	disk = make([]byte, size)
 	return nil
 }
 
-func (p RAMDiskPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
+func (p *RAMDiskPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
 	return &RAMDiskConnection{}, nil
 }
 
-func (c RAMDiskConnection) GetSize() (uint64, error) {
+func (c *RAMDiskConnection) GetSize() (uint64, error) {
 	return size, nil
 }
 
 // Clients are allowed to make multiple connections safely.
-func (c RAMDiskConnection) CanMultiConn() (bool, error) {
+func (c *RAMDiskConnection) CanMultiConn() (bool, error) {
 	return true, nil
 }
 
-func (c RAMDiskConnection) PRead(buf []byte, offset uint64,
+func (c *RAMDiskConnection) PRead(buf []byte, offset uint64,
 	flags uint32) error {
 	copy(buf, disk[offset:int(offset)+len(buf)])
 	return nil
@@ -101,11 +101,11 @@ func (c RAMDiskConnection) PRead(buf []byte, offset uint64,
 
 // Note that CanWrite is required in golang plugins, otherwise PWrite
 // will never be called.
-func (c RAMDiskConnection) CanWrite() (bool, error) {
+func (c *RAMDiskConnection) CanWrite() (bool, error) {
 	return true, nil
 }
 
-func (c RAMDiskConnection) PWrite(buf []byte, offset uint64,
+func (c *RAMDiskConnection) PWrite(buf []byte, offset uint64,
 	flags uint32) error {
 	copy(disk[offset:int(offset)+len(buf)], buf)
 	return nil
