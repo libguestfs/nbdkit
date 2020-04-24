@@ -47,8 +47,6 @@ EXTRA_DIST = \
 	examples/minimal/minimal.go \
 	examples/ramdisk/ramdisk.go \
 	nbdkit-golang-plugin.pod \
-	run-tests.sh \
-	test/test.go \
 	$(NULL)
 
 if HAVE_GOLANG
@@ -94,20 +92,11 @@ examples/ramdisk/nbdkit-goramdisk-plugin.so: \
 	$(GOLANG) build -o nbdkit-goramdisk-plugin.so -buildmode=c-shared
 
 # Tests.
-TESTS = dump-plugin-examples.sh run-tests.sh
-check_DATA = test/nbdkit-gotest-plugin.so
-
-test/nbdkit-gotest-plugin.so: $(plugin_sources) test/test.go
-	cd test && \
-	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	GOPATH="$(abs_builddir)" \
-	$(GOLANG) build -o nbdkit-gotest-plugin.so -buildmode=c-shared
+TESTS = dump-plugin-examples.sh
 
 CLEANFILES += \
 	examples/*/nbdkit-*-plugin.h \
 	examples/*/nbdkit-*-plugin.so \
-	test/nbdkit-gotest-plugin.h \
-	test/nbdkit-gotest-plugin.so \
 	$(NULL)
 
 if HAVE_POD

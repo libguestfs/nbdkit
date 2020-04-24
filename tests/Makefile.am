@@ -1011,6 +1011,20 @@ test_lua_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_LUA
 
+# Golang plugin test.
+if HAVE_GOLANG
+
+LIBGUESTFS_TESTS += test-golang
+
+test_golang_SOURCES = test-golang.c test.h
+test_golang_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
+test_golang_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+endif HAVE_GOLANG
+
 #----------------------------------------------------------------------
 # Tests of filters.
 

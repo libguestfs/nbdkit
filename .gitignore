@@ -74,8 +74,6 @@ plugins/*/*.3
 /plugins/eval/methods.c
 /plugins/golang/examples/*/nbdkit-*-plugin.h
 /plugins/golang/examples/*/nbdkit-*-plugin.so
-/plugins/golang/test/nbdkit-gotest-plugin.h
-/plugins/golang/test/nbdkit-gotest-plugin.so
 /plugins/ocaml/nbdkit-ocamlexample-plugin.so
 /plugins/rust/Cargo.lock
 /plugins/rust/Cargo.toml
@@ -118,6 +116,7 @@ plugins/*/*.3
 /tests/test-ext2
 /tests/test-file
 /tests/test-file-block
+/tests/test-golang
 /tests/test-gzip
 /tests/test-just-filter-header
 /tests/test-just-plugin-header
