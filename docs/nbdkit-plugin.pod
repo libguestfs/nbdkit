@@ -5,7 +5,6 @@ nbdkit-plugin - how to write nbdkit plugins
 =head1 SYNOPSIS
 
  #define NBDKIT_API_VERSION 2
- 
  #include <nbdkit-plugin.h>
  
  #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
@@ -25,7 +24,6 @@ nbdkit-plugin - how to write nbdkit plugins
    .pwrite            = myplugin_pwrite,
    /* etc */
  };
- 
  NBDKIT_REGISTER_PLUGIN(plugin)
 
 Compile the plugin as a shared library:
@@ -49,6 +47,11 @@ to create an nbdkit plugin in C.
 To see example plugins:
 L<https://github.com/libguestfs/nbdkit/tree/master/plugins>
 
+To write plugins in other languages, see:
+__LANG_PLUGIN_LINKS__.
+
+=head2 API and ABI guarantee for C plugins
+
 Plugins written in C have an ABI guarantee: a plugin compiled against
 an older version of nbdkit will still work correctly when loaded with
 a newer nbdkit.  We also try (but cannot guarantee) to support plugins
@@ -64,39 +67,40 @@ The API guarantee does not always apply to plugins written in other
 (non-C) languages which may have to adapt to changes when recompiled
 against a newer nbdkit.
 
-To write plugins in other languages, see:
-__LANG_PLUGIN_LINKS__.
+=head1 WRITING AN NBDKIT PLUGIN
 
-=head1 C<#define NBDKIT_API_VERSION 2>
+=head2 C<#define NBDKIT_API_VERSION 2>
 
 Plugins must choose which API version they want to use, by defining
-NBDKIT_API_VERSION to a positive integer prior to including
-C<nbdkit-plugin.h> (or any other nbdkit header).  The default version
-is 1 for backwards-compatibility with nbdkit v1.1.26 and earlier;
-however, it is recommended that new plugins be written to the maximum
-version (currently 2) as it enables more features and better
-interaction with nbdkit filters.  Therefore, the rest of this document
-only covers the version 2 interface.  A newer nbdkit will always
-support plugins written in C which were compiled against any prior API
-version.
+NBDKIT_API_VERSION before including C<E<lt>nbdkit-plugin.hE<gt>> (or
+any other nbdkit header).
 
-=head1 C<#include E<lt>nbdkit-plugin.hE<gt>>
+If omitted, the default version is 1 for backwards-compatibility with
+nbdkit v1.1.26 and earlier; however, it is recommended that new
+plugins be written to the maximum version (currently 2) as it enables
+more features and better interaction with nbdkit filters.
 
-All plugins should start by including this header file, after
-optionally choosing an API version.
+The rest of this document only covers the version 2 interface.  A
+newer nbdkit will always support plugins written in C which use any
+prior API version.
 
-=head1 C<#define THREAD_MODEL>
+=head2 C<#include E<lt>nbdkit-plugin.hE<gt>>
 
-All plugins must define a thread model.  See L</THREADS> below for
+All plugins should start by including this header file (after
+optionally choosing an API version).
+
+=head2 C<#define THREAD_MODEL ...>
+
+All plugins must define a thread model.  See L</Threads> below for
 details.  It is generally safe to use:
 
  #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
-=head1 C<struct nbdkit_plugin>
+=head2 C<struct nbdkit_plugin>
 
 All plugins must define and register one C<struct nbdkit_plugin>,
 which contains the name of the plugin and pointers to callback
-functions.
+functions, and use the C<NBDKIT_REGISTER_PLUGIN(plugin)> macro:
 
  static struct nbdkit_plugin plugin = {
    .name              = "myplugin",
@@ -108,19 +112,66 @@ functions.
    .pwrite            = myplugin_pwrite,
    /* etc */
  };
- 
  NBDKIT_REGISTER_PLUGIN(plugin)
 
 The C<.name> field is the name of the plugin.
 
 The callbacks are described below (see L</CALLBACKS>).  Only C<.name>,
 C<.open>, C<.get_size> and C<.pread> are required.  All other
-callbacks can be omitted.  However almost all plugins should have a
-C<.close> callback.  Most real-world plugins will also want to declare
-some of the other callbacks.
+callbacks can be omitted, although typical plugins need to use more.
 
-The nbdkit server calls the callbacks in the following order over the
-lifetime of the plugin:
+=head2 Callback lifecycle
+
+Callbacks are called in the following order over the lifecycle of
+the plugin:
+
+         ┌──────────────────┐
+         │ load             │
+         └─────────┬────────┘
+                   │           configuration phase starts     ─┐
+         ┌─────────┴────────┐                                  ┆
+         │ config           │  config is called once per       ┆
+         └─────────┬────────┘↺ key=value on the command line   ┆
+         ┌─────────┴────────┐                                  ┆
+         │ config_complete  │                                  ┆
+         └─────────┬────────┘                                  ┆
+         ┌─────────┴────────┐                                  ┆
+         │ thread_model     │                                  ┆
+         └─────────┬────────┘  configuration phase ends       ─┘
+         ┌─────────┴────────┐
+         │ get_ready        │
+         └─────────┬────────┘
+                   │           nbdkit forks into the background
+                   │           and starts serving clients
+                   │
+        ┌──────────┴─────────────┬─ ─ ─ ─ ─ ─ ─ ─ ─
+ ┌──────┴─────┐ client #1        │
+ │ preconnect │                  │
+ └──────┬─────┘                  │
+ ┌──────┴─────┐                  │
+ │ open       │                  │
+ └──────┬─────┘                  │
+ ┌──────┴─────┐  NBD option      │
+ │ can_write  │  negotiation     │
+ └──────┬─────┘                  │
+ ┌──────┴─────┐           ┌──────┴─────┐ client #2
+ │ get_size   │           │ preconnect │
+ └──────┬─────┘           └──────┬─────┘
+ ┌──────┴─────┐ data      ┌──────┴─────┐
+ │ pread      │ serving   │ open       │
+ └──────┬─────┘↺          └──────┬─────┘
+ ┌──────┴─────┐                 ...
+ │ pwrite     │
+ └──────┬─────┘↺          ┌──────┴─────┐
+ ┌──────┴─────┐           │ close      │
+ │ close      │           └────────────┘
+ └────────────┘
+ 
+                   │           before nbdkit exits
+                   │
+         ┌─────────┴────────┐
+         │ unload           │
+         └──────────────────┘
 
 =over 4
 
@@ -194,7 +245,7 @@ is called once just before the plugin is unloaded from memory.
 
 =back
 
-=head1 FLAGS
+=head2 Flags
 
 The following flags are defined by nbdkit, and used in various data
 serving callbacks as follows:
@@ -277,7 +328,72 @@ succeeds without doing anything.
 
 =back
 
-=head1 ERROR HANDLING
+=head2 Threads
+
+Each nbdkit plugin must declare its maximum thread safety model by
+defining the C<THREAD_MODEL> macro.  (This macro is used by
+C<NBDKIT_REGISTER_PLUGIN>).  Additionally, a plugin may implement the
+C<.thread_model> callback, called right after C<.config_complete> to
+make a runtime decision on which thread model to use.  The nbdkit
+server chooses the most restrictive model between the plugin's
+C<THREAD_MODEL>, the C<.thread_model> if present, any restrictions
+requested by filters, and any limitations imposed by the operating
+system.
+
+In C<nbdkit --dump-plugin PLUGIN> output, the C<max_thread_model> line
+matches the C<THREAD_MODEL> macro, and the C<thread_model> line
+matches what the system finally settled on after applying all
+restrictions.
+
+The possible settings for C<THREAD_MODEL> are defined below.
+
+=over 4
+
+=item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS>
+
+Only a single handle can be open at any time, and all requests happen
+from one thread.
+
+Note this means only one client can connect to the server at any time.
+If a second client tries to connect it will block waiting for the
+first client to close the connection.
+
+=item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS>
+
+I<This is a safe default for most plugins>.
+
+Multiple handles can be open at the same time, but requests are
+serialized so that for the plugin as a whole only one
+open/read/write/close (etc) request will be in progress at any time.
+
+This is a useful setting if the library you are using is not
+thread-safe.  However performance may not be good.
+
+=item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS>
+
+Multiple handles can be open and multiple data requests can happen in
+parallel.  However only one request will happen per handle at a time
+(but requests on different handles might happen concurrently).
+
+=item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL>
+
+Multiple handles can be open and multiple data requests can happen in
+parallel (even on the same handle).  The server may reorder replies,
+answering a later request before an earlier one.
+
+All the libraries you use must be thread-safe and reentrant, and any
+code that creates a file descriptor should atomically set
+C<FD_CLOEXEC> if you do not want it accidentally leaked to another
+thread's child process.  You may also need to provide mutexes for
+fields in your connection handle.
+
+=back
+
+If none of the above thread models are suitable, use
+C<NBDKIT_THREAD_MODEL_PARALLEL> and implement your own locking using
+C<pthread_mutex_t> etc.
+
+=head2 Error handling
 
 If there is an error in the plugin, the plugin should call
 C<nbdkit_error> to report an error message; additionally, if the
@@ -451,8 +567,8 @@ omit this.
 
 This optional callback is called after all the configuration has been
 passed to the plugin.  It can be used to force a stricter thread model
-based on configuration, compared to C<THREAD_MODEL>.  See L</THREADS>
-below for details.  Attempts to request a looser (more parallel) model
+based on configuration, compared to C<THREAD_MODEL>.  See L</Threads>
+above for details.  Attempts to request a looser (more parallel) model
 are silently ignored.
 
 If there is an error, C<.thread_model> should call C<nbdkit_error>
@@ -980,88 +1096,11 @@ If there is an error, C<.cache> should call C<nbdkit_error> with an
 error message, and C<nbdkit_set_error> to record an appropriate error
 (unless C<errno> is sufficient), then return C<-1>.
 
-=head1 OTHER FIELDS
+=head2 C<.errno_is_preserved>
 
-The plugin struct also contains an integer field used as a
-boolean in C code, but unlikely to be exposed in other language
-bindings:
-
-=over 4
-
-=item C<.errno_is_preserved>
-
-This defaults to 0; if non-zero, nbdkit can reliably use the value of
-C<errno> when a callback reports failure, rather than the plugin
-having to call C<nbdkit_set_error>.
-
-=back
-
-=head1 THREADS
-
-Each nbdkit plugin must declare its maximum thread safety model by
-defining the C<THREAD_MODEL> macro.  (This macro is used by
-C<NBDKIT_REGISTER_PLUGIN>).  Additionally, a plugin may implement the
-C<.thread_model> callback, called right after C<.config_complete> to
-make a runtime decision on which thread model to use.  The nbdkit
-server chooses the most restrictive model between the plugin's
-C<THREAD_MODEL>, the C<.thread_model> if present, any restrictions
-requested by filters, and any limitations imposed by the system (for
-example, a system without atomic C<FD_CLOEXEC> will serialize all
-requests, so as to avoid nbdkit leaking a new file descriptor from one
-thread into a child process created by another thread).
-
-In C<nbdkit --dump-plugin PLUGIN> output, the C<max_thread_model> line
-matches the C<THREAD_MODEL> macro, and the C<thread_model> line
-matches what the system finally settled on after applying all
-restrictions.
-
-The possible settings for C<THREAD_MODEL> are defined below.
-
-=over 4
-
-=item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS>
-
-Only a single handle can be open at any time, and all requests happen
-from one thread.
-
-Note this means only one client can connect to the server at any time.
-If a second client tries to connect it will block waiting for the
-first client to close the connection.
-
-=item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS>
-
-I<This is a safe default for most plugins>.
-
-Multiple handles can be open at the same time, but requests are
-serialized so that for the plugin as a whole only one
-open/read/write/close (etc) request will be in progress at any time.
-
-This is a useful setting if the library you are using is not
-thread-safe.  However performance may not be good.
-
-=item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS>
-
-Multiple handles can be open and multiple data requests can happen in
-parallel.  However only one request will happen per handle at a time
-(but requests on different handles might happen concurrently).
-
-=item C<#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL>
-
-Multiple handles can be open and multiple data requests can happen in
-parallel (even on the same handle).  The server may reorder replies,
-answering a later request before an earlier one.
-
-All the libraries you use must be thread-safe and reentrant, and any
-code that creates a file descriptor should atomically set
-C<FD_CLOEXEC> if you do not want it accidentally leaked to another
-thread's child process.  You may also need to provide mutexes for
-fields in your connection handle.
-
-=back
-
-If none of the above thread models are suitable, then use
-C<NBDKIT_THREAD_MODEL_PARALLEL> and implement your own locking using
-C<pthread_mutex_t> etc.
+This field defaults to 0; if non-zero, nbdkit can reliably use the
+value of C<errno> when a callback reports failure, rather than the
+plugin having to call C<nbdkit_set_error>.
 
 =head1 SHUTDOWN
 
@@ -1159,24 +1198,6 @@ C<str> can be a string containing a case-insensitive form of various
 common toggle values.  The function returns 0 or 1 if the parse was
 successful.  If there was an error, it returns C<-1>.
 
-=head2 Interacting with stdin and stdout
-
-The C<nbdkit_stdio_safe> utility function returns C<1> if it is safe
-to interact with stdin and stdout during C<.config> and
-C<.config_complete>, and C<0> otherwise.  When nbdkit is started under
-the single connection mode (C<-s>), the plugin must not directly
-interact with stdin, because that would interfere with the client.
-The result of this function only matters in callbacks up to
-C<.config_complete>; once nbdkit reaches C<.get_ready>, the plugin
-should assume that nbdkit may have closed the original stdin and
-stdout in order to become a daemon.
-
- int nbdkit_stdio_safe (void);
-
-As an example, the L<nbdkit-sh-plugin(3)> uses this function to
-determine whether it is safe to support C<script=-> to read a script
-from stdin.
-
 =head2 Reading passwords
 
 The C<nbdkit_read_password> utility function can be used to read
@@ -1209,7 +1230,7 @@ used directly on the command line, eg:
  nbdkit myplugin password=mostsecret
 
 But more securely this function can also read a password
-interactively (if C<nbdkit_stdio_safe> returns non-zero):
+interactively:
 
  nbdkit myplugin password=-
 
@@ -1223,6 +1244,26 @@ or from a file descriptor inherited by nbdkit:
 
 (If the password begins with a C<-> or C<+> character then it must be
 passed in a file).
+
+=head2 Safely interacting with stdin and stdout
+
+ int nbdkit_stdio_safe (void);
+
+The C<nbdkit_stdio_safe> utility function returns C<1> if it is safe
+to interact with stdin and stdout during the configuration phase, and
+C<0> otherwise.  This is because when the nbdkit I<-s> option is used
+the plugin must not directly interact with stdin, because that would
+interfere with the client.
+
+The result of this function only matters in callbacks up to
+C<.config_complete>.  Once nbdkit reaches C<.get_ready>, the plugin
+should assume that nbdkit may have closed the original stdin and
+stdout in order to become a daemon.
+
+L<nbdkit-sh-plugin(3)> uses this function to determine whether it is
+safe to support C<script=-> to read a script from stdin.  Also
+constructs like C<password=-> (see L</Reading passwords> above) are
+disabled when reading from stdio is not safe.
 
 =head1 FILENAMES AND PATHS
 
