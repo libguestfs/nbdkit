@@ -263,3 +263,18 @@ https://www.redhat.com/mailman/listinfo/libguestfs
 For further information, see:
 http://libguestfs.org/
 https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md
+
+Test coverage
+-------------
+
+    ./configure CFLAGS="--coverage -g" LDFLAGS="--coverage -g"
+    make clean
+    make
+    make check
+
+    lcov -c -d . -o gcov.info
+    genhtml -o coverage gcov.info
+
+Open your browser and examine the coverage/ directory.  At the time of
+writing (2020-04) test coverage of the server is reasonable, but
+things are much worse for certain plugins and filters.
