@@ -80,6 +80,8 @@
 #include <nbdkit-filter.h>
 
 #include "bitmap.h"
+#include "utils.h"
+
 #include "blk.h"
 
 #ifndef HAVE_FDATASYNC

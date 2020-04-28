@@ -51,6 +51,7 @@
 
 #include "bitmap.h"
 #include "minmax.h"
+#include "utils.h"
 
 #include "cache.h"
 #include "blk.h"
