@@ -42,10 +42,6 @@
 #ifndef NBDKIT_BYTE_SWAPPING_H
 #define NBDKIT_BYTE_SWAPPING_H
 
-#ifdef __HAIKU__
-#define _BSD_SOURCE
-#endif
-
 #ifdef HAVE_BYTESWAP_H
 #include <byteswap.h>
 #endif
@@ -56,6 +52,24 @@
 
 #ifdef HAVE_SYS_ENDIAN_H
 #include <sys/endian.h>
+#endif
+
+#ifdef __HAIKU__
+#include <ByteOrder.h>
+#define htobe16(x) B_HOST_TO_BENDIAN_INT16(x)
+#define htole16(x) B_HOST_TO_LENDIAN_INT16(x)
+#define be16toh(x) B_BENDIAN_TO_HOST_INT16(x)
+#define le16toh(x) B_LENDIAN_TO_HOST_INT16(x)
+
+#define htobe32(x) B_HOST_TO_BENDIAN_INT32(x)
+#define htole32(x) B_HOST_TO_LENDIAN_INT32(x)
+#define be32toh(x) B_BENDIAN_TO_HOST_INT32(x)
+#define le32toh(x) B_LENDIAN_TO_HOST_INT32(x)
+
+#define htobe64(x) B_HOST_TO_BENDIAN_INT64(x)
+#define htole64(x) B_HOST_TO_LENDIAN_INT64(x)
+#define be64toh(x) B_BENDIAN_TO_HOST_INT64(x)
+#define le64toh(x) B_LENDIAN_TO_HOST_INT64(x)
 #endif
 
 #ifndef htobe32
