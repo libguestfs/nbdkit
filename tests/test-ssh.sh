@@ -36,6 +36,7 @@ set -x
 
 requires sshd -t -f ssh/sshd_config
 requires qemu-img --version
+requires cut --version
 
 # Check that ssh to localhost will work without any passwords or phrases.
 requires ssh -V
@@ -54,7 +55,7 @@ sshd_pid=$!
 cleanup_fn kill $sshd_pid
 
 # Get the sshd port number which was randomly assigned.
-port="$(grep ^Port ssh/sshd_config | awk '{print $2}')"
+port="$(grep ^Port ssh/sshd_config | cut -f 2)"
 
 # Run nbdkit with the ssh plugin to copy a file.
 nbdkit -v -D ssh.log=2 -U - \
