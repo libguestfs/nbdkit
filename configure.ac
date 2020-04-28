@@ -266,6 +266,30 @@ test (int a)
     ]
 )
 
+dnl 'environ' is not always declared in public header files:
+dnl Linux => <unistd.h>  Haiku => <stdlib.h>
+dnl FreeBSD & OpenBSD => not declared
+dnl On platforms where it's not declared we must add an extern decl.
+AC_MSG_CHECKING([if environ is declared in header files])
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <stdlib.h>
+#include <unistd.h>
+static int
+test (void)
+{
+  const char **env = environ;
+  return env ? 1 : 0; // this just forces env to be used
+}
+]])
+    ],[
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([HAVE_ENVIRON_DECL],[1],[environ is declared in headers])
+    ],[
+    AC_MSG_RESULT([no])
+    ]
+)
+
 dnl Check for other headers, all optional.
 AC_CHECK_HEADERS([\
 	alloca.h \

@@ -53,6 +53,10 @@
 
 #include "call.h"
 
+#ifndef HAVE_ENVIRON_DECL
+extern char **environ;
+#endif
+
 /* Temporary directory for scripts to use. */
 char tmpdir[] = "/tmp/nbdkitXXXXXX";
 
