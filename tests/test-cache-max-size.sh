@@ -37,8 +37,9 @@ set -x
 # Check that this is a Linux-like system supporting /proc/$pid/fd.
 requires test -d /proc/self/fd
 requires qemu-io --version
-# Need the stat command from coreutils.
+# Need the stat and cut commands from coreutils.
 requires stat --version
+requires cut --version
 
 sock=`mktemp -u`
 d=cache-max-size.d
@@ -75,7 +76,7 @@ qemu-io -f raw "nbd+unix://?socket=$sock" \
 # Get the /proc link to the cache file, and the size of it in bytes.
 fddir="/proc/$( cat $d/cache-max-size.pid )/fd"
 ls -l $fddir ||:
-fd="$fddir/$( ls -l $fddir | grep $TMPDIR/ | head -1 | awk '{print $9}' )"
+fd="$fddir/$( ls -l $fddir | grep $TMPDIR/ | head -1 | cut -d ' ' -f 9 )"
 stat -L $fd
 size=$(( $(stat -L -c '%b * %B' $fd) ))
 
