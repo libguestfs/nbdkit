@@ -279,25 +279,25 @@ new_connection (int sockin, int sockout, int nworkers)
      */
     assert (top->thread_model (top) <=
             NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
-    lock_request (NULL);
+    lock_request ();
     if (pipe (conn->status_pipe)) {
       perror ("pipe");
-      unlock_request (NULL);
+      unlock_request ();
       goto error2;
     }
     if (set_nonblock (set_cloexec (conn->status_pipe[0])) == -1) {
       perror ("fcntl");
       close (conn->status_pipe[1]);
-      unlock_request (NULL);
+      unlock_request ();
       goto error2;
     }
     if (set_nonblock (set_cloexec (conn->status_pipe[1])) == -1) {
       perror ("fcntl");
       close (conn->status_pipe[0]);
-      unlock_request (NULL);
+      unlock_request ();
       goto error2;
     }
-    unlock_request (NULL);
+    unlock_request ();
 #endif
   }
 
