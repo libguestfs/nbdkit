@@ -46,11 +46,13 @@
 
 #ifdef HAVE_AUTO_TYPE
 
+#undef MIN
 #define MIN(x, y) ({                           \
       __auto_type _x = (x);                    \
       __auto_type _y = (y);                    \
       _x < _y ? _x : _y;                       \
     })
+#undef MAX
 #define MAX(x, y) ({                           \
       __auto_type _x = (x);                    \
       __auto_type _y = (y);                    \
@@ -59,11 +61,13 @@
 
 #else
 
+#undef MIN
 #define MIN(x, y) ({                           \
       typeof (x) _x = (x);                     \
       typeof (y) _y = (y);                     \
       _x < _y ? _x : _y;                       \
     })
+#undef MAX
 #define MAX(x, y) ({                           \
       typeof (x) _x = (x);                     \
       typeof (y) _y = (y);                     \
