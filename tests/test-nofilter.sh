@@ -34,6 +34,8 @@ source ./functions.sh
 set -e
 set -x
 
+requires qemu-img --version
+
 files="nofilter.img"
 rm -f $files
 cleanup_fn rm -f $files
