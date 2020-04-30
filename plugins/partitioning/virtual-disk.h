@@ -55,7 +55,7 @@
  * 32 if the number of files is <= GPT_MIN_PARTITIONS, which is the
  * normal case.
  */
-#define GPT_PTA_SIZE ROUND_UP (nr_files, GPT_MIN_PARTITIONS)
+#define GPT_PTA_SIZE ROUND_UP (the_files.size, GPT_MIN_PARTITIONS)
 #define GPT_PTA_LBAs (GPT_PTA_SIZE * GPT_PT_ENTRY_SIZE / SECTOR_SIZE)
 
 /* Maximum possible and default alignment between partitions. */
@@ -88,9 +88,9 @@ struct file {
   char type_guid[16];           /* partition type GUID of this partition */
 };
 
-extern struct file *files;
-extern size_t nr_files;
+DEFINE_VECTOR_TYPE(files, struct file);
 
+extern files the_files;
 extern regions the_regions;
 extern unsigned char *primary, *secondary, **ebr;
 

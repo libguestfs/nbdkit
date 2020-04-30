@@ -52,6 +52,7 @@
 #include "isaligned.h"
 #include "iszero.h"
 #include "rounding.h"
+#include "vector.h"
 
 #include "random.h"
 #include "regions.h"
@@ -75,15 +76,15 @@ char type_guid[16]; /* initialized by partitioning_load function below */
 int parttype = PARTTYPE_UNSET;
 
 /* Files supplied on the command line. */
-struct file *files = NULL;
-size_t nr_files = 0;
+files the_files;
 
 /* Virtual disk layout. */
 regions the_regions;
 
 /* Primary and secondary partition tables and extended boot records.
  * Secondary PT is only used for GPT.  EBR array of sectors is only
- * used for MBR with > 4 partitions and has length equal to nr_files-3.
+ * used for MBR with > 4 partitions and has length equal to
+ * the_files.size-3.
  */
 unsigned char *primary = NULL, *secondary = NULL, **ebr = NULL;
 
@@ -103,9 +104,9 @@ partitioning_unload (void)
 {
   size_t i;
 
-  for (i = 0; i < nr_files; ++i)
-    close (files[i].fd);
-  free (files);
+  for (i = 0; i < the_files.size; ++i)
+    close (the_files.ptr[i].fd);
+  free (the_files.ptr);
 
   /* We don't need to free regions.regions[].u.data because it points
    * to primary, secondary or ebr which we free here.
@@ -115,7 +116,7 @@ partitioning_unload (void)
   free (primary);
   free (secondary);
   if (ebr) {
-    for (i = 0; i < nr_files-3; ++i)
+    for (i = 0; i < the_files.size-3; ++i)
       free (ebr[i]);
     free (ebr);
   }
@@ -124,7 +125,6 @@ partitioning_unload (void)
 static int
 partitioning_config (const char *key, const char *value)
 {
-  struct file *p;
   struct file file;
   size_t i;
   int err;
@@ -163,17 +163,13 @@ partitioning_config (const char *key, const char *value)
     for (i = 0; i < 16; ++i)
       file.guid[i] = xrandom (&random_state) & 0xff;
 
-    p = realloc (files, (nr_files+1) * sizeof (struct file));
-    if (p == NULL) {
+    if (files_append (&the_files, file) == -1) {
       err = errno;
       close (file.fd);
       errno = err;
       nbdkit_error ("realloc: %m");
       return -1;
     }
-    files = p;
-    files[nr_files] = file;
-    nr_files++;
   }
   else if (strcmp (key, "partition-type") == 0) {
     if (strcasecmp (value, "mbr") == 0 || strcasecmp (value, "dos") == 0)
@@ -238,19 +234,19 @@ partitioning_config_complete (void)
   bool needs_gpt;
 
   /* Not enough / too many files? */
-  if (nr_files == 0) {
+  if (the_files.size == 0) {
     nbdkit_error ("at least one file= parameter must be supplied");
     return -1;
   }
 
   total_size = 0;
-  for (i = 0; i < nr_files; ++i)
-    total_size += files[i].statbuf.st_size;
+  for (i = 0; i < the_files.size; ++i)
+    total_size += the_files.ptr[i].statbuf.st_size;
   needs_gpt = total_size > MAX_MBR_DISK_SIZE;
 
   /* Choose default parttype if not set. */
   if (parttype == PARTTYPE_UNSET) {
-    if (needs_gpt || nr_files > 4) {
+    if (needs_gpt || the_files.size > 4) {
       parttype = PARTTYPE_GPT;
       nbdkit_debug ("picking partition type GPT");
     }
@@ -265,7 +261,7 @@ partitioning_config_complete (void)
                   "but you requested %zu partition(s) "
                   "and a total size of %" PRIu64 " bytes (> %" PRIu64 ").  "
                   "Try using: partition-type=gpt",
-                  nr_files, total_size, (uint64_t) MAX_MBR_DISK_SIZE);
+                  the_files.size, total_size, (uint64_t) MAX_MBR_DISK_SIZE);
     return -1;
   }
 
@@ -330,14 +326,15 @@ partitioning_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
     switch (region->type) {
     case region_file:
       i = region->u.i;
-      assert (i < nr_files);
-      r = pread (files[i].fd, buf, len, offset - region->start);
+      assert (i < the_files.size);
+      r = pread (the_files.ptr[i].fd, buf, len, offset - region->start);
       if (r == -1) {
-        nbdkit_error ("pread: %s: %m", files[i].filename);
+        nbdkit_error ("pread: %s: %m", the_files.ptr[i].filename);
         return -1;
       }
       if (r == 0) {
-        nbdkit_error ("pread: %s: unexpected end of file", files[i].filename);
+        nbdkit_error ("pread: %s: unexpected end of file",
+                      the_files.ptr[i].filename);
         return -1;
       }
       len = r;
@@ -378,10 +375,10 @@ partitioning_pwrite (void *handle,
     switch (region->type) {
     case region_file:
       i = region->u.i;
-      assert (i < nr_files);
-      r = pwrite (files[i].fd, buf, len, offset - region->start);
+      assert (i < the_files.size);
+      r = pwrite (the_files.ptr[i].fd, buf, len, offset - region->start);
       if (r == -1) {
-        nbdkit_error ("pwrite: %s: %m", files[i].filename);
+        nbdkit_error ("pwrite: %s: %m", the_files.ptr[i].filename);
         return -1;
       }
       len = r;
@@ -420,8 +417,8 @@ partitioning_flush (void *handle)
 {
   size_t i;
 
-  for (i = 0; i < nr_files; ++i) {
-    if (fdatasync (files[i].fd) == -1) {
+  for (i = 0; i < the_files.size; ++i) {
+    if (fdatasync (the_files.ptr[i].fd) == -1) {
       nbdkit_error ("fdatasync: %m");
       return -1;
     }

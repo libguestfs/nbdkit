@@ -62,12 +62,12 @@ create_mbr_layout (void)
   primary[0x1fe] = 0x55;
   primary[0x1ff] = 0xaa;
 
-  if (nr_files <= 4) {
+  if (the_files.size <= 4) {
     /* Basic MBR with no extended partition. */
-    for (i = 0; i < nr_files; ++i) {
+    for (i = 0; i < the_files.size; ++i) {
       const struct region *region = find_file_region (i, &j);
 
-      create_mbr_partition_table_entry (region, i == 0, files[i].mbr_id,
+      create_mbr_partition_table_entry (region, i == 0, the_files.ptr[i].mbr_id,
                                         &primary[0x1be + 16*i]);
     }
   }
@@ -80,7 +80,7 @@ create_mbr_layout (void)
      */
     for (i = 0; i < 3; ++i) {
       rptr = find_file_region (i, &j);
-      create_mbr_partition_table_entry (rptr, i == 0, files[i].mbr_id,
+      create_mbr_partition_table_entry (rptr, i == 0, the_files.ptr[i].mbr_id,
                                         &primary[0x1be + 16*i]);
     }
 
@@ -97,7 +97,7 @@ create_mbr_layout (void)
     /* The remaining files are mapped to logical partitions living in
      * the fourth extended partition.
      */
-    for (i = 3; i < nr_files; ++i) {
+    for (i = 3; i < the_files.size; ++i) {
       if (i == 3)
         eptr = eptr0;
       else
@@ -114,10 +114,10 @@ create_mbr_layout (void)
        */
       region.start = rptr->start - eptr->start;
       region.len = rptr->len;
-      create_mbr_partition_table_entry (&region, false, files[i].mbr_id,
+      create_mbr_partition_table_entry (&region, false, the_files.ptr[i].mbr_id,
                                         &ebr[i-3][0x1be]);
 
-      if (i < nr_files-1) {
+      if (i < the_files.size-1) {
         size_t j2 = j;
         const struct region *enext = find_ebr_region (i+1, &j2);
         const struct region *rnext = find_file_region (i+1, &j2);

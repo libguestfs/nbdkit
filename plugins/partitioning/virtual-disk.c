@@ -56,7 +56,7 @@ create_virtual_disk_layout (void)
   size_t i;
 
   assert (nr_regions (&the_regions) == 0);
-  assert (nr_files > 0);
+  assert (the_files.size > 0);
   assert (primary == NULL);
   assert (secondary == NULL);
 
@@ -68,17 +68,17 @@ create_virtual_disk_layout (void)
       return -1;
     }
 
-    if (nr_files > 4) {
+    if (the_files.size > 4) {
       /* The first 3 primary partitions will be real partitions, the
        * 4th will be an extended partition, and so we need to store
-       * EBRs for nr_files-3 logical partitions.
+       * EBRs for the_files.size-3 logical partitions.
        */
-      ebr = malloc (sizeof (unsigned char *) * (nr_files-3));
+      ebr = malloc (sizeof (unsigned char *) * (the_files.size-3));
       if (ebr == NULL) {
         nbdkit_error ("malloc: %m");
         return -1;
       }
-      for (i = 0; i < nr_files-3; ++i) {
+      for (i = 0; i < the_files.size-3; ++i) {
         ebr[i] = calloc (1, SECTOR_SIZE);
         if (ebr[i] == NULL) {
           nbdkit_error ("malloc: %m");
@@ -117,7 +117,7 @@ create_virtual_disk_layout (void)
   }
 
   /* The partitions. */
-  for (i = 0; i < nr_files; ++i) {
+  for (i = 0; i < the_files.size; ++i) {
     uint64_t offset;
 
     offset = virtual_size (&the_regions);
@@ -127,7 +127,7 @@ create_virtual_disk_layout (void)
     assert (IS_ALIGNED (offset, SECTOR_SIZE));
 
     /* Logical partitions are preceeded by an EBR. */
-    if (parttype == PARTTYPE_MBR && nr_files > 4 && i >= 3) {
+    if (parttype == PARTTYPE_MBR && the_files.size > 4 && i >= 3) {
       if (append_region_len (&the_regions, "EBR",
                              SECTOR_SIZE, 0, 0,
                              region_data, ebr[i-3]) == -1)
@@ -139,9 +139,9 @@ create_virtual_disk_layout (void)
      * If the file size is not a multiple of SECTOR_SIZE then
      * add a padding region at the end to round it up.
      */
-    if (append_region_len (&the_regions, files[i].filename,
-                           files[i].statbuf.st_size,
-                           files[i].alignment, SECTOR_SIZE,
+    if (append_region_len (&the_regions, the_files.ptr[i].filename,
+                           the_files.ptr[i].statbuf.st_size,
+                           the_files.ptr[i].alignment, SECTOR_SIZE,
                            region_file, i) == -1)
       return -1;
   }
@@ -161,7 +161,7 @@ create_virtual_disk_layout (void)
       nbdkit_debug ("region[%zu]: %" PRIx64 "-%" PRIx64 " type=%s",
                     i, region->start, region->end,
                     region->type == region_file ?
-                    files[region->u.i].filename :
+                    the_files.ptr[region->u.i].filename :
                     region->type == region_data ?
                     "data" : "zero");
     }
@@ -177,7 +177,7 @@ create_virtual_disk_layout (void)
     const struct region *region = &the_regions.ptr[i];
 
     if (region->type == region_file)
-      assert (IS_ALIGNED (region->start, files[region->u.i].alignment));
+      assert (IS_ALIGNED (region->start, the_files.ptr[region->u.i].alignment));
   }
 
   return create_partition_table ();

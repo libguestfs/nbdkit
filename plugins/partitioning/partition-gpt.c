@@ -129,7 +129,7 @@ create_gpt_partition_table (unsigned char *out)
       i = region->u.i;
       assert (i < GPT_PTA_SIZE);
       create_gpt_partition_table_entry (region, i == 0,
-                                        files[i].type_guid,
+                                        the_files.ptr[i].type_guid,
                                         out);
       out += GPT_PT_ENTRY_SIZE;
     }
@@ -150,7 +150,7 @@ create_gpt_partition_table_entry (const struct region *region,
 
   memcpy (entry->partition_type_guid, partition_type_guid, 16);
 
-  memcpy (entry->unique_guid, files[region->u.i].guid, 16);
+  memcpy (entry->unique_guid, the_files.ptr[region->u.i].guid, 16);
 
   entry->first_lba = htole64 (region->start / SECTOR_SIZE);
   entry->last_lba = htole64 (region->end / SECTOR_SIZE);
@@ -162,7 +162,7 @@ create_gpt_partition_table_entry (const struct region *region,
    * Is this a security risk?  It reveals something about paths on the
    * server to clients. XXX
    */
-  filename = files[region->u.i].filename;
+  filename = the_files.ptr[region->u.i].filename;
   len = strlen (filename);
   if (len < 36) {
     for (i = 0; i < len; ++i)
