@@ -60,6 +60,7 @@
 
 #include "internal.h"
 #include "utils.h"
+#include "vector.h"
 
 static void
 set_selinux_label (void)
@@ -93,13 +94,12 @@ clear_selinux_label (void)
 #endif
 }
 
-int *
-bind_unix_socket (size_t *nr_socks)
+void
+bind_unix_socket (sockets *socks)
 {
   size_t len;
   int sock;
   struct sockaddr_un addr;
-  int *ret;
 
   assert (unixsocket);
   assert (unixsocket[0] == '/');
@@ -141,27 +141,21 @@ bind_unix_socket (size_t *nr_socks)
 
   clear_selinux_label ();
 
-  ret = malloc (sizeof (int));
-  if (!ret) {
-    perror ("malloc");
+  if (sockets_append (socks, sock) == -1) {
+    perror ("realloc");
     exit (EXIT_FAILURE);
   }
-  ret[0] = sock;
-  *nr_socks = 1;
 
   debug ("bound to unix socket %s", unixsocket);
-
-  return ret;
 }
 
-int *
-bind_tcpip_socket (size_t *nr_socks)
+void
+bind_tcpip_socket (sockets *socks)
 {
   struct addrinfo *ai = NULL;
   struct addrinfo hints;
   struct addrinfo *a;
   int err, opt;
-  int *socks = NULL;
   bool addr_in_use = false;
 
   if (port == NULL)
@@ -180,8 +174,6 @@ bind_tcpip_socket (size_t *nr_socks)
              gai_strerror (err));
     exit (EXIT_FAILURE);
   }
-
-  *nr_socks = 0;
 
   for (a = ai; a != NULL; a = a->ai_next) {
     int sock;
@@ -229,36 +221,30 @@ bind_tcpip_socket (size_t *nr_socks)
 
     clear_selinux_label ();
 
-    (*nr_socks)++;
-    socks = realloc (socks, sizeof (int) * (*nr_socks));
-    if (!socks) {
+    if (sockets_append (socks, sock) == -1) {
       perror ("realloc");
       exit (EXIT_FAILURE);
     }
-    socks[*nr_socks - 1] = sock;
   }
 
   freeaddrinfo (ai);
 
-  if (*nr_socks == 0 && addr_in_use) {
+  if (socks->size == 0 && addr_in_use) {
     fprintf (stderr, "%s: unable to bind to any sockets: %s\n",
              program_name, strerror (EADDRINUSE));
     exit (EXIT_FAILURE);
   }
 
   debug ("bound to IP address %s:%s (%zu socket(s))",
-         ipaddr ? ipaddr : "<any>", port, *nr_socks);
-
-  return socks;
+         ipaddr ? ipaddr : "<any>", port, socks->size);
 }
 
-int *
-bind_vsock (size_t *nr_socks)
+void
+bind_vsock (sockets *socks)
 {
 #ifdef AF_VSOCK
   uint32_t vsock_port;
   int sock;
-  int *ret;
   struct sockaddr_vm addr;
 
   if (port == NULL)
@@ -295,13 +281,10 @@ bind_vsock (size_t *nr_socks)
     exit (EXIT_FAILURE);
   }
 
-  ret = malloc (sizeof (int));
-  if (!ret) {
-    perror ("malloc");
+  if (sockets_append (socks, sock) == -1) {
+    perror ("realloc");
     exit (EXIT_FAILURE);
   }
-  ret[0] = sock;
-  *nr_socks = 1;
 
   /* It's not easy to get the actual CID here.
    * IOCTL_VM_SOCKETS_GET_LOCAL_CID is documented, but requires
@@ -310,8 +293,6 @@ bind_vsock (size_t *nr_socks)
    * doesn't work.
    */
   debug ("bound to vsock any:%" PRIu32, addr.svm_port);
-
-  return ret;
 
 #else
   /* Can't happen because main() checks if AF_VSOCK is defined and
@@ -438,11 +419,12 @@ accept_connection (int listen_sock)
  * (don't call accept_connection in this case).
  *
  * If POLLIN occurs on one of the sockets, call
- * accept_connection (socks[i]) on each of them.
+ * accept_connection (socks.ptr[i]) on each of them.
  */
 static void
-check_sockets_and_quit_fd (int *socks, size_t nr_socks)
+check_sockets_and_quit_fd (const sockets *socks)
 {
+  const size_t nr_socks = socks->size;
   size_t i;
   int r;
 
@@ -454,7 +436,7 @@ check_sockets_and_quit_fd (int *socks, size_t nr_socks)
   }
 
   for (i = 0; i < nr_socks; ++i) {
-    fds[i].fd = socks[i];
+    fds[i].fd = socks->ptr[i];
     fds[i].events = POLLIN;
     fds[i].revents = 0;
   }
@@ -479,18 +461,18 @@ check_sockets_and_quit_fd (int *socks, size_t nr_socks)
 
   for (i = 0; i < nr_socks; ++i) {
     if (fds[i].revents & POLLIN)
-      accept_connection (socks[i]);
+      accept_connection (socks->ptr[i]);
   }
 }
 
 void
-accept_incoming_connections (int *socks, size_t nr_socks)
+accept_incoming_connections (const sockets *socks)
 {
   size_t i;
   int err;
 
   while (!quit)
-    check_sockets_and_quit_fd (socks, nr_socks);
+    check_sockets_and_quit_fd (socks);
 
   /* Wait for all threads to exit. */
   pthread_mutex_lock (&count_mutex);
@@ -505,7 +487,7 @@ accept_incoming_connections (int *socks, size_t nr_socks)
   }
   pthread_mutex_unlock (&count_mutex);
 
-  for (i = 0; i < nr_socks; ++i)
-    close (socks[i]);
-  free (socks);
+  for (i = 0; i < socks->size; ++i)
+    close (socks->ptr[i]);
+  free (socks->ptr);
 }

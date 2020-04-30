@@ -45,6 +45,7 @@
 #include "nbdkit-filter.h"
 #include "cleanup.h"
 #include "nbd-protocol.h"
+#include "vector.h"
 
 /* Define unlikely macro, but only for GCC.  These are used to move
  * debug and error handling code out of hot paths.
@@ -494,13 +495,11 @@ extern void lock_unload (void);
 extern void unlock_unload (void);
 
 /* sockets.c */
-extern int *bind_unix_socket (size_t *)
-  __attribute__((__nonnull__ (1)));
-extern int *bind_tcpip_socket (size_t *)
-  __attribute__((__nonnull__ (1)));
-extern int *bind_vsock (size_t *)
-  __attribute__((__nonnull__ (1)));
-extern void accept_incoming_connections (int *socks, size_t nr_socks)
+DEFINE_VECTOR_TYPE(sockets, int);
+extern void bind_unix_socket (sockets *) __attribute__((__nonnull__ (1)));
+extern void bind_tcpip_socket (sockets *) __attribute__((__nonnull__ (1)));
+extern void bind_vsock (sockets *) __attribute__((__nonnull__ (1)));
+extern void accept_incoming_connections (const sockets *socks)
   __attribute__((__nonnull__ (1)));
 
 /* threadlocal.c */

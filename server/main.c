@@ -907,8 +907,7 @@ open_filter_so (struct backend *next, size_t i,
 static void
 start_serving (void)
 {
-  int *socks;
-  size_t nr_socks;
+  sockets socks = empty_vector;
   size_t i;
 
   set_up_quit_pipe ();
@@ -931,23 +930,24 @@ start_serving (void)
 #endif
   }
 
-  /* Socket activation -- we are handling connections on pre-opened
-   * file descriptors [FIRST_SOCKET_ACTIVATION_FD ..
-   * FIRST_SOCKET_ACTIVATION_FD+nr_socks-1].
+  /* Socket activation: the ‘socket_activation’ variable (> 0) is the
+   * number of file descriptors from FIRST_SOCKET_ACTIVATION_FD to
+   * FIRST_SOCKET_ACTIVATION_FD+socket_activation-1.
    */
   if (socket_activation) {
-    nr_socks = socket_activation;
-    debug ("using socket activation, nr_socks = %zu", nr_socks);
-    socks = malloc (sizeof (int) * nr_socks);
-    if (socks == NULL) {
-      perror ("malloc");
-      exit (EXIT_FAILURE);
+      if (sockets_reserve (&socks, socket_activation) == -1) {
+        perror ("realloc");
+        exit (EXIT_FAILURE);
+      }
+    for (i = 0; i < socket_activation; ++i) {
+      int s = FIRST_SOCKET_ACTIVATION_FD + i;
+      /* This can't fail because of the reservation above. */
+      assert (sockets_append (&socks, s) == 0);
     }
-    for (i = 0; i < nr_socks; ++i)
-      socks[i] = FIRST_SOCKET_ACTIVATION_FD + i;
+    debug ("using socket activation, nr_socks = %zu", socks.size);
     change_user ();
     write_pidfile ();
-    accept_incoming_connections (socks, nr_socks);
+    accept_incoming_connections (&socks);
     return;
   }
 
@@ -964,17 +964,17 @@ start_serving (void)
    * AF_VSOCK.
    */
   if (unixsocket)
-    socks = bind_unix_socket (&nr_socks);
+    bind_unix_socket (&socks);
   else if (vsock)
-    socks = bind_vsock (&nr_socks);
+    bind_vsock (&socks);
   else
-    socks = bind_tcpip_socket (&nr_socks);
+    bind_tcpip_socket (&socks);
 
   run_command ();
   change_user ();
   fork_into_background ();
   write_pidfile ();
-  accept_incoming_connections (socks, nr_socks);
+  accept_incoming_connections (&socks);
 }
 
 static void
