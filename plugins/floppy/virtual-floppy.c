@@ -96,10 +96,10 @@ create_virtual_floppy (const char *dir, const char *label,
     return -1;
 
   nbdkit_debug ("floppy: %zu directories and %zu files",
-                floppy->nr_dirs, floppy->nr_files);
+                floppy->dirs.size, floppy->files.size);
 
   /* Create the on disk directory tables. */
-  for (i = 0; i < floppy->nr_dirs; ++i) {
+  for (i = 0; i < floppy->dirs.size; ++i) {
     if (create_directory (i, label, floppy) == -1)
       return -1;
   }
@@ -114,26 +114,26 @@ create_virtual_floppy (const char *dir, const char *label,
    */
   floppy->data_size = 0;
   cluster = 2;
-  for (i = 0; i < floppy->nr_dirs; ++i) {
-    floppy->dirs[i].first_cluster = cluster;
+  for (i = 0; i < floppy->dirs.size; ++i) {
+    floppy->dirs.ptr[i].first_cluster = cluster;
     nr_bytes =
-      ROUND_UP (floppy->dirs[i].table.size * sizeof (struct dir_entry),
+      ROUND_UP (floppy->dirs.ptr[i].table.size * sizeof (struct dir_entry),
                 CLUSTER_SIZE);
     floppy->data_size += nr_bytes;
     nr_clusters = nr_bytes / CLUSTER_SIZE;
     if (cluster + nr_clusters > UINT32_MAX)
       goto too_big;
-    floppy->dirs[i].nr_clusters = nr_clusters;
+    floppy->dirs.ptr[i].nr_clusters = nr_clusters;
     cluster += nr_clusters;
   }
-  for (i = 0; i < floppy->nr_files; ++i) {
-    floppy->files[i].first_cluster = cluster;
-    nr_bytes = ROUND_UP (floppy->files[i].statbuf.st_size, CLUSTER_SIZE);
+  for (i = 0; i < floppy->files.size; ++i) {
+    floppy->files.ptr[i].first_cluster = cluster;
+    nr_bytes = ROUND_UP (floppy->files.ptr[i].statbuf.st_size, CLUSTER_SIZE);
     floppy->data_size += nr_bytes;
     nr_clusters = nr_bytes / CLUSTER_SIZE;
     if (cluster + nr_clusters > UINT32_MAX)
       goto too_big;
-    floppy->files[i].nr_clusters = nr_clusters;
+    floppy->files.ptr[i].nr_clusters = nr_clusters;
     cluster += nr_clusters;
   }
 
@@ -172,7 +172,7 @@ create_virtual_floppy (const char *dir, const char *label,
    * directory entries (which we didn't have available during
    * create_directory above).
    */
-  for (i = 0; i < floppy->nr_dirs; ++i) {
+  for (i = 0; i < floppy->dirs.size; ++i) {
     if (update_directory_first_cluster (i, floppy) == -1)
       return -1;
   }
@@ -211,19 +211,19 @@ free_virtual_floppy (struct virtual_floppy *floppy)
 
   free (floppy->fat);
 
-  for (i = 0; i < floppy->nr_files; ++i) {
-    free (floppy->files[i].name);
-    free (floppy->files[i].host_path);
+  for (i = 0; i < floppy->files.size; ++i) {
+    free (floppy->files.ptr[i].name);
+    free (floppy->files.ptr[i].host_path);
   }
-  free (floppy->files);
+  free (floppy->files.ptr);
 
-  for (i = 0; i < floppy->nr_dirs; ++i) {
-    free (floppy->dirs[i].name);
-    free (floppy->dirs[i].subdirs);
-    free (floppy->dirs[i].fileidxs);
-    free (floppy->dirs[i].table.ptr);
+  for (i = 0; i < floppy->dirs.size; ++i) {
+    free (floppy->dirs.ptr[i].name);
+    free (floppy->dirs.ptr[i].subdirs.ptr);
+    free (floppy->dirs.ptr[i].fileidxs.ptr);
+    free (floppy->dirs.ptr[i].table.ptr);
   }
-  free (floppy->dirs);
+  free (floppy->dirs.ptr);
 }
 
 /* Visit files and directories.
@@ -235,7 +235,7 @@ free_virtual_floppy (struct virtual_floppy *floppy)
 static ssize_t
 visit (const char *dir, struct virtual_floppy *floppy)
 {
-  void *np;
+  struct dir null_dir;
   size_t di;
   CLEANUP_FREE char *origdir = NULL;
   DIR *DIR;
@@ -243,18 +243,15 @@ visit (const char *dir, struct virtual_floppy *floppy)
   int err;
   struct stat statbuf;
 
-  /* Allocate a new index in the directory array.  Note that the root
+  /* Reserve a new index in the directory array.  Note that the root
    * directory will always be at dirs[0].
    */
-  di = floppy->nr_dirs;
-  np = realloc (floppy->dirs, sizeof (struct dir) * (di+1));
-  if (np == NULL) {
+  memset (&null_dir, 0, sizeof null_dir);
+  di = floppy->dirs.size;
+  if (dirs_append (&floppy->dirs, null_dir) == -1) {
     nbdkit_error ("realloc: %m");
     goto error0;
   }
-  floppy->dirs = np;
-  floppy->nr_dirs++;
-  memset (&floppy->dirs[di], 0, sizeof (struct dir));
 
   /* Because this is called from get_ready, before nbdkit daemonizes
    * or starts any threads, it's safe to use chdir here and greatly
@@ -339,10 +336,8 @@ visit_subdirectory (const char *dir, const char *name,
                     const struct stat *statbuf, size_t di,
                     struct virtual_floppy *floppy)
 {
-  void *np;
   CLEANUP_FREE char *subdir = NULL;
   ssize_t sdi;                  /* subdirectory index */
-  size_t i;
 
   if (asprintf (&subdir, "%s/%s", dir, name) == -1) {
     nbdkit_error ("asprintf: %m");
@@ -357,24 +352,19 @@ visit_subdirectory (const char *dir, const char *name,
     return -1;
 
   /* We must set sdi->name because visit() cannot set it. */
-  floppy->dirs[sdi].name = strdup (name);
-  if (floppy->dirs[sdi].name == NULL) {
+  floppy->dirs.ptr[sdi].name = strdup (name);
+  if (floppy->dirs.ptr[sdi].name == NULL) {
     nbdkit_error ("strdup: %m");
     return -1;
   }
-  floppy->dirs[sdi].statbuf = *statbuf;
-  floppy->dirs[sdi].pdi = di;
+  floppy->dirs.ptr[sdi].statbuf = *statbuf;
+  floppy->dirs.ptr[sdi].pdi = di;
 
   /* Add to the list of subdirs in the parent directory (di). */
-  i = floppy->dirs[di].nr_subdirs;
-  np = realloc (floppy->dirs[di].subdirs, sizeof (size_t) * (i+1));
-  if (np == NULL) {
+  if (idxs_append (&floppy->dirs.ptr[di].subdirs, sdi) == -1) {
     nbdkit_error ("realloc: %m");
     return -1;
   }
-  floppy->dirs[di].subdirs = np;
-  floppy->dirs[di].nr_subdirs++;
-  floppy->dirs[di].subdirs[i] = sdi;
 
   return 0;
 }
@@ -388,9 +378,9 @@ visit_file (const char *dir, const char *name,
             const struct stat *statbuf, size_t di,
             struct virtual_floppy *floppy)
 {
-  void *np;
+  struct file new_file;
   char *host_path;
-  size_t fi, i;
+  size_t fi;
 
   if (asprintf (&host_path, "%s/%s", dir, name) == -1) {
     nbdkit_error ("asprintf: %m");
@@ -404,35 +394,28 @@ visit_file (const char *dir, const char *name,
     return -1;
   }
 
-  /* Add to global list of files. */
-  fi = floppy->nr_files;
-  np = realloc (floppy->files, sizeof (struct file) * (fi+1));
-  if (np == NULL) {
-    nbdkit_error ("realloc: %m");
-    free (host_path);
-    return -1;
-  }
-  floppy->files = np;
-  floppy->nr_files++;
-  floppy->files[fi].name = strdup (name);
-  if (floppy->files[fi].name == NULL) {
+  /* Append to global list of files. */
+  memset (&new_file, 0, sizeof new_file);
+  new_file.name = strdup (name);
+  if (new_file.name == NULL) {
     nbdkit_error ("strdup: %m");
     free (host_path);
     return -1;
   }
-  floppy->files[fi].host_path = host_path;
-  floppy->files[fi].statbuf = *statbuf;
+  new_file.host_path = host_path;
+  new_file.statbuf = *statbuf;
+  fi = floppy->files.size;
+  if (files_append (&floppy->files, new_file) == -1) {
+    nbdkit_error ("realloc: %m");
+    free (host_path);
+    return -1;
+  }
 
   /* Add to the list of files in the parent directory (di). */
-  i = floppy->dirs[di].nr_fileidxs;
-  np = realloc (floppy->dirs[di].fileidxs, sizeof (size_t) * (i+1));
-  if (np == NULL) {
+  if (idxs_append (&floppy->dirs.ptr[di].fileidxs, fi) == -1) {
     nbdkit_error ("realloc: %m");
     return -1;
   }
-  floppy->dirs[di].fileidxs = np;
-  floppy->dirs[di].nr_fileidxs++;
-  floppy->dirs[di].fileidxs[i] = fi;
 
   return 0;
 }
@@ -571,13 +554,13 @@ create_fat (struct virtual_floppy *floppy)
   floppy->fat[0] = htole32 (0x0ffffff8);
   floppy->fat[1] = htole32 (0x0fffffff);
 
-  for (i = 0; i < floppy->nr_dirs; ++i) {
-    write_fat_file (floppy->dirs[i].first_cluster,
-                    floppy->dirs[i].nr_clusters, floppy);
+  for (i = 0; i < floppy->dirs.size; ++i) {
+    write_fat_file (floppy->dirs.ptr[i].first_cluster,
+                    floppy->dirs.ptr[i].nr_clusters, floppy);
   }
-  for (i = 0; i < floppy->nr_files; ++i) {
-    write_fat_file (floppy->files[i].first_cluster,
-                    floppy->files[i].nr_clusters, floppy);
+  for (i = 0; i < floppy->files.size; ++i) {
+    write_fat_file (floppy->files.ptr[i].first_cluster,
+                    floppy->files.ptr[i].nr_clusters, floppy);
   }
 
   return 0;
@@ -673,32 +656,32 @@ create_regions (struct virtual_floppy *floppy)
   /* Now we're into the data region.  We add all directory tables
    * first.
    */
-  for (i = 0; i < floppy->nr_dirs; ++i) {
+  for (i = 0; i < floppy->dirs.size; ++i) {
     /* Directories can never be completely empty because of the volume
      * label (root) or "." and ".." entries (non-root).
      */
-    assert (floppy->dirs[i].table.size > 0);
+    assert (floppy->dirs.ptr[i].table.size > 0);
 
     if (append_region_len (&floppy->regions,
-                           i == 0 ? "root directory" : floppy->dirs[i].name,
-                           floppy->dirs[i].table.size *
+                           i == 0 ? "root directory" : floppy->dirs.ptr[i].name,
+                           floppy->dirs.ptr[i].table.size *
                            sizeof (struct dir_entry),
                            0, CLUSTER_SIZE,
                            region_data,
-                           (void *) floppy->dirs[i].table.ptr) == -1)
+                           (void *) floppy->dirs.ptr[i].table.ptr) == -1)
       return -1;
   }
 
   /* Add all files. */
-  for (i = 0; i < floppy->nr_files; ++i) {
+  for (i = 0; i < floppy->files.size; ++i) {
     /* It's possible for a file to have zero size, in which case it
      * doesn't occupy a region or cluster.
      */
-    if (floppy->files[i].statbuf.st_size == 0)
+    if (floppy->files.ptr[i].statbuf.st_size == 0)
       continue;
 
-    if (append_region_len (&floppy->regions, floppy->files[i].name,
-                           floppy->files[i].statbuf.st_size,
+    if (append_region_len (&floppy->regions, floppy->files.ptr[i].name,
+                           floppy->files.ptr[i].statbuf.st_size,
                            0, CLUSTER_SIZE,
                            region_file, i) == -1)
       return -1;

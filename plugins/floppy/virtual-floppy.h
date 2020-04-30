@@ -39,6 +39,8 @@
 #include "regions.h"
 #include "vector.h"
 
+DEFINE_VECTOR_TYPE(idxs, size_t);
+
 struct partition_entry {
   uint8_t bootable;             /* 0x00 or 0x80 if bootable */
   uint8_t chs[3];               /* always set to chs_too_large */
@@ -109,6 +111,8 @@ struct file {
   uint32_t nr_clusters;         /* Number of clusters. */
 };
 
+DEFINE_VECTOR_TYPE(files, struct file);
+
 /* On disk directory entry (non-LFN). */
 struct dir_entry {
   uint8_t name[8 + 3];
@@ -131,7 +135,6 @@ struct dir_entry {
   uint32_t size;                /* 0x1C - file size */
 } __attribute__((packed));
 
-/* Appendable list of struct dir_entry. */
 DEFINE_VECTOR_TYPE(dir_entries, struct dir_entry);
 
 /* On disk directory entry (LFN). */
@@ -156,18 +159,18 @@ struct dir {
   /* List of subdirectories.  This is actually a list of indexes
    * into the floppy->dirs array.
    */
-  size_t *subdirs;
-  size_t nr_subdirs;
+  idxs subdirs;
 
   /* List of files in this directory.  This is actually a list of
    * indexes into the floppy->files array.
    */
-  size_t *fileidxs;
-  size_t nr_fileidxs;
+  idxs fileidxs;
 
   /* On disk directory table. */
   dir_entries table;
 };
+
+DEFINE_VECTOR_TYPE(dirs, struct dir);
 
 struct virtual_floppy {
   /* Virtual disk layout. */
@@ -186,12 +189,10 @@ struct virtual_floppy {
   uint32_t *fat;
 
   /* All regular files found. */
-  struct file *files;
-  size_t nr_files;
+  files files;
 
   /* Directories.  dirs[0] == root directory. */
-  struct dir *dirs;
-  size_t nr_dirs;
+  dirs dirs;
 
   uint64_t fat_entries;         /* Size of FAT (number of 32 bit entries). */
   uint64_t fat_clusters;        /* Size of FAT (clusters on disk). */

@@ -161,8 +161,8 @@ floppy_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
     switch (region->type) {
     case region_file:
       i = region->u.i;
-      assert (i < floppy.nr_files);
-      host_path = floppy.files[i].host_path;
+      assert (i < floppy.files.size);
+      host_path = floppy.files.ptr[i].host_path;
       fd = open (host_path, O_RDONLY|O_CLOEXEC);
       if (fd == -1) {
         nbdkit_error ("open: %s: %m", host_path);
