@@ -10,7 +10,7 @@ ext4 filesystems
 =head1 DEPRECATED
 
 B<The ext2 plugin is deprecated in S<nbdkit E<ge> 1.17.8> and will be
-removed in S<nbdkit 1.20>>.  It has been replaced with a filter with
+removed in S<nbdkit 1.22>>.  It has been replaced with a filter with
 the same functionality, see L<nbdkit-ext2-filter(1)>.  You can use the
 filter like this:
 
