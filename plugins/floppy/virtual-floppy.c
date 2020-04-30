@@ -220,7 +220,7 @@ free_virtual_floppy (struct virtual_floppy *floppy)
   for (i = 0; i < floppy->nr_dirs; ++i) {
     free (floppy->dirs[i].name);
     free (floppy->dirs[i].subdirs);
-    free (floppy->dirs[i].files);
+    free (floppy->dirs[i].fileidxs);
     free (floppy->dirs[i].table.ptr);
   }
   free (floppy->dirs);
@@ -424,15 +424,15 @@ visit_file (const char *dir, const char *name,
   floppy->files[fi].statbuf = *statbuf;
 
   /* Add to the list of files in the parent directory (di). */
-  i = floppy->dirs[di].nr_files;
-  np = realloc (floppy->dirs[di].files, sizeof (size_t) * (i+1));
+  i = floppy->dirs[di].nr_fileidxs;
+  np = realloc (floppy->dirs[di].fileidxs, sizeof (size_t) * (i+1));
   if (np == NULL) {
     nbdkit_error ("realloc: %m");
     return -1;
   }
-  floppy->dirs[di].files = np;
-  floppy->dirs[di].nr_files++;
-  floppy->dirs[di].files[i] = fi;
+  floppy->dirs[di].fileidxs = np;
+  floppy->dirs[di].nr_fileidxs++;
+  floppy->dirs[di].fileidxs[i] = fi;
 
   return 0;
 }

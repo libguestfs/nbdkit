@@ -80,7 +80,7 @@ create_directory (size_t di, const char *label,
 {
   size_t i;
   const size_t nr_subdirs = floppy->dirs[di].nr_subdirs;
-  const size_t nr_files = floppy->dirs[di].nr_files;
+  const size_t nr_files = floppy->dirs[di].nr_fileidxs;
   struct lfn *lfns, *lfn;
   const char *name;
   uint8_t attributes;
@@ -115,7 +115,7 @@ create_directory (size_t di, const char *label,
     lfns[i].name = name;
   }
   for (i = 0; i < nr_files; ++i) {
-    const size_t fi = floppy->dirs[di].files[i];
+    const size_t fi = floppy->dirs[di].fileidxs[i];
     assert (fi < floppy->nr_files);
 
     name = floppy->files[fi].name;
@@ -147,7 +147,7 @@ create_directory (size_t di, const char *label,
   /* Add files. */
   attributes = DIR_ENTRY_ARCHIVE; /* Same as set by Linux kernel. */
   for (i = 0; i < nr_files; ++i) {
-    const size_t fi = floppy->dirs[di].files[i];
+    const size_t fi = floppy->dirs[di].fileidxs[i];
     assert (fi < floppy->nr_files);
 
     lfn = &lfns[nr_subdirs+i];
@@ -551,7 +551,7 @@ update_directory_first_cluster (size_t di, struct virtual_floppy *floppy)
 {
   size_t i, j, pdi;
   const size_t nr_subdirs = floppy->dirs[di].nr_subdirs;
-  const size_t nr_files = floppy->dirs[di].nr_files;
+  const size_t nr_files = floppy->dirs[di].nr_fileidxs;
   uint32_t first_cluster;
   struct dir_entry *entry;
 
@@ -600,7 +600,7 @@ update_directory_first_cluster (size_t di, struct virtual_floppy *floppy)
       first_cluster = floppy->dirs[sdi].first_cluster;
     }
     else if (i < nr_subdirs + nr_files) {
-      const size_t fi = floppy->dirs[di].files[i-nr_subdirs];
+      const size_t fi = floppy->dirs[di].fileidxs[i-nr_subdirs];
       assert (fi < floppy->nr_files);
       first_cluster = floppy->files[fi].first_cluster;
     }

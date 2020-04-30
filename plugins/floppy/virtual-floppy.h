@@ -162,8 +162,8 @@ struct dir {
   /* List of files in this directory.  This is actually a list of
    * indexes into the floppy->files array.
    */
-  size_t *files;
-  size_t nr_files;
+  size_t *fileidxs;
+  size_t nr_fileidxs;
 
   /* On disk directory table. */
   dir_entries table;
