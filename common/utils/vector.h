@@ -52,17 +52,17 @@
   };                                                                    \
   typedef struct name name;                                             \
   static inline int                                                     \
-  name##_extend (name *v, size_t n)                                     \
+  name##_reserve (name *v, size_t n)                                    \
   {                                                                     \
-    return generic_vector_extend ((struct generic_vector *)v, n,        \
-                                  sizeof (type));                       \
+    return generic_vector_reserve ((struct generic_vector *)v, n,       \
+                                   sizeof (type));                      \
   }                                                                     \
   /* Insert at i'th element.  i=0 => beginning  i=size => append */     \
   static inline int                                                     \
   name##_insert (name *v, type elem, size_t i)                          \
   {                                                                     \
     if (v->size >= v->alloc) {                                          \
-      if (name##_extend (v, 1) == -1) return -1;                        \
+      if (name##_reserve (v, 1) == -1) return -1;                       \
     }                                                                   \
     memmove (&v->ptr[i+1], &v->ptr[i], (v->size-i) * sizeof (elem));    \
     v->ptr[i] = elem;                                                   \
@@ -90,7 +90,7 @@ struct generic_vector {
   size_t alloc;
 };
 
-extern int generic_vector_extend (struct generic_vector *v,
-                                  size_t n, size_t itemsize);
+extern int generic_vector_reserve (struct generic_vector *v,
+                                   size_t n, size_t itemsize);
 
 #endif /* NBDKIT_VECTOR_H */

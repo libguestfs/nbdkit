@@ -38,7 +38,7 @@
 #include "vector.h"
 
 int
-generic_vector_extend (struct generic_vector *v, size_t n, size_t itemsize)
+generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
 {
   void *newptr;
 
