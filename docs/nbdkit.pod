@@ -658,7 +658,8 @@ L<nbdkit-release-notes-1.10(1)>,
 L<nbdkit-release-notes-1.12(1)>,
 L<nbdkit-release-notes-1.14(1)>,
 L<nbdkit-release-notes-1.16(1)>,
-L<nbdkit-release-notes-1.18(1)>.
+L<nbdkit-release-notes-1.18(1)>,
+L<nbdkit-release-notes-1.20(1)>.
 
 =head2 NBD clients
 

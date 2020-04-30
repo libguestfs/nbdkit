@@ -1,0 +1,181 @@
+=head1 NAME
+
+nbdkit-release-notes-1.20 - release notes for nbdkit 1.20
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.20.
+This describes the major changes since 1.18.
+
+nbdkit 1.20.0 was released on B<XX XXXX> 2020.
+
+=head2 Security
+
+There were no security issues found.  All past security issues and
+information about how to report new ones can be found in
+L<nbdkit-security(1)>.
+
+=head2 Plugins
+
+New L<nbdkit-tmpdisk-plugin(1)> is a scriptable “remote tmpfs” for
+creating temporary filesystems (eg. for thin clients), and also for
+blank or prepopulated temporary disks.
+
+L<nbdkit-data-plugin(1)> now has support for prepopulating disks with
+more complex test patterns such as repeated sequences of bytes.
+
+L<nbdkit-curl-plugin(1)> now supports setting a proxy, enabling TCP
+keepalives, and disabling Nagle’s algorithm.
+
+L<nbdkit-perl-plugin(1)> now supports API version 2.  In particular
+the full NBD client flags are visible to plugins, along with support
+for the C<.get_ready> callback.  Also there is a new function
+C<Nbdkit::debug> which is a wrapper around the C<nbdkit_debug> API.
+
+L<nbdkit-vddk-plugin(1)> drops support for VDDK 5.1.1.  This version
+was last updated in 2014 and is no longer supported by VMware.  Since
+this was the last version of VDDK to support i686, 32-bit support is
+also dropped (Eric Blake).
+
+=head2 Language bindings
+
+Plugins may now be written in Golang, see L<nbdkit-golang-plugin(3)>
+(thanks Dan Berrangé, James Shubin).
+
+OCaml plugins can now access C<nbdkit_realpath>, C<nbdkit_nanosleep>,
+C<nbdkit_export_name> and C<nbdkit_shutdown>.
+
+Python plugins now transparently support fail-fast zero (Eric Blake).
+
+=head2 Filters
+
+New L<nbdkit-exitlast-filter(1)> causes nbdkit to exit after the last
+client connection.
+
+New L<nbdkit-limit-filter(1)> allows you to limit the number of
+clients which can simultaneously connect to any plugin.
+
+=head2 Server
+
+The I<--run> option now waits for the nbdkit plugin and nbdkit to exit
+before returning to the caller.  This allows for more predictable
+clean up in shell scripts using this feature.
+
+nbdkit I<--dump-config> output now includes separate lines for
+C<version_major> and C<version_minor>, making it easier to find out
+from shell scripts which version of nbdkit is installed.
+
+nbdkit I<-s> option (which connects to the client over stdin/stdout)
+now rejects various options that would also try to read from or write
+to stdin/stdout, for example I<--dump-plugin> or C<password=->
+(Eric Blake).
+
+=head2 API
+
+New C<nbdkit_shutdown> call which allows plugins to ask for nbdkit
+to exit.  This is used to implement the new C<exitlast> filter.
+
+New C<nbdkit_stdio_safe> call allows plugins to check if reading from
+stdin or writing to stdout is safe, eg. if it is safe to read
+passwords interactively (Eric Blake).
+
+C<can_*> callbacks which return booleans can return any value E<ge> 1
+to mean true.  Previous versions of nbdkit had inconsistent behaviour
+if plugins returned anything other than 1 for true (Eric Blake).
+
+=head2 Bug fixes
+
+L<nbdkit-tar-plugin(1)> now works and there is a regression test for
+it.
+
+L<nbdkit-curl-plugin(1)> C<-D curl.version=1> option now works.
+
+Fixed a rare hang when closing a connection in L<nbdkit-nbd-plugin(1)>
+(Eric Blake).
+
+Fix compilation on certain platforms with clang (Khem Raj).
+
+Don’t leak C<$tmpdir> from L<nbdkit-sh-plugin(1)> into the I<--run>
+subcommand.
+
+nbdkit now correctly sets C<FD_CLOEXEC> when using systemd socket
+activation (Eric Blake).
+
+=head2 Documentation
+
+The L<nbdkit-plugin(3)> man page has been overhauled completely to
+make it easier to follow.  Also we now have documentation for how to
+compile plugins in various environments which was missing before.
+
+=head2 Tests
+
+All valgrind tests now pass.
+
+“Old plugin” tests were added for v1.18.2 on x86-64, and a variety of
+old plugins compiled on i686.  The i686 plugins will allow us to test
+for regressions in 32 bit support.
+
+Tests of the nbd plugin should now be stable (Eric Blake).
+
+There is an additional test combining the offset and truncate filters,
+which tests several corner cases as well as providing tests of error
+handling between layers.
+
+=head2 Build
+
+L<nbdkit-nbd-plugin(1)> now requires libnbd.  (If libnbd is not
+present at build time then this plugin is not built).  The fallback
+code in this plugin which made NBD connections by constructing NBD
+command packets without using libnbd has been removed (Eric Blake).
+
+F<scripts/git.orderfile> has been improved so that commands like
+S<C<git diff>> and S<C<git show>> display OCaml sources in a natural
+order with interface first followed by implementation.
+
+Various fixes for MinGW.  Note MinGW / MSYS support is a work in
+progress and not finished yet (Frank Gu).
+
+Multiple fixes to Haiku build.
+
+L<awk(1)> is no longer required to run the tests.  It was a “hidden”
+required dependency, but all use of it has now been eliminated.
+
+=head2 Internals
+
+There is now an internal utility library for creating vectors/lists of
+objects, for example lists of strings (F<common/utils/vector.h>).  It
+is widely used by the server, plugins and filters.
+
+F<README> discusses how to use L<lcov(1)> for code coverage reports.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Authors of nbdkit 1.20:
+
+=over 4
+
+=item Eric Blake
+
+(33 commits)
+
+=item Khem Raj
+
+(1 commit)
+
+=item Richard W.M. Jones
+
+(121 commits)
+
+=item Frank Gu
+
+(6 commits)
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.
