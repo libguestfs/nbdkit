@@ -447,6 +447,9 @@ into the background (but not required).
 
 Print the version number of nbdkit and exit.
 
+The I<--dump-config> option provides separate major and minor numbers
+and may be easier to parse from shell scripts.
+
 =item B<--vsock>
 
 Use the AF_VSOCK protocol (instead of TCP/IP).  You must use this in
