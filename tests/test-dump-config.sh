@@ -33,6 +33,8 @@
 source ./functions.sh
 set -e
 
+requires cut --version
+
 output="$(nbdkit --dump-config)"
 if [[ ! ( "$output" =~ bindir= ) ]]; then
     echo "$0: unexpected output from nbdkit --dump-config"
@@ -43,5 +45,20 @@ fi
 if [[ ! ( "$output" =~ version_major=1 ) ]]; then
     echo "$0: version_major != 1 in nbdkit --dump-config"
     echo "$output"
+    exit 1
+fi
+
+# Test that the example in nbdkit-probing(1) man page works.  The
+# first version of nbdkit to include the version_major/version_minor
+# strings was 1.16.5.
+major=$( nbdkit --dump-config | grep ^version_major | cut -d= -f2 )
+minor=$( nbdkit --dump-config | grep ^version_minor | cut -d= -f2 )
+echo major=$major minor=$minor
+if [ $major -ne 1 ]; then
+    echo "$0: version_major parsed by cut != 1"
+    exit 1
+fi
+if [ $minor -lt 16 ]; then
+    echo "$0: version_minor parsed by cut < 16"
     exit 1
 fi

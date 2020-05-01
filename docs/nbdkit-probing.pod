@@ -26,8 +26,8 @@ Use this command to see if the nbdkit program is installed:
 
  nbdkit --version
 
-This will fail with an error and non-zero exit code if the nbdkit is
-not installed or not working.
+This will fail with an error and non-zero exit code if nbdkit is not
+installed or not working.
 
 =head2 Query basic configuration
 
@@ -38,7 +38,25 @@ fields in the output are the name of the directory where nbdkit looks
 for plugins and the version of nbdkit, eg:
 
  plugindir=/usr/lib64/nbdkit/plugins
- version=1.2.3
+ version=1.20.1
+ version_major=1
+ version_minor=20
+
+=head2 Test nbdkit E<ge> version
+
+To test if nbdkit E<ge> a particular version is installed, use the
+I<--dump-config> option and look for the C<version_major> and
+C<version_minor> fields:
+
+ $ nbdkit --dump-config | grep ^version_minor
+ version_minor=20
+ $ major=$( nbdkit --dump-config | grep ^version_major | cut -d= -f2 )
+ $ minor=$( nbdkit --dump-config | grep ^version_minor | cut -d= -f2 )
+ $ if [ $major -eq 1 ] && [ $minor -lt 12 ]
+   then echo 'nbdkit >= 1.12 is required'; exit 1; fi
+
+These fields were first added in nbdkit 1.16.5 and were not present in
+earlier versions.
 
 =head2 Query information about a particular plugin
 
@@ -50,7 +68,7 @@ information about that plugin, eg:
  $ nbdkit file --dump-plugin
  path=/usr/lib64/nbdkit/plugins/nbdkit-file-plugin.so
  name=file
- version=1.2.3
+ version=1.20.1
  api_version=1
  struct_size=176
  thread_model=serialize_requests
