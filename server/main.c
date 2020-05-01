@@ -940,9 +940,10 @@ start_serving (void)
         exit (EXIT_FAILURE);
       }
     for (i = 0; i < socket_activation; ++i) {
-      int s = FIRST_SOCKET_ACTIVATION_FD + i;
+      int s = FIRST_SOCKET_ACTIVATION_FD + i, r;
       /* This can't fail because of the reservation above. */
-      assert (sockets_append (&socks, s) == 0);
+      r = sockets_append (&socks, s);
+      assert (r == 0);
     }
     debug ("using socket activation, nr_socks = %zu", socks.size);
     change_user ();
