@@ -7,7 +7,7 @@ nbdkit-release-notes-1.20 - release notes for nbdkit 1.20
 These are the release notes for nbdkit stable release 1.20.
 This describes the major changes since 1.18.
 
-nbdkit 1.20.0 was released on B<XX XXXX> 2020.
+nbdkit 1.20.0 was released on B<2nd May 2020>.
 
 =head2 Security
 
@@ -168,7 +168,7 @@ Authors of nbdkit 1.20:
 
 =item Richard W.M. Jones
 
-(121 commits)
+(134 commits)
 
 =item Frank Gu
 
