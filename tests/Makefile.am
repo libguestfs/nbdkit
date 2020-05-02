@@ -86,6 +86,7 @@ EXTRA_DIST = \
 	shebang.rb \
 	ssh/sshd_config.in \
 	test-ansi-c.sh \
+	test-binary.sh \
 	test-blocksize.sh \
 	test-cache.sh \
 	test-cache-max-size.sh \
@@ -238,6 +239,7 @@ endif HAVE_VDDK
 # Basic server command line and start-up tests.
 
 TESTS += \
+	test-binary.sh \
 	test-help.sh \
 	test-version.sh \
 	test-dump-config.sh \

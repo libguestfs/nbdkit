@@ -126,8 +126,13 @@ display_version (void)
 }
 
 static void
-dump_config (void)
+dump_config (const char *argv0)
 {
+  CLEANUP_FREE char *binary;
+
+  binary = realpath (argv0, NULL);
+  if (binary != NULL)
+    printf ("%s=%s\n", "binary", binary);
   printf ("%s=%s\n", "bindir", bindir);
   printf ("%s=%s\n", "filterdir", filterdir);
   printf ("%s=%s\n", "libdir", libdir);
@@ -208,7 +213,7 @@ main (int argc, char *argv[])
 
     switch (c) {
     case DUMP_CONFIG_OPTION:
-      dump_config ();
+      dump_config (argv[0]);
       exit (EXIT_SUCCESS);
 
     case DUMP_PLUGIN_OPTION:
