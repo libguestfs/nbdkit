@@ -121,11 +121,10 @@ display_version (void)
 }
 
 static void
-dump_config (const char *argv0)
+dump_config (void)
 {
-  CLEANUP_FREE char *binary;
+  CLEANUP_FREE char *binary = realpath ("/proc/self/exe", NULL);
 
-  binary = realpath (argv0, NULL);
   if (binary != NULL)
     printf ("%s=%s\n", "binary", binary);
   printf ("%s=%s\n", "bindir", bindir);
@@ -208,7 +207,7 @@ main (int argc, char *argv[])
 
     switch (c) {
     case DUMP_CONFIG_OPTION:
-      dump_config (argv[0]);
+      dump_config ();
       exit (EXIT_SUCCESS);
 
     case DUMP_PLUGIN_OPTION:
