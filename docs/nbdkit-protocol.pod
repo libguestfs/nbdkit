@@ -221,4 +221,4 @@ Pino Toscano
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2019 Red Hat Inc.
+Copyright (C) 2013-2020 Red Hat Inc.

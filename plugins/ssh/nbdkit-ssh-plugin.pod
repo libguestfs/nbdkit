@@ -332,4 +332,4 @@ Parts derived from Pino Toscano’s qemu libssh driver.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2014-2019 Red Hat Inc.
+Copyright (C) 2014-2020 Red Hat Inc.
