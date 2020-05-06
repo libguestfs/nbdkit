@@ -377,6 +377,8 @@ load_library (void)
      * but our testsuite is easier to write if we point libdir
      * directly to a stub .so.
      */
+    "lib64/libvixDiskLib.so.7",
+    "libvixDiskLib.so.7",
     "lib64/libvixDiskLib.so.6",
     "libvixDiskLib.so.6",
     "lib64/libvixDiskLib.so.5",
