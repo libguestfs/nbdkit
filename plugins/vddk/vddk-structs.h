@@ -32,7 +32,7 @@
 
 /* Types and structs that we pass to or return from the VDDK API.
  *
- * Updated to VDDK 6.7
+ * Updated to VDDK 7.0
  */
 
 #ifndef NBDKIT_VDDK_STRUCTS_H
@@ -127,6 +127,8 @@ typedef struct VixDiskLibInfo {
   int numLinks;
   char *parentFileNameHint;
   char *uuid;
+  uint32_t logicalSectorSize;   /* Added in 7.0. */
+  uint32_t physicalSectorSize;  /* Added in 7.0. */
 } VixDiskLibInfo;
 
 typedef struct {

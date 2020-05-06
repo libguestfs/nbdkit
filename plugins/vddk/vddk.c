@@ -149,6 +149,7 @@ vddk_load (void)
 {
   static const char *sonames[] = {
     /* Prefer the newest library in case multiple exist. */
+    "libvixDiskLib.so.7",
     "libvixDiskLib.so.6",
     "libvixDiskLib.so.5",
   };
