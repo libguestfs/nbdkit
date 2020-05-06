@@ -95,6 +95,7 @@ copy_environ (char **env, ...)
     if (environ_t_append (&ret, s) == -1) {
       nbdkit_error ("realloc: %m");
       va_end (argp);
+      free (s);
       goto error;
     }
 
