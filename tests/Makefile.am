@@ -217,7 +217,9 @@ EXTRA_DIST = \
 	test-truncate4.sh \
 	test-truncate-extents.sh \
 	test-vddk.sh \
+	test-vddk-dump-plugin.sh \
 	test-vddk-real.sh \
+	test-vddk-real-dump-plugin.sh \
 	test-version.sh \
 	test-version-filter.sh \
 	test-version-plugin.sh \
@@ -243,7 +245,7 @@ if HAVE_VDDK
 #
 #   make check-vddk vddkdir=vmware-vix-disklib-distrib
 check-vddk:
-	$(MAKE) check TESTS=test-vddk-real.sh
+	$(MAKE) check TESTS="test-vddk-real.sh test-vddk-real-dump-plugin.sh"
 endif HAVE_VDDK
 
 #----------------------------------------------------------------------
@@ -857,7 +859,9 @@ if HAVE_VDDK
 noinst_LTLIBRARIES += libvixDiskLib.la
 TESTS += \
 	test-vddk.sh \
+	test-vddk-dump-plugin.sh \
 	test-vddk-real.sh \
+	test-vddk-real-dump-plugin.sh \
 	$(NULL)
 
 libvixDiskLib_la_SOURCES = \
