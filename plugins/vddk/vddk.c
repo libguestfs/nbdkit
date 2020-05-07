@@ -408,7 +408,7 @@ check_reexec (const char *prepend)
 
 /* Load the VDDK library. */
 static void
-load_library (void)
+load_library (bool load_error_is_fatal)
 {
   static const char *sonames[] = {
     /* Prefer the newest library in case multiple exist.  Check two
@@ -428,7 +428,14 @@ load_library (void)
   size_t i;
   CLEANUP_FREE char *orig_error = NULL;
 
-  /* Load the library. */
+  if (!libdir) {
+    libdir = strdup (VDDK_LIBDIR);
+    if (!libdir) {
+      nbdkit_error ("strdup: %m");
+      exit (EXIT_FAILURE);
+    }
+  }
+
   for (i = 0; i < sizeof sonames / sizeof sonames[0]; ++i) {
     CLEANUP_FREE char *path;
 
@@ -456,6 +463,8 @@ load_library (void)
     }
   }
   if (dl == NULL) {
+    if (!load_error_is_fatal)
+      return;
     nbdkit_error ("%s\n\n"
                   "If '%s' is located on a non-standard path you may need to\n"
                   "set libdir=/path/to/vmware-vix-disklib-distrib.\n\n"
@@ -547,14 +556,6 @@ vddk_config_complete (void)
 #undef missing
   }
 
-  if (!libdir) {
-    libdir = strdup (VDDK_LIBDIR);
-    if (!libdir) {
-      nbdkit_error ("strdup: %m");
-      return -1;
-    }
-  }
-
   return 0;
 }
 
@@ -563,7 +564,7 @@ vddk_get_ready (void)
 {
   VixError err;
 
-  load_library ();
+  load_library (true);
 
   /* Initialize VDDK library. */
   DEBUG_CALL ("VixDiskLib_InitEx",
@@ -591,6 +592,8 @@ vddk_get_ready (void)
 static void
 vddk_dump_plugin (void)
 {
+  load_library (false);
+
   printf ("vddk_default_libdir=%s\n", VDDK_LIBDIR);
   printf ("vddk_has_nfchostport=1\n");
 
@@ -603,7 +606,8 @@ vddk_dump_plugin (void)
    */
   Dl_info info;
   CLEANUP_FREE char *p = NULL;
-  if (dladdr (VixDiskLib_InitEx, &info) != 0 &&
+  if (dl != NULL &&
+      dladdr (VixDiskLib_InitEx, &info) != 0 &&
       info.dli_fname != NULL &&
       (p = nbdkit_realpath (info.dli_fname)) != NULL) {
     printf ("vddk_dll=%s\n", p);

@@ -34,24 +34,28 @@ source ./functions.sh
 set -e
 set -x
 
-# Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
-# this test if valgrinding.
-if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
-    echo "$0: skipped LD_LIBRARY_PATH test when doing valgrind"
+requires test "x$vddkdir" != "x"
+requires test -d "$vddkdir"
+requires test -f "$vddkdir/lib64/libvixDiskLib.so"
+requires cut --version
+
+# VDDK > 5.1.1 only supports x86_64.
+if [ `uname -m` != "x86_64" ]; then
+    echo "$0: unsupported architecture"
     exit 77
 fi
 
-# Also test our magic file= handling, even though the dummy driver doesn't
-# really open a file.
-# really open a file.  We also ensure that LD_LIBRARY_PATH in the child
-# is not further modified, even if nbdkit had to re-exec.  It's tricky,
-# though: when running uninstalled, our wrapper nbdkit also modifies
-# LD_LIBRARY_PATH, so we need to capture an expected value from what
-# leaks through an innocuous plugin.
-expect_LD_LIBRARY_PATH=$(nbdkit -U - zero --run 'echo "$LD_LIBRARY_PATH"')
-export expect_LD_LIBRARY_PATH
+out=test-vddk-real-dump-plugin.out
+files="$out"
+rm -f $files
+cleanup_fn rm -f $files
 
-nbdkit -U - vddk libdir=.libs /dev/null \
-   --run 'echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-          echo "expect_LD_LIBRARY_PATH=$expect_LD_LIBRARY_PATH"
-          test "$LD_LIBRARY_PATH" = "$expect_LD_LIBRARY_PATH"'
+nbdkit -f -v vddk libdir="$vddkdir" --dump-plugin > $out
+
+# Check the vddk_* entries are set.
+grep ^vddk_default_libdir= $out
+grep ^vddk_has_nfchostport= $out
+grep ^vddk_dll= $out
+
+dll="$(grep ^vddk_dll $out | cut -d= -f2)"
+test -f "$dll"
