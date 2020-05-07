@@ -43,8 +43,9 @@
 #include <fcntl.h>
 #include <libgen.h>
 
-#define NBDKIT_API_VERSION 2
+#include <pthread.h>
 
+#define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
@@ -76,6 +77,7 @@ int vddk_debug_datapath = 1;
 static void *dl;                           /* dlopen handle */
 static bool init_called;                   /* was InitEx called */
 static char *reexeced;                     /* orig LD_LIBRARY_PATH on reexec */
+static pthread_key_t error_suppression;    /* threadlocal error suppression */
 
 static char *config;                       /* config */
 static const char *cookie;                 /* cookie */
@@ -108,6 +110,35 @@ static bool is_remote;
   if (vddk_debug_datapath)                                      \
     nbdkit_debug ("VDDK call: %s (" fs ")", fn, ##__VA_ARGS__)
 
+/* Load the plugin. */
+static void
+vddk_load (void)
+{
+  int err;
+
+  err = pthread_key_create (&error_suppression, NULL);
+  if (err != 0) {
+    nbdkit_error ("vddk: pthread_key_create: %s\n", strerror (err));
+    exit (EXIT_FAILURE);
+  }
+}
+
+/* Unload the plugin. */
+static void
+vddk_unload (void)
+{
+  if (init_called) {
+    DEBUG_CALL ("VixDiskLib_Exit", "");
+    VixDiskLib_Exit ();
+  }
+  if (dl)
+    dlclose (dl);
+  free (config);
+  free (libdir);
+  free (password);
+  pthread_key_delete (error_suppression);
+}
+
 static void
 trim (char *str)
 {
@@ -133,11 +164,36 @@ debug_function (const char *fs, va_list args)
   nbdkit_debug ("%s", str);
 }
 
+/* If the thread-local error_suppression pointer is non-NULL (we don't
+ * care about the actual value) then we will suppress error messages
+ * from VDDK in this thread.
+ */
+static void
+set_error_suppression (void)
+{
+  static const int one = 1; /* Something that gives us a non-NULL pointer. */
+  pthread_setspecific (error_suppression, &one);
+}
+
+static void
+clear_error_suppression (void)
+{
+  pthread_setspecific (error_suppression, NULL);
+}
+
+static bool
+are_errors_suppressed (void)
+{
+  return pthread_getspecific (error_suppression) != NULL;
+}
+
 /* Turn error messages from the library into nbdkit_error. */
 static void
 error_function (const char *fs, va_list args)
 {
   CLEANUP_FREE char *str = NULL;
+
+  if (are_errors_suppressed ()) return;
 
   if (vasprintf (&str, fs, args) == -1) {
     nbdkit_error ("lost error message: %s", fs);
@@ -147,21 +203,6 @@ error_function (const char *fs, va_list args)
   trim (str);
 
   nbdkit_error ("%s", str);
-}
-
-/* Unload the plugin. */
-static void
-vddk_unload (void)
-{
-  if (init_called) {
-    DEBUG_CALL ("VixDiskLib_Exit", "");
-    VixDiskLib_Exit ();
-  }
-  if (dl)
-    dlclose (dl);
-  free (config);
-  free (libdir);
-  free (password);
 }
 
 /* Configuration. */
@@ -878,6 +919,11 @@ vddk_can_extents (void *handle)
     return 0;
   }
 
+  /* Suppress errors around this call.  See:
+   * https://bugzilla.redhat.com/show_bug.cgi?id=1709211#c7
+   */
+  set_error_suppression ();
+
   /* However even when the call is available it rarely works well so
    * the best thing we can do here is to try the call and if it's
    * non-functional return false.
@@ -889,6 +935,7 @@ vddk_can_extents (void *handle)
                                          0, VIXDISKLIB_MIN_CHUNK_SIZE,
                                          VIXDISKLIB_MIN_CHUNK_SIZE,
                                          &block_list);
+  clear_error_suppression ();
   if (err == VIX_OK) {
     DEBUG_CALL ("VixDiskLib_FreeBlockList", "block_list");
     VixDiskLib_FreeBlockList (block_list);
@@ -1027,6 +1074,7 @@ static struct nbdkit_plugin plugin = {
   .name              = "vddk",
   .longname          = "VMware VDDK plugin",
   .version           = PACKAGE_VERSION,
+  .load              = vddk_load,
   .unload            = vddk_unload,
   .config            = vddk_config,
   .config_complete   = vddk_config_complete,
