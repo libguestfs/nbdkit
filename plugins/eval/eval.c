@@ -219,6 +219,12 @@ eval_load (void)
 }
 
 static void
+free_method_script (struct method_script entry)
+{
+  free (entry.script);
+}
+
+static void
 eval_unload (void)
 {
   const char *method = "unload";
@@ -233,7 +239,7 @@ eval_unload (void)
   }
 
   call_unload ();
-  method_script_list_iter (&method_scripts, (void *) free);
+  method_script_list_iter (&method_scripts, free_method_script);
   free (method_scripts.ptr);
   free (missing);
 }
