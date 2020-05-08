@@ -63,10 +63,16 @@ requires test -f "$f"
 requires test "$(uname -m)" = "$test_arch"
 requires test "$(uname -s)" = "$test_os"
 
-nbdkit -fv -r -U - $f file=disk \
+disk="`mktemp`"
+files="$disk"
+cleanup_fn rm -f $files
+
+cp disk $disk
+
+nbdkit -fv -U - $f file=$disk \
        --run '
     guestfish \
-        add "" protocol:nbd readonly:true server:unix:$unixsocket : \
+        add "" protocol:nbd server:unix:$unixsocket : \
         run : \
         mount /dev/sda1 / : \
         write /hello "hello,world" : \
