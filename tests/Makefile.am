@@ -114,6 +114,7 @@ EXTRA_DIST = \
 	test-error100.sh \
 	test-error-triggered.sh \
 	test-eval.sh \
+	test-eval-file.sh \
 	test-exitlast.sh \
 	test-export-name.sh \
 	test-extentlist.sh \
@@ -596,7 +597,10 @@ test_data_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_data_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # eval plugin test.
-TESTS += test-eval.sh
+TESTS += \
+	test-eval.sh \
+	test-eval-file.sh \
+	$(NULL)
 
 # ext2 filter and plugin test.
 if HAVE_MKE2FS_WITH_D
