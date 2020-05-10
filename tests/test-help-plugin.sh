@@ -34,9 +34,26 @@ source ./functions.sh
 set -e
 set -x
 
-output="$(nbdkit --help)"
-if [[ ! ( "$output" =~ dump-config ) ]]; then
-    echo "$0: unexpected output from nbdkit --help"
-    echo "$output"
-    exit 1
-fi
+run_test ()
+{
+    nbdkit $1 --help
+}
+
+do_test ()
+{
+    vg=; [ "$NBDKIT_VALGRIND" = "1" ] && vg="-valgrind"
+    case "$1$vg" in
+        python-valgrind | ruby-valgrind | tcl-valgrind)
+            echo "$0: skipping $1$vg because this language doesn't support valgrind"
+            ;;
+        example4* | tar*)
+            # These tests are written in Perl so we have to check that
+            # the Perl plugin was compiled.
+            if nbdkit perl --version; then run_test $1; fi
+            ;;
+        *)
+            run_test $1
+            ;;
+    esac
+}
+foreach_plugin do_test
