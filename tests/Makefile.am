@@ -129,7 +129,6 @@ EXTRA_DIST = \
 	test-fua.sh \
 	test-full.sh \
 	test-help.sh \
-	test-help-plugin.sh \
 	test-info-address.sh \
 	test-info-base64.sh \
 	test-info-raw.sh \
@@ -227,7 +226,6 @@ EXTRA_DIST = \
 	test-vddk-real-dump-plugin.sh \
 	test-version.sh \
 	test-version-filter.sh \
-	test-version-plugin.sh \
 	test-vsock.sh \
 	test-zero.sh \
 	$(NULL)
@@ -266,8 +264,6 @@ TESTS += \
 if HAVE_PLUGINS
 
 TESTS += \
-	test-help-plugin.sh \
-	test-version-plugin.sh \
 	test-version-filter.sh \
 	test-probe-filter.sh \
 	test-probe-plugin.sh \
