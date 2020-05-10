@@ -44,8 +44,9 @@ include $(top_srcdir)/common-rules.mk
 #   LIBGUESTFS_TESTS Tests that link to libguestfs C library should be
 #                    added to this variable.
 #
-# check_*, noinst_*, EXTRA_PROGRAMS: These are the usual automake
-# variables.  Consult the automake manual for the meaning of these.
+# check_*, noinst_*, EXTRA_DIST, EXTRA_PROGRAMS: These are the usual
+# automake variables.  Consult the automake manual for the meaning of
+# these.
 
 TESTS =
 LIBNBD_TESTS =
@@ -56,6 +57,7 @@ check_DATA = functions.sh
 check_SCRIPTS =
 check_LTLIBRARIES =
 noinst_LTLIBRARIES =
+EXTRA_DIST = README.tests
 EXTRA_PROGRAMS =
 
 # Ensure we're testing the local copy by running everything through
@@ -72,169 +74,6 @@ TESTS_ENVIRONMENT = \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
 	LIBNBD_DEBUG=1 \
-	$(NULL)
-
-# All files that need to go into the tarball must be added here.
-EXTRA_DIST = \
-	generate-file-data.sh \
-	make-pki.sh \
-	make-psk.sh \
-	python-exception.py \
-	README.tests \
-	shebang.pl \
-	shebang.py \
-	shebang.rb \
-	ssh/sshd_config.in \
-	test-ansi-c.sh \
-	test-binary.sh \
-	test-blocksize.sh \
-	test-cache.sh \
-	test-cache-max-size.sh \
-	test-cache-on-read.sh \
-	test-cacheextents.sh \
-	test-captive.sh \
-	test-cow.sh \
-	test-cow-null.sh \
-	test-curl-file.sh \
-	test-cxx.sh \
-	test-data-7E.sh \
-	test-data-base64.sh \
-	test-data-extents.sh \
-	test-data-file.sh \
-	test-data-nest.sh \
-	test-data-raw.sh \
-	test-debug-flags.sh \
-	test-delay-shutdown.sh \
-	test-dump-config.sh \
-	test-dump-config-major-1.sh \
-	test-dump-config-version-major-minor.sh \
-	test-dump-plugin.sh \
-	test-dump-plugin-and-single.sh \
-	test-dump-plugin-example1.sh \
-	test-dump-plugin-example2.sh \
-	test-dump-plugin-example4.sh \
-	test-dump-plugin-name.sh \
-	test-dump-plugin-thread-model.sh \
-	test-eflags.sh \
-	test-error0.sh \
-	test-error10.sh \
-	test-error100.sh \
-	test-error-triggered.sh \
-	test-eval.sh \
-	test-eval-file.sh \
-	test-exitlast.sh \
-	test-export-name.sh \
-	test-extentlist.sh \
-	test-file-extents.sh \
-	test-floppy.sh \
-	test-flush.sh \
-	test-foreground.sh \
-	test-fua.sh \
-	test-full.sh \
-	test-help.sh \
-	test-help-example1.sh \
-	test-help-plugin.sh \
-	test-info-address.sh \
-	test-info-base64.sh \
-	test-info-raw.sh \
-	test-info-time.sh \
-	test-info-uptime.sh \
-	test-info-conntime.sh \
-	test-ip.sh \
-	test-ip-filter.sh \
-	test-iso.sh \
-	test-layers.sh \
-	test-limit.sh \
-	test-linuxdisk.sh \
-	test-linuxdisk-copy-out.sh \
-	test-log.sh \
-	test-long-name.sh \
-	test.lua \
-	test-memory-largest.sh \
-	test-memory-largest-for-qemu.sh \
-	test-nbd-extents.sh \
-	test-nbd-tls.sh \
-	test-nbd-tls-psk.sh \
-	test-nbdkit-backend-debug.sh \
-	test-nofilter.sh \
-	test-nozero.sh \
-	test-null-extents.sh \
-	test_ocaml_plugin.ml \
-	test-ocaml.c \
-	test-offset2.sh \
-	test-offset-extents.sh \
-	test-offset-truncate.sh \
-	test-parallel-file.sh \
-	test-parallel-nbd.sh \
-	test-parallel-sh.sh \
-	test-partition1.sh \
-	test-partition2.sh \
-	test-partitioning1.sh \
-	test-partitioning2.sh \
-	test-partitioning3.sh \
-	test-partitioning4.sh \
-	test-partitioning5.sh \
-	test-partitioning6.sh \
-	test-pattern.sh \
-	test-pattern-largest.sh \
-	test-pattern-largest-for-qemu.sh \
-	test-probe-filter.sh \
-	test-probe-plugin.sh \
-	test-python-exception.sh \
-	test.pl \
-	test_python.py \
-	test-python-plugin.py \
-	test-python.sh \
-	test-rate.sh \
-	test-rate-dynamic.sh \
-	test.rb \
-	test-readahead.sh \
-	test-readahead-copy.sh \
-	test-readahead-test-plugin.sh \
-	test-readahead-test-request.py \
-	test-retry.sh \
-	test-retry-extents.sh \
-	test-retry-size.sh \
-	test-retry-readonly.sh \
-	test-retry-reopen-fail.sh \
-	test-retry-zero-flags.sh \
-	test-ssh.sh \
-	test-stdio.sh \
-	test-swap.sh \
-	test.tcl \
-	test-shebang-perl.sh \
-	test-shebang-python.sh \
-	test-shebang-ruby.sh \
-	test-shell.sh \
-	test-shutdown.sh \
-	test-sh-errors.sh \
-	test-sh-extents.sh \
-	test-sh-tmpdir-leak.sh \
-	test-single.sh \
-	test-single-from-file.sh \
-	test-single-sh.sh \
-	test-split-extents.sh \
-	test-start.sh \
-	test-random-sock.sh \
-	test-tar.sh \
-	test-tls.sh \
-	test-tls-psk.sh \
-	test-tmpdisk-command.sh \
-	test-truncate1.sh \
-	test-truncate2.sh \
-	test-truncate3.sh \
-	test-truncate4.sh \
-	test-truncate-extents.sh \
-	test-vddk.sh \
-	test-vddk-dump-plugin.sh \
-	test-vddk-real.sh \
-	test-vddk-real-dump-plugin.sh \
-	test-version.sh \
-	test-version-example1.sh \
-	test-version-filter.sh \
-	test-version-plugin.sh \
-	test-vsock.sh \
-	test-zero.sh \
 	$(NULL)
 
 #----------------------------------------------------------------------
@@ -262,6 +101,14 @@ endif HAVE_VDDK
 # Basic server command line and start-up tests.
 
 TESTS += \
+	test-binary.sh \
+	test-help.sh \
+	test-version.sh \
+	test-dump-config.sh \
+	test-dump-config-major-1.sh \
+	test-dump-config-version-major-minor.sh \
+	$(NULL)
+EXTRA_DIST += \
 	test-binary.sh \
 	test-help.sh \
 	test-version.sh \
@@ -304,6 +151,41 @@ TESTS += \
 	test-flush.sh \
 	test-swap.sh \
 	test-shutdown.sh \
+	test-nbdkit-backend-debug.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-captive.sh \
+	test-debug-flags.sh \
+	test-dump-plugin-and-single.sh \
+	test-dump-plugin-example1.sh \
+	test-dump-plugin-example2.sh \
+	test-dump-plugin-name.sh \
+	test-dump-plugin-thread-model.sh \
+	test-dump-plugin.sh \
+	test-flush.sh \
+	test-foreground.sh \
+	test-help-example1.sh \
+	test-help-plugin.sh \
+	test-ip.sh \
+	test-long-name.sh \
+	test-nbdkit-backend-debug.sh \
+	test-probe-filter.sh \
+	test-probe-plugin.sh \
+	test-random-sock.sh \
+	test-shutdown.sh \
+	test-single-from-file.sh \
+	test-single-sh.sh \
+	test-single.sh \
+	test-socket-activation \
+	test-start.sh \
+	test-stdio.sh \
+	test-swap.sh \
+	test-tls-psk.sh \
+	test-tls.sh \
+	test-version-example1.sh \
+	test-version-filter.sh \
+	test-version-plugin.sh \
+	test-vsock.sh \
 	$(NULL)
 
 check_PROGRAMS += \
@@ -406,9 +288,8 @@ if CAN_TEST_ANSI_C
 # This builds a plugin using an ANSI (ISO C90) compiler to ensure that
 # the header file is compatible.  The plugin does nothing very
 # interesting, it's mainly a compile test.
-TESTS += \
-	test-ansi-c.sh \
-	$(NULL)
+TESTS += test-ansi-c.sh
+EXTRA_DIST += test-ansi-c.sh
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
 noinst_LTLIBRARIES += test-ansi-c-plugin.la
@@ -433,9 +314,8 @@ endif CAN_TEST_ANSI_C
 if HAVE_CXX
 # This builds a plugin and a filter using the C++ compiler.  They
 # don't do anything interesting when run.
-TESTS += \
-	test-cxx.sh \
-	$(NULL)
+TESTS += test-cxx.sh
+EXTRA_DIST += test-cxx.sh
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
 noinst_LTLIBRARIES += test-cxx-plugin.la test-cxx-filter.la
@@ -487,11 +367,13 @@ test_exit_with_parent_CFLAGS = \
 
 # PKI files for the TLS tests.
 check_DATA += pki/.stamp
+EXTRA_DIST += make-pki.sh
 pki/.stamp: $(srcdir)/make-pki.sh
 	SRCDIR=$(srcdir) $(srcdir)/make-pki.sh
 
 # PSK keys for the TLS-PSK tests.
 check_DATA += keys.psk
+EXTRA_DIST += make-psk.sh
 keys.psk: $(srcdir)/make-psk.sh
 	SRCDIR=$(srcdir) $(srcdir)/make-psk.sh
 
@@ -510,12 +392,18 @@ if HAVE_PLUGINS
 # Common data shared by multiple tests
 check_DATA += file-data
 CLEANFILES += file-data
+EXTRA_DIST += generate-file-data.sh
 file-data: generate-file-data.sh
 	$(srcdir)/generate-file-data.sh $@
 
 # While most tests need libguestfs, testing parallel I/O is easier when
 # using qemu-io to kick off asynchronous requests.
 TESTS += \
+	test-parallel-file.sh \
+	test-parallel-nbd.sh \
+	test-parallel-sh.sh \
+	$(NULL)
+EXTRA_DIST += \
 	test-parallel-file.sh \
 	test-parallel-nbd.sh \
 	test-parallel-sh.sh \
@@ -549,9 +437,11 @@ test_oldstyle_LDADD = $(LIBNBD_LIBS)
 
 # Test export flags.
 TESTS += test-eflags.sh
+EXTRA_DIST += test-eflags.sh
 
 # Test export name.
 TESTS += test-export-name.sh
+EXTRA_DIST += test-export-name.sh
 
 # common disk image shared with several tests
 if HAVE_MKE2FS_WITH_D
@@ -572,6 +462,7 @@ endif
 if HAVE_MKE2FS_WITH_D
 if HAVE_CURL
 TESTS += test-curl-file.sh
+EXTRA_DIST += test-curl-file.sh
 LIBGUESTFS_TESTS += test-curl
 
 test_curl_SOURCES = \
@@ -608,6 +499,14 @@ TESTS += \
 	test-data-nest.sh \
 	test-data-raw.sh \
 	$(NULL)
+EXTRA_DIST += \
+	test-data-7E.sh \
+	test-data-base64.sh \
+	test-data-extents.sh \
+	test-data-file.sh \
+	test-data-nest.sh \
+	test-data-raw.sh \
+	$(NULL)
 
 test_data_SOURCES = test-data.c test.h
 test_data_CPPFLAGS = -I$(top_srcdir)/common/include
@@ -616,6 +515,10 @@ test_data_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # eval plugin test.
 TESTS += \
+	test-eval.sh \
+	test-eval-file.sh \
+	$(NULL)
+EXTRA_DIST += \
 	test-eval.sh \
 	test-eval-file.sh \
 	$(NULL)
@@ -661,12 +564,15 @@ test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_file_block_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 TESTS += test-file-extents.sh
+EXTRA_DIST += test-file-extents.sh
 
 # floppy plugin test.
 TESTS += test-floppy.sh
+EXTRA_DIST += test-floppy.sh
 
 # full plugin test.
 TESTS += test-full.sh
+EXTRA_DIST += test-full.sh
 
 # gzip plugin test.
 if HAVE_MKE2FS_WITH_D
@@ -694,11 +600,20 @@ TESTS += \
 	test-info-uptime.sh \
 	test-info-conntime.sh \
 	$(NULL)
+EXTRA_DIST += \
+	test-info-address.sh \
+	test-info-base64.sh \
+	test-info-raw.sh \
+	test-info-time.sh \
+	test-info-uptime.sh \
+	test-info-conntime.sh \
+	$(NULL)
 
 # iso plugin test.
 if HAVE_ISO
 TESTS += test-iso.sh
 endif HAVE_ISO
+EXTRA_DIST += test-iso.sh
 
 # linuxdisk plugin test.
 if HAVE_MKE2FS_WITH_D
@@ -707,17 +622,64 @@ TESTS += \
 	test-linuxdisk-copy-out.sh \
 	$(NULL)
 endif HAVE_MKE2FS_WITH_D
+EXTRA_DIST += \
+	test-linuxdisk.sh \
+	test-linuxdisk-copy-out.sh \
+	$(NULL)
 
 # memory plugin test.
 LIBGUESTFS_TESTS += test-memory
-TESTS += test-memory-largest.sh test-memory-largest-for-qemu.sh
+TESTS += \
+	test-memory-largest.sh \
+	test-memory-largest-for-qemu.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-memory-largest.sh \
+	test-memory-largest-for-qemu.sh \
+	$(NULL)
 
 test_memory_SOURCES = test-memory.c test.h
 test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
+if HAVE_LIBNBD
+# nbd plugin test.
+LIBGUESTFS_TESTS += test-nbd
+TESTS += \
+	test-nbd-extents.sh \
+	test-nbd-tls.sh \
+	test-nbd-tls-psk.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-nbd-extents.sh \
+	test-nbd-tls.sh \
+	test-nbd-tls-psk.sh \
+	$(NULL)
+
+test_nbd_SOURCES = test-nbd.c test.h
+test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+endif HAVE_LIBNBD
+
+# null plugin test.
+LIBNBD_TESTS += test-null
+TESTS += test-null-extents.sh
+EXTRA_DIST += test-null-extents.sh
+
+test_null_SOURCES = test-null.c
+test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_null_LDADD = $(LIBNBD_LIBS)
+
 # partitioning plugin test.
 TESTS += \
+	test-partitioning1.sh \
+	test-partitioning2.sh \
+	test-partitioning3.sh \
+	test-partitioning4.sh \
+	test-partitioning5.sh \
+	test-partitioning6.sh \
+	$(NULL)
+EXTRA_DIST += \
 	test-partitioning1.sh \
 	test-partitioning2.sh \
 	test-partitioning3.sh \
@@ -732,28 +694,11 @@ TESTS += \
 	test-pattern-largest.sh \
 	test-pattern-largest-for-qemu.sh \
 	$(NULL)
-
-if HAVE_LIBNBD
-# nbd plugin test.
-LIBGUESTFS_TESTS += test-nbd
-TESTS += \
-	test-nbd-extents.sh \
-	test-nbd-tls.sh \
-	test-nbd-tls-psk.sh \
+EXTRA_DIST += \
+	test-pattern.sh \
+	test-pattern-largest.sh \
+	test-pattern-largest-for-qemu.sh \
 	$(NULL)
-
-test_nbd_SOURCES = test-nbd.c test.h
-test_nbd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_nbd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-endif HAVE_LIBNBD
-
-# null plugin test.
-LIBNBD_TESTS += test-null
-TESTS += test-null-extents.sh
-
-test_null_SOURCES = test-null.c
-test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
-test_null_LDADD = $(LIBNBD_LIBS)
 
 # random plugin test.
 LIBNBD_TESTS += test-random
@@ -785,6 +730,7 @@ test_split_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_split_LDADD = $(LIBNBD_LIBS)
 
 TESTS += test-split-extents.sh
+EXTRA_DIST += test-split-extents.sh
 
 # ssh plugin test.
 if HAVE_SSH
@@ -793,6 +739,10 @@ check_DATA += \
 	ssh/sshd_config \
 	ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub \
 	ssh/authorized_keys \
+	$(NULL)
+EXTRA_DIST += \
+	ssh/sshd_config.in \
+	test-ssh.sh \
 	$(NULL)
 SSH_RANDOM_PORT := $(shell bash -c 'echo $$(( 10000 + $$RANDOM ))')
 CLEANFILES += \
@@ -848,10 +798,12 @@ test_streaming_LDADD = $(LIBNBD_LIBS)
 if HAVE_PERL
 TESTS += test-tar.sh
 endif HAVE_PERL
+EXTRA_DIST += test-tar.sh
 
 # tmpdisk plugin test.
 LIBGUESTFS_TESTS += test-tmpdisk
 TESTS += test-tmpdisk-command.sh
+EXTRA_DIST += test-tmpdisk-command.sh
 
 test_tmpdisk_SOURCES = \
 	test-tmpdisk.c \
@@ -898,14 +850,18 @@ libvixDiskLib_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 libvixDiskLib_la_LDFLAGS = \
 	-shared -version-number 6:0:0 -no-undefined -rpath /nowhere \
 	$(NULL)
-
 endif HAVE_VDDK
+
+EXTRA_DIST += \
+	test-vddk.sh \
+	test-vddk-dump-plugin.sh \
+	test-vddk-real.sh \
+	test-vddk-real-dump-plugin.sh \
+	$(NULL)
 
 # zero plugin test.
 TESTS += test-zero.sh
-
-# -D nbdkit.backend.* settings.
-TESTS += test-nbdkit-backend-debug.sh
+EXTRA_DIST += test-zero.sh
 
 #----------------------------------------------------------------------
 # Tests of language plugins.
@@ -935,10 +891,21 @@ test_ocaml_plugin.cmx: test_ocaml_plugin.ml ../plugins/ocaml/NBDKit.cmi ../plugi
 
 endif HAVE_OCAML
 
+EXTRA_DIST += \
+	test_ocaml_plugin.ml \
+	test-ocaml.c \
+	$(NULL)
+
 # perl plugin test.
 if HAVE_PERL
 
 TESTS += \
+	test-dump-plugin-example4.sh \
+	test-shebang-perl.sh \
+	$(NULL)
+EXTRA_DIST += \
+	shebang.pl \
+	test.pl \
 	test-dump-plugin-example4.sh \
 	test-shebang-perl.sh \
 	$(NULL)
@@ -962,6 +929,15 @@ TESTS += \
 	test-python-exception.sh \
 	test-shebang-python.sh \
 	$(NULL)
+EXTRA_DIST += \
+	python-exception.py \
+	shebang.py \
+	test-python-exception.sh \
+	test-python-plugin.py \
+	test-python.sh \
+	test-shebang-python.sh \
+	test_python.py \
+	$(NULL)
 
 endif HAVE_PYTHON
 
@@ -976,6 +952,11 @@ if HAVE_RUBY
 #	$(NULL)
 #TESTS += test-shebang-ruby.sh
 EXTRA_PROGRAMS += test-ruby
+EXTRA_DIST += \
+	shebang.rb \
+	test.rb \
+	test-shebang-ruby.sh \
+	$(NULL)
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \
@@ -990,6 +971,7 @@ endif HAVE_RUBY
 # Shell (sh) plugin test.
 LIBGUESTFS_TESTS += test-shell
 check_DATA += test-shell.img
+EXTRA_DIST += test-shell.sh
 CLEANFILES += test-shell.img
 
 test_shell_SOURCES = test-lang-plugins.c test.h
@@ -1008,11 +990,17 @@ TESTS += \
 	test-sh-extents.sh \
 	test-sh-tmpdir-leak.sh \
 	$(NULL)
+EXTRA_DIST += \
+	test-sh-errors.sh \
+	test-sh-extents.sh \
+	test-sh-tmpdir-leak.sh \
+	$(NULL)
 
 # Tcl plugin test.
 if HAVE_TCL
 
 LIBGUESTFS_TESTS += test-tcl
+EXTRA_DIST += test.tcl
 
 test_tcl_SOURCES = test-lang-plugins.c test.h
 test_tcl_CFLAGS = \
@@ -1028,6 +1016,7 @@ endif HAVE_TCL
 if HAVE_LUA
 
 LIBGUESTFS_TESTS += test-lua
+EXTRA_DIST += test.lua
 
 test_lua_SOURCES = test-lang-plugins.c test.h
 test_lua_CFLAGS = \
@@ -1058,7 +1047,11 @@ endif HAVE_GOLANG
 
 # Generic test of filter layers.
 check_PROGRAMS += test-layers
-TESTS += test-layers.sh test-layers
+TESTS += \
+	test-layers.sh \
+	test-layers \
+	$(NULL)
+EXTRA_DIST += test-layers.sh
 
 test_layers_SOURCES = \
 	test-layers.c \
@@ -1145,25 +1138,37 @@ test_layers_filter3_la_LDFLAGS = \
 
 # blocksize filter test.
 TESTS += test-blocksize.sh
+EXTRA_DIST += test-blocksize.sh
 
 # cache filter test.
 TESTS += \
 	test-cache.sh \
 	test-cache-on-read.sh \
+	test-cache-max-size.sh \
 	$(NULL)
-TESTS += test-cache-max-size.sh
+EXTRA_DIST += \
+	test-cache.sh \
+	test-cache-on-read.sh \
+	test-cache-max-size.sh \
+	$(NULL)
 
 # cacheextents filter test.
 TESTS += test-cacheextents.sh
+EXTRA_DIST += test-cacheextents.sh
 
 # cow filter test.
 if HAVE_MKE2FS_WITH_D
 TESTS += test-cow.sh
 endif
 TESTS += test-cow-null.sh
+EXTRA_DIST += \
+	test-cow.sh \
+	test-cow-null.sh \
+	$(NULL)
 
 # delay filter tests.
 TESTS += test-delay-shutdown.sh
+EXTRA_DIST += test-delay-shutdown.sh
 LIBNBD_TESTS += test-delay
 
 test_delay_SOURCES = test-delay.c
@@ -1177,32 +1182,46 @@ TESTS += \
 	test-error100.sh \
 	test-error-triggered.sh \
 	$(NULL)
+EXTRA_DIST += \
+	test-error0.sh \
+	test-error10.sh \
+	test-error100.sh \
+	test-error-triggered.sh \
+	$(NULL)
 
 # exitlast filter test.
 TESTS += test-exitlast.sh
+EXTRA_DIST += test-exitlast.sh
 
 # extentlist filter test.
 TESTS += test-extentlist.sh
+EXTRA_DIST += test-extentlist.sh
 
 # fua filter test.
 TESTS += test-fua.sh
+EXTRA_DIST += test-fua.sh
 
 # ip filter test.
 TESTS += test-ip-filter.sh
+EXTRA_DIST += test-ip-filter.sh
 
 # limit filter test.
 TESTS += test-limit.sh
+EXTRA_DIST += test-limit.sh
 
 # log filter test.
 TESTS += test-log.sh
+EXTRA_DIST += test-log.sh
 
 # nofilter test.
 TESTS += test-nofilter.sh
+EXTRA_DIST += test-nofilter.sh
 
 if HAVE_LIBNBD
 # nozero filter test.
 TESTS += test-nozero.sh
 endif HAVE_LIBNBD
+EXTRA_DIST += test-nozero.sh
 
 # offset filter test.
 LIBGUESTFS_TESTS += test-offset
@@ -1215,16 +1234,31 @@ TESTS += \
 	test-offset2.sh \
 	test-offset-extents.sh \
 	$(NULL)
+EXTRA_DIST += \
+	test-offset2.sh \
+	test-offset-extents.sh \
+	$(NULL)
 
 # offset + truncate test.
 TESTS += test-offset-truncate.sh
+EXTRA_DIST += test-offset-truncate.sh
 
 # partition filter test.
-TESTS += test-partition1.sh
-TESTS += test-partition2.sh
+TESTS += \
+	test-partition1.sh \
+	test-partition2.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-partition1.sh \
+	test-partition2.sh \
+	$(NULL)
 
 # rate filter test.
 TESTS += \
+	test-rate.sh \
+	test-rate-dynamic.sh \
+	$(NULL)
+EXTRA_DIST += \
 	test-rate.sh \
 	test-rate-dynamic.sh \
 	$(NULL)
@@ -1233,6 +1267,12 @@ TESTS += \
 TESTS += \
 	test-readahead.sh \
 	test-readahead-copy.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-readahead.sh \
+	test-readahead-copy.sh \
+	test-readahead-test-plugin.sh \
+	test-readahead-test-request.py \
 	$(NULL)
 
 # retry filter test.
@@ -1244,9 +1284,24 @@ TESTS += \
 	test-retry-reopen-fail.sh \
 	test-retry-zero-flags.sh \
 	$(NULL)
+EXTRA_DIST += \
+	test-retry.sh \
+	test-retry-readonly.sh \
+	test-retry-extents.sh \
+	test-retry-size.sh \
+	test-retry-reopen-fail.sh \
+	test-retry-zero-flags.sh \
+	$(NULL)
 
 # truncate filter tests.
 TESTS += \
+	test-truncate1.sh \
+	test-truncate2.sh \
+	test-truncate3.sh \
+	test-truncate4.sh \
+	test-truncate-extents.sh \
+	$(NULL)
+EXTRA_DIST += \
 	test-truncate1.sh \
 	test-truncate2.sh \
 	test-truncate3.sh \
