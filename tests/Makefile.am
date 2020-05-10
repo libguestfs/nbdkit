@@ -111,6 +111,7 @@ EXTRA_DIST = \
 	test-dump-plugin-example2.sh \
 	test-dump-plugin-example4.sh \
 	test-dump-plugin-name.sh \
+	test-dump-plugin-thread-model.sh \
 	test-eflags.sh \
 	test-error0.sh \
 	test-error10.sh \
@@ -274,6 +275,7 @@ TESTS += \
 	test-dump-plugin-example2.sh \
 	test-dump-plugin-name.sh \
 	test-dump-plugin-and-single.sh \
+	test-dump-plugin-thread-model.sh \
 	test-start.sh \
 	test-single.sh \
 	test-single-from-file.sh \
