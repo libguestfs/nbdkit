@@ -96,11 +96,8 @@ extentlist_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 }
 
 static int
-compare_offsets (const void *ev1, const void *ev2)
+compare_offsets (const struct extent *e1, const struct extent *e2)
 {
-  const struct extent *e1 = ev1;
-  const struct extent *e2 = ev2;
-
   if (e1->offset < e2->offset)
     return -1;
   else if (e1->offset > e2->offset)
@@ -110,10 +107,9 @@ compare_offsets (const void *ev1, const void *ev2)
 }
 
 static int
-compare_ranges (const void *ev1, const void *ev2)
+compare_ranges (const void *ev1, const struct extent *e2)
 {
   const struct extent *e1 = ev1;
-  const struct extent *e2 = ev2;
 
   if (e1->offset < e2->offset)
     return -1;
@@ -198,7 +194,7 @@ parse_extentlist (void)
   fclose (fp);
 
   /* Sort the extents by offset. */
-  qsort (extents.ptr, extents.size, sizeof (struct extent), compare_offsets);
+  extent_list_sort (&extents, compare_offsets);
 
   /* There must not be overlaps at this point. */
   end = 0;
@@ -295,8 +291,7 @@ extentlist_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint64_t end;
 
   /* Find the starting point in the extents list. */
-  p = bsearch (&eoffset, extents.ptr,
-               extents.size, sizeof (struct extent), compare_ranges);
+  p = extent_list_search (&extents, &eoffset, compare_ranges);
   assert (p != NULL);
   i = p - extents.ptr;
 

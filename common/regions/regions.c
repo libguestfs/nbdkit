@@ -61,10 +61,9 @@ free_regions (struct regions *rs)
  * to find the end of the region.
  */
 static int
-compare_offset (const void *offsetp, const void *regionp)
+compare_offset (const void *offsetp, const struct region *region)
 {
   const uint64_t offset = *(uint64_t *)offsetp;
-  const struct region *region = (struct region *)regionp;
 
   if (offset < region->start) return -1;
   if (offset > region->end) return 1;
@@ -74,8 +73,7 @@ compare_offset (const void *offsetp, const void *regionp)
 const struct region *
 find_region (const regions *rs, uint64_t offset)
 {
-  return bsearch (&offset, rs->ptr, rs->size,
-                  sizeof (struct region), compare_offset);
+  return regions_search (rs, &offset, compare_offset);
 }
 
 /* This is the low level function for constructing the list of

@@ -123,6 +123,25 @@
     size_t i;                                                           \
     for (i = 0; i < v->size; ++i)                                       \
       f (v->ptr[i]);                                                    \
+  }                                                                     \
+                                                                        \
+  /* Sort the elements of the vector. */                                \
+  static inline void                                                    \
+  name##_sort (name *v,                                                 \
+               int (*compare) (const type *p1, const type *p2))         \
+  {                                                                     \
+    qsort (v->ptr, v->size, sizeof (type), (void *) compare);           \
+  }                                                                     \
+                                                                        \
+  /* Search for an exactly matching element in the vector using a       \
+   * binary search.  Returns a pointer to the element or NULL.          \
+   */                                                                   \
+  static inline type *                                                  \
+  name##_search (const name *v, const void *key,                        \
+                 int (*compare) (const void *key, const type *v))       \
+  {                                                                     \
+    return bsearch (key, v->ptr, v->size, sizeof (type),                \
+                    (void *) compare);                                  \
   }
 
 #define empty_vector { .ptr = NULL, .size = 0, .alloc = 0 }

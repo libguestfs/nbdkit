@@ -96,10 +96,10 @@ DEFINE_VECTOR_TYPE(method_script_list, struct method_script);
 static method_script_list method_scripts;
 
 static int
-compare_script (const void *methodvp, const void *entryvp)
+compare_script (const void *methodvp, const struct method_script *entry)
 {
   const char *method = methodvp;
-  const struct method_script *entry = entryvp;
+
   return strcmp (method, entry->method);
 }
 
@@ -141,10 +141,7 @@ get_script (const char *method)
 {
   struct method_script *p;
 
-  p = bsearch (method,
-               method_scripts.ptr,
-               method_scripts.size, sizeof (struct method_script),
-               compare_script);
+  p = method_script_list_search (&method_scripts, method, compare_script);
   if (p)
     return p->script;
   else

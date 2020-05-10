@@ -152,10 +152,9 @@ alloc_sparse_array (bool debug)
 
 /* Comparison function used when searching through the L1 directory. */
 static int
-compare_l1_offsets (const void *offsetp, const void *entryp)
+compare_l1_offsets (const void *offsetp, const struct l1_entry *e)
 {
   const uint64_t offset = *(uint64_t *)offsetp;
-  const struct l1_entry *e = entryp;
 
   if (offset < e->offset) return -1;
   if (offset >= e->offset + PAGE_SIZE*L2_SIZE) return 1;
@@ -226,9 +225,7 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
 
  again:
   /* Search the L1 directory. */
-  entry = bsearch (&offset, sa->l1_dir.ptr,
-                   sa->l1_dir.size, sizeof (struct l1_entry),
-                   compare_l1_offsets);
+  entry = l1_dir_search (&sa->l1_dir, &offset, compare_l1_offsets);
 
   if (sa->debug) {
     if (entry)
