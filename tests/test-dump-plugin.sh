@@ -46,14 +46,6 @@ if [[ ! ( "$output" =~ name\=example1 ) ]]; then
     exit 1
 fi
 
-# example2 overrides the --dump-plugin with extra data.
-output="$(nbdkit example2 --dump-plugin)"
-if [[ ! ( "$output" =~ example2_extra\=hello ) ]]; then
-    echo "$0: unexpected output from nbdkit example2 --dump-plugin"
-    echo "$output"
-    exit 1
-fi
-
 run_test ()
 {
     nbdkit $1 --dump-plugin
