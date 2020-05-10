@@ -108,6 +108,7 @@ EXTRA_DIST = \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
 	test-dump-plugin-and-single.sh \
+	test-dump-plugin-example1.sh \
 	test-dump-plugin-example2.sh \
 	test-dump-plugin-example4.sh \
 	test-dump-plugin-name.sh \
@@ -129,6 +130,7 @@ EXTRA_DIST = \
 	test-fua.sh \
 	test-full.sh \
 	test-help.sh \
+	test-help-example1.sh \
 	test-help-plugin.sh \
 	test-info-address.sh \
 	test-info-base64.sh \
@@ -226,6 +228,7 @@ EXTRA_DIST = \
 	test-vddk-real.sh \
 	test-vddk-real-dump-plugin.sh \
 	test-version.sh \
+	test-version-example1.sh \
 	test-version-filter.sh \
 	test-version-plugin.sh \
 	test-vsock.sh \
@@ -266,9 +269,12 @@ TESTS += \
 if HAVE_PLUGINS
 
 TESTS += \
+	test-help-example1.sh \
 	test-help-plugin.sh \
+	test-version-example1.sh \
 	test-version-plugin.sh \
 	test-version-filter.sh \
+	test-dump-plugin-example1.sh \
 	test-dump-plugin.sh \
 	test-dump-plugin-example2.sh \
 	test-dump-plugin-name.sh \
