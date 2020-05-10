@@ -62,28 +62,6 @@ do_test ()
 }
 foreach_plugin do_test
 
-# --dump-plugin and -s are incompatible
-if nbdkit --dump-plugin -s null > dump-plugin.out 2> dump-plugin.err; then
-    echo "$0: unexpected success from nbdkit -s --dump-plugin"
-    echo "out:"
-    cat dump-plugin.out
-    echo "err:"
-    cat dump-plugin.err
-    exit 1
-fi
-if test -s dump-plugin.out; then
-    echo "$0: unexpected output during nbdkit -s --dump-plugin"
-    echo "out:"
-    cat dump-plugin.out
-    echo "err:"
-    cat dump-plugin.err
-    exit 1
-fi
-if test ! -s dump-plugin.err; then
-    echo "$0: missing error message during nbdkit -s --dump-plugin"
-    ecit 1
-fi
-
 # Test that --dump-plugin can be used to introspect a resulting dynamic
 # thread model.  First, get a baseline (since a system without atomic
 # CLOEXEC can't do parallel). Then test various patterns with the sh plugin.

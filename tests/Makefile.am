@@ -107,6 +107,7 @@ EXTRA_DIST = \
 	test-delay-shutdown.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
+	test-dump-plugin-and-single.sh \
 	test-dump-plugin-example2.sh \
 	test-dump-plugin-example4.sh \
 	test-dump-plugin-name.sh \
@@ -272,6 +273,7 @@ TESTS += \
 	test-dump-plugin.sh \
 	test-dump-plugin-example2.sh \
 	test-dump-plugin-name.sh \
+	test-dump-plugin-and-single.sh \
 	test-start.sh \
 	test-single.sh \
 	test-single-from-file.sh \
