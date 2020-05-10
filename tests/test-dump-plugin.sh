@@ -54,8 +54,11 @@ if [[ ! ( "$output" =~ example2_extra\=hello ) ]]; then
     exit 1
 fi
 
-# Run nbdkit plugin --dump-plugin for each plugin.
-# However some of these tests are expected to fail.
+run_test ()
+{
+    nbdkit $1 --dump-plugin
+}
+
 do_test ()
 {
     vg=; [ "$NBDKIT_VALGRIND" = "1" ] && vg="-valgrind"
@@ -64,7 +67,7 @@ do_test ()
             echo "$0: skipping $1$vg because this language doesn't support valgrind"
             ;;
         *)
-            nbdkit $1 --dump-plugin
+            run_test $1
             ;;
     esac
 }
