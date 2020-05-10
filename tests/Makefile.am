@@ -107,6 +107,7 @@ EXTRA_DIST = \
 	test-delay-shutdown.sh \
 	test-dump-config.sh \
 	test-dump-plugin.sh \
+	test-dump-plugin-example2.sh \
 	test-dump-plugin-example4.sh \
 	test-eflags.sh \
 	test-error0.sh \
@@ -268,6 +269,7 @@ TESTS += \
 	test-probe-filter.sh \
 	test-probe-plugin.sh \
 	test-dump-plugin.sh \
+	test-dump-plugin-example2.sh \
 	test-start.sh \
 	test-single.sh \
 	test-single-from-file.sh \
