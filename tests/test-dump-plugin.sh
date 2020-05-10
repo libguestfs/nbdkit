@@ -38,14 +38,6 @@ files="dump-plugin.out dump-plugin.err"
 rm -f $files
 cleanup_fn rm -f $files
 
-# Basic check that the name field is present.
-output="$(nbdkit example1 --dump-plugin)"
-if [[ ! ( "$output" =~ name\=example1 ) ]]; then
-    echo "$0: unexpected output from nbdkit example1 --dump-plugin"
-    echo "$output"
-    exit 1
-fi
-
 run_test ()
 {
     nbdkit $1 --dump-plugin
