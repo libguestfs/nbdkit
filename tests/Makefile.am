@@ -106,6 +106,8 @@ EXTRA_DIST = \
 	test-debug-flags.sh \
 	test-delay-shutdown.sh \
 	test-dump-config.sh \
+	test-dump-config-major-1.sh \
+	test-dump-config-version-major-minor.sh \
 	test-dump-plugin.sh \
 	test-dump-plugin-and-single.sh \
 	test-dump-plugin-example1.sh \
@@ -264,6 +266,8 @@ TESTS += \
 	test-help.sh \
 	test-version.sh \
 	test-dump-config.sh \
+	test-dump-config-major-1.sh \
+	test-dump-config-version-major-minor.sh \
 	$(NULL)
 
 if HAVE_PLUGINS
