@@ -1,5 +1,6 @@
 To report security bugs, see ‘SECURITY’ in the top source directory.
 
+
 Fuzzing nbdkit using the American Fuzzy Lop (afl) fuzzer
 ========================================================
 
@@ -68,6 +69,22 @@ We have only fuzzed the memory plugin, which is convenient because it
 stores everything in memory and throws it away when nbdkit exits.
 Since plugins can have bugs as well as the core server, it may be
 productive to test other plugins and filters.
+
+
+Fuzzing nbdkit using honggfuzz
+==============================
+
+Recompile nbdkit with honggfuzz instrumentation:
+
+  ./configure CC=/path/to/hfuzz-clang CXX=/path/to/hfuzz-clang++
+  make clean
+  make
+
+Run honggfuzz using test cases:
+
+  honggfuzz -i fuzzing/testcase_dir -z -s -- \
+      ./server/nbdkit -s ./plugins/memory/.libs/nbdkit-memory-plugin.so 1M
+
 
 Fuzzing nbdkit using Clang + libFuzzer
 ======================================
