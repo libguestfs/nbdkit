@@ -103,42 +103,44 @@ const (
 
 // The plugin interface.
 type PluginInterface interface {
-	// Open is required for all plugins.
-	// Other methods are optional.
 	Load()
 	Unload()
+
 	DumpPlugin()
+
 	Config(key string, value string) error
 	ConfigComplete() error
 	GetReady() error
+
 	PreConnect(readonly bool) error
-	Open(readonly bool) (ConnectionInterface, error)
+	Open(readonly bool) (ConnectionInterface, error) // required
 }
 
 // The client connection interface.
 type ConnectionInterface interface {
-	// GetSize and PRead are required for all plugins.
-	// Other methods are optional.
-	Close()
-
-	GetSize() (uint64, error)
-
-	CanWrite() (bool, error)
-	CanFlush() (bool, error)
+	GetSize() (uint64, error) // required
 	IsRotational() (bool, error)
-	CanTrim() (bool, error)
-	CanZero() (bool, error)
 	CanMultiConn() (bool, error)
 
-	PRead(buf []byte, offset uint64, flags uint32) error
-	// NB: This will NOT be called unless CanWrite returns true.
+	PRead(buf []byte, offset uint64, flags uint32) error // required
+
+	// NB: PWrite will NOT be called unless CanWrite returns true.
+	CanWrite() (bool, error)
 	PWrite(buf []byte, offset uint64, flags uint32) error
-	// NB: This will NOT be called unless CanFlush returns true.
+
+	// NB: Flush will NOT be called unless CanFlush returns true.
+	CanFlush() (bool, error)
 	Flush(flags uint32) error
-	// NB: This will NOT be called unless CanTrim returns true.
+
+	// NB: Trim will NOT be called unless CanTrim returns true.
+	CanTrim() (bool, error)
 	Trim(count uint32, offset uint64, flags uint32) error
-	// NB: This will NOT be called unless CanZero returns true.
+
+	// NB: Zero will NOT be called unless CanZero returns true.
+	CanZero() (bool, error)
 	Zero(count uint32, offset uint64, flags uint32) error
+
+	Close()
 }
 
 // Default implementations for plugin interface methods.
