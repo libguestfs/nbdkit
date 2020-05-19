@@ -45,13 +45,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#include <ctype.h>
 #include <termios.h>
 #include <errno.h>
 #include <poll.h>
 #include <signal.h>
 #include <sys/socket.h>
 
+#include "ascii-ctype.h"
 #include "get-current-dir-name.h"
 
 #include "internal.h"
@@ -210,7 +210,7 @@ nbdkit_parse_int64_t (const char *what, const char *str, int64_t *rp)
  */
 #define PARSE_ERROR_IF_NEGATIVE                                         \
   do {                                                                  \
-    while (isspace (*str))                                              \
+    while (ascii_isspace (*str))                                        \
       str++;                                                            \
     if (*str == '-') {                                                  \
       nbdkit_error ("%s: negative numbers are not allowed", what);      \
