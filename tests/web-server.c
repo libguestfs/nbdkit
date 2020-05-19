@@ -235,7 +235,7 @@ handle_request (int s, bool headers_only)
   const char response1_ok[] = "HTTP/1.1 200 OK\r\n";
   const char response1_partial[] = "HTTP/1.1 206 Partial Content\r\n";
   const char response2[] =
-    "Accept-Ranges: bytes\r\n"
+    "Accept-rANGES:     bytes\r\n" /* See RHBZ#1837337 */
     "Connection: keep-alive\r\n"
     "Content-Type: application/octet-stream\r\n";
   char response3[64];
