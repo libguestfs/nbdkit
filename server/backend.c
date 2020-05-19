@@ -37,12 +37,13 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
-#include <ctype.h>
 
 #include <dlfcn.h>
 
-#include "internal.h"
+#include "ascii-ctype.h"
 #include "minmax.h"
+
+#include "internal.h"
 
 /* Helpers for registering a new backend. */
 
@@ -100,7 +101,7 @@ backend_load (struct backend *b, const char *name, void (*load) (void))
   for (i = 0; i < len; ++i) {
     unsigned char c = name[i];
 
-    if (!(isascii (c) && isalnum (c))) {
+    if (! ascii_isalnum (c)) {
       fprintf (stderr,
                "%s: %s: %s.name ('%s') field "
                "must contain only ASCII alphanumeric characters\n",
