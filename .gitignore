@@ -26,6 +26,7 @@ Makefile.in
 /aclocal.m4
 /autom4te.cache
 /common/bitmap/test-bitmap
+/common/include/test-ascii-ctype
 /common/include/test-byte-swapping
 /common/include/test-current-dir-name
 /common/include/test-isaligned

@@ -36,12 +36,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <ctype.h>
 #include <inttypes.h>
 #include <assert.h>
 
 #include <nbdkit-plugin.h>
 
+#include "ascii-ctype.h"
 #include "byte-swapping.h"
 
 #include "efi-crc32.h"
@@ -244,19 +244,19 @@ parse_guid (const char *str, char *out)
     return -1;
 
   for (i = 0; i < 8; ++i)
-    if (!isxdigit (str[i]))
+    if (!ascii_isxdigit (str[i]))
       return -1;
   for (i = 9; i < 13; ++i)
-    if (!isxdigit (str[i]))
+    if (!ascii_isxdigit (str[i]))
       return -1;
   for (i = 14; i < 18; ++i)
-    if (!isxdigit (str[i]))
+    if (!ascii_isxdigit (str[i]))
       return -1;
   for (i = 19; i < 23; ++i)
-    if (!isxdigit (str[i]))
+    if (!ascii_isxdigit (str[i]))
       return -1;
   for (i = 24; i < 36; ++i)
-    if (!isxdigit (str[i]))
+    if (!ascii_isxdigit (str[i]))
       return -1;
 
   /* The first, second and third blocks are parsed as little endian,

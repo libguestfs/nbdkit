@@ -34,6 +34,7 @@ include $(top_srcdir)/common-rules.mk
 # These headers contain only common code shared by the core server,
 # plugins and/or filters.  They are not installed.
 EXTRA_DIST = \
+	ascii-ctype.h \
 	byte-swapping.h \
 	exit-with-parent.h \
 	get-current-dir-name.h \
@@ -50,6 +51,7 @@ EXTRA_DIST = \
 # Unit tests.
 
 TESTS = \
+	test-ascii-ctype \
 	test-byte-swapping \
 	test-current-dir-name \
 	test-isaligned \
@@ -61,6 +63,10 @@ TESTS = \
 	test-tvdiff \
 	$(NULL)
 check_PROGRAMS = $(TESTS)
+
+test_ascii_ctype_SOURCES = test-ascii-ctype.c ascii-ctype.h
+test_ascii_ctype_CPPFLAGS = -I$(srcdir)
+test_ascii_ctype_CFLAGS = $(WARNINGS_CFLAGS)
 
 test_byte_swapping_SOURCES = test-byte-swapping.c byte-swapping.h
 test_byte_swapping_CPPFLAGS = -I$(srcdir)
