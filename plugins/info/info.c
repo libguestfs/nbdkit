@@ -49,6 +49,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "ascii-string.h"
 #include "byte-swapping.h"
 #include "tvdiff.h"
 
@@ -76,12 +77,12 @@ static int
 info_config (const char *key, const char *value)
 {
   if (strcmp (key, "mode") == 0) {
-    if (strcasecmp (value, "exportname") == 0 ||
-        strcasecmp (value, "export-name") == 0) {
+    if (ascii_strcasecmp (value, "exportname") == 0 ||
+        ascii_strcasecmp (value, "export-name") == 0) {
       mode = MODE_EXPORTNAME;
     }
-    else if (strcasecmp (value, "base64exportname") == 0 ||
-             strcasecmp (value, "base64-export-name") == 0) {
+    else if (ascii_strcasecmp (value, "base64exportname") == 0 ||
+             ascii_strcasecmp (value, "base64-export-name") == 0) {
 #ifdef HAVE_BASE64
       mode = MODE_BASE64EXPORTNAME;
 #else
@@ -89,13 +90,13 @@ info_config (const char *key, const char *value)
       return -1;
 #endif
     }
-    else if (strcasecmp (value, "address") == 0)
+    else if (ascii_strcasecmp (value, "address") == 0)
       mode = MODE_ADDRESS;
-    else if (strcasecmp (value, "time") == 0)
+    else if (ascii_strcasecmp (value, "time") == 0)
       mode = MODE_TIME;
-    else if (strcasecmp (value, "uptime") == 0)
+    else if (ascii_strcasecmp (value, "uptime") == 0)
       mode = MODE_UPTIME;
-    else if (strcasecmp (value, "conntime") == 0)
+    else if (ascii_strcasecmp (value, "conntime") == 0)
       mode = MODE_CONNTIME;
     else {
       nbdkit_error ("unknown mode: '%s'", value);

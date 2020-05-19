@@ -52,6 +52,7 @@
 #include <sys/socket.h>
 
 #include "ascii-ctype.h"
+#include "ascii-string.h"
 #include "get-current-dir-name.h"
 
 #include "internal.h"
@@ -385,19 +386,19 @@ int
 nbdkit_parse_bool (const char *str)
 {
   if (!strcmp (str, "1") ||
-      !strcasecmp (str, "true") ||
-      !strcasecmp (str, "t") ||
-      !strcasecmp (str, "yes") ||
-      !strcasecmp (str, "y") ||
-      !strcasecmp (str, "on"))
+      !ascii_strcasecmp (str, "true") ||
+      !ascii_strcasecmp (str, "t") ||
+      !ascii_strcasecmp (str, "yes") ||
+      !ascii_strcasecmp (str, "y") ||
+      !ascii_strcasecmp (str, "on"))
     return 1;
 
   if (!strcmp (str, "0") ||
-      !strcasecmp (str, "false") ||
-      !strcasecmp (str, "f") ||
-      !strcasecmp (str, "no") ||
-      !strcasecmp (str, "n") ||
-      !strcasecmp (str, "off"))
+      !ascii_strcasecmp (str, "false") ||
+      !ascii_strcasecmp (str, "f") ||
+      !ascii_strcasecmp (str, "no") ||
+      !ascii_strcasecmp (str, "n") ||
+      !ascii_strcasecmp (str, "off"))
     return 0;
 
   nbdkit_error ("could not decipher boolean (%s)", str);

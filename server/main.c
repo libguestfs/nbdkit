@@ -55,6 +55,8 @@
 
 #include <dlfcn.h>
 
+#include "ascii-string.h"
+
 #include "internal.h"
 #include "nbd-protocol.h"
 #include "options.h"
@@ -282,9 +284,9 @@ main (int argc, char *argv[])
 
     case TLS_OPTION:
       tls_set_on_cli = true;
-      if (strcasecmp (optarg, "require") == 0 ||
-          strcasecmp (optarg, "required") == 0 ||
-          strcasecmp (optarg, "force") == 0)
+      if (ascii_strcasecmp (optarg, "require") == 0 ||
+          ascii_strcasecmp (optarg, "required") == 0 ||
+          ascii_strcasecmp (optarg, "force") == 0)
         tls = 2;
       else {
         tls = nbdkit_parse_bool (optarg);

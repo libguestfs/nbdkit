@@ -58,6 +58,7 @@
 
 #include "cleanup.h"
 #include "ascii-ctype.h"
+#include "ascii-string.h"
 
 static const char *url = NULL;
 static const char *user = NULL;
@@ -419,8 +420,8 @@ curl_open (int readonly)
 #endif
   nbdkit_debug ("content length: %" PRIi64, h->exportsize);
 
-  if (strncasecmp (url, "http://", strlen ("http://")) == 0 ||
-      strncasecmp (url, "https://", strlen ("https://")) == 0) {
+  if (ascii_strncasecmp (url, "http://", strlen ("http://")) == 0 ||
+      ascii_strncasecmp (url, "https://", strlen ("https://")) == 0) {
     if (!h->accept_range) {
       nbdkit_error ("server does not support 'range' (byte range) requests");
       goto err;
@@ -504,7 +505,7 @@ header_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
   const char *bytes = "bytes";
 
   if (realsize >= strlen (accept_ranges) &&
-      strncasecmp (header, accept_ranges, strlen (accept_ranges)) == 0) {
+      ascii_strncasecmp (header, accept_ranges, strlen (accept_ranges)) == 0) {
     const char *p = strchr (header, ':') + 1;
 
     /* Skip whitespace between the header name and value. */

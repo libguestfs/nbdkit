@@ -52,6 +52,8 @@
 #define NBDKIT_API_VERSION 2
 
 #include <nbdkit-plugin.h>
+
+#include "ascii-string.h"
 #include "byte-swapping.h"
 #include "cleanup.h"
 #include "utils.h"
@@ -152,9 +154,9 @@ nbdplug_config (const char *key, const char *value)
     shared = r;
   }
   else if (strcmp (key, "tls") == 0) {
-    if (strcasecmp (value, "require") == 0 ||
-        strcasecmp (value, "required") == 0 ||
-        strcasecmp (value, "force") == 0)
+    if (ascii_strcasecmp (value, "require") == 0 ||
+        ascii_strcasecmp (value, "required") == 0 ||
+        ascii_strcasecmp (value, "force") == 0)
       tls = LIBNBD_TLS_REQUIRE;
     else {
       r = nbdkit_parse_bool (value);

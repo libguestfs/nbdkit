@@ -48,6 +48,7 @@
 #include <nbdkit-plugin.h>
 
 #include "ascii-ctype.h"
+#include "ascii-string.h"
 #include "cleanup.h"
 #include "utils.h"
 
@@ -332,48 +333,48 @@ handle_script_error (const char *argv0, char *ebuf, size_t len)
   }
 
   /* Recognize the errno values that match NBD protocol errors */
-  if (strncasecmp (ebuf, "EPERM", 5) == 0) {
+  if (ascii_strncasecmp (ebuf, "EPERM", 5) == 0) {
     err = EPERM;
     skip = 5;
   }
-  else if (strncasecmp (ebuf, "EIO", 3) == 0) {
+  else if (ascii_strncasecmp (ebuf, "EIO", 3) == 0) {
     err = EIO;
     skip = 3;
   }
-  else if (strncasecmp (ebuf, "ENOMEM", 6) == 0) {
+  else if (ascii_strncasecmp (ebuf, "ENOMEM", 6) == 0) {
     err = ENOMEM;
     skip = 6;
   }
-  else if (strncasecmp (ebuf, "EINVAL", 6) == 0) {
+  else if (ascii_strncasecmp (ebuf, "EINVAL", 6) == 0) {
     err = EINVAL;
     skip = 6;
   }
-  else if (strncasecmp (ebuf, "ENOSPC", 6) == 0) {
+  else if (ascii_strncasecmp (ebuf, "ENOSPC", 6) == 0) {
     err = ENOSPC;
     skip = 6;
   }
-  else if (strncasecmp (ebuf, "EOVERFLOW", 9) == 0) {
+  else if (ascii_strncasecmp (ebuf, "EOVERFLOW", 9) == 0) {
     err = EOVERFLOW;
     skip = 9;
   }
-  else if (strncasecmp (ebuf, "ESHUTDOWN", 9) == 0) {
+  else if (ascii_strncasecmp (ebuf, "ESHUTDOWN", 9) == 0) {
     err = ESHUTDOWN;
     skip = 9;
   }
-  else if (strncasecmp (ebuf, "ENOTSUP", 7) == 0) {
+  else if (ascii_strncasecmp (ebuf, "ENOTSUP", 7) == 0) {
     err = ENOTSUP;
     skip = 7;
   }
-  else if (strncasecmp (ebuf, "EOPNOTSUPP", 10) == 0) {
+  else if (ascii_strncasecmp (ebuf, "EOPNOTSUPP", 10) == 0) {
     err = EOPNOTSUPP;
     skip = 10;
   }
   /* Other errno values that server/protocol.c treats specially */
-  else if (strncasecmp (ebuf, "EROFS", 5) == 0) {
+  else if (ascii_strncasecmp (ebuf, "EROFS", 5) == 0) {
     err = EROFS;
     skip = 5;
   }
-  else if (strncasecmp (ebuf, "EDQUOT", 6) == 0) {
+  else if (ascii_strncasecmp (ebuf, "EDQUOT", 6) == 0) {
 #ifdef EDQUOT
     err = EDQUOT;
 #else
@@ -381,7 +382,7 @@ handle_script_error (const char *argv0, char *ebuf, size_t len)
 #endif
     skip = 6;
   }
-  else if (strncasecmp (ebuf, "EFBIG", 5) == 0) {
+  else if (ascii_strncasecmp (ebuf, "EFBIG", 5) == 0) {
     err = EFBIG;
     skip = 5;
   }

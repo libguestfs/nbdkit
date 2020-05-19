@@ -30,37 +30,48 @@
  * SUCH DAMAGE.
  */
 
-/* Normal ctype functions are affected by the current locale.  For
- * example isupper() might recognize Ä in some but not all locales.
- * These functions match only 7 bit ASCII characters.
+/* Case insensitive string comparison functions (like strcasecmp,
+ * strncasecmp) which work correctly in any locale.  They can only be
+ * used for comparison when one or both strings is 7 bit ASCII.
  */
 
-#ifndef NBDKIT_ASCII_CTYPE_H
-#define NBDKIT_ASCII_CTYPE_H
+#ifndef NBDKIT_ASCII_STRING_H
+#define NBDKIT_ASCII_STRING_H
 
-#define ascii_isalnum(c) (ascii_isalpha (c) || ascii_isdigit (c))
+#include "ascii-ctype.h"
 
-#define ascii_isalpha(c)                                        \
-  (((c) >= 'a' && (c) <= 'z') || ((c) >= 'A' && (c) <= 'Z'))
+static inline int
+ascii_strcasecmp (const char *s1, const char *s2)
+{
+  const unsigned char *us1 = (const unsigned char *)s1;
+  const unsigned char *us2 = (const unsigned char *)s2;
 
-#define ascii_isdigit(c)                        \
-  ((c) >= '0' && (c) <= '9')
+  while (ascii_tolower (*us1) == ascii_tolower (*us2)) {
+    if (*us1++ == '\0')
+      return 0;
+    us2++;
+  }
 
-#define ascii_isspace(c)                                                \
-  ((c) == '\t' || (c) == '\n' || (c) == '\f' || (c) == '\r' || (c) == ' ')
+  return ascii_tolower (*us1) - ascii_tolower (*us2);
+}
 
-#define ascii_isupper(c)                        \
-  ((c) >= 'A' && (c) <= 'Z')
+static inline int
+ascii_strncasecmp (const char *s1, const char *s2, size_t n)
+{
+  if (n != 0) {
+    const unsigned char *us1 = (const unsigned char *)s1;
+    const unsigned char *us2 = (const unsigned char *)s2;
 
-#define ascii_isxdigit(c)                                               \
-  ((c) == '0' || (c) == '1' || (c) == '2' || (c) == '3' || (c) == '4' || \
-   (c) == '5' || (c) == '6' || (c) == '7' || (c) == '8' || (c) == '9' || \
-   (c) == 'a' || (c) == 'b' || (c) == 'c' ||                            \
-   (c) == 'd' || (c) == 'e' || (c) == 'f' ||                            \
-   (c) == 'A' || (c) == 'B' || (c) == 'C' ||                            \
-   (c) == 'D' || (c) == 'E' || (c) == 'F')
+    do {
+      if (ascii_tolower (*us1) != ascii_tolower (*us2))
+        return ascii_tolower (*us1) - ascii_tolower (*us2);
+      if (*us1++ == '\0')
+        break;
+      us2++;
+    } while (--n != 0);
+  }
 
-#define ascii_tolower(c)                        \
-  (ascii_isupper ((c)) ? (c) - 'A' + 'a' : (c))
+  return 0;
+}
 
-#endif /* NBDKIT_ASCII_CTYPE_H */
+#endif /* NBDKIT_ASCII_STRING_H */
