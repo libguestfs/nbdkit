@@ -443,7 +443,7 @@ handle_script_error (const char *argv0, char *ebuf, size_t len)
   }
 
   if (skip && ebuf[skip]) {
-    if (!ascii_isspace ((unsigned char) ebuf[skip])) {
+    if (!ascii_isspace (ebuf[skip])) {
       /* Treat 'EINVALID' as EIO, not EINVAL */
       err = EIO;
       skip = 0;
@@ -451,7 +451,7 @@ handle_script_error (const char *argv0, char *ebuf, size_t len)
     else
       do
         skip++;
-      while (ascii_isspace ((unsigned char) ebuf[skip]));
+      while (ascii_isspace (ebuf[skip]));
   }
 
   while (len > 0 && ebuf[len-1] == '\n')
