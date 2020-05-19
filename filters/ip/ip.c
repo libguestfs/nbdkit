@@ -45,6 +45,7 @@
 
 #include <nbdkit-filter.h>
 
+#include "ascii-string.h"
 #include "cleanup.h"
 
 /* -D ip.rules=1 to enable debugging of rules and rule matching. */
@@ -199,20 +200,20 @@ parse_rule (const char *paramname,
 
   assert (n > 0);
 
-  if (n == 3 && (strncasecmp (value, "all", 3) == 0 ||
-                 strncasecmp (value, "any", 3) == 0)) {
+  if (n == 3 && (ascii_strncasecmp (value, "all", 3) == 0 ||
+                 ascii_strncasecmp (value, "any", 3) == 0)) {
     new_rule->type = ANY;
     return 0;
   }
 
-  if (n == 7 && (strncasecmp (value, "allipv4", 7) == 0 ||
-                 strncasecmp (value, "anyipv4", 7) == 0)) {
+  if (n == 7 && (ascii_strncasecmp (value, "allipv4", 7) == 0 ||
+                 ascii_strncasecmp (value, "anyipv4", 7) == 0)) {
     new_rule->type = ANYV4;
     return 0;
   }
 
-  if (n == 7 && (strncasecmp (value, "allipv6", 7) == 0 ||
-                 strncasecmp (value, "anyipv6", 7) == 0)) {
+  if (n == 7 && (ascii_strncasecmp (value, "allipv6", 7) == 0 ||
+                 ascii_strncasecmp (value, "anyipv6", 7) == 0)) {
     new_rule->type = ANYV6;
     return 0;
   }

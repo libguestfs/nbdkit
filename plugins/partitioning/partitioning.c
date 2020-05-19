@@ -48,6 +48,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "ascii-string.h"
 #include "byte-swapping.h"
 #include "isaligned.h"
 #include "iszero.h"
@@ -172,9 +173,10 @@ partitioning_config (const char *key, const char *value)
     }
   }
   else if (strcmp (key, "partition-type") == 0) {
-    if (strcasecmp (value, "mbr") == 0 || strcasecmp (value, "dos") == 0)
+    if (ascii_strcasecmp (value, "mbr") == 0 ||
+        ascii_strcasecmp (value, "dos") == 0)
       parttype = PARTTYPE_MBR;
-    else if (strcasecmp (value, "gpt") == 0)
+    else if (ascii_strcasecmp (value, "gpt") == 0)
       parttype = PARTTYPE_GPT;
     else {
       nbdkit_error ("unknown partition-type: %s", value);
@@ -205,13 +207,13 @@ partitioning_config (const char *key, const char *value)
     alignment = r;
   }
   else if (strcmp (key, "mbr-id") == 0) {
-    if (strcasecmp (value, "default") == 0)
+    if (ascii_strcasecmp (value, "default") == 0)
       mbr_id = DEFAULT_MBR_ID;
     else if (nbdkit_parse_uint8_t ("mbr-id", value, &mbr_id) == -1)
       return -1;
   }
   else if (strcmp (key, "type-guid") == 0) {
-    if (strcasecmp (value, "default") == 0)
+    if (ascii_strcasecmp (value, "default") == 0)
       parse_guid (DEFAULT_TYPE_GUID, type_guid);
     else if (parse_guid (value, type_guid) == -1) {
       nbdkit_error ("could not validate GUID: %s", value);
