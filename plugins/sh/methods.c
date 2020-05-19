@@ -45,6 +45,7 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "ascii-string.h"
 
 #include "call.h"
 #include "methods.h"
@@ -105,16 +106,16 @@ sh_thread_model (void)
   case OK:
     if (slen > 0 && s[slen-1] == '\n')
       s[slen-1] = '\0';
-    if (strcasecmp (s, "parallel") == 0)
+    if (ascii_strcasecmp (s, "parallel") == 0)
       r = NBDKIT_THREAD_MODEL_PARALLEL;
-    else if (strcasecmp (s, "serialize_requests") == 0 ||
-             strcasecmp (s, "serialize-requests") == 0)
+    else if (ascii_strcasecmp (s, "serialize_requests") == 0 ||
+             ascii_strcasecmp (s, "serialize-requests") == 0)
       r = NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS;
-    else if (strcasecmp (s, "serialize_all_requests") == 0 ||
-             strcasecmp (s, "serialize-all-requests") == 0)
+    else if (ascii_strcasecmp (s, "serialize_all_requests") == 0 ||
+             ascii_strcasecmp (s, "serialize-all-requests") == 0)
       r = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
-    else if (strcasecmp (s, "serialize_connections") == 0 ||
-             strcasecmp (s, "serialize-connections") == 0)
+    else if (ascii_strcasecmp (s, "serialize_connections") == 0 ||
+             ascii_strcasecmp (s, "serialize-connections") == 0)
       r = NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS;
     else {
       nbdkit_debug ("%s: ignoring unrecognized thread model: %s",
@@ -545,11 +546,11 @@ sh_can_fua (void *handle)
   case OK:
     if (slen > 0 && s[slen-1] == '\n')
       s[slen-1] = '\0';
-    if (strcasecmp (s, "none") == 0)
+    if (ascii_strcasecmp (s, "none") == 0)
       r = NBDKIT_FUA_NONE;
-    else if (strcasecmp (s, "emulate") == 0)
+    else if (ascii_strcasecmp (s, "emulate") == 0)
       r = NBDKIT_FUA_EMULATE;
-    else if (strcasecmp (s, "native") == 0)
+    else if (ascii_strcasecmp (s, "native") == 0)
       r = NBDKIT_FUA_NATIVE;
     else {
       nbdkit_error ("%s: could not parse output from %s method: %s",
@@ -600,11 +601,11 @@ sh_can_cache (void *handle)
   case OK:
     if (slen > 0 && s[slen-1] == '\n')
       s[slen-1] = '\0';
-    if (strcasecmp (s, "none") == 0)
+    if (ascii_strcasecmp (s, "none") == 0)
       r = NBDKIT_CACHE_NONE;
-    else if (strcasecmp (s, "emulate") == 0)
+    else if (ascii_strcasecmp (s, "emulate") == 0)
       r = NBDKIT_CACHE_EMULATE;
-    else if (strcasecmp (s, "native") == 0)
+    else if (ascii_strcasecmp (s, "native") == 0)
       r = NBDKIT_CACHE_NATIVE;
     else {
       nbdkit_error ("%s: could not parse output from %s method: %s",
