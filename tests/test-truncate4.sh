@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2019 Red Hat Inc.
+# Copyright (C) 2019-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -31,55 +31,76 @@
 # SUCH DAMAGE.
 
 # Regression test when next_ops->get_size changes between connections.
+#
 # For now, NBD does not support dynamic resize; but the file plugin
 # reads size from the file system for each new connection, at which
 # point the client remembers that size for the life of the connection.
+#
 # We are testing that connection A can still see the tail of a file,
 # even when connection B is opened while the file was temporarily
-# shorter (if the actions of connection B affect the size visible
-# through connection A, we didn't isolate per-connection state).
+# shorter.  If the actions of connection B affect the size visible
+# through connection A, we didn't isolate per-connection state.
 
 source ./functions.sh
 set -e
 set -x
 
-requires qemu-io --version
+requires nbdsh --version
 
 sock=`mktemp -u`
-files="truncate4.out truncate4.pid $sock truncate4.data"
+data=truncate4.data
+files="truncate4.pid $sock $data"
 rm -f $files
 cleanup_fn rm -f $files
 
-# Initial file contents: 1k of pattern 1
-truncate -s 1024 truncate4.data
-qemu-io -c 'w -P 1 0 1024' -f raw truncate4.data
+# Create and truncate the file.
+: > $data
 
 # Run nbdkit with file plugin and truncate filter in front.
 start_nbdkit -P truncate4.pid -U $sock \
        --filter=truncate \
-       file truncate4.data \
+       file $data \
        round-up=1024
 
-fail=0
-exec 4>&1 # Save original stdout
-{
-    exec 5>&1 >&4 # Save connection A, set stdout back to original
-    echo 'Reading from connection A, try 1'
-    echo 'r -P 1 0 1024' >&5
-    sleep 1
-    echo 'Resizing down'
-    truncate -s 512 truncate4.data
-    echo 'Reading from connection B'
-    echo 'r -P 1 0 512' | qemu-io -f raw nbd:unix:$sock >> truncate4.out
-    echo 'Restoring size'
-    truncate -s 1024 truncate4.data
-    qemu-io -c 'w -P 2 0 1024' -f raw truncate4.data
-    echo 'Reading from connection A, try 2'
-    echo 'r -P 2 512 512' >&5
-    echo 'quit' >&5
-} | qemu-io -f raw nbd:unix:$sock >> truncate4.out || fail=1
-exec 4>&-
+export data sock
+nbdsh -c '
+import os
 
-cat truncate4.out
-grep 'Pattern verification failed' truncate4.out && fail=1
-exit $fail
+data = os.environ["data"]
+sock = os.environ["sock"]
+
+def restore_file():
+    # Original test data, 1024 bytes of "TEST" repeated.
+    with open (data, "w") as file:
+        file.write ("TEST"*256)
+
+restore_file ()
+
+print ("Connection A.", flush=True)
+connA = nbd.NBD ()
+connA.set_handle_name ("A")
+connA.connect_unix (sock)
+print ("Check the size.", flush=True)
+assert connA.get_size () == 1024
+
+print ("Truncate %s to 512 bytes." % data, flush=True)
+os.truncate (data, 512)
+
+print ("Connection B.", flush=True)
+connB = nbd.NBD ()
+connB.set_handle_name ("B")
+connB.connect_unix (sock)
+print ("Check the size.", flush=True)
+assert connB.get_size () == 1024 # because of the round-up parameter
+print ("Read data from connection B.", flush=True)
+buf = connB.pread (1024, 0)
+assert buf == b"TEST"*128 + b"\0"*512
+
+print ("Restore the file size and original data.", flush=True)
+restore_file ()
+
+print ("Read data from connection A.", flush=True)
+buf = connA.pread (1024, 0)
+assert 1024 == len (buf)
+assert buf == b"TEST"*256
+'
