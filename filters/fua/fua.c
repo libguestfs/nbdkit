@@ -47,6 +47,7 @@ static enum FuaMode {
   NATIVE,
   FORCE,
   PASS,
+  DISCARD,
 } fuamode;
 
 static int
@@ -64,6 +65,8 @@ fua_config (nbdkit_next_config *next, void *nxdata,
       fuamode = FORCE;
     else if (strcmp (value, "pass") == 0)
       fuamode = PASS;
+    else if (strcmp (value, "discard") == 0)
+      fuamode = DISCARD;
     else {
       nbdkit_error ("unknown fuamode '%s'", value);
       return -1;
@@ -91,6 +94,7 @@ fua_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   switch (fuamode) {
   case NONE:
   case PASS:
+  case DISCARD:
     break;
   case EMULATE:
     r = next_ops->can_flush (nxdata);
@@ -120,9 +124,17 @@ fua_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 static int
 fua_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
-  if (fuamode == FORCE)
+  switch (fuamode) {
+  case FORCE:
+  case DISCARD:
     return 1; /* Advertise our no-op flush, even if plugin lacks it */
-  return next_ops->can_flush (nxdata);
+  case NONE:
+  case EMULATE:
+  case NATIVE:
+  case PASS:
+    return next_ops->can_flush (nxdata);
+  }
+  abort ();
 }
 
 /* Advertise desired fua mode. */
@@ -136,6 +148,7 @@ fua_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
     return NBDKIT_FUA_EMULATE;
   case NATIVE:
   case FORCE:
+  case DISCARD:
     return NBDKIT_FUA_NATIVE;
   case PASS:
     return next_ops->can_fua (nxdata);
@@ -167,6 +180,9 @@ fua_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   case FORCE:
     flags |= NBDKIT_FLAG_FUA;
     break;
+  case DISCARD:
+    flags &= ~NBDKIT_FLAG_FUA;
+    break;
   }
   r = next_ops->pwrite (nxdata, buf, count, offs, flags, err);
   if (r != -1 && need_flush)
@@ -178,9 +194,18 @@ static int
 fua_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
            void *handle, uint32_t flags, int *err)
 {
-  if (fuamode == FORCE)
+  switch (fuamode) {
+  case FORCE:
     return 0; /* Nothing to flush, since all writes already used FUA */
-  return next_ops->flush (nxdata, flags, err);
+  case DISCARD:
+    return 0; /* Drop flushes! */
+  case NONE:
+  case EMULATE:
+  case NATIVE:
+  case PASS:
+    return next_ops->flush (nxdata, flags, err);
+  }
+  abort ();
 }
 
 static int
@@ -206,6 +231,9 @@ fua_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
     break;
   case FORCE:
     flags |= NBDKIT_FLAG_FUA;
+    break;
+  case DISCARD:
+    flags &= ~NBDKIT_FLAG_FUA;
     break;
   }
   r = next_ops->trim (nxdata, count, offs, flags, err);
@@ -237,6 +265,9 @@ fua_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     break;
   case FORCE:
     flags |= NBDKIT_FLAG_FUA;
+    break;
+  case DISCARD:
+    flags &= ~NBDKIT_FLAG_FUA;
     break;
   }
   r = next_ops->zero (nxdata, count, offs, flags, err);

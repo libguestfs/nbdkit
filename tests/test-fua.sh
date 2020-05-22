@@ -40,7 +40,8 @@ files="fua.img
        fua2.log fua2.pid
        fua3.log fua3.pid
        fua4.log fua4.pid
-       fua5.log fua5.pid"
+       fua5.log fua5.pid
+       fua6.log fua6.pid"
 rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on
@@ -56,16 +57,10 @@ fi
 # on exit.
 cleanup ()
 {
-    echo "Log 1 file contents:"
-    cat fua1.log || :
-    echo "Log 2 file contents:"
-    cat fua2.log || :
-    echo "Log 3 file contents:"
-    cat fua3.log || :
-    echo "Log 4 file contents:"
-    cat fua4.log || :
-    echo "Log 5 file contents:"
-    cat fua5.log || :
+    for i in {1..6}; do
+        echo "Log $i file contents:"
+        cat fua$i.log || :
+    done
     rm -f $files
     rm -rf $sockdir
 }
@@ -77,6 +72,7 @@ cleanup_fn cleanup
 # 3: fuamode=native: log shows that blocksize preserves fua
 # 4: fuamode=force: log shows that fua is always enabled
 # 5: fuamode=pass: fua flag and flush unchanged
+# 6: fuamode=discard: discard all fua and flush
 start_nbdkit -P fua1.pid -U $sockdir/fua1.sock \
              --filter=log --filter=fua \
              file logfile=fua1.log fua.img
@@ -92,10 +88,13 @@ start_nbdkit -P fua4.pid -U $sockdir/fua4.sock \
 start_nbdkit -P fua5.pid -U $sockdir/fua5.sock \
              --filter=fua --filter=log \
              file logfile=fua5.log fua.img fuamode=pass
+start_nbdkit -P fua6.pid -U $sockdir/fua6.sock \
+             --filter=fua --filter=log \
+             file logfile=fua6.log fua.img fuamode=discard
 
 # Perform a flush, write, and zero, first without then with FUA
 for f in '' -f; do
-    for i in {1..5}; do
+    for i in {1..6}; do
 	qemu-io -f raw -t none -c flush -c "w $f 0 64k" -c "w -z $f 64k 64k" \
 		 "nbd+unix://?socket=$sockdir/fua$i.sock"
     done
@@ -139,3 +138,13 @@ grep 'connection=1 Write.*fua=0' fua5.log
 grep 'connection=2 Write.*fua=1' fua5.log
 grep 'connection=1 Zero.*fua=0' fua5.log
 grep 'connection=2 Zero.*fua=1' fua5.log
+
+# Test 6: Flush and fua=1 must not appear.
+if grep 'Flush' fua6.log; then
+    echo "filter should have elided flush"
+    exit 1
+fi
+if grep -E '(Write|Zero).*fua=1' fua6.log; then
+    echo "filter should have elided fua"
+    exit 1
+fi

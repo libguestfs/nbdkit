@@ -112,6 +112,7 @@ L<nbdkit-plugin(3)>,
 L<nbdkit-split-plugin(1)>,
 L<nbdkit-partitioning-plugin(1)>,
 L<nbdkit-tmpdisk-plugin(1)>,
+L<nbdkit-fua-filter(1)>,
 L<nbdkit-noextents-filter(1)>.
 
 =head1 AUTHORS

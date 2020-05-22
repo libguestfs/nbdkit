@@ -9,10 +9,12 @@ nbdkit-fua-filter - modify nbdkit flush and Forced Unit Access (FUA)
 =head1 DESCRIPTION
 
 C<nbdkit-fua-filter> is a filter that intentionally modifies handling
-of the S<“Forced Unit Access”> (FUA) flag across the NBD protocol.  It
-is mainly useful for testing client or server fallbacks, and for
-evaluating timing differences between proper use of FUA compared to a
-full flush.
+of the S<“Forced Unit Access”> (FUA) flag across the NBD protocol.
+
+This filter can be used to disable FUA and flush requests for speed
+(although this is unsafe).  Also it can be used to test client or
+server fallbacks, and for evaluating timing differences between proper
+use of FUA compared to a full flush.
 
 =head1 PARAMETERS
 
@@ -20,6 +22,17 @@ The C<fuamode> parameter is optional and controls which mode the
 filter will use.
 
 =over 4
+
+=item B<fuamode=discard>
+
+(nbdkit E<ge> 1.22)
+
+The filter will discard FUA and flush requests.
+
+B<This mode is unsafe>: If the NBD disk contains a filesystem then you
+will likely lose data in the event of a crash.  It should only be used
+for ephemeral data which you can easily recreate, such as caches,
+builds, test data, etc.
 
 =item B<fuamode=pass>
 
@@ -63,6 +76,14 @@ C<.can_fua> callback returns C<NBDKIT_FUA_NONE>.
 =head1 EXAMPLES
 
 =over 4
+
+=item *
+
+Serve the file F<disk.img> discarding all FUA and flush requests.
+This can greatly improve performance, but you will likely lose data if
+there is a crash, so it is not safe.
+
+ nbdkit --filter=discard file disk.img fuamode=discard
 
 =item *
 
