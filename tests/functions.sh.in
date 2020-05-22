@@ -43,17 +43,17 @@ cleanup_fn ()
 
 _run_cleanup_hooks ()
 {
-    local status=$? i
+    local _status=$? _i
 
     set +e
     trap '' INT QUIT TERM EXIT ERR
-    echo $0: run cleanup hooks: exit code $status
+    echo $0: run cleanup hooks: exit code $_status
 
-    for (( i = 0; i < ${#_cleanup_hook[@]}; ++i )); do
-        ${_cleanup_hook[i]}
+    for (( _i = 0; _i < ${#_cleanup_hook[@]}; ++_i )); do
+        ${_cleanup_hook[_i]}
     done
 
-    exit $status
+    exit $_status
 }
 trap _run_cleanup_hooks INT QUIT TERM EXIT ERR
 
