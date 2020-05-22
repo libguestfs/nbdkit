@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit-fua-filter - nbdkit FUA filter
+nbdkit-fua-filter - modify nbdkit flush and Forced Unit Access (FUA)
 
 =head1 SYNOPSIS
 
@@ -9,46 +9,62 @@ nbdkit-fua-filter - nbdkit FUA filter
 =head1 DESCRIPTION
 
 C<nbdkit-fua-filter> is a filter that intentionally modifies handling
-of the 'Forced Unit Access' (FUA) flag across the NBD protocol.  It is
-mainly useful for testing client or server fallbacks, and for
+of the S<“Forced Unit Access”> (FUA) flag across the NBD protocol.  It
+is mainly useful for testing client or server fallbacks, and for
 evaluating timing differences between proper use of FUA compared to a
 full flush.
 
 =head1 PARAMETERS
 
+The C<fuamode> parameter is optional and controls which mode the
+filter will use.
+
 =over 4
 
 =item B<fuamode=none>
 
+FUA support is not advertised to the client.  Clients will not be able
+to issue FUA write requests, but can send flush commands if the plugin
+supports it.
+
+This is the default if the C<fuamode> parameter is not specified.
+
 =item B<fuamode=emulate>
+
+The filter will emulate FUA support using the plugin’s C<.flush>
+callback, regardless of whether the plugin itself supports more
+efficient FUA.  It refuses to load if the plugin does not support
+flush.
 
 =item B<fuamode=native>
 
+The filter will advertise native FUA support to the client and earlier
+filters in the chain.  This is useful for comparing optimizations of
+FUA handling when splitting large requests into sub-requests.  It
+refuses to load if the plugin’s C<.can_fua> callback returns
+C<NBDKIT_FUA_NONE>.
+
 =item B<fuamode=force>
 
-Optional, controls which mode the filter will use.  Mode B<none>
-(default) means that FUA support is not advertised to the client.
-Mode B<emulate> causes the filter to emulate FUA support using the
-plugin's C<flush> callback, regardless of whether the plugin itself
-supports more efficient FUA (or refuses to load if the plugin's
-C<can_flush> callback returns false).  Mode B<native> causes the
-filter to advertise native FUA support to earlier filters, useful for
-comparing optimizations of FUA handling when splitting large requests
-into sub-requests (or refuses to load if the plugin's C<can_fua>
-callback returns C<NBDKIT_FUA_NONE>).  Mode B<force> causes the filter
-to request FUA on all write transactions, even when the client did not
-request it, and in turn treats client flush requests as a no-op (or
-refuses to load if the plugin's C<can_fua> callback returns
-C<NBDKIT_FUA_NONE>).
+The filter will request FUA on all write transactions, even when the
+client did not request it (“write-through” mode).  In turn client
+flush requests become no-ops.  It refuses to load if the plugin’s
+C<.can_fua> callback returns C<NBDKIT_FUA_NONE>.
 
 =back
 
 =head1 EXAMPLES
 
+=over 4
+
+=item *
+
 Serve the file F<disk.img>, but force the client to submit explicit
 flush requests instead of using C<NBD_CMD_FLAG_FUA>:
 
  nbdkit --filter=fua file disk.img
+
+=item *
 
 Observe that the blocksize filter optimizes its handling of the FUA
 flag based on whether it knows nbdkit will be emulating FUA with a
@@ -60,11 +76,15 @@ filter modes:
  nbdkit --filter=blocksize --filter=log --filter=fua file disk.img \
    maxlen=4k logfile=fua_native fuamode=native
 
+=item *
+
 Serve the file F<disk.img> in write-through mode, where all writes
 from the client are immediately flushed to disk as if the client had
 always requested FUA:
 
- nbdkit --filter=fua file fuamode=force disk.img
+ nbdkit --filter=fua file disk.img fuamode=force
+
+=back
 
 =head1 FILES
 
