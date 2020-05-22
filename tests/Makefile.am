@@ -131,6 +131,7 @@ TESTS += \
 	test-dump-plugin-name.sh \
 	test-dump-plugin-and-single.sh \
 	test-dump-plugin-thread-model.sh \
+	test-ddrescue-filter.sh \
 	test-probe-filter.sh \
 	test-probe-plugin.sh \
 	test-start.sh \
@@ -155,6 +156,7 @@ TESTS += \
 	$(NULL)
 EXTRA_DIST += \
 	test-captive.sh \
+	test-ddrescue-filter.sh \
 	test-debug-flags.sh \
 	test-dump-plugin-and-single.sh \
 	test-dump-plugin-example1.sh \

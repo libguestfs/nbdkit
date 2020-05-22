@@ -97,6 +97,7 @@ filters="\
         cache \
         cacheextents \
         cow \
+        ddrescue \
         delay \
         error \
         exitlast \
@@ -1089,6 +1090,7 @@ AC_CONFIG_FILES([Makefile
                  filters/cache/Makefile
                  filters/cacheextents/Makefile
                  filters/cow/Makefile
+                 filters/ddrescue/Makefile
                  filters/delay/Makefile
                  filters/error/Makefile
                  filters/exitlast/Makefile
