@@ -46,6 +46,7 @@ static enum FuaMode {
   EMULATE,
   NATIVE,
   FORCE,
+  PASS,
 } fuamode;
 
 static int
@@ -61,6 +62,8 @@ fua_config (nbdkit_next_config *next, void *nxdata,
       fuamode = NATIVE;
     else if (strcmp (value, "force") == 0)
       fuamode = FORCE;
+    else if (strcmp (value, "pass") == 0)
+      fuamode = PASS;
     else {
       nbdkit_error ("unknown fuamode '%s'", value);
       return -1;
@@ -71,7 +74,8 @@ fua_config (nbdkit_next_config *next, void *nxdata,
 }
 
 #define fua_config_help \
-  "fuamode=<MODE>       One of 'none' (default), 'emulate', 'native', 'force'.\n" \
+  "fuamode=<MODE>       One of 'none' (default), 'emulate', 'native',\n" \
+  "                       'force', 'pass'."
 
 /* Check that desired mode is supported by plugin. */
 static int
@@ -86,6 +90,7 @@ fua_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 
   switch (fuamode) {
   case NONE:
+  case PASS:
     break;
   case EMULATE:
     r = next_ops->can_flush (nxdata);
@@ -132,6 +137,8 @@ fua_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   case NATIVE:
   case FORCE:
     return NBDKIT_FUA_NATIVE;
+  case PASS:
+    return next_ops->can_fua (nxdata);
   }
   abort ();
 }
@@ -155,6 +162,7 @@ fua_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     }
     break;
   case NATIVE:
+  case PASS:
     break;
   case FORCE:
     flags |= NBDKIT_FLAG_FUA;
@@ -194,6 +202,7 @@ fua_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
     }
     break;
   case NATIVE:
+  case PASS:
     break;
   case FORCE:
     flags |= NBDKIT_FLAG_FUA;
@@ -224,6 +233,7 @@ fua_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     }
     break;
   case NATIVE:
+  case PASS:
     break;
   case FORCE:
     flags |= NBDKIT_FLAG_FUA;

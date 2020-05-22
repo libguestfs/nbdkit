@@ -39,7 +39,8 @@ files="fua.img
        fua1.log fua1.pid
        fua2.log fua2.pid
        fua3.log fua3.pid
-       fua4.log fua4.pid"
+       fua4.log fua4.pid
+       fua5.log fua5.pid"
 rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on
@@ -63,16 +64,19 @@ cleanup ()
     cat fua3.log || :
     echo "Log 4 file contents:"
     cat fua4.log || :
+    echo "Log 5 file contents:"
+    cat fua5.log || :
     rm -f $files
     rm -rf $sockdir
 }
 cleanup_fn cleanup
 
-# Run four parallel nbdkit; to compare the logs and see what changes.
+# Run parallel nbdkit; to compare the logs and see what changes.
 # 1: fuamode=none (default): client should send flush instead
 # 2: fuamode=emulate: log shows that blocksize optimizes fua to flush
 # 3: fuamode=native: log shows that blocksize preserves fua
 # 4: fuamode=force: log shows that fua is always enabled
+# 5: fuamode=pass: fua flag and flush unchanged
 start_nbdkit -P fua1.pid -U $sockdir/fua1.sock \
              --filter=log --filter=fua \
              file logfile=fua1.log fua.img
@@ -85,10 +89,13 @@ start_nbdkit -P fua3.pid -U $sockdir/fua3.sock \
 start_nbdkit -P fua4.pid -U $sockdir/fua4.sock \
              --filter=fua --filter=log \
              file logfile=fua4.log fua.img fuamode=force
+start_nbdkit -P fua5.pid -U $sockdir/fua5.sock \
+             --filter=fua --filter=log \
+             file logfile=fua5.log fua.img fuamode=pass
 
 # Perform a flush, write, and zero, first without then with FUA
 for f in '' -f; do
-    for i in {1..4}; do
+    for i in {1..5}; do
 	qemu-io -f raw -t none -c flush -c "w $f 0 64k" -c "w -z $f 64k 64k" \
 		 "nbd+unix://?socket=$sockdir/fua$i.sock"
     done
@@ -124,3 +131,11 @@ if grep 'Flush' fua4.log; then
     echo "filter should have elided flush"
     exit 1
 fi
+
+# Test 5: Flush should be passed through.
+# There should also be one set of fua=0 and a second set of fua=1.
+grep 'Flush' fua5.log
+grep 'connection=1 Write.*fua=0' fua5.log
+grep 'connection=2 Write.*fua=1' fua5.log
+grep 'connection=1 Zero.*fua=0' fua5.log
+grep 'connection=2 Zero.*fua=1' fua5.log

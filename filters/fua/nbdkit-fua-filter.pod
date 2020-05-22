@@ -21,6 +21,13 @@ filter will use.
 
 =over 4
 
+=item B<fuamode=pass>
+
+(nbdkit E<ge> 1.22)
+
+Pass through FUA and flush requests unchanged.  Turns the filter into
+a no-op.
+
 =item B<fuamode=none>
 
 FUA support is not advertised to the client.  Clients will not be able
