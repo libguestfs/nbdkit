@@ -20,10 +20,23 @@ work even when nbdkit is run as a daemon.
 
 =head1 PARAMETERS
 
-The nbdkit-log-filter requires a single parameter C<logfile> which
-specifies the path of the file to use for logging.  If the file
-already exists, it will be truncated unless the C<logappend> parameter
-was specified with a value that can be parsed as a boolean true.
+=over 4
+
+=item B<logfile=>FILE
+
+The file where the log is written.  This parameter is required.
+
+=item B<logappend=true>
+
+=item B<logappend=false>
+
+(nbdkit E<ge> 1.8)
+
+When set to C<false> (the default), if the file already exists it will
+be truncated.  When set to C<true>, the filter appends to the existing
+file.
+
+=back
 
 =head1 EXAMPLES
 
