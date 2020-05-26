@@ -36,9 +36,13 @@ ports and protocols used to serve NBD see L<nbdkit(1)>).
 
 =item B<cainfo=>FILENAME
 
+(nbdkit E<ge> 1.18)
+
 Configure CA bundle for libcurl. See L<CURLOPT_CAINFO(3)> for details.
 
 =item B<capath=>PATH
+
+(nbdkit E<ge> 1.18)
 
 Set CA certificates directory location for libcurl. See
 L<CURLOPT_CAPATH(3)> for more information.
@@ -50,6 +54,8 @@ L<CURLOPT_CAPATH(3)> for more information.
 =item B<cookie=->
 
 =item B<cookie=->FD
+
+(nbdkit E<ge> 1.12)
 
 Set a cookie in the request header when connecting to the remote
 server.
@@ -96,6 +102,8 @@ method to supply a password.
 
 =item B<protocols=>PROTO,PROTO,...
 
+(nbdkit E<ge> 1.12)
+
 Limit the protocols that are allowed in the URL.  Use this option for
 extra security if the URL comes from an untrusted source and you want
 to avoid security isues in the more obscure protocols that curl
@@ -116,6 +124,8 @@ The default is to allow any protocol.
 
 =item B<proxy=>PROXY
 
+(nbdkit E<ge> 1.20)
+
 Set the proxy.  See L<CURLOPT_PROXY(3)>.
 
 =item B<proxy-password=>PASSWORD
@@ -128,6 +138,8 @@ Set the proxy.  See L<CURLOPT_PROXY(3)>.
 
 =item B<proxy-user=>USERNAME
 
+(nbdkit E<ge> 1.12)
+
 Set the proxy username and password.
 
 =item B<sslverify=false>
@@ -136,9 +148,13 @@ Don't verify the SSL certificate of the remote host.
 
 =item B<tcp-keepalive=true>
 
+(nbdkit E<ge> 1.20)
+
 Enable TCP keepalives.
 
 =item B<tcp-nodelay=false>
+
+(nbdkit E<ge> 1.20)
 
 Disable Nagle’s algorithm.
 
@@ -151,6 +167,8 @@ Set the timeout for requests.
 Use the default libcurl timeout for requests.
 
 =item B<unix-socket-path=>PATH
+
+(nbdkit E<ge> 1.10)
 
 Instead of using a TCP connection, connect to the server over the
 named Unix domain socket.  See L<CURLOPT_UNIX_SOCKET_PATH(3)>.

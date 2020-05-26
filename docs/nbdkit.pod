@@ -189,6 +189,8 @@ value C<N>.  See L<nbdkit-plugin(3)/Debug Flags>.
 
 =item B<--debug> nbdkit.FLAG=N
 
+(nbdkit E<ge> 1.18)
+
 Set the nbdkit server Debug Flag called C<FLAG> to the integer value
 C<N>.  See L</SERVER DEBUG FLAGS> below.
 
@@ -377,6 +379,8 @@ Unix domain sockets:
 
 =item B<--swap>
 
+(nbdkit E<ge> 1.18)
+
 Specifies that the NBD device will be used as swap space loop mounted
 on the same machine which is running nbdkit.  To avoid deadlocks this
 locks the whole nbdkit process into memory using L<mlockall(2)>.  This
@@ -475,6 +479,8 @@ The I<--dump-config> option provides separate major and minor numbers
 and may be easier to parse from shell scripts.
 
 =item B<--vsock>
+
+(nbdkit E<ge> 1.16)
 
 Use the AF_VSOCK protocol (instead of TCP/IP).  You must use this in
 conjunction with I<-p>/I<--port>.  See L<nbdkit-service(1)/AF_VSOCK>.

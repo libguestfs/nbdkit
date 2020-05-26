@@ -185,6 +185,8 @@ The hostname or IP address of VCenter or ESXi host.
 
 =item B<single-link=true>
 
+(nbdkit E<ge> 1.12)
+
 Open the current link, not the entire chain.  This corresponds to the
 C<VIXDISKLIB_FLAG_OPEN_SINGLE_LINK> flag.
 
@@ -210,6 +212,8 @@ List of one or more transport modes to use.  Possible values include
 not given, VDDK will try to choose the best transport mode.
 
 =item B<unbuffered=true>
+
+(nbdkit E<ge> 1.12)
 
 Disable host caching.  This corresponds to the
 C<VIXDISKLIB_FLAG_OPEN_UNBUFFERED> flag.
