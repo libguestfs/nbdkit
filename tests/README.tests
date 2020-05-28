@@ -1,42 +1,110 @@
-To test a plugin using libguestfs
-=================================
+For users
+=========
 
-  - #include <test.h>
+To run the tests:
 
-  - Call:
+  make check
+  make check-valgrind
 
-    test_start_nbdkit ("plugin", <plugin args ...>, NULL)
+To test against the real VDDK library:
 
-    at the beginning.  This starts the nbdkit server.
+  make check-vddk vddkdir=vmware-vix-disklib-distrib
 
-  - Open a libguestfs handle, and configure the NBD client using:
+Optionally:
 
-    guestfs_add_drive_opts (g, "",
-                            GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
-                            GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
-                            GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
-                            -1);
+  sudo make check-root
 
-    'server' is a global that is initialized by 'test_start_nbdkit' and
-    points to the nbdkit server socket.
 
-  - Perform tests via libguestfs using the libguestfs device "/dev/sda",
-    which corresponds to the NBD drive exposed by the plugin.
+For developers
+==============
 
-  - Close the handle and exit.  An 'atexit' handler installed by
-    'test_start_nbdkit' cleans up the server automatically.
+This directory contains the nbdkit test suite.  It uses the automake
+Parallel Test Harness[1] to run the tests in parallel.  We prefer
+individual small tests as they are easier to parallelize and debug.
 
-For an example, see 'test-data.c'.
+[1] https://www.gnu.org/software/automake/manual/html_node/Parallel-Test-Harness.html
+
+Existing tests generally use one of these approaches:
+
+(1) shell script + qemu-io.
+
+(2) shell script + guestfish.
+
+(3) shell script + nbdsh (preferred over (1) and (2), if possible).
+
+(4) C program using libguestfs + test harness.  The test harness is
+    described below.
+
+(5) C program using libnbd (somewhat preferred over (4), if possible).
+
+
+Shell script tests
+------------------
+
+At the top of the shell script use:
+
+  source ./functions.sh
+  set -e     # optional, depends on the test
+  set -x     # optional, but usually better to have it
+
+The ‘functions.sh’ script contains many useful functions that help
+with writing tests, specifying test prerequisites, and cleaning up.
+
+Mosts tests will need one or more ‘requires’ lines in order to skip
+the test if required utilities are not available.  See existing tests
+for examples.
+
+Before any shell script test will run, you must add it to ‘TESTS’ and
+‘EXTRA_DIST’ in the ‘Makefile.am’ file.
+
+There are many examples, eg. ‘tests/test-limit.sh’.
+
 
 To test a plugin using libnbd
-=============================
+-----------------------------
 
-  - Open a libnbd handle, and configure it using:
+Open a libnbd handle, and configure it using:
 
-    char *args[] = { "nbdkit", "-s", "--exit-with-parent",
-                     "plugin", <plugin args ...>, NULL };
-    nbd_connect_command (nbd, args);
+  char *args[] = { "nbdkit", "-s", "--exit-with-parent",
+                    "plugin", <plugin args ...>, NULL };
+  nbd_connect_command (nbd, args);
 
-  - Perform tests via libnbd.
+Perform tests via libnbd functions.
 
-For an example, see 'test-delay.c'.
+Add the test to ‘LIBNBD_TESTS’ and ‘EXTRA_DIST’ in ‘Makefile.am’.
+
+For an example, see ‘test-delay.c’.
+
+
+To test a plugin using libguestfs
+---------------------------------
+
+There is a small test harness to help with tests written in C using
+libguestfs (http://libguestfs.org).
+
+#include "test.h"
+
+Call at the beginning.  This starts the nbdkit server:
+
+  test_start_nbdkit ("plugin", <plugin args ...>, NULL)
+
+Open a libguestfs handle, and configure the NBD client using:
+
+  guestfs_add_drive_opts (g, "",
+                          GUESTFS_ADD_DRIVE_OPTS_FORMAT, "raw",
+                          GUESTFS_ADD_DRIVE_OPTS_PROTOCOL, "nbd",
+                          GUESTFS_ADD_DRIVE_OPTS_SERVER, server,
+                          -1);
+
+‘server’ is a global that is initialized by ‘test_start_nbdkit’ and
+points to the nbdkit server socket.
+
+Perform tests via libguestfs using the libguestfs device "/dev/sda",
+which corresponds to the NBD drive exposed by the plugin.
+
+Close the handle and exit.  An atexit handler installed by
+‘test_start_nbdkit’ cleans up the server automatically.
+
+Add the test to ‘LIBGUESTFS_TESTS’ and ‘EXTRA_DIST’ in ‘Makefile.am’.
+
+For an example, see ‘test-data.c’.
