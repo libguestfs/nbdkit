@@ -55,14 +55,18 @@ extern void bucket_init (struct bucket *bucket,
 /* Dynamically adjust the rate.  The old rate is returned. */
 extern uint64_t bucket_adjust_rate (struct bucket *bucket, uint64_t rate);
 
-/* Take up to N tokens from the bucket.  Returns the number
- * of tokens remaining (that could not be taken from the bucket),
- * or 0 if we were able to take all N tokens from the bucket.
+/* Take up to N tokens from the bucket.
  *
- * In the case that the return value > 0, *TS is initialized with the
- * estimated length of time you should sleep.  Note that *TS is _NOT_
+ * If the bucket has >= N tokens (ie. we can send the packet now) then
+ * the number of tokens in the bucket is reduced by N and this
+ * function returns 0.
+ *
+ * If the bucket has fewer than N tokens then the bucket is emptied
+ * and the number of tokens we still need to take is returned as a
+ * positive number > 0.  In this case, *TS is initialized with the
+ * estimated length of time you should sleep.  (Note that *TS is _NOT_
  * initialized if the return value == 0, because the caller should not
- * sleep in that case.
+ * sleep in that case.)
  *
  * In the case where the caller needs to sleep, it must make a further
  * call to bucket_run before proceeding, since another thread may have
