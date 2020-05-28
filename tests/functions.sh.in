@@ -114,32 +114,32 @@ requires_linux_kernel_version ()
 # installed automatically which kills nbdkit on exit.
 start_nbdkit ()
 {
-    local pidfile i
+    local _pidfile _i
 
     # -P <pidfile> must be the first two parameters.
     if [ "$1" != "-P" ]; then
        echo "$0: start_nbdkit: -P <pidfile> option must be first"
        exit 1
     fi
-    pidfile="$2"
+    _pidfile="$2"
 
     # Run nbdkit.
     nbdkit -v "$@"
 
     # Wait for the pidfile to appear.
-    for i in {1..60}; do
-        if test -s "$pidfile"; then
+    for _i in {1..60}; do
+        if test -s "$_pidfile"; then
             break
         fi
         sleep 1
     done
-    if ! test -s "$pidfile"; then
-        echo "$0: start_nbdkit: PID file $pidfile was not created"
+    if ! test -s "$_pidfile"; then
+        echo "$0: start_nbdkit: PID file $_pidfile was not created"
         exit 1
     fi
 
     # Kill nbdkit on exit.
-    cleanup_fn kill_nbdkit "$(cat "$pidfile")"
+    cleanup_fn kill_nbdkit "$(cat "$_pidfile")"
 }
 
 # kill_nbdkit pid
