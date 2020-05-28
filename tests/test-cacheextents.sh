@@ -47,31 +47,30 @@ files="$pidfile $sock"
 rm -f $files $accessfile
 cleanup_fn rm -f $files
 
-# Intentionally using EOF rather than 'EOF' so that we can pass in the
-# $accessfile_full
+export accessfile_full
 start_nbdkit \
     -P $pidfile \
     -U $sock \
     --filter=cacheextents \
-    sh - <<EOF
-echo "Call: \$@" >>$accessfile_full
+    sh - <<'EOF'
+echo "Call: $@" >>$accessfile_full
 size=4M
-block_size=\$((1024*1024))
-case "\$1" in
+block_size=$((1024*1024))
+case "$1" in
   thread_model) echo parallel ;;
-  get_size) echo \$size ;;
+  get_size) echo $size ;;
   can_extents) ;;
   extents)
-    echo "extents request: \$@" >>$accessfile_full
-    offset=\$((\$4 / \$block_size))
-    count=\$((\$3 / \$block_size))
-    length=\$((\$offset + \$count))
-    for i in \$(seq \$offset \$length); do
-      echo \${i}M \$block_size \$((i%4)) >>$accessfile_full
-      echo \${i}M \$block_size \$((i%4))
+    echo "extents request: $@" >>$accessfile_full
+    offset=$(($4 / $block_size))
+    count=$(($3 / $block_size))
+    length=$(($offset + $count))
+    for i in $(seq $offset $length); do
+      echo ${i}M $block_size $((i%4)) >>$accessfile_full
+      echo ${i}M $block_size $((i%4))
     done
     ;;
-  pread) dd if=/dev/zero count=\$3 iflag=count_bytes ;;
+  pread) dd if=/dev/zero count=$3 iflag=count_bytes ;;
   can_write) ;;
   pwrite) dd of=/dev/null ;;
   can_trim) ;;
