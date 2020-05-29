@@ -97,7 +97,13 @@ The method was executed successfully.
 There was an error.  The script may print on stderr an errno name,
 optionally followed by whitespace and a message, for example:
 
- ENOSPC Out of space
+ echo 'ENOSPC Out of space' >&2
+ exit 1
+
+or if you don't need the log message:
+
+ echo ENOSPC >&2
+ exit 1
 
 If the script doesn't print anything or the output cannot be parsed
 then nbdkit assumes error C<EIO>.  Note that output to stderr is
