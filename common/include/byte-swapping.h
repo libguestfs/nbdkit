@@ -32,11 +32,13 @@
 
 /* The job of this header is to define macros (or functions) called
  * things like 'htobe32' and 'le64toh' which byte swap N-bit integers
- * between host representation, and little and big endian.  The core
- * code and plugins in nbdkit uses these names and relies on this
- * header to provide the platform-specific implementation.  On Linux
- * these are defined in <endian.h> but other platforms have other
- * requirements.
+ * between host representation, and little and big endian.  Also
+ * bswap_16, bswap_32 and bswap_64 which simply swap endianness.
+ *
+ * The core code and plugins in nbdkit uses these names and relies on
+ * this header to provide the platform-specific implementation.  On
+ * GNU/Linux these are defined in <endian.h> and <byteswap.h> but
+ * other platforms have other requirements.
  */
 
 #ifndef NBDKIT_BYTE_SWAPPING_H
@@ -72,38 +74,56 @@
 #define le64toh(x) B_LENDIAN_TO_HOST_INT64(x)
 #endif
 
+/* If we didn't define bswap_16, bswap_32 and bswap_64 already above,
+ * create macros.  GCC >= 4.8 and Clang have builtins.
+ */
+#ifndef bswap_16
+#define bswap_16 __builtin_bswap16
+#endif
+
+#ifndef bswap_32
+#define bswap_32 __builtin_bswap32
+#endif
+
+#ifndef bswap_64
+#define bswap_64 __builtin_bswap64
+#endif
+
+/* If we didn't define htobe* above then define them in terms of
+ * bswap_* macros.
+ */
 #ifndef htobe32
-# if __BYTE_ORDER == __LITTLE_ENDIAN
-#  define htobe16(x) __bswap_16 (x)
+# ifndef WORDS_BIGENDIAN /* little endian */
+#  define htobe16(x) bswap_16 (x)
 #  define htole16(x) (x)
-#  define be16toh(x) __bswap_16 (x)
+#  define be16toh(x) bswap_16 (x)
 #  define le16toh(x) (x)
 
-#  define htobe32(x) __bswap_32 (x)
+#  define htobe32(x) bswap_32 (x)
 #  define htole32(x) (x)
-#  define be32toh(x) __bswap_32 (x)
+#  define be32toh(x) bswap_32 (x)
 #  define le32toh(x) (x)
 
-#  define htobe64(x) __bswap_64 (x)
+#  define htobe64(x) bswap_64 (x)
 #  define htole64(x) (x)
-#  define be64toh(x) __bswap_64 (x)
+#  define be64toh(x) bswap_64 (x)
 #  define le64toh(x) (x)
 
-# else
+# else /* big endian */
 #  define htobe16(x) (x)
-#  define htole16(x) __bswap_16 (x)
+#  define htole16(x) bswap_16 (x)
 #  define be16toh(x) (x)
-#  define le16toh(x) __bswap_16 (x)
+#  define le16toh(x) bswap_16 (x)
 
 #  define htobe32(x) (x)
-#  define htole32(x) __bswap_32 (x)
+#  define htole32(x) bswap_32 (x)
 #  define be32toh(x) (x)
-#  define le32toh(x) __bswap_32 (x)
+#  define le32toh(x) bswap_32 (x)
 
 #  define htobe64(x) (x)
-#  define htole64(x) __bswap_64 (x)
+#  define htole64(x) bswap_64 (x)
 #  define be64toh(x) (x)
-#  define le64toh(x) __bswap_64 (x)
+#  define le64toh(x) bswap_64 (x)
 # endif
 #endif
 

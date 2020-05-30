@@ -141,6 +141,9 @@ test "x$U" != "x" && AC_MSG_ERROR([Compiler not ANSI compliant])
 
 AM_PROG_CC_C_O
 
+dnl Defines WORDS_BIGENDIAN on big endian platforms.
+AC_C_BIGENDIAN
+
 dnl Check for C++ (optional, we just use this to test the header
 dnl can be included from C++ code).
 AC_PROG_CXX

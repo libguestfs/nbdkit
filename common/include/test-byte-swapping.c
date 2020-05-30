@@ -85,5 +85,23 @@ main (void)
   i64 = htobe64 (0x123456789abcdef0);
   assert (memcmp (&i64, be64, 8) == 0);
 
+  memcpy (&i16, le16, 2);
+  i16 = bswap_16 (i16);
+  assert (memcmp (&i16, be16, 2) == 0);
+  i16 = bswap_16 (i16);
+  assert (memcmp (&i16, le16, 2) == 0);
+
+  memcpy (&i32, le32, 4);
+  i32 = bswap_32 (i32);
+  assert (memcmp (&i32, be32, 4) == 0);
+  i32 = bswap_32 (i32);
+  assert (memcmp (&i32, le32, 4) == 0);
+
+  memcpy (&i64, le64, 8);
+  i64 = bswap_64 (i64);
+  assert (memcmp (&i64, be64, 8) == 0);
+  i64 = bswap_64 (i64);
+  assert (memcmp (&i64, le64, 8) == 0);
+
   exit (EXIT_SUCCESS);
 }
