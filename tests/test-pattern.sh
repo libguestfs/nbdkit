@@ -40,16 +40,12 @@
 source ./functions.sh
 set -e
 
+requires qemu-io --version
+
 sock=`mktemp -u`
 files="pattern.out pattern.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Test that qemu-io works
-if ! qemu-io --help >/dev/null; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
 
 # Run nbdkit with pattern plugin.
 start_nbdkit -P pattern.pid -U $sock pattern 1G
