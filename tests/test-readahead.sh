@@ -40,6 +40,7 @@ set -x
 
 requires python3 --version
 requires python3 -c 'import nbd'
+requires dd iflag=count_bytes </dev/null
 
 files="readahead.img"
 rm -f $files

@@ -37,6 +37,7 @@ set -x
 fail=0
 
 requires qemu-io --version
+requires dd iflag=count_bytes </dev/null
 
 files="retry-size-open-count retry-size-fail"
 rm -f $files

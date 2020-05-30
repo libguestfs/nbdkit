@@ -35,6 +35,7 @@ set -e
 set -x
 
 requires qemu-img --version
+requires dd iflag=count_bytes </dev/null
 
 files="eval.out eval.missing"
 rm -f $files

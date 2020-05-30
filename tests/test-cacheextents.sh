@@ -37,6 +37,7 @@ set -e
 requires grep --version
 requires qemu-img --version
 requires qemu-io --version
+requires dd iflag=count_bytes </dev/null
 
 sock="$(mktemp -u)"
 sockurl="nbd+unix:///?socket=$sock"
