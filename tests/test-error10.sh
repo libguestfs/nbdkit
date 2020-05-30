@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires qemu-io --version
+requires nbdsh --version
 
 sock=`mktemp -u`
 files="$sock error10.pid"
@@ -46,18 +46,19 @@ start_nbdkit -P error10.pid -U $sock \
              --filter=error \
              pattern 1G error-rate=10%
 
+nbdsh --connect "nbd+unix://?socket=$sock" -c '
 # The error rate is 10% so about every 1 in 10 operations should fail.
 errors=0
-for i in {1..100}; do
-    qemu-io -r -f raw "nbd+unix://?socket=$sock" \
-            -c "r 0 512" || ((++errors))
-done
+for i in range(0,1000):
+    try:
+        h.pread (512, 0)
+    except nbd.Error as ex:
+        assert ex.errno == "EIO"
+        errors += 1
 
-echo errors=$errors
-# Unfortunately there's no "right answer" here, so our policy is if we
+# Unfortunately there is no "right answer" here, so our policy is if we
 # see the error number in a real test run we will extend the
 # boundaries here.
-if [ $errors -lt 3 ] || [ $errors -gt 21 ]; then
-    echo "$0: unexpected error rate"
-    exit 1
-fi
+print ("error rate: %d/1000" % errors)
+assert errors >= 50 and errors <= 150
+'
