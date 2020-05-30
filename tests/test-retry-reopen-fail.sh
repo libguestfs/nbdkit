@@ -40,6 +40,7 @@ set -x
 fail=0
 
 requires qemu-io --version
+requires dd iflag=count_bytes </dev/null
 
 files="retry-reopen-fail-count retry-reopen-fail-open-count
        retry-reopen-fail-status"

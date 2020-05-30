@@ -35,6 +35,7 @@ set -e
 set -x
 
 requires nbdsh --version
+requires dd iflag=count_bytes </dev/null
 
 files="single-sh.script single-sh.log"
 rm -f $files

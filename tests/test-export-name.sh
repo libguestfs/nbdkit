@@ -35,6 +35,7 @@ set -e
 set -x
 
 requires nbdsh --version
+requires dd iflag=count_bytes </dev/null
 
 sock=`mktemp -u`
 files="$sock exportname.pid"
