@@ -93,7 +93,7 @@ esac
 EOF
 
 # Multi-line message, ESHUTDOWN
-do_test 'Cannot send after transport endpoint shutdown' <<'EOF'
+do_test "(Cannot|Can't) send after (transport endpoint|socket) shutdown" <<'EOF'
 case "$1" in
     get_size) echo 1M ;;
     pread) printf 'ESHUTDOWN\nline one\nline two\n' >&2; exit 1 ;;
