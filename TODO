@@ -103,6 +103,9 @@ General ideas for improvements
     realloc is suspect)
   - add more iterators, map function, etc, as required.
 
+* password=- to mean read a password interactively from /dev/tty (not
+  stdin).
+
 Suggestions for plugins
 -----------------------
 
