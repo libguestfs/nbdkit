@@ -1242,8 +1242,12 @@ or from a file descriptor inherited by nbdkit:
 
  nbdkit myplugin password=-99
 
-(If the password begins with a C<-> or C<+> character then it must be
-passed in a file).
+=head3 Notes on reading passwords
+
+If the password begins with a C<-> or C<+> character then it must be
+passed in a file.
+
+C<password=-> can only be used when stdin is a terminal.
 
 =head2 Safely interacting with stdin and stdout
 
