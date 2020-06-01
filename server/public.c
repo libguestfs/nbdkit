@@ -433,8 +433,8 @@ nbdkit_read_password (const char *value, char **password)
 
     if (nbdkit_parse_int ("password file descriptor", &value[1], &fd) == -1)
       return -1;
-    if (fd == STDIN_FILENO && !nbdkit_stdio_safe ()) {
-      nbdkit_error ("stdin is not available for reading password");
+    if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO) {
+      nbdkit_error ("cannot use password -FD for stdin/stdout/stderr");
       return -1;
     }
     if (read_password_from_fd (&value[1], fd, password) == -1)
