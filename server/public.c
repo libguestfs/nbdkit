@@ -480,7 +480,7 @@ nbdkit_read_password (const char *value, char **password)
   else if (value[0] == '+') {
     int fd;
 
-    fd = open (&value[1], O_CLOEXEC | O_RDONLY);
+    fd = open (&value[1], O_RDONLY | O_CLOEXEC);
     if (fd == -1) {
       nbdkit_error ("open %s: %m", &value[1]);
       return -1;
