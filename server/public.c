@@ -413,53 +413,18 @@ nbdkit_stdio_safe (void)
 }
 
 /* Read a password from configuration value. */
+static int read_password_interactive (char **password);
 static int read_password_from_fd (const char *what, int fd, char **password);
 
 int
 nbdkit_read_password (const char *value, char **password)
 {
-  int tty, err;
-  struct termios orig, temp;
-  ssize_t r;
-  size_t n;
-
   *password = NULL;
 
-  /* Read from stdin. */
+  /* Read from stdin interactively. */
   if (strcmp (value, "-") == 0) {
-    if (!nbdkit_stdio_safe ()) {
-      nbdkit_error ("stdin is not available for reading password");
+    if (read_password_interactive (password) == -1)
       return -1;
-    }
-
-    printf ("password: ");
-
-    /* Set no echo. */
-    tty = isatty (0);
-    if (tty) {
-      tcgetattr (0, &orig);
-      temp = orig;
-      temp.c_lflag &= ~ECHO;
-      tcsetattr (0, TCSAFLUSH, &temp);
-    }
-
-    r = getline (password, &n, stdin);
-    err = errno;
-
-    /* Restore echo. */
-    if (tty)
-      tcsetattr (0, TCSAFLUSH, &orig);
-
-    /* Complete the printf above. */
-    printf ("\n");
-
-    if (r == -1) {
-      errno = err;
-      nbdkit_error ("could not read password from stdin: %m");
-      return -1;
-    }
-    if (*password && r > 0 && (*password)[r-1] == '\n')
-      (*password)[r-1] = '\0';
   }
 
   /* Read from numbered file descriptor. */
@@ -502,6 +467,68 @@ nbdkit_read_password (const char *value, char **password)
 }
 
 static int
+read_password_interactive (char **password)
+{
+  int err;
+  struct termios orig, temp;
+  ssize_t r;
+  size_t n;
+
+  if (!nbdkit_stdio_safe ()) {
+    nbdkit_error ("stdin is not available for reading password");
+    return -1;
+  }
+
+  if (!isatty (STDIN_FILENO)) {
+    nbdkit_error ("stdin is not a tty, cannot read password interactively");
+    return -1;
+  }
+
+  printf ("password: ");
+
+  /* Set no echo.  This is best-effort, ignore errors. */
+  tcgetattr (STDIN_FILENO, &orig);
+  temp = orig;
+  temp.c_lflag &= ~ECHO;
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &temp);
+
+  /* To distinguish between error and EOF we have to check errno.
+   * getline can return -1 and errno = 0 which means we got end of
+   * file, which is simply a zero length password.
+   */
+  errno = 0;
+  r = getline (password, &n, stdin);
+  err = errno;
+
+  /* Restore echo. */
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig);
+
+  /* Complete the printf above. */
+  printf ("\n");
+
+  if (r == -1 && err != 0) {
+    if (err == 0) {             /* EOF, not an error. */
+      free (*password);         /* State of linebuf is undefined. */
+      *password = strdup ("");
+      if (*password == NULL) {
+        nbdkit_error ("strdup: %m");
+        return -1;
+      }
+    }
+    else {
+      errno = err;
+      nbdkit_error ("could not read password from stdin: %m");
+      return -1;
+    }
+  }
+
+  if (*password && r > 0 && (*password)[r-1] == '\n')
+    (*password)[r-1] = '\0';
+
+  return 0;
+}
+
+static int
 read_password_from_fd (const char *what, int fd, char **password)
 {
   FILE *fp;
@@ -515,13 +542,31 @@ read_password_from_fd (const char *what, int fd, char **password)
     close (fd);
     return -1;
   }
+
+  /* To distinguish between error and EOF we have to check errno.
+   * getline can return -1 and errno = 0 which means we got end of
+   * file, which is simply a zero length password.
+   */
+  errno = 0;
   r = getline (password, &n, fp);
   err = errno;
+
   fclose (fp);
+
   if (r == -1) {
-    errno = err;
-    nbdkit_error ("could not read password from %s: %m", what);
-    return -1;
+    if (err == 0) {             /* EOF, not an error. */
+      free (*password);         /* State of linebuf is undefined. */
+      *password = strdup ("");
+      if (*password == NULL) {
+        nbdkit_error ("strdup: %m");
+        return -1;
+      }
+    }
+    else {
+      errno = err;
+      nbdkit_error ("could not read password from %s: %m", what);
+      return -1;
+    }
   }
 
   if (*password && r > 0 && (*password)[r-1] == '\n')
