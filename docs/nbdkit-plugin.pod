@@ -1249,6 +1249,11 @@ passed in a file.
 
 C<password=-> can only be used when stdin is a terminal.
 
+C<password=-FD> cannot be used with stdin, stdout or stderr
+(ie. C<-0>, C<-1> or C<-2>).  The reason is that after reading the
+password the file descriptor is closed, which causes bad stuff to
+happen.
+
 =head2 Safely interacting with stdin and stdout
 
  int nbdkit_stdio_safe (void);
