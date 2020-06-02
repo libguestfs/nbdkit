@@ -34,10 +34,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <sys/types.h>
 
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
@@ -90,6 +92,9 @@ perform_reexec (const char *env, const char *prepend)
   CLEANUP_FREE_STRING_VECTOR string_vector argv = empty_vector;
   int fd;
   size_t len;
+  bool seen_password = false;
+  char tmpfile[] = "/tmp/XXXXXX";
+  CLEANUP_FREE char *password_fd = NULL;
 
   /* In order to re-exec, we need our original command line.  The
    * Linux kernel does not make it easy to know in advance how large
@@ -125,11 +130,52 @@ perform_reexec (const char *env, const char *prepend)
 
   /* Split cmdline into argv, then append one more arg. */
   for (len = 0; len < buf.size; len += strlen (buf.ptr + len) + 1) {
-    if (string_vector_append (&argv, buf.ptr + len) == -1) {
-    argv_realloc_fail:
-      nbdkit_error ("argv: realloc: %m");
+    char *arg = buf.ptr + len;  /* Next \0-terminated argument. */
+
+    /* See below for why we eat password parameter(s). */
+    if (strncmp (arg, "password=", 9) == 0)
+      seen_password = true;
+    else {
+      if (string_vector_append (&argv, arg) == -1) {
+      argv_realloc_fail:
+        nbdkit_error ("argv: realloc: %m");
+        exit (EXIT_FAILURE);
+      }
+    }
+  }
+
+  /* password parameter requires special handling for reexec.  For
+   * password=- and password=-FD, after reexec we might try to
+   * reread these, but stdin has gone away and FD has been consumed
+   * already so that won't work.  Even password=+FILE is a little
+   * problematic since the file will be read twice, which may break
+   * for special files.
+   *
+   * However we may write the password to a temporary file and
+   * substitute password=-<FD> of the opened temporary file here.
+   * The trick is described by Eric Blake here:
+   * https://www.redhat.com/archives/libguestfs/2020-June/msg00021.html
+   *
+   * (RHBZ#1842440)
+   */
+  if (seen_password && password) {
+    fd = mkstemp (tmpfile);
+    if (fd == -1) {
+      nbdkit_error ("mkstemp: %m");
       exit (EXIT_FAILURE);
     }
+    unlink (tmpfile);
+    if (write (fd, password, strlen (password)) != strlen (password)) {
+      nbdkit_error ("write: %m");
+      exit (EXIT_FAILURE);
+    }
+    lseek (fd, 0, SEEK_SET);
+    if (asprintf (&password_fd, "password=-%d", fd) == -1) {
+      nbdkit_error ("asprintf: %m");
+      exit (EXIT_FAILURE);
+    }
+    if (string_vector_append (&argv, password_fd) == -1)
+      goto argv_realloc_fail;
   }
 
   if (!env)
