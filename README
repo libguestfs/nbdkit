@@ -162,6 +162,8 @@ To test for memory leaks (‘make check-valgrind’):
 
 For non-essential enhancements to the test suite:
 
+ - expect
+
  - ip, ss (from iproute package)
 
  - jq

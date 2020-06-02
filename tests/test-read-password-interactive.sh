@@ -34,54 +34,52 @@ source ./functions.sh
 set -e
 set -x
 
+# Skip this test if valgrinding.  For some reason valgrind causes
+# nbdkit or expect to hang.
+if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
+    echo "$0: skipped password- interactive test when doing valgrind"
+    exit 77
+fi
+
 plugin=.libs/test-read-password-plugin.so
 requires test -f $plugin
+
+requires expect -v
 
 # Since we are matching on error messages.
 export LANG=C
 
-f=test-read-password.file
-tf=test-read-password.tmp
-out=test-read-password.out
-rm -f $f $tf $out
-cleanup_fn rm -f $f $tf $out
+f=test-read-password-interactive.file
+out=test-read-password-interactive.out
+rm -f $f $out
+cleanup_fn rm -f $f $out
 
-# Password on the command line.
-nbdkit -fv $plugin file=$f password=abc
+# Reading a password from stdin (non-interactive) should fail.
+if nbdkit -fv $plugin file=$f password=- </dev/null >&$out ; then
+    echo "$0: expected password=- to fail"
+    exit 1
+fi
+cat $out
+grep "stdin is not a tty" $out
+
+export plugin f
+
+# Password read interactively from stdin tty.
+expect -f - <<'EOF'
+  spawn nbdkit -fv $env(plugin) password=- file=$env(f)
+  expect "ssword:"
+  send "abc\r"
+  wait
+EOF
 grep '^abc$' $f
 
-# Password +FILENAME.
-echo def > $tf
-nbdkit -fv $plugin file=$f password=+$tf
-grep '^def$' $f
-
-# Password +FILENAME, zero length.
-: > $tf
-nbdkit -fv $plugin file=$f password=+$tf
+# Empty password read interactively from stdin tty.
+rm -f $f
+expect -f - <<'EOF'
+  spawn nbdkit -fv $env(plugin) password=- file=$env(f)
+  expect "ssword:"
+  send "\r"
+  wait
+EOF
 test -f $f
 ! test -s $f
-
-# Password -FD.
-echo 123 > $tf
-exec 3< $tf
-nbdkit -fv $plugin file=$f password=-3
-exec 3<&-
-grep '^123$' $f
-
-# Password -FD, zero length.
-: > $tf
-exec 3< $tf
-nbdkit -fv $plugin file=$f password=-3
-exec 3<&-
-test -f $f
-! test -s $f
-
-# Reading a password from stdin/stdout/stderr using -0/-1/-2 should fail.
-for i in 0 1 2; do
-    if nbdkit -fv $plugin file=$f password=-$i </dev/null >&$out ; then
-        echo "$0: expected password=-$i to fail"
-        exit 1
-    fi
-    cat $out
-    grep "cannot use password -FD" $out
-done
