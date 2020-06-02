@@ -40,7 +40,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <dlfcn.h>
-#include <fcntl.h>
 #include <libgen.h>
 
 #include <pthread.h>
@@ -52,8 +51,8 @@
 #include "isaligned.h"
 #include "minmax.h"
 #include "rounding.h"
-#include "vector.h"
 
+#include "vddk.h"
 #include "vddk-structs.h"
 
 /* Debug flags. */
@@ -76,13 +75,12 @@ int vddk_debug_datapath = 1;
 
 static void *dl;                           /* dlopen handle */
 static bool init_called;                   /* was InitEx called */
-static char *reexeced;                     /* orig LD_LIBRARY_PATH on reexec */
 static pthread_key_t error_suppression;    /* threadlocal error suppression */
 
 static char *config;                       /* config */
 static const char *cookie;                 /* cookie */
 static const char *filename;               /* file */
-static char *libdir;                       /* libdir */
+char *libdir;                              /* libdir */
 static uint16_t nfc_host_port;             /* nfchostport */
 static char *password;                     /* password */
 static uint16_t port;                      /* port */
@@ -293,119 +291,6 @@ vddk_config (const char *key, const char *value)
   return 0;
 }
 
-/* Perform a re-exec that temporarily modifies LD_LIBRARY_PATH.  Does
- * not return on success; on failure, problems have been logged, but
- * the caller prefers to proceed as if this had not been attempted.
- * Thus, no return value is needed.
- */
-DEFINE_VECTOR_TYPE(string_vector, char *);
-
-#define CLEANUP_FREE_STRING_VECTOR \
-  __attribute__((cleanup (cleanup_free_string_vector)))
-
-static void
-cleanup_free_string_vector (string_vector *v)
-{
-  string_vector_iter (v, (void *) free);
-  free (v->ptr);
-}
-
-static void
-perform_reexec (const char *env, const char *prepend)
-{
-  CLEANUP_FREE char *library = NULL;
-  CLEANUP_FREE_STRING_VECTOR string_vector argv = empty_vector;
-  int fd;
-  size_t len = 0, buflen = 512;
-  CLEANUP_FREE char *buf = NULL;
-
-  /* In order to re-exec, we need our original command line.  The
-   * Linux kernel does not make it easy to know in advance how large
-   * it was, so we just slurp in the whole file, doubling our reads
-   * until we get a short read.  This assumes nbdkit did not alter its
-   * original argv[].
-   */
-  fd = open ("/proc/self/cmdline", O_RDONLY);
-  if (fd == -1) {
-    nbdkit_debug ("failure to parse original argv: %m");
-    return;
-  }
-
-  do {
-    char *p = realloc (buf, buflen * 2);
-    ssize_t r;
-
-    if (!p) {
-      nbdkit_debug ("failure to parse original argv: %m");
-      return;
-    }
-    buf = p;
-    buflen *= 2;
-    r = read (fd, buf + len, buflen - len);
-    if (r == -1) {
-      nbdkit_debug ("failure to parse original argv: %m");
-      return;
-    }
-    len += r;
-  } while (len == buflen);
-  nbdkit_debug ("original command line occupies %zu bytes", len);
-
-  /* Split cmdline into argv, then append one more arg. */
-  buflen = len;
-  len = 0;
-  while (len < buflen) {
-    if (string_vector_append (&argv, buf + len) == -1) {
-    argv_realloc_fail:
-      nbdkit_debug ("argv: realloc: %m");
-      return;
-    }
-    len += strlen (buf + len) + 1;
-  }
-  if (!env)
-    env = "";
-  nbdkit_debug ("adding reexeced_=%s", env);
-  if (asprintf (&reexeced, "reexeced_=%s", env) == -1)
-    goto argv_realloc_fail;
-  if (string_vector_append (&argv, reexeced) == -1)
-    goto argv_realloc_fail;
-  if (string_vector_append (&argv, NULL) == -1)
-    goto argv_realloc_fail;
-
-  if (env[0]) {
-    if (asprintf (&library, "%s:%s", prepend, env) == -1)
-      assert (library == NULL);
-  }
-  else
-    library = strdup (prepend);
-  if (!library || setenv ("LD_LIBRARY_PATH", library, 1) == -1) {
-    nbdkit_debug ("failure to set LD_LIBRARY_PATH: %m");
-    return;
-  }
-
-  nbdkit_debug ("re-executing with updated LD_LIBRARY_PATH=%s", library);
-  fflush (NULL);
-  execvp ("/proc/self/exe", argv.ptr);
-  nbdkit_debug ("failure to execvp: %m");
-}
-
-/* See if prepend is already in LD_LIBRARY_PATH; if not, re-exec. */
-static void
-check_reexec (const char *prepend)
-{
-  const char *env = getenv ("LD_LIBRARY_PATH");
-  CLEANUP_FREE char *haystack = NULL;
-  CLEANUP_FREE char *needle = NULL;
-
-  if (reexeced)
-    return;
-  if (env && asprintf (&haystack, ":%s:", env) >= 0 &&
-      asprintf (&needle, ":%s:", prepend) >= 0 &&
-      strstr (haystack, needle) != NULL)
-    return;
-
-  perform_reexec (env, prepend);
-}
-
 /* Load the VDDK library. */
 static void
 load_library (bool load_error_is_fatal)
@@ -453,7 +338,7 @@ load_library (bool load_error_is_fatal)
        * includes its directory for all future loads.  This may modify
        * path in-place and/or re-exec nbdkit, but that's okay.
        */
-      check_reexec (dirname (path));
+      reexec_if_needed (dirname (path));
       break;
     }
     if (i == 0) {
@@ -498,33 +383,9 @@ vddk_config_complete (void)
     return -1;
   }
 
-  /* If load_library caused a re-execution with an expanded
-   * LD_LIBRARY_PATH, restore it back to its original contents, passed
-   * as the value of "reexeced_".  dlopen uses the value of
-   * LD_LIBRARY_PATH cached at program startup; our change is for the
-   * sake of child processes (such as --run) to see the same
-   * environment as the original nbdkit saw before re-exec.
-   */
-  if (reexeced) {
-    char *env = getenv ("LD_LIBRARY_PATH");
-
-    nbdkit_debug ("cleaning up after re-exec");
-    if (!env || strstr (env, reexeced) == NULL ||
-        (libdir && strncmp (env, libdir, strlen (libdir)) != 0)) {
-      nbdkit_error ("'reexeced_' set with garbled environment");
-      return -1;
-    }
-    if (reexeced[0]) {
-      if (setenv ("LD_LIBRARY_PATH", reexeced, 1) == -1) {
-        nbdkit_error ("setenv: %m");
-        return -1;
-      }
-    }
-    else if (unsetenv ("LD_LIBRARY_PATH") == -1) {
-      nbdkit_error ("unsetenv: %m");
-      return -1;
-    }
-  }
+  /* Restore original LD_LIBRARY_PATH after reexec. */
+  if (restore_ld_library_path () == -1)
+    return -1;
 
   /* For remote connections, check all the parameters have been
    * passed.  Note that VDDK will segfault if parameters that it
