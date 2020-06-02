@@ -41,10 +41,11 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-rm -f test-vddk.out
-cleanup_fn rm -f test-vddk.out
+out=test-vddk-dump-plugin.out
+rm -f $out
+cleanup_fn rm -f $out
 
-nbdkit vddk libdir=.libs --dump-plugin > test-vddk.out
-cat test-vddk.out
+nbdkit vddk libdir=.libs --dump-plugin > $out
+cat $out
 
-grep ^vddk_default_libdir= test-vddk.out
+grep ^vddk_default_libdir= $out
