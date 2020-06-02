@@ -858,7 +858,7 @@ if HAVE_VDDK
 # So we have to do this and add a dependency.
 noinst_LTLIBRARIES += libvixDiskLib.la
 TESTS += \
-	test-vddk.sh \
+	test-vddk-reexec.sh \
 	test-vddk-dump-plugin.sh \
 	test-vddk-real.sh \
 	test-vddk-real-dump-plugin.sh \
@@ -879,10 +879,10 @@ libvixDiskLib_la_LDFLAGS = \
 endif HAVE_VDDK
 
 EXTRA_DIST += \
-	test-vddk.sh \
 	test-vddk-dump-plugin.sh \
 	test-vddk-real.sh \
 	test-vddk-real-dump-plugin.sh \
+	test-vddk-reexec.sh \
 	$(NULL)
 
 # zero plugin test.

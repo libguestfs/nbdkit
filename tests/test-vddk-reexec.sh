@@ -41,12 +41,11 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-# Also test our magic file= handling, even though the dummy driver doesn't
-# really open a file.  We also ensure that LD_LIBRARY_PATH in the child
-# is not further modified, even if nbdkit had to re-exec.  It's tricky,
-# though: when running uninstalled, our wrapper nbdkit also modifies
-# LD_LIBRARY_PATH, so we need to capture an expected value from what
-# leaks through an innocuous plugin.
+# We ensure that LD_LIBRARY_PATH in the child is not further modified,
+# even if nbdkit had to re-exec.  It's tricky, though: when running
+# uninstalled, our wrapper nbdkit also modifies LD_LIBRARY_PATH, so we
+# need to capture an expected value from what leaks through an
+# innocuous plugin.
 expect_LD_LIBRARY_PATH=$(nbdkit -U - zero --run 'echo "$LD_LIBRARY_PATH"')
 export expect_LD_LIBRARY_PATH
 
