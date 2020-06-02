@@ -42,7 +42,6 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
 fi
 
 # Also test our magic file= handling, even though the dummy driver doesn't
-# really open a file.
 # really open a file.  We also ensure that LD_LIBRARY_PATH in the child
 # is not further modified, even if nbdkit had to re-exec.  It's tricky,
 # though: when running uninstalled, our wrapper nbdkit also modifies
