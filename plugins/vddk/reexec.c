@@ -72,7 +72,6 @@ DEFINE_VECTOR_TYPE(string_vector, char *);
 static void
 cleanup_free_string_vector (string_vector *v)
 {
-  string_vector_iter (v, (void *) free);
   free (v->ptr);
 }
 
