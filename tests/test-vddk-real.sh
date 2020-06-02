@@ -38,6 +38,7 @@ requires test "x$vddkdir" != "x"
 requires test -d "$vddkdir"
 requires test -f "$vddkdir/lib64/libvixDiskLib.so"
 requires qemu-img --version
+requires stat --version
 
 # VDDK > 5.1.1 only supports x86_64.
 if [ `uname -m` != "x86_64" ]; then
@@ -67,4 +68,9 @@ cat test-vddk-real.log
 if grep 'cannot open shared object file' test-vddk-real.log; then
    exit 1
 fi
+
+# Check the raw output file has exactly the right size.
+size="$(stat -c '%s' test-vddk-real.out)"
+test "$size" -eq $((100 * 1024 * 1024))
+
 exit $fail
