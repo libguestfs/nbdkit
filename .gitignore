@@ -145,6 +145,7 @@ plugins/*/*.3
 /tests/test-streaming
 /tests/test-tcl
 /tests/test-tmpdisk
+/tests/test-vddk
 /tests/test-xz
 /tests/test-xz-curl
 /test-driver
