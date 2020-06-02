@@ -154,6 +154,7 @@ TESTS += \
 	test-shutdown.sh \
 	test-nbdkit-backend-debug.sh \
 	test-read-password.sh \
+	test-read-password-interactive.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-captive.sh \
@@ -176,6 +177,7 @@ EXTRA_DIST += \
 	test-probe-plugin.sh \
 	test-random-sock.sh \
 	test-read-password.sh \
+	test-read-password-interactive.sh \
 	test-shutdown.sh \
 	test-single-from-file.sh \
 	test-single-sh.sh \
@@ -266,6 +268,7 @@ noinst_LTLIBRARIES += \
 	test-read-password-plugin.la \
 	$(NULL)
 test-read-password.sh: test-read-password-plugin.la
+test-read-password-interactive.sh: test-read-password-plugin.la
 
 test_read_password_plugin_la_SOURCES = \
 	test-read-password-plugin.c \
