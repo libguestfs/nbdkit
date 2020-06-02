@@ -7,7 +7,8 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
  nbdkit vddk [file=]FILENAME
              [config=FILENAME] [cookie=COOKIE] [libdir=LIBRARY]
              [nfchostport=PORT] [single-link=true]
-             [password=PASSWORD | password=+FILENAME | password=-FD]
+             [password=PASSWORD | password=- | password=+FILENAME
+             | password=-FD]
              [port=PORT] [server=HOSTNAME] [snapshot=MOREF]
              [thumbprint=THUMBPRINT] [transports=MODE:MODE:...]
              [unbuffered=true] [user=USERNAME] [vm=moref=ID]
@@ -157,6 +158,10 @@ Set the password to use when connecting to the remote server.
 
 Note that passing this on the command line is not secure on shared
 machines.
+
+=item B<password=->
+
+Ask for the password (interactively) when nbdkit starts up.
 
 =item B<password=+>FILENAME
 

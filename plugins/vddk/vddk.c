@@ -240,10 +240,6 @@ vddk_config (const char *key, const char *value)
       return -1;
   }
   else if (strcmp (key, "password") == 0) {
-    if (strcmp (value, "-") == 0) {
-      nbdkit_error ("password=- is not supported with the VDDK plugin");
-      return -1;
-    }
     free (password);
     if (nbdkit_read_password (value, &password) == -1)
       return -1;
