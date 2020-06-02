@@ -37,6 +37,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
@@ -48,6 +49,19 @@
 
 char *reexeced;                 /* orig LD_LIBRARY_PATH on reexec */
 
+/* Extensible buffer (string). */
+DEFINE_VECTOR_TYPE(buffer, char);
+
+#define CLEANUP_FREE_BUFFER \
+  __attribute__((cleanup (cleanup_free_buffer)))
+
+static void
+cleanup_free_buffer (buffer *v)
+{
+  free (v->ptr);
+}
+
+/* List of strings. */
 DEFINE_VECTOR_TYPE(string_vector, char *);
 
 #define CLEANUP_FREE_STRING_VECTOR \
@@ -61,18 +75,21 @@ cleanup_free_string_vector (string_vector *v)
 }
 
 /* Perform a re-exec that temporarily modifies LD_LIBRARY_PATH.  Does
- * not return on success; on failure, problems have been logged, but
- * the caller prefers to proceed as if this had not been attempted.
- * Thus, no return value is needed.
+ * not return on success.  Some failures such as /proc/self/... not
+ * present are not errors - it means we are not on a Linux-like
+ * platform, VDDK probably doesn't work anyway, and we simply return.
+ * Memory allocation failures etc result in an exit.
  */
 static void
 perform_reexec (const char *env, const char *prepend)
 {
+  static const char cmdline_file[] = "/proc/self/cmdline";
+  static const char exe_file[] = "/proc/self/exe";
   CLEANUP_FREE char *library = NULL;
+  CLEANUP_FREE_BUFFER buffer buf = empty_vector;
   CLEANUP_FREE_STRING_VECTOR string_vector argv = empty_vector;
   int fd;
-  size_t len = 0, buflen = 512;
-  CLEANUP_FREE char *buf = NULL;
+  size_t len;
 
   /* In order to re-exec, we need our original command line.  The
    * Linux kernel does not make it easy to know in advance how large
@@ -80,42 +97,41 @@ perform_reexec (const char *env, const char *prepend)
    * until we get a short read.  This assumes nbdkit did not alter its
    * original argv[].
    */
-  fd = open ("/proc/self/cmdline", O_RDONLY);
+  fd = open (cmdline_file, O_RDONLY|O_CLOEXEC);
   if (fd == -1) {
-    nbdkit_debug ("failure to parse original argv: %m");
+    /* Not an error. */
+    nbdkit_debug ("open: %s: %m", cmdline_file);
     return;
   }
 
-  do {
-    char *p = realloc (buf, buflen * 2);
+  for (;;) {
     ssize_t r;
 
-    if (!p) {
-      nbdkit_debug ("failure to parse original argv: %m");
-      return;
+    if (buffer_reserve (&buf, 512) == -1) {
+      nbdkit_error ("realloc: %m");
+      exit (EXIT_FAILURE);
     }
-    buf = p;
-    buflen *= 2;
-    r = read (fd, buf + len, buflen - len);
+    r = read (fd, buf.ptr + buf.size, buf.alloc - buf.size);
     if (r == -1) {
-      nbdkit_debug ("failure to parse original argv: %m");
-      return;
+      nbdkit_error ("read: %s: %m", cmdline_file);
+      exit (EXIT_FAILURE);
     }
-    len += r;
-  } while (len == buflen);
-  nbdkit_debug ("original command line occupies %zu bytes", len);
+    if (r == 0)
+      break;
+    buf.size += r;
+  }
+  close (fd);
+  nbdkit_debug ("original command line occupies %zu bytes", buf.size);
 
   /* Split cmdline into argv, then append one more arg. */
-  buflen = len;
-  len = 0;
-  while (len < buflen) {
-    if (string_vector_append (&argv, buf + len) == -1) {
+  for (len = 0; len < buf.size; len += strlen (buf.ptr + len) + 1) {
+    if (string_vector_append (&argv, buf.ptr + len) == -1) {
     argv_realloc_fail:
-      nbdkit_debug ("argv: realloc: %m");
-      return;
+      nbdkit_error ("argv: realloc: %m");
+      exit (EXIT_FAILURE);
     }
-    len += strlen (buf + len) + 1;
   }
+
   if (!env)
     env = "";
   nbdkit_debug ("adding reexeced_=%s", env);
@@ -133,14 +149,15 @@ perform_reexec (const char *env, const char *prepend)
   else
     library = strdup (prepend);
   if (!library || setenv ("LD_LIBRARY_PATH", library, 1) == -1) {
-    nbdkit_debug ("failure to set LD_LIBRARY_PATH: %m");
-    return;
+    nbdkit_error ("failure to set LD_LIBRARY_PATH: %m");
+    exit (EXIT_FAILURE);
   }
 
   nbdkit_debug ("re-executing with updated LD_LIBRARY_PATH=%s", library);
   fflush (NULL);
-  execvp ("/proc/self/exe", argv.ptr);
-  nbdkit_debug ("failure to execvp: %m");
+  execvp (exe_file, argv.ptr);
+  nbdkit_debug ("execvp: %s: %m", exe_file);
+  /* Not an error. */
 }
 
 /* See if prepend is already in LD_LIBRARY_PATH; if not, re-exec. */
