@@ -849,18 +849,22 @@ test_tmpdisk_LDADD = \
 
 if HAVE_VDDK
 # VDDK plugin test.
-# This only tests that the plugin can be loaded against a
-# dummy VDDK library, it is not a detailed test.
 
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
 noinst_LTLIBRARIES += libvixDiskLib.la
+LIBGUESTFS_TESTS += test-vddk
 TESTS += \
 	test-vddk-reexec.sh \
 	test-vddk-dump-plugin.sh \
 	test-vddk-real.sh \
 	test-vddk-real-dump-plugin.sh \
 	$(NULL)
+
+test_vddk_SOURCES = test-vddk.c test.h
+test_vddk_CPPFLAGS = -I$(top_srcdir)/common/include
+test_vddk_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_vddk_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 libvixDiskLib_la_SOURCES = \
 	dummy-vddk.c \

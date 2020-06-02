@@ -44,10 +44,6 @@
  * which is the earliest version of VDDK that we support.
  */
 
-/* We treat these two stubs slightly specially for the benefit of
- * tests/dummy-vddk.c.
- */
-#ifndef NO_INITEX_STUB
 STUB (VixDiskLib_InitEx,
       VixError,
       (uint32_t major, uint32_t minor,
@@ -56,13 +52,9 @@ STUB (VixDiskLib_InitEx,
        VixDiskLibGenericLogFunc *panic_function,
        const char *lib_dir,
        const char *config_file));
-#endif
-#ifndef NO_EXIT_STUB
 STUB (VixDiskLib_Exit,
       void,
       (void));
-#endif
-
 STUB (VixDiskLib_GetErrorText,
       char *,
       (VixError err, const char *unused));

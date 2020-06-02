@@ -30,17 +30,23 @@
  * SUCH DAMAGE.
  */
 
-/* This file pretends to be libvixDiskLib.so.6.
- *
- * However it only implements --dump-plugin support so our stubs don't
- * need to do anything.
- */
+/* This file pretends to be libvixDiskLib.so.6. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "vddk-structs.h"
+
+#define STUB(fn,ret,args) extern ret fn args;
+#define OPTIONAL_STUB(fn,ret,args)
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
+
+#define CAPACITY 1024 /* sectors */
+static char disk[CAPACITY * VIXDISKLIB_SECTOR_SIZE];
 
 VixError
 VixDiskLib_InitEx (uint32_t major, uint32_t minor,
@@ -59,10 +65,95 @@ VixDiskLib_Exit (void)
   /* Do nothing. */
 }
 
-#define NO_INITEX_STUB
-#define NO_EXIT_STUB
-#define STUB(fn,ret,args) void fn (void) { abort (); }
-#define OPTIONAL_STUB(fn,ret,args)
-#include "vddk-stubs.h"
-#undef STUB
-#undef OPTIONAL_STUB
+char *
+VixDiskLib_GetErrorText (VixError err, const char *unused)
+{
+  return strdup ("dummy-vddk: error message");
+}
+
+void
+VixDiskLib_FreeErrorText (char *text)
+{
+  free (text);
+}
+
+void
+VixDiskLib_FreeConnectParams (VixDiskLibConnectParams *params)
+{
+  /* never called since we don't define optional AllocateConnectParams */
+  abort ();
+}
+
+VixError
+VixDiskLib_ConnectEx (const VixDiskLibConnectParams *params,
+                      char read_only,
+                      const char *snapshot_ref,
+                      const char *transport_modes,
+                      VixDiskLibConnection *connection)
+{
+  return VIX_OK;
+}
+
+VixError
+VixDiskLib_Open (const VixDiskLibConnection connection,
+                 const char *path,
+                 uint32_t flags,
+                 VixDiskLibHandle *handle)
+{
+  return VIX_OK;
+}
+
+const char *
+VixDiskLib_GetTransportMode (VixDiskLibHandle handle)
+{
+  return "file";
+}
+
+VixError
+VixDiskLib_Close (VixDiskLibHandle handle)
+{
+  return VIX_OK;
+}
+
+VixError
+VixDiskLib_Disconnect (VixDiskLibConnection connection)
+{
+  return VIX_OK;
+}
+
+VixError
+VixDiskLib_GetInfo (VixDiskLibHandle handle,
+                    VixDiskLibInfo **info)
+{
+  *info = calloc (1, sizeof (struct VixDiskLibInfo));
+  (*info)->capacity = CAPACITY;
+  return VIX_OK;
+}
+
+void
+VixDiskLib_FreeInfo (VixDiskLibInfo *info)
+{
+  free (info);
+}
+
+VixError
+VixDiskLib_Read (VixDiskLibHandle handle,
+                 uint64_t start_sector, uint64_t nr_sectors,
+                 unsigned char *buf)
+{
+  size_t offset = start_sector * VIXDISKLIB_SECTOR_SIZE;
+
+  memcpy (buf, disk + offset, nr_sectors * VIXDISKLIB_SECTOR_SIZE);
+  return VIX_OK;
+}
+
+VixError
+VixDiskLib_Write (VixDiskLibHandle handle,
+                  uint64_t start_sector, uint64_t nr_sectors,
+                  const unsigned char *buf)
+{
+  size_t offset = start_sector * VIXDISKLIB_SECTOR_SIZE;
+
+  memcpy (disk + offset, buf, nr_sectors * VIXDISKLIB_SECTOR_SIZE);
+  return VIX_OK;
+}
