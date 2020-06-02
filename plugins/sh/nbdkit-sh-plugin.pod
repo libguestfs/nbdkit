@@ -475,7 +475,8 @@ C<nbdkit-sh-plugin> first appeared in nbdkit 1.8.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
-L<nbdkit-eval-plugin(1)>.
+L<nbdkit-eval-plugin(1)>,
+L<nbdkit-cc-plugin(1)>.
 
 =head1 AUTHORS
 

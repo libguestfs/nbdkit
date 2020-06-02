@@ -1076,6 +1076,15 @@ test_golang_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_GOLANG
 
+# CC plugin test.
+TESTS += \
+	test-shebang-cc.sh \
+	$(NULL)
+EXTRA_DIST += \
+	shebang.c \
+	test-shebang-cc.sh \
+	$(NULL)
+
 #----------------------------------------------------------------------
 # Tests of filters.
 

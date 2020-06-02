@@ -140,19 +140,10 @@ VDDK:
 Suggestions for language plugins
 --------------------------------
 
-"CC" plugin
-
-* Analogous to sh plugin, would let you write a C plugin on the
-  command line or in a script.
-
-* Would work by compiling the plugin to a temporary file at runtime
-  using GCC or clang.
+CC plugin:
 
 * Could be used to replace the explicit plugins used for
   testing (see tests/*-plugin.c).
-
-* Tricky to get compiler flags right.  Should we bake them into the
-  plugin or let them be set at runtime (or both?)
 
 Python:
 

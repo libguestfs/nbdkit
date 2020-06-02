@@ -49,6 +49,7 @@ LT_INIT
 
 dnl List of plugins and filters.
 lang_plugins="\
+        cc \
         golang \
         lua \
         ocaml \
@@ -1048,6 +1049,7 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  include/nbdkit-version.h
                  plugins/Makefile
+                 plugins/cc/Makefile
                  plugins/curl/Makefile
                  plugins/data/Makefile
                  plugins/eval/Makefile
