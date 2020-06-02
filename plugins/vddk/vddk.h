@@ -34,6 +34,7 @@
 #define NBDKIT_VDDK_H
 
 extern char *libdir;
+extern char *password;
 extern char *reexeced;
 
 extern void reexec_if_needed (const char *prepend);

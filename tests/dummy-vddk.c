@@ -91,6 +91,12 @@ VixDiskLib_ConnectEx (const VixDiskLibConnectParams *params,
                       const char *transport_modes,
                       VixDiskLibConnection *connection)
 {
+  /* Used when regression testing password= parameter. */
+  if (getenv ("DUMMY_VDDK_PRINT_PASSWORD") &&
+      params->credType == VIXDISKLIB_CRED_UID &&
+      params->creds.uid.password != NULL)
+    fprintf (stderr, "dummy-vddk: password=%s\n", params->creds.uid.password);
+
   return VIX_OK;
 }
 

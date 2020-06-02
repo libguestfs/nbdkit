@@ -857,6 +857,8 @@ LIBGUESTFS_TESTS += test-vddk
 TESTS += \
 	test-vddk-reexec.sh \
 	test-vddk-dump-plugin.sh \
+	test-vddk-password-fd.sh \
+	test-vddk-password-interactive.sh \
 	test-vddk-real.sh \
 	test-vddk-real-dump-plugin.sh \
 	$(NULL)
@@ -882,6 +884,8 @@ endif HAVE_VDDK
 
 EXTRA_DIST += \
 	test-vddk-dump-plugin.sh \
+	test-vddk-password-fd.sh \
+	test-vddk-password-interactive.sh \
 	test-vddk-real.sh \
 	test-vddk-real-dump-plugin.sh \
 	test-vddk-reexec.sh \

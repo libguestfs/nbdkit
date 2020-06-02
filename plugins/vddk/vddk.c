@@ -80,7 +80,7 @@ static const char *cookie;                 /* cookie */
 static const char *filename;               /* file */
 char *libdir;                              /* libdir */
 static uint16_t nfc_host_port;             /* nfchostport */
-static char *password;                     /* password */
+char *password;                            /* password */
 static uint16_t port;                      /* port */
 static const char *server_name;            /* server */
 static bool single_link;                   /* single-link */
