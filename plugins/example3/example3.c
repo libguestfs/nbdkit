@@ -45,6 +45,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
 #ifndef HAVE_FDATASYNC
@@ -160,7 +161,8 @@ example3_get_size (void *handle)
 
 /* Read data from the file. */
 static int
-example3_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+example3_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags)
 {
   struct example3_handle *h = handle;
 
@@ -184,7 +186,8 @@ example3_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 
 /* Write data to the file. */
 static int
-example3_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
+example3_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+                 uint32_t flags)
 {
   struct example3_handle *h = handle;
 
@@ -204,7 +207,7 @@ example3_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 
 /* Flush the file to disk. */
 static int
-example3_flush (void *handle)
+example3_flush (void *handle, uint32_t flags)
 {
   struct example3_handle *h = handle;
 
