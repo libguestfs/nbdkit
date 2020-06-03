@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
 /* This looks like a 100MB disk with one empty partition. */
@@ -153,7 +154,8 @@ example1_get_size (void *handle)
  * takes care of bounds- and sanity-checking the request.
  */
 static int
-example1_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+example1_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags)
 {
   memcpy (buf, data+offset, count);
   return 0;                     /* 0 = success, -1 = error */

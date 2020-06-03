@@ -46,6 +46,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
 static char *filename = NULL;
@@ -186,7 +187,8 @@ example2_get_size (void *handle)
 
 /* Read data from the file. */
 static int
-example2_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+example2_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags)
 {
   struct example2_handle *h = handle;
 
