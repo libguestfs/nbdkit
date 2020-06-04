@@ -34,13 +34,6 @@ source ./functions.sh
 set -e
 set -x
 
-# Skip this test if valgrinding.  For some reason valgrind causes
-# nbdkit or expect to hang.
-if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
-    echo "$0: skipped password- interactive test when doing valgrind"
-    exit 77
-fi
-
 # This is an executable C script using nbdkit-cc-plugin.
 plugin=$SRCDIR/test-read-password-plugin.c
 requires test -x $plugin

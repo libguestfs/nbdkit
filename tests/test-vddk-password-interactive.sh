@@ -40,9 +40,8 @@ source ./functions.sh
 set -e
 set -x
 
-# The tests break under valgrind for a couple of reasons:
-# (1) Setting LD_LIBRARY_PATH breaks valgrind.
-# (2) Valgrinded nbdkit hangs under expect.
+# Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
+# this test if valgrinding.
 if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     echo "$0: skipped under valgrind"
     exit 77
