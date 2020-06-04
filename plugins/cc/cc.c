@@ -68,6 +68,9 @@ static struct nbdkit_plugin subplugin;
 static void
 cc_unload (void)
 {
+  if (subplugin.unload)
+    subplugin.unload ();
+
   if (unlink_on_exit)
     unlink (script);
   if (dl)
