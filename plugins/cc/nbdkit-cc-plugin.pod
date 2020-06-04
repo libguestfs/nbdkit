@@ -27,11 +27,12 @@ L<nbdkit-plugin(3)>.
 Simple plugins from the nbdkit source tree can be compiled and run
 directly using commands such as:
 
- $ nbdkit cc plugins/example1/example1.c EXTRA_CFLAGS="-I."
+ $ nbdkit cc plugins/example1/example1.c EXTRA_CFLAGS="-I. -Iinclude"
 
 You can also read the source from stdin using C<->:
 
- $ nbdkit cc - EXTRA_CFLAGS="-I." < plugins/example1/example1.c
+ $ nbdkit cc - EXTRA_CFLAGS="-I. -Iinclude" \
+             < plugins/example1/example1.c
 
 To replace the compiler flags:
 

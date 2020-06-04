@@ -45,6 +45,7 @@ fi
 requires guestfish --version
 
 $script -fv -U - \
+        EXTRA_CFLAGS="-I$SRCDIR/../include" \
         --run '
     guestfish \
         add "" protocol:nbd server:unix:$unixsocket : \
