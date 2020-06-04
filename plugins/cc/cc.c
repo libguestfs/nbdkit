@@ -37,6 +37,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <dlfcn.h>
 
 #define NBDKIT_API_VERSION 2
@@ -463,38 +464,75 @@ static int
 cc_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
            uint32_t flags)
 {
-  return subplugin.pwrite (handle, buf, count, offset, flags);
+  if (subplugin.pwrite)
+    return subplugin.pwrite (handle, buf, count, offset, flags);
+  else {
+    nbdkit_error ("missing %s callback", "pwrite");
+    errno = EROFS;
+    return -1;
+  }
 }
 
 static int
 cc_flush (void *handle, uint32_t flags)
 {
-  return subplugin.flush (handle, flags);
+  if (subplugin.flush)
+    return subplugin.flush (handle, flags);
+  else {
+    nbdkit_error ("missing %s callback", "flush");
+    errno = EINVAL;
+    return -1;
+  }
 }
 
 static int
 cc_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
-  return subplugin.trim (handle, count, offset, flags);
+  if (subplugin.trim)
+    return subplugin.trim (handle, count, offset, flags);
+  else {
+    nbdkit_error ("missing %s callback", "trim");
+    errno = EINVAL;
+    return -1;
+  }
 }
 
 static int
 cc_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
-  return subplugin.zero (handle, count, offset, flags);
+  if (subplugin.zero)
+    return subplugin.zero (handle, count, offset, flags);
+  else {
+    /* XXX nbdkit tries to emulate this and we should too. */
+    nbdkit_error ("missing %s callback", "zero");
+    errno = EINVAL;
+    return -1;
+  }
 }
 
 static int
 cc_extents (void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, struct nbdkit_extents *extents)
 {
-  return subplugin.extents (handle, count, offset, flags, extents);
+  if (subplugin.extents)
+    return subplugin.extents (handle, count, offset, flags, extents);
+  else {
+    nbdkit_error ("missing %s callback", "extents");
+    errno = EINVAL;
+    return -1;
+  }
 }
 
 static int
 cc_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
-  return subplugin.cache (handle, count, offset, flags);
+  if (subplugin.cache)
+    return subplugin.cache (handle, count, offset, flags);
+  else
+    /* A plugin may advertise caching but not provide .cache; in that
+     * case, caching is explicitly a no-op.
+     */
+    return 0;
 }
 
 static struct nbdkit_plugin plugin = {
