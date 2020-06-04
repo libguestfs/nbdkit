@@ -41,8 +41,9 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-plugin=.libs/test-read-password-plugin.so
-requires test -f $plugin
+# This is an executable C script using nbdkit-cc-plugin.
+plugin=$SRCDIR/test-read-password-plugin.c
+requires test -x $plugin
 
 requires expect -v
 
@@ -55,7 +56,7 @@ rm -f $f $out
 cleanup_fn rm -f $f $out
 
 # Reading a password from stdin (non-interactive) should fail.
-if nbdkit -fv $plugin file=$f password=- </dev/null >&$out ; then
+if $plugin -fv file=$f password=- </dev/null >&$out ; then
     echo "$0: expected password=- to fail"
     exit 1
 fi
@@ -66,7 +67,7 @@ export plugin f
 
 # Password read interactively from stdin tty.
 expect -f - <<'EOF'
-  spawn nbdkit -fv $env(plugin) password=- file=$env(f)
+  spawn $env(plugin) -fv password=- file=$env(f)
   expect "ssword:"
   send "abc\r"
   wait
@@ -76,7 +77,7 @@ grep '^abc$' $f
 # Empty password read interactively from stdin tty.
 rm -f $f
 expect -f - <<'EOF'
-  spawn nbdkit -fv $env(plugin) password=- file=$env(f)
+  spawn $env(plugin) -fv password=- file=$env(f)
   expect "ssword:"
   send "\r"
   wait

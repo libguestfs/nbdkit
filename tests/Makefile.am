@@ -178,6 +178,7 @@ EXTRA_DIST += \
 	test-random-sock.sh \
 	test-read-password.sh \
 	test-read-password-interactive.sh \
+	test-read-password-plugin.c \
 	test-shutdown.sh \
 	test-single-from-file.sh \
 	test-single-sh.sh \
@@ -259,26 +260,6 @@ test_shutdown_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 test_shutdown_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared $(SHARED_LDFLAGS) -rpath /nowhere \
-	$(NULL)
-
-# check_LTLIBRARIES won't build a shared library (see automake manual).
-# So we have to do this and add a dependency.
-noinst_LTLIBRARIES += \
-	test-read-password-plugin.la \
-	$(NULL)
-test-read-password.sh: test-read-password-plugin.la
-test-read-password-interactive.sh: test-read-password-plugin.la
-
-test_read_password_plugin_la_SOURCES = \
-	test-read-password-plugin.c \
-	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(NULL)
-test_read_password_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
-test_read_password_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
-# For use of the -rpath option, see:
-# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
-test_read_password_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(SHARED_LDFLAGS) -rpath /nowhere \
 	$(NULL)
 

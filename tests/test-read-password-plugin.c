@@ -1,3 +1,6 @@
+#if 0
+exec nbdkit cc "$0" "$@" EXTRA_CFLAGS="-I.. -I${SRCDIR:-.}/../include"
+#endif
 /* nbdkit
  * Copyright (C) 2013-2020 Red Hat Inc.
  *
@@ -30,7 +33,7 @@
  * SUCH DAMAGE.
  */
 
-/* See test-read-password.sh */
+/* See test-read-password.sh and test-read-password-interactive.sh */
 
 #include <config.h>
 
@@ -111,7 +114,8 @@ password_get_size (void *handle)
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 static int
-password_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
+password_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+                uint32_t flags)
 {
   abort ();
 }

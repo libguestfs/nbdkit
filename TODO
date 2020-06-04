@@ -140,11 +140,6 @@ VDDK:
 Suggestions for language plugins
 --------------------------------
 
-CC plugin:
-
-* Could be used to replace the explicit plugins used for
-  testing (see tests/*-plugin.c).
-
 Python:
 
 * Get the __docstring__ from the module and print it in --help output.

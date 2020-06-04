@@ -34,8 +34,9 @@ source ./functions.sh
 set -e
 set -x
 
-plugin=.libs/test-read-password-plugin.so
-requires test -f $plugin
+# This is an executable C script using nbdkit-cc-plugin.
+plugin=$SRCDIR/test-read-password-plugin.c
+requires test -x $plugin
 
 # Since we are matching on error messages.
 export LANG=C
@@ -47,38 +48,38 @@ rm -f $f $tf $out
 cleanup_fn rm -f $f $tf $out
 
 # Password on the command line.
-nbdkit -fv $plugin file=$f password=abc
+$plugin -fv file=$f password=abc
 grep '^abc$' $f
 
 # Password +FILENAME.
 echo def > $tf
-nbdkit -fv $plugin file=$f password=+$tf
+$plugin -fv file=$f password=+$tf
 grep '^def$' $f
 
 # Password +FILENAME, zero length.
 : > $tf
-nbdkit -fv $plugin file=$f password=+$tf
+$plugin -fv file=$f password=+$tf
 test -f $f
 ! test -s $f
 
 # Password -FD.
 echo 123 > $tf
 exec 3< $tf
-nbdkit -fv $plugin file=$f password=-3
+$plugin -fv file=$f password=-3
 exec 3<&-
 grep '^123$' $f
 
 # Password -FD, zero length.
 : > $tf
 exec 3< $tf
-nbdkit -fv $plugin file=$f password=-3
+$plugin -fv file=$f password=-3
 exec 3<&-
 test -f $f
 ! test -s $f
 
 # Reading a password from stdin/stdout/stderr using -0/-1/-2 should fail.
 for i in 0 1 2; do
-    if nbdkit -fv $plugin file=$f password=-$i </dev/null >&$out ; then
+    if $plugin -fv file=$f password=-$i </dev/null >&$out ; then
         echo "$0: expected password=-$i to fail"
         exit 1
     fi
