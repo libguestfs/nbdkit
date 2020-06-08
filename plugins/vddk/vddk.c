@@ -237,6 +237,17 @@ vddk_config (const char *key, const char *value)
     if (nbdkit_parse_uint16_t ("nfchostport", value, &nfc_host_port) == -1)
       return -1;
   }
+  else if (strcmp (key, "noreexec") == 0) {
+    /* This undocumented option disables reexec.  The caller must set
+     * LD_LIBRARY_PATH correctly as for older versions of the plugin.
+     * This option is only for use when debugging reexec, eg. to see
+     * if it causing a problem.
+     */
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    noreexec = r;
+  }
   else if (strcmp (key, "password") == 0) {
     free (password);
     if (nbdkit_read_password (value, &password) == -1)

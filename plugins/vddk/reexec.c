@@ -49,6 +49,7 @@
 
 #include "vddk.h"
 
+bool noreexec = false;          /* hidden noreexec option */
 char *reexeced;                 /* orig LD_LIBRARY_PATH on reexec */
 
 /* Extensible buffer (string). */
@@ -213,6 +214,8 @@ reexec_if_needed (const char *prepend)
   CLEANUP_FREE char *haystack = NULL;
   CLEANUP_FREE char *needle = NULL;
 
+  if (noreexec)
+    return;
   if (reexeced)
     return;
   if (env && asprintf (&haystack, ":%s:", env) >= 0 &&
