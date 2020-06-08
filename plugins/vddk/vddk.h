@@ -35,6 +35,7 @@
 
 extern char *libdir;
 extern char *password;
+extern bool noreexec;
 extern char *reexeced;
 
 extern void reexec_if_needed (const char *prepend);
