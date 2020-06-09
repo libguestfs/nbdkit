@@ -101,6 +101,8 @@ All other parameters on the command line are passed to the plugin.
  $ nbdkit cc - <<'EOF'
  #include <stdint.h>
  #include <string.h>
+ 
+ #define NBDKIT_API_VERSION 2
  #include <nbdkit-plugin.h>
  
  char data[10*1024*1024];

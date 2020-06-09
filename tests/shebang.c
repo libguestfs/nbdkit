@@ -3,6 +3,8 @@ exec nbdkit cc "$0" "$@"
 #endif
 #include <stdint.h>
 #include <string.h>
+
+#define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
 char data[100*1024*1024];

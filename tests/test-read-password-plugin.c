@@ -41,6 +41,7 @@ exec nbdkit cc "$0" "$@" EXTRA_CFLAGS="-I.. -I${SRCDIR:-.}/../include"
 #include <stdlib.h>
 #include <string.h>
 
+#define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
 static char *password;

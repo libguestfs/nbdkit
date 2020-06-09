@@ -217,8 +217,6 @@ cc_config_complete (void)
   fprintf (fp, " %s ", cflags);
   if (extra_cflags)
     fprintf (fp, "%s ", extra_cflags);
-  /* The API version is required and cannot be changed. */
-  fprintf (fp, "-DNBDKIT_API_VERSION=%d ", NBDKIT_API_VERSION);
   shell_quote (script, fp);
   fprintf (fp, " -o ");
   shell_quote (tmpfile, fp);
