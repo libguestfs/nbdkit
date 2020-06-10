@@ -566,6 +566,7 @@ vddk_open (int readonly)
     h->params->thumbPrint = (char *) thumb_print;
     h->params->port = port;
     h->params->nfcHostPort = nfc_host_port;
+    h->params->specType = VIXDISKLIB_SPEC_VMX;
   }
 
   /* XXX Some documentation suggests we should call
