@@ -51,12 +51,7 @@ main (int argc, char *argv[])
   char *data;
 
   if (test_start_nbdkit ("-D", "memory.dir=1",
-                         "memory", "100M",
-                         /* Add the allocator=sparse option even
-                          * though it's the default to test that it
-                          * works.
-                          */
-                         "allocator=sparse", NULL) == -1)
+                         "memory", "100M", "allocator=malloc", NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();

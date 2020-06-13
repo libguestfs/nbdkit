@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # nbdkit
 # Copyright (C) 2018-2020 Red Hat Inc.
 #
@@ -29,20 +30,37 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Test the memory plugin with the malloc allocator.
 
-noinst_LTLIBRARIES = liballocators.la
+source ./functions.sh
+set -e
 
-liballocators_la_SOURCES = \
-	allocator.c \
-	allocator.h \
-	allocator-internal.h \
-	malloc.c \
-        sparse.c \
-	$(NULL)
-liballocators_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/utils \
-	$(NULL)
-liballocators_la_CFLAGS = $(WARNINGS_CFLAGS)
+requires nbdsh --version
+
+sock=`mktemp -u`
+files="memory-allocator-malloc.pid $sock"
+rm -f $files
+cleanup_fn rm -f $files
+
+# Run nbdkit with memory plugin.
+start_nbdkit -P memory-allocator-malloc.pid -U $sock \
+             memory 16M allocator=malloc
+
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+# Write some stuff to the beginning, middle and end.
+buf1 = b"1" * 512
+h.pwrite (buf1, 0)
+buf2 = b"2" * 65536
+h.pwrite (buf2, 8*1024*1024+1)
+buf3 = b"3" * 512
+h.pwrite (buf3, 16*1024*1024-512)
+
+# Read it back.
+buf11 = h.pread (len(buf1), 0)
+assert buf1 == buf11
+buf22 = h.pread (len(buf2), 8*1024*1024+1)
+assert buf2 == buf22
+buf33 = h.pread (len(buf3), 16*1024*1024-512)
+assert buf3 == buf33
+'

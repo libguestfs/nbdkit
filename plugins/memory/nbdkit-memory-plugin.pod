@@ -56,6 +56,8 @@ See L<nbdkit(1)/Magic parameters>.
 
 =item B<allocator=sparse>
 
+=item B<allocator=malloc>[,B<mlock=true>]
+
 (nbdkit E<ge> 1.22)
 
 Select the backend allocation strategy.  See L</ALLOCATORS> below.
@@ -113,6 +115,22 @@ maximum supported by nbdkit (S<2⁶³-1 bytes>).
 This is the default, and was the only allocator available before
 S<nbdkit 1.22>.
 
+=item B<allocator=malloc>
+
+=item B<allocator=malloc,mlock=true>
+
+The disk image is stored directly in memory allocated using
+L<malloc(3)> on the heap.  No sparseness is possible: you must have
+enough memory for the whole disk.  Very large virtual sizes will
+usually fail.  However this can be faster because the implementation
+is simpler and the locking strategy allows more concurrency.
+
+If C<mlock=true> is added then additionally the array is locked into
+RAM using L<mlock(2)> (so it should never be swapped out).  This
+usually requires you to adjust the L<ulimit(1)> associated with the
+process and on some operating systems may require you to run nbdkit as
+root.  (See also the L<nbdkit(1)> I<--swap> option).
+
 =back
 
 =head1 FILES
@@ -139,7 +157,9 @@ L<nbdkit-loop(1)>,
 L<nbdkit-data-plugin(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-info-plugin(1)>,
-L<nbdkit-tmpdisk-plugin(1)>.
+L<nbdkit-tmpdisk-plugin(1)>,
+L<mlock(2)>,
+L<malloc(3)>.
 
 =head1 AUTHORS
 

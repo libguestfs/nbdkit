@@ -33,6 +33,9 @@
 #ifndef NBDKIT_ALLOCATOR_INTERNAL_H
 #define NBDKIT_ALLOCATOR_INTERNAL_H
 
+#include <stdbool.h>
+
+extern struct allocator *create_malloc (bool use_mlock);
 extern struct allocator *create_sparse_array (void);
 
 #endif /* NBDKIT_ALLOCATOR_INTERNAL_H */

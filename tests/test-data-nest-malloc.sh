@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # nbdkit
 # Copyright (C) 2018-2020 Red Hat Inc.
 #
@@ -29,20 +30,29 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Test the data plugin with ( nesting ) construct and malloc allocator.
 
-noinst_LTLIBRARIES = liballocators.la
+source ./functions.sh
+set -e
+set -x
 
-liballocators_la_SOURCES = \
-	allocator.c \
-	allocator.h \
-	allocator-internal.h \
-	malloc.c \
-        sparse.c \
-	$(NULL)
-liballocators_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/utils \
-	$(NULL)
-liballocators_la_CFLAGS = $(WARNINGS_CFLAGS)
+requires nbdsh --version
+
+sock=`mktemp -u`
+files="data-nest-malloc.pid $sock"
+rm -f $files
+cleanup_fn rm -f $files
+
+# Run nbdkit.
+start_nbdkit -P data-nest-malloc.pid -U $sock \
+       data data=' ( 0x55 0xAA )*4 ( @4 ( 0x21 )*4 )*4 ' \
+       allocator=malloc
+
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+print ("%d" % h.get_size())
+assert h.get_size() == 2*4 + 8*4
+buf = h.pread (h.get_size(), 0)
+print ("%r" % buf)
+assert buf == b"\x55\xAA"*4 + b"\0\0\0\0!!!!"*4
+'

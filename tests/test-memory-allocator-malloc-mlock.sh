@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # nbdkit
 # Copyright (C) 2018-2020 Red Hat Inc.
 #
@@ -29,20 +30,45 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Test the memory plugin with the malloc allocator and mlock.  Usually
+# mlock limits are very low, so this test only tries to allocate a
+# very tiny disk, in the hope that this way we at least end up with
+# some test coverage of the feature.
 
-noinst_LTLIBRARIES = liballocators.la
+source ./functions.sh
+set -e
 
-liballocators_la_SOURCES = \
-	allocator.c \
-	allocator.h \
-	allocator-internal.h \
-	malloc.c \
-        sparse.c \
-	$(NULL)
-liballocators_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/utils \
-	$(NULL)
-liballocators_la_CFLAGS = $(WARNINGS_CFLAGS)
+requires nbdsh --version
+
+# ulimit -l is measured in kilobytes and so for this test must be at
+# least 2 (kilobytes) and we actually check it's a bit larger to allow
+# room for error.  On Linux the default is usually 64.
+requires test `ulimit -l` -gt 8
+
+sock=`mktemp -u`
+files="memory-allocator-malloc-mlock.pid $sock"
+rm -f $files
+cleanup_fn rm -f $files
+
+# Run nbdkit with memory plugin.
+start_nbdkit -P memory-allocator-malloc-mlock.pid -U $sock \
+             memory 2048 allocator=malloc,mlock=true
+
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+# Write some stuff to the beginning, middle and end.
+buf1 = b"1" * 512
+h.pwrite (buf1, 0)
+buf2 = b"2" * 512
+h.pwrite (buf2, 1024)
+buf3 = b"3" * 512
+h.pwrite (buf3, 1536)
+
+# Read it back.
+buf11 = h.pread (len(buf1), 0)
+assert buf1 == buf11
+buf22 = h.pread (len(buf2), 1024)
+assert buf2 == buf22
+buf33 = h.pread (len(buf3), 1536)
+assert buf3 == buf33
+'

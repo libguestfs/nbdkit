@@ -49,6 +49,11 @@ create_allocator (const char *type, bool debug)
 
   if (strcmp (type, "sparse") == 0)
     ret = create_sparse_array ();
+  else if (strcmp (type, "malloc") == 0)
+    ret = create_malloc (false);
+  /* XXX In the end we want to split and parse these subparameters. */
+  else if (strcmp (type, "malloc,mlock=true") == 0)
+    ret = create_malloc (true);
   else {
     nbdkit_error ("unknown allocator \"%s\"", type);
     ret = NULL;

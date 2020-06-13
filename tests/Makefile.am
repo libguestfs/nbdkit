@@ -504,6 +504,7 @@ TESTS += \
 	test-data-extents.sh \
 	test-data-file.sh \
 	test-data-nest.sh \
+	test-data-nest-malloc.sh \
 	test-data-raw.sh \
 	$(NULL)
 EXTRA_DIST += \
@@ -512,6 +513,7 @@ EXTRA_DIST += \
 	test-data-extents.sh \
 	test-data-file.sh \
 	test-data-nest.sh \
+	test-data-nest-malloc.sh \
 	test-data-raw.sh \
 	$(NULL)
 
@@ -635,12 +637,19 @@ EXTRA_DIST += \
 	$(NULL)
 
 # memory plugin test.
-LIBGUESTFS_TESTS += test-memory
+LIBGUESTFS_TESTS += \
+	test-memory \
+	test-memory-allocator-malloc \
+	$(NULL)
 TESTS += \
+	test-memory-allocator-malloc.sh \
+	test-memory-allocator-malloc-mlock.sh \
 	test-memory-largest.sh \
 	test-memory-largest-for-qemu.sh \
 	$(NULL)
 EXTRA_DIST += \
+	test-memory-allocator-malloc.sh \
+	test-memory-allocator-malloc-mlock.sh \
 	test-memory-largest.sh \
 	test-memory-largest-for-qemu.sh \
 	$(NULL)
@@ -648,6 +657,10 @@ EXTRA_DIST += \
 test_memory_SOURCES = test-memory.c test.h
 test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+test_memory_allocator_malloc_SOURCES = test-memory-allocator-malloc.c test.h
+test_memory_allocator_malloc_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_memory_allocator_malloc_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 if HAVE_LIBNBD
 # nbd plugin test.

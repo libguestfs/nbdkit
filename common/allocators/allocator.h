@@ -62,6 +62,10 @@ struct allocator {
    *
    * The sparse array allocator ignores the size hint.
    *
+   * The malloc allocator uses it to reserve the expected size of disk
+   * in memory (especially important if using mlock so we fail during
+   * start-up if there's not enough RAM).
+   *
    * Note this does not set or enforce the virtual size of the disk,
    * nor does it implement bounds checking.
    */
