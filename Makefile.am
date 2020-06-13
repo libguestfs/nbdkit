@@ -80,10 +80,10 @@ SUBDIRS = \
 
 if HAVE_PLUGINS
 SUBDIRS += \
+	common/allocators \
 	common/bitmap \
 	common/gpt \
 	common/regions \
-	common/sparse \
 	plugins \
 	filters \
 	$(NULL)

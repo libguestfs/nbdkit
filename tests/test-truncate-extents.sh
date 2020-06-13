@@ -31,7 +31,7 @@
 # SUCH DAMAGE.
 
 # Unfortunately the output of this test depends on the PAGE_SIZE
-# defined in common/sparse/sparse.c and would change (breaking the
+# defined in common/allocators/sparse.c and would change (breaking the
 # test) if we ever changed that definition.
 
 source ./functions.sh

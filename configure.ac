@@ -1038,12 +1038,12 @@ AC_CONFIG_FILES([common/protocol/generate-protostrings.sh],
                 [chmod +x,-w common/protocol/generate-protostrings.sh])
 AC_CONFIG_FILES([Makefile
                  bash/Makefile
+                 common/allocators/Makefile
                  common/bitmap/Makefile
                  common/gpt/Makefile
                  common/include/Makefile
                  common/protocol/Makefile
                  common/regions/Makefile
-                 common/sparse/Makefile
                  common/utils/Makefile
                  docs/Makefile
                  include/Makefile

@@ -39,18 +39,15 @@
 #include <string.h>
 
 #define NBDKIT_API_VERSION 2
-
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
-#include "sparse.h"
+#include "allocator.h"
 #include "format.h"
 
-/* Store file at current offset in the sparse array, updating
- * the offset.
- */
+/* Store file at current offset in the allocator, updating the offset. */
 static int
-store_file (struct sparse_array *sa,
+store_file (struct allocator *a,
             const char *filename, int64_t *offset)
 {
   FILE *fp;
@@ -66,7 +63,7 @@ store_file (struct sparse_array *sa,
   while (!feof (fp)) {
     n = fread (buf, 1, BUFSIZ, fp);
     if (n > 0) {
-      if (sparse_array_write (sa, buf, n, *offset) == -1) {
+      if (a->write (a, buf, n, *offset) == -1) {
         fclose (fp);
         return -1;
       }
@@ -93,7 +90,7 @@ store_file (struct sparse_array *sa,
 static int
 parse (int level,
        const char *value, size_t *start, size_t len,
-       struct sparse_array *sa, int64_t *size)
+       struct allocator *a, int64_t *size)
 {
   int64_t offset = 0;
   size_t i = *start;
@@ -119,18 +116,18 @@ parse (int level,
       break;
 
     case '(': {               /* ( */
-      CLEANUP_FREE_SPARSE_ARRAY struct sparse_array *sa2;
+      CLEANUP_FREE_ALLOCATOR struct allocator *a2;
       int64_t size2 = 0;
 
       i++;
 
       /* Call self recursively to create a new sparse array. */
-      sa2 = alloc_sparse_array (0);
-      if (sa2 == NULL) {
+      a2 = create_allocator ("sparse", false);
+      if (a2 == NULL) {
         nbdkit_error ("malloc: %m");
         return -1;
       }
-      if (parse (level+1, value, &i, len, sa2, &size2) == -1)
+      if (parse (level+1, value, &i, len, a2, &size2) == -1)
         return -1;
 
       /* ( ... )*N */
@@ -141,9 +138,9 @@ parse (int level,
         }
         i += n;
 
-        /* Duplicate the sparse array sa2 N (=k) times. */
+        /* Duplicate the allocator a2 N (=k) times. */
         while (k > 0) {
-          if (sparse_array_blit (sa2, sa, size2, 0, offset) == -1)
+          if (a->blit (a2, a, size2, 0, offset) == -1)
             return -1;
           offset += size2;
           k--;
@@ -181,7 +178,7 @@ parse (int level,
         }
         i += n;
 
-        if (sparse_array_fill (sa, j, k, offset) == -1)
+        if (a->fill (a, j, k, offset) == -1)
           return -1;
         offset += k;
         if (*size < offset)
@@ -200,7 +197,7 @@ parse (int level,
 
         /* Store the byte. */
         c = j;
-        if (sparse_array_write (sa, &c, 1, offset) == -1)
+        if (a->write (a, &c, 1, offset) == -1)
           return -1;
         offset++;
       }
@@ -227,7 +224,7 @@ parse (int level,
       }
       i += len;
 
-      if (store_file (sa, filename, &offset) == -1)
+      if (store_file (a, filename, &offset) == -1)
         return -1;
 
       if (*size < offset)
@@ -261,10 +258,10 @@ parse (int level,
 
 int
 read_data_format (const char *value,
-                  struct sparse_array *sa, int64_t *size)
+                  struct allocator *a, int64_t *size)
 {
   size_t i = 0;
   size_t len = strlen (value);
 
-  return parse (0, value, &i, len, sa, size);
+  return parse (0, value, &i, len, a, size);
 }

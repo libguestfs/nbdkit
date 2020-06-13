@@ -38,18 +38,15 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include <pthread.h>
-
 #if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
 #include <gnutls/gnutls.h>
 #endif
 
 #define NBDKIT_API_VERSION 2
-
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
-#include "sparse.h"
+#include "allocator.h"
 #include "format.h"
 
 /* If raw|base64|data parameter seen. */
@@ -61,11 +58,8 @@ static int64_t size = -1;
 /* Size of data specified on the command line. */
 static int64_t data_size = -1;
 
-/* Sparse array - the lock must be held when accessing this from
- * connected callbacks.
- */
-static struct sparse_array *sa;
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+/* Allocator. */
+static struct allocator *a;
 
 /* Debug directory operations (-D data.dir=1). */
 int data_debug_dir;
@@ -73,18 +67,16 @@ int data_debug_dir;
 static void
 data_load (void)
 {
-  sa = alloc_sparse_array (data_debug_dir);
-  if (sa == NULL) {
-    perror ("malloc");
+  a = create_allocator ("sparse", data_debug_dir);
+  if (a == NULL)
     exit (EXIT_FAILURE);
-  }
 }
 
 /* On unload, free the sparse array. */
 static void
 data_unload (void)
 {
-  free_sparse_array (sa);
+  a->free (a);
 }
 
 /* Parse the base64 parameter. */
@@ -103,7 +95,7 @@ read_base64 (const char *value, int64_t *size_ret)
     return -1;
   }
 
-  if (sparse_array_write (sa, out.data, out.size, 0) == -1)
+  if (a->write (a, out.data, out.size, 0) == -1)
     return -1;
   free (out.data);
   *size_ret = out.size;
@@ -136,7 +128,7 @@ data_config (const char *key, const char *value)
 
     if (strcmp (key, "raw") == 0) {
       data_size = strlen (value);
-      if (sparse_array_write (sa, value, data_size, 0) == -1)
+      if (a->write (a, value, data_size, 0) == -1)
         return -1;
     }
     else if (strcmp (key, "base64") == 0) {
@@ -144,7 +136,7 @@ data_config (const char *key, const char *value)
         return -1;
     }
     else if (strcmp (key, "data") == 0) {
-      if (read_data_format (value, sa, &data_size) == -1)
+      if (read_data_format (value, a, &data_size) == -1)
         return -1;
     }
     else
@@ -245,8 +237,7 @@ data_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags)
 {
   assert (!flags);
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  sparse_array_read (sa, buf, count, offset);
+  a->read (a, buf, count, offset);
   return 0;
 }
 
@@ -257,8 +248,7 @@ data_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 {
   /* Flushing, and thus FUA flag, is a no-op */
   assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  return sparse_array_write (sa, buf, count, offset);
+  return a->write (a, buf, count, offset);
 }
 
 /* Zero. */
@@ -266,11 +256,10 @@ static int
 data_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* Flushing, and thus FUA flag, is a no-op. Assume that
-   * sparse_array_zero generally beats writes, so FAST_ZERO is a no-op. */
+   * a->zero generally beats writes, so FAST_ZERO is a no-op. */
   assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
                      NBDKIT_FLAG_FAST_ZERO)) == 0);
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  sparse_array_zero (sa, count, offset);
+  a->zero (a, count, offset);
   return 0;
 }
 
@@ -280,8 +269,7 @@ data_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* Flushing, and thus FUA flag, is a no-op */
   assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  sparse_array_zero (sa, count, offset);
+  a->zero (a, count, offset);
   return 0;
 }
 
@@ -297,8 +285,7 @@ static int
 data_extents (void *handle, uint32_t count, uint64_t offset,
               uint32_t flags, struct nbdkit_extents *extents)
 {
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  return sparse_array_extents (sa, count, offset, extents);
+  return a->extents (a, count, offset, extents);
 }
 
 static struct nbdkit_plugin plugin = {

@@ -41,14 +41,11 @@
 #include <errno.h>
 #include <assert.h>
 
-#include <pthread.h>
-
 #define NBDKIT_API_VERSION 2
-
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
-#include "sparse.h"
+#include "allocator.h"
 
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
 static int64_t size = -1;
@@ -56,26 +53,21 @@ static int64_t size = -1;
 /* Debug directory operations (-D memory.dir=1). */
 int memory_debug_dir;
 
-/* Sparse array - the lock must be held when accessing this from
- * connected callbacks.
- */
-static struct sparse_array *sa;
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+/* Allocator. */
+static struct allocator *a;
 
 static void
 memory_load (void)
 {
-  sa = alloc_sparse_array (memory_debug_dir);
-  if (sa == NULL) {
-    perror ("malloc");
+  a = create_allocator ("sparse", memory_debug_dir);
+  if (a == NULL)
     exit (EXIT_FAILURE);
-  }
 }
 
 static void
 memory_unload (void)
 {
-  free_sparse_array (sa);
+  a->free (a);
 }
 
 static int
@@ -160,8 +152,7 @@ memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
               uint32_t flags)
 {
   assert (!flags);
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  sparse_array_read (sa, buf, count, offset);
+  a->read (a, buf, count, offset);
   return 0;
 }
 
@@ -172,8 +163,7 @@ memory_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 {
   /* Flushing, and thus FUA flag, is a no-op */
   assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  return sparse_array_write (sa, buf, count, offset);
+  return a->write (a, buf, count, offset);
 }
 
 /* Zero. */
@@ -181,11 +171,10 @@ static int
 memory_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* Flushing, and thus FUA flag, is a no-op. Assume that
-   * sparse_array_zero generally beats writes, so FAST_ZERO is a no-op. */
+   * a->zero generally beats writes, so FAST_ZERO is a no-op. */
   assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
                      NBDKIT_FLAG_FAST_ZERO)) == 0);
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  sparse_array_zero (sa, count, offset);
+  a->zero (a, count, offset);
   return 0;
 }
 
@@ -195,8 +184,7 @@ memory_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* Flushing, and thus FUA flag, is a no-op */
   assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  sparse_array_zero (sa, count, offset);
+  a->zero (a, count, offset);
   return 0;
 }
 
@@ -212,8 +200,7 @@ static int
 memory_extents (void *handle, uint32_t count, uint64_t offset,
                 uint32_t flags, struct nbdkit_extents *extents)
 {
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  return sparse_array_extents (sa, count, offset, extents);
+  return a->extents (a, count, offset, extents);
 }
 
 static struct nbdkit_plugin plugin = {

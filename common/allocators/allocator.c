@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -30,15 +30,42 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NBDKIT_DATA_FORMAT_H
-#define NBDKIT_DATA_FORMAT_H
+#include <config.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+#include <nbdkit-plugin.h>
 
 #include "allocator.h"
+#include "allocator-internal.h"
 
-/* Parses the data parameter as described in the man page
- * under "DATA FORMAT".
- */
-extern int read_data_format (const char *value,
-                             struct allocator *a, int64_t *size);
+struct allocator *
+create_allocator (const char *type, bool debug)
+{
+  struct allocator *ret;
 
-#endif /* NBDKIT_DATA_FORMAT_H */
+  if (strcmp (type, "sparse") == 0)
+    ret = create_sparse_array ();
+  else {
+    nbdkit_error ("unknown allocator \"%s\"", type);
+    ret = NULL;
+  }
+
+  if (ret) {
+    ret->type = type;
+    ret->debug = debug;
+  }
+  return ret;
+}
+
+void
+cleanup_free_allocator (struct allocator **ap)
+{
+  struct allocator *a = *ap;
+
+  if (a)
+    a->free (a);
+}

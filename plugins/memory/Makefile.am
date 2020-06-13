@@ -42,7 +42,7 @@ nbdkit_memory_plugin_la_SOURCES = \
 
 nbdkit_memory_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/sparse \
+	-I$(top_srcdir)/common/allocators \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_memory_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
@@ -51,7 +51,7 @@ nbdkit_memory_plugin_la_LDFLAGS = \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 nbdkit_memory_plugin_la_LIBADD = \
-	$(top_builddir)/common/sparse/libsparse.la \
+	$(top_builddir)/common/allocators/liballocators.la \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 

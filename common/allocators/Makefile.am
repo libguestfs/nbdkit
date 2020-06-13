@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -31,15 +31,17 @@
 
 include $(top_srcdir)/common-rules.mk
 
-noinst_LTLIBRARIES = libsparse.la
+noinst_LTLIBRARIES = liballocators.la
 
-libsparse_la_SOURCES = \
+liballocators_la_SOURCES = \
+	allocator.c \
+	allocator.h \
+	allocator-internal.h \
         sparse.c \
-        sparse.h \
 	$(NULL)
-libsparse_la_CPPFLAGS = \
+liballocators_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
-libsparse_la_CFLAGS = $(WARNINGS_CFLAGS)
+liballocators_la_CFLAGS = $(WARNINGS_CFLAGS)

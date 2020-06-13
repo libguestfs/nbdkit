@@ -41,11 +41,27 @@
 #include <errno.h>
 #include <assert.h>
 
+#include <pthread.h>
+
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
 #include "iszero.h"
-#include "sparse.h"
 #include "vector.h"
+
+#include "allocator.h"
+#include "allocator-internal.h"
+
+/* This allocator implements a sparse array of any size up to 2⁶³-1
+ * bytes.
+ *
+ * The array reads as zeroes until something is written.
+ *
+ * The implementation aims to be reasonably efficient for ordinary
+ * sized disks, while permitting huge (but sparse) disks for testing.
+ * Everything allocated has to be stored in memory.  There is no
+ * temporary file backing.
+ */
 
 /* Two level directory for the sparse array.
  *
@@ -104,8 +120,9 @@ struct l1_entry {
 DEFINE_VECTOR_TYPE(l1_dir, struct l1_entry);
 
 struct sparse_array {
+  struct allocator a;           /* Must come first. */
+  pthread_mutex_t lock;
   l1_dir l1_dir;                /* L1 directory. */
-  bool debug;
 };
 
 /* Free L1 and/or L2 directories. */
@@ -119,35 +136,19 @@ free_l2_dir (void **l2_dir)
   free (l2_dir);
 }
 
-void
-free_sparse_array (struct sparse_array *sa)
+static void
+sparse_array_free (struct allocator *a)
 {
+  struct sparse_array *sa = (struct sparse_array *) a;
   size_t i;
 
   if (sa) {
     for (i = 0; i < sa->l1_dir.size; ++i)
       free_l2_dir (sa->l1_dir.ptr[i].l2_dir);
     free (sa->l1_dir.ptr);
+    pthread_mutex_destroy (&sa->lock);
     free (sa);
   }
-}
-
-void
-cleanup_free_sparse_array (struct sparse_array **sa)
-{
-  free_sparse_array (*sa);
-}
-
-struct sparse_array *
-alloc_sparse_array (bool debug)
-{
-  struct sparse_array *sa;
-
-  sa = calloc (1, sizeof *sa);
-  if (sa == NULL)
-    return NULL;
-  sa->debug = debug;
-  return sa;
 }
 
 /* Comparison function used when searching through the L1 directory. */
@@ -176,7 +177,7 @@ insert_l1_entry (struct sparse_array *sa, const struct l1_entry *entry)
         nbdkit_error ("realloc: %m");
         return -1;
       }
-      if (sa->debug)
+      if (sa->a.debug)
         nbdkit_debug ("%s: inserted new L1 entry for %" PRIu64
                       " at l1_dir.ptr[%zu]",
                       __func__, entry->offset, i);
@@ -194,7 +195,7 @@ insert_l1_entry (struct sparse_array *sa, const struct l1_entry *entry)
     nbdkit_error ("realloc: %m");
     return -1;
   }
-  if (sa->debug)
+  if (sa->a.debug)
     nbdkit_debug ("%s: inserted new L1 entry for %" PRIu64
                   " at end of l1_dir", __func__, entry->offset);
   return 0;
@@ -227,7 +228,7 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
   /* Search the L1 directory. */
   entry = l1_dir_search (&sa->l1_dir, &offset, compare_l1_offsets);
 
-  if (sa->debug) {
+  if (sa->a.debug) {
     if (entry)
       nbdkit_debug ("%s: search L1 dir: entry found: offset %" PRIu64,
                     __func__, entry->offset);
@@ -280,10 +281,12 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
   goto again;
 }
 
-void
-sparse_array_read (struct sparse_array *sa,
+static void
+sparse_array_read (struct allocator *a,
                    void *buf, uint32_t count, uint64_t offset)
 {
+  struct sparse_array *sa = (struct sparse_array *) a;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
   uint32_t n;
   void *p;
 
@@ -303,10 +306,12 @@ sparse_array_read (struct sparse_array *sa,
   }
 }
 
-int
-sparse_array_write (struct sparse_array *sa,
+static int
+sparse_array_write (struct allocator *a,
                     const void *buf, uint32_t count, uint64_t offset)
 {
+  struct sparse_array *sa = (struct sparse_array *) a;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
   uint32_t n;
   void *p;
 
@@ -327,17 +332,23 @@ sparse_array_write (struct sparse_array *sa,
   return 0;
 }
 
-int
-sparse_array_fill (struct sparse_array *sa, char c,
+static void sparse_array_zero (struct allocator *a,
+                               uint32_t count, uint64_t offset);
+
+static int
+sparse_array_fill (struct allocator *a, char c,
                    uint32_t count, uint64_t offset)
 {
+  struct sparse_array *sa = (struct sparse_array *) a;
   uint32_t n;
   void *p;
 
   if (c == 0) {
-    sparse_array_zero (sa, count, offset);
+    sparse_array_zero (a, count, offset);
     return 0;
   }
+
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
 
   while (count > 0) {
     p = lookup (sa, offset, true, &n, NULL);
@@ -355,9 +366,11 @@ sparse_array_fill (struct sparse_array *sa, char c,
   return 0;
 }
 
-void
-sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset)
+static void
+sparse_array_zero (struct allocator *a, uint32_t count, uint64_t offset)
 {
+  struct sparse_array *sa = (struct sparse_array *) a;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
   uint32_t n;
   void *p;
   void **l2_page;
@@ -375,7 +388,7 @@ sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset)
 
       /* If the whole page is now zero, free it. */
       if (n >= PAGE_SIZE || is_zero (*l2_page, PAGE_SIZE)) {
-        if (sa->debug)
+        if (sa->a.debug)
           nbdkit_debug ("%s: freeing zero page at offset %" PRIu64,
                         __func__, offset);
         free (*l2_page);
@@ -388,11 +401,44 @@ sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset)
   }
 }
 
-int
-sparse_array_extents (struct sparse_array *sa,
+static int
+sparse_array_blit (struct allocator *a1,
+                   struct allocator *a2,
+                   uint32_t count,
+                   uint64_t offset1, uint64_t offset2)
+{
+  struct sparse_array *sa2 = (struct sparse_array *) a2;
+  uint32_t n;
+  void *p;
+
+  while (count > 0) {
+    p = lookup (sa2, offset2, true, &n, NULL);
+    if (p == NULL)
+      return -1;
+
+    if (n > count)
+      n = count;
+
+    /* Read the source allocator (a1) directly to p which points into
+     * the right place in sa2.
+     */
+    a1->read (a1, p, n, offset1);
+
+    count -= n;
+    offset1 += n;
+    offset2 += n;
+  }
+
+  return 0;
+}
+
+static int
+sparse_array_extents (struct allocator *a,
                       uint32_t count, uint64_t offset,
                       struct nbdkit_extents *extents)
 {
+  struct sparse_array *sa = (struct sparse_array *) a;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
   uint32_t n, type;
   void *p;
 
@@ -424,32 +470,27 @@ sparse_array_extents (struct sparse_array *sa,
   return 0;
 }
 
-int
-sparse_array_blit (struct sparse_array *sa1,
-                   struct sparse_array *sa2,
-                   uint32_t count,
-                   uint64_t offset1, uint64_t offset2)
+static struct allocator functions = {
+  .free = sparse_array_free,
+  .read = sparse_array_read,
+  .write = sparse_array_write,
+  .fill = sparse_array_fill,
+  .zero = sparse_array_zero,
+  .blit = sparse_array_blit,
+  .extents = sparse_array_extents,
+};
+
+struct allocator *
+create_sparse_array (void)
 {
-  uint32_t n;
-  void *p;
+  struct sparse_array *sa;
 
-  while (count > 0) {
-    p = lookup (sa2, offset2, true, &n, NULL);
-    if (p == NULL)
-      return -1;
-
-    if (n > count)
-      n = count;
-
-    /* Read the source array (sa1) directly to p which points into the
-     * right place in sa2.
-     */
-    sparse_array_read (sa1, p, n, offset1);
-
-    count -= n;
-    offset1 += n;
-    offset2 += n;
+  sa = calloc (1, sizeof *sa);
+  if (sa == NULL) {
+    nbdkit_error ("calloc");
+    return NULL;
   }
-
-  return 0;
+  sa->a = functions;
+  pthread_mutex_init (&sa->lock, NULL);
+  return (struct allocator *) sa;
 }
