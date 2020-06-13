@@ -151,6 +151,13 @@ sparse_array_free (struct allocator *a)
   }
 }
 
+static int
+sparse_array_set_size_hint (struct allocator *a, uint64_t size)
+{
+  /* Ignored. */
+  return 0;
+}
+
 /* Comparison function used when searching through the L1 directory. */
 static int
 compare_l1_offsets (const void *offsetp, const struct l1_entry *e)
@@ -472,6 +479,7 @@ sparse_array_extents (struct allocator *a,
 
 static struct allocator functions = {
   .free = sparse_array_free,
+  .set_size_hint = sparse_array_set_size_hint,
   .read = sparse_array_read,
   .write = sparse_array_write,
   .fill = sparse_array_fill,

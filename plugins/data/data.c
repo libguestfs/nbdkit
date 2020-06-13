@@ -197,6 +197,10 @@ data_get_ready (void)
   if (size == -1)
     size = data_size;
   nbdkit_debug ("final size: %" PRIi64, size);
+
+  if (a->set_size_hint (a, size) == -1)
+    return -1;
+
   return 0;
 }
 

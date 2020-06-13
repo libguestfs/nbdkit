@@ -57,6 +57,17 @@ struct allocator {
   /* Free the allocator instance. */
   void (*free) (struct allocator *a);
 
+  /* Set the size hint.  The size hint is used in various ways by some
+   * allocators, and ignored by others.
+   *
+   * The sparse array allocator ignores the size hint.
+   *
+   * Note this does not set or enforce the virtual size of the disk,
+   * nor does it implement bounds checking.
+   */
+  int (*set_size_hint) (struct allocator *a, uint64_t size)
+  __attribute__((__nonnull__ (1)));
+
   /* Read bytes from [offset, offset+count-1] and copy into buf.  This
    * can never return an error.
    */

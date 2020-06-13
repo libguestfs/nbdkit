@@ -103,6 +103,8 @@ memory_get_ready (void)
   a = create_allocator (allocator_type, memory_debug_dir);
   if (a == NULL)
     return -1;
+  if (a->set_size_hint (a, size) == -1)
+    return -1;
   return 0;
 }
 
