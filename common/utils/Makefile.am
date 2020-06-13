@@ -47,7 +47,13 @@ libutils_la_SOURCES = \
 libutils_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	$(NULL)
-libutils_la_CFLAGS = $(WARNINGS_CFLAGS)
+libutils_la_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
+libutils_la_LIBADD = \
+	$(PTHREAD_LIBS) \
+	$(NULL)
 
 # Unit tests.
 

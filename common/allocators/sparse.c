@@ -61,6 +61,9 @@
  * sized disks, while permitting huge (but sparse) disks for testing.
  * Everything allocated has to be stored in memory.  There is no
  * temporary file backing.
+ *
+ * XXX It would be nice to change the locking to use r/w locks here,
+ * as that ought to greatly benefit read-heavy loads using multi-conn.
  */
 
 /* Two level directory for the sparse array.

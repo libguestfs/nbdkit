@@ -45,8 +45,15 @@ cleanup_free (void *ptr)
 }
 
 void
-cleanup_unlock (pthread_mutex_t **ptr)
+cleanup_mutex_unlock (pthread_mutex_t **ptr)
 {
   int r = pthread_mutex_unlock (*ptr);
+  assert (!r);
+}
+
+void
+cleanup_rwlock_unlock (pthread_rwlock_t **ptr)
+{
+  int r = pthread_rwlock_unlock (*ptr);
   assert (!r);
 }

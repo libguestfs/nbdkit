@@ -40,13 +40,30 @@
 extern void cleanup_free (void *ptr);
 #define CLEANUP_FREE __attribute__((cleanup (cleanup_free)))
 
-extern void cleanup_unlock (pthread_mutex_t **ptr);
-#define CLEANUP_UNLOCK __attribute__((cleanup (cleanup_unlock)))
+extern void cleanup_mutex_unlock (pthread_mutex_t **ptr);
+#define CLEANUP_MUTEX_UNLOCK __attribute__((cleanup (cleanup_mutex_unlock)))
 
 #define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex) \
-  CLEANUP_UNLOCK pthread_mutex_t *_lock = mutex; \
+  CLEANUP_MUTEX_UNLOCK pthread_mutex_t *_lock = mutex; \
   do { \
     int _r = pthread_mutex_lock (_lock); \
+    assert (!_r); \
+  } while (0)
+
+extern void cleanup_rwlock_unlock (pthread_rwlock_t **ptr);
+#define CLEANUP_RWLOCK_UNLOCK __attribute__((cleanup (cleanup_rwlock_unlock)))
+
+#define ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE(rwlock) \
+  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *_lock = rwlock; \
+  do { \
+    int _r = pthread_rwlock_wrlock (_lock); \
+    assert (!_r); \
+  } while (0)
+
+#define ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE(rwlock) \
+  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *_lock = rwlock; \
+  do { \
+    int _r = pthread_rwlock_rdlock (_lock); \
     assert (!_r); \
   } while (0)
 
