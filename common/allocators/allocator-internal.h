@@ -38,4 +38,8 @@
 extern struct allocator *create_malloc (bool use_mlock);
 extern struct allocator *create_sparse_array (void);
 
+#ifdef HAVE_LIBZSTD
+extern struct allocator *create_zstd_array (void);
+#endif
+
 #endif /* NBDKIT_ALLOCATOR_INTERNAL_H */

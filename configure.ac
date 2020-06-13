@@ -944,6 +944,22 @@ AS_IF([test "$with_liblzma" != "no"],[
 ])
 AM_CONDITIONAL([HAVE_LIBLZMA],[test "x$LIBLZMA_LIBS" != "x"])
 
+dnl Check for zstd (only if you want to compile allocator=zstd).
+AC_ARG_WITH([libzstd],
+    [AS_HELP_STRING([--without-libzstd],
+                    [disable allocator=zstd @<:@default=check@:>@])],
+    [],
+    [with_libzstd=check])
+AS_IF([test "$with_libzstd" != "no"],[
+    PKG_CHECK_MODULES([LIBZSTD], [libzstd],[
+        AC_SUBST([LIBZSTD_CFLAGS])
+        AC_SUBST([LIBZSTD_LIBS])
+        AC_DEFINE([HAVE_LIBZSTD],[1],[libzstd found at compile time.])
+    ],
+    [AC_MSG_WARN([libzstd not found, allocator=zstd will be disabled])])
+])
+AM_CONDITIONAL([HAVE_LIBZSTD],[test "x$LIBZSTD_LIBS" != "x"])
+
 dnl Check for libguestfs (only for the guestfs plugin and the test suite).
 AC_ARG_WITH([libguestfs],
     [AS_HELP_STRING([--without-libguestfs],
@@ -1212,6 +1228,12 @@ feature "ext2 ................................... " \
         test "x$HAVE_EXT2_TRUE" = "x"
 feature "xz ..................................... " \
         test "x$HAVE_LIBLZMA_TRUE" = "x"
+
+echo
+echo "Other optional features:"
+echo
+feature "allocator=zstd ......................... " \
+        test "x$HAVE_LIBZSTD_TRUE" = "x"
 
 echo
 echo "If any optional component is configured ‘no’ when you expected ‘yes’"

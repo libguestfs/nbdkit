@@ -58,6 +58,8 @@ See L<nbdkit(1)/Magic parameters>.
 
 =item B<allocator=malloc>[,B<mlock=true>]
 
+=item B<allocator=zstd>
+
 (nbdkit E<ge> 1.22)
 
 Select the backend allocation strategy.  See L</ALLOCATORS> below.
@@ -130,6 +132,21 @@ RAM using L<mlock(2)> (so it should never be swapped out).  This
 usually requires you to adjust the L<ulimit(1)> associated with the
 process and on some operating systems may require you to run nbdkit as
 root.  (See also the L<nbdkit(1)> I<--swap> option).
+
+=item B<allocator=zstd>
+
+The disk image is stored in a sparse array where each page is
+compressed using L<zstd compression|https://facebook.github.io/zstd/>.
+Assuming a typical 2:1 compression ratio, this allows you to store
+twice as much real data as C<allocator=sparse>, with the trade-off
+that the plugin is slightly slower because it has to compress and
+decompress each page.  Aside from compression, the implementation of
+this allocator is similar to C<allocator=sparse>, so in other respects
+(such as supporting huge virtual disk sizes) it is the same.
+
+This allocator is only supported if nbdkit was compiled with zstd
+support.  Use S<C<nbdkit memory --dump-plugin>> and check that the
+output contains C<zstd=yes>.
 
 =back
 

@@ -39,6 +39,7 @@ liballocators_la_SOURCES = \
 	allocator-internal.h \
 	malloc.c \
         sparse.c \
+	zstd.c \
 	$(NULL)
 liballocators_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
@@ -46,3 +47,8 @@ liballocators_la_CPPFLAGS = \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 liballocators_la_CFLAGS = $(WARNINGS_CFLAGS)
+liballocators_la_LIBADD =
+if HAVE_LIBZSTD
+liballocators_la_CFLAGS += $(LIBZSTD_CFLAGS)
+liballocators_la_LIBADD += $(LIBZSTD_LIBS)
+endif

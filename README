@@ -73,6 +73,10 @@ For the xz filter:
 
  - liblzma
 
+For the memory plugin with allocator=zstd:
+
+ - zstd
+
 For the curl (HTTP/FTP) plugin:
 
  - libcurl

@@ -97,6 +97,16 @@ memory_config_complete (void)
   "size=<SIZE>  (required) Size of the backing disk\n" \
   "allocator=sparse|...    Backend allocation strategy"
 
+static void
+memory_dump_plugin (void)
+{
+#ifdef HAVE_LIBZSTD
+  printf ("zstd=yes\n");
+#else
+  printf ("zstd=no\n");
+#endif
+}
+
 static int
 memory_get_ready (void)
 {
@@ -218,6 +228,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = memory_config_complete,
   .config_help       = memory_config_help,
   .magic_config_key  = "size",
+  .dump_plugin       = memory_dump_plugin,
   .get_ready         = memory_get_ready,
   .open              = memory_open,
   .get_size          = memory_get_size,

@@ -641,6 +641,9 @@ LIBGUESTFS_TESTS += \
 	test-memory \
 	test-memory-allocator-malloc \
 	$(NULL)
+if HAVE_LIBZSTD
+LIBGUESTFS_TESTS += test-memory-allocator-zstd
+endif HAVE_LIBZSTD
 TESTS += \
 	test-memory-allocator-malloc.sh \
 	test-memory-allocator-malloc-mlock.sh \
@@ -655,12 +658,21 @@ EXTRA_DIST += \
 	$(NULL)
 
 test_memory_SOURCES = test-memory.c test.h
+test_memory_CPPFLAGS = -DALLOCATOR='"sparse"'
 test_memory_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_memory_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-test_memory_allocator_malloc_SOURCES = test-memory-allocator-malloc.c test.h
+test_memory_allocator_malloc_SOURCES = test-memory.c test.h
+test_memory_allocator_malloc_CPPFLAGS = -DALLOCATOR='"malloc"'
 test_memory_allocator_malloc_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_memory_allocator_malloc_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+if HAVE_LIBZSTD
+test_memory_allocator_zstd_SOURCES = test-memory.c test.h
+test_memory_allocator_zstd_CPPFLAGS = -DALLOCATOR='"zstd"'
+test_memory_allocator_zstd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_memory_allocator_zstd_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+endif HAVE_LIBZSTD
 
 if HAVE_LIBNBD
 # nbd plugin test.

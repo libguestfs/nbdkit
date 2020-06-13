@@ -60,7 +60,7 @@ struct allocator {
   /* Set the size hint.  The size hint is used in various ways by some
    * allocators, and ignored by others.
    *
-   * The sparse array allocator ignores the size hint.
+   * The sparse and zstd array allocators ignore the size hint.
    *
    * The malloc allocator uses it to reserve the expected size of disk
    * in memory (especially important if using mlock so we fail during

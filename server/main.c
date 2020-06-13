@@ -159,6 +159,11 @@ dump_config (void)
   printf ("%s=%s\n", "version", PACKAGE_VERSION);
   printf ("%s=%d\n", "version_major", NBDKIT_VERSION_MAJOR);
   printf ("%s=%d\n", "version_minor", NBDKIT_VERSION_MINOR);
+#ifdef HAVE_LIBZSTD
+  printf ("zstd=yes\n");
+#else
+  printf ("zstd=no\n");
+#endif
 }
 
 int

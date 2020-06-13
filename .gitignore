@@ -126,6 +126,7 @@ plugins/*/*.3
 /tests/test-lua
 /tests/test-memory
 /tests/test-memory-allocator-malloc
+/tests/test-memory-allocator-zstd
 /tests/test-newstyle
 /tests/test-nbd
 /tests/test-null

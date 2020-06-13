@@ -187,6 +187,8 @@ of the C<data>, C<raw> or C<base64> parameter.
 
 =item B<allocator=malloc>[,B<mlock=true>]
 
+=item B<allocator=zstd>
+
 (nbdkit E<ge> 1.22)
 
 Select the backend allocation strategy.  See

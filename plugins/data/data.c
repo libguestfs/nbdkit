@@ -211,6 +211,11 @@ data_dump_plugin (void)
 #if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
   printf ("data_base64=yes\n");
 #endif
+#ifdef HAVE_LIBZSTD
+  printf ("zstd=yes\n");
+#else
+  printf ("zstd=no\n");
+#endif
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
