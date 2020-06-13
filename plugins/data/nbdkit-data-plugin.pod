@@ -4,11 +4,14 @@ nbdkit-data-plugin - nbdkit plugin for serving data from the command line
 
 =head1 SYNOPSIS
 
- nbdkit data data="0 1 2 3 @0x1fe 0x55 0xaa" [size=size]
+ nbdkit data data="0 1 2 3 @0x1fe 0x55 0xaa"
+             [size=SIZE] [allocator=sparse|...]
 
- nbdkit data base64="aGVsbG8gbmJka2l0IHVzZXI=" [size=size]
+ nbdkit data base64="aGVsbG8gbmJka2l0IHVzZXI="
+             [size=SIZE] [allocator=sparse|...]
 
- nbdkit data raw="binary_data" [size=size]
+ nbdkit data raw="binary_data"
+             [size=SIZE] [allocator=sparse|...]
 
 =head1 DESCRIPTION
 
@@ -179,6 +182,13 @@ The data is truncated or extended to the size specified.
 
 This parameter is optional: If omitted the size is defined by the size
 of the C<data>, C<raw> or C<base64> parameter.
+
+=item B<allocator=sparse>
+
+(nbdkit E<ge> 1.22)
+
+Select the backend allocation strategy.  See
+L<nbdkit-memory-plugin(1)/ALLOCATORS>.  The default is sparse.
 
 =back
 

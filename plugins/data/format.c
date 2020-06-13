@@ -48,7 +48,7 @@
 /* Store file at current offset in the allocator, updating the offset. */
 static int
 store_file (struct allocator *a,
-            const char *filename, int64_t *offset)
+            const char *filename, uint64_t *offset)
 {
   FILE *fp;
   char buf[BUFSIZ];
@@ -90,9 +90,9 @@ store_file (struct allocator *a,
 static int
 parse (int level,
        const char *value, size_t *start, size_t len,
-       struct allocator *a, int64_t *size)
+       struct allocator *a, uint64_t *size)
 {
-  int64_t offset = 0;
+  uint64_t offset = 0;
   size_t i = *start;
 
   for (; i < len; ++i) {
@@ -117,7 +117,7 @@ parse (int level,
 
     case '(': {               /* ( */
       CLEANUP_FREE_ALLOCATOR struct allocator *a2;
-      int64_t size2 = 0;
+      uint64_t size2 = 0;
 
       i++;
 
@@ -258,7 +258,7 @@ parse (int level,
 
 int
 read_data_format (const char *value,
-                  struct allocator *a, int64_t *size)
+                  struct allocator *a, uint64_t *size)
 {
   size_t i = 0;
   size_t len = strlen (value);

@@ -49,39 +49,33 @@
 #include "allocator.h"
 #include "format.h"
 
-/* If raw|base64|data parameter seen. */
-static int data_seen = 0;
+/* Data (raw|base64|data) parameter. */
+static enum { NOT_SEEN, RAW, BASE64, DATA } data_seen = NOT_SEEN;
+static const char *data_param;
 
-/* size= parameter on the command line, -1 if not set. */
+/* size= parameter on the command line.  After configuration, it is
+ * set to the final size.
+ */
 static int64_t size = -1;
-
-/* Size of data specified on the command line. */
-static int64_t data_size = -1;
 
 /* Allocator. */
 static struct allocator *a;
+const char *allocator_type = "sparse";
 
 /* Debug directory operations (-D data.dir=1). */
 int data_debug_dir;
-
-static void
-data_load (void)
-{
-  a = create_allocator ("sparse", data_debug_dir);
-  if (a == NULL)
-    exit (EXIT_FAILURE);
-}
 
 /* On unload, free the sparse array. */
 static void
 data_unload (void)
 {
-  a->free (a);
+  if (a)
+    a->free (a);
 }
 
 /* Parse the base64 parameter. */
 static int
-read_base64 (const char *value, int64_t *size_ret)
+read_base64 (const char *value, uint64_t *size_ret)
 {
 #if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
   gnutls_datum_t in, out;
@@ -117,30 +111,27 @@ data_config (const char *key, const char *value)
       return -1;
     size = r;
   }
-  else if (strcmp (key, "raw") == 0 ||
-           strcmp (key, "base64") == 0 ||
-           strcmp (key, "data") == 0) {
-    if (data_seen) {
+  else if (strcmp (key, "allocator") == 0) {
+    allocator_type = value;
+  }
+  else if (strcmp (key, "raw") == 0) {
+    if (data_seen != NOT_SEEN) {
+    seen_error:
       nbdkit_error ("raw|base64|data parameter must be specified exactly once");
       return -1;
     }
-    data_seen = 1;
-
-    if (strcmp (key, "raw") == 0) {
-      data_size = strlen (value);
-      if (a->write (a, value, data_size, 0) == -1)
-        return -1;
-    }
-    else if (strcmp (key, "base64") == 0) {
-      if (read_base64 (value, &data_size) == -1)
-        return -1;
-    }
-    else if (strcmp (key, "data") == 0) {
-      if (read_data_format (value, a, &data_size) == -1)
-        return -1;
-    }
-    else
-      abort (); /* cannot happen */
+    data_seen = RAW;
+    data_param = value;
+  }
+  else if (strcmp (key, "base64") == 0) {
+    if (data_seen != NOT_SEEN) goto seen_error;
+    data_seen = BASE64;
+    data_param = value;
+  }
+  else if (strcmp (key, "data") == 0) {
+    if (data_seen != NOT_SEEN) goto seen_error;
+    data_seen = DATA;
+    data_param = value;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -150,13 +141,52 @@ data_config (const char *key, const char *value)
   return 0;
 }
 
-/* Check the raw|base64|data was specified, and set the final size. */
+/* Check the raw|base64|data was specified. */
 static int
 data_config_complete (void)
 {
-  if (!data_seen) {
+  if (data_seen == NOT_SEEN) {
     nbdkit_error ("raw|base64|data parameter was not specified");
     return -1;
+  }
+
+  return 0;
+}
+
+#define data_config_help \
+  "data|raw|base64=...     Specify disk data on the command line\n" \
+  "size=<SIZE>             Size of the backing disk"
+
+/* Parse raw|base64|data parameter and set the final size. */
+static int
+data_get_ready (void)
+{
+  uint64_t data_size = 0; /* Size of data specified on the command line. */
+
+  a = create_allocator (allocator_type, data_debug_dir);
+  if (a == NULL)
+    return -1;
+
+  switch (data_seen) {
+  case RAW:
+    data_size = strlen (data_param);
+    if (a->write (a, data_param, data_size, 0) == -1)
+      return -1;
+    break;
+
+  case BASE64:
+    if (read_base64 (data_param, &data_size) == -1)
+      return -1;
+    break;
+
+  case DATA:
+    if (read_data_format (data_param, a, &data_size) == -1)
+      return -1;
+    break;
+
+  case NOT_SEEN:
+  default:
+    abort ();
   }
 
   nbdkit_debug ("implicit data size: %" PRIi64, data_size);
@@ -167,13 +197,8 @@ data_config_complete (void)
   if (size == -1)
     size = data_size;
   nbdkit_debug ("final size: %" PRIi64, size);
-
   return 0;
 }
-
-#define data_config_help \
-  "data|raw|base64=...     Specify disk data on the command line\n" \
-  "size=<SIZE>             Size of the backing disk"
 
 /* Provide a way to detect if the base64 feature is supported. */
 static void
@@ -291,12 +316,12 @@ data_extents (void *handle, uint32_t count, uint64_t offset,
 static struct nbdkit_plugin plugin = {
   .name              = "data",
   .version           = PACKAGE_VERSION,
-  .load              = data_load,
   .unload            = data_unload,
   .config            = data_config,
   .config_complete   = data_config_complete,
   .config_help       = data_config_help,
   .dump_plugin       = data_dump_plugin,
+  .get_ready         = data_get_ready,
   .open              = data_open,
   .get_size          = data_get_size,
   .can_multi_conn    = data_can_multi_conn,

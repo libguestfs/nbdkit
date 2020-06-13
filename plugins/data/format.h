@@ -39,6 +39,6 @@
  * under "DATA FORMAT".
  */
 extern int read_data_format (const char *value,
-                             struct allocator *a, int64_t *size);
+                             struct allocator *a, uint64_t *size);
 
 #endif /* NBDKIT_DATA_FORMAT_H */
