@@ -55,19 +55,13 @@ int memory_debug_dir;
 
 /* Allocator. */
 static struct allocator *a;
-
-static void
-memory_load (void)
-{
-  a = create_allocator ("sparse", memory_debug_dir);
-  if (a == NULL)
-    exit (EXIT_FAILURE);
-}
+static const char *allocator_type = "sparse";
 
 static void
 memory_unload (void)
 {
-  a->free (a);
+  if (a)
+    a->free (a);
 }
 
 static int
@@ -77,6 +71,9 @@ memory_config (const char *key, const char *value)
     size = nbdkit_parse_size (value);
     if (size == -1)
       return -1;
+  }
+  else if (strcmp (key, "allocator") == 0) {
+    allocator_type = value;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -97,7 +94,17 @@ memory_config_complete (void)
 }
 
 #define memory_config_help \
-  "size=<SIZE>  (required) Size of the backing disk"
+  "size=<SIZE>  (required) Size of the backing disk\n" \
+  "allocator=sparse|...    Backend allocation strategy"
+
+static int
+memory_get_ready (void)
+{
+  a = create_allocator (allocator_type, memory_debug_dir);
+  if (a == NULL)
+    return -1;
+  return 0;
+}
 
 /* Create the per-connection handle. */
 static void *
@@ -206,12 +213,12 @@ memory_extents (void *handle, uint32_t count, uint64_t offset,
 static struct nbdkit_plugin plugin = {
   .name              = "memory",
   .version           = PACKAGE_VERSION,
-  .load              = memory_load,
   .unload            = memory_unload,
   .config            = memory_config,
   .config_complete   = memory_config_complete,
   .config_help       = memory_config_help,
   .magic_config_key  = "size",
+  .get_ready         = memory_get_ready,
   .open              = memory_open,
   .get_size          = memory_get_size,
   .can_fua           = memory_can_fua,

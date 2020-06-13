@@ -4,7 +4,7 @@ nbdkit-memory-plugin - nbdkit virtual memory (RAM disk) plugin
 
 =head1 SYNOPSIS
 
- nbdkit memory [size=]SIZE
+ nbdkit memory [size=]SIZE [allocator=sparse|...]
 
 =head1 DESCRIPTION
 
@@ -16,16 +16,18 @@ about the final content of the disk image.
 All nbdkit clients will see the same disk content, initially all
 zeroes.
 
-The disk image is stored in memory using a sparse array.  The
-allocated parts of the disk image cannot be larger than physical RAM
-plus swap, less whatever is being used by the rest of the system.  If
-you want to allocate more space than this use L<nbdkit-file-plugin(1)>
-backed by a temporary file instead.
+By default the disk image is stored in memory using a sparse array.
+The allocated parts of the disk image cannot be larger than physical
+RAM plus swap, less whatever is being used by the rest of the system.
+Other allocators are available, see L</ALLOCATORS> below.  All
+allocators store the image in memory.  If you want to allocate more
+space than this use L<nbdkit-file-plugin(1)> backed by a temporary
+file instead.
 
-However the virtual size can be as large as you like, up to the
-maximum supported by nbdkit (S<2⁶³-1 bytes>).  This limit is tested
-when nbdkit is compiled, and it should work on all platforms and
-architectures supported by nbdkit.
+Using the sparse allocator the virtual size can be as large as you
+like, up to the maximum supported by nbdkit (S<2⁶³-1 bytes>).  This
+limit is tested when nbdkit is compiled, and it should work on all
+platforms and architectures supported by nbdkit.
 
 =head1 EXAMPLES
 
@@ -51,6 +53,13 @@ This parameter is required.
 
 C<size=> is a magic config key and may be omitted in most cases.
 See L<nbdkit(1)/Magic parameters>.
+
+=item B<allocator=sparse>
+
+(nbdkit E<ge> 1.22)
+
+Select the backend allocation strategy.  See L</ALLOCATORS> below.
+The default is sparse.
 
 =back
 
@@ -79,6 +88,32 @@ the memory plugin, use L<qemu-img(1)>:
  # preload Fedora disk image:
  $ virt-builder fedora-28 --size=10G
  $ qemu-img convert -p -n fedora-28.img nbd:localhost:10809
+
+=head1 ALLOCATORS
+
+Since nbdkit E<ge> 1.22 several allocation strategies are available
+using the C<allocator> parameter.
+
+=over 4
+
+=item B<allocator=sparse>
+
+The disk image is stored in memory using a sparse array.  The sparse
+array uses a simple two level page table with a fixed page size.  The
+allocated parts of the disk image cannot be larger than physical RAM
+plus swap, less whatever is being used by the rest of the system.  The
+aim of the sparse array implementation is to support extremely large
+images for testing, although it won't necessarily be efficient for
+that use case.  However it should also be reasonably efficient for
+normal disk sizes.
+
+The virtual size of the disk can be as large as you like, up to the
+maximum supported by nbdkit (S<2⁶³-1 bytes>).
+
+This is the default, and was the only allocator available before
+S<nbdkit 1.22>.
+
+=back
 
 =head1 FILES
 
