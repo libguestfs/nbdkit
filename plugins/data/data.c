@@ -89,7 +89,7 @@ data_unload (void)
 
 /* Parse the base64 parameter. */
 static int
-read_base64 (const char *value)
+read_base64 (const char *value, int64_t *size_ret)
 {
 #if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
   gnutls_datum_t in, out;
@@ -106,6 +106,7 @@ read_base64 (const char *value)
   if (sparse_array_write (sa, out.data, out.size, 0) == -1)
     return -1;
   free (out.data);
+  *size_ret = out.size;
   return 0;
 #else
   nbdkit_error ("base64 is not supported in this build of the plugin");
@@ -139,7 +140,7 @@ data_config (const char *key, const char *value)
         return -1;
     }
     else if (strcmp (key, "base64") == 0) {
-      if (read_base64 (value) == -1)
+      if (read_base64 (value, &data_size) == -1)
         return -1;
     }
     else if (strcmp (key, "data") == 0) {
@@ -180,7 +181,7 @@ data_config_complete (void)
 
 #define data_config_help \
   "data|raw|base64=...     Specify disk data on the command line\n" \
-  "size=<SIZE>  (required) Size of the backing disk"
+  "size=<SIZE>             Size of the backing disk"
 
 /* Provide a way to detect if the base64 feature is supported. */
 static void
