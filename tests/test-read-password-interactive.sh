@@ -49,7 +49,7 @@ rm -f $f $out
 cleanup_fn rm -f $f $out
 
 # Reading a password from stdin (non-interactive) should fail.
-if $plugin -fv file=$f password=- </dev/null >&$out ; then
+if $plugin -U - -fv file=$f password=- </dev/null >&$out ; then
     echo "$0: expected password=- to fail"
     exit 1
 fi
@@ -60,7 +60,7 @@ export plugin f
 
 # Password read interactively from stdin tty.
 expect -f - <<'EOF'
-  spawn $env(plugin) -fv password=- file=$env(f)
+  spawn $env(plugin) -U - -fv password=- file=$env(f)
   expect "ssword:"
   send "abc\r"
   wait
@@ -70,7 +70,7 @@ grep '^abc$' $f
 # Empty password read interactively from stdin tty.
 rm -f $f
 expect -f - <<'EOF'
-  spawn $env(plugin) -fv password=- file=$env(f)
+  spawn $env(plugin) -U - -fv password=- file=$env(f)
   expect "ssword:"
   send "\r"
   wait

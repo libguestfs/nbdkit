@@ -48,38 +48,38 @@ rm -f $f $tf $out
 cleanup_fn rm -f $f $tf $out
 
 # Password on the command line.
-$plugin -fv file=$f password=abc
+$plugin -U - -fv file=$f password=abc
 grep '^abc$' $f
 
 # Password +FILENAME.
 echo def > $tf
-$plugin -fv file=$f password=+$tf
+$plugin -U - -fv file=$f password=+$tf
 grep '^def$' $f
 
 # Password +FILENAME, zero length.
 : > $tf
-$plugin -fv file=$f password=+$tf
+$plugin -U - -fv file=$f password=+$tf
 test -f $f
 ! test -s $f
 
 # Password -FD.
 echo 123 > $tf
 exec 3< $tf
-$plugin -fv file=$f password=-3
+$plugin -U - -fv file=$f password=-3
 exec 3<&-
 grep '^123$' $f
 
 # Password -FD, zero length.
 : > $tf
 exec 3< $tf
-$plugin -fv file=$f password=-3
+$plugin -U - -fv file=$f password=-3
 exec 3<&-
 test -f $f
 ! test -s $f
 
 # Reading a password from stdin/stdout/stderr using -0/-1/-2 should fail.
 for i in 0 1 2; do
-    if $plugin -fv file=$f password=-$i </dev/null >&$out ; then
+    if $plugin -U - -fv file=$f password=-$i </dev/null >&$out ; then
         echo "$0: expected password=-$i to fail"
         exit 1
     fi
