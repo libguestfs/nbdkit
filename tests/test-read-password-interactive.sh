@@ -55,7 +55,7 @@ rm -f $f $out
 cleanup_fn rm -f $f $out
 
 # Reading a password from stdin (non-interactive) should fail.
-if nbdkit -fv $plugin file=$f password=- </dev/null >&$out ; then
+if nbdkit -U - -fv $plugin file=$f password=- </dev/null >&$out ; then
     echo "$0: expected password=- to fail"
     exit 1
 fi
@@ -66,7 +66,7 @@ export plugin f
 
 # Password read interactively from stdin tty.
 expect -f - <<'EOF'
-  spawn nbdkit -fv $env(plugin) password=- file=$env(f)
+  spawn nbdkit -U - -fv $env(plugin) password=- file=$env(f)
   expect "ssword:"
   send "abc\r"
   wait
@@ -76,7 +76,7 @@ grep '^abc$' $f
 # Empty password read interactively from stdin tty.
 rm -f $f
 expect -f - <<'EOF'
-  spawn nbdkit -fv $env(plugin) password=- file=$env(f)
+  spawn nbdkit -U - -fv $env(plugin) password=- file=$env(f)
   expect "ssword:"
   send "\r"
   wait
