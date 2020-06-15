@@ -1192,8 +1192,8 @@ pub struct Plugin {
 macro_rules! plugin {
     ( $cls:path { $($feat:ident),* } ) => {
         #[no_mangle]
-        pub extern fn plugin_init () -> *const Plugin {
-            let mut plugin = Builder::new();
+        pub extern fn plugin_init () -> *const ::nbdkit::Plugin {
+            let mut plugin = ::nbdkit::Builder::new();
             $(plugin.$feat = true;)*
             plugin.into_ptr::<$cls>()
         }
