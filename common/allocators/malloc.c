@@ -259,7 +259,7 @@ create_malloc (bool use_mlock)
 
   ma = calloc (1, sizeof *ma);
   if (ma == NULL) {
-    nbdkit_error ("calloc");
+    nbdkit_error ("calloc: %m");
     return NULL;
   }
   ma->a = functions;

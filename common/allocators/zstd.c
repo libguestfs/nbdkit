@@ -340,7 +340,7 @@ zstd_array_read (struct allocator *a,
 
   tbuf = malloc (PAGE_SIZE);
   if (tbuf == NULL) {
-    nbdkit_error ("malloc");
+    nbdkit_error ("malloc: %m");
     return -1;
   }
 
@@ -371,7 +371,7 @@ zstd_array_write (struct allocator *a,
 
   tbuf = malloc (PAGE_SIZE);
   if (tbuf == NULL) {
-    nbdkit_error ("malloc");
+    nbdkit_error ("malloc: %m");
     return -1;
   }
 
@@ -414,7 +414,7 @@ zstd_array_fill (struct allocator *a, char c,
 
   tbuf = malloc (PAGE_SIZE);
   if (tbuf == NULL) {
-    nbdkit_error ("malloc");
+    nbdkit_error ("malloc: %m");
     return -1;
   }
 
@@ -447,7 +447,7 @@ zstd_array_zero (struct allocator *a, uint32_t count, uint64_t offset)
 
   tbuf = malloc (PAGE_SIZE);
   if (tbuf == NULL) {
-    nbdkit_error ("malloc");
+    nbdkit_error ("malloc: %m");
     return -1;
   }
 
@@ -496,7 +496,7 @@ zstd_array_blit (struct allocator *a1,
 
   tbuf = malloc (PAGE_SIZE);
   if (tbuf == NULL) {
-    nbdkit_error ("malloc");
+    nbdkit_error ("malloc: %m");
     return -1;
   }
 
@@ -537,7 +537,7 @@ zstd_array_extents (struct allocator *a,
 
   buf = malloc (PAGE_SIZE);
   if (buf == NULL) {
-    nbdkit_error ("malloc");
+    nbdkit_error ("malloc: %m");
     return -1;
   }
 
