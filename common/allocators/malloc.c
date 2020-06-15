@@ -140,7 +140,7 @@ m_alloc_set_size_hint (struct allocator *a, uint64_t size_hint)
   return extend (ma, size_hint);
 }
 
-static void
+static int
 m_alloc_read (struct allocator *a, void *buf,
               uint32_t count, uint64_t offset)
 {
@@ -158,6 +158,8 @@ m_alloc_read (struct allocator *a, void *buf,
   }
   else
     memcpy (buf, ma->ba.ptr + offset, count);
+
+  return 0;
 }
 
 static int
@@ -192,7 +194,7 @@ m_alloc_fill (struct allocator *a, char c, uint32_t count, uint64_t offset)
   return 0;
 }
 
-static void
+static int
 m_alloc_zero (struct allocator *a, uint32_t count, uint64_t offset)
 {
   struct m_alloc *ma = (struct m_alloc *) a;
@@ -207,6 +209,8 @@ m_alloc_zero (struct allocator *a, uint32_t count, uint64_t offset)
     else
       memset (ma->ba.ptr + offset, 0, count);
   }
+
+  return 0;
 }
 
 static int
@@ -220,8 +224,7 @@ m_alloc_blit (struct allocator *a1, struct allocator *a2,
 
   /* See comment in m_alloc_write. */
   ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE (&ma2->lock);
-  a1->read (a1, ma2->ba.ptr + offset2, count, offset1);
-  return 0;
+  return a1->read (a1, ma2->ba.ptr + offset2, count, offset1);
 }
 
 static int

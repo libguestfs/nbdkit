@@ -72,11 +72,10 @@ struct allocator {
   int (*set_size_hint) (struct allocator *a, uint64_t size)
   __attribute__((__nonnull__ (1)));
 
-  /* Read bytes from [offset, offset+count-1] and copy into buf.  This
-   * can never return an error.
+  /* Read bytes from [offset, offset+count-1] and copy into buf.
    */
-  void (*read) (struct allocator *a, void *buf,
-                uint32_t count, uint64_t offset)
+  int (*read) (struct allocator *a, void *buf,
+               uint32_t count, uint64_t offset)
   __attribute__((__nonnull__ (1, 2)));
 
   /* Write bytes from buf to [offset, offset+count-1].  Because this
@@ -93,9 +92,9 @@ struct allocator {
   __attribute__((__nonnull__ (1)));
 
   /* Zero range [offset, offset+count-1].  For all allocators zero and
-   * trim are the same operation.  This can never fail.
+   * trim are the same operation.
    */
-  void (*zero) (struct allocator *a, uint32_t count, uint64_t offset)
+  int (*zero) (struct allocator *a, uint32_t count, uint64_t offset)
   __attribute__((__nonnull__ (1)));
 
   /* Blit (copy) between two allocators.  Copy count bytes from

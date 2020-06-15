@@ -161,8 +161,7 @@ memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
               uint32_t flags)
 {
   assert (!flags);
-  a->read (a, buf, count, offset);
-  return 0;
+  return a->read (a, buf, count, offset);
 }
 
 /* Write data. */
@@ -183,8 +182,7 @@ memory_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
    * a->zero generally beats writes, so FAST_ZERO is a no-op. */
   assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
                      NBDKIT_FLAG_FAST_ZERO)) == 0);
-  a->zero (a, count, offset);
-  return 0;
+  return a->zero (a, count, offset);
 }
 
 /* Trim (same as zero). */

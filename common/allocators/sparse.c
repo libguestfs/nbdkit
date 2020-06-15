@@ -291,7 +291,7 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
   goto again;
 }
 
-static void
+static int
 sparse_array_read (struct allocator *a,
                    void *buf, uint32_t count, uint64_t offset)
 {
@@ -314,6 +314,8 @@ sparse_array_read (struct allocator *a,
     count -= n;
     offset += n;
   }
+
+  return 0;
 }
 
 static int
@@ -342,8 +344,8 @@ sparse_array_write (struct allocator *a,
   return 0;
 }
 
-static void sparse_array_zero (struct allocator *a,
-                               uint32_t count, uint64_t offset);
+static int sparse_array_zero (struct allocator *a,
+                              uint32_t count, uint64_t offset);
 
 static int
 sparse_array_fill (struct allocator *a, char c,
@@ -353,10 +355,8 @@ sparse_array_fill (struct allocator *a, char c,
   uint32_t n;
   void *p;
 
-  if (c == 0) {
-    sparse_array_zero (a, count, offset);
-    return 0;
-  }
+  if (c == 0)
+    return sparse_array_zero (a, count, offset);
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
 
@@ -376,7 +376,7 @@ sparse_array_fill (struct allocator *a, char c,
   return 0;
 }
 
-static void
+static int
 sparse_array_zero (struct allocator *a, uint32_t count, uint64_t offset)
 {
   struct sparse_array *sa = (struct sparse_array *) a;
@@ -409,6 +409,8 @@ sparse_array_zero (struct allocator *a, uint32_t count, uint64_t offset)
     count -= n;
     offset += n;
   }
+
+  return 0;
 }
 
 static int
@@ -435,7 +437,8 @@ sparse_array_blit (struct allocator *a1,
     /* Read the source allocator (a1) directly to p which points into
      * the right place in sa2.
      */
-    a1->read (a1, p, n, offset1);
+    if (a1->read (a1, p, n, offset1) == -1)
+      return -1;
 
     count -= n;
     offset1 += n;
