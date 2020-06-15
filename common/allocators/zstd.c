@@ -58,6 +58,28 @@
 
 /* This is derived from the sparse array implementation - see
  * common/allocators/sparse.c for details of how it works.
+ *
+ * TO DO:
+ *
+ * (1) We can avoid decompressing a page if we know we are going to
+ * write over / trim / zero the whole page.
+ *
+ * (2) Locking is correct but very naive.  It should be possible to
+ * take much more fine-grained locks.
+ *
+ * (3) Do we need to store the compressed page size?  The simple
+ * answer is yes we need it: I tried to call ZSTD_decompressDCtx with
+ * the final parameter being a large constant instead of the
+ * compressed size, but it does not work.  However it surely ought to
+ * be possible for zstd not to require the compressed size to
+ * decompress into a fixed size page.  That would save us 8 bytes per
+ * page.
+ *
+ * (4) Better stats: Can we iterate over the page table in order to
+ * find the ratio of uncompressed : compressed?
+ *
+ * Once some optimizations are made it would be worth profiling to
+ * find the hot spots.
  */
 #define PAGE_SIZE 32768
 #define L2_SIZE   4096
