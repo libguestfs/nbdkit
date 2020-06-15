@@ -96,9 +96,13 @@
 #define PAGE_SIZE 32768
 #define L2_SIZE   4096
 
+struct l2_entry {
+  void *page;                   /* Pointer to page (array of PAGE_SIZE bytes).*/
+};
+
 struct l1_entry {
   uint64_t offset;              /* Virtual offset of this entry. */
-  void **l2_dir;                /* Pointer to L2 directory. */
+  struct l2_entry *l2_dir;      /* Pointer to L2 directory (L2_SIZE entries). */
 };
 
 DEFINE_VECTOR_TYPE(l1_dir, struct l1_entry);
@@ -110,12 +114,12 @@ struct sparse_array {
 
 /* Free L1 and/or L2 directories. */
 static void
-free_l2_dir (void **l2_dir)
+free_l2_dir (struct l2_entry *l2_dir)
 {
   size_t i;
 
   for (i = 0; i < L2_SIZE; ++i)
-    free (l2_dir[i]);
+    free (l2_dir[i].page);
   free (l2_dir);
 }
 
@@ -214,10 +218,10 @@ insert_l1_entry (struct sparse_array *sa, const struct l1_entry *entry)
  */
 static void *
 lookup (struct sparse_array *sa, uint64_t offset, bool create,
-        uint32_t *remaining, void ***l2_page)
+        uint32_t *remaining, struct l2_entry **l2_entry)
 {
   struct l1_entry *entry;
-  void **l2_dir;
+  struct l2_entry *l2_dir;
   uint64_t o;
   void *page;
   struct l1_entry new_entry;
@@ -243,9 +247,9 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
 
     /* Which page in the L2 directory? */
     o = (offset - entry->offset) / PAGE_SIZE;
-    if (l2_page)
-      *l2_page = &l2_dir[o];
-    page = l2_dir[o];
+    if (l2_entry)
+      *l2_entry = &l2_dir[o];
+    page = l2_dir[o].page;
     if (!page && create) {
       /* No page allocated.  Allocate one if creating. */
       page = calloc (PAGE_SIZE, 1);
@@ -253,7 +257,7 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
         nbdkit_error ("calloc: %m");
         return NULL;
       }
-      l2_dir[o] = page;
+      l2_dir[o].page = page;
     }
     if (!page)
       return NULL;
@@ -271,7 +275,7 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
    * repeat the above search to create the page.
    */
   new_entry.offset = offset & ~(PAGE_SIZE*L2_SIZE-1);
-  new_entry.l2_dir = calloc (L2_SIZE, sizeof (void *));
+  new_entry.l2_dir = calloc (L2_SIZE, sizeof (struct l2_entry));
   if (new_entry.l2_dir == NULL) {
     nbdkit_error ("calloc: %m");
     return NULL;
@@ -363,10 +367,10 @@ sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset)
 {
   uint32_t n;
   void *p;
-  void **l2_page;
+  struct l2_entry *l2_entry;
 
   while (count > 0) {
-    p = lookup (sa, offset, false, &n, &l2_page);
+    p = lookup (sa, offset, false, &n, &l2_entry);
     if (n > count)
       n = count;
 
@@ -374,15 +378,15 @@ sparse_array_zero (struct sparse_array *sa, uint32_t count, uint64_t offset)
       if (n < PAGE_SIZE)
         memset (p, 0, n);
       else
-        assert (p == *l2_page);
+        assert (p == l2_entry->page);
 
       /* If the whole page is now zero, free it. */
-      if (n >= PAGE_SIZE || is_zero (*l2_page, PAGE_SIZE)) {
+      if (n >= PAGE_SIZE || is_zero (l2_entry->page, PAGE_SIZE)) {
         if (sa->debug)
           nbdkit_debug ("%s: freeing zero page at offset %" PRIu64,
                         __func__, offset);
-        free (*l2_page);
-        *l2_page = NULL;
+        free (l2_entry->page);
+        l2_entry->page = NULL;
       }
     }
 
