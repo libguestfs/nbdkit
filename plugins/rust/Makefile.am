@@ -38,6 +38,7 @@ EXTRA_DIST = \
 	nbdkit-rust-plugin.pod \
 	README.md \
 	src/lib.rs \
+	test.sh \
 	tests/bare_bones.rs \
 	tests/common/mod.rs \
 	tests/full_featured.rs \
@@ -55,6 +56,8 @@ target/release/libnbdkit.rlib: Cargo.toml src/lib.rs
 
 target/release/examples/libramdisk.so: Cargo.toml examples/ramdisk.rs
 	cargo build --release --example ramdisk
+
+TESTS = test.sh
 
 if HAVE_POD
 
