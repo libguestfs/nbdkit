@@ -250,7 +250,7 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
       /* No page allocated.  Allocate one if creating. */
       page = calloc (PAGE_SIZE, 1);
       if (page == NULL) {
-        nbdkit_error ("calloc");
+        nbdkit_error ("calloc: %m");
         return NULL;
       }
       l2_dir[o] = page;
@@ -273,7 +273,7 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
   new_entry.offset = offset & ~(PAGE_SIZE*L2_SIZE-1);
   new_entry.l2_dir = calloc (L2_SIZE, sizeof (void *));
   if (new_entry.l2_dir == NULL) {
-    nbdkit_error ("calloc");
+    nbdkit_error ("calloc: %m");
     return NULL;
   }
   if (insert_l1_entry (sa, &new_entry) == -1) {
@@ -433,6 +433,9 @@ sparse_array_blit (struct sparse_array *sa1,
                    uint32_t count,
                    uint64_t offset1, uint64_t offset2)
 {
+  /* XXX Does not lock the target.  As it happens we only call this
+   * from non-threaded code currently.
+   */
   uint32_t n;
   void *p;
 
