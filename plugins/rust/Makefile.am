@@ -32,10 +32,15 @@
 include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
-	Cargo.toml.in \
+	Cargo.toml \
 	examples/ramdisk.rs \
+	LICENSE \
 	nbdkit-rust-plugin.pod \
+	README.md \
 	src/lib.rs \
+	tests/bare_bones.rs \
+	tests/common/mod.rs \
+	tests/full_featured.rs \
 	$(NULL)
 
 if HAVE_RUST

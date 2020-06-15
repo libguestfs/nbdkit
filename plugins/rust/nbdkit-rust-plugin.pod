@@ -24,46 +24,21 @@ L<https://github.com/libguestfs/nbdkit/blob/master/plugins/rust/examples/ramdisk
 in the nbdkit source tree.  The first describes the plugin interface
 for Rust plugins and the second provides a simple example.
 
-We may change how Rust plugins are written in future to make them more
-idiomatic.  At the moment each callback corresponds directly to a C
-callback - in fact each is called directly from the server.
+Your Rust code should define a public implementation of the C<Server> trait,
+and register it using the C<plugin!> macro.
 
-Your Rust code should define a public C<plugin_init> function which
-returns a pointer to a C<Plugin> struct.  This struct is exactly
-compatible with the C struct used by C plugins.
-
- extern crate nbdkit;
  use nbdkit::*;
- use nbdkit::ThreadModel::*;
  
- #[no_mangle]
- extern fn myplugin_thread_model () -> ThreadModel {
-    SerializeAllRequests
+ #[derive(Default)]
+ struct MyPlugin {
+     // ...
  }
  
- //... more functions
- 
- pub extern fn plugin_init () -> *const Plugin {
-    // Plugin name.
-    let name = "myplugin\0"
-      as *const str as *const [c_char] as *const c_char;
+ impl Server for MyPlugin {
+     // ...
+ }
 
-    // Create a mutable plugin, setting the 4 required fields.
-    let mut plugin = Plugin::new (
-        name,
-        myplugin_open,
-        myplugin_get_size,
-        myplugin_pread
-    );
-    // Update any other fields as required.
-    plugin.close = Some (myplugin_close);
-    plugin.pwrite = Some (myplugin_pwrite);
-    plugin.thread_model = Some (myplugin_thread_model);
-
-    // Return the pointer.
-    let plugin = Box::new(plugin);
-    return Box::into_raw(plugin);
-}
+ plugin!(MyPlugin {write_at, trim, ...});
 
 =head2 Compiling a Rust nbdkit plugin
 
@@ -80,7 +55,7 @@ L<nbdkit-plugin(3)>):
 
 =head2 Threads
 
-One of the members in C<Plugin> returned by C<plugin_init> is
+One of the methods of C<Server> is
 C<thread_model>, which must return one of the values in the table
 below. For more information on thread models, see
 L<nbdkit-plugin(3)/THREADS>.  If this optional function is not
@@ -101,17 +76,14 @@ C<nbdkit::ThreadModel::Parallel>.
 
 =head2 Missing callbacks
 
-=over 4
-
-=item Missing: C<can_extents> and C<extents>
-
-These are not yet supported.
-
-=back
+All NBDKit callbacks are supported.  However, the C<Server> trait has no
+C<close> method.  Instead, you should implement C<Drop> if you need to clean
+up resources during destruction.
 
 =head1 VERSION
 
-Rust plugins first appeared in nbdkit 1.12.
+Rust plugins first appeared in nbdkit 1.12.  The crate was completely
+rewritten for nbdkit 1.22.
 
 =head1 SEE ALSO
 
@@ -121,8 +93,8 @@ L<cargo(1)>.
 
 =head1 AUTHORS
 
-Richard W.M. Jones
+Alan Somers
 
 =head1 COPYRIGHT
 
-Copyright (C) 2019 Red Hat Inc.
+Copyright (C) 2020 Axcient.

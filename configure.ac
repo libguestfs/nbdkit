@@ -1095,7 +1095,6 @@ AC_CONFIG_FILES([Makefile
                  plugins/python/Makefile
                  plugins/random/Makefile
                  plugins/ruby/Makefile
-                 plugins/rust/Cargo.toml
                  plugins/rust/Makefile
                  plugins/sh/Makefile
                  plugins/ssh/Makefile

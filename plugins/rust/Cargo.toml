@@ -1,0 +1,37 @@
+[package]
+name = "nbdkit"
+version = "0.1.0"
+authors = ["Alan Somers <asomers@gmail.com>"]
+license = "BSD-2-Clause"
+edition = "2018"
+readme = "README.md"
+repository = "https://github.com/libguestfs/nbdkit"
+categories = ["api-bindings", "filesystem"]
+keywords = ["network-block-device", "nbd"]
+homepage = "http://libguestfs.org/"
+exclude = ["nbdkit-rust-plugin.*", "Cargo.toml.in", "Makefile*"]
+description = """
+Rust bindings to the NBDKit framework for creating Network Block Device servers
+"""
+
+[package.metadata.docs.rs]
+features = ["nix", "nightly-docs"]
+
+[features]
+# For building documentation only; no functional change to the library.
+nightly-docs = []
+
+[dependencies]
+bitflags = "1.2.1"
+libc = "0.2.71"
+nix = { version = "0.17.0", optional = true }
+
+[dev-dependencies]
+errno = "0.2.5"
+lazy_static = "1.2.0"
+# Need Mockall's PR #141, which hasn't yet been released
+mockall = { git = "https://github.com/asomers/mockall.git", rev = "7c23b5cab5eca8a40ee3ab3270155f52bea4d658" }
+
+[[example]]
+name = "ramdisk"
+crate-type = ["cdylib"]
