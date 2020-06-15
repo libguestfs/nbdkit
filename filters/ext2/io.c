@@ -209,7 +209,7 @@ io_open (const char *name, int flags,
   data->next_ops = next.next_ops;
   data->nxdata = next.nxdata;
 
-  /* Too bad NBD doesn't tell is if next_ops->trim guarantees read as zero. */
+  /* Too bad NBD doesn't tell us if next_ops->trim guarantees read as zero. */
   /* if (next_ops-> XXX (...)
      io->flags |= CHANNEL_FLAGS_DISCARD_ZEROES; */
 
