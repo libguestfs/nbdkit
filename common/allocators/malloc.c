@@ -219,6 +219,9 @@ m_alloc_blit (struct allocator *a1, struct allocator *a2,
 {
   struct m_alloc *ma2 = (struct m_alloc *) a2;
 
+  assert (a1 != a2);
+  assert (strncmp (a2->type, "malloc", 6) == 0);
+
   if (extend (ma2, offset2+count) == -1)
     return -1;
 

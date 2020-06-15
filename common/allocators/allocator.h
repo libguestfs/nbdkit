@@ -103,9 +103,9 @@ struct allocator {
    * Note you have to call the destination blit function, ie:
    * a2->blit (a1, a2, ...)
    *
-   * You may call this with a1 == a2, but overlapping ranges are
-   * undefined.  It's also permitted for the allocators to have
-   * different types.
+   * It's permitted for the allocators to have different types.
+   * However you cannot use this to copy within a single allocator
+   * (because of locks), ie. a1 must != a2.
    */
   int (*blit) (struct allocator *a1, struct allocator *a2,
                uint32_t count, uint64_t offset1, uint64_t offset2)

@@ -505,6 +505,7 @@ TESTS += \
 	test-data-file.sh \
 	test-data-nest.sh \
 	test-data-nest-malloc.sh \
+	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	$(NULL)
 EXTRA_DIST += \
@@ -514,6 +515,7 @@ EXTRA_DIST += \
 	test-data-file.sh \
 	test-data-nest.sh \
 	test-data-nest-malloc.sh \
+	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	$(NULL)
 

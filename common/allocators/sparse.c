@@ -423,12 +423,13 @@ sparse_array_blit (struct allocator *a1,
                    uint32_t count,
                    uint64_t offset1, uint64_t offset2)
 {
-  /* XXX Does not lock the target.  As it happens we only call this
-   * from non-threaded code currently.
-   */
   struct sparse_array *sa2 = (struct sparse_array *) a2;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa2->lock);
   uint32_t n;
   void *p;
+
+  assert (a1 != a2);
+  assert (strcmp (a2->type, "sparse") == 0);
 
   while (count > 0) {
     p = lookup (sa2, offset2, true, &n, NULL);

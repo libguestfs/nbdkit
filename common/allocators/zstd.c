@@ -508,13 +508,14 @@ zstd_array_blit (struct allocator *a1,
                  uint32_t count,
                  uint64_t offset1, uint64_t offset2)
 {
-  /* XXX Does not lock the target.  As it happens we only call this
-   * from non-threaded code currently.
-   */
   struct zstd_array *za2 = (struct zstd_array *) a2;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&za2->lock);
   CLEANUP_FREE void *tbuf = NULL;
   uint32_t n;
   void *p;
+
+  assert (a1 != a2);
+  assert (strcmp (a2->type, "zstd") == 0);
 
   tbuf = malloc (PAGE_SIZE);
   if (tbuf == NULL) {
