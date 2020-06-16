@@ -67,15 +67,7 @@
  * (2) Locking is correct but very naive.  It should be possible to
  * take much more fine-grained locks.
  *
- * (3) Do we need to store the compressed page size?  The simple
- * answer is yes we need it: I tried to call ZSTD_decompressDCtx with
- * the final parameter being a large constant instead of the
- * compressed size, but it does not work.  However it surely ought to
- * be possible for zstd not to require the compressed size to
- * decompress into a fixed size page.  That would save us 8 bytes per
- * page.
- *
- * (4) Better stats: Can we iterate over the page table in order to
+ * (3) Better stats: Can we iterate over the page table in order to
  * find the ratio of uncompressed : compressed?
  *
  * Once some optimizations are made it would be worth profiling to
@@ -86,7 +78,6 @@
 
 struct l2_entry {
   void *page;                   /* Pointer to compressed data. */
-  size_t zsize;                 /* Size of compressed data in this page. */
 };
 
 struct l1_entry {
@@ -101,13 +92,19 @@ struct zstd_array {
   pthread_mutex_t lock;
   l1_dir l1_dir;                /* L1 directory. */
 
-  /* Compression and decompression context.  If we ever get serious
-   * about making this allocator work well multi-threaded [at the
-   * moment the locking is too course-grained], then the zstd
-   * documentation recommends creating a context per thread.
+  /* Compression context and decompression stream.  We use the
+   * streaming API for decompression because it allows us to
+   * decompress without storing the compressed size, so we need a
+   * streaming object.  But in fact decompression context and stream
+   * are the same thing since zstd 1.3.0.
+   *
+   * If we ever get serious about making this allocator work well
+   * multi-threaded [at the moment the locking is too course-grained],
+   * then the zstd documentation recommends creating a context per
+   * thread.
    */
   ZSTD_CCtx *zcctx;
-  ZSTD_DCtx *zdctx;
+  ZSTD_DStream *zdstrm;
 
   /* Collect stats when we compress a page. */
   uint64_t stats_uncompressed_bytes;
@@ -138,7 +135,7 @@ zstd_array_free (struct allocator *a)
                     za->stats_compressed_bytes);
 
     ZSTD_freeCCtx (za->zcctx);
-    ZSTD_freeDCtx (za->zdctx);
+    ZSTD_freeDStream (za->zdstrm);
     for (i = 0; i < za->l1_dir.size; ++i)
       free_l2_dir (za->l1_dir.ptr[i].l2_dir);
     free (za->l1_dir.ptr);
@@ -229,7 +226,6 @@ lookup_decompress (struct zstd_array *za, uint64_t offset, void *buf,
   struct l2_entry *l2_dir;
   uint64_t o;
   void *page;
-  size_t n;
 
   *remaining = PAGE_SIZE - (offset & (PAGE_SIZE-1));
 
@@ -253,14 +249,20 @@ lookup_decompress (struct zstd_array *za, uint64_t offset, void *buf,
       *l2_entry = &l2_dir[o];
     page = l2_dir[o].page;
 
-    /* Decompress the page into the user buffer.  We assume this
-     * can never fail since the only pages we decompress are ones
-     * we have compressed.
-     */
     if (page) {
-      n = ZSTD_decompressDCtx (za->zdctx, buf, PAGE_SIZE,
-                               page, l2_dir[o].zsize);
-      assert (n == PAGE_SIZE);
+      /* Decompress the page into the user buffer.  We assume this can
+       * never fail since the only pages we decompress are ones we
+       * have compressed.  We use the streaming API because the normal
+       * ZSTD_decompressDCtx function requires the compressed size,
+       * whereas the streaming API does not.
+       */
+      ZSTD_inBuffer inb = { .src = page, .size = SIZE_MAX, .pos = 0 };
+      ZSTD_outBuffer outb = { .dst = buf, .size = PAGE_SIZE, .pos = 0 };
+
+      ZSTD_initDStream (za->zdstrm);
+      while (outb.pos < outb.size)
+        ZSTD_decompressStream (za->zdstrm, &outb, &inb);
+      assert (outb.pos == PAGE_SIZE);
     }
     else
       memset (buf, 0, PAGE_SIZE);
@@ -326,7 +328,6 @@ compress (struct zstd_array *za, uint64_t offset, void *buf)
     page = realloc (page, n);
     assert (page != NULL);
     l2_dir[o].page = page;
-    l2_dir[o].zsize = n;
     za->stats_uncompressed_bytes += PAGE_SIZE;
     za->stats_compressed_bytes += n;
     return 0;
@@ -623,9 +624,9 @@ create_zstd_array (void)
     free (za);
     return NULL;
   }
-  za->zdctx = ZSTD_createDCtx ();
-  if (za->zdctx == NULL) {
-    nbdkit_error ("ZSTD_createDCtx: %m");
+  za->zdstrm = ZSTD_createDStream ();
+  if (za->zdstrm == NULL) {
+    nbdkit_error ("ZSTD_createDStream: %m");
     ZSTD_freeCCtx (za->zcctx);
     free (za);
     return NULL;
