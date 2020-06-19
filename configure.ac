@@ -483,17 +483,17 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
     LIBS="$old_LIBS"
 ])
 
-AC_ARG_WITH([linuxdisk],
-    [AS_HELP_STRING([--without-linuxdisk],
+AC_ARG_ENABLE([linuxdisk],
+    [AS_HELP_STRING([--disable-linuxdisk],
                     [disable linuxdisk plugin @<:@default=check@:>@])],
     [],
-    [with_linuxdisk=check])
+    [enable_linuxdisk=check])
 dnl Check for mke2fs -d (used by linuxdisk plugin).  There are two
 dnl possible outcomes that we care about: (1) We have mke2fs and
 dnl it supports the -d option.  (2) We either don't have mke2fs
 dnl or it's too old to support the -d option (eg. on RHEL 7).
 mke2fs_with_d=no
-AS_IF([test "$with_linuxdisk" != "no"], [
+AS_IF([test "$enable_linuxdisk" != "no"], [
     AC_MSG_CHECKING([for mke2fs supporting the -d option])
     AS_IF([mke2fs -V >/dev/null 2>&1], [
         AS_IF([LANG=C mke2fs -d 2>&1 | grep -sq "option requires an argument"], [
