@@ -53,6 +53,7 @@ nbdkit_info_plugin_la_LDFLAGS = \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 nbdkit_info_plugin_la_LIBADD = \
+	$(GNUTLS_LIBS) \
 	$(NULL)
 
 if HAVE_POD
