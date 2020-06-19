@@ -1196,6 +1196,8 @@ feature "iso .................................... " \
         test "x$HAVE_ISO_TRUE" = "x"
 feature "libvirt ................................ " \
         test "x$HAVE_LIBVIRT_TRUE" = "x"
+feature "linuxdisk .............................. " \
+        test "x$HAVE_MKE2FS_WITH_D_TRUE" = "x"
 feature "nbd .................................... " \
         test "x$HAVE_LIBNBD_TRUE" = "x"
 feature "ssh .................................... " \
