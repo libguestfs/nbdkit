@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires test -f disk
 requires sshd -t -f ssh/sshd_config
 requires qemu-img --version
 requires cut --version
