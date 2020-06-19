@@ -44,7 +44,10 @@ nbdkit_info_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
 	$(NULL)
-nbdkit_info_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+nbdkit_info_plugin_la_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(GNUTLS_CFLAGS) \
+	$(NULL)
 nbdkit_info_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(SHARED_LDFLAGS) \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
