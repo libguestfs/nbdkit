@@ -53,6 +53,7 @@ L<nbdkit-cache-filter(1)>,
 L<nbdkit-curl-plugin(1)>,
 L<nbdkit-retry-filter(1)>,
 L<nbdkit-ssh-plugin(1)>,
+L<nbdkit-torrent-plugin(1)>,
 L<nbdkit-vddk-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<qemu-img(1)>.

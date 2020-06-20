@@ -120,6 +120,10 @@ of the test suite:
 
  - libnbd >= 0.9.8
 
+For the bittorrent plugin:
+
+ - libtorrent-rasterbar (https://www.libtorrent.org)
+
 For the Perl and example4 plugins:
 
  - perl interpreter

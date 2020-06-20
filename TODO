@@ -137,6 +137,14 @@ VDDK:
 * Map export name to file parameter, allowing clients to access
   multiple disks from a single VM.
 
+nbdkit-torrent-plugin:
+
+* There are lots of settings we could map into parameters:
+  https://www.libtorrent.org/reference-Settings.html#settings_pack
+
+* The C++ could be a lot more natural.  At the moment it's a kind of
+  “C with C++ extensions”.
+
 Suggestions for language plugins
 --------------------------------
 

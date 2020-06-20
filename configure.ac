@@ -89,6 +89,7 @@ non_lang_plugins="\
         streaming \
         tar \
         tmpdisk \
+        torrent \
         vddk \
         zero \
         "
@@ -1024,6 +1025,23 @@ AS_IF([test "$with_ext2" != "no"], [
 AM_CONDITIONAL([HAVE_EXT2],
                [test "x$EXT2FS_LIBS" != "x" && test "x$COM_ERR_LIBS" != "x"])
 
+dnl libtorrent-rasterbar for the bittorrent plugin.
+AC_ARG_ENABLE([torrent],
+    [AS_HELP_STRING([--disable-torrent],
+                    [disable bittorrent plugin])],
+    [],
+    [enable_torrent=check]
+)
+AS_IF([test "$enable_torrent" != "xno"], [
+    PKG_CHECK_MODULES([LIBTORRENT], [libtorrent-rasterbar], [
+        AC_SUBST([LIBTORRENT_CFLAGS])
+        AC_SUBST([LIBTORRENT_LIBS])
+    ],
+    [AC_MSG_WARN([libtorrent-rasterbar not found, bittorrent plugin will be disabled])])
+])
+AM_CONDITIONAL([HAVE_TORRENT],
+               [test "x$have_cxx" = "xyes" && test "x$LIBTORRENT_LIBS" != "x"])
+
 dnl Check if the user wants to disable VDDK support.
 dnl See plugins/vddk/README.VDDK.
 AC_ARG_ENABLE([vddk],
@@ -1110,6 +1128,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/tar/Makefile
                  plugins/tcl/Makefile
                  plugins/tmpdisk/Makefile
+                 plugins/torrent/Makefile
                  plugins/vddk/Makefile
                  plugins/zero/Makefile
                  filters/Makefile
@@ -1204,6 +1223,8 @@ feature "ssh .................................... " \
         test "x$HAVE_SSH_TRUE" = "x"
 feature "tar .................................... " \
         test "x$HAVE_PYTHON_TRUE" = "x"
+feature "torrent ................................ " \
+        test "x$HAVE_TORRENT_TRUE" = "x"
 feature "vddk ................................... " \
         test "x$HAVE_VDDK_TRUE" = "x"
 

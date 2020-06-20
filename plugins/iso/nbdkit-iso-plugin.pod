@@ -116,6 +116,7 @@ L<nbdkit-plugin(3)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-floppy-plugin(1)>,
 L<nbdkit-linuxdisk-plugin(1)>,
+L<nbdkit-torrent-plugin(1)>,
 L<genisoimage(1)>,
 L<mkisofs(1)>.
 

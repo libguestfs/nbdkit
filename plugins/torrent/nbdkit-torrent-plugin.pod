@@ -1,0 +1,169 @@
+=head1 NAME
+
+nbdkit-torrent-plugin - serve a BitTorrent file or magnet link over NBD
+
+=head1 SYNOPSIS
+
+ nbdkit torrent FILE.torrent|'magnet:?xt=urn:...'
+                [file=DISK.iso] [cache=DIR]
+                [download-rate-limit=BITS_PER_SEC]
+                [upload-rate-limit=BITS_PER_SEC]
+
+=head1 DESCRIPTION
+
+C<nbdkit-torrent-plugin> is an L<nbdkit(1)> plugin which lets you
+serve a single file from within a torrent read-only over NBD.  The
+torrent to download can be a local F<FILE.torrent> file, or a L<magnet
+link|https://en.wikipedia.org/wiki/Magnet_URI_scheme>.
+
+A single torrent contains a collection of files, and by default this
+plugin serves the largest file within the torrent.  For operating
+system installers this is usually the large ISO file and ignores other
+small files like READMEs.  You can also select a particular file by
+name to serve.
+
+If you want to turn a file hosted on a web server into an NBD export
+use L<nbdkit-curl-plugin(1)> instead.  If you have a local ISO you can
+simply serve it using L<nbdkit-file-plugin(1)>.  If you want to turn a
+local directory into an ISO use L<nbdkit-iso-plugin(1)>.
+
+=head1 NOTES
+
+This plugin implements a full-featured BitTorrent client.  BitTorrent
+clients form a peer-to-peer (p2p) network and upload the file to other
+clients as well as downloading.
+
+By default the plugin will cache the downloaded torrent into
+C<$TMPDIR>, potentially consuming a lot of disk space.  See the
+C<cache=DIR> parameter for how to control this.
+
+By default the plugin will consume all available network bandwidth in
+both download and upload directions.  To limit it, set
+C<download-rate-limit> and C<upload-rate-limit> appropriately.
+
+=head1 EXAMPLES
+
+=head2 Boot the Fedora installer
+
+Choose the right URL from L<https://torrent.fedoraproject.org/>:
+
+ url=https://torrent.fedoraproject.org/torrents/Fedora-Server-dvd-x86_64-32.torrent
+ wget $url
+ nbdkit -U - torrent Fedora-Server-*.torrent \
+        --run 'qemu-system-x86_64 -m 2048 -cdrom $nbd -boot d'
+
+=head2 Boot the Debian installer
+
+Choose the right URL from L<https://www.debian.org/CD/torrent-cd/>:
+
+ url=https://cdimage.debian.org/debian-cd/current/amd64/bt-dvd/debian-10.4.0-amd64-DVD-1.iso.torrent
+ wget $url
+ nbdkit -U - torrent debian-*.torrent \
+        --run 'qemu-system-x86_64 -m 2048 -cdrom $nbd -boot d'
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<cache=>DIR
+
+Set a directory which will be used to store the partially downloaded
+torrent between runs.
+
+This parameter is optional.  If I<not> given then the plugin will
+create a randomly named temporary directory under C<$TMPDIR>, and will
+attempt to ensure it is cleaned up on exit (thus no state is saved
+between runs and the whole torrent must be downloaded each time).
+
+=item B<download-rate-limit=>BITS_PER_SEC
+
+Set the download rate limit in bits per second.  Usual abbreviations
+can be used such as C<download-rate-limit=1M> for 1 megabit per
+second.  C<0> means unlimited, which is the default.
+
+=item B<file=>DISK.iso
+
+Select the file from within the torrent to serve.
+
+This parameter is optional.  If not specified then the plugin searches
+the torrent for the largest file and serves that.  This is usually the
+right thing to do for operating system installers and similar because
+it serves the large F<.iso> file and ignores other files like READMEs.
+
+The parameter is actually a path relative to the root directory of the
+torrent, so if the torrent contains subdirectories you may need to use
+a path like C<file=SUBDIR/DISK>.  To list all the files within the
+torrent try running:
+
+ $ nbdkit -fv -U - torrent file.torrent
+
+and examining the debug output.  As an alternative you can use
+standard BitTorrent tools, eg:
+
+ $ transmission-show file.torrent
+
+=item [B<torrent=>]FILEB<.torrent>
+
+Specify a local torrent file.
+
+=item [B<torrent=>]magnet:?xt=urn:...
+
+Specify a L<magnet link|https://en.wikipedia.org/wiki/Magnet_URI_scheme>.
+
+C<torrent=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
+
+=item B<upload-rate-limit=>BITS_PER_SEC
+
+Set the upload rate limit in bits per second.  Usual abbreviations can
+be used such as C<upload-rate-limit=1M> for 1 megabit per second.
+C<0> means unlimited, which is the default.
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item C<TMPDIR>
+
+This directory is used to cache the downloaded torrent file (or
+F</var/tmp> if not set).  See also the C<cache=DIR> parameter above.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-torrent-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-torrent-plugin> first appeared in nbdkit 1.22.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-curl-plugin(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-iso-plugin(1)>,
+L<nbdkit-readahead-filter(1)>,
+L<transmission-show(1)>,
+L<https://en.wikipedia.org/wiki/BitTorrent>,
+L<http://libtorrent.org/>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.
