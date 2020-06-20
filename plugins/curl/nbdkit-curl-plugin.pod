@@ -188,6 +188,13 @@ See L<nbdkit(1)/Magic parameters>.
 Set the username to use when connecting to the remote server.  This
 may also be set in the URL (eg. C<http://foo@example.com/disk.img>)
 
+=item B<user-agent=>USER-AGENT
+
+(nbdkit E<ge> 1.22)
+
+Send user-agent header when using HTTP or HTTPS.  The default is no
+user-agent header.
+
 =back
 
 =head1 DEBUG FLAG
@@ -230,6 +237,7 @@ L<CURLOPT_TCP_KEEPALIVE(3)>,
 L<CURLOPT_TCP_NODELAY(3)>,
 L<CURLOPT_URL(3)>,
 L<CURLOPT_UNIX_SOCKET_PATH(3)>,
+L<CURLOPT_USERAGENT(3)>,
 L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
 L<nbdkit-extentlist-filter(1)>,

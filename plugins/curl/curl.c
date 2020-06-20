@@ -76,6 +76,7 @@ static bool tcp_nodelay = true;
 static uint32_t timeout = 0;
 static const char *unix_socket_path = NULL;
 static const char *user = NULL;
+static const char *user_agent = NULL;
 
 /* Use '-D curl.verbose=1' to set. */
 int curl_debug_verbose = 0;
@@ -272,6 +273,9 @@ curl_config (const char *key, const char *value)
   else if (strcmp (key, "user") == 0)
     user = value;
 
+  else if (strcmp (key, "user-agent") == 0)
+    user_agent = value;
+
   else {
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
@@ -308,7 +312,8 @@ curl_config_complete (void)
   "tcp-nodelay=false          Disable Nagle’s algorithm.\n" \
   "unix-socket-path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
   "url=<URL>       (required) The disk image URL to serve.\n" \
-  "user=<USER>                The user to log in as."
+  "user=<USER>                The user to log in as.\n" \
+  "user-agent=<USER-AGENT>    Send user-agent header for HTTP/HTTPS."
 
 /* The per-connection handle. */
 struct curl_handle {
@@ -431,6 +436,8 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_TIMEOUT, (long) timeout);
   if (user)
     curl_easy_setopt (h->c, CURLOPT_USERNAME, user);
+  if (user_agent)
+    curl_easy_setopt (h->c, CURLOPT_USERAGENT, user_agent);
 
   /* Get the file size and also whether the remote HTTP server
    * supports byte ranges.
