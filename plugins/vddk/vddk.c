@@ -431,12 +431,31 @@ vddk_config_complete (void)
   return 0;
 }
 
+#define vddk_config_help \
+  "[file=]<FILENAME>   (required) The filename (eg. VMDK file) to serve.\n" \
+  "Many optional parameters are supported, see nbdkit-vddk-plugin(3)."
+
 static int
 vddk_get_ready (void)
 {
-  VixError err;
-
   load_library (true);
+  return 0;
+}
+
+/* Defer VDDK initialization until after fork because it is known to
+ * create background threads from VixDiskLib_InitEx.  Unfortunately
+ * error reporting from this callback is difficult, but we have
+ * already checked in .get_ready that the library is dlopenable.
+ *
+ * For various hangs and failures which were caused by background
+ * threads and fork see:
+ * https://bugzilla.redhat.com/show_bug.cgi?id=1846309#c9
+ * https://www.redhat.com/archives/libguestfs/2019-April/msg00090.html
+ */
+static int
+vddk_after_fork (void)
+{
+  VixError err;
 
   /* Initialize VDDK library. */
   DEBUG_CALL ("VixDiskLib_InitEx",
@@ -456,10 +475,6 @@ vddk_get_ready (void)
 
   return 0;
 }
-
-#define vddk_config_help \
-  "[file=]<FILENAME>   (required) The filename (eg. VMDK file) to serve.\n" \
-  "Many optional parameters are supported, see nbdkit-vddk-plugin(3)."
 
 static void
 vddk_dump_plugin (void)
@@ -959,6 +974,7 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key  = "file",
   .dump_plugin       = vddk_dump_plugin,
   .get_ready         = vddk_get_ready,
+  .after_fork        = vddk_after_fork,
   .open              = vddk_open,
   .close             = vddk_close,
   .get_size          = vddk_get_size,
