@@ -142,7 +142,10 @@ the plugin:
          │ get_ready        │
          └─────────┬────────┘
                    │           nbdkit forks into the background
-                   │           and starts serving clients
+         ┌─────────┴────────┐
+         │ after_fork       │
+         └─────────┬────────┘
+                   │           nbdkit starts serving clients
                    │
         ┌──────────┴─────────────┬─ ─ ─ ─ ─ ─ ─ ─ ─
  ┌──────┴─────┐ client #1        │
@@ -201,8 +204,32 @@ script must be prepared for a missing script).
 
 In normal operation, C<.get_ready> is called before the server starts
 serving.  It is called before the server forks or changes directory.
-It is the last chance to do any global preparation that is needed to
-serve connections.
+It is normally the last chance to do any global preparation that is
+needed to serve connections.
+
+Plugins should not create background threads here.  Use C<.after_fork>
+instead.
+
+=item C<.after_fork>
+
+In normal operation, C<.after_fork> is called after the server has
+forked into the background and changed UID and directory.  If a plugin
+needs to create background threads (or uses an external library that
+creates threads) it should do so here, because background threads are
+invalidated by fork.
+
+Because the server may have forked into the background, error messages
+and failures from C<.after_fork> cannot be seen by the user unless
+they look through syslog.  An error in C<.after_fork> can appear to
+the user as if nbdkit “just died”.  So in almost all cases it is
+better to use C<.get_ready> instead of this callback, or to do as much
+preparation work as possible in C<.get_ready> and only start
+background threads here.
+
+The server doesn't always fork (eg. if the I<-f> flag is used), but
+even so this callback will be called.  If you want to find out if the
+server forked between C<.get_ready> and C<.after_fork> use
+L<getpid(2)>.
 
 =item C<.preconnect>
 
@@ -579,11 +606,26 @@ with an error message and return C<-1>.
  int get_ready (void);
 
 This optional callback is called before the server starts serving.  It
-is called before the server forks or changes directory.  It is the
-last chance to do any global preparation that is needed to serve
-connections.
+is called before the server forks or changes directory.  It is
+ordinarily the last chance to do any global preparation that is needed
+to serve connections.
 
 If there is an error, C<.get_ready> should call C<nbdkit_error> with
+an error message and return C<-1>.
+
+=head2 C<.after_fork>
+
+ int after_fork (void);
+
+This optional callback is called before the server starts serving.  It
+is called after the server forks and changes directory.  If a plugin
+needs to create background threads (or uses an external library that
+creates threads) it should do so here, because background threads are
+killed by fork.  However you should try to do as little as possible
+here because error reporting is difficult.  See L</Callback lifecycle>
+above.
+
+If there is an error, C<.after_fork> should call C<nbdkit_error> with
 an error message and return C<-1>.
 
 =head2 C<.preconnect>

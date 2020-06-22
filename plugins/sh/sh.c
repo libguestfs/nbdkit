@@ -297,6 +297,7 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key  = "script",
   .thread_model      = sh_thread_model,
   .get_ready         = sh_get_ready,
+  .after_fork        = sh_after_fork,
 
   .preconnect        = sh_preconnect,
   .open              = sh_open,

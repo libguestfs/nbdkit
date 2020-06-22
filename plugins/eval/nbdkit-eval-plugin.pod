@@ -68,6 +68,8 @@ features):
 
 =over 4
 
+=item B<after_fork=>SCRIPT
+
 =item B<cache=>SCRIPT
 
 =item B<can_cache=>SCRIPT

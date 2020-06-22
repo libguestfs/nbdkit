@@ -54,6 +54,7 @@
 static char *missing;
 
 static const char *known_methods[] = {
+  "after_fork",
   "cache",
   "can_cache",
   "can_extents",
@@ -389,6 +390,7 @@ static struct nbdkit_plugin plugin = {
   .config_help       = eval_config_help,
   .thread_model      = sh_thread_model,
   .get_ready         = sh_get_ready,
+  .after_fork        = sh_after_fork,
 
   .preconnect        = sh_preconnect,
   .open              = sh_open,

@@ -80,6 +80,13 @@ test_layers_plugin_get_ready (void)
 }
 
 static int
+test_layers_plugin_after_fork (void)
+{
+  DEBUG_FUNCTION;
+  return 0;
+}
+
+static int
 test_layers_plugin_preconnect (int readonly)
 {
   DEBUG_FUNCTION;
@@ -239,6 +246,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = test_layers_plugin_config_complete,
   .config_help       = test_layers_plugin_config_help,
   .get_ready         = test_layers_plugin_get_ready,
+  .after_fork        = test_layers_plugin_after_fork,
   .preconnect        = test_layers_plugin_preconnect,
   .open              = test_layers_plugin_open,
   .close             = test_layers_plugin_close,

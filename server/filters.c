@@ -194,6 +194,28 @@ filter_get_ready (struct backend *b)
 }
 
 static int
+next_after_fork (struct backend *b)
+{
+  b->after_fork (b);
+  return 0;
+}
+
+static void
+filter_after_fork (struct backend *b)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  debug ("%s: after_fork", b->name);
+
+  if (f->filter.after_fork) {
+    if (f->filter.after_fork (next_after_fork, b->next) == -1)
+      exit (EXIT_FAILURE);
+  }
+  else
+    b->next->after_fork (b->next);
+}
+
+static int
 filter_preconnect (struct backend *b, int readonly)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
@@ -516,6 +538,7 @@ static struct backend filter_functions = {
   .config_complete = filter_config_complete,
   .magic_config_key = plugin_magic_config_key,
   .get_ready = filter_get_ready,
+  .after_fork = filter_after_fork,
   .preconnect = filter_preconnect,
   .open = filter_open,
   .prepare = filter_prepare,

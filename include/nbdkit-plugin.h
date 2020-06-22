@@ -138,6 +138,7 @@ struct nbdkit_plugin {
   int (*preconnect) (int readonly);
 
   int (*get_ready) (void);
+  int (*after_fork) (void);
 };
 
 extern void nbdkit_set_error (int err);

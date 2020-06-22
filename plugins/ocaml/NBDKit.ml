@@ -70,6 +70,7 @@ type 'a plugin = {
   thread_model : (unit -> thread_model) option;
 
   get_ready : (unit -> unit) option;
+  after_fork : (unit -> unit) option;
 
   preconnect : (bool -> unit) option;
   open_connection : (bool -> 'a) option;
@@ -114,6 +115,7 @@ let default_callbacks = {
   thread_model = None;
 
   get_ready = None;
+  after_fork = None;
 
   preconnect = None;
   open_connection = None;
@@ -157,6 +159,7 @@ external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" "noal
 external set_thread_model : (unit -> thread_model) -> unit = "ocaml_nbdkit_set_thread_model"
 
 external set_get_ready : (unit -> unit) -> unit = "ocaml_nbdkit_set_get_ready"
+external set_after_fork : (unit -> unit) -> unit = "ocaml_nbdkit_set_after_fork"
 
 external set_preconnect : (bool -> unit) -> unit = "ocaml_nbdkit_set_preconnect"
 external set_open : (bool -> 'a) -> unit = "ocaml_nbdkit_set_open"
@@ -219,6 +222,7 @@ let register_plugin plugin =
   may set_thread_model plugin.thread_model;
 
   may set_get_ready plugin.get_ready;
+  may set_after_fork plugin.after_fork;
 
   may set_preconnect plugin.preconnect;
   may set_open plugin.open_connection;

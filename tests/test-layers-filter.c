@@ -90,6 +90,14 @@ test_layers_filter_get_ready (nbdkit_next_get_ready *next,
 }
 
 static int
+test_layers_filter_after_fork (nbdkit_next_after_fork *next,
+                               void *nxdata)
+{
+  DEBUG_FUNCTION;
+  return next (nxdata);
+}
+
+static int
 test_layers_filter_preconnect (nbdkit_next_preconnect *next,
                                void *nxdata, int readonly)
 {
@@ -358,6 +366,7 @@ static struct nbdkit_filter filter = {
   .config_complete   = test_layers_filter_config_complete,
   .config_help       = test_layers_filter_config_help,
   .get_ready         = test_layers_filter_get_ready,
+  .after_fork        = test_layers_filter_after_fork,
   .preconnect        = test_layers_filter_preconnect,
   .open              = test_layers_filter_open,
   .close             = test_layers_filter_close,

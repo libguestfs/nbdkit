@@ -959,6 +959,7 @@ start_serving (void)
     debug ("using socket activation, nr_socks = %zu", socks.size);
     change_user ();
     write_pidfile ();
+    top->after_fork (top);
     accept_incoming_connections (&socks);
     return;
   }
@@ -967,6 +968,7 @@ start_serving (void)
   if (listen_stdin) {
     change_user ();
     write_pidfile ();
+    top->after_fork (top);
     threadlocal_new_server_thread ();
     handle_single_connection (saved_stdin, saved_stdout);
     return;
@@ -986,6 +988,7 @@ start_serving (void)
   change_user ();
   fork_into_background ();
   write_pidfile ();
+  top->after_fork (top);
   accept_incoming_connections (&socks);
 }
 

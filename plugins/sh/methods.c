@@ -166,6 +166,31 @@ sh_get_ready (void)
 }
 
 int
+sh_after_fork (void)
+{
+  const char *method = "after_fork";
+  const char *script = get_script (method);
+  const char *args[] = { script, method, NULL };
+
+  switch (call (args)) {
+  case OK:
+  case MISSING:
+    return 0;
+
+  case ERROR:
+    return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, method);
+    errno = EIO;
+    return -1;
+
+  default: abort ();
+  }
+}
+
+int
 sh_preconnect (int readonly)
 {
   const char *method = "preconnect";

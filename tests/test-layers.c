@@ -300,6 +300,18 @@ main (int argc, char *argv[])
      "test_layers_plugin_get_ready",
      NULL);
 
+  /* after_fork methods called in order. */
+  log_verify_seen_in_order
+    ("testlayersfilter3: after_fork",
+     "filter3: test_layers_filter_after_fork",
+     "testlayersfilter2: after_fork",
+     "filter2: test_layers_filter_after_fork",
+     "testlayersfilter1: after_fork",
+     "filter1: test_layers_filter_after_fork",
+     "testlayersplugin: after_fork",
+     "test_layers_plugin_after_fork",
+     NULL);
+
   /* preconnect methods called in outer-to-inner order, complete
    * in inner-to-outer order.
    */

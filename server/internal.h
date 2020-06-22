@@ -362,6 +362,7 @@ struct backend {
   void (*config_complete) (struct backend *);
   const char *(*magic_config_key) (struct backend *);
   void (*get_ready) (struct backend *);
+  void (*after_fork) (struct backend *);
   int (*preconnect) (struct backend *, int readonly);
   void *(*open) (struct backend *, int readonly);
   int (*prepare) (struct backend *, void *handle, int readonly);

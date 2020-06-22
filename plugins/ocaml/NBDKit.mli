@@ -75,6 +75,7 @@ type 'a plugin = {
   thread_model : (unit -> thread_model) option;
 
   get_ready : (unit -> unit) option;
+  after_fork : (unit -> unit) option;
 
   preconnect : (bool -> unit) option;
   open_connection : (bool -> 'a) option;          (* required *)
