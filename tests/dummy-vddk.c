@@ -36,6 +36,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <errno.h>
+
+#include <pthread.h>
 
 #include "vddk-structs.h"
 
@@ -48,6 +53,17 @@
 #define CAPACITY 1024 /* sectors */
 static char disk[CAPACITY * VIXDISKLIB_SECTOR_SIZE];
 
+static pthread_t thread;
+
+static void *
+bg_thread (void *datav)
+{
+  for (;;)
+    pause ();
+  /*NOTREACHED*/
+  return NULL;
+}
+
 VixError
 VixDiskLib_InitEx (uint32_t major, uint32_t minor,
                    VixDiskLibGenericLogFunc *log_function,
@@ -55,7 +71,20 @@ VixDiskLib_InitEx (uint32_t major, uint32_t minor,
                    VixDiskLibGenericLogFunc *panic_function,
                    const char *lib_dir, const char *config_file)
 {
-  /* Do nothing, only exit with no error. */
+  int err;
+
+  /* Real VDDK creates one or more background threads, and this caused
+   * problems in the past when we forked stranding those threads.
+   * Create a background thread, and we will check that it still
+   * exists when reading later.
+   */
+  err = pthread_create (&thread, NULL, bg_thread, NULL);
+  if (err) {
+    errno = err;
+    perror ("pthread_create");
+    abort ();
+  }
+
   return VIX_OK;
 }
 
@@ -106,6 +135,10 @@ VixDiskLib_Open (const VixDiskLibConnection connection,
                  uint32_t flags,
                  VixDiskLibHandle *handle)
 {
+  /* Check that the background thread is still present. */
+  if (pthread_kill (thread, 0) != 0)
+    abort ();
+
   return VIX_OK;
 }
 
