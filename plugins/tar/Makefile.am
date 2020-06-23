@@ -31,19 +31,18 @@
 
 include $(top_srcdir)/common-rules.mk
 
-source = tar.pl
-
 EXTRA_DIST = \
-	$(source) \
+	nbdkit-tar-plugin.pod \
+	tar.py \
 	$(NULL)
 
-if HAVE_PERL
+if HAVE_PYTHON
 
 plugin_SCRIPTS = nbdkit-tar-plugin
 CLEANFILES += nbdkit-tar-plugin
 
 # We have to do the rewriting here to avoid stupid exec_prefix.
-nbdkit-tar-plugin: $(source)
+nbdkit-tar-plugin: tar.py
 	rm -f $@ $@-t
 	sed 's,\@sbindir\@,${sbindir},g' < $< > $@-t
 	mv $@-t $@
@@ -54,8 +53,8 @@ if HAVE_POD
 man_MANS = nbdkit-tar-plugin.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-tar-plugin.1: $(source)
-	$(PODWRAPPER) --section=1 --name nbdkit-tar-plugin --man $@ \
+nbdkit-tar-plugin.1: nbdkit-tar-plugin.pod
+	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 

@@ -78,14 +78,20 @@
 static const char **cmd;
 static size_t len;
 
-/* Plugins written in scripting languages (only Perl right now) need
- * to be rewritten on the command line in a different way from plugins
- * written in C.  So we have to list those here.
+/* Plugins written in scripting languages need to be rewritten on the
+ * command line in a different way from plugins written in C.  So we
+ * have to list those here.
  */
 static bool
 is_perl_plugin (const char *name)
 {
-  return strcmp (name, "example4") == 0 || strcmp (name, "tar") == 0;
+  return strcmp (name, "example4") == 0;
+}
+
+static bool
+is_python_plugin (const char *name)
+{
+  return strcmp (name, "tar") == 0;
 }
 
 static void
@@ -259,6 +265,13 @@ main (int argc, char *argv[])
       /* Special plugins written in Perl. */
       if (is_perl_plugin (argv[optind])) {
         passthru_format ("%s/plugins/perl/.libs/nbdkit-perl-plugin.so",
+                         builddir);
+        passthru_format ("%s/plugins/%s/nbdkit-%s-plugin",
+                         builddir, argv[optind], argv[optind]);
+      }
+      /* Special plugins written in Python. */
+      else if (is_python_plugin (argv[optind])) {
+        passthru_format ("%s/plugins/python/.libs/nbdkit-python-plugin.so",
                          builddir);
         passthru_format ("%s/plugins/%s/nbdkit-%s-plugin",
                          builddir, argv[optind], argv[optind]);

@@ -34,14 +34,18 @@ source ./functions.sh
 set -e
 set -x
 
+# Python scripts break valgrind.
+if [ "$NBDKIT_VALGRIND" = "1" ]; then
+    echo "$0: skipping Python test under valgrind."
+    exit 77
+fi
+
 requires test -f disk
 requires guestfish --version
-requires tar --version
 
-# The tar plugin requires some Perl modules, this checks if they are
-# installed.
-requires perl -MCwd -e 1
-requires perl -MIO::File -e 1
+# The tar plugin is written in Python and uses the tarfile module.
+requires python --version
+requires python -c 'import tarfile'
 
 sock=`mktemp -u`
 files="tar.pid tar.tar $sock"
@@ -54,7 +58,15 @@ tar cf tar.tar disk
 # Run nbdkit.
 start_nbdkit -P tar.pid -U $sock tar tar=tar.tar file=disk
 
-# Now see if we can open the disk from the tar file.
-guestfish -x --ro --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
+# Now see if we can open, read and write the disk from the tar file.
+guestfish -x --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
+  # Check for existing file.
   cat /hello.txt
+
+  # Write a new file.
+  write /test.txt "hello"
+  cat /test.txt
 EOF
+
+# Check that the tar file isn't corrupt.
+tar tvvf tar.tar

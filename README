@@ -120,21 +120,23 @@ of the test suite:
 
  - libnbd >= 0.9.8
 
-For the Perl, example4 and tar plugins:
+For the Perl and example4 plugins:
 
  - perl interpreter
 
  - perl development libraries
 
- - perl modules ExtUtils::Embed, IO::File and Cwd
+ - perl modules ExtUtils::Embed
 
-For the Python plugin:
+For the Python and tar plugins:
 
  - python interpreter (version 3 only)
 
  - python development libraries
 
  - python unittest to run the test suite
+
+ - python tarfile.py (part of standard library)
 
 For the OCaml plugin:
 
