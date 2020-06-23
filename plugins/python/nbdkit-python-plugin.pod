@@ -112,7 +112,13 @@ L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 Your script may use C<import nbdkit> to have access to the following
 methods in the C<nbdkit> module:
 
- nbdkit.set_error(err)
+=head3 C<nbdkit.export_name()>
+
+Return the export name negotiated with the client as a Unicode string.
+Note this should not be trusted because the client can send whatever
+it wants.
+
+=head3 C<nbdkit.set_error(err)>
 
 Record C<err> as the reason you are about to throw an exception. C<err>
 should correspond to usual errno values, where it may help to

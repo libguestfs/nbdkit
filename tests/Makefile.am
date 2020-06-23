@@ -969,12 +969,14 @@ if HAVE_PYTHON
 TESTS += \
 	test-python.sh \
 	test-python-exception.sh \
+	test-python-export-name.sh \
 	test-shebang-python.sh \
 	$(NULL)
 EXTRA_DIST += \
 	python-exception.py \
 	shebang.py \
 	test-python-exception.sh \
+	test-python-export-name.sh \
 	test-python-plugin.py \
 	test-python.sh \
 	test-shebang-python.sh \

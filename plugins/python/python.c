@@ -66,24 +66,6 @@ static int py_api_version = 1;
 
 static int last_error;
 
-static PyObject *
-set_error (PyObject *self, PyObject *args)
-{
-  int err;
-
-  if (!PyArg_ParseTuple (args, "i", &err))
-    return NULL;
-  nbdkit_set_error (err);
-  last_error = err;
-  Py_RETURN_NONE;
-}
-
-static PyMethodDef NbdkitMethods[] = {
-  { "set_error", set_error, METH_VARARGS,
-    "Store an errno value prior to throwing an exception" },
-  { NULL }
-};
-
 /* Is a callback defined? */
 static int
 callback_defined (const char *name, PyObject **obj_rtn)
@@ -211,6 +193,48 @@ check_python_failure (const char *callback)
   }
   return 0;
 }
+
+/* Functions in the virtual nbdkit.* module. */
+
+/* nbdkit.export_name */
+static PyObject *
+export_name (PyObject *self, PyObject *args)
+{
+  const char *s = nbdkit_export_name ();
+
+  if (!s) {
+    /* Unfortunately we lose the actual error. XXX */
+    PyErr_SetString (PyExc_RuntimeError, "nbdkit.export_name failed");
+    return NULL;
+  }
+
+  /* NBD spec says that the export name should be UTF-8, so this
+   * ought to work, and if it fails the client gave us a bad export
+   * name which should turn into an exception.
+   */
+  return PyUnicode_FromString (s);
+}
+
+/* nbdkit.set_error */
+static PyObject *
+set_error (PyObject *self, PyObject *args)
+{
+  int err;
+
+  if (!PyArg_ParseTuple (args, "i", &err))
+    return NULL;
+  nbdkit_set_error (err);
+  last_error = err;
+  Py_RETURN_NONE;
+}
+
+static PyMethodDef NbdkitMethods[] = {
+  { "export_name", export_name, METH_VARARGS,
+    "Return the optional export name negotiated with the client" },
+  { "set_error", set_error, METH_VARARGS,
+    "Store an errno value prior to throwing an exception" },
+  { NULL }
+};
 
 static struct PyModuleDef moduledef = {
   PyModuleDef_HEAD_INIT,
