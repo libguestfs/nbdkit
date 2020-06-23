@@ -112,6 +112,11 @@ L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 Your script may use C<import nbdkit> to have access to the following
 methods in the C<nbdkit> module:
 
+=head3 C<nbdkit.debug(msg)>
+
+Send a debug message to stderr or syslog if verbose messages are
+enabled.
+
 =head3 C<nbdkit.export_name()>
 
 Return the export name negotiated with the client as a Unicode string.

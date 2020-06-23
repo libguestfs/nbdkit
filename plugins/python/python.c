@@ -196,6 +196,18 @@ check_python_failure (const char *callback)
 
 /* Functions in the virtual nbdkit.* module. */
 
+/* nbdkit.debug */
+static PyObject *
+debug (PyObject *self, PyObject *args)
+{
+  const char *msg;
+
+  if (!PyArg_ParseTuple (args, "s", &msg))
+    return NULL;
+  nbdkit_debug ("%s", msg);
+  Py_RETURN_NONE;
+}
+
 /* nbdkit.export_name */
 static PyObject *
 export_name (PyObject *self, PyObject *args)
@@ -229,6 +241,8 @@ set_error (PyObject *self, PyObject *args)
 }
 
 static PyMethodDef NbdkitMethods[] = {
+  { "debug", debug, METH_VARARGS,
+    "Print a debug message" },
   { "export_name", export_name, METH_VARARGS,
     "Return the optional export name negotiated with the client" },
   { "set_error", set_error, METH_VARARGS,

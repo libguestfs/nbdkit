@@ -39,6 +39,7 @@ def open(readonly):
     # The export name is a Unicode string, but to return this to the
     # client we have to convert it to bytes.
     name = nbdkit.export_name()
+    nbdkit.debug("export name = '%s'" % name)
     return { 'name': str.encode(name) }
 
 def get_size(h):
