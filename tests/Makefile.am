@@ -974,6 +974,7 @@ TESTS += \
 	$(NULL)
 EXTRA_DIST += \
 	python-exception.py \
+	python-export-name.py \
 	shebang.py \
 	test-python-exception.sh \
 	test-python-export-name.sh \
