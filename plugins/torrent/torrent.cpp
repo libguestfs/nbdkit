@@ -200,7 +200,7 @@ torrent_config (const char *key, const char *value)
     int64_t v = nbdkit_parse_size (value);
     if (v == -1)
       return -1;
-    pack.set_int (pack.download_rate_limit, int (v));
+    pack.set_int (pack.download_rate_limit, int (v / 8));
   }
 
   else if (strcmp (key, "upload-rate-limit") == 0 ||
@@ -208,7 +208,7 @@ torrent_config (const char *key, const char *value)
     int64_t v = nbdkit_parse_size (value);
     if (v == -1)
       return -1;
-    pack.set_int (pack.upload_rate_limit, int (v));
+    pack.set_int (pack.upload_rate_limit, int (v / 8));
   }
 
   else {
