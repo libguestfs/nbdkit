@@ -72,8 +72,9 @@ torrent between runs.
 
 This parameter is optional.  If I<not> given then the plugin will
 create a randomly named temporary directory under C<$TMPDIR>, and will
-attempt to ensure it is cleaned up on exit (thus no state is saved
-between runs and the whole torrent must be downloaded each time).
+attempt to ensure it is cleaned up on exit (thus unless you set
+C<cache>, no state is saved between runs and the whole torrent must be
+downloaded each time).
 
 =item B<download-rate-limit=>BITS_PER_SEC
 
