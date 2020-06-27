@@ -5,9 +5,7 @@ nbdkit-torrent-plugin - serve a BitTorrent file or magnet link over NBD
 =head1 SYNOPSIS
 
  nbdkit torrent FILE.torrent|'magnet:?xt=urn:...'
-                [file=DISK.iso] [cache=DIR]
-                [download-rate-limit=BITS_PER_SEC]
-                [upload-rate-limit=BITS_PER_SEC]
+                [file=DISK.iso] [cache=DIR] ...
 
 =head1 DESCRIPTION
 
@@ -76,6 +74,11 @@ attempt to ensure it is cleaned up on exit (thus unless you set
 C<cache>, no state is saved between runs and the whole torrent must be
 downloaded each time).
 
+=item B<connections-limit=>N
+
+Set limit on number of connections to other peers that this client
+will open (default 200).
+
 =item B<download-rate-limit=>BITS_PER_SEC
 
 Set the download rate limit in bits per second.  Usual abbreviations
@@ -103,6 +106,16 @@ standard BitTorrent tools, eg:
 
  $ transmission-show file.torrent
 
+=item B<listen-interfaces=>LIST_OF_IP_ADDRESS:PORT
+
+Listening ports that are opened for accepting incoming connections.
+The parameter is a comma-separated list of IP address:port.
+
+=item B<outgoing-interfaces=>LIST_OF_IP_ADDRESSES
+
+Controls which IP address outgoing TCP connections are bound to.  The
+parameter is a comma-separated list of IP addresses.
+
 =item [B<torrent=>]FILEB<.torrent>
 
 Specify a local torrent file.
@@ -119,6 +132,11 @@ See L<nbdkit(1)/Magic parameters>.
 Set the upload rate limit in bits per second.  Usual abbreviations can
 be used such as C<upload-rate-limit=1M> for 1 megabit per second.
 C<0> means unlimited, which is the default.
+
+=item B<user-agent=>STRING
+
+Set the user-agent.  The recommended format is
+C<client-name/client-version>.
 
 =back
 

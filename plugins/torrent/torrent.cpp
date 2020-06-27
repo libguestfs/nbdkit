@@ -81,17 +81,25 @@ static libtorrent::torrent_handle handle;
 static libtorrent::add_torrent_params params;
 static libtorrent::settings_pack pack;
 
-enum setting_type { BPS };
+enum setting_type { BPS, STRING, INT };
 struct setting {
   const char *name, *altname;
   int setting;
   enum setting_type type;
 };
 static struct setting settings[] = {
+  { "connections-limit",   "connections_limit",   pack.connections_limit,
+    INT },
   { "download-rate-limit", "download_rate_limit", pack.download_rate_limit,
     BPS },
+  { "listen-interfaces",   "listen_interfaces",   pack.listen_interfaces,
+    STRING },
+  { "outgoing-interfaces", "outgoing_interfaces", pack.outgoing_interfaces,
+    STRING },
   { "upload-rate-limit",   "upload_rate_limit",   pack.upload_rate_limit,
     BPS },
+  { "user-agent",          "user_agent",          pack.user_agent,
+    STRING },
 };
 static const size_t nr_settings = sizeof settings / sizeof settings[0];
 
@@ -217,12 +225,21 @@ torrent_config (const char *key, const char *value)
       if (strcmp (key, settings[i].name) == 0 ||
           (settings[i].altname && strcmp (key, settings[i].altname) == 0)) {
         switch (settings[i].type) {
+          int vi;
           int64_t vbps;
         case BPS:
           vbps = nbdkit_parse_size (value);
           if (vbps == -1)
             return -1;
           pack.set_int (settings[i].setting, int (vbps / 8));
+          break;
+        case INT:
+          if (nbdkit_parse_int (key, value, &vi) == -1)
+            return -1;
+          pack.set_int (settings[i].setting, vi);
+          break;
+        case STRING:
+          pack.set_str (settings[i].setting, value);
           break;
         }
         return 0;
