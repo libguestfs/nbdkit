@@ -81,6 +81,20 @@ static libtorrent::torrent_handle handle;
 static libtorrent::add_torrent_params params;
 static libtorrent::settings_pack pack;
 
+enum setting_type { BPS };
+struct setting {
+  const char *name, *altname;
+  int setting;
+  enum setting_type type;
+};
+static struct setting settings[] = {
+  { "download-rate-limit", "download_rate_limit", pack.download_rate_limit,
+    BPS },
+  { "upload-rate-limit",   "upload_rate_limit",   pack.upload_rate_limit,
+    BPS },
+};
+static const size_t nr_settings = sizeof settings / sizeof settings[0];
+
 static libtorrent::alert_category_t alerts =
     libtorrent::alert_category::error
   | libtorrent::alert_category::piece_progress
@@ -176,6 +190,7 @@ torrent_config (const char *key, const char *value)
         return -1;
       }
     }
+    return 0;
   }
 
   else if (strcmp (key, "file") == 0) {
@@ -184,6 +199,7 @@ torrent_config (const char *key, const char *value)
       nbdkit_error ("strdup: %m");
       return -1;
     }
+    return 0;
   }
 
   else if (strcmp (key, "cache") == 0) {
@@ -192,31 +208,30 @@ torrent_config (const char *key, const char *value)
     if (cache == NULL)
       return -1;
     clean_cache_on_exit = false;
+    return 0;
   }
 
   /* Settings. */
-  else if (strcmp (key, "download-rate-limit") == 0 ||
-           strcmp (key, "download_rate_limit") == 0) {
-    int64_t v = nbdkit_parse_size (value);
-    if (v == -1)
-      return -1;
-    pack.set_int (pack.download_rate_limit, int (v / 8));
-  }
-
-  else if (strcmp (key, "upload-rate-limit") == 0 ||
-           strcmp (key, "upload_rate_limit") == 0) {
-    int64_t v = nbdkit_parse_size (value);
-    if (v == -1)
-      return -1;
-    pack.set_int (pack.upload_rate_limit, int (v / 8));
-  }
-
   else {
-    nbdkit_error ("unknown parameter '%s'", key);
-    return -1;
+    for (size_t i = 0; i < nr_settings; ++i) {
+      if (strcmp (key, settings[i].name) == 0 ||
+          (settings[i].altname && strcmp (key, settings[i].altname) == 0)) {
+        switch (settings[i].type) {
+          int64_t vbps;
+        case BPS:
+          vbps = nbdkit_parse_size (value);
+          if (vbps == -1)
+            return -1;
+          pack.set_int (settings[i].setting, int (vbps / 8));
+          break;
+        }
+        return 0;
+      }
+    }
   }
 
-  return 0;
+  nbdkit_error ("unknown parameter '%s'", key);
+  return -1;
 }
 
 static int
