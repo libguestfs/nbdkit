@@ -79,7 +79,6 @@ plugins/*/*.3
 /plugins/ocaml/nbdkit-ocamlexample-plugin.so
 /plugins/rust/Cargo.lock
 /plugins/rust/target
-/plugins/tar/nbdkit-tar-plugin
 /plugins/tmpdisk/default-command.c
 /podwrapper.pl
 /server/local/nbdkit.pc

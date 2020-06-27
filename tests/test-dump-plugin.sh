@@ -46,7 +46,7 @@ do_test ()
         python-valgrind | ruby-valgrind | tcl-valgrind)
             echo "$0: skipping $1$vg because this language doesn't support valgrind"
             ;;
-        example4* | tar*)
+        example4*)
             # These tests are written in Perl so we have to check that
             # the Perl plugin was compiled.
             if nbdkit perl --version; then run_test $1; fi

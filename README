@@ -124,13 +124,13 @@ For the bittorrent plugin:
 
  - libtorrent-rasterbar (https://www.libtorrent.org)
 
-For the Perl, example4 and tar plugins:
+For the Perl and example4 plugins:
 
  - perl interpreter
 
  - perl development libraries
 
- - perl modules ExtUtils::Embed, IO::File and Cwd
+ - perl modules ExtUtils::Embed
 
 For the Python plugin:
 

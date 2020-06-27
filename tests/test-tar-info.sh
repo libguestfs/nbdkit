@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2017-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -29,39 +30,38 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Test that qemu-img info works on a qcow2 file in a tar file.
 
-EXTRA_DIST = nbdkit-tar-plugin.pod
+source ./functions.sh
+set -e
+set -x
 
-plugin_LTLIBRARIES = nbdkit-tar-plugin.la
+requires test -f disk
+requires guestfish --version
+requires tar --version
+requires qemu-img --version
+requires qemu-img info --output=json /dev/null
+requires jq --version
+requires stat --version
 
-nbdkit_tar_plugin_la_SOURCES = \
-	tar.c \
-	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(NULL)
+disk=tar-info-disk.qcow2
+out=tar-info.out
+tar=tar-info.tar
+files="$disk $out $tar"
+rm -f $files
+cleanup_fn rm -f $files
 
-nbdkit_tar_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils \
-	-I$(top_srcdir)/include \
-	-I. \
-	$(NULL)
-nbdkit_tar_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
-nbdkit_tar_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared $(SHARED_LDFLAGS) \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(NULL)
-nbdkit_tar_plugin_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la \
-	$(NULL)
+# Create a tar file containing a known qcow2 file.
+qemu-img convert -f raw disk -O qcow2 $disk
+tar cf $tar $disk
 
-if HAVE_POD
+# Run nbdkit.
+nbdkit -U - tar $tar file=$disk --run 'qemu-img info --output=json $nbd' > $out
+cat $out
 
-man_MANS = nbdkit-tar-plugin.1
-CLEANFILES += $(man_MANS)
+# Check various fields in the input.
+# Virtual size must be the same as the size of the original raw disk.
+test "$( jq -r -c '.["virtual-size"]' $out )" -eq "$( stat -c %s disk )"
 
-nbdkit-tar-plugin.1: nbdkit-tar-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+# Format must be qcow2.
+test "$( jq -r -c '.["format"]' $out )" = "qcow2"

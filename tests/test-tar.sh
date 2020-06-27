@@ -38,23 +38,27 @@ requires test -f disk
 requires guestfish --version
 requires tar --version
 
-# The tar plugin requires some Perl modules, this checks if they are
-# installed.
-requires perl -MCwd -e 1
-requires perl -MIO::File -e 1
-
 sock=`mktemp -u`
 files="tar.pid tar.tar $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
-# Create a tar file containing the disk image.
-tar cf tar.tar disk
+# Create a tar file containing the disk image plus some other random
+# files that hopefully will be ignored.
+tar cf tar.tar test-tar.sh Makefile disk Makefile.am
+tar tvvf tar.tar
 
 # Run nbdkit.
 start_nbdkit -P tar.pid -U $sock tar tar=tar.tar file=disk
 
-# Now see if we can open the disk from the tar file.
-guestfish -x --ro --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
+# Now see if we can open, read and write the disk from the tar file.
+guestfish -x --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
   cat /hello.txt
+
+  # Write a new file.
+  write /test.txt "hello"
+  cat /test.txt
 EOF
+
+# Check that the tar file isn't corrupt.
+tar tvvf tar.tar

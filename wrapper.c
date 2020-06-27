@@ -85,7 +85,7 @@ static size_t len;
 static bool
 is_perl_plugin (const char *name)
 {
-  return strcmp (name, "example4") == 0 || strcmp (name, "tar") == 0;
+  return strcmp (name, "example4") == 0;
 }
 
 static void
