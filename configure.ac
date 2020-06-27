@@ -1222,7 +1222,7 @@ feature "nbd .................................... " \
 feature "ssh .................................... " \
         test "x$HAVE_SSH_TRUE" = "x"
 feature "tar .................................... " \
-        test "x$HAVE_PYTHON_TRUE" = "x"
+        test "x$HAVE_PERL_TRUE" = "x"
 feature "torrent ................................ " \
         test "x$HAVE_TORRENT_TRUE" = "x"
 feature "vddk ................................... " \

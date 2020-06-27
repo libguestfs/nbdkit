@@ -124,23 +124,21 @@ For the bittorrent plugin:
 
  - libtorrent-rasterbar (https://www.libtorrent.org)
 
-For the Perl and example4 plugins:
+For the Perl, example4 and tar plugins:
 
  - perl interpreter
 
  - perl development libraries
 
- - perl modules ExtUtils::Embed
+ - perl modules ExtUtils::Embed, IO::File and Cwd
 
-For the Python and tar plugins:
+For the Python plugin:
 
  - python interpreter (version 3 only)
 
  - python development libraries
 
  - python unittest to run the test suite
-
- - python tarfile.py (part of standard library)
 
 For the OCaml plugin:
 

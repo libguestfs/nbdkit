@@ -828,10 +828,10 @@ test_streaming_SOURCES = test-streaming.c
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_streaming_LDADD = $(LIBNBD_LIBS)
 
-# tar plugin test (written in python).
-if HAVE_PYTHON
+# tar plugin test (written in perl).
+if HAVE_PERL
 TESTS += test-tar.sh
-endif HAVE_PYTHON
+endif HAVE_PERL
 EXTRA_DIST += test-tar.sh
 
 # tmpdisk plugin test.

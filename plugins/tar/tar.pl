@@ -1,3 +1,8 @@
+#!@sbindir@/nbdkit perl
+# -*- perl -*-
+
+=pod
+
 =head1 NAME
 
 nbdkit-tar-plugin - read and write files inside tar files without unpacking
@@ -89,10 +94,11 @@ C<nbdkit-tar-plugin> first appeared in nbdkit 1.2.
 
 =head1 SEE ALSO
 
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/tar/tar.pl>,
 L<nbdkit(1)>,
 L<nbdkit-offset-filter(1)>,
 L<nbdkit-plugin(3)>,
-L<nbdkit-python-plugin(3)>,
+L<nbdkit-perl-plugin(3)>,
 L<nbdkit-xz-filter(1)>,
 L<tar(1)>.
 
@@ -105,3 +111,114 @@ Based on the virt-v2v OVA importer written by Tomáš Golembiovský.
 =head1 COPYRIGHT
 
 Copyright (C) 2017-2020 Red Hat Inc.
+
+=cut
+
+use strict;
+
+use Cwd qw(abs_path);
+use IO::File;
+
+my $tar;                        # Tar file.
+my $file;                       # File within the tar file.
+my $offset;                     # Offset within tar file.
+my $size;                       # Size of disk image within tar file.
+
+sub config
+{
+    my $k = shift;
+    my $v = shift;
+
+    if ($k eq "tar") {
+        $tar = abs_path ($v);
+    }
+    elsif ($k eq "file") {
+        $file = $v;
+    }
+    else {
+        die "unknown parameter $k";
+    }
+}
+
+# Check all the config parameters were set.
+sub config_complete
+{
+    die "tar or file parameter was not set\n"
+        unless defined $tar && defined $file;
+
+    die "$tar: file not found\n"
+        unless -f $tar;
+}
+
+# Find the extent of the file within the tar file.
+sub get_ready
+{
+    open (my $pipe, "-|", "tar", "--no-auto-compress", "-tRvf", $tar, $file)
+        or die "$tar: could not open or parse tar file, see errors above";
+    while (<$pipe>) {
+        if (/^block\s(\d+):\s\S+\s\S+\s(\d+)/) {
+            # Add one for the tar header, and multiply by the block size.
+            $offset = ($1 + 1) * 512;
+            $size = $2;
+            Nbdkit::debug ("tar: file: $file offset: $offset size: $size")
+        }
+    }
+    close ($pipe);
+
+    die "offset or size could not be parsed.  Probably the tar file is not a tar file or the file does not exist in the tar file.  See any errors above.\n"
+        unless defined $offset && defined $size;
+}
+
+# Accept a connection from a client, create and return the handle
+# which is passed back to other calls.
+sub open
+{
+    my $readonly = shift;
+    my $mode = "<";
+    $mode = "+<" unless $readonly;
+    my $fh = IO::File->new;
+    $fh->open ($tar, $mode) or die "$tar: open: $!";
+    $fh->binmode;
+    my $h = { fh => $fh, readonly => $readonly };
+    return $h;
+}
+
+# Close the connection.
+sub close
+{
+    my $h = shift;
+    my $fh = $h->{fh};
+    $fh->close;
+}
+
+# Return the size.
+sub get_size
+{
+    my $h = shift;
+    return $size;
+}
+
+# Read.
+sub pread
+{
+    my $h = shift;
+    my $fh = $h->{fh};
+    my $count = shift;
+    my $offs = shift;
+    $fh->seek ($offset + $offs, 0) or die "seek: $!";
+    my $r;
+    $fh->read ($r, $count) or die "read: $!";
+    return $r;
+}
+
+# Write.
+sub pwrite
+{
+    my $h = shift;
+    my $fh = $h->{fh};
+    my $buf = shift;
+    my $count = length ($buf);
+    my $offs = shift;
+    $fh->seek ($offset + $offs, 0) or die "seek: $!";
+    print $fh ($buf);
+}
