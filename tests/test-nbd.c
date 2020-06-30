@@ -52,11 +52,13 @@ main (int argc, char *argv[])
   char *sockarg = NULL;
   size_t i, size;
 
-  /* If wrapping once is good, why not do it twice!  Shows that we can
-   * convert between either style of server options. */
+  /* Run an oldstyle nbdkit server. */
   if (test_start_nbdkit ("-o", "file", "file-data", NULL) == -1)
     exit (EXIT_FAILURE);
 
+  /* Now run a second (newstyle) server connecting to the oldstyle
+   * server above.
+   */
   if (asprintf (&sockarg, "socket=%s", sock) < 0) {
     perror ("asprintf");
     exit (EXIT_FAILURE);
@@ -65,6 +67,9 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   free (sockarg);
 
+  /* And now run another oldstyle server connecting to the newstyle
+   * server above, for a total of 3 nbdkit instances.
+   */
   if (asprintf (&sockarg, "socket=%s", sock) < 0) {
     perror ("asprintf");
     exit (EXIT_FAILURE);
@@ -73,6 +78,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   free (sockarg);
 
+  /* Now connect to the front (oldstyle) server using libguestfs. */
   g = guestfs_create ();
   if (g == NULL) {
     perror ("guestfs_create");
