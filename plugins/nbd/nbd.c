@@ -57,6 +57,9 @@
 #include "byte-swapping.h"
 #include "cleanup.h"
 #include "utils.h"
+#include "vector.h"
+
+DEFINE_VECTOR_TYPE(string_vector, const char *);
 
 /* The per-transaction details */
 struct transaction {
@@ -86,6 +89,12 @@ static char *sockname;
 static const char *hostname;
 static const char *port;
 
+/* Connect to a command. */
+static string_vector command = empty_vector;
+
+/* Connect to a socket file descriptor. */
+static int socket_fd = -1;
+
 /* Name of export on remote server, default '', ignored for oldstyle */
 static const char *export;
 
@@ -114,6 +123,7 @@ nbdplug_unload (void)
   free (sockname);
   free (tls_certificates);
   free (tls_psk);
+  free (command.ptr); /* the strings are statically allocated */
 }
 
 /* Called for each key=value passed on the command line.  This plugin
@@ -140,6 +150,20 @@ nbdplug_config (const char *key, const char *value)
     port = value;
   else if (strcmp (key, "uri") == 0)
     uri = value;
+  else if (strcmp (key, "command") == 0 || strcmp (key, "arg") == 0) {
+    if (string_vector_append (&command, value) == -1) {
+      nbdkit_error ("realloc: %m");
+      return -1;
+    }
+  }
+  else if (strcmp (key, "socket-fd") == 0) {
+    if (nbdkit_parse_int ("socket-fd", value, &socket_fd) == -1)
+      return -1;
+    if (socket_fd < 0) {
+      nbdkit_error ("socket-fd must be >= 0");
+      return -1;
+    }
+  }
   else if (strcmp (key, "export") == 0)
     export = value;
   else if (strcmp (key, "retry") == 0) {
@@ -195,16 +219,17 @@ nbdplug_config (const char *key, const char *value)
 static int
 nbdplug_config_complete (void)
 {
-  int c = !!sockname + !!hostname + !!uri;
+  int c = !!sockname + !!hostname + !!uri +
+    (command.size > 0) + (socket_fd >= 0);
 
   /* Check the user passed exactly one connection parameter. */
   if (c > 1) {
-    nbdkit_error ("cannot mix Unix ‘socket’, TCP ‘hostname’/‘port’ "
-                  "and ‘uri’ parameters");
+    nbdkit_error ("cannot mix Unix ‘socket’, TCP ‘hostname’/‘port’, "
+                  "‘command’, ‘socket-fd’ and ‘uri’ parameters");
     return -1;
   }
   if (c == 0) {
-    nbdkit_error ("exactly one of ‘socket’, ‘hostname’ "
+    nbdkit_error ("exactly one of ‘socket’, ‘hostname’, ‘command’, ‘socket-fd’ "
                   "and ‘uri’ parameters must be specified");
     return -1;
   }
@@ -240,6 +265,17 @@ nbdplug_config_complete (void)
   else if (hostname) {
     if (!port)
       port = "10809";
+  }
+  else if (command.size > 0) {
+    /* Add NULL sentinel to the command. */
+    if (string_vector_append (&command, NULL) == -1) {
+      nbdkit_error ("realloc: %m");
+      return -1;
+    }
+    shared = true;
+  }
+  else if (socket_fd >= 0) {
+    shared = true;
   }
   else {
     abort ();         /* can't happen, if checks above were correct */
@@ -285,6 +321,9 @@ nbdplug_after_fork (void)
   "socket=<SOCKNAME>      The Unix socket to connect to.\n" \
   "hostname=<HOST>        The hostname for the TCP socket to connect to.\n" \
   "port=<PORT>            TCP port or service name to use (default 10809).\n" \
+  "command=<COMMAND>      Command to run.\n" \
+  "arg=<ARG>              Parameters for command.\n" \
+  "socket-fd=<FD>         Socket file descriptor to connect to.\n" \
   "export=<NAME>          Export name to connect to (default \"\").\n" \
   "retry=<N>              Retry connection up to N seconds (default 0).\n" \
   "shared=<BOOL>          True to share one server connection among all clients,\n" \
@@ -506,6 +545,10 @@ nbdplug_open_handle (int readonly)
     r = nbd_connect_unix (h->nbd, sockname);
   else if (hostname)
     r = nbd_connect_tcp (h->nbd, hostname, port);
+  else if (command.size > 0)
+    r = nbd_connect_systemd_socket_activation (h->nbd, (char **) command.ptr);
+  else if (socket_fd >= 0)
+    r = nbd_connect_socket (h->nbd, socket_fd);
   else
     abort ();
   if (r == -1) {

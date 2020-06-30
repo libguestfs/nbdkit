@@ -4,8 +4,10 @@ nbdkit-nbd-plugin - proxy / forward to another NBD server
 
 =head1 SYNOPSIS
 
- nbdkit nbd { hostname=HOST [port=PORT] |
+ nbdkit nbd { command=COMMAND [arg=ARG [...]] |
+              hostname=HOST [port=PORT] |
               socket=SOCKNAME |
+              socket-fd=FD |
               [uri=]URI }
             [export=NAME] [retry=N] [shared=BOOL]
             [tls=MODE] [tls-certificates=DIR] [tls-verify=BOOL]
@@ -38,10 +40,31 @@ With L<qemu-nbd(8)>, read and write qcow2 files with nbdkit.
 
 =head1 PARAMETERS
 
-One of B<socket>, B<hostname> (optionally with B<port>), or B<uri>
-must be given to specify which NBD server to forward to:
+One of B<socket>, B<hostname> (optionally with B<port>), B<uri>,
+B<socket-fd> or B<command> must be given to specify which NBD server
+to forward to:
 
 =over 4
+
+=item B<command=>COMMAND
+
+=item B<arg=>ARG
+
+Run an NBD server, usually L<qemu-nbd(8)>, as an external command.
+See L</EXAMPLES> below.
+
+C<COMMAND> is the program to run, followed by zero or more C<arg=ARG>
+parameters for each argument.  For example:
+
+ nbdkit nbd command=qemu-nbd arg=-f arg=qcow2 arg=$PWD/disk.qcow2
+
+would run the command C<qemu-nbd -f qcow2 $PWD/disk.qcow2>.  Because
+nbdkit may change directory before running the command, you may need
+to ensure that all file paths used in parameters (like the disk name
+above) are absolute paths.
+
+This uses the libnbd API L<nbd_connect_systemd_socket_activation(3)>.
+This option implies C<shared=true>.
 
 =item B<hostname=>HOST
 
@@ -53,6 +76,12 @@ The optional port parameter overrides the default port (10809).
 =item B<socket=>SOCKNAME
 
 Connect to the NBD server using Unix domain socket C<SOCKNAME>.
+
+=item B<socket-fd=>FD
+
+Connect to the NBD server over a socket file descriptor inherited by
+nbdkit.  This uses the libnbd API L<nbd_connect_socket(3)>.  This
+option implies C<shared=true>.
 
 =item [B<uri=>]URI
 
@@ -83,11 +112,16 @@ embedded in the URI instead.
 If the initial connection attempt to the server fails, retry up to
 C<N> times more after a one-second delay between tries (default 0).
 
+=item B<shared=false>
+
 =item B<shared=true>
 
-By default the plugin will open a new connection to the server for
-each client making a connection to nbdkit.  The remote server does not
-have to be started until immediately before the first nbdkit client
+If using C<command> or C<socket-fd> modes then this defaults to true,
+otherwise false.
+
+If false the plugin will open a new connection to the server for each
+client making a connection to nbdkit.  The remote server does not have
+to be started until immediately before the first nbdkit client
 connects.
 
 If this parameter is set to C<true>, the plugin will open a single
@@ -158,23 +192,28 @@ that the old server exits.
  │ new client │ ────────▶│ nbdkit │ ───────────▶│ old server │
  └────────────┘   TCP    └────────┘    Unix     └────────────┘
 
+=head2 Use qemu-nbd to open a qcow2 file
+
+Run qemu-nbd as the server, allowing you to read and write qcow2 files
+(since nbdkit does not have a native qcow2 plugin).  This allows you
+to use nbdkit filters on top, see the next example.
+
+ nbdkit nbd command=qemu-nbd arg=-f arg=qcow2 arg=/path/to/image.qcow2
+
+qemu-nbd is cleaned up when nbdkit exits.
+
 =head2 Add nbdkit-partition-filter to qemu-nbd
 
-Combine nbdkit's partition filter with L<qemu-nbd(8)>’s ability to
-visit qcow2 files (since nbdkit does not have a native qcow2 plugin).
+Combine L<nbdkit-partition-filter(1)> with L<qemu-nbd(8)>’s ability to
+visit qcow2 files:
+
+ nbdkit --filter=partition nbd \
+        command=qemu-nbd arg=-f arg=qcow2 arg=/path/to/image.qcow2 \
+        partition=1
 
 This performs the same task as the deprecated qemu-nbd I<-P> option:
 
  qemu-nbd -P 1 -f qcow2 /path/to/image.qcow2
-
-Also this allows multiple clients, even though C<qemu-nbd> without
-I<-t> normally quits after the first client, and utilizes a 5-second
-retry to give qemu-nbd time to create the socket:
-
- ( sock=`mktemp -u`
-   nbdkit --exit-with-parent --filter=partition nbd \
-     nbd+unix:///\?socket=$sock shared=1 retry=5 partition=1 &
-   exec qemu-nbd -k $sock -f qcow2 /path/to/image.qcow2 )
 
 =head2 Convert newstyle server for oldstyle-only client
 
