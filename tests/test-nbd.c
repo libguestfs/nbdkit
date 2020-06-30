@@ -57,13 +57,15 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
 
   /* Now run a second (newstyle) server connecting to the oldstyle
-   * server above.
+   * server above.  Add shared=true on this handle to test that
+   * feature.
    */
   if (asprintf (&sockarg, "socket=%s", sock) < 0) {
     perror ("asprintf");
     exit (EXIT_FAILURE);
   }
-  if (test_start_nbdkit ("-e", "wrap", "nbd", sockarg, NULL) == -1)
+  if (test_start_nbdkit ("-e", "wrap", "nbd", sockarg,
+                         "shared=true", NULL) == -1)
     exit (EXIT_FAILURE);
   free (sockarg);
 
