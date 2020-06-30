@@ -77,15 +77,15 @@ struct handle {
   pthread_t reader;
 };
 
+/* Connect to server via URI */
+static const char *uri;
+
 /* Connect to server via absolute name of Unix socket */
 static char *sockname;
 
 /* Connect to server via TCP socket */
 static const char *hostname;
 static const char *port;
-
-/* Connect to server via URI */
-static const char *uri;
 
 /* Name of export on remote server, default '', ignored for oldstyle */
 static const char *export;
@@ -193,41 +193,32 @@ nbdplug_config (const char *key, const char *value)
   return 0;
 }
 
-/* Check the user passed exactly one socket description. */
 static int
 nbdplug_config_complete (void)
 {
-  if (sockname) {
-    struct sockaddr_un sock;
+  int c = !!sockname + !!hostname + !!uri;
 
-    if (hostname || port) {
-      nbdkit_error ("cannot mix Unix socket and TCP hostname/port parameters");
-      return -1;
-    }
-    else if (uri) {
-      nbdkit_error ("cannot mix Unix socket and URI parameters");
-      return -1;
-    }
-    if (strlen (sockname) > sizeof sock.sun_path) {
-      nbdkit_error ("socket file name too large");
-      return -1;
-    }
+  /* Check the user passed exactly one connection parameter. */
+  if (c > 1) {
+    nbdkit_error ("cannot mix Unix ‘socket’, TCP ‘hostname’/‘port’ "
+                  "and ‘uri’ parameters");
+    return -1;
   }
-  else if (hostname) {
-    if (uri) {
-      nbdkit_error ("cannot mix TCP hostname/port and URI parameters");
-      return -1;
-    }
-    if (!port)
-      port = "10809";
+  if (c == 0) {
+    nbdkit_error ("exactly one of ‘socket’, ‘hostname’ "
+                  "and ‘uri’ parameters must be specified");
+    return -1;
   }
-  else if (uri) {
+
+  /* Port, if present, should only be used with hostname. */
+  if (port && !hostname) {
+    nbdkit_error ("‘port’ parameter should only be used with ‘hostname’");
+    return -1;
+  }
+
+  if (uri) {
     struct nbd_handle *nbd = nbd_create ();
 
-    if (port) {
-      nbdkit_error ("cannot mix TCP hostname/port and URI parameters");
-      return -1;
-    }
     if (!nbd) {
       nbdkit_error ("unable to query libnbd details: %s", nbd_get_error ());
       return -1;
@@ -238,11 +229,24 @@ nbdplug_config_complete (void)
       return -1;
     }
     nbd_close (nbd);
-  } else {
-    nbdkit_error ("must supply socket=, hostname= or uri= of external NBD server");
-    return -1;
+  }
+  else if (sockname) {
+    struct sockaddr_un sock;
+
+    if (strlen (sockname) > sizeof sock.sun_path) {
+      nbdkit_error ("socket file name too large");
+      return -1;
+    }
+  }
+  else if (hostname) {
+    if (!port)
+      port = "10809";
+  }
+  else {
+    abort ();         /* can't happen, if checks above were correct */
   }
 
+  /* Check the other parameters. */
   if (!export)
     export = "";
 
@@ -264,6 +268,7 @@ nbdplug_config_complete (void)
     nbd_close (nbd);
   }
 
+  /* Create the shared connection. */
   if (shared && (shared_handle = nbdplug_open_handle (false)) == NULL)
     return -1;
   return 0;
@@ -485,8 +490,10 @@ nbdplug_open_handle (int readonly)
     r = nbd_connect_uri (h->nbd, uri);
   else if (sockname)
     r = nbd_connect_unix (h->nbd, sockname);
-  else
+  else if (hostname)
     r = nbd_connect_tcp (h->nbd, hostname, port);
+  else
+    abort ();
   if (r == -1) {
     if (retries--) {
       nbdkit_debug ("connect failed; will try again: %s", nbd_get_error ());
