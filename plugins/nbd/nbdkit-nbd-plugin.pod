@@ -1,109 +1,117 @@
 =head1 NAME
 
-nbdkit-nbd-plugin - nbdkit nbd plugin
+nbdkit-nbd-plugin - proxy / forward to another NBD server
 
 =head1 SYNOPSIS
 
- nbdkit nbd { socket=SOCKNAME | hostname=HOST [port=PORT] | [uri=]URI }
-    [export=NAME] [retry=N] [shared=BOOL] [tls=MODE] [tls-certificates=DIR]
-    [tls-verify=BOOL] [tls-username=NAME] [tls-psk=FILE]
+ nbdkit nbd { hostname=HOST [port=PORT] |
+              socket=SOCKNAME |
+              [uri=]URI }
+            [export=NAME] [retry=N] [shared=BOOL]
+            [tls=MODE] [tls-certificates=DIR] [tls-verify=BOOL]
+            [tls-username=NAME] [tls-psk=FILE]
 
 =head1 DESCRIPTION
 
-C<nbdkit-nbd-plugin> is an NBD forwarding plugin for L<nbdkit(1)>.
-
-It provides an NBD server that forwards all traffic as a client to
-another existing NBD server.  A primary usage of this setup is to
-alter the set of features available to the ultimate end client,
-without having to change the original server (for example, to convert
-between oldstyle and newstyle, or to add TLS support where the
-original server lacks it).  Use of this plugin along with nbdkit
-filters (adding I<--filter> to the nbdkit command line) makes it
-possible to apply any nbdkit filter to any other NBD server.
-
-Remember that when using this plugin as a bridge between an encrypted
-and a non-encrypted endpoint, it is best to preserve encryption over
-TCP and use plaintext only on a Unix socket.
-
-=head1 PARAMETERS
-
-One of B<socket>, B<hostname> or B<uri> must be provided to designate
-the server. The server can speak either new or old style
-protocol. C<uri=> is a magic config key and may be omitted in most
-cases.  See L<nbdkit(1)/Magic parameters>.
-
-The following parameters are available whether or not the plugin was
-compiled against libnbd:
+C<nbdkit-nbd-plugin> is a plugin for L<nbdkit(1)> that lets you
+forward the connection to another NBD server.  There are several uses
+for this plugin:
 
 =over 4
 
-=item B<socket=>SOCKNAME
+=item *
 
-Connect to the NBD server located at the Unix socket C<SOCKNAME>.
+Adjust the set of features seen by the ultimate NBD client without
+having to change the original server.  For example, convert between
+the oldstyle and newstyle protocols, or add TLS support if the
+original server lacks it.
+
+=item *
+
+Apply nbdkit filters to any other NBD server.
+
+=item *
+
+With L<qemu-nbd(8)>, read and write qcow2 files with nbdkit.
+
+=back
+
+=head1 PARAMETERS
+
+One of B<socket>, B<hostname> (optionally with B<port>), or B<uri>
+must be given to specify which NBD server to forward to:
+
+=over 4
 
 =item B<hostname=>HOST
 
-Connect to the NBD server at the given remote C<HOST> using a TCP socket.
-
 =item B<port=>PORT
 
-When B<hostname> is supplied, use B<PORT> instead of the default port
-10809.
+Connect to the NBD server at the remote C<HOST> using a TCP socket.
+The optional port parameter overrides the default port (10809).
+
+=item B<socket=>SOCKNAME
+
+Connect to the NBD server using Unix domain socket C<SOCKNAME>.
+
+=item [B<uri=>]URI
+
+When C<uri> is supplied, decode C<URI> to determine the address to
+connect to.  A URI can specify a TCP connection (such as
+C<nbd://localhost:10809/export>) or a Unix socket (such as
+C<nbd+unix:///export?socket=/path/to/sock>).  Remember you may need to
+quote the parameter to protect it from the shell.
+
+C<uri=> is a magic config key and may be omitted in most
+cases.  See L<nbdkit(1)/Magic parameters>.
+
+=back
+
+Other parameters control the NBD connection:
+
+=over 4
 
 =item B<export=>NAME
 
 If this parameter is given, and the server speaks new style protocol,
 then connect to the named export instead of the default export (the
-empty string). If C<uri> is supplied, the export name should be
+empty string).  If C<uri> is supplied, the export name should be
 embedded in the URI instead.
 
 =item B<retry=>N
 
 If the initial connection attempt to the server fails, retry up to
-B<N> times more after a one-second delay between tries (default 0).
+C<N> times more after a one-second delay between tries (default 0).
 
-=item B<shared=>BOOL
+=item B<shared=true>
 
-If this parameter is false (default), the plugin will open a distinct
-connection to the server for each client making a connection to
-nbdkit, and the remote server does not have to be started until
-immediately before the first nbdkit client.  If this parameter is set
-to true, the plugin will open a single connection to the server when
-nbdkit is first started (the C<delay> parameter may be necessary to
-coordinate timing of the remote server startup), and all clients to
-nbdkit will share that single connection.
+By default the plugin will open a new connection to the server for
+each client making a connection to nbdkit.  The remote server does not
+have to be started until immediately before the first nbdkit client
+connects.
 
-=back
+If this parameter is set to C<true>, the plugin will open a single
+connection to the server when nbdkit is first started (the C<retry>
+parameter may be necessary to coordinate timing of the remote server
+startup), and all clients to nbdkit will share that single connection.
 
-The following parameters are only available if the plugin was compiled
-against libnbd:
+=item B<tls=off>
 
-=over 4
+=item B<tls=on>
 
-=item B<uri=>URI
+=item B<tls=require>
 
-When B<uri> is supplied, decode B<URI> to determine the address to
-connect to. A URI can specify a TCP connection (such as
-C<nbd://localhost:10809/export>) or a Unix socket (such as
-C<nbd+unix:///export?socket=/path/to/sock>).  Remember to use proper
-shell quoting to prevent B<URI> from accidentally being handled as a
-shell glob. The B<uri> parameter is only available when the plugin was
-compiled against libnbd with URI support; C<nbdkit --dump-plugin nbd>
-will contain C<libnbd_uri=1> if this is the case.
-
-=item B<tls=>MODE
-
-Selects which TLS mode to use with the server. If no other tls option
+Selects which TLS mode to use with the server.  If no other tls option
 is present, this defaults to C<off>, where the client does not attempt
-encryption (and may be rejected by a server that requires it). If
+encryption (and may be rejected by a server that requires it).  If
 omitted but another tls option is present, this defaults to C<on>,
 where the client opportunistically attempts a TLS handshake, but will
 continue running unencrypted if the server does not support
-encryption. If set to C<require> or if the C<uri> parameter is used
+encryption.  If set to C<require> or if the C<uri> parameter is used
 with a scheme that requires encryption (such as C<nbds://host>), then
 this requires an encrypted connection to the server.
 
-The B<tls> parameter is only available when the plugin was compiled
+The C<tls> parameter is only available when the plugin was compiled
 against libnbd with TLS support; C<nbdkit --dump-plugin nbd> will
 contain C<libnbd_tls=1> if this is the case.  Note the difference
 between C<--tls=...> controlling what nbdkit serves, and C<tls=...>
@@ -114,11 +122,11 @@ controlling what the nbd plugin connects to as a client.
 This specifies the directory containing X.509 client certificates to
 present to the server.
 
-=item B<tls-verify=>BOOL
+=item B<tls-verify=false>
 
-This defaults to true; setting it to false disables server name
-verification, which opens you to potential Man-in-the-Middle (MITM)
-attacks, but allows for a simpler setup for distributing certificates.
+Setting this parameter to false disables server name verification,
+which opens you to potential Man-in-the-Middle (MITM) attacks, but
+allows for a simpler setup for distributing certificates.
 
 =item B<tls-username=>NAME
 
@@ -128,16 +136,18 @@ alongside the certificate.
 =item B<tls-psk=>FILE
 
 If provided, this is the filename containing the Pre-Shared Keys (PSK)
-to present to the server. While this is easier to set up than X.509,
+to present to the server.  While this is easier to set up than X.509,
 it requires that the PSK file be transmitted over a secure channel.
 
 =back
 
 =head1 EXAMPLES
 
+=head2 Convert oldstyle server to encrypted newstyle
+
 Expose the contents of an export served by an old style server over a
 Unix socket to TCP network clients that only want to consume encrypted
-data. Use I<--exit-with-parent> to clean up nbdkit at the same time
+data.  Use I<--exit-with-parent> to clean up nbdkit at the same time
 that the old server exits.
 
  ( sock=`mktemp -u`
@@ -148,23 +158,31 @@ that the old server exits.
  │ new client │ ────────▶│ nbdkit │ ───────────▶│ old server │
  └────────────┘   TCP    └────────┘    Unix     └────────────┘
 
-Combine nbdkit's partition filter with qemu-nbd's ability to visit
-qcow2 files (nbdkit does not have a native qcow2 plugin), performing
-the same task as the deprecated C<qemu-nbd -P 1 -f qcow2
-/path/to/image.qcow2> command. Allow multiple clients, even though
-C<qemu-nbd> without B<-t> normally quits after the first client, and
-utilize a 5-second retry to give qemu-nbd time to create the socket:
+=head2 Add nbdkit-partition-filter to qemu-nbd
+
+Combine nbdkit's partition filter with L<qemu-nbd(8)>’s ability to
+visit qcow2 files (since nbdkit does not have a native qcow2 plugin).
+
+This performs the same task as the deprecated qemu-nbd I<-P> option:
+
+ qemu-nbd -P 1 -f qcow2 /path/to/image.qcow2
+
+Also this allows multiple clients, even though C<qemu-nbd> without
+I<-t> normally quits after the first client, and utilizes a 5-second
+retry to give qemu-nbd time to create the socket:
 
  ( sock=`mktemp -u`
    nbdkit --exit-with-parent --filter=partition nbd \
      nbd+unix:///\?socket=$sock shared=1 retry=5 partition=1 &
    exec qemu-nbd -k $sock -f qcow2 /path/to/image.qcow2 )
 
-Conversely, expose the contents of export I<foo> from a new style
-server with encrypted data to a client that can only consume
-unencrypted old style. Use I<--run> to clean up nbdkit at the time the
-client exits.  In general, note that it is best to keep the plaintext
-connection limited to a Unix socket on the local machine.
+=head2 Convert newstyle server for oldstyle-only client
+
+Expose the contents of export C<foo> from a newstyle server with
+encrypted data to a client that can only consume unencrypted old
+style.  Use I<--run> to clean up nbdkit at the time the client exits.
+In general, note that it is best to keep the plaintext connection
+limited to a Unix socket on the local machine.
 
  nbdkit -U - -o --tls=off nbd hostname=example.com export=foo tls=require \
   --run '/path/to/oldclient --socket=$unixsocket'
@@ -173,10 +191,16 @@ connection limited to a Unix socket on the local machine.
  │ old client │ ───────────▶│ nbdkit │ ────────▶│ new server │
  └────────────┘    Unix     └────────┘   TCP    └────────────┘
 
-Learn which features are provided by libnbd by inspecting the
-C<libnbd_*> lines:
+=head1 DUMP PLUGIN OUTPUT
 
- nbdkit --dump-plugin nbd
+You can learn which features are provided by libnbd by inspecting the
+C<libnbd_*> lines in I<--dump-plugin> output:
+
+ $ nbdkit --dump-plugin nbd
+ [...]
+ libnbd_version=1.2.3
+ libnbd_tls=1
+ libnbd_uri=1
 
 =head1 FILES
 
@@ -202,7 +226,7 @@ L<nbdkit-filter(3)>,
 L<nbdkit-tls(1)>,
 L<nbdkit-plugin(3)>,
 L<libnbd(3)>,
-L<qemu-nbd(1)>.
+L<qemu-nbd(8)>.
 
 =head1 AUTHORS
 
