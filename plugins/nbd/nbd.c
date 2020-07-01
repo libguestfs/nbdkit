@@ -314,6 +314,7 @@ nbdplug_reader (void *handle)
   nbdkit_debug ("nbd: started reader thread");
 
   while (!nbd_aio_is_dead (h->nbd) && !nbd_aio_is_closed (h->nbd)) {
+    int r;
     struct pollfd fds[2] = {
       [0].fd = nbd_aio_get_fd (h->nbd),
       [1].fd = h->fds[0],
@@ -332,10 +333,16 @@ nbdplug_reader (void *handle)
       break;
     }
 
-    if (dir & LIBNBD_AIO_DIRECTION_READ && fds[0].revents & POLLIN)
-      nbd_aio_notify_read (h->nbd);
-    else if (dir & LIBNBD_AIO_DIRECTION_WRITE && fds[0].revents & POLLOUT)
-      nbd_aio_notify_write (h->nbd);
+    dir = nbd_aio_get_direction (h->nbd);
+
+    if ((dir & LIBNBD_AIO_DIRECTION_READ) && (fds[0].revents & POLLIN))
+      r = nbd_aio_notify_read (h->nbd);
+    else if ((dir & LIBNBD_AIO_DIRECTION_WRITE) && (fds[0].revents & POLLOUT))
+      r = nbd_aio_notify_write (h->nbd);
+    if (r == -1) {
+      nbdkit_error ("%s", nbd_get_error ());
+      break;
+    }
 
     /* Check if we were kicked because a command was started */
     if (fds[1].revents & POLLIN) {
