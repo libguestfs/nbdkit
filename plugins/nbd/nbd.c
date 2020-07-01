@@ -109,7 +109,7 @@ static void nbdplug_close_handle (struct handle *h);
 static void
 nbdplug_unload (void)
 {
-  if (shared)
+  if (shared && shared_handle)
     nbdplug_close_handle (shared_handle);
   free (sockname);
   free (tls_certificates);
@@ -266,8 +266,15 @@ nbdplug_config_complete (void)
     }
     nbd_close (nbd);
   }
+  return 0;
+}
 
-  /* Create the shared connection. */
+/* Create the shared connection.  Because this may create a background
+ * thread it must be done after we fork.
+ */
+static int
+nbdplug_after_fork (void)
+{
   if (shared && (shared_handle = nbdplug_open_handle (false)) == NULL)
     return -1;
   return 0;
@@ -858,6 +865,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete    = nbdplug_config_complete,
   .config_help        = nbdplug_config_help,
   .magic_config_key   = "uri",
+  .after_fork         = nbdplug_after_fork,
   .dump_plugin        = nbdplug_dump_plugin,
   .open               = nbdplug_open,
   .close              = nbdplug_close,
