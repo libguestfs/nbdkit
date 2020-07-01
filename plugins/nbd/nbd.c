@@ -312,6 +312,8 @@ nbdplug_reader (void *handle)
 {
   struct handle *h = handle;
 
+  nbdkit_debug ("nbd: started reader thread");
+
   while (!nbd_aio_is_dead (h->nbd) && !nbd_aio_is_closed (h->nbd)) {
     struct pollfd fds[2] = {
       [0].fd = h->fd,
@@ -348,7 +350,7 @@ nbdplug_reader (void *handle)
   }
 
   nbdkit_debug ("state machine changed to %s", nbd_connection_state (h->nbd));
-  nbdkit_debug ("exiting state machine thread");
+  nbdkit_debug ("exiting reader thread");
   return NULL;
 }
 
