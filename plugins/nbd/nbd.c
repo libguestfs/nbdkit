@@ -71,7 +71,6 @@ struct transaction {
 struct handle {
   /* These fields are read-only once initialized */
   struct nbd_handle *nbd;
-  int fd; /* Cache of nbd_aio_get_fd */
   int fds[2]; /* Pipe for kicking the reader thread */
   bool readonly;
   pthread_t reader;
@@ -316,7 +315,7 @@ nbdplug_reader (void *handle)
 
   while (!nbd_aio_is_dead (h->nbd) && !nbd_aio_is_closed (h->nbd)) {
     struct pollfd fds[2] = {
-      [0].fd = h->fd,
+      [0].fd = nbd_aio_get_fd (h->nbd),
       [1].fd = h->fds[0],
       [1].events = POLLIN,
     };
@@ -469,7 +468,6 @@ nbdplug_open_handle (int readonly)
 #endif
 
  retry:
-  h->fd = -1;
   h->nbd = nbd_create ();
   if (!h->nbd)
     goto err;
@@ -505,9 +503,6 @@ nbdplug_open_handle (int readonly)
     }
     goto err;
   }
-  h->fd = nbd_aio_get_fd (h->nbd);
-  if (h->fd == -1)
-    goto err;
 
   if (readonly)
     h->readonly = true;
