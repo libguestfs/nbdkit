@@ -32,13 +32,13 @@
 
 #include <config.h>
 
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <nbdkit-filter.h>
 
