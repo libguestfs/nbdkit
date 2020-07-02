@@ -1311,6 +1311,13 @@ EXTRA_DIST += \
 	test-partition2.sh \
 	$(NULL)
 
+# pause filter test.
+LIBNBD_TESTS += test-pause
+
+test_pause_SOURCES = test-pause.c
+test_pause_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_pause_LDADD = $(LIBNBD_LIBS)
+
 # rate filter test.
 TESTS += \
 	test-rate.sh \

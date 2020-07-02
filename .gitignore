@@ -133,6 +133,7 @@ plugins/*/*.3
 /tests/test-oldstyle
 /tests/test-old-plugins-*.sh
 /tests/test-partition
+/tests/test-pause
 /tests/test-perl
 /tests/test-python
 /tests/test-random

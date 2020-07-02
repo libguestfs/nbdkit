@@ -121,6 +121,7 @@ C<rdelay> and C<wdelay> options in L<nbdkit-file-plugin(1)>.
 
 L<nbdkit(1)>,
 L<nbdkit-filter(3)>,
+L<nbdkit-pause-filter(1)>,
 L<nbdkit-rate-filter(1)>.
 
 =head1 AUTHORS

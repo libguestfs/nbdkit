@@ -116,6 +116,7 @@ filters="\
         nozero \
         offset \
         partition \
+        pause \
         rate \
         readahead \
         retry \
@@ -1153,6 +1154,7 @@ AC_CONFIG_FILES([Makefile
                  filters/nozero/Makefile
                  filters/offset/Makefile
                  filters/partition/Makefile
+                 filters/pause/Makefile
                  filters/rate/Makefile
                  filters/readahead/Makefile
                  filters/retry/Makefile

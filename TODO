@@ -182,9 +182,6 @@ Suggestions for filters
   https://www.cloudandheat.com/block-level-data-tracking-using-davice-mappers-dm-era/
   https://github.com/qemu/qemu/blob/master/docs/interop/bitmaps.rst
 
-* pause filter which would stop requests (causing them to hang) for
-  short periods, eg to allow the backing disk to be copied
-
 * masking plugin features for testing clients (see 'nozero' and 'fua'
   filters for examples)
 
@@ -198,6 +195,10 @@ Suggestions for filters
 
 * nbdkit-exitlast-filter could probably use a configurable timeout so
   that there is a grace period in case another connection comes along.
+
+* nbdkit-pause-filter would probably be more useful if the filter
+  could inject a flush after pausing.  However this requires that
+  filter background threads have access to the plugin (see above).
 
 nbdkit-rate-filter:
 
