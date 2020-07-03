@@ -59,5 +59,29 @@ main (void)
   { const char *s = "Ø"; assert (! ascii_isdigit (s[0])); } /* U+00D8 */
   { const char *s = "９"; assert (! ascii_isdigit (s[0])); } /* U+FF19 */
 
+  assert (ascii_islower ('a'));
+  assert (ascii_islower ('z'));
+  assert (! ascii_islower ('Z'));
+  { const char *s = "Ä"; assert (! ascii_islower (s[0])); }
+
+  assert (ascii_isupper ('A'));
+  assert (ascii_isupper ('Z'));
+  assert (! ascii_isupper ('z'));
+  { const char *s = "Ä"; assert (! ascii_isupper (s[0])); }
+
+  assert (ascii_tolower ('A') == 'a');
+  assert (ascii_tolower ('Z') == 'z');
+  assert (ascii_tolower ('a') == 'a');
+  assert (ascii_tolower ('z') == 'z');
+  assert (ascii_tolower ('0') == '0');
+  { const char *s = "Ä"; assert (ascii_tolower (s[0]) == s[0]); }
+
+  assert (ascii_toupper ('a') == 'A');
+  assert (ascii_toupper ('z') == 'Z');
+  assert (ascii_toupper ('A') == 'A');
+  assert (ascii_toupper ('Z') == 'Z');
+  assert (ascii_toupper ('0') == '0');
+  { const char *s = "à"; assert (ascii_toupper (s[0]) == s[0]); }
+
   exit (EXIT_SUCCESS);
 }

@@ -52,6 +52,9 @@
 #define ascii_isupper(c)                        \
   ((c) >= 'A' && (c) <= 'Z')
 
+#define ascii_islower(c)                        \
+  ((c) >= 'a' && (c) <= 'z')
+
 #define ascii_isxdigit(c)                                               \
   ((c) == '0' || (c) == '1' || (c) == '2' || (c) == '3' || (c) == '4' || \
    (c) == '5' || (c) == '6' || (c) == '7' || (c) == '8' || (c) == '9' || \
@@ -61,6 +64,9 @@
    (c) == 'D' || (c) == 'E' || (c) == 'F')
 
 #define ascii_tolower(c)                        \
-  (ascii_isupper ((c)) ? (c) - 'A' + 'a' : (c))
+  (ascii_isupper ((c)) ? (c) + 32 : (c))
+
+#define ascii_toupper(c)                        \
+  (ascii_islower ((c)) ? (c) - 32 : (c))
 
 #endif /* NBDKIT_ASCII_CTYPE_H */
