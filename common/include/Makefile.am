@@ -47,6 +47,7 @@ EXTRA_DIST = \
 	random.h \
 	rounding.h \
 	tvdiff.h \
+	unix-path-max.h \
 	$(NULL)
 
 # Unit tests.

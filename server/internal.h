@@ -45,6 +45,7 @@
 #include "nbdkit-filter.h"
 #include "cleanup.h"
 #include "nbd-protocol.h"
+#include "unix-path-max.h"
 #include "vector.h"
 
 /* Define unlikely macro, but only for GCC.  These are used to move
@@ -56,12 +57,6 @@
 #else
 #define unlikely(x) (x)
 #define if_verbose if (verbose)
-#endif
-
-#ifdef __APPLE__
-#define UNIX_PATH_MAX 104
-#else
-#define UNIX_PATH_MAX 108
 #endif
 
 #if HAVE_VALGRIND
