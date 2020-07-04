@@ -172,6 +172,8 @@ For non-essential enhancements to the test suite:
 
  - expect
 
+ - hexdump
+
  - ip, ss (from iproute package)
 
  - jq

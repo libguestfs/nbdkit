@@ -1,0 +1,62 @@
+=head1 NAME
+
+nbdkit-swab-filter - nbdkit filter for swapping byte order
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=swab PLUGIN [PLUGIN-ARGS...]
+
+=head1 DESCRIPTION
+
+C<nbdkit-swab-filter> is a filter for L<nbdkit(1)> which swaps bytes
+in the underlying plugin.
+
+One use for this is to read disk images which were formatted on the
+Atari Falcon, where the IDE controller is wired in reverse order.
+
+=head1 EXAMPLE
+
+=head2 Swap bytes from a disk image
+
+ nbdkit --filter=swab file file=disk.img
+
+The above command serves the disk image F<disk.img>, swapping even and
+odd bytes:
+
+ disk.img   0   1   2   3   4   5 ...
+              ╳       ╳       ╳
+   output   1   0   3   2   5   4 ...
+
+=head1 PARAMETERS
+
+There are no parameters specific to this filter.
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-swab-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-swab-filter> first appeared in nbdkit 1.22.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-filter(3)>.
+
+=head1 AUTHORS
+
+François Revol
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 François Revol

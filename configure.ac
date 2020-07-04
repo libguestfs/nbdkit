@@ -121,6 +121,7 @@ filters="\
         readahead \
         retry \
         stats \
+        swab \
         truncate \
         xz \
         "
@@ -1159,6 +1160,7 @@ AC_CONFIG_FILES([Makefile
                  filters/readahead/Makefile
                  filters/retry/Makefile
                  filters/stats/Makefile
+                 filters/swab/Makefile
                  filters/truncate/Makefile
                  filters/xz/Makefile
                  fuzzing/Makefile

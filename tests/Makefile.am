@@ -1360,6 +1360,16 @@ EXTRA_DIST += \
 	test-retry-zero-flags.sh \
 	$(NULL)
 
+# swab filter test.
+TESTS += \
+	test-swab-16r.sh \
+	test-swab-16w.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-swab-16r.sh \
+	test-swab-16w.sh \
+	$(NULL)
+
 # truncate filter tests.
 TESTS += \
 	test-truncate1.sh \
