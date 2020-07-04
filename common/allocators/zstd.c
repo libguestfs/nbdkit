@@ -605,9 +605,14 @@ static struct allocator functions = {
 };
 
 struct allocator *
-create_zstd_array (void)
+create_zstd_array (const parameters *params)
 {
   struct zstd_array *za;
+
+  if (params->size > 0) {
+    nbdkit_error ("allocator=zstd does not take extra parameters");
+    return NULL;
+  }
 
   za = calloc (1, sizeof *za);
   if (za == NULL) {

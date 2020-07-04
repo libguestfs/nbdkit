@@ -42,38 +42,111 @@
 #include "allocator.h"
 #include "allocator-internal.h"
 
+static void
+free_key_value (struct key_value kv)
+{
+  free (kv.key);
+  free (kv.value);
+}
+
+static void
+free_parameters (parameters *params)
+{
+  parameters_iter (params, free_key_value);
+  free (params->ptr);
+}
+
+/* The type may be followed by parameters "type,key=value[,...]" */
+static int
+parse_parameters (const char *type, size_t *type_len, parameters *params)
+{
+  size_t i, j, len;
+
+  *type_len = strcspn (type, ",");
+
+  nbdkit_debug ("allocator: %*s", (int) *type_len, type);
+
+  /* Split the parameters. */
+  for (i = *type_len; type[i] == ',';) {
+    struct key_value kv;
+
+    i++;
+    len = strcspn (&type[i], ",");
+    if (len == 0) {
+      i++;
+      continue;
+    }
+
+    j = strcspn (&type[i], "=");
+    if (j == 0) {
+      nbdkit_error ("invalid allocator parameter");
+      free_parameters (params);
+      return -1;
+    }
+    if (j < len) {
+      kv.key = strndup (&type[i], j);
+      kv.value = strndup (&type[i+j+1], len-j-1);
+    }
+    else {
+      kv.key = strndup (&type[i], len);
+      kv.value = strdup ("1");
+    }
+    if (kv.key == NULL || kv.value == NULL) {
+      nbdkit_error ("strdup: %m");
+      free (kv.key);
+      free (kv.value);
+      free_parameters (params);
+      return -1;
+    }
+
+    nbdkit_debug ("allocator parameter: %s=%s", kv.key, kv.value);
+    if (parameters_append (params, kv) == -1) {
+      nbdkit_error ("realloc: %m");
+      free_parameters (params);
+      return -1;
+    }
+    i += len;
+  }
+
+  return 0;
+}
+
 struct allocator *
 create_allocator (const char *type, bool debug)
 {
-  struct allocator *ret;
+  struct allocator *ret = NULL;
+  parameters params = empty_vector;
+  size_t type_len;
 
-  if (strcmp (type, "sparse") == 0)
-    ret = create_sparse_array ();
+  if (parse_parameters (type, &type_len, &params) == -1)
+    return NULL;
 
-  else if (strcmp (type, "malloc") == 0)
-    ret = create_malloc (false);
-  /* XXX In the end we want to split and parse these subparameters. */
-  else if (strcmp (type, "malloc,mlock=true") == 0)
-    ret = create_malloc (true);
+  if (strncmp (type, "sparse", type_len) == 0) {
+    ret = create_sparse_array (&params);
+    if (ret) ret->type = "sparse";
+  }
 
-  else if (strcmp (type, "zstd") == 0) {
+  else if (strncmp (type, "malloc", type_len) == 0) {
+    ret = create_malloc (&params);
+    if (ret) ret->type = "malloc";
+  }
+
+  else if (strncmp (type, "zstd", type_len) == 0) {
 #ifdef HAVE_LIBZSTD
-    ret = create_zstd_array ();
+    ret = create_zstd_array (&params);
+    if (ret) ret->type = "zstd";
 #else
     nbdkit_error ("allocator=zstd is not supported in this build of nbdkit");
-    ret = NULL;
 #endif
   }
 
-  else {
+  else
     nbdkit_error ("unknown allocator \"%s\"", type);
-    ret = NULL;
-  }
 
-  if (ret) {
-    ret->type = type;
-    ret->debug = debug;
-  }
+  /* Free the parameters allocated above. */
+  free_parameters (&params);
+
+  if (ret) ret->debug = debug;
   return ret;
 }
 

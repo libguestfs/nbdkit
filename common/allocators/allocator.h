@@ -48,7 +48,9 @@
 struct nbdkit_extents;
 
 struct allocator {
-  /* Type string passed to create_allocator. */
+  /* Allocator type (eg. "sparse").
+   * This does not include the parameters.
+   */
   const char *type;
 
   /* Debug flag. */

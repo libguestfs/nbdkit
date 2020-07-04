@@ -220,7 +220,7 @@ m_alloc_blit (struct allocator *a1, struct allocator *a2,
   struct m_alloc *ma2 = (struct m_alloc *) a2;
 
   assert (a1 != a2);
-  assert (strncmp (a2->type, "malloc", 6) == 0);
+  assert (strcmp (a2->type, "malloc") == 0);
 
   if (extend (ma2, offset2+count) == -1)
     return -1;
@@ -256,9 +256,25 @@ static struct allocator functions = {
 };
 
 struct allocator *
-create_malloc (bool use_mlock)
+create_malloc (const parameters *params)
 {
   struct m_alloc *ma;
+  bool use_mlock = false;
+  size_t i;
+
+  /* Parse the optional mlock=true|false parameter. */
+  for (i = 0; i < params->size; ++i) {
+    if (strcmp (params->ptr[i].key, "mlock") == 0) {
+      int r = nbdkit_parse_bool (params->ptr[i].value);
+      if (r == -1) return NULL;
+      use_mlock = r;
+    }
+    else {
+      nbdkit_error ("allocator=malloc: unknown parameter %s",
+                    params->ptr[i].key);
+      return NULL;
+    }
+  }
 
   ma = calloc (1, sizeof *ma);
   if (ma == NULL) {

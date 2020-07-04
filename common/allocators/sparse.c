@@ -503,9 +503,14 @@ static struct allocator functions = {
 };
 
 struct allocator *
-create_sparse_array (void)
+create_sparse_array (const parameters *params)
 {
   struct sparse_array *sa;
+
+  if (params->size > 0) {
+    nbdkit_error ("allocator=sparse does not take extra parameters");
+    return NULL;
+  }
 
   sa = calloc (1, sizeof *sa);
   if (sa == NULL) {
