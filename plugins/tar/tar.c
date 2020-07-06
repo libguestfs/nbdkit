@@ -100,7 +100,7 @@ tar_config_complete (void)
 
 #define tar_config_help \
   "[tar=]<TARBALL>     (required) The name of the tar file.\n" \
-  "file=<FILENAME>                The path inside the tar file to server."
+  "file=<FILENAME>     (required) The path inside the tar file to serve."
 
 static int
 tar_get_ready (void)
