@@ -91,6 +91,10 @@ C<nbd://localhost:10809/export>) or a Unix socket (such as
 C<nbd+unix:///export?socket=/path/to/sock>).  Remember you may need to
 quote the parameter to protect it from the shell.
 
+The C<uri> parameter is only available when the plugin was compiled
+against libnbd with URI support; C<nbdkit --dump-plugin nbd> will
+contain C<libnbd_uri=1> if this is the case.
+
 C<uri=> is a magic config key and may be omitted in most
 cases.  See L<nbdkit(1)/Magic parameters>.
 
