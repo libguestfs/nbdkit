@@ -1362,12 +1362,21 @@ EXTRA_DIST += \
 
 # swab filter test.
 TESTS += \
+	test-swab-8.sh \
 	test-swab-16r.sh \
 	test-swab-16w.sh \
+	test-swab-32r.sh \
+	test-swab-32w.sh \
+	test-swab-64r.sh \
+	test-swab-64w.sh \
 	$(NULL)
 EXTRA_DIST += \
-	test-swab-16r.sh \
+	test-swab-8.sh \
 	test-swab-16w.sh \
+	test-swab-32r.sh \
+	test-swab-32w.sh \
+	test-swab-64r.sh \
+	test-swab-64w.sh \
 	$(NULL)
 
 # truncate filter tests.

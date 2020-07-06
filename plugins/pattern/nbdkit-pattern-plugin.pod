@@ -43,6 +43,12 @@ you can use:
 
 Note this is too large for qemu to open.
 
+=head2 Little endian pattern
+
+To get a little endian pattern instead of big endian apply
+L<nbdkit-swab-filter(1)> on top of this plugin, setting
+C<swab-bits=64>.
+
 =head1 PARAMETERS
 
 =over 4
@@ -83,6 +89,7 @@ L<nbdkit-full-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
 L<nbdkit-offset-filter(1)>,
 L<nbdkit-random-plugin(1)>,
+L<nbdkit-swab-filter(1)>,
 L<nbdkit-zero-plugin(1)>.
 
 =head1 AUTHORS

@@ -4,7 +4,7 @@ nbdkit-swab-filter - nbdkit filter for swapping byte order
 
 =head1 SYNOPSIS
 
- nbdkit --filter=swab PLUGIN [PLUGIN-ARGS...]
+ nbdkit --filter=swab PLUGIN [PLUGIN-ARGS...] [swab-bits=8|16|32|64]
 
 =head1 DESCRIPTION
 
@@ -29,7 +29,37 @@ odd bytes:
 
 =head1 PARAMETERS
 
-There are no parameters specific to this filter.
+=over 4
+
+=item B<swab-bits=8>
+
+This turns off the filter.
+
+=item B<swab-bits=16>
+
+This is the default setting which swaps pairs of bytes.  This is
+suitable when reading and writing to Atari Falcon drives.
+
+=item B<swab-bits=32>
+
+This swaps the endianness of each 4 byte word in the disk, ie:
+
+  input    0   1   2   3   4   5   6   7
+
+ output    3   2   1   0   7   6   5   4
+
+=item B<swab-bits=64>
+
+This swaps the endianness of each 8 byte word in the disk, ie:
+
+  input    0   1   2   3   4   5   6   7
+
+ output    7   6   5   4   3   2   1   0
+
+This can be used to make L<nbdkit-pattern-plugin(1)> little endian
+instead of big endian.
+
+=back
 
 =head1 FILES
 
@@ -51,6 +81,7 @@ C<nbdkit-swab-filter> first appeared in nbdkit 1.22.
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-filter(3)>.
 
 =head1 AUTHORS

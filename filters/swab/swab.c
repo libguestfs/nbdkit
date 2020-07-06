@@ -45,17 +45,76 @@
 #include "isaligned.h"
 #include "cleanup.h"
 
+/* Can only be 8 (filter disabled), 16, 32 or 64. */
+static int bits = 16;
+
+/* Called for each key=value passed on the command line. */
+static int
+swab_config (nbdkit_next_config *next, void *nxdata,
+             const char *key, const char *value)
+{
+  int r;
+
+  if (strcmp (key, "swab-bits") == 0) {
+    r = nbdkit_parse_int ("swab-bits", value, &bits);
+    if (r == -1)
+      return -1;
+    if (bits != 8 && bits != 16 && bits != 32 && bits != 64) {
+      nbdkit_error ("invalid swab-bits, must be 8, 16, 32 or 64");
+      return -1;
+    }
+    return 0;
+  }
+  else
+    return next (nxdata, key, value);
+}
+
+#define swab_config_help \
+  "swab-bits=8|16|32|64       Size of byte swap (default 16)."
+
 /* The request must be aligned.
  * XXX We could lift this restriction with more work.
  */
 static bool
 is_aligned (uint32_t count, uint64_t offset)
 {
-  if (!IS_ALIGNED (count, 2) || !IS_ALIGNED (offset, 2)) {
+  if (!IS_ALIGNED (count, bits/8) || !IS_ALIGNED (offset, bits/8)) {
     nbdkit_error ("swab: requests to this filter must be aligned");
     return false;
   }
   return true;
+}
+
+/* Byte swap, works either from one buffer to another or in-place. */
+static void
+buf_bswap (void *dest, const void *src, uint32_t count)
+{
+  uint32_t i;
+  uint16_t *d16, *s16;
+  uint32_t *d32, *s32;
+  uint64_t *d64, *s64;
+
+  switch (bits) {
+  case 8: /* nothing */ break;
+  case 16:
+    d16 = (uint16_t *) dest;
+    s16 = (uint16_t *) src;
+    for (i = 0; i < count; i += 2)
+      *d16++ = bswap_16 (*s16++);
+    break;
+  case 32:
+    d32 = (uint32_t *) dest;
+    s32 = (uint32_t *) src;
+    for (i = 0; i < count; i += 4)
+      *d32++ = bswap_32 (*s32++);
+    break;
+  case 64:
+    d64 = (uint64_t *) dest;
+    s64 = (uint64_t *) src;
+    for (i = 0; i < count; i += 8)
+      *d64++ = bswap_64 (*s64++);
+    break;
+  }
 }
 
 /* Read data. */
@@ -64,8 +123,6 @@ swab_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
-  size_t i;
-  uint16_t *p;
   int r;
 
   if (!is_aligned (count, offset)) return -1;
@@ -75,10 +132,8 @@ swab_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
 
   /* for reads we can do it in-place */
-  for (i = 0, p = (uint16_t *)buf; i < count; i += 2, p++)
-    *p = bswap_16 (*p);
-
-  return r;
+  buf_bswap (buf, buf, count);
+  return 0;
 }
 
 /* Write data. */
@@ -88,9 +143,6 @@ swab_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
              uint32_t flags, int *err)
 {
   CLEANUP_FREE uint16_t *block = NULL;
-  size_t i;
-  uint16_t *p = (uint16_t *)buf;
-  uint16_t *q;
 
   if (!is_aligned (count, offset)) return -1;
 
@@ -101,8 +153,7 @@ swab_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
   }
 
-  for (i = 0, q = block; i < count; i += 2)
-    *q++ = bswap_16 (*p++);
+  buf_bswap (block, buf, count);
 
   return next_ops->pwrite (nxdata, block, count, offset, flags, err);
 }
@@ -152,6 +203,8 @@ swab_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "swab",
   .longname          = "nbdkit byte-swapping filter",
+  .config            = swab_config,
+  .config_help       = swab_config_help,
   .pread             = swab_pread,
   .pwrite            = swab_pwrite,
   .trim              = swab_trim,
