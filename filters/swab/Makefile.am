@@ -45,7 +45,6 @@ nbdkit_swab_filter_la_SOURCES = \
 nbdkit_swab_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/sparse \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_swab_filter_la_CFLAGS = \
@@ -57,7 +56,6 @@ nbdkit_swab_filter_la_LDFLAGS = \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
 nbdkit_swab_filter_la_LIBADD = \
-	$(top_builddir)/common/sparse/libsparse.la \
 	$(top_builddir)/common/utils/libutils.la \
 	$(GNUTLS_LIBS) \
 	$(NULL)
