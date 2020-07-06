@@ -127,14 +127,15 @@ swab_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
-/* Extents. */
+/* FIXME: Extents could be useful, but if the underlying plugin ever reports
+ * values not aligned to 2 bytes, it is complicated to adjust that correctly.
+ * In the short term, we punt by disabling extents.
+ */
 static int
-swab_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
-              void *handle, uint32_t count, uint64_t offset, uint32_t flags,
-              struct nbdkit_extents *extents, int *err)
+swab_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+                  void *handle)
 {
-  if (!is_aligned (count, offset)) return -1;
-  return next_ops->extents (nxdata, count, offset, flags, extents, err);
+  return 0;
 }
 
 /* Cache. */
@@ -155,7 +156,7 @@ static struct nbdkit_filter filter = {
   .pwrite            = swab_pwrite,
   .trim              = swab_trim,
   .zero              = swab_zero,
-  .extents           = swab_extents,
+  .can_extents       = swab_can_extents,
   .cache             = swab_cache,
 };
 
