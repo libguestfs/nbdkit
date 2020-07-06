@@ -318,6 +318,19 @@ authenticate (struct ssh_handle *h)
     return -1;
 
   method = ssh_userauth_list (h->session, NULL);
+  nbdkit_debug ("authentication methods offered by the server: 0x%x"
+                "%s%s%s%s%s%s%s",
+                method,
+                method & SSH_AUTH_METHOD_NONE        ? " none" : "",
+                method & SSH_AUTH_METHOD_PASSWORD    ? " password" : "",
+                method & SSH_AUTH_METHOD_PUBLICKEY   ? " publickey" : "",
+                method & SSH_AUTH_METHOD_HOSTBASED   ? " hostbased" : "",
+                method & SSH_AUTH_METHOD_INTERACTIVE
+                       ? " keyboard-interactive" : "",
+                method & SSH_AUTH_METHOD_GSSAPI_MIC
+                       ? " gssapi-with-mic" : "",
+                method & ~0x3f
+                       ? " (and other unknown methods)" : "");
 
   if (method & SSH_AUTH_METHOD_PUBLICKEY) {
     rc = authenticate_pubkey (h->session);
