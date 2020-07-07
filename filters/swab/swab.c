@@ -44,6 +44,7 @@
 #include "byte-swapping.h"
 #include "isaligned.h"
 #include "cleanup.h"
+#include "rounding.h"
 
 /* Can only be 8 (filter disabled), 16, 32 or 64. */
 static int bits = 16;
@@ -71,6 +72,18 @@ swab_config (nbdkit_next_config *next, void *nxdata,
 
 #define swab_config_help \
   "swab-bits=8|16|32|64       Size of byte swap (default 16)."
+
+/* Round size down to avoid issues at end of file. */
+static int64_t
+swab_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+               void *handle)
+{
+  int64_t size = next_ops->get_size (nxdata);
+
+  if (size == -1)
+    return -1;
+  return ROUND_DOWN (size, bits/8);
+}
 
 /* The request must be aligned.
  * XXX We could lift this restriction with more work.
@@ -205,6 +218,7 @@ static struct nbdkit_filter filter = {
   .longname          = "nbdkit byte-swapping filter",
   .config            = swab_config,
   .config_help       = swab_config_help,
+  .get_size          = swab_get_size,
   .pread             = swab_pread,
   .pwrite            = swab_pwrite,
   .trim              = swab_trim,

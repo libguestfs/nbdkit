@@ -27,6 +27,13 @@ odd bytes:
               ╳       ╳       ╳
    output   1   0   3   2   5   4 ...
 
+This filter truncates the size of the plugin down to the alignment
+determined by swab-bits (since operating on an unaligned tail would be
+awkward).  If you need to round the image size up instead to access
+the last few bytes, combine this filter with
+L<nbdkit-truncate-filter(1)>; fortunately, sector-based disk images
+are already suitably sized.
+
 =head1 PARAMETERS
 
 =over 4
@@ -82,7 +89,8 @@ C<nbdkit-swab-filter> first appeared in nbdkit 1.22.
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
-L<nbdkit-filter(3)>.
+L<nbdkit-filter(3)>,
+L<nbdkit-truncate-filter(1)>.
 
 =head1 AUTHORS
 
