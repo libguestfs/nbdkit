@@ -201,6 +201,7 @@ tar_close (void *handle)
   struct handle *h = handle;
 
   close (h->fd);
+  free (h);
 }
 
 /* Get the file size. */
