@@ -100,6 +100,7 @@
   static inline int                                                     \
   name##_insert (name *v, type elem, size_t i)                          \
   {                                                                     \
+    assert (i <= v->size);                                              \
     if (v->size >= v->alloc) {                                          \
       if (name##_reserve (v, 1) == -1) return -1;                       \
     }                                                                   \
@@ -114,6 +115,15 @@
   name##_append (name *v, type elem)                                    \
   {                                                                     \
     return name##_insert (v, elem, v->size);                            \
+  }                                                                     \
+                                                                        \
+  /* Remove i'th element.  i=0 => beginning  i=size-1 => end */         \
+  static inline void                                                    \
+  name##_remove (name *v, size_t i)                                     \
+  {                                                                     \
+    assert (i < v->size);                                               \
+    memmove (&v->ptr[i], &v->ptr[i+1], (v->size-i) * sizeof (type));    \
+    v->size--;                                                          \
   }                                                                     \
                                                                         \
   /* Iterate over the vector, calling f() on each element. */           \

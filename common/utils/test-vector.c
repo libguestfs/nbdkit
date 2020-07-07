@@ -43,19 +43,42 @@
 DEFINE_VECTOR_TYPE(int64_vector, int64_t);
 DEFINE_VECTOR_TYPE(string_vector, char *);
 
+static int
+compare (const int64_t *a, const int64_t *b)
+{
+  return (*a > *b) - (*a < *b);
+}
+
 static void
 test_int64_vector (void)
 {
   int64_vector v = empty_vector;
   size_t i;
   int r;
+  int64_t tmp, *p;
 
   for (i = 0; i < 10; ++i) {
-    r = int64_vector_append (&v, i);
+    r = int64_vector_insert (&v, i, 0);
     assert (r == 0);
   }
+
+  for (i = 0; i < 10; ++i)
+    assert (v.ptr[i] == 9 - i);
+  int64_vector_sort (&v, compare);
   for (i = 0; i < 10; ++i)
     assert (v.ptr[i] == i);
+
+  int64_vector_remove (&v, 1);
+  assert (v.size == 9);
+  assert (v.ptr[1] == 2);
+
+  tmp = 10;
+  p = int64_vector_search (&v, &tmp, (void*) compare);
+  assert (p == NULL);
+  tmp = 8;
+  p = int64_vector_search (&v, &tmp, (void*) compare);
+  assert (p == &v.ptr[7]);
+
   free (v.ptr);
 }
 
