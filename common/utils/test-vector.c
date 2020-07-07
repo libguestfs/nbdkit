@@ -47,9 +47,12 @@ test_int64_vector (void)
 {
   int64_vector v = empty_vector;
   size_t i;
+  int r;
 
-  for (i = 0; i < 10; ++i)
-    assert (int64_vector_append (&v, i) == 0);
+  for (i = 0; i < 10; ++i) {
+    r = int64_vector_append (&v, i);
+    assert (r == 0);
+  }
   for (i = 0; i < 10; ++i)
     assert (v.ptr[i] == i);
   free (v.ptr);
@@ -60,15 +63,19 @@ test_string_vector (void)
 {
   string_vector v = empty_vector;
   size_t i;
+  int r;
 
   for (i = 0; i < 10; ++i) {
     char *s;
 
-    assert (asprintf (&s, "number %zu", i) >= 0);
-    assert (string_vector_append (&v, s) == 0);
+    r = asprintf (&s, "number %zu", i);
+    assert (r >= 0);
+    r = string_vector_append (&v, s);
+    assert (r == 0);
   }
   /* NULL-terminate the strings. */
-  assert (string_vector_append (&v, NULL) == 0);
+  r = string_vector_append (&v, NULL);
+  assert (r == 0);
 
   /* Now print them. */
   for (i = 0; v.ptr[i] != NULL; ++i)
