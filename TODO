@@ -278,6 +278,14 @@ Build-related
 
 * Port to Windows.
 
+* Right now, 'make check' builds keys with an expiration of 1 year
+  only if they don't exist, and we leave the keys around except under
+  'make distclean'.  This leads to testsuite failures when
+  (re-)building in an incremental tree first started more than a year
+  ago.  Better would be having make unconditionally run the generator
+  scripts, but tweak the scripts themselves to be a no-op unless the
+  keys don't exist or have expired.
+
 V3 plugin protocol
 ------------------
 
