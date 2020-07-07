@@ -41,6 +41,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
+#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 
 #include "test.h"

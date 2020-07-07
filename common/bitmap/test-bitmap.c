@@ -40,6 +40,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 
 #include <nbdkit-plugin.h>

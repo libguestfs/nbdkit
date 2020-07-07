@@ -32,6 +32,7 @@
 
 #include <config.h>
 
+#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 #include <fcntl.h>
 #include <stdbool.h>
