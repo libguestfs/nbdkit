@@ -335,6 +335,7 @@ nbdplug_reader (void *handle)
 
     dir = nbd_aio_get_direction (h->nbd);
 
+    r = 0;
     if ((dir & LIBNBD_AIO_DIRECTION_READ) && (fds[0].revents & POLLIN))
       r = nbd_aio_notify_read (h->nbd);
     else if ((dir & LIBNBD_AIO_DIRECTION_WRITE) && (fds[0].revents & POLLOUT))
