@@ -116,6 +116,11 @@ extern void nbdkit_extents_free (struct nbdkit_extents *);
 extern size_t nbdkit_extents_count (const struct nbdkit_extents *);
 extern struct nbdkit_extent nbdkit_get_extent (const struct nbdkit_extents *,
                                                size_t);
+extern int nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
+                                   nbdkit_backend *nxdata,
+                                   uint32_t count, uint64_t offset,
+                                   uint32_t flags, uint32_t align,
+                                   struct nbdkit_extents *extents, int *err);
 
 /* Filter struct. */
 struct nbdkit_filter {

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019 Red Hat Inc.
+ * Copyright (C) 2019-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -41,7 +41,10 @@
 #include <errno.h>
 #include <assert.h>
 
+#include "cleanup.h"
+#include "isaligned.h"
 #include "minmax.h"
+#include "rounding.h"
 #include "vector.h"
 
 #include "internal.h"
@@ -205,4 +208,87 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
       { .offset = offset, .length = length, .type = type };
     return append_extent (exts, &e);
   }
+}
+
+/* Compute aligned extents on behalf of a filter. */
+int
+nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
+                        nbdkit_backend *nxdata,
+                        uint32_t count, uint64_t offset,
+                        uint32_t flags, uint32_t align,
+                        struct nbdkit_extents *exts, int *err)
+{
+  size_t i;
+  struct nbdkit_extent *e, *e2;
+
+  assert (IS_ALIGNED(count | offset, align));
+
+  /* Perform an initial query, then scan for the first unaligned extent. */
+  if (next_ops->extents (nxdata, count, offset, flags, exts, err) == -1)
+    return -1;
+  for (i = 0; i < exts->extents.size; ++i) {
+    e = &exts->extents.ptr[i];
+    if (!IS_ALIGNED(e->length, align)) {
+      /* If the unalignment is past align, just truncate and return early */
+      if (e->offset + e->length > offset + align) {
+        e->length = ROUND_DOWN (e->length, align);
+        exts->extents.size = i + !!e->length;
+        exts->next = e->offset + e->length;
+        break;
+      }
+
+      /* Otherwise, coalesce until we have at least align bytes, which
+       * may require further queries. The type bits are:
+       *  NBDKIT_EXTENT_HOLE (1<<0)
+       *  NBDKIT_EXTENT_ZERO (1<<1)
+       * and the NBD protocol says any future bits will also have the
+       * desired property that returning '0' is the safe default for
+       * the generic case.  Thus, performing the bitwise-and
+       * intersection of the types of underlying extents gives the
+       * correct type for our merged extent.
+       */
+      assert (i == 0);
+      while (e->length < align) {
+        if (exts->extents.size > 1) {
+          e->length += exts->extents.ptr[1].length;
+          e->type &= exts->extents.ptr[1].type;
+          extents_remove (&exts->extents, 1);
+        }
+        else {
+          /* The plugin needs a fresh extents object each time, but
+           * with care, we can merge it into the callers' exts.
+           */
+          extents tmp;
+          CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 = NULL;
+
+          extents2 = nbdkit_extents_new (e->offset + e->length,
+                                         offset + align);
+          if (extents2 == NULL) {
+            *err = errno;
+            return -1;
+          }
+          if (next_ops->extents (nxdata, align - e->length,
+                                 offset + e->length,
+                                 flags & ~NBDKIT_FLAG_REQ_ONE,
+                                 extents2, err) == -1)
+            return -1;
+          e2 = &extents2->extents.ptr[0];
+          assert (e2->offset == e->offset + e->length);
+          e2->offset = e->offset;
+          e2->length += e->length;
+          e2->type &= e->type;
+          e = e2;
+          tmp = exts->extents;
+          exts->extents = extents2->extents;
+          extents2->extents = tmp;
+        }
+      }
+      e->length = align;
+      exts->extents.size = 1;
+      exts->next = e->offset + e->length;
+      break;
+    }
+  }
+  /* Once we get here, all extents are aligned. */
+  return 0;
 }

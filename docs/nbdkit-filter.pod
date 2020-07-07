@@ -719,6 +719,25 @@ Returns the number of extents in the list.
 
 Returns a copy of the C<i>'th extent.
 
+=head3 Enforcing alignment of an nbdkit_extents list
+
+A convenience function is provided to filters only which makes it
+easier to ensure that the client only encounters aligned extents.
+
+ int nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
+                             nbdkit_backend *nxdata,
+                             uint32_t count, uint64_t offset,
+                             uint32_t flags, uint32_t align,
+                             struct nbdkit_extents *extents, int *err);
+
+Calls next_ops->extents as needed until at least C<align> bytes are
+obtained, where C<align> is a power of 2.  Anywhere the underlying
+plugin returns differing extents within C<align> bytes, this function
+treats that portion of the disk as a single extent with zero and
+sparse status bits determined by the intersection of all underlying
+extents.  It is an error to call this function with C<count> or
+C<offset> that is not already aligned.
+
 =head2 C<.cache>
 
  int (*cache) (struct nbdkit_next_ops *next_ops, void *nxdata,
