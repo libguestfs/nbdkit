@@ -684,12 +684,14 @@ TESTS += \
 	test-nbd-qcow2.sh \
 	test-nbd-tls.sh \
 	test-nbd-tls-psk.sh \
+	test-nbd-vsock.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-nbd-extents.sh \
 	test-nbd-qcow2.sh \
 	test-nbd-tls.sh \
 	test-nbd-tls-psk.sh \
+	test-nbd-vsock.sh \
 	$(NULL)
 
 test_nbd_SOURCES = test-nbd.c test.h
