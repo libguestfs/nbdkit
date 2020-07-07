@@ -40,6 +40,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/socket.h>

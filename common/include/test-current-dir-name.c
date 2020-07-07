@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 
 #include "get-current-dir-name.h"

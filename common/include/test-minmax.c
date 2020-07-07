@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <limits.h>
+#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 #include <float.h>
 

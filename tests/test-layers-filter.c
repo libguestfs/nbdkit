@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 
 #include <nbdkit-filter.h>
