@@ -1,6 +1,5 @@
-#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2017-2020 Red Hat Inc.
+# Copyright (C) 2019-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -30,40 +29,39 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Test that qemu-img info works on a qcow2 file in a tar file.
+include $(top_srcdir)/common-rules.mk
 
-source ./functions.sh
-set -e
-set -x
+EXTRA_DIST = nbdkit-tar-filter.pod
 
-requires test -f disk
-requires guestfish --version
-requires tar --version
-requires qemu-img --version
-requires qemu-img info --output=json /dev/null
-requires jq --version
-requires stat --version
+filter_LTLIBRARIES = nbdkit-tar-filter.la
 
-disk=tar-info-disk.qcow2
-out=tar-info.out
-tar=tar-info.tar
-files="$disk $out $tar"
-rm -f $files
-cleanup_fn rm -f $files
+nbdkit_tar_filter_la_SOURCES = \
+	tar.c \
+	$(top_srcdir)/include/nbdkit-filter.h \
+	$(NULL)
 
-# Create a tar file containing a known qcow2 file.
-qemu-img convert -f raw disk -O qcow2 $disk
-tar cf $tar $disk
+nbdkit_tar_filter_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
+nbdkit_tar_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
+nbdkit_tar_filter_la_LDFLAGS = \
+	-module -avoid-version -shared $(SHARED_LDFLAGS) \
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
+	$(NULL)
+nbdkit_tar_filter_la_LIBADD = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(NULL)
 
-# Run nbdkit.
-nbdkit -U - file $tar \
-       --filter=tar tar-entry=$disk \
-       --run 'qemu-img info --output=json $nbd' > $out
-cat $out
+if HAVE_POD
 
-# Check various fields in the input.
-# Virtual size must be the same as the size of the original raw disk.
-test "$( jq -r -c '.["virtual-size"]' $out )" -eq "$( stat -c %s disk )"
+man_MANS = nbdkit-tar-filter.1
+CLEANFILES += $(man_MANS)
 
-# Format must be qcow2.
-test "$( jq -r -c '.["format"]' $out )" = "qcow2"
+nbdkit-tar-filter.1: nbdkit-tar-filter.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+endif HAVE_POD

@@ -1,0 +1,117 @@
+=head1 NAME
+
+nbdkit-tar-filter - read and write files inside tar files without unpacking
+
+=head1 SYNOPSIS
+
+ nbdkit file FILENAME.tar --filter=tar tar-entry=PATH_INSIDE_TAR
+
+=head1 EXAMPLES
+
+=head2 Serve a single file inside a tarball
+
+ nbdkit file file.tar --filter=tar tar-entry=some/disk.img
+ guestfish --format=raw -a nbd://localhost
+
+=head2 Opening a disk image inside an OVA file
+
+The popular "Open Virtual Appliance" (OVA) format is really an
+uncompressed tar file containing (usually) VMDK-format files, so you
+could access one file in an OVA like this:
+
+ $ tar tf rhel.ova
+ rhel.ovf
+ rhel-disk1.vmdk
+ rhel.mf
+ $ nbdkit -r file rhel.ova --filter=tar tar-entry=rhel-disk1.vmdk
+ $ guestfish --ro --format=vmdk -a nbd://localhost
+
+In this case the tarball is opened readonly (I<-r> option).  The
+plugin supports write access, but writing to the VMDK file in the
+tarball does not change data checksums stored in other files (the
+C<rhel.mf> file in this example), and as these will become incorrect
+you probably won't be able to open the file with another tool
+afterwards.
+
+=head2 Open a disk image inside a remote tar file
+
+You can use other plugins apart from L<nbdkit-file-plugin(1)> to
+provide the tar file.  For example if the tar file is located on a web
+server use:
+
+ nbdkit -r curl https://example.com/file.tar \
+        --filter=tar tar-entry=disk.img
+
+=head2 Open an xz-compressed tar file (read-only)
+
+This filter cannot handle compressed tar files itself, but you can
+combine it with L<nbdkit-xz-filter(1)>:
+
+ nbdkit file filename.tar.xz \
+        --filter=tar tar-entry=disk.img --filter=xz
+
+=head1 DESCRIPTION
+
+C<nbdkit-tar-filter> is a filter which can read and writes files
+inside an uncompressed tar file without unpacking the tar file.
+
+The tar file is provided by the underlying plugin.  You must tell the
+filter which entry in the tar file you wish to read and write using
+the C<tar-entry> parameter.  C<tar-entry> must exactly match the file
+name in the tar index.  Use C<tar tf filename.tar> to list the index
+of a tar file.
+
+This filter will B<not> work directly on compressed tar files.  You
+have to combine it with another filter as shown in the example above.
+
+Use the nbdkit I<-r> flag to open the file readonly.  This is the
+safest option because it guarantees that the tar file will not be
+modified.  Without I<-r> writes will modify the tar file.
+
+The disk image cannot be resized.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item [B<tar-entry=>]PATH_INSIDE_TAR
+
+The path of the file inside the tarball to serve.  This parameter is
+required.  It must exactly match the name stored in the tarball, so
+use S<C<tar tf filename.tar>>
+
+=item B<tar=gtar>
+
+=item B<tar=>/PATH/TO/GTAR
+
+Specify the program name or full path of GNU tar, in case C<tar> on
+C<$PATH> is not GNU tar.  This filter requires GNU tar and will not
+normally work with other tar programs (eg. on FreeBSD).
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-tar-filter> first appeared in nbdkit 1.22.  It is derived
+from C<nbdkit-tar-plugin> which first appeared in nbdkit 1.2.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-curl-plugin(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-offset-filter(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-ssh-plugin(1)>,
+L<nbdkit-xz-filter(1)>,
+L<tar(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones.
+
+Based on the virt-v2v OVA importer written by Tomáš Golembiovský.
+
+=head1 COPYRIGHT
+
+Copyright (C) 2017-2020 Red Hat Inc.

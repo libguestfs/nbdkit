@@ -106,10 +106,10 @@ If the source suffers from temporary network failures
 L<nbdkit-retry-filter(1)> may help.
 
 To overwrite a file inside an uncompressed tar file (the file being
-overwritten must be the same size), use L<nbdkit-tar-plugin(1)> like
+overwritten must be the same size), use L<nbdkit-tar-filter(1)> like
 this:
 
- nbdkit -U - tar tar=data.tar file=disk.img \
+ nbdkit -U - file data.tar --filter=tar tar-entry=disk.img \
    --run 'qemu-img convert -n disk.img $nbd'
 
 =head1 EXIT WITH PARENT

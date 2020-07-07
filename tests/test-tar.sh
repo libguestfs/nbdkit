@@ -49,7 +49,7 @@ tar cf tar.tar test-tar.sh Makefile disk Makefile.am
 tar tvvf tar.tar
 
 # Run nbdkit.
-start_nbdkit -P tar.pid -U $sock tar tar=tar.tar file=disk
+start_nbdkit -P tar.pid -U $sock file tar.tar --filter=tar tar-entry=disk
 
 # Now see if we can open, read and write the disk from the tar file.
 guestfish -x --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF

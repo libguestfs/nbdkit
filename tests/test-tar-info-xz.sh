@@ -30,7 +30,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Test that qemu-img info works on a qcow2 file in a tar file.
+# Test that qemu-img info works on a qcow2 file in a tar.xz file.
 
 source ./functions.sh
 set -e
@@ -43,21 +43,25 @@ requires qemu-img --version
 requires qemu-img info --output=json /dev/null
 requires jq --version
 requires stat --version
+requires xz --version
 
-disk=tar-info-disk.qcow2
-out=tar-info.out
-tar=tar-info.tar
-files="$disk $out $tar"
+disk=tar-info-disk-xz.qcow2
+out=tar-info-xz.out
+tar=tar-info-xz.tar
+tar_xz=tar-info-xz.tar.xz
+files="$disk $out $tar $tar_xz"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Create a tar file containing a known qcow2 file.
 qemu-img convert -f raw disk -O qcow2 $disk
 tar cf $tar $disk
+xz --best --block-size=32768 $tar
 
 # Run nbdkit.
-nbdkit -U - file $tar \
+nbdkit -U - file $tar_xz \
        --filter=tar tar-entry=$disk \
+       --filter=xz \
        --run 'qemu-img info --output=json $nbd' > $out
 cat $out
 

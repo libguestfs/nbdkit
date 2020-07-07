@@ -6,6 +6,15 @@ nbdkit-tar-plugin - read and write files inside tar files without unpacking
 
  nbdkit tar [tar=]FILENAME.tar file=PATH_INSIDE_TAR
 
+=head1 DEPRECATED
+
+B<The tar plugin is deprecated in S<nbdkit E<ge> 1.22.16> and will be
+removed in S<nbdkit 1.26>>.  It has been replaced with a filter with
+the same functionality, see L<nbdkit-tar-filter(1)>.  You can use the
+filter like this:
+
+ nbdkit file FILENAME.tar --filter=tar tar-entry=PATH_INSIDE_TAR
+
 =head1 EXAMPLES
 
 =head2 Serve a single file inside a tarball
@@ -113,6 +122,7 @@ C<nbdkit-tar-plugin> first appeared in nbdkit 1.2.
 L<nbdkit(1)>,
 L<nbdkit-offset-filter(1)>,
 L<nbdkit-plugin(3)>,
+L<nbdkit-tar-filter(1)>,
 L<nbdkit-xz-filter(1)>,
 L<tar(1)>.
 

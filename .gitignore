@@ -90,6 +90,7 @@ plugins/*/*.3
 /tests/__pycache__/
 /tests/disk
 /tests/disk.gz
+/tests/disk.tar.xz
 /tests/disk.xz
 /tests/ext2.img
 /tests/file-data
@@ -144,6 +145,7 @@ plugins/*/*.3
 /tests/test-socket-activation
 /tests/test-split
 /tests/test-streaming
+/tests/test-tar-xz-curl
 /tests/test-tcl
 /tests/test-tmpdisk
 /tests/test-vddk

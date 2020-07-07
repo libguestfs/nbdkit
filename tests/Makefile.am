@@ -832,16 +832,6 @@ test_streaming_SOURCES = test-streaming.c
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_streaming_LDADD = $(LIBNBD_LIBS)
 
-# tar plugin test.
-TESTS += \
-	test-tar.sh \
-	test-tar-info.sh \
-	$(NULL)
-EXTRA_DIST += \
-	test-tar.sh \
-	test-tar-info.sh \
-	$(NULL)
-
 # tmpdisk plugin test.
 LIBGUESTFS_TESTS += test-tmpdisk
 TESTS += test-tmpdisk-command.sh
@@ -1384,6 +1374,24 @@ EXTRA_DIST += \
 	test-swab-extents.sh \
 	$(NULL)
 
+# tar filter test.
+check_DATA += disk.tar
+CLEANFILES += disk.tar
+TESTS += \
+	test-tar.sh \
+	test-tar-info.sh \
+	test-tar-info-xz.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-tar.sh \
+	test-tar-info.sh \
+	test-tar-info-xz.sh \
+	$(NULL)
+
+disk.tar: disk
+	rm -f $@
+	tar cf disk.tar disk
+
 # truncate filter tests.
 TESTS += \
 	test-truncate1.sh \
@@ -1404,8 +1412,8 @@ EXTRA_DIST += \
 if HAVE_MKE2FS_WITH_D
 if HAVE_LIBLZMA
 LIBGUESTFS_TESTS += test-xz
-check_DATA += disk.xz
-CLEANFILES += disk.xz
+check_DATA += disk.xz disk.tar.xz
+CLEANFILES += disk.xz disk.tar.xz
 
 test_xz_SOURCES = test-xz.c test.h
 test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
@@ -1417,9 +1425,16 @@ disk.xz: disk
 # you should choose a 16M block size.
 	xz --best --block-size=32768 -c disk > $@
 
-# xz filter + curl.
+disk.tar.xz: disk.tar
+	rm -f $@
+	xz --best --block-size=32768 disk.tar
+
+# tar filter + xz filter + curl.
 if HAVE_CURL
-LIBGUESTFS_TESTS += test-xz-curl
+LIBGUESTFS_TESTS += \
+	test-xz-curl \
+	test-tar-xz-curl \
+	$(NULL)
 
 test_xz_curl_SOURCES = \
 	test-xz-curl.c \
@@ -1439,6 +1454,28 @@ test_xz_curl_LDFLAGS = \
 	$(PTHREAD_LIBS) \
 	$(NULL)
 test_xz_curl_LDADD = \
+	libtest.la \
+	$(LIBGUESTFS_LIBS) \
+	$(NULL)
+
+test_tar_xz_curl_SOURCES = \
+	test-tar-xz-curl.c \
+	web-server.c \
+	web-server.h \
+	test.h \
+	$(NULL)
+test_tar_xz_curl_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils
+test_tar_xz_curl_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
+test_tar_xz_curl_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(PTHREAD_LIBS) \
+	$(NULL)
+test_tar_xz_curl_LDADD = \
 	libtest.la \
 	$(LIBGUESTFS_LIBS) \
 	$(NULL)
