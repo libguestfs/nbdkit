@@ -89,10 +89,11 @@ swab_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
  * XXX We could lift this restriction with more work.
  */
 static bool
-is_aligned (uint32_t count, uint64_t offset)
+is_aligned (uint32_t count, uint64_t offset, int *err)
 {
   if (!IS_ALIGNED (count, bits/8) || !IS_ALIGNED (offset, bits/8)) {
     nbdkit_error ("swab: requests to this filter must be aligned");
+    *err = EINVAL;
     return false;
   }
   return true;
@@ -138,7 +139,7 @@ swab_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   int r;
 
-  if (!is_aligned (count, offset)) return -1;
+  if (!is_aligned (count, offset, err)) return -1;
 
   r = next_ops->pread (nxdata, buf, count, offset, flags, err);
   if (r == -1)
@@ -157,7 +158,7 @@ swab_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   CLEANUP_FREE uint16_t *block = NULL;
 
-  if (!is_aligned (count, offset)) return -1;
+  if (!is_aligned (count, offset, err)) return -1;
 
   block = malloc (count);
   if (block == NULL) {
@@ -177,7 +178,7 @@ swab_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
            void *handle, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
-  if (!is_aligned (count, offset)) return -1;
+  if (!is_aligned (count, offset, err)) return -1;
   return next_ops->trim (nxdata, count, offset, flags, err);
 }
 
@@ -187,7 +188,7 @@ swab_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
            void *handle, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
-  if (!is_aligned (count, offset)) return -1;
+  if (!is_aligned (count, offset, err)) return -1;
   return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
@@ -208,7 +209,7 @@ swab_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
-  if (!is_aligned (count, offset)) return -1;
+  if (!is_aligned (count, offset, err)) return -1;
   return next_ops->cache (nxdata, count, offset, flags, err);
 }
 
