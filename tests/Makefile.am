@@ -1199,8 +1199,8 @@ test_layers_filter3_la_LDFLAGS = \
 	$(NULL)
 
 # blocksize filter test.
-TESTS += test-blocksize.sh
-EXTRA_DIST += test-blocksize.sh
+TESTS += test-blocksize.sh test-blocksize-extents.sh
+EXTRA_DIST += test-blocksize.sh test-blocksize-extents.sh
 
 # cache filter test.
 TESTS += \

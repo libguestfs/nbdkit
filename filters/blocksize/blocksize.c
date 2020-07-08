@@ -43,6 +43,7 @@
 
 #include <nbdkit-filter.h>
 
+#include "cleanup.h"
 #include "minmax.h"
 #include "rounding.h"
 
@@ -372,16 +373,37 @@ blocksize_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
                    void *handle, uint32_t count, uint64_t offset,
                    uint32_t flags, struct nbdkit_extents *extents, int *err)
 {
-  /* Ask the plugin for blocksize-aligned data.  Since the extents
-   * list start is set to the real offset, everything before the
-   * offset is ignored automatically.  Also we only need to ask for
-   * maxlen of data, because it's fine to return less than the full
-   * count as long as we're making progress.
+  /* Ask the plugin for blocksize-aligned data.  Copying that into the
+   * callers' extents will then take care of truncating unaligned
+   * ends.  Also we only need to ask for maxlen of data, because it's
+   * fine to return less than the full count as long as we're making
+   * progress.
    */
-  return next_ops->extents (nxdata,
-                            MIN (count, maxlen),
-                            ROUND_DOWN (offset, minblock),
-                            flags, extents, err);
+  CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 = NULL;
+  size_t i;
+  struct nbdkit_extent e;
+
+  extents2 = nbdkit_extents_new (ROUND_DOWN (offset, minblock),
+                                 ROUND_UP (offset + count, minblock));
+  if (extents2 == NULL) {
+    *err = errno;
+    return -1;
+  }
+
+  if (nbdkit_extents_aligned (next_ops, nxdata,
+                              MIN (ROUND_UP (count, minblock), maxlen),
+                              ROUND_DOWN (offset, minblock),
+                              flags, minblock, extents2, err) == -1)
+    return -1;
+
+  for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
+    e = nbdkit_get_extent (extents2, i);
+    if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
+      *err = errno;
+      return -1;
+    }
+  }
+  return 0;
 }
 
 static int

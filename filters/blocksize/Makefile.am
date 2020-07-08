@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -43,11 +43,15 @@ nbdkit_blocksize_filter_la_SOURCES = \
 nbdkit_blocksize_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_blocksize_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_blocksize_filter_la_LDFLAGS = \
 	-module -avoid-version -shared $(SHARED_LDFLAGS) \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
+	$(NULL)
+nbdkit_blocksize_filter_la_LIBADD = \
+	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 
 if HAVE_POD
