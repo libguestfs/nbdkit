@@ -345,7 +345,7 @@ eval_config_complete (void)
       create_can_wrapper ("flush",   "can_flush") == -1 ||
       create_can_wrapper ("trim",    "can_trim") == -1 ||
       create_can_wrapper ("zero",    "can_zero") == -1 ||
-      create_can_wrapper ("extents", "can_flush") == -1)
+      create_can_wrapper ("extents", "can_extents") == -1)
     return -1;
 
   /* Call config_complete. */
