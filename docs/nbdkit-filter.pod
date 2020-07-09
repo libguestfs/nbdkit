@@ -372,14 +372,26 @@ connection (C<.finalize>).
 
 For example if you need to scan the underlying disk to check for a
 partition table, you could do it in your C<.prepare> method (calling
-the plugin's C<.pread> method via C<next_ops>).  Or if you need to
-cleanly update superblock data in the image on close you can do it in
-your C<.finalize> method (calling the plugin's C<.pwrite> method).
-Doing these things in the filter's C<.open> or C<.close> method is not
-possible.
+the plugin's C<.get_size> and C<.pread> methods via C<next_ops>).  Or
+if you need to cleanly update superblock data in the image on close
+you can do it in your C<.finalize> method (calling the plugin's
+C<.pwrite> method).  Doing these things in the filter's C<.open> or
+C<.close> method is not possible.
 
 For C<.prepare>, the value of C<readonly> is the same as was passed to
 C<.open>, declaring how this filter will be used.
+
+Note that nbdkit performs sanity checking on requests made to the
+underlying plugin; for example, C<next_ops-E<gt>pread> cannot be
+called on a given connection unless C<next_ops-E<gt>get_size> has
+first been called at least once in the same connection (to ensure the
+read requests are in bounds), and C<next_ops-E<gt>pwrite> further
+requires an earlier successful call to C<next_ops-E<gt>can_write>.  In
+many filters, these prerequisites will be automatically called during
+the client negotiation phase, but there are cases where a filter
+overrides query functions or makes I/O calls into the plugin before
+handshaking is complete, where the filter needs to make those
+prerequisite calls manually during C<.prepare>.
 
 There is no C<next_ops-E<gt>prepare> or C<next_ops-E<gt>finalize>.
 Unlike other filter methods, prepare and finalize are not chained
