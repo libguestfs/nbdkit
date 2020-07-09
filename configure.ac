@@ -68,7 +68,6 @@ non_lang_plugins="\
         example2 \
         example3 \
         example4 \
-        ext2 \
         file \
         floppy \
         full \
@@ -1002,7 +1001,7 @@ dnl Check for guestfish (only needed for some of the tests).
 AC_CHECK_PROG([GUESTFISH], [guestfish], [guestfish], [no])
 AM_CONDITIONAL([HAVE_GUESTFISH], [test "x$GUESTFISH" != "xno"])
 
-dnl Check for ext2fs and com_err, for the ext2 filter and plugin.
+dnl Check for ext2fs and com_err, for the ext2 filter.
 AC_ARG_WITH([ext2],
     [AS_HELP_STRING([--without-ext2],
                     [disable ext2 filter @<:@default=check@:>@])],
@@ -1014,13 +1013,13 @@ AS_IF([test "$with_ext2" != "no"], [
         AC_SUBST([EXT2FS_LIBS])
         AC_DEFINE([HAVE_EXT2FS],[1],[ext2fs found at compile time.])
     ],
-    [AC_MSG_WARN([ext2fs not found, ext2 plugin will be disabled])])
+    [AC_MSG_WARN([ext2fs not found, ext2 filter will be disabled])])
     PKG_CHECK_MODULES([COM_ERR], [com_err], [
         AC_SUBST([COM_ERR_CFLAGS])
         AC_SUBST([COM_ERR_LIBS])
         AC_DEFINE([HAVE_COM_ERR],[1],[com_err found at compile time.])
     ],
-    [AC_MSG_WARN([com_err not found, ext2 plugin will be disabled])])
+    [AC_MSG_WARN([com_err not found, ext2 filter will be disabled])])
 
     AC_CHECK_MEMBERS([struct struct_io_manager.cache_readahead,
                       struct struct_io_manager.zeroout])
@@ -1101,7 +1100,6 @@ AC_CONFIG_FILES([Makefile
                  plugins/example2/Makefile
                  plugins/example3/Makefile
                  plugins/example4/Makefile
-                 plugins/ext2/Makefile
                  plugins/file/Makefile
                  plugins/floppy/Makefile
                  plugins/full/Makefile
@@ -1209,8 +1207,6 @@ feature "curl ................................... " \
         test "x$HAVE_CURL_TRUE" = "x"
 feature "example4 ............................... " \
         test "x$HAVE_PERL_TRUE" = "x"
-feature "ext2 ................................... " \
-        test "x$HAVE_EXT2_TRUE" = "x"
 feature "floppy ................................. " \
         test "x$HAVE_ICONV_TRUE" = "x"
 feature "guestfs ................................ " \
@@ -1232,7 +1228,6 @@ feature "torrent ................................ " \
 feature "vddk ................................... " \
         test "x$HAVE_VDDK_TRUE" = "x"
 
-
 echo
 echo "Languages:"
 echo
@@ -1252,7 +1247,6 @@ feature "rust ................................... " \
         test "x$HAVE_RUST_TRUE" = "x"
 feature "tcl .................................... " \
         test "x$HAVE_TCL_TRUE" = "x"
-
 
 echo
 echo "Optional filters:"

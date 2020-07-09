@@ -534,34 +534,6 @@ EXTRA_DIST += \
 	test-eval-file.sh \
 	$(NULL)
 
-# ext2 filter and plugin test.
-if HAVE_MKE2FS_WITH_D
-if HAVE_EXT2
-if HAVE_GUESTFISH
-
-LIBGUESTFS_TESTS += test-ext2
-check_DATA += ext2.img
-CLEANFILES += ext2.img
-
-ext2.img: disk
-	rm -f $@ $@-t
-	guestfish \
-	    sparse $@-t 2G : \
-	    run : \
-	    mkfs ext4 /dev/sda : \
-	    mount /dev/sda / : \
-	    mkdir /disks : \
-	    upload $< /disks/disk.img
-	mv $@-t $@
-
-test_ext2_SOURCES = test-ext2.c test.h
-test_ext2_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_ext2_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-endif HAVE_GUESTFISH
-endif HAVE_EXT2
-endif HAVE_MKE2FS_WITH_D
-
 # file plugin test.
 LIBNBD_TESTS += test-file
 LIBGUESTFS_TESTS += test-file-block
@@ -1244,6 +1216,34 @@ EXTRA_DIST += \
 # exitlast filter test.
 TESTS += test-exitlast.sh
 EXTRA_DIST += test-exitlast.sh
+
+# ext2 filter test.
+if HAVE_MKE2FS_WITH_D
+if HAVE_EXT2
+if HAVE_GUESTFISH
+
+LIBGUESTFS_TESTS += test-ext2
+check_DATA += ext2.img
+CLEANFILES += ext2.img
+
+ext2.img: disk
+	rm -f $@ $@-t
+	guestfish \
+	    sparse $@-t 2G : \
+	    run : \
+	    mkfs ext4 /dev/sda : \
+	    mount /dev/sda / : \
+	    mkdir /disks : \
+	    upload $< /disks/disk.img
+	mv $@-t $@
+
+test_ext2_SOURCES = test-ext2.c test.h
+test_ext2_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_ext2_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+endif HAVE_GUESTFISH
+endif HAVE_EXT2
+endif HAVE_MKE2FS_WITH_D
 
 # extentlist filter test.
 TESTS += test-extentlist.sh

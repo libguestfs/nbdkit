@@ -43,12 +43,16 @@
 
 #include "test.h"
 
-static int
-do_test (void)
+int
+main (int argc, char *argv[])
 {
   guestfs_h *g;
   int r;
   char *data;
+
+  if (test_start_nbdkit ("--filter", "ext2", "-r", "file", "ext2.img",
+                         "ext2file=/disks/disk.img", NULL) == -1)
+    exit (EXIT_FAILURE);
 
   g = guestfs_create ();
   if (g == NULL) {
@@ -85,21 +89,5 @@ do_test (void)
   }
 
   guestfs_close (g);
-  return 0;
-}
-
-int
-main (int argc, char *argv[])
-{
-  /* Older plugin */
-  if (test_start_nbdkit ("ext2", "-r", "disk=ext2.img", "file=/disks/disk.img",
-                         NULL) == -1)
-  do_test ();
-
-  /* Newer filter */
-  if (test_start_nbdkit ("--filter", "ext2", "-r", "file", "ext2.img",
-                         "ext2file=/disks/disk.img", NULL) == -1)
-    exit (EXIT_FAILURE);
-  do_test ();
-  return 0;
+  exit (EXIT_SUCCESS);
 }

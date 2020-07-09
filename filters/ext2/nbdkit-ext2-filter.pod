@@ -81,8 +81,9 @@ Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
 
 =head1 VERSION
 
-C<nbdkit-ext2-filter> first appeared in nbdkit 1.18, replacing an older
-C<nbdkit-ext2-plugin> from nbdkit 1.4.
+C<nbdkit-ext2-filter> first appeared in nbdkit 1.18,
+replacing C<nbdkit-ext2-plugin> which was added in nbdkit 1.4
+and removed in nbdkit 1.22.
 
 =head1 SEE ALSO
 
