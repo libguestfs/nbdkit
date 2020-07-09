@@ -65,6 +65,7 @@ static const char *url = NULL;  /* required */
 static const char *cainfo = NULL;
 static const char *capath = NULL;
 static char *cookie = NULL;
+static struct curl_slist *headers = NULL;
 static char *password = NULL;
 static long protocols = CURLPROTO_ALL;
 static const char *proxy = NULL;
@@ -108,6 +109,8 @@ curl_unload (void)
   free (password);
   free (proxy_password);
   free (cookie);
+  if (headers)
+    curl_slist_free_all (headers);
   curl_global_cleanup ();
 }
 
@@ -202,6 +205,14 @@ curl_config (const char *key, const char *value)
     free (cookie);
     if (nbdkit_read_password (value, &cookie) == -1)
       return -1;
+  }
+
+  else if (strcmp (key, "header") == 0) {
+    headers = curl_slist_append (headers, value);
+    if (headers == NULL) {
+      nbdkit_error ("curl_slist_append: %m");
+      return -1;
+    }
   }
 
   else if (strcmp (key, "password") == 0) {
@@ -301,6 +312,7 @@ curl_config_complete (void)
   "cainfo=<CAINFO>            Path to Certificate Authority file.\n" \
   "capath=<CAPATH>            Path to directory with CA certificates.\n" \
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
+  "header=<HEADER>            Set HTTP/HTTPS header.\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
   "protocols=PROTO,PROTO,..   Limit protocols allowed.\n" \
   "proxy=<PROXY>              Set proxy URL.\n" \
@@ -406,6 +418,8 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_CAPATH, capath);
   if (cookie)
     curl_easy_setopt (h->c, CURLOPT_COOKIE, cookie);
+  if (headers)
+    curl_easy_setopt (h->c, CURLOPT_HTTPHEADER, headers);
   if (password)
     curl_easy_setopt (h->c, CURLOPT_PASSWORD, password);
   if (protocols != CURLPROTO_ALL) {

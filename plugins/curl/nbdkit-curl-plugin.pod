@@ -77,6 +77,29 @@ command line is not secure on shared machines.  Use the alternate
 C<+FILENAME> syntax to pass it in a file, C<-> to read the cookie
 interactively, or C<-FD> to read it from a file descriptor.
 
+=item B<header=>HEADER
+
+For HTTP/HTTPS, send a custom header, or remove a header that curl has
+added.  To add a custom header:
+
+ header='X-My-Name: John Doe'
+
+To remove a header that curl has added, add the header without any
+value:
+
+ header='User-Agent:'
+
+To add a custom header that has no value, you have to use semi-colon
+instead of colon.  This adds an 'X-Empty:' header with no value:
+
+ header='X-Empty;'
+
+See L<CURLOPT_HTTPHEADER(3)>.  You can use this option multiple times
+in order to add several headers.  Note this sends the header in all
+requests, even when following a redirect, which can cause headers
+(eg. containing sensitive authorization information) to be sent to
+hosts other than the one originally requested.
+
 =item B<password=>PASSWORD
 
 Set the password to use when connecting to the remote server.
@@ -232,6 +255,7 @@ L<libcurl(3)>,
 L<CURLOPT_CAINFO(3)>,
 L<CURLOPT_CAPATH(3)>,
 L<CURLOPT_COOKIE(3)>,
+L<CURLOPT_HTTPHEADER(3)>,
 L<CURLOPT_PROXY(3)>,
 L<CURLOPT_TCP_KEEPALIVE(3)>,
 L<CURLOPT_TCP_NODELAY(3)>,

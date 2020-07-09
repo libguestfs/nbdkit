@@ -77,6 +77,8 @@ main (int argc, char *argv[])
                          "-D", "curl.verbose=1",
                          "http://localhost/disk",
                          "cookie=foo=bar; baz=1;",
+                         "header=X-My-Name: John Doe",
+                         "header=X-My-Age: 25",
                          usp_param, /* unix-socket-path=... */
                          NULL) == -1)
     exit (EXIT_FAILURE);
