@@ -90,6 +90,7 @@ plugins/*/*.3
 /tests/__pycache__/
 /tests/disk
 /tests/disk.gz
+/tests/disk.tar
 /tests/disk.tar.xz
 /tests/disk.xz
 /tests/ext2.img

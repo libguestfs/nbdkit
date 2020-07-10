@@ -1427,7 +1427,7 @@ disk.xz: disk
 
 disk.tar.xz: disk.tar
 	rm -f $@
-	xz --best --block-size=32768 disk.tar
+	xz --best --block-size=32768 --keep disk.tar
 
 # tar filter + xz filter + curl.
 if HAVE_CURL
