@@ -143,7 +143,7 @@ xz_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   if (maxblock < xzfile_max_uncompressed_block_size (h->xz)) {
     nbdkit_error ("xz file largest block is bigger than maxblock\n"
                   "Either recompress the xz file with smaller blocks "
-                  "(see nbdkit-xz-plugin(1))\n"
+                  "(see nbdkit-xz-filter(1))\n"
                   "or make maxblock parameter bigger.\n"
                   "maxblock = %" PRIu64 " (bytes)\n"
                   "largest block in xz file = %" PRIu64 " (bytes)",
