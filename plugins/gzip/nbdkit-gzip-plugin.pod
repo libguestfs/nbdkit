@@ -6,6 +6,15 @@ nbdkit-gzip-plugin - nbdkit gzip plugin
 
  nbdkit gzip [file=]FILENAME.gz
 
+=head1 DEPRECATED
+
+B<The gzip plugin is deprecated in S<nbdkit E<ge> 1.22.17> and will be
+removed in S<nbdkit 1.26>>.  It has been replaced with a filter with
+the same functionality, see L<nbdkit-gzip-filter(1)>.  You can use the
+filter like this:
+
+ nbdkit file --filter=gzip FILENAME.gz
+
 =head1 DESCRIPTION
 
 C<nbdkit-gzip-plugin> is a file serving plugin for L<nbdkit(1)>.

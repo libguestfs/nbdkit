@@ -169,8 +169,6 @@ Rust:
 Suggestions for filters
 -----------------------
 
-* gzip plugin should really be a filter
-
 * LUKS encrypt/decrypt filter, bonus points if compatible with qemu
   LUKS-encrypted disk images
 

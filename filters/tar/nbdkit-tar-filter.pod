@@ -42,11 +42,13 @@ server use:
  nbdkit -r curl https://example.com/file.tar \
         --filter=tar tar-entry=disk.img
 
-=head2 Open an xz-compressed tar file (read-only)
+=head2 Open a compressed tar file (read-only)
 
 This filter cannot handle compressed tar files itself, but you can
-combine it with L<nbdkit-xz-filter(1)>:
+combine it with L<nbdkit-gzip-filter(1)> or L<nbdkit-xz-filter(1)>:
 
+ nbdkit file filename.tar.gz \
+        --filter=tar tar-entry=disk.img --filter=gzip
  nbdkit file filename.tar.xz \
         --filter=tar tar-entry=disk.img --filter=xz
 
@@ -100,6 +102,7 @@ from C<nbdkit-tar-plugin> which first appeared in nbdkit 1.2.
 L<nbdkit(1)>,
 L<nbdkit-curl-plugin(1)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-gzip-filter(1)>,
 L<nbdkit-offset-filter(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-ssh-plugin(1)>,

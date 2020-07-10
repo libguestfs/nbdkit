@@ -557,23 +557,6 @@ EXTRA_DIST += test-floppy.sh
 TESTS += test-full.sh
 EXTRA_DIST += test-full.sh
 
-# gzip plugin test.
-if HAVE_MKE2FS_WITH_D
-if HAVE_ZLIB
-LIBGUESTFS_TESTS += test-gzip
-check_DATA += disk.gz
-CLEANFILES += disk.gz
-
-test_gzip_SOURCES = test-gzip.c test.h
-test_gzip_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_gzip_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-disk.gz: disk
-	rm -f $@
-	gzip -9 -c disk > $@
-endif HAVE_ZLIB
-endif HAVE_MKE2FS_WITH_D
-
 # info plugin test.
 TESTS += \
 	test-info-address.sh \
@@ -1252,6 +1235,23 @@ EXTRA_DIST += test-extentlist.sh
 # fua filter test.
 TESTS += test-fua.sh
 EXTRA_DIST += test-fua.sh
+
+# gzip filter test.
+if HAVE_MKE2FS_WITH_D
+if HAVE_ZLIB
+LIBGUESTFS_TESTS += test-gzip
+check_DATA += disk.gz
+CLEANFILES += disk.gz
+
+test_gzip_SOURCES = test-gzip.c test.h
+test_gzip_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_gzip_LDADD = libtest.la $(LIBGUESTFS_LIBS)
+
+disk.gz: disk
+	rm -f $@
+	gzip -9 -c disk > $@
+endif HAVE_ZLIB
+endif HAVE_MKE2FS_WITH_D
 
 # ip filter test.
 TESTS += test-ip-filter.sh

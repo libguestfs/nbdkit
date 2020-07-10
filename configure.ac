@@ -105,6 +105,7 @@ filters="\
         ext2 \
         extentlist \
         fua \
+        gzip \
         ip \
         limit \
         log \
@@ -899,10 +900,10 @@ AS_IF([test "$with_libvirt" != "no"],[
 ])
 AM_CONDITIONAL([HAVE_LIBVIRT],[test "x$LIBVIRT_LIBS" != "x"])
 
-dnl Check for zlib (only if you want to compile the gzip plugin).
+dnl Check for zlib (only if you want to compile the gzip filter).
 AC_ARG_WITH([zlib],
     [AS_HELP_STRING([--without-zlib],
-                    [disable gzip plugin @<:@default=check@:>@])],
+                    [disable gzip filter @<:@default=check@:>@])],
     [],
     [with_zlib=check])
 AS_IF([test "$with_zlib" != "no"],[
@@ -911,7 +912,7 @@ AS_IF([test "$with_zlib" != "no"],[
         AC_SUBST([ZLIB_LIBS])
         AC_DEFINE([HAVE_ZLIB],[1],[zlib found at compile time.])
     ],
-    [AC_MSG_WARN([zlib >= 1.2.3.5 not found, gzip plugin will be disabled])])
+    [AC_MSG_WARN([zlib >= 1.2.3.5 not found, gzip filter will be disabled])])
 ])
 AM_CONDITIONAL([HAVE_ZLIB],[test "x$ZLIB_LIBS" != "x"])
 
@@ -1144,6 +1145,7 @@ AC_CONFIG_FILES([Makefile
                  filters/ext2/Makefile
                  filters/extentlist/Makefile
                  filters/fua/Makefile
+                 filters/gzip/Makefile
                  filters/ip/Makefile
                  filters/limit/Makefile
                  filters/log/Makefile
@@ -1253,6 +1255,8 @@ echo "Optional filters:"
 echo
 feature "ext2 ................................... " \
         test "x$HAVE_EXT2_TRUE" = "x"
+feature "gzip ................................... " \
+        test "x$HAVE_ZLIB_TRUE" = "x"
 feature "xz ..................................... " \
         test "x$HAVE_LIBLZMA_TRUE" = "x"
 

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013 Red Hat Inc.
+ * Copyright (C) 2013-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -43,15 +43,30 @@
 
 #include "test.h"
 
+static int do_test (void);
+
 int
 main (int argc, char *argv[])
+{
+  /* Test the deprecated plugin - remove this when we remove the plugin. */
+  if (test_start_nbdkit ("gzip", "disk.gz", NULL) == -1)
+    exit (EXIT_FAILURE);
+  do_test ();
+
+  /* Test the new filter. */
+  if (test_start_nbdkit ("file", "--filter=gzip", "disk.gz", NULL) == -1)
+    exit (EXIT_FAILURE);
+  do_test ();
+
+  exit (EXIT_SUCCESS);
+}
+
+static int
+do_test (void)
 {
   guestfs_h *g;
   int r;
   char *data;
-
-  if (test_start_nbdkit ("gzip", "-r", "file=disk.gz", NULL) == -1)
-    exit (EXIT_FAILURE);
 
   g = guestfs_create ();
   if (g == NULL) {
