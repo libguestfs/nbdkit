@@ -79,18 +79,20 @@ interactively, or C<-FD> to read it from a file descriptor.
 
 =item B<header=>HEADER
 
+(nbdkit E<ge> 1.22)
+
 For HTTP/HTTPS, send a custom header, or remove a header that curl has
 added.  To add a custom header:
 
  header='X-My-Name: John Doe'
 
-To remove a header that curl has added, add the header without any
-value:
+To remove a header that curl has added, add the header followed by a
+colon and no value:
 
  header='User-Agent:'
 
-To add a custom header that has no value, you have to use semi-colon
-instead of colon.  This adds an 'X-Empty:' header with no value:
+To add a custom header that has no value, you have to use a semicolon
+instead of colon.  This adds an C<X-Empty:> header with no value:
 
  header='X-Empty;'
 
