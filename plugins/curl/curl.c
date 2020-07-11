@@ -48,9 +48,11 @@
 
 #include <nbdkit-plugin.h>
 
-#include "cleanup.h"
 #include "ascii-ctype.h"
 #include "ascii-string.h"
+#include "cleanup.h"
+
+#include "curldefs.h"
 
 /* Macro CURL_AT_LEAST_VERSION was added in 2015 (Curl 7.43) so if the
  * macro isn't present then Curl is very old.
@@ -61,24 +63,29 @@
 #endif
 #endif
 
-static const char *url = NULL;  /* required */
+/* Plugin configuration. */
+const char *url = NULL;         /* required */
 
-static const char *cainfo = NULL;
-static const char *capath = NULL;
-static char *cookie = NULL;
-static struct curl_slist *headers = NULL;
-static char *password = NULL;
-static long protocols = CURLPROTO_ALL;
-static const char *proxy = NULL;
-static char *proxy_password = NULL;
-static const char *proxy_user = NULL;
-static bool sslverify = true;
-static bool tcp_keepalive = false;
-static bool tcp_nodelay = true;
-static uint32_t timeout = 0;
-static const char *unix_socket_path = NULL;
-static const char *user = NULL;
-static const char *user_agent = NULL;
+const char *cainfo = NULL;
+const char *capath = NULL;
+char *cookie = NULL;
+const char *cookie_script = NULL;
+unsigned cookie_script_renew = 0;
+struct curl_slist *headers = NULL;
+const char *header_script = NULL;
+unsigned header_script_renew = 0;
+char *password = NULL;
+long protocols = CURLPROTO_ALL;
+const char *proxy = NULL;
+char *proxy_password = NULL;
+const char *proxy_user = NULL;
+bool sslverify = true;
+bool tcp_keepalive = false;
+bool tcp_nodelay = true;
+uint32_t timeout = 0;
+const char *unix_socket_path = NULL;
+const char *user = NULL;
+const char *user_agent = NULL;
 
 /* Use '-D curl.verbose=1' to set. */
 int curl_debug_verbose = 0;
@@ -98,11 +105,12 @@ curl_load (void)
 static void
 curl_unload (void)
 {
-  free (password);
-  free (proxy_password);
   free (cookie);
   if (headers)
     curl_slist_free_all (headers);
+  free (password);
+  free (proxy_password);
+  scripts_unload ();
   curl_global_cleanup ();
 }
 
@@ -202,12 +210,32 @@ curl_config (const char *key, const char *value)
       return -1;
   }
 
+  else if (strcmp (key, "cookie-script") == 0) {
+    cookie_script = value;
+  }
+
+  else if (strcmp (key, "cookie-script-renew") == 0) {
+    if (nbdkit_parse_unsigned ("cookie-script-renew", value,
+                               &cookie_script_renew) == -1)
+      return -1;
+  }
+
   else if (strcmp (key, "header") == 0) {
     headers = curl_slist_append (headers, value);
     if (headers == NULL) {
       nbdkit_error ("curl_slist_append: %m");
       return -1;
     }
+  }
+
+  else if (strcmp (key, "header-script") == 0) {
+    header_script = value;
+  }
+
+  else if (strcmp (key, "header-script-renew") == 0) {
+    if (nbdkit_parse_unsigned ("header-script-renew", value,
+                               &header_script_renew) == -1)
+      return -1;
   }
 
   else if (strcmp (key, "password") == 0) {
@@ -300,6 +328,26 @@ curl_config_complete (void)
     return -1;
   }
 
+  if (headers && header_script) {
+    nbdkit_error ("header and header-script cannot be used at the same time");
+    return -1;
+  }
+
+  if (!header_script && header_script_renew) {
+    nbdkit_error ("header-script-renew cannot be used without header-script");
+    return -1;
+  }
+
+  if (cookie && cookie_script) {
+    nbdkit_error ("cookie and cookie-script cannot be used at the same time");
+    return -1;
+  }
+
+  if (!cookie_script && cookie_script_renew) {
+    nbdkit_error ("cookie-script-renew cannot be used without cookie-script");
+    return -1;
+  }
+
   return 0;
 }
 
@@ -307,7 +355,11 @@ curl_config_complete (void)
   "cainfo=<CAINFO>            Path to Certificate Authority file.\n" \
   "capath=<CAPATH>            Path to directory with CA certificates.\n" \
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
+  "cookie-script=<SCRIPT>     Script to set HTTP/HTTPS cookies.\n" \
+  "cookie-script-renew=<SECS> Time to renew HTTP/HTTPS cookies.\n" \
   "header=<HEADER>            Set HTTP/HTTPS header.\n" \
+  "header-script=<SCRIPT>     Script to set HTTP/HTTPS headers.\n" \
+  "header-script-renew=<SECS> Time to renew HTTP/HTTPS headers.\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
   "protocols=PROTO,PROTO,..   Limit protocols allowed.\n" \
   "proxy=<PROXY>              Set proxy URL.\n" \
@@ -321,18 +373,6 @@ curl_config_complete (void)
   "url=<URL>       (required) The disk image URL to serve.\n" \
   "user=<USER>                The user to log in as.\n" \
   "user-agent=<USER-AGENT>    Send user-agent header for HTTP/HTTPS."
-
-/* The per-connection handle. */
-struct curl_handle {
-  CURL *c;
-  bool accept_range;
-  int64_t exportsize;
-  char errbuf[CURL_ERROR_SIZE];
-  char *write_buf;
-  uint32_t write_count;
-  const char *read_buf;
-  uint32_t read_count;
-};
 
 /* Translate CURLcode to nbdkit_error. */
 #define display_curl_error(h, r, fs, ...)                       \
@@ -450,7 +490,11 @@ curl_open (int readonly)
 
   /* Get the file size and also whether the remote HTTP server
    * supports byte ranges.
+   *
+   * We must run the scripts if necessary and set headers in the
+   * handle.
    */
+  if (do_scripts (h) == -1) goto err;
   h->accept_range = false;
   curl_easy_setopt (h->c, CURLOPT_NOBODY, 1); /* No Body, not nobody! */
   curl_easy_setopt (h->c, CURLOPT_HEADERFUNCTION, header_cb);
@@ -608,6 +652,8 @@ curl_close (void *handle)
   struct curl_handle *h = handle;
 
   curl_easy_cleanup (h->c);
+  if (h->headers_copy)
+    curl_slist_free_all (h->headers_copy);
   free (h);
 }
 
@@ -637,6 +683,9 @@ curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   struct curl_handle *h = handle;
   CURLcode r;
   char range[128];
+
+  /* Run the scripts if necessary and set headers in the handle. */
+  if (do_scripts (h) == -1) return -1;
 
   /* Tell the write_cb where we want the data to be written.  write_cb
    * will update this if the data comes in multiple sections.
@@ -698,6 +747,9 @@ curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   struct curl_handle *h = handle;
   CURLcode r;
   char range[128];
+
+  /* Run the scripts if necessary and set headers in the handle. */
+  if (do_scripts (h) == -1) return -1;
 
   /* Tell the read_cb where we want the data to be read from.  read_cb
    * will update this if the data comes in multiple sections.

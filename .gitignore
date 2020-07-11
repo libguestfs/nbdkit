@@ -113,6 +113,8 @@ plugins/*/*.3
 /tests/stamp-ssh-user-key
 /tests/test-connect
 /tests/test-curl
+/tests/test-curl-cookie-script
+/tests/test-curl-header-script
 /tests/test-data
 /tests/test-delay
 /tests/test-exit-with-parent

@@ -81,6 +81,14 @@ command line is not secure on shared machines.  Use the alternate
 C<+FILENAME> syntax to pass it in a file, C<-> to read the cookie
 interactively, or C<-FD> to read it from a file descriptor.
 
+=item B<cookie-script=>SCRIPT
+
+=item B<cookie-script-renew=>SECS
+
+Run C<SCRIPT> (a command or shell script fragment) to generate the
+HTTP/HTTPS cookies.  C<cookie-script> cannot be used with C<cookie>.
+See L</HEADER AND COOKIE SCRIPTS> below.
+
 =item B<header=>HEADER
 
 (nbdkit E<ge> 1.22)
@@ -105,6 +113,14 @@ in order to add several headers.  Note this sends the header in all
 requests, even when following a redirect, which can cause headers
 (eg. containing sensitive authorization information) to be sent to
 hosts other than the one originally requested.
+
+=item B<header-script=>SCRIPT
+
+=item B<header-script-renew=>SECS
+
+Run C<SCRIPT> (a command or shell script fragment) to generate the
+HTTP/HTTPS headers.  C<header-script> cannot be used with C<header>.
+See L</HEADER AND COOKIE SCRIPTS> below.
 
 =item B<password=>PASSWORD
 
@@ -225,6 +241,132 @@ Send user-agent header when using HTTP or HTTPS.  The default is no
 user-agent header.
 
 =back
+
+=head1 HEADER AND COOKIE SCRIPTS
+
+While the C<header> and C<cookie> parameters can be used to specify
+static headers and cookies which are used in every HTTP/HTTPS request,
+the alternate C<header-script> and C<cookie-script> parameters can be
+used to run an external script or program to generate headers and/or
+cookies.  This is particularly useful to access services which require
+an authorization token.  In addition the C<header-script-renew> and
+C<cookie-script-renew> parameters allow you to renew the authorization
+token by rerunning the script periodically.
+
+C<header-script> is incompatible with C<header>, and C<cookie-script>
+is incompatible with C<cookie>.
+
+=head2 Header script
+
+The header script should print zero or more HTTP headers, each line of
+output in the same format as the C<header> parameter.  The headers
+printed by the script are passed to L<CURLOPT_HTTPHEADER(3)>.
+
+In the following example, an imaginary web service requires
+authentication using a token fetched from a separate login server.
+The token expires after 60 seconds, so we also tell the plugin that it
+must renew the token (by re-running the script) if more than 45
+seconds have elapsed since the last request:
+
+ nbdkit curl https://service.example.com/disk.img \
+        header-script='
+          echo -n "Authorization: Bearer "
+          curl -s -X POST https://auth.example.com/login |
+               jq -r .token
+        ' \
+        header-script-renew=50
+
+=head2 Cookie script
+
+The cookie script should print a single line in the same format as the
+C<cookie> parameter.  This is passed to L<CURLOPT_COOKIE(3)>.
+
+=head2 Header and cookie script shell variables
+
+Within the C<header-script> and C<cookie-script> the following shell
+variables are available:
+
+=over 4
+
+=item C<$iteration>
+
+The number of times that the script has been called.  The first time
+the script is called this contains C<0>.
+
+=item C<$url>
+
+The URL as passed to the plugin.
+
+=back
+
+=head2 Example: VMware ESXi cookies
+
+VMware ESXi’s web server can expose both VMDK and raw format disk
+images, but requires you to log in using HTTP Basic Authentication.
+While you can use the C<user> and C<password> parameters to send HTTP
+Basic Authentication headers in every request, tests have shown that
+it is faster to accept the cookie which the server returns and send
+that instead.  (It is not clear why it is faster, but one theory is
+that VMware has to do a more expensive username and password check
+each time.)
+
+The web server can be accessed as below.  Since the cookie expires
+after a certain period of time, we use C<cookie-script-renew>, and
+because the server uses a self-signed certificate we must use
+I<--insecure> and C<sslverify=false>.
+
+ SERVER=esx.example.com
+ DCPATH=data
+ DS=datastore1
+ GUEST=guest-name
+ URL="https://$SERVER/folder/$GUEST/$GUEST-flat.vmdk?dcPath=$DCPATH&dsName=$DS"
+ 
+ nbdkit curl "$URL" \
+        cookie-script='
+            curl --head -s --insecure -u root:password "$url" |
+                 sed -ne '{ s/^Set-Cookie: \([^;]*\);.*/\1/ip }'
+        ' \
+        cookie-script-renew=500 \
+        sslverify=false
+
+=head2 Example: Docker Hub authorization tokens
+
+Accessing objects like container layers from Docker Hub requires that
+you first fetch an authorization token, even for anonymous access.
+These tokens expire after about 5 minutes (300 seconds) so must be
+periodically renewed.
+
+You will need this authorization script (F</tmp/auth.sh>):
+
+ #!/bin/sh -
+ IMAGE=library/fedora
+ curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$IMAGE:pull" |
+      jq -r .token
+
+You will also need this script to get the blobSum of the layer
+(F</tmp/blobsum.sh>):
+
+ #!/bin/sh -
+ TOKEN=`/tmp/auth.sh`
+ IMAGE=library/fedora
+ curl -s -X GET -H "Authorization: Bearer $TOKEN" \
+      "https://registry-1.docker.io/v2/$IMAGE/manifests/latest" |
+      jq -r '.fsLayers[0].blobSum'
+
+Both scripts must be executable, and both can be run on their own to
+check they are working.  To run nbdkit:
+
+ IMAGE=library/fedora
+ BLOBSUM=`/tmp/blobsum.sh`
+ URL="https://registry-1.docker.io/v2/$IMAGE/blobs/$BLOBSUM"
+ 
+ nbdkit curl "$URL" \
+        header-script=' echo -n "Authorization: Bearer "; /tmp/auth.sh ' \
+        header-script-renew=200 \
+        --filter=gzip
+
+Note that this exposes a tar file over NBD.  See also
+L<nbdkit-tar-filter(1)>.
 
 =head1 DEBUG FLAG
 

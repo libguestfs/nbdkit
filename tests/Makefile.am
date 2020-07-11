@@ -506,6 +506,10 @@ if HAVE_CURL
 TESTS += test-curl-file.sh
 EXTRA_DIST += test-curl-file.sh
 LIBGUESTFS_TESTS += test-curl
+LIBNBD_TESTS += \
+	test-curl-header-script \
+	test-curl-cookie-script \
+	$(NULL)
 
 test_curl_SOURCES = \
 	test-curl.c \
@@ -528,6 +532,49 @@ test_curl_LDADD = \
 	libtest.la \
 	$(LIBGUESTFS_LIBS) \
 	$(NULL)
+
+test_curl_header_script_SOURCES = \
+	test-curl-header-script.c \
+	web-server.c \
+	web-server.h \
+	$(NULL)
+test_curl_header_script_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
+test_curl_header_script_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBNBD_CFLAGS) \
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
+test_curl_header_script_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(PTHREAD_LIBS) \
+	$(NULL)
+test_curl_header_script_LDADD = \
+	$(LIBNBD_LIBS) \
+	$(NULL)
+
+test_curl_cookie_script_SOURCES = \
+	test-curl-cookie-script.c \
+	web-server.c \
+	web-server.h \
+	$(NULL)
+test_curl_cookie_script_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
+test_curl_cookie_script_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBNBD_CFLAGS) \
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
+test_curl_cookie_script_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(PTHREAD_LIBS) \
+	$(NULL)
+test_curl_cookie_script_LDADD = \
+	$(LIBNBD_LIBS) \
+	$(NULL)
+
 endif HAVE_CURL
 endif HAVE_MKE2FS_WITH_D
 

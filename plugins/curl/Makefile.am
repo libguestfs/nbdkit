@@ -38,6 +38,8 @@ if HAVE_CURL
 plugin_LTLIBRARIES = nbdkit-curl-plugin.la
 
 nbdkit_curl_plugin_la_SOURCES = \
+	curldefs.h \
+	scripts.c \
 	curl.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
