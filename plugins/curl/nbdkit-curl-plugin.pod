@@ -21,7 +21,9 @@ doesn't understand them).  To force nbdkit to use a readonly
 connection, pass the I<-r> flag.
 
 Although this plugin can access SFTP (ie. SSH) servers, it is much
-better to use L<nbdkit-ssh-plugin(1)>.
+better to use L<nbdkit-ssh-plugin(1)>.  This plugin can be used to
+access C<file:///> URLs, but you should use L<nbdkit-file-plugin(1)>
+instead.
 
 =head1 EXAMPLE
 
@@ -215,6 +217,7 @@ L<CURLOPT_UNIX_SOCKET_PATH(3)>,
 L<CURLOPT_VERBOSE(3)>,
 L<nbdkit(1)>,
 L<nbdkit-extentlist-filter(1)>,
+L<nbdkit-file-plugin(1)>,
 L<nbdkit-readahead-filter(1)>,
 L<nbdkit-retry-filter(1)>,
 L<nbdkit-ssh-plugin(1)>,
