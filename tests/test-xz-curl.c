@@ -50,11 +50,17 @@
 int
 main (int argc, char *argv[])
 {
+  static const char disk[] = "disk.xz";
   const char *sockpath;
   guestfs_h *g;
   int r;
   char *data;
   CLEANUP_FREE char *usp_param = NULL;
+
+  if (access (disk, F_OK) == -1) {
+    fprintf (stderr, "%s: %s not found, test skipped\n", argv[0], disk);
+    exit (77);
+  }
 
 #ifndef HAVE_CURLOPT_UNIX_SOCKET_PATH
   fprintf (stderr, "%s: curl does not support CURLOPT_UNIX_SOCKET_PATH\n",
@@ -62,7 +68,7 @@ main (int argc, char *argv[])
   exit (77);
 #endif
 
-  sockpath = web_server ("disk.xz");
+  sockpath = web_server (disk);
   if (sockpath == NULL) {
     fprintf (stderr, "test-xz-curl: could not start web server thread\n");
     exit (EXIT_FAILURE);

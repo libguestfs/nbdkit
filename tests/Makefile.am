@@ -76,6 +76,49 @@ TESTS_ENVIRONMENT = \
 	LIBNBD_DEBUG=1 \
 	$(NULL)
 
+# Common disk image shared with several tests.  These are built
+# conditionally, so tests should check the files they need exist and
+# skip if not present.
+if HAVE_MKE2FS_WITH_D
+check_DATA += disk disk.tar
+CLEANFILES += disk disk.tar
+
+disk:
+	rm -rf disk.tmp $@ $@-t
+	mkdir disk.tmp
+	echo -n "hello,world" > disk.tmp/hello.txt
+	$(top_builddir)/nbdkit -fv -U - linuxdisk disk.tmp size=100M \
+	    --run 'qemu-img convert $$nbd $@-t'
+	rm -rf disk.tmp
+	mv $@-t $@
+
+disk.tar: disk
+	rm -f $@
+	tar cf disk.tar $<
+
+if HAVE_ZLIB
+check_DATA += disk.gz
+CLEANFILES += disk.gz
+disk.gz: disk
+	rm -f $@
+	gzip -9 --keep $<
+endif HAVE_ZLIB
+
+if HAVE_LIBLZMA
+check_DATA += disk.xz disk.tar.xz
+CLEANFILES += disk.xz disk.tar.xz
+disk.xz: disk
+	rm -f $@
+# We choose a very small block size here only for testing.  Normally
+# you should choose a 16M block size.
+	xz --best --block-size=32768 --keep $<
+disk.tar.xz: disk.tar
+	rm -f $@
+	xz --best --block-size=32768 --keep $<
+endif HAVE_LIBLZMA
+
+endif
+
 #----------------------------------------------------------------------
 # Use 'make check' to run the ordinary tests as non-root.  The
 # following are special commands for particular scenarios:
@@ -449,21 +492,6 @@ EXTRA_DIST += test-eflags.sh
 # Test export name.
 TESTS += test-export-name.sh
 EXTRA_DIST += test-export-name.sh
-
-# common disk image shared with several tests
-if HAVE_MKE2FS_WITH_D
-check_DATA += disk
-CLEANFILES += disk
-
-disk:
-	rm -rf disk.tmp $@ $@-t
-	mkdir disk.tmp
-	echo -n "hello,world" > disk.tmp/hello.txt
-	$(top_builddir)/nbdkit -fv -U - linuxdisk disk.tmp size=100M \
-	    --run 'qemu-img convert $$nbd $@-t'
-	rm -rf disk.tmp
-	mv $@-t $@
-endif
 
 # curl plugin test.
 if HAVE_MKE2FS_WITH_D
@@ -1237,21 +1265,11 @@ TESTS += test-fua.sh
 EXTRA_DIST += test-fua.sh
 
 # gzip filter test.
-if HAVE_MKE2FS_WITH_D
-if HAVE_ZLIB
 LIBGUESTFS_TESTS += test-gzip
-check_DATA += disk.gz
-CLEANFILES += disk.gz
 
 test_gzip_SOURCES = test-gzip.c test.h
 test_gzip_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_gzip_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-disk.gz: disk
-	rm -f $@
-	gzip -9 -c disk > $@
-endif HAVE_ZLIB
-endif HAVE_MKE2FS_WITH_D
 
 # ip filter test.
 TESTS += test-ip-filter.sh
@@ -1375,8 +1393,6 @@ EXTRA_DIST += \
 	$(NULL)
 
 # tar filter test.
-check_DATA += disk.tar
-CLEANFILES += disk.tar
 TESTS += \
 	test-tar.sh \
 	test-tar-info.sh \
@@ -1387,10 +1403,6 @@ EXTRA_DIST += \
 	test-tar-info.sh \
 	test-tar-info-xz.sh \
 	$(NULL)
-
-disk.tar: disk
-	rm -f $@
-	tar cf disk.tar disk
 
 # truncate filter tests.
 TESTS += \
@@ -1409,28 +1421,15 @@ EXTRA_DIST += \
 	$(NULL)
 
 # xz filter test.
-if HAVE_MKE2FS_WITH_D
-if HAVE_LIBLZMA
 LIBGUESTFS_TESTS += test-xz
-check_DATA += disk.xz disk.tar.xz
-CLEANFILES += disk.xz disk.tar.xz
 
 test_xz_SOURCES = test-xz.c test.h
 test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-disk.xz: disk
-	rm -f $@
-# We choose a very small block size here only for testing.  Normally
-# you should choose a 16M block size.
-	xz --best --block-size=32768 -c disk > $@
-
-disk.tar.xz: disk.tar
-	rm -f $@
-	xz --best --block-size=32768 --keep disk.tar
-
 # tar filter + xz filter + curl.
 if HAVE_CURL
+
 LIBGUESTFS_TESTS += \
 	test-xz-curl \
 	test-tar-xz-curl \
@@ -1481,8 +1480,6 @@ test_tar_xz_curl_LDADD = \
 	$(NULL)
 
 endif HAVE_CURL
-endif HAVE_LIBLZMA
-endif HAVE_MKE2FS_WITH_D
 
 endif HAVE_PLUGINS
 

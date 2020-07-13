@@ -48,13 +48,20 @@ static void do_test (void);
 int
 main (int argc, char *argv[])
 {
+  static const char disk[] = "disk.gz";
+
+  if (access (disk, F_OK) == -1) {
+    fprintf (stderr, "%s: %s not found, test skipped\n", argv[0], disk);
+    exit (77);
+  }
+
   /* Test the deprecated plugin - remove this when we remove the plugin. */
-  if (test_start_nbdkit ("gzip", "disk.gz", NULL) == -1)
+  if (test_start_nbdkit ("gzip", disk, NULL) == -1)
     exit (EXIT_FAILURE);
   do_test ();
 
   /* Test the new filter. */
-  if (test_start_nbdkit ("file", "--filter=gzip", "disk.gz", NULL) == -1)
+  if (test_start_nbdkit ("file", "--filter=gzip", disk, NULL) == -1)
     exit (EXIT_FAILURE);
   do_test ();
 

@@ -46,11 +46,17 @@
 int
 main (int argc, char *argv[])
 {
+  static const char disk[] = "disk.xz";
   guestfs_h *g;
   int r;
   char *data;
 
-  if (test_start_nbdkit ("--filter=xz", "file", "disk.xz", NULL) == -1)
+  if (access (disk, F_OK) == -1) {
+    fprintf (stderr, "%s: %s not found, test skipped\n", argv[0], disk);
+    exit (77);
+  }
+
+  if (test_start_nbdkit ("--filter=xz", "file", disk, NULL) == -1)
     exit (EXIT_FAILURE);
 
   g = guestfs_create ();
