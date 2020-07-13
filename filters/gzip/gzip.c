@@ -57,8 +57,8 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 /* Temporary file storing the uncompressed data. */
 static int fd = -1;
 
-/* Size of uncompressed data. */
-static int64_t size = -1;
+/* Size of compressed and uncompressed data. */
+static int64_t compressed_size = -1, size = -1;
 
 static void
 gzip_unload (void)
@@ -125,7 +125,6 @@ xwrite (const void *buf, size_t count)
 static int
 do_uncompress (struct nbdkit_next_ops *next_ops, void *nxdata)
 {
-  int64_t compressed_size;
   z_stream strm;
   int zerr;
   const char *tmpdir;
@@ -300,7 +299,7 @@ gzip_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   t = next_ops->get_size (nxdata);
   if (t == -1)
     return -1;
-  if (t != size) {
+  if (t != compressed_size) {
     nbdkit_error ("plugin size changed unexpectedly: "
                   "you must restart nbdkit so the gzip filter "
                   "can uncompress the data again");
