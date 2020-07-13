@@ -43,7 +43,7 @@
 
 #include "test.h"
 
-static int do_test (void);
+static void do_test (void);
 
 int
 main (int argc, char *argv[])
@@ -61,7 +61,7 @@ main (int argc, char *argv[])
   exit (EXIT_SUCCESS);
 }
 
-static int
+static void
 do_test (void)
 {
   guestfs_h *g;
@@ -103,5 +103,4 @@ do_test (void)
   }
 
   guestfs_close (g);
-  exit (EXIT_SUCCESS);
 }
