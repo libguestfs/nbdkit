@@ -97,9 +97,12 @@ disk.tar: disk
 	tar cf disk.tar $<
 
 if HAVE_ZLIB
-check_DATA += disk.gz
-CLEANFILES += disk.gz
+check_DATA += disk.gz disk.tar.gz
+CLEANFILES += disk.gz disk.tar.gz
 disk.gz: disk
+	rm -f $@
+	gzip -9 --keep $<
+disk.tar.gz: disk.tar
 	rm -f $@
 	gzip -9 --keep $<
 endif HAVE_ZLIB
@@ -1427,12 +1430,58 @@ test_xz_SOURCES = test-xz.c test.h
 test_xz_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_xz_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-# tar filter + xz filter + curl.
+# tar filter + gzip or xz filter + curl.
 if HAVE_CURL
 
 LIBGUESTFS_TESTS += \
+	test-gzip-curl \
+	test-tar-gzip-curl \
 	test-xz-curl \
 	test-tar-xz-curl \
+	$(NULL)
+
+test_gzip_curl_SOURCES = \
+	test-gzip-curl.c \
+	web-server.c \
+	web-server.h \
+	test.h \
+	$(NULL)
+test_gzip_curl_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils
+test_gzip_curl_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
+test_gzip_curl_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(PTHREAD_LIBS) \
+	$(NULL)
+test_gzip_curl_LDADD = \
+	libtest.la \
+	$(LIBGUESTFS_LIBS) \
+	$(NULL)
+
+test_tar_gzip_curl_SOURCES = \
+	test-tar-gzip-curl.c \
+	web-server.c \
+	web-server.h \
+	test.h \
+	$(NULL)
+test_tar_gzip_curl_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils
+test_tar_gzip_curl_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(LIBGUESTFS_CFLAGS) \
+	$(PTHREAD_CFLAGS) \
+	$(NULL)
+test_tar_gzip_curl_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(PTHREAD_LIBS) \
+	$(NULL)
+test_tar_gzip_curl_LDADD = \
+	libtest.la \
+	$(LIBGUESTFS_LIBS) \
 	$(NULL)
 
 test_xz_curl_SOURCES = \

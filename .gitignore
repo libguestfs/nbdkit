@@ -91,6 +91,7 @@ plugins/*/*.3
 /tests/disk
 /tests/disk.gz
 /tests/disk.tar
+/tests/disk.tar.gz
 /tests/disk.tar.xz
 /tests/disk.xz
 /tests/ext2.img
@@ -120,6 +121,7 @@ plugins/*/*.3
 /tests/test-file-block
 /tests/test-golang
 /tests/test-gzip
+/tests/test-gzip-curl
 /tests/test-just-filter-header
 /tests/test-just-plugin-header
 /tests/test-layers
@@ -146,6 +148,7 @@ plugins/*/*.3
 /tests/test-socket-activation
 /tests/test-split
 /tests/test-streaming
+/tests/test-tar-gzip-curl
 /tests/test-tar-xz-curl
 /tests/test-tcl
 /tests/test-tmpdisk
