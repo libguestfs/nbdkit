@@ -140,6 +140,9 @@ static struct { const char *name; long bitmask; } curl_protocols[] = {
 #ifdef CURLPROTO_SMBS
   { "smbs", CURLPROTO_SMBS },
 #endif
+#ifdef CURLPROTO_MQTT
+  { "mqtt", CURLPROTO_MQTT },
+#endif
   { NULL }
 };
 

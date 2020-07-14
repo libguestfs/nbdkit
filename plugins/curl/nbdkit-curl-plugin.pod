@@ -143,9 +143,9 @@ add this parameter: C<protocols=http,https>
 The value of this parameter is a comma-separated list of protocols.
 The following protocols are known: B<dict>, B<file>, B<ftp>, B<ftps>,
 B<gopher>, B<http>, B<https>, B<imap>, B<imaps>, B<ldap>, B<ldaps>,
-B<pop3>, B<pop3s>, B<rtmp>, B<rtmpe>, B<rtmps>, B<rtmpt>, B<rtmpte>,
-B<rtmpts>, B<rtsp>, B<scp>, B<sftp>, B<smb>, B<smbs>, B<smtp>,
-B<smtps>, B<telnet>, B<tftp>.
+B<mqtt>, B<pop3>, B<pop3s>, B<rtmp>, B<rtmpe>, B<rtmps>, B<rtmpt>,
+B<rtmpte>, B<rtmpts>, B<rtsp>, B<scp>, B<sftp>, B<smb>, B<smbs>,
+B<smtp>, B<smtps>, B<telnet>, B<tftp>.
 
 The default is to allow any protocol.
 
