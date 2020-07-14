@@ -126,6 +126,15 @@
     v->size--;                                                          \
   }                                                                     \
                                                                         \
+  /* Remove all elements and deallocate the vector. */                  \
+  static inline void                                                    \
+  name##_reset (name *v)                                                \
+  {                                                                     \
+    free (v->ptr);                                                      \
+    v->ptr = NULL;                                                      \
+    v->size = v->alloc = 0;                                             \
+  }                                                                     \
+                                                                        \
   /* Iterate over the vector, calling f() on each element. */           \
   static inline void                                                    \
   name##_iter (name *v, void (*f) (type elem))                          \
