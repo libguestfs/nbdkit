@@ -30,14 +30,6 @@
  * SUCH DAMAGE.
  */
 
-/* NB: The terminology used by libcurl is confusing!
- *
- * WRITEFUNCTION / write_cb is used when reading from the remote server
- * READFUNCTION / read_cb is used when writing to the remote server.
- *
- * We use the same terminology as libcurl here.
- */
-
 #include <config.h>
 
 #include <stdio.h>
@@ -626,6 +618,14 @@ curl_get_size (void *handle)
 
   return h->exportsize;
 }
+
+/* NB: The terminology used by libcurl is confusing!
+ *
+ * WRITEFUNCTION / write_cb is used when reading from the remote server
+ * READFUNCTION / read_cb is used when writing to the remote server.
+ *
+ * We use the same terminology as libcurl here.
+ */
 
 /* Read data from the remote server. */
 static int
