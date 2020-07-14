@@ -52,6 +52,15 @@
 #include "ascii-ctype.h"
 #include "ascii-string.h"
 
+/* Macro CURL_AT_LEAST_VERSION was added in 2015 (Curl 7.43) so if the
+ * macro isn't present then Curl is very old.
+ */
+#ifdef CURL_AT_LEAST_VERSION
+#if CURL_AT_LEAST_VERSION(7, 55, 0)
+#define HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+#endif
+#endif
+
 static const char *url = NULL;  /* required */
 
 static const char *cainfo = NULL;
@@ -73,15 +82,6 @@ static const char *user_agent = NULL;
 
 /* Use '-D curl.verbose=1' to set. */
 int curl_debug_verbose = 0;
-
-/* Macro CURL_AT_LEAST_VERSION was added in 2015 (Curl 7.43) so if the
- * macro isn't present then Curl is very old.
- */
-#ifdef CURL_AT_LEAST_VERSION
-#if CURL_AT_LEAST_VERSION(7, 55, 0)
-#define HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
-#endif
-#endif
 
 static void
 curl_load (void)
