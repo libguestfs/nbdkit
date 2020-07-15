@@ -47,6 +47,26 @@
 
 #include "test.h"
 
+/* Check that the cookie and headers are sent in each request.  This
+ * is called back from the web server thread.
+ */
+static void
+check_request (const char *request)
+{
+  if (strcasestr (request, "\r\nX-My-Name: John Doe\r\n") == NULL) {
+    fprintf (stderr, "test-curl: X-My-Name header was not sent.\n");
+    exit (EXIT_FAILURE);
+  }
+  if (strcasestr (request, "\r\nX-My-Age: 25\r\n") == NULL) {
+    fprintf (stderr, "test-curl: X-My-Age header was not sent.\n");
+    exit (EXIT_FAILURE);
+  }
+  if (strcasestr (request, "\r\nCookie: foo=bar; baz=1") == NULL) {
+    fprintf (stderr, "test-curl: Cookie header was not sent.\n");
+    exit (EXIT_FAILURE);
+  }
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -62,7 +82,7 @@ main (int argc, char *argv[])
   exit (77);
 #endif
 
-  sockpath = web_server ("disk", NULL);
+  sockpath = web_server ("disk", check_request);
   if (sockpath == NULL) {
     fprintf (stderr, "%s: could not start web server thread\n", program_name);
     exit (EXIT_FAILURE);
@@ -76,7 +96,7 @@ main (int argc, char *argv[])
   if (test_start_nbdkit ("curl",
                          "-D", "curl.verbose=1",
                          "http://localhost/disk",
-                         "cookie=foo=bar; baz=1;",
+                         "cookie=foo=bar; baz=1",
                          "header=X-My-Name: John Doe",
                          "header=X-My-Age: 25",
                          usp_param, /* unix-socket-path=... */
