@@ -63,6 +63,7 @@ static int listen_sock = -1;
 static int fd = -1;
 static struct stat statbuf;
 static char request[16384];
+static check_request_t check_request;
 
 static void *start_web_server (void *arg);
 static void handle_requests (int s);
@@ -82,11 +83,13 @@ cleanup (void)
 }
 
 const char *
-web_server (const char *filename)
+web_server (const char *filename, check_request_t _check_request)
 {
   struct sockaddr_un addr;
   pthread_t thread;
   int err;
+
+  check_request = _check_request;
 
   /* Open the file. */
   fd = open (filename, O_RDONLY|O_CLOEXEC);
@@ -207,6 +210,9 @@ handle_requests (int s)
       continue;
 
     fprintf (stderr, "web server: request:\n%s", request);
+
+    /* Call the optional user function to check the request. */
+    if (check_request) check_request (request);
 
     /* HEAD or GET request? */
     if (strncmp (request, "HEAD ", 5) == 0)

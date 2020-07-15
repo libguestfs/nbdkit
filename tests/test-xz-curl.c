@@ -68,7 +68,7 @@ main (int argc, char *argv[])
   exit (77);
 #endif
 
-  sockpath = web_server (disk);
+  sockpath = web_server (disk, NULL);
   if (sockpath == NULL) {
     fprintf (stderr, "test-xz-curl: could not start web server thread\n");
     exit (EXIT_FAILURE);
