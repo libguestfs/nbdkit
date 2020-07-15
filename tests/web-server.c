@@ -50,6 +50,8 @@
 
 #include <pthread.h>
 
+#include "web-server.h"
+
 #ifndef SOCK_CLOEXEC
 /* For this file, we don't care if fds are marked cloexec; leaking is okay.  */
 #define SOCK_CLOEXEC 0
