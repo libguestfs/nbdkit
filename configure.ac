@@ -61,6 +61,7 @@ lang_plugins="\
         tcl \
         "
 non_lang_plugins="\
+        cdi \
         curl \
         data \
         eval \
@@ -1094,6 +1095,7 @@ AC_CONFIG_FILES([Makefile
                  include/nbdkit-version.h
                  plugins/Makefile
                  plugins/cc/Makefile
+                 plugins/cdi/Makefile
                  plugins/curl/Makefile
                  plugins/data/Makefile
                  plugins/eval/Makefile

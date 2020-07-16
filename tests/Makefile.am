@@ -496,6 +496,10 @@ EXTRA_DIST += test-eflags.sh
 TESTS += test-export-name.sh
 EXTRA_DIST += test-export-name.sh
 
+# cdi plugin test.
+TESTS += test-cdi.sh
+EXTRA_DIST += test-cdi.sh
+
 # curl plugin test.
 if HAVE_MKE2FS_WITH_D
 if HAVE_CURL

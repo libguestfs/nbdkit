@@ -124,6 +124,12 @@ For the bittorrent plugin:
 
  - libtorrent-rasterbar (https://www.libtorrent.org)
 
+For the containerized data importer (CDI) plugin:
+
+ - podman
+
+ - jq
+
 For the Perl and example4 plugins:
 
  - perl interpreter

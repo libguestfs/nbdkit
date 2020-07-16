@@ -1,0 +1,99 @@
+=head1 NAME
+
+nbdkit-cdi-plugin - export a layer from a container image
+
+=head1 SYNOPSIS
+
+ nbdkit cdi [name=]NAME[:TAG|@DIGEST] [layer=N]
+
+=head1 DESCRIPTION
+
+C<nbdkit-cdi-plugin> (Containerized Data Importer plugin) is a plugin
+for L<nbdkit(1)> which downloads a container image using
+L<podman-pull(1)> and makes a single layer available over NBD.  The
+plugin is essentially a convenient wrapper around L<podman(1)> and
+L<jq(1)> and requires both tools to be installed.
+
+=head1 EXAMPLES
+
+Given a Containerized Data Importer (CDI) registry image containing a
+VM disk, you can export the whole layer using:
+
+ $ nbdkit cdi docker://kubevirt/fedora-cloud-container-disk-demo
+
+The layer exported over NBD is a tar file:
+
+ $ nbdcopy nbd://localhost - | file -
+ -: POSIX tar archive
+
+To export only the VM disk image in this layer, combine this plugin
+with L<nbdkit-tar-filter(1)>.  In this example when you run L<file(1)>
+on the tar entry within the layer it shows that it is a QCOW2 file:
+
+ $ nbdkit cdi docker://kubevirt/fedora-cloud-container-disk-demo \
+         --filter=tar tar-entry=./disk/downloaded \
+         --run 'nbdcopy $uri - | file -'
+ -: QEMU QCOW2 Image (v2), 4294967296 bytes
+
+=head1 PARAMETERS
+
+=over 4
+
+=item [B<name=>]NAME[:TAG|@DIGEST]
+
+The name or URI of the container image.  This is passed to
+L<podman-pull(1)>.
+
+C<name=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
+
+=item B<layer=>N
+
+Export the N'th layer (instead of layer 0).
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item C<TMPDIR>
+
+A temporary copy of the layer is created in C<TMPDIR>.  If this
+environment variable is not set then F</var/tmp> is used instead.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-cdi-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-cdi-plugin> first appeared in nbdkit 1.22.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-tar-filter(1)>,
+L<podman(1)>,
+L<podman-pull(1)>,
+L<jq(1)>,
+L<https://github.com/kubevirt/containerized-data-importer/blob/master/doc/image-from-registry.md>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.
