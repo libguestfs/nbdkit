@@ -81,17 +81,24 @@ line.
 =head2 Preloading large amounts of data
 
 If you want to preload a large amount of data (eg. a disk image) into
-the memory plugin, use L<qemu-img(1)>:
+the memory plugin, use L<qemu-img(1)> or L<nbdcopy(1)>:
 
  $ rm -f pid
  $ nbdkit -P pid memory 10G
  
- # wait for nbdkit to become ready to accept connections:
+Wait for nbdkit to become ready to accept connections:
+
  $ while [ ! -f pid ]; do sleep 1; done
  
- # preload Fedora disk image:
+Preload Fedora disk image using qemu-img:
+
  $ virt-builder fedora-28 --size=10G
  $ qemu-img convert -p -n fedora-28.img nbd:localhost:10809
+
+If you have libnbd E<ge> 1.4, you can use L<nbdcopy(1)> as an
+alternative:
+
+ $ nbdcopy -p fedora-28.img nbd://localhost
 
 =head1 ALLOCATORS
 
@@ -176,7 +183,9 @@ L<nbdkit-file-plugin(1)>,
 L<nbdkit-info-plugin(1)>,
 L<nbdkit-tmpdisk-plugin(1)>,
 L<mlock(2)>,
-L<malloc(3)>.
+L<malloc(3)>,
+L<qemu-img(1)>,
+L<nbdcopy(1)>.
 
 =head1 AUTHORS
 
