@@ -52,7 +52,7 @@
 #include "cleanup.h"
 #include "utils.h"
 
-static const char *tmpdir = "/var/tmp";
+static const char *tmpdir = LARGE_TMPDIR;
 static int64_t requested_size = -1; /* size parameter on the command line */
 
 /* Shell variables. */
