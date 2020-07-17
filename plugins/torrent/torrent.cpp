@@ -261,7 +261,7 @@ torrent_config_complete (void)
 
   /* If no cache was given, create a temporary directory under $TMPDIR. */
   if (!cache) {
-    const char *tmpdir = getenv ("TMPDIR") ? : "/var/tmp";
+    const char *tmpdir = getenv ("TMPDIR") ? : LARGE_TMPDIR;
 
     if (asprintf (&cache, "%s/torrentXXXXXX", tmpdir) == -1) {
       nbdkit_error ("asprintf: %m");
