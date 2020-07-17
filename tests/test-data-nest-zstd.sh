@@ -37,6 +37,10 @@ set -e
 set -x
 
 requires nbdsh --version
+if ! nbdkit memory --dump-plugin | grep -sq zstd=yes; then
+    echo "$0: zstd not enabled in this build of nbdkit"
+    exit 77
+fi
 
 sock=`mktemp -u`
 files="data-nest-zstd.pid $sock"
