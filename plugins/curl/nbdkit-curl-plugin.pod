@@ -265,12 +265,12 @@ printed by the script are passed to L<CURLOPT_HTTPHEADER(3)>.
 In the following example, an imaginary web service requires
 authentication using a token fetched from a separate login server.
 The token expires after 60 seconds, so we also tell the plugin that it
-must renew the token (by re-running the script) if more than 45
+must renew the token (by re-running the script) if more than 50
 seconds have elapsed since the last request:
 
  nbdkit curl https://service.example.com/disk.img \
         header-script='
-          echo -n "Authorization: Bearer "
+          printf "Authorization: Bearer "
           curl -s -X POST https://auth.example.com/login |
                jq -r .token
         ' \
@@ -361,7 +361,7 @@ check they are working.  To run nbdkit:
  URL="https://registry-1.docker.io/v2/$IMAGE/blobs/$BLOBSUM"
  
  nbdkit curl "$URL" \
-        header-script=' echo -n "Authorization: Bearer "; /tmp/auth.sh ' \
+        header-script=' printf "Authorization: Bearer "; /tmp/auth.sh ' \
         header-script-renew=200 \
         --filter=gzip
 
