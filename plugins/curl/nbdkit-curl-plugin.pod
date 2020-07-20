@@ -324,7 +324,7 @@ I<--insecure> and C<sslverify=false>.
  nbdkit curl "$URL" \
         cookie-script='
             curl --head -s --insecure -u root:password "$url" |
-                 sed -ne '{ s/^Set-Cookie: \([^;]*\);.*/\1/ip }'
+                 sed -ne "{ s/^Set-Cookie: \([^;]*\);.*/\1/ip }"
         ' \
         cookie-script-renew=500 \
         sslverify=false
