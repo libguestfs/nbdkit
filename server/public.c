@@ -506,7 +506,7 @@ read_password_interactive (char **password)
   /* Complete the printf above. */
   printf ("\n");
 
-  if (r == -1 && err != 0) {
+  if (r == -1) {
     if (err == 0) {             /* EOF, not an error. */
       free (*password);         /* State of linebuf is undefined. */
       *password = strdup ("");
