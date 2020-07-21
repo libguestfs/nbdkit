@@ -5,7 +5,7 @@ nbdkit - which parts of the NBD protocol nbdkit supports
 =head1 SYNOPSIS
 
  nbdkit [-n|--newstyle] [--mask-handshake MASK] [--no-sr] [-o|--oldstyle]
-        [-e|--exportname EXPORTNAME] [...]
+        [...]
 
 =head1 DESCRIPTION
 
@@ -28,9 +28,6 @@ block status.  By default, nbdkit advertises as many features as it
 can support (in some cases, this can be limited by what callbacks the
 plugin handles), even if the client does not negotiate to use all
 advertised features.
-
-Use the I<-e> or I<--exportname> flag to set the optional exportname
-for the newstyle protocol.
 
 Nbdkit also includes some options that are useful mainly when
 performing integration tests, for proving whether clients have sane
@@ -101,11 +98,13 @@ Supported in nbdkit E<ge> 1.1.12, and the default in nbdkit E<ge> 1.3.
 
 =item export names
 
-Supported in nbdkit E<ge> 1.1.12.
+Partially supported in nbdkit E<ge> 1.1.12.  Support for plugins to
+read the client export name added in nbdkit E<ge> 1.15.2.
 
-nbdkit can advertise an export name, but ignores any export name sent
-by the client.  nbdkit does I<not> support serving different data on
-different export names.
+Versions of nbdkit before 1.16 could advertise a single export name to
+clients, specified through the now deprecated I<-e> option.  In nbdkit
+1.15.2, plugins could read the client requested export name using
+C<nbdkit_export_name()> and serve different content.
 
 =item C<NBD_FLAG_NO_ZEROES>
 

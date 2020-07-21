@@ -75,12 +75,15 @@ send_newstyle_option_reply (uint32_t option, uint32_t reply)
   return 0;
 }
 
+/* Reply to NBD_OPT_LIST with a single empty export name.
+ * TODO: Ask the plugin for the list of exports.
+ */
 static int
 send_newstyle_option_reply_exportname (uint32_t option, uint32_t reply)
 {
   GET_CONN;
   struct nbd_fixed_new_option_reply fixed_new_option_reply;
-  size_t name_len = strlen (exportname);
+  const size_t name_len = 0;    /* length of export name */
   uint32_t len;
 
   fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
@@ -100,11 +103,14 @@ send_newstyle_option_reply_exportname (uint32_t option, uint32_t reply)
                   name_of_nbd_opt (option), "sending length");
     return -1;
   }
+#if 0
+  /* If we were sending a non-"" export name, this is what we'd use. */
   if (conn->send (exportname, name_len, 0) == -1) {
     nbdkit_error ("write: %s: %s: %m",
                   name_of_nbd_opt (option), "sending export name");
     return -1;
   }
+#endif
 
   return 0;
 }
@@ -364,8 +370,8 @@ negotiate_handshake_newstyle_options (void)
       }
 
       /* Send back the exportname. */
-      debug ("newstyle negotiation: %s: advertising export '%s'",
-             name_of_nbd_opt (option), exportname);
+      debug ("newstyle negotiation: %s: advertising export \"\"",
+             name_of_nbd_opt (option));
       if (send_newstyle_option_reply_exportname (option, NBD_REP_SERVER) == -1)
         return -1;
 

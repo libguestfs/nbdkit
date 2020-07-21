@@ -61,8 +61,6 @@ run_command (void)
   if (!run)
     return;
 
-  assert (exportname != NULL);
-
   fp = open_memstream (&cmd, &len);
   if (fp == NULL) {
     perror ("open_memstream");
@@ -74,26 +72,15 @@ run_command (void)
   if (port) {
     fprintf (fp, "nbd://localhost:");
     shell_quote (port, fp);
-    if (strcmp (exportname, "") != 0) {
-      putc ('/', fp);
-      uri_quote (exportname, fp);
-    }
   }
   else if (unixsocket) {
-    fprintf (fp, "nbd+unix://");
-    if (strcmp (exportname, "") != 0) {
-      putc ('/', fp);
-      uri_quote (exportname, fp);
-    }
-    fprintf (fp, "\\?socket=");
+    fprintf (fp, "nbd+unix://\\?socket=");
     uri_quote (unixsocket, fp);
   }
   putc ('\n', fp);
 
-  /* Expose $exportname. */
-  fprintf (fp, "exportname=");
-  shell_quote (exportname, fp);
-  putc ('\n', fp);
+  /* $exportname is for backwards compatibility. */
+  fprintf (fp, "exportname=\n");
 
   /* Construct older $nbd "URL".  Unfortunately guestfish and qemu take
    * different syntax, so try to guess which one we need.

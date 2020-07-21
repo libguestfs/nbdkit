@@ -47,14 +47,12 @@ The following shell variables are available in the I<--run> argument:
 =item C<$uri>
 
 A URI that refers to the nbdkit port or socket in the preferred form
-documented by the NBD project.  If nbdkit was started with the B<-e>
-option to set the preferred export name, this is included in the URI.
+documented by the NBD project.
 
 =item C<$nbd>
 
 An older URL that refers to the nbdkit port or socket in a manner
-specific to certain tools.  This form does not include an export name,
-even if B<-e> was used.
+specific to certain tools.
 
 Note there is some magic here, since qemu and guestfish URLs have a
 different format, so nbdkit tries to guess which you are running.  If
@@ -67,12 +65,6 @@ If E<ne> "", the port number that nbdkit is listening on.
 =item C<$unixsocket>
 
 If E<ne> "", the Unix domain socket that nbdkit is listening on.
-
-=item C<$exportname>
-
-The default export name (which may be "") that nbdkit will advertise
-in response to NBD_OPT_LIST.  This comes from the B<-e>
-(B<--exportname>) command line option.
 
 =back
 

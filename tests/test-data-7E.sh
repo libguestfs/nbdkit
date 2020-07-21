@@ -45,7 +45,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-7E.pid -U $sock --export= \
+start_nbdkit -P data-7E.pid -U $sock \
        --filter=partition \
        data size=7E partition=1 \
        data="

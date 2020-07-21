@@ -108,7 +108,6 @@ enum log_to {
 };
 
 extern struct debug_flag *debug_flags;
-extern const char *exportname;
 extern bool foreground;
 extern const char *ipaddr;
 extern enum log_to log_to;

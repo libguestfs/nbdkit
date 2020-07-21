@@ -214,19 +214,6 @@ An alternative to this is L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
 
 This option implies I<--foreground>.
 
-=item B<-e> EXPORTNAME
-
-=item B<--export> EXPORTNAME
-
-=item B<--export-name> EXPORTNAME
-
-=item B<--exportname> EXPORTNAME
-
-Set the exportname.
-
-If not set, exportname C<""> (empty string) is used.  Exportnames are
-not allowed with the oldstyle protocol.
-
 =item B<-f>
 
 =item B<--foreground>

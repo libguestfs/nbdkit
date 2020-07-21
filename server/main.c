@@ -79,7 +79,6 @@ static bool is_config_key (const char *key, size_t len);
 
 struct debug_flag *debug_flags; /* -D */
 bool exit_with_parent;          /* --exit-with-parent */
-const char *exportname;         /* -e */
 bool foreground;                /* -f */
 const char *ipaddr;             /* -i */
 enum log_to log_to = LOG_TO_DEFAULT; /* --log */
@@ -345,13 +344,7 @@ main (int argc, char *argv[])
       break;
 
     case 'e':
-      exportname = optarg;
-      if (strnlen (exportname, NBD_MAX_STRING + 1) > NBD_MAX_STRING) {
-        nbdkit_error ("export name too long");
-        exit (EXIT_FAILURE);
-      }
-      /* TODO: Check that name is valid UTF-8? */
-      newstyle = true;
+      /* Does nothing, ignored for compatibility with older nbdkit. */
       break;
 
     case 'f':
@@ -486,18 +479,6 @@ main (int argc, char *argv[])
              program_name, program_name);
     exit (EXIT_FAILURE);
   }
-
-  /* Oldstyle protocol + exportname not allowed. */
-  if (!newstyle && exportname != NULL) {
-    fprintf (stderr,
-             "%s: cannot use oldstyle protocol (-o) and exportname (-e)\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-
-  /* If exportname was not set on the command line, use "". */
-  if (exportname == NULL)
-    exportname = "";
 
   /* --tls=require and oldstyle won't work. */
   if (tls == 2 && !newstyle) {

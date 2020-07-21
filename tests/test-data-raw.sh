@@ -44,8 +44,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-raw.pid -U $sock --export "" \
-       data raw=123 size=512
+start_nbdkit -P data-raw.pid -U $sock data raw=123 size=512
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
