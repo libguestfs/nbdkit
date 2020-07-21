@@ -133,6 +133,7 @@ log_get_ready (nbdkit_next_get_ready *next, void *nxdata)
 struct handle {
   uint64_t connection;
   uint64_t id;
+  char *exportname;
 };
 
 /* Compute the next id number on the current connection. */
@@ -227,16 +228,28 @@ output_return (struct handle *h, const char *act, uint64_t id, int r, int *err)
 
 /* Open a connection. */
 static void *
-log_open (nbdkit_next_open *next, void *nxdata, int readonly)
+log_open (nbdkit_next_open *next, void *nxdata,
+          int readonly, const char *exportname)
 {
   struct handle *h;
 
-  if (next (nxdata, readonly) == -1)
+  if (next (nxdata, readonly, exportname) == -1)
     return NULL;
 
   h = malloc (sizeof *h);
   if (h == NULL) {
     nbdkit_error ("malloc: %m");
+    return NULL;
+  }
+
+  /* Save the exportname in the handle so we can display it in
+   * log_prepare.  We must take a copy because this string has a short
+   * lifetime.
+   */
+  h->exportname = strdup (exportname);
+  if (h->exportname == NULL) {
+    nbdkit_error ("strdup: %m");
+    free (h);
     return NULL;
   }
 
@@ -251,6 +264,7 @@ log_close (void *handle)
 {
   struct handle *h = handle;
 
+  free (h->exportname);
   free (h);
 }
 
@@ -259,7 +273,7 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
              int readonly)
 {
   struct handle *h = handle;
-  const char *exportname = nbdkit_export_name ();
+  const char *exportname = h->exportname;
   int64_t size = next_ops->get_size (nxdata);
   int w = next_ops->can_write (nxdata);
   int f = next_ops->can_flush (nxdata);

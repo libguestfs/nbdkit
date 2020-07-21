@@ -238,7 +238,7 @@ plugin_magic_config_key (struct backend *b)
 }
 
 static void *
-filter_open (struct backend *b, int readonly)
+filter_open (struct backend *b, int readonly, const char *exportname)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle;
@@ -247,8 +247,8 @@ filter_open (struct backend *b, int readonly)
    * inner-to-outer ordering.
    */
   if (f->filter.open)
-    handle = f->filter.open (backend_open, b->next, readonly);
-  else if (backend_open (b->next, readonly) == -1)
+    handle = f->filter.open (backend_open, b->next, readonly, exportname);
+  else if (backend_open (b->next, readonly, exportname) == -1)
     handle = NULL;
   else
     handle = NBDKIT_HANDLE_NOT_NEEDED;

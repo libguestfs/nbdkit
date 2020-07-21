@@ -56,7 +56,7 @@ protocol_handshake_oldstyle (void)
   /* With oldstyle, our only option if .open or friends fail is to
    * disconnect, as we cannot report the problem to the client.
    */
-  if (protocol_common_open (&exportsize, &eflags) == -1)
+  if (protocol_common_open (&exportsize, &eflags, "") == -1)
     return -1;
 
   gflags = 0;

@@ -152,12 +152,13 @@ backend_unload (struct backend *b, void (*unload) (void))
 }
 
 int
-backend_open (struct backend *b, int readonly)
+backend_open (struct backend *b, int readonly, const char *exportname)
 {
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
 
-  controlpath_debug ("%s: open readonly=%d", b->name, readonly);
+  controlpath_debug ("%s: open readonly=%d exportname=\"%s\"",
+                     b->name, readonly, exportname);
 
   assert (h->handle == NULL);
   assert ((h->state & HANDLE_OPEN) == 0);
@@ -168,7 +169,7 @@ backend_open (struct backend *b, int readonly)
   /* Most filters will call next_open first, resulting in
    * inner-to-outer ordering.
    */
-  h->handle = b->open (b, readonly);
+  h->handle = b->open (b, readonly, exportname);
   controlpath_debug ("%s: open returned handle %p", b->name, h->handle);
 
   if (h->handle == NULL) {
@@ -268,14 +269,15 @@ backend_valid_range (struct backend *b, uint64_t offset, uint32_t count)
 /* Wrappers for all callbacks in a filter's struct nbdkit_next_ops. */
 
 int
-backend_reopen (struct backend *b, int readonly)
+backend_reopen (struct backend *b, int readonly, const char *exportname)
 {
-  controlpath_debug ("%s: reopen readonly=%d", b->name, readonly);
+  controlpath_debug ("%s: reopen readonly=%d exportname=\"%s\"",
+                     b->name, readonly, exportname);
 
   if (backend_finalize (b) == -1)
     return -1;
   backend_close (b);
-  if (backend_open (b, readonly) == -1) {
+  if (backend_open (b, readonly, exportname) == -1) {
     backend_close (b);
     return -1;
   }

@@ -107,7 +107,8 @@ test_layers_filter_preconnect (nbdkit_next_preconnect *next,
 }
 
 static void *
-test_layers_filter_open (nbdkit_next_open *next, void *nxdata, int readonly)
+test_layers_filter_open (nbdkit_next_open *next, void *nxdata,
+                         int readonly, const char *exportname)
 {
   struct handle *h = malloc (sizeof *h);
 
@@ -118,7 +119,7 @@ test_layers_filter_open (nbdkit_next_open *next, void *nxdata, int readonly)
   h->nxdata = nxdata;
   h->next_ops = NULL;
 
-  if (next (nxdata, readonly) == -1)
+  if (next (nxdata, readonly, exportname) == -1)
     return NULL;
 
   /* Debug after recursing, to show opposite order from .close */

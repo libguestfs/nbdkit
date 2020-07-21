@@ -112,11 +112,12 @@ struct handle {
 };
 
 static void *
-tar_open (nbdkit_next_open *next, nbdkit_backend *nxdata, int readonly)
+tar_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
+          int readonly, const char *exportname)
 {
   struct handle *h;
 
-  if (next (nxdata, readonly) == -1)
+  if (next (nxdata, readonly, exportname) == -1)
     return NULL;
 
   h = calloc (1, sizeof *h);

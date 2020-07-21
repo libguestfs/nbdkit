@@ -356,6 +356,8 @@ free_connection (struct connection *conn)
   pthread_mutex_destroy (&conn->write_lock);
   pthread_mutex_destroy (&conn->status_lock);
 
+  free (conn->exportname_from_set_meta_context);
+  free (conn->exportname);
   free (conn->handles);
   free (conn);
   threadlocal_set_conn (NULL);

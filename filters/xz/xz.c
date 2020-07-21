@@ -89,12 +89,13 @@ struct xz_handle {
 
 /* Create the per-connection handle. */
 static void *
-xz_open (nbdkit_next_open *next, void *nxdata, int readonly)
+xz_open (nbdkit_next_open *next, void *nxdata,
+         int readonly, const char *exportname)
 {
   struct xz_handle *h;
 
   /* Always pass readonly=1 to the underlying plugin. */
-  if (next (nxdata, 1) == -1)
+  if (next (nxdata, 1, exportname) == -1)
     return NULL;
 
   h = malloc (sizeof *h);

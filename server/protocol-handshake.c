@@ -72,14 +72,15 @@ protocol_handshake ()
  * simply opening a TCP connection.
  */
 int
-protocol_common_open (uint64_t *exportsize, uint16_t *flags)
+protocol_common_open (uint64_t *exportsize, uint16_t *flags,
+                      const char *exportname)
 {
   GET_CONN;
   int64_t size;
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
 
-  if (backend_open (top, read_only) == -1)
+  if (backend_open (top, read_only, exportname) == -1)
     return -1;
 
   /* Prepare (for filters), called just after open. */

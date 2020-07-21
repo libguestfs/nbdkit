@@ -112,6 +112,7 @@ ext2_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 
 /* The per-connection handle. */
 struct handle {
+  char *exportname;             /* Client export name. */
   ext2_filsys fs;               /* Filesystem handle. */
   ext2_ino_t ino;               /* Inode of open file. */
   ext2_file_t file;             /* File handle. */
@@ -120,17 +121,34 @@ struct handle {
 
 /* Create the per-connection handle. */
 static void *
-ext2_open (nbdkit_next_open *next, void *nxdata, int readonly)
+ext2_open (nbdkit_next_open *next, void *nxdata,
+           int readonly, const char *exportname)
 {
   struct handle *h;
-
-  /* Request write access to the underlying plugin, for journal replay. */
-  if (next (nxdata, 0) == -1)
-    return NULL;
 
   h = calloc (1, sizeof *h);
   if (h == NULL) {
     nbdkit_error ("calloc: %m");
+    return NULL;
+  }
+
+  /* Save the client exportname in the handle. */
+  h->exportname = strdup (exportname);
+  if (h->exportname == NULL) {
+    nbdkit_error ("strdup: %m");
+    free (h);
+    return NULL;
+  }
+
+  /* If file == NULL (ie. using exportname) then don't
+   * pass the client exportname to the lower layers.
+   */
+  exportname = file ? exportname : "";
+
+  /* Request write access to the underlying plugin, for journal replay. */
+  if (next (nxdata, 0, exportname) == -1) {
+    free (h->exportname);
+    free (h);
     return NULL;
   }
 
@@ -148,7 +166,7 @@ ext2_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   struct ext2_inode inode;
   int64_t r;
   CLEANUP_FREE char *name = NULL;
-  const char *fname = file ?: nbdkit_export_name ();
+  const char *fname = file ?: h->exportname;
   CLEANUP_FREE char *absname = NULL;
 
   fs_flags = 0;
@@ -242,6 +260,7 @@ ext2_close (void *handle)
     ext2fs_file_close (h->file);
     ext2fs_close (h->fs);
   }
+  free (h->exportname);
   free (h);
 }
 

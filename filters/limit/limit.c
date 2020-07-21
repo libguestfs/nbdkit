@@ -91,9 +91,9 @@ limit_preconnect (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
 
 static void *
 limit_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
-            int readonly)
+            int readonly, const char *exportname)
 {
-  if (next (nxdata, readonly) == -1)
+  if (next (nxdata, readonly, exportname) == -1)
     return NULL;
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);

@@ -124,11 +124,12 @@ struct handle {
 
 /* Open a connection. */
 static void *
-truncate_open (nbdkit_next_open *next, void *nxdata, int readonly)
+truncate_open (nbdkit_next_open *next, void *nxdata,
+               int readonly, const char *exportname)
 {
   struct handle *h;
 
-  if (next (nxdata, readonly) == -1)
+  if (next (nxdata, readonly, exportname) == -1)
     return NULL;
 
   h = malloc (sizeof *h); /* h is populated during .prepare */

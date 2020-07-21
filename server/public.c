@@ -654,6 +654,9 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
 #endif
 }
 
+/* This function will be deprecated for API V3 users.  The preferred
+ * approach will be to get the exportname from .open().
+ */
 const char *
 nbdkit_export_name (void)
 {

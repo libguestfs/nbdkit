@@ -65,13 +65,14 @@ typedef int nbdkit_next_config_complete (nbdkit_backend *nxdata);
 typedef int nbdkit_next_get_ready (nbdkit_backend *nxdata);
 typedef int nbdkit_next_after_fork (nbdkit_backend *nxdata);
 typedef int nbdkit_next_preconnect (nbdkit_backend *nxdata, int readonly);
-typedef int nbdkit_next_open (nbdkit_backend *nxdata, int readonly);
+typedef int nbdkit_next_open (nbdkit_backend *nxdata,
+                              int readonly, const char *exportname);
 
 struct nbdkit_next_ops {
   /* Performs close + open on the underlying chain.
    * Used by the retry filter.
    */
-  int (*reopen) (nbdkit_backend *nxdata, int readonly);
+  int (*reopen) (nbdkit_backend *nxdata, int readonly, const char *exportname);
 
   /* The rest of the next ops are the same as normal plugin operations. */
   int64_t (*get_size) (nbdkit_backend *nxdata);
@@ -156,7 +157,7 @@ struct nbdkit_filter {
                      int readonly);
 
   void * (*open) (nbdkit_next_open *next, nbdkit_backend *nxdata,
-                  int readonly);
+                  int readonly, const char *exportname);
   void (*close) (void *handle);
 
   int (*prepare) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,

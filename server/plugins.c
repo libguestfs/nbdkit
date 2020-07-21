@@ -278,11 +278,29 @@ plugin_preconnect (struct backend *b, int readonly)
 }
 
 static void *
-plugin_open (struct backend *b, int readonly)
+plugin_open (struct backend *b, int readonly, const char *exportname)
 {
+  GET_CONN;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (p->plugin.open != NULL);
+
+  /* Save the exportname since the lifetime of the string passed in
+   * here is likely to be brief.  In addition this provides a place
+   * for nbdkit_export_name to retrieve it if called from the plugin.
+   *
+   * In API V3 we propose to pass the exportname as an extra parameter
+   * to the (new) plugin.open and deprecate nbdkit_export_name for V3
+   * users.  Even then we will still need to save it in the handle
+   * because of the lifetime issue.
+   */
+  if (conn->exportname == NULL) {
+    conn->exportname = strdup (exportname);
+    if (conn->exportname == NULL) {
+      nbdkit_error ("strdup: %m");
+      return NULL;
+    }
+  }
 
   return p->plugin.open (readonly);
 }

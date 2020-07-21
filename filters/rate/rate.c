@@ -162,11 +162,12 @@ rate_get_ready (nbdkit_next_get_ready *next, void *nxdata)
 
 /* Create the per-connection handle. */
 static void *
-rate_open (nbdkit_next_open *next, void *nxdata, int readonly)
+rate_open (nbdkit_next_open *next, void *nxdata,
+           int readonly, const char *exportname)
 {
   struct rate_handle *h;
 
-  if (next (nxdata, readonly) == -1)
+  if (next (nxdata, readonly, exportname) == -1)
     return NULL;
 
   h = malloc (sizeof *h);

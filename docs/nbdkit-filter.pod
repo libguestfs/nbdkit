@@ -329,7 +329,7 @@ an error message and return C<-1>.
 =head2 C<.open>
 
  void * (*open) (nbdkit_next_open *next, void *nxdata,
-                 int readonly);
+                 int readonly, const char *exportname);
 
 This is called when a new client connection is opened and can be used
 to allocate any per-connection data structures needed by the filter.
@@ -345,17 +345,22 @@ If there is an error, C<.open> should call C<nbdkit_error> with an
 error message and return C<NULL>.
 
 This callback is optional, but if provided, it must call C<next>,
-passing a value for C<readonly> according to how the filter plans to
-use the plugin.  Typically, the filter passes the same value as it
-received, or passes true to provide a writable layer on top of a
-read-only backend.  However, it is also acceptable to attempt write
-access to the plugin even if this filter is readonly, such as when a
-file system mounted read-only still requires write access to the
-underlying device in case a journal needs to be replayed for
-consistency as part of the mounting process.  The filter should
-generally call C<next> as its first step, to allocate from the plugin
-outwards, so that C<.close> running from the outer filter to the
-plugin will be in reverse.
+passing C<readonly> and C<exportname> possibly modified according to
+how the filter plans to use the plugin.  Typically, the filter passes
+the same values as it received, or passes readonly=true to provide a
+writable layer on top of a read-only backend.  However, it is also
+acceptable to attempt write access to the plugin even if this filter
+is readonly, such as when a file system mounted read-only still
+requires write access to the underlying device in case a journal needs
+to be replayed for consistency as part of the mounting process.
+
+The C<exportname> string is only guaranteed to be available during the
+call.  If the filter needs to use it (other than immediately passing
+it down to the next layer) it must take a copy.
+
+The filter should generally call C<next> as its first step, to
+allocate from the plugin outwards, so that C<.close> running from the
+outer filter to the plugin will be in reverse.
 
 =head2 C<.close>
 

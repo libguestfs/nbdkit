@@ -93,10 +93,11 @@ cow_config (nbdkit_next_config *next, void *nxdata,
   "cow-on-cache=<BOOL>  Set to true to treat client cache requests as writes.\n"
 
 static void *
-cow_open (nbdkit_next_open *next, void *nxdata, int readonly)
+cow_open (nbdkit_next_open *next, void *nxdata,
+          int readonly, const char *exportname)
 {
   /* Always pass readonly=1 to the underlying plugin. */
-  if (next (nxdata, 1) == -1)
+  if (next (nxdata, 1, exportname) == -1)
     return NULL;
 
   return NBDKIT_HANDLE_NOT_NEEDED;

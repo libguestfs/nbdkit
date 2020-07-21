@@ -246,14 +246,15 @@ struct connection {
   struct handle *handles;       /* One per plugin and filter. */
   size_t nr_handles;
 
-  char exportname[NBD_MAX_STRING + 1];
-  uint32_t exportnamelen;
   uint32_t cflags;
   uint16_t eflags;
   bool handshake_complete;
   bool using_tls;
   bool structured_replies;
   bool meta_context_base_allocation;
+
+  char *exportname_from_set_meta_context;
+  char *exportname;
 
   int sockin, sockout;
   connection_recv_function recv;
@@ -273,8 +274,9 @@ extern int connection_set_status (int value);
 
 /* protocol-handshake.c */
 extern int protocol_handshake (void);
-extern int protocol_common_open (uint64_t *exportsize, uint16_t *flags)
-  __attribute__((__nonnull__ (1, 2)));
+extern int protocol_common_open (uint64_t *exportsize, uint16_t *flags,
+                                 const char *exportname)
+  __attribute__((__nonnull__ (1, 2, 3)));
 
 /* protocol-handshake-oldstyle.c */
 extern int protocol_handshake_oldstyle (void);
@@ -358,7 +360,7 @@ struct backend {
   void (*get_ready) (struct backend *);
   void (*after_fork) (struct backend *);
   int (*preconnect) (struct backend *, int readonly);
-  void *(*open) (struct backend *, int readonly);
+  void *(*open) (struct backend *, int readonly, const char *exportname);
   int (*prepare) (struct backend *, void *handle, int readonly);
   int (*finalize) (struct backend *, void *handle);
   void (*close) (struct backend *, void *handle);
@@ -402,8 +404,13 @@ extern void backend_load (struct backend *b, const char *name,
 extern void backend_unload (struct backend *b, void (*unload) (void))
   __attribute__((__nonnull__ (1)));
 
-extern int backend_open (struct backend *b, int readonly)
-  __attribute__((__nonnull__ (1)));
+/* exportname is only valid for this call and almost certainly will be
+ * freed on return of this function, so backends must save the
+ * exportname if they need to refer to it later.
+ */
+extern int backend_open (struct backend *b,
+                         int readonly, const char *exportname)
+  __attribute__((__nonnull__ (1, 3)));
 extern int backend_prepare (struct backend *b)
   __attribute__((__nonnull__ (1)));
 extern int backend_finalize (struct backend *b)
@@ -414,8 +421,9 @@ extern bool backend_valid_range (struct backend *b,
                                  uint64_t offset, uint32_t count)
   __attribute__((__nonnull__ (1)));
 
-extern int backend_reopen (struct backend *b, int readonly)
-  __attribute__((__nonnull__ (1)));
+extern int backend_reopen (struct backend *b,
+                           int readonly, const char *exportname)
+  __attribute__((__nonnull__ (1, 3)));
 extern int64_t backend_get_size (struct backend *b)
   __attribute__((__nonnull__ (1)));
 extern int backend_can_write (struct backend *b)

@@ -74,10 +74,11 @@ gzip_thread_model (void)
 }
 
 static void *
-gzip_open (nbdkit_next_open *next, nbdkit_backend *nxdata, int readonly)
+gzip_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
+           int readonly, const char *exportname)
 {
   /* Always pass readonly=1 to the underlying plugin. */
-  if (next (nxdata, 1) == -1)
+  if (next (nxdata, 1, exportname) == -1)
     return NULL;
 
   return NBDKIT_HANDLE_NOT_NEEDED;

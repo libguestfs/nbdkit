@@ -200,11 +200,35 @@ conn_recv_full (void *buf, size_t len, const char *fmt, ...)
  * in that function, and must not cause any wire traffic.
  */
 static int
-finish_newstyle_options (uint64_t *exportsize)
+finish_newstyle_options (uint64_t *exportsize,
+                         const char *exportname_in, uint32_t exportnamelen)
 {
   GET_CONN;
 
-  if (protocol_common_open (exportsize, &conn->eflags) == -1)
+  /* Since the exportname string passed here comes directly out of the
+   * NBD protocol make a temporary copy of the exportname into a
+   * \0-terminated buffer.
+   */
+  CLEANUP_FREE char *exportname = strndup (exportname_in, exportnamelen);
+  if (exportname == NULL) {
+    nbdkit_error ("strndup: %m");
+    return -1;
+  }
+
+  /* The NBD spec says that if the client later uses NBD_OPT_GO on a
+   * different export, then the context from the earlier
+   * NBD_OPT_SET_META_CONTEXT is not usable so discard it.
+   */
+  if (conn->exportname_from_set_meta_context &&
+      strcmp (conn->exportname_from_set_meta_context, exportname) != 0) {
+    debug ("newstyle negotiation: NBD_OPT_SET_META_CONTEXT export name \"%s\" "
+           "≠ final client exportname \"%s\", "
+           "so discarding the previous context",
+           conn->exportname_from_set_meta_context, exportname);
+    conn->meta_context_base_allocation = false;
+  }
+
+  if (protocol_common_open (exportsize, &conn->eflags, exportname) == -1)
     return -1;
 
   debug ("newstyle negotiation: flags: export 0x%x", conn->eflags);
@@ -238,22 +262,13 @@ check_string (uint32_t option, char *buf, uint32_t len, uint32_t maxlen,
  */
 static int
 check_export_name (uint32_t option, char *buf,
-                   uint32_t exportnamelen, uint32_t maxlen, bool save)
+                   uint32_t exportnamelen, uint32_t maxlen)
 {
   GET_CONN;
 
   if (check_string (option, buf, exportnamelen, maxlen, "export name") == -1)
     return -1;
 
-  assert (exportnamelen < sizeof conn->exportname);
-  if (save) {
-    if (exportnamelen != conn->exportnamelen ||
-        memcmp (conn->exportname, buf, exportnamelen) != 0)
-      conn->meta_context_base_allocation = false;
-    memcpy (conn->exportname, buf, exportnamelen);
-    conn->exportname[exportnamelen] = '\0';
-    conn->exportnamelen = exportnamelen;
-  }
   debug ("newstyle negotiation: %s: client requested export '%.*s'",
          name_of_nbd_opt (option), (int) exportnamelen, buf);
   return 0;
@@ -329,13 +344,13 @@ negotiate_handshake_newstyle_options (void)
       if (conn_recv_full (data, optlen,
                           "read: %s: %m", name_of_nbd_opt (option)) == -1)
         return -1;
-      if (check_export_name (option, data, optlen, optlen, true) == -1)
+      if (check_export_name (option, data, optlen, optlen) == -1)
         return -1;
 
       /* We have to finish the handshake by sending handshake_finish.
        * On failure, we have to disconnect.
        */
-      if (finish_newstyle_options (&exportsize) == -1)
+      if (finish_newstyle_options (&exportsize, data, optlen) == -1)
         return -1;
 
       memset (&handshake_finish, 0, sizeof handshake_finish);
@@ -468,7 +483,7 @@ negotiate_handshake_newstyle_options (void)
          * or else we drop the support for that context.
          */
         if (check_export_name (option, &data[4], exportnamelen,
-                               optlen - 6, true) == -1) {
+                               optlen - 6) == -1) {
           if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
@@ -483,7 +498,8 @@ negotiate_handshake_newstyle_options (void)
          * client and let them try another NBD_OPT, rather than
          * disconnecting.
          */
-        if (finish_newstyle_options (&exportsize) == -1) {
+        if (finish_newstyle_options (&exportsize,
+                                     &data[4], exportnamelen) == -1) {
           if (backend_finalize (top) == -1)
             return -1;
           backend_close (top);
@@ -601,17 +617,26 @@ negotiate_handshake_newstyle_options (void)
           continue;
         }
 
-        /* Remember the export name: the NBD spec says that if the client
-         * later uses NBD_OPT_GO on a different export, then the context
-         * returned here is not usable.
-         */
         memcpy (&exportnamelen, &data[0], 4);
         exportnamelen = be32toh (exportnamelen);
         what = "validating export name";
         if (check_export_name (option, &data[4], exportnamelen,
-                               optlen - 8,
-                               option == NBD_OPT_SET_META_CONTEXT) == -1)
+                               optlen - 8) == -1)
           goto opt_meta_invalid_option_len;
+
+        /* Remember the export name: the NBD spec says that if the client
+         * later uses NBD_OPT_GO on a different export, then the context
+         * returned here is not usable.
+         */
+        if (option == NBD_OPT_SET_META_CONTEXT) {
+          conn->exportname_from_set_meta_context =
+            strndup (&data[4], exportnamelen);
+          if (conn->exportname_from_set_meta_context == NULL) {
+            nbdkit_error ("malloc: %m");
+            return -1;
+          }
+        }
+
         opt_index = 4 + exportnamelen;
 
         /* Read the number of queries. */

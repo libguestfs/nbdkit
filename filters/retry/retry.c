@@ -106,16 +106,18 @@ retry_config (nbdkit_next_config *next, void *nxdata,
 
 struct retry_handle {
   int readonly;                 /* Save original readonly setting. */
+  const char *exportname;       /* Client exportname. */
   unsigned reopens;
   bool open;
 };
 
 static void *
-retry_open (nbdkit_next_open *next, void *nxdata, int readonly)
+retry_open (nbdkit_next_open *next, void *nxdata,
+            int readonly, const char *exportname)
 {
   struct retry_handle *h;
 
-  if (next (nxdata, readonly) == -1)
+  if (next (nxdata, readonly, exportname) == -1)
     return NULL;
 
   h = malloc (sizeof *h);
@@ -125,6 +127,12 @@ retry_open (nbdkit_next_open *next, void *nxdata, int readonly)
   }
 
   h->readonly = readonly;
+  h->exportname = strdup (exportname);
+  if (h->exportname == NULL) {
+    nbdkit_error ("strdup: %m");
+    free (h);
+    return NULL;
+  }
   h->reopens = 0;
   h->open = true;
 
@@ -198,7 +206,8 @@ do_retry (struct retry_handle *h,
 
   /* Reopen the connection. */
   h->reopens++;
-  if (next_ops->reopen (nxdata, h->readonly || force_readonly) == -1) {
+  if (next_ops->reopen (nxdata,
+                        h->readonly || force_readonly, h->exportname) == -1) {
     /* If the reopen fails we treat it the same way as a command
      * failing.
      */
