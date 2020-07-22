@@ -48,7 +48,7 @@ start_t=$SECONDS
 nbdkit -v -U - \
        sh - \
        --filter=retry retry-delay=1 \
-       --run 'nbdsh --uri $uri -c "
+       --run 'nbdsh --uri "$uri" -c "
 h.zero (512, 0)
 try:
     h.zero (512, 0,
