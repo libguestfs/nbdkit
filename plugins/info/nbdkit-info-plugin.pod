@@ -79,7 +79,7 @@ which will print something like:
 
 This plugin can also return the wallclock time:
 
- $ nbdkit info time --run 'nbdsh --connect $uri -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
+ $ nbdkit info time --run 'nbdsh -u "$uri" -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
  00000000  00 00 00 00 5d 8f 24 c7  00 04 24 01
                       └─────┬─────┘
                           ┌─┘
@@ -89,14 +89,14 @@ This plugin can also return the wallclock time:
 
 or the nbdkit server uptime:
 
- $ nbdkit info uptime --run 'nbdsh --connect $uri -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
+ $ nbdkit info uptime --run 'nbdsh -u "$uri" -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
  00000000  00 00 00 00 00 00 00 00  00 00 60 4b
                                          └──┬──┘
                                    0x604b is about 25ms
 
 or the time since the client opened the connection:
 
- $ nbdkit info conntime --run 'nbdsh --connect $uri -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
+ $ nbdkit info conntime --run 'nbdsh -u "$uri" -c "sys.stdout.buffer.write(h.pread(12,0))" | hexdump -C'
  00000000  00 00 00 00 00 00 00 00  00 00 00 e0
                                             └─┬─┘
                                      0xe0 is about 200μs

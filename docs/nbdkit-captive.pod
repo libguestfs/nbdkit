@@ -40,6 +40,10 @@ Running nbdkit captive under guestfish:
 
 When guestfish exits, nbdkit is killed.
 
+Running nbdkit captive under nbdsh for unit testing:
+
+ nbdkit -U - memory 1 --run 'nbdsh -u "$uri" -c "print (h.pread (1, 0))"'
+
 The following shell variables are available in the I<--run> argument:
 
 =over 4
@@ -47,7 +51,9 @@ The following shell variables are available in the I<--run> argument:
 =item C<$uri>
 
 A URI that refers to the nbdkit port or socket in the preferred form
-documented by the NBD project.
+documented by the NBD project.  As this variable may contain a bare
+C<?> for Unix sockets, it is safest to use $uri within double quotes
+to avoid unintentional globbing.
 
 =item C<$nbd>
 

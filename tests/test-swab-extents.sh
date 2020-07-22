@@ -121,7 +121,7 @@ for bits in 8 16 32 64; do
     for exts in "$all" "$one"; do
         nbdkit -U - --filter=swab eval swab-bits=$bits \
                get_size='echo 48' pread='exit 1' extents="$exts" \
-               --run 'nbdsh --base-allocation -u $uri -c "$script"' \
+               --run 'nbdsh --base-allocation -u "$uri" -c "$script"' \
                > swab-extents.out || fail=1
         diff -u swab-extents.exp$bits swab-extents.out || fail=1
     done

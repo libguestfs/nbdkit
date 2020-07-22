@@ -63,14 +63,14 @@ if test "$name4k" != "$out"; then
     echo "$0: \$exportname contains wrong contents" >&2
     fail=1
 fi
-out=$(nbdkit -U - -e $name4k null --run 'echo $uri')
+out=$(nbdkit -U - -e $name4k null --run 'echo "$uri"')
 case $out in
     nbd+unix:///$name4k\?socket=*) ;;
     *) echo "$0: \$uri contains wrong contents" >&2
        fail=1 ;;
 esac
 pick_unused_port
-out=$(nbdkit -i localhost -p $port -e $name4k null --run 'echo $uri')
+out=$(nbdkit -i localhost -p $port -e $name4k null --run 'echo "$uri"')
 case $out in
     nbd://localhost:$port/$name4k) ;;
     *) echo "$0: \$uri contains wrong contents" >&2

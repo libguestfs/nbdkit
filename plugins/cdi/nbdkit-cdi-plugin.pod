@@ -32,7 +32,7 @@ on the tar entry within the layer it shows that it is a QCOW2 file:
 
  $ nbdkit cdi docker://kubevirt/fedora-cloud-container-disk-demo \
          --filter=tar tar-entry=./disk/downloaded \
-         --run 'nbdcopy $uri - | file -'
+         --run 'nbdcopy "$uri" - | file -'
  -: QEMU QCOW2 Image (v2), 4294967296 bytes
 
 =head1 PARAMETERS

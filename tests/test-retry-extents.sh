@@ -47,7 +47,7 @@ start_t=$SECONDS
 nbdkit -v -U - \
        sh - \
        --filter=retry retry-delay=1 \
-       --run 'nbdsh --base-allocation --uri $uri -c "
+       --run 'nbdsh --base-allocation --uri "$uri" -c "
 entries = []
 def f (metacontext, offset, e, err):
     global entries

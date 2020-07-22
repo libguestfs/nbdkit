@@ -78,7 +78,7 @@ cp nozero1.img nozero4.img
 cp nozero1.img nozero5.img
 cp nozero1.img nozero6.img
 requires nbdkit -U - --filter=log file logfile=nozero1.log nozero1.img \
-    --run 'nbdsh -u $uri -c "h.zero (1024*1024, 0)"'
+    --run 'nbdsh -u "$uri" -c "h.zero (1024*1024, 0)"'
 if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
     echo "$0: can't trim file by writing zeroes"
     exit 77

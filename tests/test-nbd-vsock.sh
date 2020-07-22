@@ -61,7 +61,7 @@ cleanup_fn rm -f $files
 start_nbdkit -P nbd-vsock.pid --vsock --port $port memory 1M
 
 # Run a second nbdkit as a vsock->Unix bridge.
-nbdkit -U - nbd vsock=1 port=$port --run 'nbdsh -u $uri -c "
+nbdkit -U - nbd vsock=1 port=$port --run 'nbdsh -u "$uri" -c "
 size = h.get_size ()
 assert size == 1048576
 "'

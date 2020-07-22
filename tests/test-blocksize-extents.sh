@@ -99,4 +99,4 @@ assert entries == [(1, 0), (1, 3)]
 # Now run everything
 nbdkit -U - --filter=blocksize eval minblock=4k maxlen=32k \
        get_size='echo 64k' pread='exit 1' extents="$exts" \
-       --run 'nbdsh --base-allocation -u $uri -c "$script"'
+       --run 'nbdsh --base-allocation -u "$uri" -c "$script"'
