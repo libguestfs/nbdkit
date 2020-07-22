@@ -65,6 +65,9 @@ typedef int nbdkit_next_config_complete (nbdkit_backend *nxdata);
 typedef int nbdkit_next_get_ready (nbdkit_backend *nxdata);
 typedef int nbdkit_next_after_fork (nbdkit_backend *nxdata);
 typedef int nbdkit_next_preconnect (nbdkit_backend *nxdata, int readonly);
+typedef int nbdkit_next_list_exports (nbdkit_backend *nxdata, int readonly,
+                                      int default_only,
+                                      struct nbdkit_exports *exports);
 typedef int nbdkit_next_open (nbdkit_backend *nxdata,
                               int readonly, const char *exportname);
 
@@ -167,6 +170,9 @@ struct nbdkit_filter {
   int (*after_fork) (nbdkit_next_after_fork *next, nbdkit_backend *nxdata);
   int (*preconnect) (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
                      int readonly);
+  int (*list_exports) (nbdkit_next_list_exports *next, nbdkit_backend *nxdata,
+                       int readonly, int default_only,
+                       struct nbdkit_exports *exports);
 
   void * (*open) (nbdkit_next_open *next, nbdkit_backend *nxdata,
                   int readonly, const char *exportname);

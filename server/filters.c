@@ -241,7 +241,11 @@ static int
 filter_list_exports (struct backend *b, int readonly, int default_only,
                      struct nbdkit_exports *exports)
 {
-  /* XXX No filter override yet... */
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  if (f->filter.list_exports)
+    return f->filter.list_exports (backend_list_exports, b->next,
+                                   readonly, default_only, exports);
   return backend_list_exports (b->next, readonly, default_only, exports);
 }
 

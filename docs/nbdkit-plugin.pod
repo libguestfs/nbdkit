@@ -152,6 +152,9 @@ the plugin:
  │ preconnect │                  │
  └──────┬─────┘                  │
  ┌──────┴─────┐                  │
+ │list_exports│                  │
+ └──────┬─────┘                  │
+ ┌──────┴─────┐                  │
  │ open       │                  │
  └──────┬─────┘                  │
  ┌──────┴─────┐  NBD option      │
@@ -160,10 +163,10 @@ the plugin:
  ┌──────┴─────┐           ┌──────┴─────┐ client #2
  │ get_size   │           │ preconnect │
  └──────┬─────┘           └──────┬─────┘
- ┌──────┴─────┐ data      ┌──────┴─────┐
- │ pread      │ serving   │ open       │
- └──────┬─────┘↺          └──────┬─────┘
- ┌──────┴─────┐                 ...
+ ┌──────┴─────┐ data
+ │ pread      │ serving
+ └──────┬─────┘↺                ...
+ ┌──────┴─────┐
  │ pwrite     │
  └──────┬─────┘↺          ┌──────┴─────┐
  ┌──────┴─────┐           │ close      │
@@ -235,6 +238,12 @@ L<getpid(2)>.
 
 Called when a TCP connection has been made to the server.  This
 happens early, before NBD or TLS negotiation.
+
+=item C<.list_exports>
+
+Early in option negotiation the client may try to list the exports
+served by the plugin, and plugins can optionally implement this
+callback to answer the client.  See L</EXPORT NAME> below.
 
 =item C<.open>
 
@@ -651,6 +660,53 @@ with the I<-r> flag on the command line.
 Returning C<0> will allow the connection to continue.  If there is an
 error or you want to deny the connection, call C<nbdkit_error> with an
 error message and return C<-1>.
+
+=head2 C<.list_exports>
+
+ int list_exports (int readonly, int default_only,
+                   struct nbdkit_exports *exports);
+
+This optional callback is called if the client tries to list the
+exports served by the plugin (using C<NBD_OPT_LIST>).  If the plugin
+does not supply this callback then a single export called C<""> is
+returned.  The NBD protocol defines C<""> as the default export, so
+this is suitable for plugins which ignore the export name and always
+serve the same content.  See also L</EXPORT NAME> below.
+
+The C<readonly> flag informs the plugin that the server was started
+with the I<-r> flag on the command line, which is the same value
+passed to C<.preconnect> and C<.open>.  However, the NBD protocol does
+not yet have a way to let the client advertise an intent to be
+read-only even when the server allows writes, so this parameter may
+not be as useful as it appears.
+
+If the C<default_only> flag is set then the client is querying for the
+name of the default export, and the plugin may optimize by adding only
+a single export to the returned list (the default export name, usually
+C<"">).  The plugin can ignore this flag and return all exports if it
+wants.
+
+The C<exports> parameter is an opaque object for collecting the list
+of exports.  Call C<nbdkit_add_export> to add a single export to the
+list.  If the plugin has a concept of a default export (usually but
+not always called C<"">) then it should return that first in the list.
+
+ int nbdkit_add_export (struct nbdkit_export *exports,
+                        const char *name, const char *description);
+
+The C<name> must be a non-NULL, UTF-8 string between 0 and 4096 bytes
+in length.  Export names must be unique.  C<description> is an
+optional description of the export which some clients can display but
+which is otherwise unused (if you don't want a description, you can
+pass this parameter as C<NULL>).  The string(s) are copied into the
+exports list so you may free them immediately after calling this
+function.  C<nbdkit_add_export> returns C<0> on success or C<-1> on
+failure; on failure C<nbdkit_error> has already been called, with
+C<errno> set to a suitable value.
+
+Returning C<0> will send the list of exports back to the client.  If
+there is an error, C<.list_exports> should call C<nbdkit_error> with
+an error message and return C<-1>.
 
 =head2 C<.open>
 

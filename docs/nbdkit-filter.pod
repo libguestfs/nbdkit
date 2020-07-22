@@ -129,15 +129,17 @@ which is required.
 F<nbdkit-filter.h> defines some function types (C<nbdkit_next_config>,
 C<nbdkit_next_config_complete>, C<nbdkit_next_get_ready>,
 C<nbdkit_next_after_fork>, C<nbdkit_next_preconnect>,
-C<nbdkit_next_open>) and a structure called C<struct nbdkit_next_ops>.
-These abstract the next plugin or filter in the chain.  There is also
-an opaque pointer C<nxdata> which must be passed along when calling
-these functions.  The value of C<nxdata> passed to C<.open> has a
-stable lifetime that lasts to the corresponding C<.close>, with all
-intermediate functions (such as C<.pread>) receiving the same value
-for convenience; the only exceptions where C<nxdata> is not reused are
-C<.config>, C<.config_complete>, C<.get_ready>, C<.after_fork> and
-C<.preconnect>, which are called outside the lifetime of a connection.
+C<nbdkit_next_list_exports>, C<nbdkit_next_open>) and a structure
+called C<struct nbdkit_next_ops>.  These abstract the next plugin or
+filter in the chain.  There is also an opaque pointer C<nxdata> which
+must be passed along when calling these functions.  The value of
+C<nxdata> passed to C<.open> has a stable lifetime that lasts to the
+corresponding C<.close>, with all intermediate functions (such as
+C<.pread>) receiving the same value for convenience; the only
+exceptions where C<nxdata> is not reused are C<.config>,
+C<.config_complete>, C<.get_ready>, C<.after_fork>, C<.preconnect> and
+C<.list_exports>, which are called outside the lifetime of a
+connection.
 
 =head2 Next config, open and close
 
@@ -325,6 +327,78 @@ filter access to the server.
 
 If there is an error, C<.preconnect> should call C<nbdkit_error> with
 an error message and return C<-1>.
+
+=head2 C<.list_exports>
+
+ int (*list_exports) (nbdkit_next_list_exports *next, void *nxdata,
+                      int readonly, int default_only,
+                      struct nbdkit_exports *exports);
+
+This intercepts the plugin C<.list_exports> method and can be used to
+filter which exports are advertised.
+
+It is possible for filters to transform the exports list received back
+from the layer below.  Without error checking it would look like this:
+
+ myfilter_list_exports (...)
+ {
+   size_t i;
+   struct nbdkit_exports *exports2;
+   struct nbdkit_export e;
+   char *name, *desc;
+
+   exports2 = nbdkit_exports_new (default_only);
+   next_list_exports (nxdata, readonly, default_only, exports);
+   for (i = 0; i < nbdkit_exports_count (exports2); ++i) {
+     e = nbdkit_get_export (exports2, i);
+     name = adjust (e.name);
+     desc = adjust (e.desc);
+     nbdkit_add_export (exports, name, desc);
+     free (name);
+     free (desc);
+   }
+   nbdkit_exports_free (exports2);
+ }
+
+If there is an error, C<.list_exports> should call C<nbdkit_error> with
+an error message and return C<-1>.
+
+=head3 Allocating and freeing nbdkit_exports list
+
+Two functions are provided to filters only for allocating and freeing
+the list:
+
+ struct nbdkit_exports *nbdkit_exports_new (int default_only);
+
+Allocates and returns a new, empty exports list.  The C<default_only>
+parameter should match whether the list is intended to grab the
+canonical name of the default export, or all exports.
+
+On error this function can return C<NULL>.  In this case it calls
+C<nbdkit_error> as required.  C<errno> will be set to a suitable
+value.
+
+ void nbdkit_exports_free (struct nbdkit_exports *);
+
+Frees an existing exports list.
+
+=head3 Iterating over nbdkit_exports list
+
+Two functions are provided to filters only to iterate over the exports
+in order:
+
+ size_t nbdkit_exports_count (const struct nbdkit_exports *);
+
+Returns the number of exports in the list.
+
+ struct nbdkit_export {
+   char *name;
+   char *description;
+ };
+ const struct nbdkit_export nbdkit_get_export (const struct nbdkit_exports *,
+                                               size_t i);
+
+Returns a copy of the C<i>'th export.
 
 =head2 C<.open>
 
