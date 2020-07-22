@@ -259,6 +259,7 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
              int readonly)
 {
   struct handle *h = handle;
+  const char *exportname = nbdkit_export_name ();
   int64_t size = next_ops->get_size (nxdata);
   int w = next_ops->can_write (nxdata);
   int f = next_ops->can_flush (nxdata);
@@ -274,9 +275,9 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
       e < 0 || c < 0 || Z < 0)
     return -1;
 
-  output (h, "Connect", 0, "size=0x%" PRIx64 " write=%d flush=%d "
+  output (h, "Connect", 0, "export='%s' size=0x%" PRIx64 " write=%d flush=%d "
           "rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d "
-          "fast_zero=%d", size, w, f, r, t, z, F, e, c, Z);
+          "fast_zero=%d", exportname, size, w, f, r, t, z, F, e, c, Z);
   return 0;
 }
 
