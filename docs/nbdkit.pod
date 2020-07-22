@@ -214,6 +214,24 @@ An alternative to this is L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
 
 This option implies I<--foreground>.
 
+=item B<-e> EXPORTNAME
+
+=item B<--export> EXPORTNAME
+
+=item B<--export-name> EXPORTNAME
+
+=item B<--exportname> EXPORTNAME
+
+Set a preferred exportname to expose in the shell environment created
+during B<--run>.  The use of this option without B<--run> has no
+effect.  This option does I<not> change what nbdkit advertises as a
+server, but can aid in writing a captive client that wants to access
+particular content from a plugin that differentiates content based on
+the client's choice of export name.
+
+If not set, the B<--run> environment is set to access the default
+exportname C<""> (empty string).
+
 =item B<-f>
 
 =item B<--foreground>

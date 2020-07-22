@@ -79,6 +79,7 @@ static bool is_config_key (const char *key, size_t len);
 
 struct debug_flag *debug_flags; /* -D */
 bool exit_with_parent;          /* --exit-with-parent */
+const char *export_name;        /* -e */
 bool foreground;                /* -f */
 const char *ipaddr;             /* -i */
 enum log_to log_to = LOG_TO_DEFAULT; /* --log */
@@ -344,7 +345,7 @@ main (int argc, char *argv[])
       break;
 
     case 'e':
-      /* Does nothing, ignored for compatibility with older nbdkit. */
+      export_name = optarg;
       break;
 
     case 'f':

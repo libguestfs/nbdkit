@@ -102,7 +102,7 @@ Partially supported in nbdkit E<ge> 1.1.12.  Support for plugins to
 read the client export name added in nbdkit E<ge> 1.15.2.
 
 Versions of nbdkit before 1.16 could advertise a single export name to
-clients, specified through the now deprecated I<-e> option.  In nbdkit
+clients, via a now deprecated side effect of the I<-e> option.  In nbdkit
 1.15.2, plugins could read the client requested export name using
 C<nbdkit_export_name()> and serve different content.
 

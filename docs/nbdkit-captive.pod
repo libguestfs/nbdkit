@@ -5,7 +5,7 @@ reliably cleaned up
 
 =head1 SYNOPSIS
 
- nbdkit PLUGIN [...] --run "CMD ARGS ..."
+ nbdkit PLUGIN [...] [-e|--exportname EXPORTNAME] --run "CMD ARGS ..."
 
  nbdkit --exit-with-parent PLUGIN [...]
 
@@ -53,7 +53,9 @@ The following shell variables are available in the I<--run> argument:
 A URI that refers to the nbdkit port or socket in the preferred form
 documented by the NBD project.  As this variable may contain a bare
 C<?> for Unix sockets, it is safest to use $uri within double quotes
-to avoid unintentional globbing.
+to avoid unintentional globbing.  For plugins that support distinct
+data based on export names, the B<-e> option to nbdkit controls which
+export name will be set in the URI.
 
 =item C<$nbd>
 
@@ -71,6 +73,14 @@ If E<ne> "", the port number that nbdkit is listening on.
 =item C<$unixsocket>
 
 If E<ne> "", the Unix domain socket that nbdkit is listening on.
+
+=item C<$exportname>
+
+The export name (which may be "") that the process should use when
+connecting to nbdkit, as set by the B<-e> (B<--exportname>) command
+line option of nbdkit.  This only matters to plugins that
+differentiate what they serve based on the export name requested by
+the client.
 
 =back
 

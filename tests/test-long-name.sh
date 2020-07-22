@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2019 Red Hat Inc.
+# Copyright (C) 2019-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -52,10 +52,6 @@ name256=$name64$name64$name64$name64
 name1k=$name256$name256$name256$name256
 name4k=$name1k$name1k$name1k$name1k
 almost4k=${name4k%8$name16}
-
-# Test behavior of -e: accept 4k max, reject longer
-nbdkit -U - -e $name4k null --run true || fail=1
-nbdkit -U - -e a$name4k null --run true && fail=1
 
 # Test that $exportname and $uri reflect the name
 out=$(nbdkit -U - -e $name4k null --run 'echo $exportname')
@@ -110,6 +106,9 @@ assert h.get_size() == 0
 EOF
 '
 
+# TODO when we add .list_extents, we should test a plugin advertising
+# a name near 4k in length. nbdkit -e no longer does this
+if false; then
 # The rest of this test uses the ‘qemu-nbd --list’ option added in qemu 4.0.
 if ! qemu-nbd --help | grep -sq -- --list; then
     echo "$0: skipping because qemu-nbd does not support the --list option"
@@ -118,5 +117,6 @@ fi
 
 # Test response to NBD_OPT_LIST
 nbdkit -U - -e $name4k null --run 'qemu-nbd --list -k $unixsocket' || fail=1
+fi
 
 exit $fail
