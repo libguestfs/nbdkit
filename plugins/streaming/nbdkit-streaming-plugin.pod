@@ -4,7 +4,9 @@ nbdkit-streaming-plugin - nbdkit streaming plugin
 
 =head1 SYNOPSIS
 
- nbdkit streaming write=FILENAME [size=SIZE]
+ nbdkit streaming write=PIPE [size=SIZE]
+
+ nbdkit streaming read=PIPE [size=SIZE]
 
 =head1 DESCRIPTION
 
@@ -26,6 +28,20 @@ This can be visualised as:
  client ──────▶│ streaming │──────▶ data to ./pipe
  writes        │ plugin    │
                └───────────┘
+
+If the NBD client opens the NBD port and I<reads> from the start to
+the end of the disk without seeking backwards, then you can turn a
+local pipe or socket into a stream of data for that client:
+
+ nbdkit streaming read=./pipe
+
+This can be visualised as:
+
+                  ┌───────────┐
+ plugin streams   │ nbdkit    │        NBD
+ data from ──────▶│ streaming │──────▶ client
+ ./pipe           │ plugin    │        reads
+                  └───────────┘
 
 Note that F<./pipe> (or the local socket) sees raw data, it is not
 using the NBD protocol.  If you want to forward NBD to a local socket
@@ -57,19 +73,30 @@ of order).  This approach cannot work for other formats such as qcow2
 since those contain metadata that must be updated by seeking back to
 the start of the file which is not possible if the output is a pipe.
 
+The reverse is to get qemu-img to read from a pipe:
+
+ nbdkit -U - streaming read=./pipe \
+        --run ' qemu-img convert -f raw $nbd -O qcow2 output.qcow2 '
+
 For use of the I<--run> and I<-U -> options, see L<nbdkit-captive(1)>.
 
 =head1 PARAMETERS
 
+Either C<read> or C<write> is required, but not both.
+
 =over 4
+
+=item B<read=>FILENAME
+
+Read data stream from the named pipe or socket.  If the pipe or socket
+does not exist, then it is created (as a named FIFO), otherwise the
+existing pipe or socket is opened and used.
 
 =item B<write=>FILENAME
 
 Write data stream to the named pipe or socket.  If the pipe or socket
 does not exist, then it is created (as a named FIFO), otherwise the
 existing pipe or socket is opened and used.
-
-This parameter is required.
 
 =item B<pipe=>FILENAME
 

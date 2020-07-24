@@ -38,11 +38,15 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <assert.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <nbdkit-plugin.h>
+
+/* Mode - read or write? */
+static enum { UNKNOWN_MODE, READ_MODE, WRITE_MODE } mode = UNKNOWN_MODE;
 
 /* The pipe. */
 static char *filename = NULL;
@@ -58,8 +62,8 @@ static int64_t size = INT64_C(9223372036854775296);
  */
 static bool errorstate = 0;
 
-/* Highest byte (+1) that has been written in the data stream. */
-static uint64_t highestwrite = 0;
+/* Highest byte (+1) that has been accessed in the data stream. */
+static uint64_t highest = 0;
 
 static void
 streaming_unload (void)
@@ -75,7 +79,20 @@ streaming_config (const char *key, const char *value)
 {
   if (strcmp (key, "write") == 0 ||
       strcmp (key, "pipe") == 0) {
-    /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
+    if (mode != UNKNOWN_MODE) {
+      nbdkit_error ("you cannot use read and write options at the same time");
+      return -1;
+    }
+    mode = WRITE_MODE;
+    goto adjust_filename;
+  }
+  else if (strcmp (key, "read") == 0) {
+    if (mode != UNKNOWN_MODE) {
+      nbdkit_error ("you cannot use read and write options at the same time");
+      return -1;
+    }
+    mode = READ_MODE;
+  adjust_filename:
     filename = nbdkit_absolute_path (value);
     if (!filename)
       return -1;
@@ -93,12 +110,13 @@ streaming_config (const char *key, const char *value)
   return 0;
 }
 
-/* Check the user did pass a write=<FILENAME> parameter. */
+/* Did the user pass either the read or write parameter? */
 static int
 streaming_config_complete (void)
 {
-  if (filename == NULL) {
-    nbdkit_error ("you must supply the write=<FILENAME> parameter "
+  if (mode == UNKNOWN_MODE) {
+    nbdkit_error ("you must supply either the read=<FILENAME> or "
+                  "write=<FILENAME> parameter "
                   "after the plugin name on the command line");
     return -1;
   }
@@ -106,14 +124,31 @@ streaming_config_complete (void)
   return 0;
 }
 
+#define streaming_config_help \
+  "read=<FILENAME>                The pipe or socket to read.\n" \
+  "write=<FILENAME>               The pipe or socket to write.\n" \
+  "size=<SIZE>         (optional) Stream size."
+
 static int
 streaming_get_ready (void)
 {
+  int flags;
+
+  assert (mode != UNKNOWN_MODE);
+  assert (filename != NULL);
+  assert (fd == -1);
+
+  flags = O_CLOEXEC|O_NOCTTY;
+  if (mode == WRITE_MODE)
+    flags |= O_RDWR;
+  else
+    flags |= O_RDONLY;
+
   /* Open the file blindly.  If this fails with ENOENT then we create a
    * FIFO and try again.
    */
  again:
-  fd = open (filename, O_RDWR|O_CLOEXEC|O_NOCTTY);
+  fd = open (filename, flags);
   if (fd == -1) {
     if (errno != ENOENT) {
       nbdkit_error ("open: %s: %m", filename);
@@ -128,10 +163,6 @@ streaming_get_ready (void)
 
   return 0;
 }
-
-#define streaming_config_help \
-  "write=<FILENAME>    (required) The filename to serve.\n" \
-  "size=<SIZE>         (optional) Stream size."
 
 /* Create the per-connection handle. */
 static void *
@@ -151,6 +182,16 @@ streaming_open (int readonly)
   return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
+/* In write mode, writes are allowed.  In read mode, we act as if -r
+ * was passed on the command line and the client will not be allowed
+ * to write.
+ */
+static int
+streaming_can_write (void *h)
+{
+  return mode == WRITE_MODE;
+}
+
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
 /* Return the size of the stream (infinite). */
@@ -160,10 +201,9 @@ streaming_get_size (void *handle)
   return size;
 }
 
-/* Write data to the stream. */
+/* Read data back from the stream. */
 static int
-streaming_pwrite (void *handle, const void *buf,
-                  uint32_t count, uint64_t offset)
+streaming_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
   size_t n;
   ssize_t r;
@@ -174,17 +214,107 @@ streaming_pwrite (void *handle, const void *buf,
     return -1;
   }
 
-  if (offset < highestwrite) {
+  if (mode == READ_MODE) {
+    if (offset < highest) {
+      nbdkit_error ("client tried to seek backwards and read: "
+                    "the streaming plugin does not support this");
+      errorstate = true;
+      errno = EIO;
+      return -1;
+    }
+
+    /* If the offset is higher than previously read we must seek
+     * forwards and discard data.
+     */
+    if (offset > highest) {
+      int64_t remaining = offset - highest;
+      static char discard[4096];
+
+      while (remaining > 0) {
+        n = remaining > sizeof discard ? sizeof discard : remaining;
+        r = read (fd, discard, n);
+        if (r == -1) {
+          nbdkit_error ("read: %m");
+          errorstate = true;
+          return -1;
+        }
+        if (r == 0) {
+          nbdkit_error ("read: unexpected end of file reading from the pipe");
+          errorstate = true;
+          return -1;
+        }
+        highest += r;
+        remaining -= r;
+      }
+    }
+
+    /* Read data from the pipe into the return buffer. */
+    while (count > 0) {
+      r = read (fd, buf, count);
+      if (r == -1) {
+        nbdkit_error ("read: %m");
+        errorstate = true;
+        return -1;
+      }
+      if (r == 0) {
+        nbdkit_error ("read: unexpected end of file reading from the pipe");
+        errorstate = true;
+        return -1;
+      }
+      buf += r;
+      highest += r;
+      count -= r;
+    }
+
+    return 0;
+  }
+
+  /* WRITE_MODE */
+  else {
+    /* Allow reads which are entirely >= highest.  These return zeroes. */
+    if (offset >= highest) {
+      memset (buf, 0, count);
+      return 0;
+    }
+
+    nbdkit_error ("client tried to read, but the streaming plugin is "
+                  "being used in write mode (write= parameter)");
+    errorstate = true;
+    errno = EIO;
+    return -1;
+  }
+}
+
+/* Write data to the stream. */
+static int
+streaming_pwrite (void *handle, const void *buf,
+                  uint32_t count, uint64_t offset)
+{
+  size_t n;
+  ssize_t r;
+
+  /* This can never happen because streaming_can_write above returns
+   * false in read mode.
+   */
+  assert (mode == WRITE_MODE);
+
+  if (errorstate) {
+    nbdkit_error ("unrecoverable error state");
+    errno = EIO;
+    return -1;
+  }
+
+  if (offset < highest) {
     nbdkit_error ("client tried to seek backwards and write: "
-                  "the streaming plugin does not currently support this");
+                  "the streaming plugin does not support this");
     errorstate = true;
     errno = EIO;
     return -1;
   }
 
   /* Need to write some zeroes. */
-  if (offset > highestwrite) {
-    int64_t remaining = offset - highestwrite;
+  if (offset > highest) {
+    int64_t remaining = offset - highest;
     static char zerobuf[4096];
 
     while (remaining > 0) {
@@ -195,7 +325,7 @@ streaming_pwrite (void *handle, const void *buf,
         errorstate = true;
         return -1;
       }
-      highestwrite += r;
+      highest += r;
       remaining -= r;
     }
   }
@@ -209,34 +339,11 @@ streaming_pwrite (void *handle, const void *buf,
       return -1;
     }
     buf += r;
-    highestwrite += r;
+    highest += r;
     count -= r;
   }
 
   return 0;
-}
-
-/* Read data back from the stream. */
-static int
-streaming_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
-{
-  if (errorstate) {
-    nbdkit_error ("unrecoverable error state");
-    errno = EIO;
-    return -1;
-  }
-
-  /* Allow reads which are entirely >= highestwrite.  These return zeroes. */
-  if (offset >= highestwrite) {
-    memset (buf, 0, count);
-    return 0;
-  }
-
-  nbdkit_error ("client tried to read: "
-                "the streaming plugin does not currently support this");
-  errorstate = 1;
-  errno = EIO;
-  return -1;
 }
 
 static struct nbdkit_plugin plugin = {
@@ -249,9 +356,10 @@ static struct nbdkit_plugin plugin = {
   .config_help       = streaming_config_help,
   .get_ready         = streaming_get_ready,
   .open              = streaming_open,
+  .can_write         = streaming_can_write,
   .get_size          = streaming_get_size,
-  .pwrite            = streaming_pwrite,
   .pread             = streaming_pread,
+  .pwrite            = streaming_pwrite,
   .errno_is_preserved = 1,
 };
 
