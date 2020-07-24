@@ -40,8 +40,13 @@ However this will work:
               └───────────┘      ↑└───────────┘
                               Unix domain socket (-U -)
 
-For use of the I<--run> and I<-U -> options, see
-L<nbdkit-captive(1)>.
+This only works because the output format is raw and qemu-img can
+write that linearly (without seeking backwards or writing blocks out
+of order).  This approach cannot work for other formats such as qcow2
+since those contain metadata that must be updated by seeking back to
+the start of the file which is not possible if the output is a pipe.
+
+For use of the I<--run> and I<-U -> options, see L<nbdkit-captive(1)>.
 
 =head1 PARAMETERS
 

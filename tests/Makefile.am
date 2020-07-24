@@ -863,6 +863,12 @@ endif HAVE_SSH
 
 # streaming plugin test.
 LIBNBD_TESTS += test-streaming
+TESTS += \
+	test-streaming-qemu-write.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-streaming-qemu-write.sh \
+	$(NULL)
 
 test_streaming_SOURCES = test-streaming.c
 test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
