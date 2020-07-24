@@ -811,7 +811,6 @@ stamp-ssh-user-key:
 endif HAVE_SSH
 
 # streaming plugin test.
-# Doesn't work:
 LIBNBD_TESTS += test-streaming
 
 test_streaming_SOURCES = test-streaming.c
