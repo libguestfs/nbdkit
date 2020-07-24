@@ -34,15 +34,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <errno.h>
 
 #include <nbdkit-plugin.h>
 
+/* The pipe. */
 static char *filename = NULL;
 static int fd = -1;
 
@@ -52,10 +54,18 @@ static int64_t size = INT64_MAX/2;
 /* Flag if we have entered the unrecoverable error state because of
  * a seek backwards.
  */
-static int errorstate = 0;
+static bool errorstate = 0;
 
 /* Highest byte (+1) that has been written in the data stream. */
 static uint64_t highestwrite = 0;
+
+static void
+streaming_unload (void)
+{
+  if (fd >= 0)
+    close (fd);
+  free (filename);
+}
 
 /* Called for each key=value passed on the command line. */
 static int
@@ -116,15 +126,6 @@ streaming_get_ready (void)
   return 0;
 }
 
-/* nbdkit is shutting down. */
-static void
-streaming_unload (void)
-{
-  if (fd >= 0)
-    close (fd);
-  free (filename);
-}
-
 #define streaming_config_help \
   "pipe=<FILENAME>     (required) The filename to serve.\n" \
   "size=<SIZE>         (optional) Stream size."
@@ -133,8 +134,6 @@ streaming_unload (void)
 static void *
 streaming_open (int readonly)
 {
-  void *h;
-
   if (readonly) {
     nbdkit_error ("you cannot use the -r option with the streaming plugin");
     return NULL;
@@ -146,16 +145,7 @@ streaming_open (int readonly)
     return NULL;
   }
 
-  /* There is no handle, so return an arbitrary non-NULL pointer. */
-  h = &fd;
-
-  return h;
-}
-
-/* Free up the per-connection handle. */
-static void
-streaming_close (void *handle)
-{
+  return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
@@ -184,7 +174,7 @@ streaming_pwrite (void *handle, const void *buf,
   if (offset < highestwrite) {
     nbdkit_error ("client tried to seek backwards and write: "
                   "the streaming plugin does not currently support this");
-    errorstate = 1;
+    errorstate = true;
     errno = EIO;
     return -1;
   }
@@ -199,7 +189,7 @@ streaming_pwrite (void *handle, const void *buf,
       r = write (fd, zerobuf, n);
       if (r == -1) {
         nbdkit_error ("write: %m");
-        errorstate = 1;
+        errorstate = true;
         return -1;
       }
       highestwrite += r;
@@ -212,7 +202,7 @@ streaming_pwrite (void *handle, const void *buf,
     r = write (fd, buf, count);
     if (r == -1) {
       nbdkit_error ("write: %m");
-      errorstate = 1;
+      errorstate = true;
       return -1;
     }
     buf += r;
@@ -256,7 +246,6 @@ static struct nbdkit_plugin plugin = {
   .config_help       = streaming_config_help,
   .get_ready         = streaming_get_ready,
   .open              = streaming_open,
-  .close             = streaming_close,
   .get_size          = streaming_get_size,
   .pwrite            = streaming_pwrite,
   .pread             = streaming_pread,
