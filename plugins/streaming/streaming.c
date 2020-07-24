@@ -46,8 +46,10 @@
 static char *filename = NULL;
 static int fd = -1;
 
-/* In theory INT64_MAX, but it breaks qemu's NBD driver. */
-static int64_t size = INT64_MAX/2;
+/* This is (2^63-1) & ~511.  We have to round it down to the nearest
+ * sector size for qemu.
+ */
+static int64_t size = INT64_C(9223372036854775296);
 
 /* Flag if we have entered the unrecoverable error state because of
  * a seek backwards.
