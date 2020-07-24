@@ -8,19 +8,30 @@ nbdkit-streaming-plugin - nbdkit streaming plugin
 
 =head1 DESCRIPTION
 
-C<nbdkit-streaming-plugin> is a plugin for L<nbdkit(1)> that can turn
-certain kinds of input into a stream.
+C<nbdkit-streaming-plugin> is a plugin for L<nbdkit(1)> that can
+stream in or out of a local pipe or socket.  An alternate tool which
+can do something similar to this is L<nbdcopy(1)>.  To turn an NBD
+export into a local file use L<nbdfuse(1)>.
 
-If the NBD client opens the NBD port, and writes from the start to the
-end of the disk without seeking backwards, then this plugin will turn
-the resulting disk image into a stream of data which is written to the
-named C<write=./pipe> parameter.
+If the NBD client opens the NBD port and I<writes> from the start to
+the end of the disk without seeking backwards, then you can turn that
+into a stream of data on a local pipe or socket using:
+
+ nbdkit streaming write=./pipe
+
+This can be visualised as:
 
                ┌───────────┐
- client        │ nbdkit    │        plugin streams
- writes ──────▶│ streaming │──────▶ data to ./pipe
-               │ plugin    │
+ NBD           │ nbdkit    │        plugin streams
+ client ──────▶│ streaming │──────▶ data to ./pipe
+ writes        │ plugin    │
                └───────────┘
+
+Note that F<./pipe> (or the local socket) sees raw data, it is not
+using the NBD protocol.  If you want to forward NBD to a local socket
+connected to another NBD server, use L<nbdkit-nbd-plugin(1)>.
+
+=head2 Combining this plugin with qemu tools
 
 Typical usage is with qemu tools.  The following command does I<not>
 work because the output is a pipe or socket:
@@ -54,9 +65,9 @@ For use of the I<--run> and I<-U -> options, see L<nbdkit-captive(1)>.
 
 =item B<write=>FILENAME
 
-Write to the named pipe or socket.  If the pipe or socket does not
-exist, then it is created (as a named FIFO), otherwise the existing
-pipe or socket is opened and used.
+Write data stream to the named pipe or socket.  If the pipe or socket
+does not exist, then it is created (as a named FIFO), otherwise the
+existing pipe or socket is opened and used.
 
 This parameter is required.
 
@@ -72,7 +83,9 @@ This parameter is optional.  If not specified, then the virtual disk
 appears to the client to be very large (effectively infinite).
 Whether you need to specify this parameter depends on the client.
 Some clients don't check the size and just write/stream, others do
-checks or calculations based on the apparent size.
+checks or calculations based on the apparent size.  It is not possible
+for the plugin to work out the size itself since it doesn't see the
+whole stream until it has all been streamed.
 
 =back
 
@@ -95,7 +108,13 @@ C<nbdkit-streaming-plugin> first appeared in nbdkit 1.2.
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
-L<nbdkit-plugin(3)>.
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-nbd-plugin(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-captive(1)>,
+L<nbdcopy(1)>,
+L<nbdfuse(1)>,
+L<qemu-img(1)>.
 
 =head1 AUTHORS
 
