@@ -4,7 +4,7 @@ nbdkit-streaming-plugin - nbdkit streaming plugin
 
 =head1 SYNOPSIS
 
- nbdkit streaming pipe=FILENAME [size=SIZE]
+ nbdkit streaming write=FILENAME [size=SIZE]
 
 =head1 DESCRIPTION
 
@@ -14,28 +14,28 @@ certain kinds of input into a stream.
 If the NBD client opens the NBD port, and writes from the start to the
 end of the disk without seeking backwards, then this plugin will turn
 the resulting disk image into a stream of data which is written to the
-named C<pipe> parameter.
+named C<write=./pipe> parameter.
 
                ┌───────────┐
  client        │ nbdkit    │        plugin streams
- writes ──────▶│ streaming │──────▶ data to pipe
+ writes ──────▶│ streaming │──────▶ data to ./pipe
                │ plugin    │
                └───────────┘
 
-Typical usage is with qemu tools.  The following command will I<not>
+Typical usage is with qemu tools.  The following command does I<not>
 work because the output is a pipe or socket:
 
- qemu-img convert input -O raw pipe
+ $ qemu-img convert input -O raw ./pipe
+ qemu-img: ./pipe: error while converting raw: Could not resize file: Invalid argument
 
 However this will work:
 
- nbdkit -U - streaming pipe=pipe --run '
-   qemu-img convert -n input -O raw $nbd
- '
+ nbdkit -U - streaming write=./pipe \
+        --run ' qemu-img convert -n input -O raw $nbd '
 
               ┌───────────┐       ┌───────────┐
  reads        │ qemu-img  │       │ nbdkit    │        plugin streams
- input ──────▶│ convert   │──────▶│ streaming │──────▶ data to pipe
+ input ──────▶│ convert   │──────▶│ streaming │──────▶ data to ./pipe
  file         │ command   │       │ plugin    │
               └───────────┘      ↑└───────────┘
                               Unix domain socket (-U -)
@@ -47,13 +47,17 @@ L<nbdkit-captive(1)>.
 
 =over 4
 
-=item B<pipe=>FILENAME
+=item B<write=>FILENAME
 
 Write to the named pipe or socket.  If the pipe or socket does not
 exist, then it is created (as a named FIFO), otherwise the existing
 pipe or socket is opened and used.
 
 This parameter is required.
+
+=item B<pipe=>FILENAME
+
+For backwards compatibility this is a synonym for C<write=FILENAME>.
 
 =item B<size=>SIZE
 
@@ -94,4 +98,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2014 Red Hat Inc.
+Copyright (C) 2014-2020 Red Hat Inc.

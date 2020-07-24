@@ -69,7 +69,7 @@ main (int argc, char *argv[])
 
   char *args[] = {
     "nbdkit", "-s", "--exit-with-parent",
-    "streaming", "pipe=streaming.fifo", "size=640k", NULL
+    "streaming", "write=streaming.fifo", "size=640k", NULL
   };
   if (nbd_connect_command (nbd, args) == -1) {
     fprintf (stderr, "%s\n", nbd_get_error ());

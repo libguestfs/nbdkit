@@ -61,7 +61,8 @@ static uint64_t highestwrite = 0;
 static int
 streaming_config (const char *key, const char *value)
 {
-  if (strcmp (key, "pipe") == 0) {
+  if (strcmp (key, "write") == 0 ||
+      strcmp (key, "pipe") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
     filename = nbdkit_absolute_path (value);
     if (!filename)
@@ -80,12 +81,12 @@ streaming_config (const char *key, const char *value)
   return 0;
 }
 
-/* Check the user did pass a pipe=<FILENAME> parameter. */
+/* Check the user did pass a write=<FILENAME> parameter. */
 static int
 streaming_config_complete (void)
 {
   if (filename == NULL) {
-    nbdkit_error ("you must supply the pipe=<FILENAME> parameter "
+    nbdkit_error ("you must supply the write=<FILENAME> parameter "
                   "after the plugin name on the command line");
     return -1;
   }
@@ -126,7 +127,7 @@ streaming_unload (void)
 }
 
 #define streaming_config_help \
-  "pipe=<FILENAME>     (required) The filename to serve.\n" \
+  "write=<FILENAME>    (required) The filename to serve.\n" \
   "size=<SIZE>         (optional) Stream size."
 
 /* Create the per-connection handle. */
