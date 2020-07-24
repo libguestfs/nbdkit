@@ -52,8 +52,10 @@ connected to another NBD server, use L<nbdkit-nbd-plugin(1)>.
 Typical usage is with qemu tools.  The following command does I<not>
 work because the output is a pipe or socket:
 
- $ qemu-img convert input -O raw ./pipe
- qemu-img: ./pipe: error while converting raw: Could not resize file: Invalid argument
+ $ mkfifo pipe
+ $ qemu-img convert -n input -O raw ./pipe
+ qemu-img: Could not open './pipe': A regular file was expected by
+ the 'file' driver, but something else was given
 
 However this will work:
 
