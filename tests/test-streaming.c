@@ -144,5 +144,7 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
+  unlink ("streaming.fifo");
+
   exit (EXIT_SUCCESS);
 }
