@@ -13,14 +13,6 @@ C<nbdkit-file-plugin> is a file serving plugin for L<nbdkit(1)>.
 It serves the named C<FILENAME> over NBD.  Local block devices
 (eg. F</dev/sda>) may also be served.
 
-To concatenate multiple files, use L<nbdkit-split-plugin(1)>.
-
-If you want to expose a file that resides on a file system known to
-have poor C<lseek(2)> performance when searching for holes (C<tmpfs>
-is known to be one such file system), you can use
-L<nbdkit-noextents-filter(1)> to avoid the penalty of probing for
-holes.
-
 =head1 PARAMETERS
 
 =over 4
@@ -35,17 +27,19 @@ This parameter is required.
 C<file=> is a magic config key and may be omitted in most cases.
 See L<nbdkit(1)/Magic parameters>.
 
-=item B<rdelay>
-
-=item B<wdelay>
-
-These plugin parameters have been moved to the
-L<nbdkit-delay-filter(1)> filter.  Modify the command line to add
-I<--filter=delay> in order to use these parameters.
-
 =back
 
-=head1 DUMP-PLUGIN OUTPUT
+=head1 NOTES
+
+=head2 Files on tmpfs
+
+If you want to expose a file that resides on a file system known to
+have poor C<lseek(2)> performance when searching for holes (C<tmpfs>
+is known to be one such file system), you can use
+L<nbdkit-noextents-filter(1)> to avoid the penalty of probing for
+holes.
+
+=head2 Plugin I<--dump-plugin> output
 
 You can obtain extra information about how the file plugin was
 compiled by doing:
@@ -76,6 +70,18 @@ If set, the plugin may be able to efficiently zero ranges of files and
 block devices.
 
 =back
+
+=head2 Old C<rdelay> and C<wdelay> parameters.
+
+Before nbdkit supported filters (E<lt> 1.2) this plugin had extra
+parameters C<rdelay> and C<wdelay> to insert delays.  These parameters
+have been moved to L<nbdkit-delay-filter(1)>.  Modify the command line
+to add I<--filter=delay> in order to use these parameters.
+
+=head2 Concatenating files
+
+To concatenate and export multiple files, use
+L<nbdkit-split-plugin(1)>.
 
 =head1 DEBUG FLAG
 
