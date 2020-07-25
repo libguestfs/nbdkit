@@ -90,6 +90,8 @@ Either C<read> or C<write> is required, but not both.
 
 =item B<read=>FILENAME
 
+(nbdkit E<ge> 1.22)
+
 Read data stream from the named pipe or socket.  If the pipe or socket
 does not exist, then it is created (as a named FIFO), otherwise the
 existing pipe or socket is opened and used.
@@ -102,7 +104,8 @@ existing pipe or socket is opened and used.
 
 =item B<pipe=>FILENAME
 
-For backwards compatibility this is a synonym for C<write=FILENAME>.
+For backwards compatibility with nbdkit E<le> 1.20 this is a synonym
+for C<write=FILENAME>.
 
 =item B<size=>SIZE
 
