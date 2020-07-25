@@ -15,6 +15,9 @@ Most NBD consumers will be very confused by this device.  Trying to
 create filesystems etc on it will likely fail badly.  If the client is
 caching writes locally then you will get inconsistent read behaviour.
 
+The null plugin is also used when probing for installed filters, see
+L<nbdkit-probing(1)/Detect if a filter is installed>.
+
 =head1 PARAMETERS
 
 =over 4
