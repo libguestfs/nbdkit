@@ -106,12 +106,12 @@ standard BitTorrent tools, eg:
 
  $ transmission-show file.torrent
 
-=item B<listen-interfaces=>LIST_OF_IP_ADDRESS:PORT
+=item B<listen-interfaces=>IP_ADDRESS:PORT[,IP_ADDRESS:PORT[,...]]
 
 Listening ports that are opened for accepting incoming connections.
-The parameter is a comma-separated list of IP address:port.
+The parameter is a comma-separated list of C<IP-address:port>.
 
-=item B<outgoing-interfaces=>LIST_OF_IP_ADDRESSES
+=item B<outgoing-interfaces=>IP_ADDRESS[,IP_ADDRESS[,...]]
 
 Controls which IP address outgoing TCP connections are bound to.  The
 parameter is a comma-separated list of IP addresses.
