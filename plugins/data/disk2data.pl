@@ -117,7 +117,7 @@ die "$0: expecting a single disk image parameter\n" unless @ARGV == 1;
 my $disk = $ARGV[0];
 my $size = (stat ($disk))[7];
 
-open FH, $disk or die "$0: $disk: $!\n";
+open FH, "<:raw", $disk or die "$0: $disk: $!\n";
 
 print "nbdkit data data=\"\n  ";
 my $col = 2;
