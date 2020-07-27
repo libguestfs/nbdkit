@@ -154,6 +154,20 @@ struct nbd_fixed_new_option_reply_info_export {
   uint16_t eflags;              /* per-export flags */
 } NBD_ATTRIBUTE_PACKED;
 
+/* NBD_INFO_BLOCK_SIZE reply (follows fixed_new_option_reply). */
+struct nbd_fixed_new_option_reply_info_block_size {
+  uint16_t info;                /* NBD_INFO_BLOCK_SIZE */
+  uint32_t minimum;             /* minimum block size */
+  uint32_t preferred;           /* preferred block size */
+  uint32_t maximum;             /* maximum block size */
+} NBD_ATTRIBUTE_PACKED;
+
+/* NBD_REP_SERVER reply (follows fixed_new_option_reply). */
+struct nbd_fixed_new_option_reply_server {
+  uint32_t export_name_len;     /* length of export name */
+  /* followed by a string export name and description*/
+} NBD_ATTRIBUTE_PACKED;
+
 /* NBD_REP_META_CONTEXT reply (follows fixed_new_option_reply). */
 struct nbd_fixed_new_option_reply_meta_context {
   uint32_t context_id;          /* metadata context ID */
