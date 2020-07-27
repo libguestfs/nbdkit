@@ -589,6 +589,7 @@ TESTS += \
 	test-data-nest-malloc.sh \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
+	test-data-raw-copy.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-data-7E.sh \
@@ -599,6 +600,7 @@ EXTRA_DIST += \
 	test-data-nest-malloc.sh \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
+	test-data-raw-copy.sh \
 	$(NULL)
 
 test_data_SOURCES = test-data.c test.h

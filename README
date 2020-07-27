@@ -188,7 +188,7 @@ For non-essential enhancements to the test suite:
 
  - mke2fs (from e2fsprogs)
 
- - nbdsh (from libnbd)
+ - nbdcopy, nbdsh (from libnbd)
 
  - qemu-img, qemu-io, qemu-nbd (usually shipped with qemu)
 
