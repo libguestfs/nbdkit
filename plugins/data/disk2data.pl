@@ -156,6 +156,45 @@ while ($offset < $size) {
         emit (sprintf ('@0x%x', $offset));
     }
 
+    # Look for short-period repeated data.
+    my $max_period = 8;
+    my $old_offset = $offset;
+    $r = read FH, $c, 2*$max_period;
+    last if $r == 0;
+    seek FH, $old_offset, 0;
+    if ($r == 2*$max_period) {
+        my $period;
+        my $found;
+        for ($period = 1; $period <= $max_period; ++$period) {
+            my $pattern = substr ($c, 0, $period);
+            if ($pattern eq substr ($c, $period, $period)) {
+                my $repeats = 0;
+                while ($r = read FH, $c, $period) {
+                    if ($c ne $pattern) {
+                        seek FH, $offset, 0;
+                        last;
+                    }
+                    $offset += $period;
+                    $repeats++;
+                }
+                die if $repeats <= 1;
+                if ($period == 1) {
+                    emit (sprintf ("%d*%d", ord ($pattern), $repeats));
+                }
+                else {
+                    emit ("(");
+                    for (my $i = 0; $i < $period; ++$i) {
+                        emit (sprintf ("%d", ord (substr ($pattern, $i, 1))));
+                    }
+                    emit (sprintf (")*%d", $repeats));
+                }
+                $found = 1;
+                last
+            }
+        }
+        next if $found;
+    }
+
     # Emit non-zero data.
     while ($r = read FH, $c, 1) {
         $offset++;

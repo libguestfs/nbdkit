@@ -590,6 +590,7 @@ TESTS += \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
+	test-disk2data.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-data-7E.sh \
@@ -601,6 +602,7 @@ EXTRA_DIST += \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
+	test-disk2data.sh \
 	$(NULL)
 
 test_data_SOURCES = test-data.c test.h
