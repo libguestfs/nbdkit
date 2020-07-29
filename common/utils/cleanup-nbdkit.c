@@ -43,3 +43,9 @@ cleanup_extents_free (struct nbdkit_extents **ptr)
 {
   nbdkit_extents_free (*ptr);
 }
+
+void
+cleanup_exports_free (struct nbdkit_exports **ptr)
+{
+  nbdkit_exports_free (*ptr);
+}

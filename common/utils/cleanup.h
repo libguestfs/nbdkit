@@ -76,5 +76,8 @@ extern void cleanup_rwlock_unlock (pthread_rwlock_t **ptr);
 struct nbdkit_extents;
 extern void cleanup_extents_free (struct nbdkit_extents **ptr);
 #define CLEANUP_EXTENTS_FREE __attribute__((cleanup (cleanup_extents_free)))
+struct nbdkit_exports;
+extern void cleanup_exports_free (struct nbdkit_exports **ptr);
+#define CLEANUP_EXPORTS_FREE __attribute__((cleanup (cleanup_exports_free)))
 
 #endif /* NBDKIT_CLEANUP_H */

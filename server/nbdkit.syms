@@ -39,10 +39,15 @@
   # The functions we want plugins and filters to call.
   global:
     nbdkit_absolute_path;
+    nbdkit_add_export;
     nbdkit_add_extent;
     nbdkit_debug;
     nbdkit_error;
     nbdkit_export_name;
+    nbdkit_exports_count;
+    nbdkit_exports_free;
+    nbdkit_exports_new;
+    nbdkit_get_export;
     nbdkit_extents_aligned;
     nbdkit_extents_count;
     nbdkit_extents_free;

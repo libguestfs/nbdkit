@@ -123,6 +123,18 @@ extern int nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
                                    uint32_t flags, uint32_t align,
                                    struct nbdkit_extents *extents, int *err);
 
+/* Export functions. */
+struct nbdkit_export {
+  char *name;
+  char *description;
+};
+
+extern struct nbdkit_exports *nbdkit_exports_new (int default_only);
+extern void nbdkit_exports_free (struct nbdkit_exports *);
+extern size_t nbdkit_exports_count (const struct nbdkit_exports *);
+extern const struct nbdkit_export nbdkit_get_export (const struct nbdkit_exports *,
+                                                     size_t);
+
 /* Filter struct. */
 struct nbdkit_filter {
   /* Do not set these fields directly; use NBDKIT_REGISTER_FILTER.

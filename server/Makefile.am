@@ -43,6 +43,7 @@ nbdkit_SOURCES = \
 	crypto.c \
 	debug.c \
 	debug-flags.c \
+	exports.c \
 	extents.c \
 	filters.c \
 	internal.h \
@@ -139,6 +140,7 @@ check_PROGRAMS = test-public
 test_public_SOURCES = \
 	test-public.c \
 	public.c \
+	exports.c \
 	extents.c \
 	$(NULL)
 test_public_CPPFLAGS = \
