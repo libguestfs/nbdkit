@@ -75,44 +75,59 @@ send_newstyle_option_reply (uint32_t option, uint32_t reply)
   return 0;
 }
 
-/* Reply to NBD_OPT_LIST with a single empty export name.
- * TODO: Ask the plugin for the list of exports.
+/* Reply to NBD_OPT_LIST with the plugin's list of export names.
  */
 static int
-send_newstyle_option_reply_exportname (uint32_t option, uint32_t reply)
+send_newstyle_option_reply_exportnames (uint32_t option)
 {
   GET_CONN;
   struct nbd_fixed_new_option_reply fixed_new_option_reply;
-  const size_t name_len = 0;    /* length of export name */
-  uint32_t len;
+  size_t i;
+  CLEANUP_EXPORTS_FREE struct nbdkit_exports *exps = NULL;
 
-  fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
-  fixed_new_option_reply.option = htobe32 (option);
-  fixed_new_option_reply.reply = htobe32 (reply);
-  fixed_new_option_reply.replylen = htobe32 (name_len + sizeof (len));
+  exps = nbdkit_exports_new (false);
+  if (exps == NULL)
+    return send_newstyle_option_reply (option, NBD_REP_ERR_TOO_BIG);
+  if (backend_list_exports (top, read_only, false, exps) == -1)
+    return send_newstyle_option_reply (option, NBD_REP_ERR_PLATFORM);
 
-  if (conn->send (&fixed_new_option_reply,
-                  sizeof fixed_new_option_reply, SEND_MORE) == -1) {
-    nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
-    return -1;
+  for (i = 0; i < nbdkit_exports_count (exps); i++) {
+    const struct nbdkit_export export = nbdkit_get_export (exps, i);
+    size_t name_len = strlen (export.name);
+    size_t desc_len = export.description ? strlen (export.description) : 0;
+    uint32_t len;
+
+    fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
+    fixed_new_option_reply.option = htobe32 (option);
+    fixed_new_option_reply.reply = htobe32 (NBD_REP_SERVER);
+    fixed_new_option_reply.replylen = htobe32 (name_len + sizeof (len) +
+                                               desc_len);
+
+    if (conn->send (&fixed_new_option_reply,
+                    sizeof fixed_new_option_reply, SEND_MORE) == -1) {
+      nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
+      return -1;
+    }
+
+    len = htobe32 (name_len);
+    if (conn->send (&len, sizeof len, SEND_MORE) == -1) {
+      nbdkit_error ("write: %s: %s: %m",
+                    name_of_nbd_opt (option), "sending length");
+      return -1;
+    }
+    if (conn->send (export.name, name_len, SEND_MORE) == -1) {
+      nbdkit_error ("write: %s: %s: %m",
+                    name_of_nbd_opt (option), "sending export name");
+      return -1;
+    }
+    if (conn->send (export.description, desc_len, 0) == -1) {
+      nbdkit_error ("write: %s: %s: %m",
+                    name_of_nbd_opt (option), "sending export description");
+      return -1;
+    }
   }
 
-  len = htobe32 (name_len);
-  if (conn->send (&len, sizeof len, SEND_MORE) == -1) {
-    nbdkit_error ("write: %s: %s: %m",
-                  name_of_nbd_opt (option), "sending length");
-    return -1;
-  }
-#if 0
-  /* If we were sending a non-"" export name, this is what we'd use. */
-  if (conn->send (exportname, name_len, 0) == -1) {
-    nbdkit_error ("write: %s: %s: %m",
-                  name_of_nbd_opt (option), "sending export name");
-    return -1;
-  }
-#endif
-
-  return 0;
+  return send_newstyle_option_reply (option, NBD_REP_ACK);
 }
 
 static int
@@ -384,13 +399,10 @@ negotiate_handshake_newstyle_options (void)
         continue;
       }
 
-      /* Send back the exportname. */
-      debug ("newstyle negotiation: %s: advertising export \"\"",
+      /* Send back the exportname list. */
+      debug ("newstyle negotiation: %s: advertising exports",
              name_of_nbd_opt (option));
-      if (send_newstyle_option_reply_exportname (option, NBD_REP_SERVER) == -1)
-        return -1;
-
-      if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
+      if (send_newstyle_option_reply_exportnames (option) == -1)
         return -1;
       break;
 

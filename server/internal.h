@@ -202,6 +202,8 @@ struct handle {
 
   unsigned char state;  /* Bitmask of HANDLE_* values */
 
+  char *default_exportname;
+
   uint64_t exportsize;
   int can_write;
   int can_flush;
@@ -220,6 +222,8 @@ reset_handle (struct handle *h)
 {
   h->handle = NULL;
   h->state = 0;
+  free (h->default_exportname);
+  h->default_exportname = NULL;
   h->exportsize = -1;
   h->can_write = -1;
   h->can_flush = -1;
@@ -361,6 +365,8 @@ struct backend {
   void (*get_ready) (struct backend *);
   void (*after_fork) (struct backend *);
   int (*preconnect) (struct backend *, int readonly);
+  int (*list_exports) (struct backend *, int readonly, int default_only,
+                       struct nbdkit_exports *exports);
   void *(*open) (struct backend *, int readonly, const char *exportname);
   int (*prepare) (struct backend *, void *handle, int readonly);
   int (*finalize) (struct backend *, void *handle);
@@ -405,6 +411,10 @@ extern void backend_load (struct backend *b, const char *name,
 extern void backend_unload (struct backend *b, void (*unload) (void))
   __attribute__((__nonnull__ (1)));
 
+extern int backend_list_exports (struct backend *b, int readonly,
+                                 int default_only,
+                                 struct nbdkit_exports *exports)
+  __attribute__((__nonnull__ (1, 4)));
 /* exportname is only valid for this call and almost certainly will be
  * freed on return of this function, so backends must save the
  * exportname if they need to refer to it later.

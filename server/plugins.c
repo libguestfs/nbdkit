@@ -277,6 +277,14 @@ plugin_preconnect (struct backend *b, int readonly)
   return p->plugin.preconnect (readonly);
 }
 
+static int
+plugin_list_exports (struct backend *b, int readonly, int default_only,
+                     struct nbdkit_exports *exports)
+{
+  /* XXX No plugin support yet, so for now just advertise "" */
+  return nbdkit_add_export (exports, "", NULL);
+}
+
 static void *
 plugin_open (struct backend *b, int readonly, const char *exportname)
 {
@@ -730,6 +738,7 @@ static struct backend plugin_functions = {
   .get_ready = plugin_get_ready,
   .after_fork = plugin_after_fork,
   .preconnect = plugin_preconnect,
+  .list_exports = plugin_list_exports,
   .open = plugin_open,
   .prepare = plugin_prepare,
   .finalize = plugin_finalize,

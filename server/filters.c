@@ -237,6 +237,14 @@ plugin_magic_config_key (struct backend *b)
   return b->next->magic_config_key (b->next);
 }
 
+static int
+filter_list_exports (struct backend *b, int readonly, int default_only,
+                     struct nbdkit_exports *exports)
+{
+  /* XXX No filter override yet... */
+  return backend_list_exports (b->next, readonly, default_only, exports);
+}
+
 static void *
 filter_open (struct backend *b, int readonly, const char *exportname)
 {
@@ -540,6 +548,7 @@ static struct backend filter_functions = {
   .get_ready = filter_get_ready,
   .after_fork = filter_after_fork,
   .preconnect = filter_preconnect,
+  .list_exports = filter_list_exports,
   .open = filter_open,
   .prepare = filter_prepare,
   .finalize = filter_finalize,

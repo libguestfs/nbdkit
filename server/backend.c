@@ -152,6 +152,35 @@ backend_unload (struct backend *b, void (*unload) (void))
 }
 
 int
+backend_list_exports (struct backend *b, int readonly, int default_only,
+                      struct nbdkit_exports *exports)
+{
+  GET_CONN;
+  struct handle *h = get_handle (conn, b->i);
+  int r;
+
+  controlpath_debug ("%s: list_exports readonly=%d default_only=%d",
+                     b->name, readonly, default_only);
+
+  assert (h->handle == NULL);
+  assert ((h->state & HANDLE_OPEN) == 0);
+  if (default_only && h->default_exportname)
+    return nbdkit_add_export (exports, h->default_exportname, NULL);
+
+  r = b->list_exports (b, readonly, default_only, exports);
+  if (r == -1)
+    controlpath_debug ("%s: list_exports failed", b->name);
+  else {
+    size_t count = nbdkit_exports_count (exports);
+    controlpath_debug ("%s: list_exports returned %zu names", b->name, count);
+    /* Best effort caching of default export name */
+    if (!h->default_exportname && count)
+      h->default_exportname = strdup (nbdkit_get_export (exports, 0).name);
+  }
+  return r;
+}
+
+int
 backend_open (struct backend *b, int readonly, const char *exportname)
 {
   GET_CONN;
@@ -165,6 +194,20 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   assert (h->can_write == -1);
   if (readonly)
     h->can_write = 0;
+
+  /* Best-effort determination of the canonical name for default export */
+  if (!*exportname) {
+    if (!h->default_exportname) {
+      CLEANUP_EXPORTS_FREE struct nbdkit_exports *exps = NULL;
+
+      exps = nbdkit_exports_new (true);
+      if (b->list_exports (b, readonly, true, exps) == 0 &&
+          nbdkit_exports_count (exps))
+        h->default_exportname = strdup (nbdkit_get_export (exps, 0).name);
+    }
+    if (h->default_exportname)
+      exportname = h->default_exportname;
+  }
 
   /* Most filters will call next_open first, resulting in
    * inner-to-outer ordering.
