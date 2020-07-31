@@ -32,6 +32,7 @@
 
 source ./functions.sh
 set -e
+set -x
 
 sock2=`mktemp -u`
 sock3=`mktemp -u`
