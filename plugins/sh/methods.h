@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2020 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -44,6 +44,8 @@ extern int sh_thread_model (void);
 extern int sh_get_ready (void);
 extern int sh_after_fork (void);
 extern int sh_preconnect (int readonly);
+extern int sh_list_exports (int readonly, int default_only,
+                            struct nbdkit_exports *exports);
 extern void *sh_open (int readonly);
 extern void sh_close (void *handle);
 extern int64_t sh_get_size (void *handle);

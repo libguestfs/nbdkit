@@ -108,6 +108,8 @@ features):
 
 =item B<is_rotational=>SCRIPT
 
+=item B<list_exports=>SCRIPT
+
 =item B<open=>SCRIPT
 
 =item B<pread=>SCRIPT

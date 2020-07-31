@@ -300,6 +300,7 @@ static struct nbdkit_plugin plugin = {
   .after_fork        = sh_after_fork,
 
   .preconnect        = sh_preconnect,
+  .list_exports      = sh_list_exports,
   .open              = sh_open,
   .close             = sh_close,
 

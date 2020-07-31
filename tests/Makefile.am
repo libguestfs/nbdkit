@@ -616,10 +616,12 @@ test_data_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 TESTS += \
 	test-eval.sh \
 	test-eval-file.sh \
+	test-eval-exports.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-eval.sh \
 	test-eval-file.sh \
+	test-eval-exports.sh \
 	$(NULL)
 
 # file plugin test.
