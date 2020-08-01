@@ -71,13 +71,21 @@ cleanup ()
 }
 cleanup_fn cleanup
 
-# Prep images, and check that zero with trim results in a sparse image.
-for f in {0..1023}; do printf '%1024s' . >> nozero1.img; done
+# Prep images.
+for f in {0..1023}; do printf '%1024s' . ; done > nozero1.img
 cp nozero1.img nozero2.img
 cp nozero1.img nozero3.img
 cp nozero1.img nozero4.img
 cp nozero1.img nozero5.img
 cp nozero1.img nozero6.img
+
+# Debug number of blocks and block size in the images.
+for f in {1..6}; do
+    stat -c "%n: %b allocated blocks of size %B bytes, total size %s" \
+         nozero$f.img
+done
+
+# Check that zero with trim results in a sparse image.
 requires nbdkit -U - --filter=log file logfile=nozero1.log nozero1.img \
     --run 'nbdsh -u "$uri" -c "h.zero (1024*1024, 0)"'
 if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
