@@ -48,6 +48,7 @@ files="nozero1.img nozero1.log
        nozero5a.pid nozero5b.pid
        nozero6.img nozero6.log $sock6 nozero6.pid"
 rm -f $files
+fail=0
 
 # For easier debugging, dump the final log files before removing them
 # on exit.
@@ -72,7 +73,8 @@ cleanup ()
 cleanup_fn cleanup
 
 # Prep images.
-for f in {0..1023}; do printf '%1024s' . ; done > nozero1.img
+declare -a sizes
+printf %$((1024*1024))s . > nozero1.img
 cp nozero1.img nozero2.img
 cp nozero1.img nozero3.img
 cp nozero1.img nozero4.img
@@ -83,12 +85,13 @@ cp nozero1.img nozero6.img
 for f in {1..6}; do
     stat -c "%n: %b allocated blocks of size %B bytes, total size %s" \
          nozero$f.img
+    sizes[$f]=$(stat -c %b nozero$f.img)
 done
 
 # Check that zero with trim results in a sparse image.
 requires nbdkit -U - --filter=log file logfile=nozero1.log nozero1.img \
     --run 'nbdsh -u "$uri" -c "h.zero (1024*1024, 0)"'
-if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
+if test "$(stat -c %b nozero1.img)" = "${sizes[1]}"; then
     echo "$0: can't trim file by writing zeroes"
     exit 77
 fi
@@ -129,17 +132,17 @@ nbdsh -u "nbd+unix://?socket=$sock6" -c 'h.zero (1024*1024, 0)'
 grep 'connection=1 Zero' nozero1.log
 if grep 'connection=1 Zero' nozero2.log; then
     echo "filter should have prevented zero"
-    exit 1
+    fail=1
 fi
 grep 'connection=1 Zero' nozero3.log
 if grep 'connection=1 Zero' nozero4.log; then
     echo "filter should have converted zero into write"
-    exit 1
+    fail=1
 fi
 grep 'connection=1 Zero' nozero5b.log
 if grep 'connection=1 Zero' nozero5a.log; then
     echo "nbdkit should have converted zero into write before nbd plugin"
-    exit 1
+    fail=1
 fi
 grep 'connection=1 Zero' nozero6.log
 
@@ -150,14 +153,12 @@ cmp nozero3.img nozero4.img
 cmp nozero4.img nozero5.img
 cmp nozero5.img nozero6.img
 
-# Sanity check on sparseness; only image 1 should be sparse
-if test "$(stat -c %b nozero1.img)" = "$(stat -c %b nozero2.img)"; then
-    echo "nozero2.img was trimmed by mistake"
-    exit 1
-fi
-for i in 3 4 5 6; do
-    if test "$(stat -c %b nozero2.img)" != "$(stat -c %b nozero$i.img)"; then
-	echo "nozero$i.img was trimmed by mistake"
-	exit 1
+# Sanity check on sparseness: images 2-6 should not be sparse
+for i in {2..6}; do
+    if test "$(stat -c %b nozero$i.img)" != "${sizes[$i]}"; then
+        echo "nozero$i.img was trimmed by mistake"
+        fail=1
     fi
 done
+
+exit $fail
