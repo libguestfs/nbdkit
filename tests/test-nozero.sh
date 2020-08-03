@@ -74,7 +74,7 @@ cleanup_fn cleanup
 
 # Prep images.
 declare -a sizes
-printf %$((1024*1024))s . > nozero1.img
+printf %$((2*1024*1024))s . > nozero1.img
 cp nozero1.img nozero2.img
 cp nozero1.img nozero3.img
 cp nozero1.img nozero4.img
@@ -153,9 +153,10 @@ cmp nozero3.img nozero4.img
 cmp nozero4.img nozero5.img
 cmp nozero5.img nozero6.img
 
-# Sanity check on sparseness: images 2-6 should not be sparse
+# Sanity check on sparseness: images 2-6 should not be sparse (although the
+# filesystem may have reserved additional space due to our writes)
 for i in {2..6}; do
-    if test "$(stat -c %b nozero$i.img)" != "${sizes[$i]}"; then
+    if test "$(stat -c %b nozero$i.img)" -lt "${sizes[$i]}"; then
         echo "nozero$i.img was trimmed by mistake"
         fail=1
     fi
