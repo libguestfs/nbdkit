@@ -69,6 +69,7 @@ EXTRA_PROGRAMS =
 TESTS_ENVIRONMENT = \
 	PATH=$(abs_top_builddir):$(PATH) \
 	SRCDIR=$(srcdir) \
+	CXX=$(CXX) \
 	PYTHON=$(PYTHON) \
 	LIBGUESTFS_ATTACH_METHOD=appliance \
 	LIBGUESTFS_DEBUG=1 \
@@ -1136,11 +1137,14 @@ endif HAVE_GOLANG
 # CC plugin test.
 TESTS += \
 	test-cc.sh \
+	test-cc-cpp.sh \
 	test-shebang-cc.sh \
 	$(NULL)
 EXTRA_DIST += \
 	shebang.c \
 	test-cc.sh \
+	test-cc-cpp.cpp \
+	test-cc-cpp.sh \
 	test-shebang-cc.sh \
 	$(NULL)
 

@@ -1,6 +1,7 @@
 =head1 NAME
 
 nbdkit-cc-plugin - write small nbdkit plugins in inline C
+(and other languages)
 
 =head1 SYNOPSIS
 
@@ -12,11 +13,12 @@ nbdkit-cc-plugin - write small nbdkit plugins in inline C
 
 =head1 DESCRIPTION
 
-This plugin allows you to write small L<nbdkit(1)> plugins in C.  When
-you use this plugin it compiles your source code to a temporary plugin
-and then jumps into your compiled plugin.  It is somewhat similar to
-L<nbdkit-sh-plugin(3)>, except for C source code.  This can also be
-used to write plugins which are "C scripts".
+This plugin allows you to write small L<nbdkit(1)> plugins in C (and
+some other languages).  When you use this plugin it compiles your
+source code to a temporary plugin and then jumps into your compiled
+plugin.  It is somewhat similar to L<nbdkit-sh-plugin(3)>, except for
+C source code.  This can also be used to write plugins which are "C
+scripts".
 
 B<Note> this is not the way you normally write nbdkit plugins in C.
 To understand how to write plugins in C normally, read
@@ -76,6 +78,17 @@ plugin parameters, eg:
  ./plugin.c -f -v
  ./plugin.c -p 10000 --filter=cow
  ./plugin.c param=1
+
+=head2 Using this plugin with other programming languages
+
+This plugin can be used with most ahead-of-time compiled programming
+languages if they can create shared objects (F<.so> files).  The only
+requirement is that the compiler (C<CC>) supports an I<-o> option to
+write a shared object.  Some examples follow.
+
+=head3 Using this plugin with C++
+
+ nbdkit cc CC=g++ source.cpp
 
 =head1 PARAMETERS
 
