@@ -1135,10 +1135,12 @@ endif HAVE_GOLANG
 
 # CC plugin test.
 TESTS += \
+	test-cc.sh \
 	test-shebang-cc.sh \
 	$(NULL)
 EXTRA_DIST += \
 	shebang.c \
+	test-cc.sh \
 	test-shebang-cc.sh \
 	$(NULL)
 
