@@ -136,6 +136,12 @@ in verbose mode by calling:
 
 This function works like C<Printf.printf>.
 
+=head2 OCaml scripts
+
+Using L<nbdkit-cc-plugin(1)> it is possible to write OCaml plugins
+which are compiled just before use, and so appear to work more like
+scripts.
+
 =head1 VERSION
 
 OCaml plugins first appeared in nbdkit 1.2.

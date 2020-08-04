@@ -70,6 +70,7 @@ TESTS_ENVIRONMENT = \
 	PATH=$(abs_top_builddir):$(PATH) \
 	SRCDIR=$(srcdir) \
 	CXX=$(CXX) \
+	OCAMLOPT=$(OCAMLOPT) \
 	PYTHON=$(PYTHON) \
 	LIBGUESTFS_ATTACH_METHOD=appliance \
 	LIBGUESTFS_DEBUG=1 \
@@ -1138,6 +1139,7 @@ endif HAVE_GOLANG
 TESTS += \
 	test-cc.sh \
 	test-cc-cpp.sh \
+	test-cc-ocaml.sh \
 	test-shebang-cc.sh \
 	$(NULL)
 EXTRA_DIST += \
@@ -1145,6 +1147,7 @@ EXTRA_DIST += \
 	test-cc.sh \
 	test-cc-cpp.cpp \
 	test-cc-cpp.sh \
+	test-cc-ocaml.sh \
 	test-shebang-cc.sh \
 	$(NULL)
 

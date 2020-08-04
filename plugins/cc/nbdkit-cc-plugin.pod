@@ -90,6 +90,14 @@ write a shared object.  Some examples follow.
 
  nbdkit cc CC=g++ source.cpp
 
+=head3 Using this plugin with OCaml
+
+ nbdkit cc CC=ocamlopt \
+           CFLAGS="-output-obj -runtime-variant _pic NBDKit.cmx -cclib -lnbdkitocaml" \
+           source.ml
+
+See L<nbdkit-ocaml-plugin(3)>.
+
 =head1 PARAMETERS
 
 The script name, or C<->, must appear as the first parameter.
