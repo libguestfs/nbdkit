@@ -334,6 +334,14 @@ cc_get_ready (void)
 }
 
 static int
+cc_after_fork (void)
+{
+  if (subplugin.after_fork)
+    return subplugin.after_fork ();
+  return 0;
+}
+
+static int
 cc_preconnect (int readonly)
 {
   if (subplugin.preconnect)
@@ -553,6 +561,7 @@ static struct nbdkit_plugin plugin = {
    * passed through to the subplugin.
    */
   .get_ready         = cc_get_ready,
+  .after_fork        = cc_after_fork,
 
   .preconnect        = cc_preconnect,
   .open              = cc_open,
