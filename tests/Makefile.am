@@ -913,12 +913,13 @@ if HAVE_VDDK
 noinst_LTLIBRARIES += libvixDiskLib.la
 LIBGUESTFS_TESTS += test-vddk
 TESTS += \
-	test-vddk-reexec.sh \
 	test-vddk-dump-plugin.sh \
 	test-vddk-password-fd.sh \
 	test-vddk-password-interactive.sh \
-	test-vddk-real.sh \
 	test-vddk-real-dump-plugin.sh \
+	test-vddk-real.sh \
+	test-vddk-reexec.sh \
+	test-vddk-run.sh \
 	$(NULL)
 
 test_vddk_SOURCES = test-vddk.c test.h
@@ -944,9 +945,10 @@ EXTRA_DIST += \
 	test-vddk-dump-plugin.sh \
 	test-vddk-password-fd.sh \
 	test-vddk-password-interactive.sh \
-	test-vddk-real.sh \
 	test-vddk-real-dump-plugin.sh \
+	test-vddk-real.sh \
 	test-vddk-reexec.sh \
+	test-vddk-run.sh \
 	$(NULL)
 
 # zero plugin test.
