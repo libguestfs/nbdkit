@@ -47,7 +47,6 @@
 #include <Python.h>
 
 #define NBDKIT_API_VERSION 2
-
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
@@ -278,7 +277,6 @@ static void
 py_unload (void)
 {
   Py_XDECREF (module);
-
   Py_Finalize ();
 }
 
