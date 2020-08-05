@@ -63,7 +63,7 @@ static const char *script;
 static PyObject *module;
 static int py_api_version = 1;
 
-static int last_error;
+static __thread int last_error;
 
 static PyObject *
 set_error (PyObject *self, PyObject *args)
