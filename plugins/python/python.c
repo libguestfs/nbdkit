@@ -51,6 +51,19 @@
 
 #include "cleanup.h"
 
+/* All callbacks that want to call any Py* function should use this
+ * macro.  See
+ * https://docs.python.org/3/c-api/init.html#non-python-created-threads
+ */
+#define ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE            \
+  __attribute__((cleanup (cleanup_release)))            \
+  PyGILState_STATE gstate = PyGILState_Ensure()
+static inline void
+cleanup_release (PyGILState_STATE *gstateptr)
+{
+  PyGILState_Release (*gstateptr);
+}
+
 /* XXX Apparently global state is technically wrong in Python 3, see:
  *
  * https://www.python.org/dev/peps/pep-3121/
@@ -304,23 +317,30 @@ create_nbdkit_module (void)
   return m;
 }
 
+static PyThreadState *tstate;
+
 static void
 py_load (void)
 {
   PyImport_AppendInittab ("nbdkit", create_nbdkit_module);
   Py_Initialize ();
+  tstate = PyEval_SaveThread ();
 }
 
 static void
 py_unload (void)
 {
-  Py_XDECREF (module);
-  Py_Finalize ();
+  if (tstate) {
+    PyEval_RestoreThread (tstate);
+    Py_XDECREF (module);
+    Py_Finalize ();
+  }
 }
 
 static void
 py_dump_plugin (void)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   PyObject *fn;
   PyObject *r;
 
@@ -368,6 +388,7 @@ get_py_api_version (void)
 static int
 py_config (const char *key, const char *value)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   int fd;
   FILE *fp;
   PyObject *modname;
@@ -456,6 +477,7 @@ py_config (const char *key, const char *value)
 static int
 py_config_complete (void)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   PyObject *fn;
   PyObject *r;
 
@@ -475,6 +497,7 @@ py_config_complete (void)
 static int
 py_get_ready (void)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   PyObject *fn;
   PyObject *r;
 
@@ -499,6 +522,7 @@ struct handle {
 static void *
 py_open (int readonly)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   PyObject *fn;
   struct handle *h;
 
@@ -531,6 +555,7 @@ py_open (int readonly)
 static void
 py_close (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -551,6 +576,7 @@ py_close (void *handle)
 static int64_t
 py_get_size (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -580,6 +606,7 @@ static int
 py_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
           uint32_t flags)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -642,6 +669,7 @@ static int
 py_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
            uint32_t flags)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -678,6 +706,7 @@ py_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 static int
 py_flush (void *handle, uint32_t flags)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -710,6 +739,7 @@ py_flush (void *handle, uint32_t flags)
 static int
 py_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -742,6 +772,7 @@ py_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 static int
 py_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -788,6 +819,7 @@ py_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 static int
 py_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -847,36 +879,42 @@ boolean_callback (void *handle, const char *can_fn, const char *plain_fn)
 static int
 py_is_rotational (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   return boolean_callback (handle, "is_rotational", NULL);
 }
 
 static int
 py_can_multi_conn (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   return boolean_callback (handle, "can_multi_conn", NULL);
 }
 
 static int
 py_can_write (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   return boolean_callback (handle, "can_write", "pwrite");
 }
 
 static int
 py_can_flush (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   return boolean_callback (handle, "can_flush", "flush");
 }
 
 static int
 py_can_trim (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   return boolean_callback (handle, "can_trim", "trim");
 }
 
 static int
 py_can_zero (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
 
   if (h->can_zero >= 0)
@@ -887,6 +925,7 @@ py_can_zero (void *handle)
 static int
 py_can_fast_zero (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   int r;
 
   if (callback_defined ("can_fast_zero", NULL))
@@ -904,6 +943,7 @@ py_can_fast_zero (void *handle)
 static int
 py_can_fua (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
@@ -932,6 +972,7 @@ py_can_fua (void *handle)
 static int
 py_can_cache (void *handle)
 {
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
