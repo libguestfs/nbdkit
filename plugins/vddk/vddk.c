@@ -478,11 +478,18 @@ vddk_dump_plugin (void)
 #endif
 }
 
-/* XXX To really do threading correctly in accordance with the VDDK
- * documentation, we must do all open/close calls from a single
- * thread.  This is a huge pain.
+/* The rules on threads and VDDK are here:
+ * https://code.vmware.com/docs/11750/virtual-disk-development-kit-programming-guide/GUID-6BE903E8-DC70-46D9-98E4-E34A2002C2AD.html
+ *
+ * Before nbdkit 1.22 we used SERIALIZE_ALL_REQUESTS.  Since nbdkit
+ * 1.22 we changed this to SERIALIZE_REQUESTS and added a mutex around
+ * calls to VixDiskLib_Open and VixDiskLib_Close.  This is not quite
+ * within the letter of the rules, but is within the spirit.
  */
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
+
+/* Lock protecting open/close calls - see above. */
+static pthread_mutex_t open_close_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* The per-connection handle. */
 struct vddk_handle {
@@ -524,6 +531,7 @@ free_connect_params (VixDiskLibConnectParams *params)
 static void *
 vddk_open (int readonly)
 {
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&open_close_lock);
   struct vddk_handle *h;
   VixError err;
   uint32_t flags;
@@ -616,6 +624,7 @@ vddk_open (int readonly)
 static void
 vddk_close (void *handle)
 {
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&open_close_lock);
   struct vddk_handle *h = handle;
 
   DEBUG_CALL ("VixDiskLib_Close", "handle");
