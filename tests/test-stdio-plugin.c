@@ -124,6 +124,14 @@ static int
 stdio_get_ready (void)
 {
   bool check = stdio_check ();
+  assert (check == false);
+  return 0;
+}
+
+static int
+stdio_after_fork (void)
+{
+  bool check = stdio_check ();
   assert (check == true);
   return 0;
 }
@@ -163,6 +171,7 @@ static struct nbdkit_plugin plugin = {
   .config            = stdio_config,
   .config_complete   = stdio_config_complete,
   .get_ready         = stdio_get_ready,
+  .after_fork        = stdio_after_fork,
   .open              = stdio_open,
   .get_size          = stdio_get_size,
   .pread             = stdio_pread,

@@ -693,6 +693,11 @@ main (int argc, char *argv[])
   /* Select the correct thread model based on config. */
   lock_init_thread_model ();
 
+  /* Tell the plugin that we are about to start serving.  This must be
+   * called before we change user, fork, or open any sockets.
+   */
+  top->get_ready (top);
+
   /* Sanitize stdin/stdout to /dev/null, after saving the originals
    * when needed.  We are still single-threaded at this point, and
    * already checked that stdin/out were open, so we don't have to
@@ -726,12 +731,7 @@ main (int argc, char *argv[])
     perror ("open");
     exit (EXIT_FAILURE);
   }
-
-  /* Tell the plugin that we are about to start serving.  This must be
-   * called before we change user, fork, or open any sockets.
-   */
   configured = true;
-  top->get_ready (top);
 
   start_serving ();
 
