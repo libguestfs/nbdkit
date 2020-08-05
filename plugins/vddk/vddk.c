@@ -353,10 +353,6 @@ vddk_config_complete (void)
     return -1;
   }
 
-  /* Restore original LD_LIBRARY_PATH after reexec. */
-  if (restore_ld_library_path () == -1)
-    return -1;
-
   /* For remote connections, check all the parameters have been
    * passed.  Note that VDDK will segfault if parameters that it
    * expects are NULL (and there's no real way to tell what parameters
@@ -386,6 +382,10 @@ vddk_config_complete (void)
     missing (!vmx_spec, "vm");
 #undef missing
   }
+
+  /* Restore original LD_LIBRARY_PATH after reexec. */
+  if (restore_ld_library_path () == -1)
+    return -1;
 
   return 0;
 }
