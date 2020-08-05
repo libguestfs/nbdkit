@@ -495,6 +495,28 @@ py_config_complete (void)
 }
 
 static int
+py_thread_model (void)
+{
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
+  PyObject *fn;
+  PyObject *r;
+  int ret = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
+
+  if (script && callback_defined ("thread_model", &fn)) {
+    PyErr_Clear ();
+
+    r = PyObject_CallObject (fn, NULL);
+    Py_DECREF (fn);
+    if (check_python_failure ("thread_model") == -1)
+      return -1;
+    ret = PyLong_AsLong (r);
+    Py_DECREF (r);
+  }
+
+  return ret;
+}
+
+static int
 py_get_ready (void)
 {
   ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
@@ -1002,7 +1024,11 @@ py_can_cache (void *handle)
   "script=<FILENAME>     (required) The Python plugin to run.\n" \
   "[other arguments may be used by the plugin that you load]"
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
+/* This is the maximum possible, but the default for plugins is
+ * NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS.  Plugins can override
+ * that by providing a thread_model() function.
+ */
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 static struct nbdkit_plugin plugin = {
   .name              = "python",
@@ -1016,6 +1042,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = py_config_complete,
   .config_help       = py_config_help,
 
+  .thread_model      = py_thread_model,
   .get_ready         = py_get_ready,
 
   .open              = py_open,

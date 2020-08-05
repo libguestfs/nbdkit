@@ -163,6 +163,15 @@ There are no arguments or return value.
 
 There are no arguments or return value.
 
+=item C<thread_model>
+
+(Optional, nbdkit E<ge> 1.22)
+
+ def thread_model():
+   return nbdkit.THEAD_MODEL_SERIALIZE_ALL_REQUESTS
+
+See L</Threads> below.
+
 =item C<get_ready>
 
 (Optional)
@@ -367,10 +376,6 @@ optionally using C<nbdkit.set_error> first.
 These are not needed because you can just use ordinary Python
 constructs.
 
-=item Missing: C<thread_model>
-
-See L</Threads> below.
-
 =item Missing:
 C<name>,
 C<version>,
@@ -387,10 +392,15 @@ These are not yet supported.
 
 =head2 Threads
 
-The thread model for Python callbacks currently cannot be set from
-Python.  It is hard-coded in the C part to
-C<NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS>.  This may change or be
-settable in future.
+The thread model for Python callbacks defaults to
+C<NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS>.  Since S<nbdkit 1.22>
+it is possible to set this by implementing a C<thread_model> function
+which returns one of the constants C<nbdkit.THREAD_MODEL_*>.
+
+The Python Global Interpreter Lock (GIL) usually means that you cannot
+execute Python code in parallel, but Python code which calls into
+libraries which block (eg. to make HTTP requests) might be executed in
+parallel.
 
 =head1 FILES
 
