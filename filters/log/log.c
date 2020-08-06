@@ -48,6 +48,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "utils.h"
 
 static uint64_t connections;
 static char *logfilename;
@@ -166,8 +167,11 @@ output (struct handle *h, const char *act, uint64_t id, const char *fmt, ...)
                 0L + tv.tv_usec);
     }
   flockfile (logfile);
-  fprintf (logfile, "%s connection=%" PRIu64 " %s ", timestamp, h->connection,
-           act);
+  if (h)
+    fprintf (logfile, "%s connection=%" PRIu64 " %s ", timestamp,
+             h->connection, act);
+  else
+    fprintf (logfile, "%s %s ", timestamp, act);
   if (id)
     fprintf (logfile, "id=%" PRIu64 " ", id);
   va_start (args, fmt);
@@ -233,6 +237,47 @@ output_return (struct handle *h, const char *act, uint64_t id, int r, int *err)
     s = "Success";
   }
   output (h, act, id, "return=%d (%s)", r, s);
+}
+
+/* List exports. */
+static int
+log_list_exports (nbdkit_next_list_exports *next, void *nxdata,
+                  int readonly, int default_only,
+                  struct nbdkit_exports *exports)
+{
+  static uint64_t id;
+  int r;
+  int err;
+
+  output (NULL, "ListExports", ++id, "readonly=%d default_only=%d ...",
+          readonly, default_only);
+  r = next (nxdata, readonly, default_only, exports);
+  if (r == -1) {
+    err = errno;
+    output_return (NULL, "...ListExports", id, r, &err);
+  }
+  else {
+    FILE *fp;
+    CLEANUP_FREE char *exports_str = NULL;
+    size_t i, n, len = 0;
+
+    fp = open_memstream (&exports_str, &len);
+    if (fp != NULL) {
+      n = nbdkit_exports_count (exports);
+      for (i = 0; i < n; ++i) {
+        struct nbdkit_export e = nbdkit_get_export (exports, i);
+        if (i > 0)
+          fprintf (fp, ", ");
+        shell_quote (e.name, fp);
+      }
+
+      fclose (fp);
+    }
+
+    output (NULL, "...ListExports", id, "exports=[%s] return=0",
+            exports_str ? exports_str : "(null)");
+  }
+  return r;
 }
 
 /* Open a connection. */
@@ -476,6 +521,7 @@ static struct nbdkit_filter filter = {
   .config_help       = log_config_help,
   .unload            = log_unload,
   .get_ready         = log_get_ready,
+  .list_exports      = log_list_exports,
   .open              = log_open,
   .close             = log_close,
   .prepare           = log_prepare,
