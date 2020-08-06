@@ -34,6 +34,7 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = \
 	nbdkit-python-plugin.pod \
 	examples/file.py \
+	examples/imageio.py \
 	examples/ramdisk.py \
 	examples/url.py \
 	$(NULL)
