@@ -225,7 +225,7 @@ Optionally run this command as root to install everything:
 Python
 ------
 
-Since nbdkit >= 1.16, only Python >= 3.3 is supported.
+Since nbdkit >= 1.16, only Python >= 3.6 is supported.
 
 By default nbdkit uses the Python version of the Python interpreter
 called “python” on the current $PATH.  If you have parallel versions
