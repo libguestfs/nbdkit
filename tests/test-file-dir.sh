@@ -36,14 +36,30 @@ source ./functions.sh
 set -e
 set -x
 
-# requires nbdinfo --version # nbdinfo 1.3.9 was broken, so check this instead:
-requires nbdkit -U - memory 1 --run 'nbdinfo --size --json "$uri"'
+requires nbdinfo --version
+requires nbdsh -c 'print(h.set_full_info)'
 requires jq --version
 
 files="file-dir file-dir.out"
 rm -rf $files
 cleanup_fn rm -rf $files
 fail=0
+
+# do_nbdkit_list [--no-sort] EXPOUT
+# Check that the advertised list of exports matches EXPOUT
+do_nbdkit_list ()
+{
+    sort=' | sort'
+    if [ "$1" = --no-sort ]; then
+	sort=
+	shift
+    fi
+    nbdkit -U - -v file directory=file-dir \
+        --run 'nbdinfo --list --json "$uri"' >file-dir.out
+    cat file-dir.out
+    diff -u <(jq -c '[.exports[]."export-name"]'"$sort" file-dir.out) \
+        <(printf %s\\n "$1") || fail=1
+}
 
 nbdsh_connect_fail_script='
 import os
@@ -76,6 +92,7 @@ nbdkit -vf file dir=nosuchdir && fail=1
 
 # Serving an empty directory
 mkdir file-dir
+do_nbdkit_list '[]'
 do_nbdkit_fail ''
 do_nbdkit_fail 'a'
 do_nbdkit_fail '..'
@@ -83,12 +100,18 @@ do_nbdkit_fail '/'
 
 # Serving a directory with one file
 echo 1 > file-dir/a
+do_nbdkit_list '["a"]'
 do_nbdkit_fail ''
 do_nbdkit_pass a 1
 do_nbdkit_fail b
 
 # Serving a directory with multiple files.
+# Use 'find' to match readdir's raw order (a is not always first!)
 echo 2 > file-dir/b
+raw=$(find file-dir -type f | xargs echo)
+exp=$(echo $raw | sed 's,file-dir/\(.\),"\1",g; s/ /,/')
+do_nbdkit_list --no-sort "[$exp]"
+do_nbdkit_list '["a","b"]'
 do_nbdkit_fail ''
 do_nbdkit_pass 'a' 1
 do_nbdkit_pass 'b' 2
@@ -101,6 +124,7 @@ mkdir file-dir/e
 ln -s /dev/null file-dir/f
 ln -s . file-dir/g
 ln -s dangling file-dir/h
+do_nbdkit_list '["a","b","c"]'
 do_nbdkit_pass 'a' 1
 do_nbdkit_pass 'b' 2
 do_nbdkit_pass 'c' 2

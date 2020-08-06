@@ -46,6 +46,8 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <dirent.h>
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
@@ -180,7 +182,7 @@ file_config (const char *key, const char *value)
   return 0;
 }
 
-/* Check the user passed exactly one parameter. */
+/* Check that the user passed exactly one parameter. */
 static int
 file_config_complete (void)
 {
@@ -245,6 +247,51 @@ file_dump_plugin (void)
 #endif
 }
 
+static int
+file_list_exports (int readonly, int default_only,
+                   struct nbdkit_exports *exports)
+{
+  /* We don't fork, so no need to worry about FD_CLOEXEC on the directory */
+  DIR *dir;
+  struct dirent *entry;
+  struct stat sb;
+  int fd;
+
+  if (!directory)
+    return nbdkit_add_export (exports, "", NULL);
+
+  dir = opendir (directory);
+  if (dir == NULL) {
+    nbdkit_error ("opendir: %m");
+    return -1;
+  }
+  fd = dirfd (dir);
+  if (fd == -1) {
+    nbdkit_error ("dirfd: %m");
+    closedir (dir);
+    return -1;
+  }
+  errno = 0;
+  while ((entry = readdir (dir)) != NULL) {
+    /* TODO: Optimize with d_type and/or statx when present? */
+    if (fstatat (fd, entry->d_name, &sb, 0) == 0 &&
+        (S_ISREG (sb.st_mode) || S_ISBLK (sb.st_mode))) {
+      if (nbdkit_add_export (exports, entry->d_name, NULL) == -1) {
+        closedir (dir);
+        return -1;
+      }
+    }
+    errno = 0;
+  }
+  if (errno) {
+    nbdkit_error ("readdir: %m");
+    closedir (dir);
+    return -1;
+  }
+  closedir (dir);
+  return 0;
+}
+
 /* The per-connection handle. */
 struct handle {
   int fd;
@@ -296,7 +343,7 @@ file_open (int readonly)
 
   h->fd = openat (dfd, file, flags);
   if (h->fd == -1) {
-    nbdkit_error ("openat: %s: %m", file);
+    nbdkit_error ("open: %s: %m", file);
     if (dfd != -1)
       close (dfd);
     free (h);
@@ -372,7 +419,7 @@ file_close (void *handle)
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 /* For block devices, stat->st_size is not the true size.  The caller
- * grabs the lseek_lock.
+ * grabs the lock.
  */
 static int64_t
 block_device_size (int fd)
@@ -822,6 +869,7 @@ static struct nbdkit_plugin plugin = {
   .config_help       = file_config_help,
   .magic_config_key  = "file",
   .dump_plugin       = file_dump_plugin,
+  .list_exports      = file_list_exports,
   .open              = file_open,
   .close             = file_close,
   .get_size          = file_get_size,

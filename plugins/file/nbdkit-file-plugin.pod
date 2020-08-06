@@ -82,13 +82,12 @@ directory named C<DIRNAME>, including those found by following
 symbolic links.  Other special files in the directory (such as
 subdirectories, fifos, or Unix sockets) are ignored.  When this mode
 is used, the file to be served is chosen by the export name passed by
-the client.  For now, the client must already know what files are in
-the directory, although there are plans to expose them via
-NBD_OPT_LIST; likewise, a client that requests the default export
-(C<"">) will be rejected.  However, you can use
-L<nbdkit-exportname-filter(1)> to adjust what export names the client
-sees or uses as a default.  For security, when using directory mode,
-this plugin will not accept export names containing slash (C</>).
+the client, where the client can request a list of available exports
+using NBD_OPT_LIST.  A client that requests the default export (C<"">)
+will be rejected.  However, you can use L<nbdkit-exportname-filter(1)>
+to adjust what export names the client sees or uses as a default.  For
+security, when using directory mode, this plugin will not accept
+export names containing slash (C</>).
 
 =back
 
