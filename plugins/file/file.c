@@ -188,7 +188,16 @@ file_open (int readonly)
     return NULL;
   }
 
-  h->is_block_device = S_ISBLK (statbuf.st_mode);
+  if (S_ISBLK (statbuf.st_mode))
+    h->is_block_device = true;
+  else if (S_ISREG (statbuf.st_mode))
+    h->is_block_device = false;
+  else {
+    nbdkit_error ("file is not regular or block device: %s", filename);
+    close (h->fd);
+    free (h);
+    return NULL;
+  }
   h->sector_size = 4096;  /* Start with safe guess */
 
 #ifdef BLKSSZGET
