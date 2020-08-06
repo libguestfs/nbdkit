@@ -4,11 +4,11 @@
 
 # Run it from the build directory like this:
 #
-#   ./nbdkit -f -v python ./plugins/python/example.py test1=foo test2=bar
+#   ./nbdkit -f -v python ./plugins/python/examples/ramdisk.py test1=foo
 #
 # Or run it after installing nbdkit like this:
 #
-#   nbdkit -f -v python ./plugins/python/example.py test1=foo test2=bar
+#   nbdkit -f -v python ./plugins/python/examples/ramdisk.py test1=foo
 #
 # The -f -v arguments are optional.  They cause the server to stay in
 # the foreground and print debugging, which is useful when testing.

@@ -33,7 +33,7 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	nbdkit-python-plugin.pod \
-	example.py \
+	examples/ramdisk.py \
 	$(NULL)
 
 if HAVE_PYTHON
