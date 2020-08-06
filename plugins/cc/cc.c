@@ -212,9 +212,8 @@ cc_config_complete (void)
     nbdkit_error ("open_memstream: %m");
     return -1;
   }
-  shell_quote (cc, fp);
-  /* The C flags don't need to be quoted. */
-  fprintf (fp, " %s ", cflags);
+  /* The C compiler and C flags don't need to be quoted. */
+  fprintf (fp, "%s %s ", cc, cflags);
   if (extra_cflags)
     fprintf (fp, "%s ", extra_cflags);
   shell_quote (script, fp);
