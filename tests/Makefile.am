@@ -640,8 +640,8 @@ test_file_block_SOURCES = test-file-block.c test.h
 test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_file_block_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-TESTS += test-file-extents.sh
-EXTRA_DIST += test-file-extents.sh
+TESTS += test-file-extents.sh test-file-dir.sh
+EXTRA_DIST += test-file-extents.sh test-file-dir.sh
 
 # floppy plugin test.
 TESTS += test-floppy.sh

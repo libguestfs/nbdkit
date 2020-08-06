@@ -65,6 +65,7 @@
 #endif
 
 static char *filename = NULL;
+static char *directory = NULL;
 
 /* posix_fadvise mode: -1 = don't set it, or POSIX_FADV_*. */
 static int fadvise_mode =
@@ -94,19 +95,32 @@ static void
 file_unload (void)
 {
   free (filename);
+  free (directory);
 }
 
 /* Called for each key=value passed on the command line.  This plugin
- * only accepts file=<filename>, which is required.
+ * only accepts file=<filename> and directory=<dirname>, where exactly
+ * one is required.
  */
 static int
 file_config (const char *key, const char *value)
 {
+  /* See FILENAMES AND PATHS in nbdkit-plugin(3).
+   * Our use of nbdkit_realpath requires the destination to exist at
+   * startup; use nbdkit_absolute_path instead if we wanted to defer
+   * existence checks to the last possible moment.
+   */
   if (strcmp (key, "file") == 0) {
-    /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
     free (filename);
     filename = nbdkit_realpath (value);
     if (!filename)
+      return -1;
+  }
+  else if (strcmp (key, "directory") == 0 ||
+           strcmp (key, "dir") == 0) {
+    free (directory);
+    directory = nbdkit_realpath (value);
+    if (!directory)
       return -1;
   }
   else if (strcmp (key, "fadvise") == 0) {
@@ -162,13 +176,41 @@ file_config (const char *key, const char *value)
   return 0;
 }
 
-/* Check the user did pass a file=<FILENAME> parameter. */
+/* Check the user passed exactly one parameter. */
 static int
 file_config_complete (void)
 {
-  if (filename == NULL) {
-    nbdkit_error ("you must supply the file=<FILENAME> parameter "
-                  "after the plugin name on the command line");
+  int r;
+  struct stat sb;
+
+  if (!filename && !directory) {
+    nbdkit_error ("you must supply either [file=]<FILENAME> or "
+                  "directory=<DIRNAME> parameter after the plugin name "
+                  "on the command line");
+    return -1;
+  }
+  if (filename && directory) {
+    nbdkit_error ("file= and directory= cannot be used at the same time");
+    return -1;
+  }
+
+  /* Sanity check now, rather than waiting for first client open.
+   * See also comment in .config about use of nbdkit_realpath.
+   * Yes, this is a harmless TOCTTOU race.
+   */
+  if (filename) {
+    r = stat (filename, &sb);
+    if (r == 0 && S_ISDIR (sb.st_mode)) {
+      nbdkit_error ("use directory= to serve files within %s", filename);
+      return -1;
+    }
+    if (r == -1 || !(S_ISBLK (sb.st_mode) || S_ISREG (sb.st_mode))) {
+      nbdkit_error ("file is not regular or block device: %s", filename);
+      return -1;
+    }
+  }
+  else if (stat (directory, &sb) == -1 || !S_ISDIR (sb.st_mode)) {
+    nbdkit_error ("expecting a directory: %s", directory);
     return -1;
   }
 
@@ -176,7 +218,8 @@ file_config_complete (void)
 }
 
 #define file_config_help \
-  "file=<FILENAME>     (required) The filename to serve." \
+  "[file=]<FILENAME>     The filename to serve.\n" \
+  "directory=<DIRNAME>   A directory containing files to serve.\n" \
 
 /* Print some extra information about how the plugin was compiled. */
 static void
@@ -214,6 +257,24 @@ file_open (int readonly)
   struct handle *h;
   struct stat statbuf;
   int flags;
+  const char *file;
+  int dfd = -1;
+
+  if (directory) {
+    file = nbdkit_export_name ();
+    if (strchr (file, '/')) {
+      nbdkit_error ("exportname cannot contain /");
+      errno = EINVAL;
+      return NULL;
+    }
+    dfd = open (directory, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (dfd == -1) {
+      nbdkit_error ("open %s: %m", directory);
+      return NULL;
+    }
+  }
+  else
+    file = filename;
 
   h = malloc (sizeof *h);
   if (h == NULL) {
@@ -227,15 +288,19 @@ file_open (int readonly)
   else
     flags |= O_RDWR;
 
-  h->fd = open (filename, flags);
+  h->fd = openat (dfd, file, flags);
   if (h->fd == -1) {
-    nbdkit_error ("open: %s: %m", filename);
+    nbdkit_error ("openat: %s: %m", file);
+    if (dfd != -1)
+      close (dfd);
     free (h);
     return NULL;
   }
+  if (dfd != -1)
+    close (dfd);
 
   if (fstat (h->fd, &statbuf) == -1) {
-    nbdkit_error ("fstat: %s: %m", filename);
+    nbdkit_error ("fstat: %s: %m", file);
     free (h);
     return NULL;
   }
@@ -256,7 +321,7 @@ file_open (int readonly)
   else if (S_ISREG (statbuf.st_mode))
     h->is_block_device = false;
   else {
-    nbdkit_error ("file is not regular or block device: %s", filename);
+    nbdkit_error ("file is not regular or block device: %s", file);
     close (h->fd);
     free (h);
     return NULL;
@@ -266,7 +331,7 @@ file_open (int readonly)
 #ifdef BLKSSZGET
   if (h->is_block_device) {
     if (ioctl (h->fd, BLKSSZGET, &h->sector_size))
-      nbdkit_debug ("cannot get sector size: %s: %m", filename);
+      nbdkit_debug ("cannot get sector size: %s: %m", file);
   }
 #endif
 
