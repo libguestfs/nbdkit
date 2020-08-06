@@ -331,6 +331,8 @@ new_connection (int sockin, int sockout, int nworkers)
 static void
 free_connection (struct connection *conn)
 {
+  struct backend *b;
+
   if (!conn)
     return;
 
@@ -358,7 +360,12 @@ free_connection (struct connection *conn)
 
   free (conn->exportname_from_set_meta_context);
   free (conn->exportname);
+
+  /* This is needed in order to free a field in struct handle. */
+  for_each_backend (b)
+    reset_handle (get_handle (conn, b->i));
   free (conn->handles);
+
   free (conn);
   threadlocal_set_conn (NULL);
 }
