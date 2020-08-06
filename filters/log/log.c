@@ -183,7 +183,7 @@ output_return (struct handle *h, const char *act, uint64_t id, int r, int *err)
 {
   const char *s = "Other=>EINVAL";
 
-  /* Only decode what connections.c:nbd_errno() recognizes */
+  /* Only decode what protocol.c:nbd_errno() recognizes */
   if (r == -1) {
     switch (*err) {
     case EROFS:
@@ -214,6 +214,15 @@ output_return (struct handle *h, const char *act, uint64_t id, int r, int *err)
       s = "ESHUTDOWN";
       break;
 #endif
+    case ENOTSUP:
+#if ENOTSUP != EOPNOTSUPP
+    case EOPNOTSUPP:
+#endif
+      s = "ENOTSUP";
+      break;
+    case EOVERFLOW:
+      s = "EOVERFLOW";
+      break;
     case EINVAL:
       s = "EINVAL";
       break;
