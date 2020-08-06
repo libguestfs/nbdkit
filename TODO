@@ -252,6 +252,15 @@ nbdkit-tls-fallback-filter:
 * Adjust handling of .list_exports to mask what the plugin advertises
   when tls is not yet active.
 
+nbdkit-exportname-fitler:
+
+* find a way to call the plugin's .list_exports during .open, so that
+  we can enforce exportname-strict=true without command line redundancy
+
+* add a mode for passing in a file containing exportnames in the same
+  manner accepted by the sh/eval plugins, rather than one name (and no
+  description) per config parameter
+
 Filters for security
 --------------------
 

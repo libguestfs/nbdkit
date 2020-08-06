@@ -1375,6 +1375,10 @@ EXTRA_DIST += \
 TESTS += test-exitlast.sh
 EXTRA_DIST += test-exitlast.sh
 
+# exportname filter test.
+TESTS += test-exportname.sh
+EXTRA_DIST += test-exportname.sh
+
 # ext2 filter test.
 if HAVE_MKE2FS_WITH_D
 if HAVE_EXT2

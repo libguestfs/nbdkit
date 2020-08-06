@@ -104,6 +104,7 @@ filters="\
         delay \
         error \
         exitlast \
+	exportname \
         ext2 \
         extentlist \
         fua \
@@ -1224,6 +1225,7 @@ AC_CONFIG_FILES([Makefile
                  filters/delay/Makefile
                  filters/error/Makefile
                  filters/exitlast/Makefile
+                 filters/exportname/Makefile
                  filters/ext2/Makefile
                  filters/extentlist/Makefile
                  filters/fua/Makefile

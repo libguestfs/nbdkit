@@ -1,0 +1,154 @@
+=head1 NAME
+
+nbdkit-exportname-filter - adjust export names between client and plugin
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=exportname plugin [default-export=NAME]
+  [exportname-list=MODE] [exportname-strict=true] [exportname=NAME]...
+  [exportdesc=DESC]
+
+=head1 DESCRIPTION
+
+Some plugins (such as C<nbdkit-file-plugin(1)> and filters (such as
+C<nbdkit-ext2-filter(1)> are able to serve different content based on
+the export name requested by the client.  The NBD protocol allows a
+server to advertise the set of export names it is serving.  However,
+the list advertised (or absent) from the plugin may not always match
+what you want an actual client to see.  This filter can be used to
+alter the advertised list, as well as configuring which export should
+be treated as the default when the client requests the empty string
+(C<"">) as an export name.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<default-export=>NAME
+
+When the client requests the default export name (C<"">), request the
+export C<NAME> from the underlying plugin instead of relying on the
+plugin's choice of default export.  Setting NAME to the empty string
+has the same effect as omitting this parameter.
+
+=item B<exportname-list=keep>
+
+=item B<exportname-list=error>
+
+=item B<exportname-list=empty>
+
+=item B<exportname-list=defaultonly>
+
+=item B<exportname-list=explicit>
+
+This parameter determines which exports are advertised to a guest that
+requests a listing via C<NBD_OPT_LIST>.  The default mode is C<keep>
+to advertise whatever the underlying plugin reports.  Mode C<error>
+causes clients to see an error rather than an export list.  Mode
+C<empty> returns an empty list.  Mode C<defaultonly> returns a list
+that contains only the canonical name of the default export.  Mode
+C<explicit> returns only the exports set by C<exportname=>.  Note that
+the list of advertised exports need not reflect reality: an advertised
+name may be rejected, or a client may connect to an export name that
+was not advertised, but learned through other means.
+
+=item B<exportname-strict=false>
+
+=item B<exportname-strict=true>
+
+Normally, a client can pass whatever export name it wants, regardless
+of whether that name is advertised.  But setting this parameter to
+true will cause the connection to fail if a client requests an export
+name that was not included via an B<exportname=> parameter.  At this
+time, it is not possible to restrict a client to exports advertised by
+the plugin without repeating that list via B<exportname>; this
+technical limitation may be lifted in the future.
+
+=item B<exportname=>NAME
+
+This parameter adds C<NAME> to the list of advertised exports; it may
+be set multiple times.
+
+=item B<exportdesc=keep>
+
+=item B<exportdesc=none>
+
+=item B<exportdesc=fixed:>STRING
+
+=item B<exportdesc=script:>SCRIPT
+
+The C<exportdesc> parameter controls what optional descriptions are
+sent alongside an export name.  If set to C<keep> (the default),
+descriptions are determined by the plugin.  If set to C<none>,
+descriptions from the plugin are ignored (useful if you are worried
+about a potential information leak).  If set to C<fixed:STRING>, the
+same fixed string description is offered for every export.  If set to
+C<script:SCRIPT>, this filter executes script with C<$name> set to the
+export to be described, and uses the output of that command as the
+description.
+
+=back
+
+=head1 EXAMPLES
+
+Suppose that the directory /path/to/dir contains permanent files named
+file1, file2, and file3.  The following commands show various ways to
+alter the use of export names while serving that directory:
+
+Allow a client requesting C<""> to get the contents of file2, rather
+than an error:
+
+ nbdkit --filter=exportname file dir=/path/to/dir default-export=file2
+
+Do not advertise any exports; a client must know in advance what
+export names to try:
+
+ nbdkit --filter=exportname file dir=/path/to/dir exportname-list=empty
+
+Allow clients to connect to file1 and file3, but not file2:
+
+ nbdkit --filter=exportname file dir=/path/to/dir \
+   exportname-list=explicit exportname-strict=true \
+   exportname=file1 exportname=file3
+
+Offer C<ls(3)> long descriptions alongside each export name:
+
+ nbdkit --filter=exportname file dir=/path/to/dir \
+   exportdesc=script:'ls -l /path/to/dir/"$name"'
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-exportname-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-exportname-filter> first appeared in nbdkit 1.24.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-ext2-filter(1)>,
+L<nbdkit-extentlist-filter(1)>,
+L<nbdkit-fua-filter(1)>,
+L<nbdkit-nocache-filter(1)>,
+L<nbdkit-noparallel-filter(1)>,
+L<nbdkit-nozero-filter(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-info-plugin(1)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.

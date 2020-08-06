@@ -65,6 +65,10 @@ exportname passed by the client.  Note that this mode allows the
 client to deduce which files exist within the disk image, which may be
 a security risk in some situations.
 
+At present, when using this mode, the server does not advertise any
+particular exports; however, you may use
+L<nbdkit-exportname-filter(1)> to perform that task.
+
 =back
 
 =head1 FILES
@@ -89,6 +93,7 @@ and removed in nbdkit 1.22.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
+L<nbdkit-exportname-filter(1)>,
 L<nbdkit-partition-filter(1)>,
 L<nbdkit-guestfs-plugin(1)>,
 L<http://e2fsprogs.sourceforge.net/>,
