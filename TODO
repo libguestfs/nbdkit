@@ -62,11 +62,11 @@ General ideas for improvements
   continue to keep their non-standard handshake while utilizing nbdkit
   to prototype new behaviors in serving the kernel.
 
-* Clients should be able to list export names supported by plugins.
-  Current behaviour is not really correct: We only list the -e
-  parameter from the command line, which is different from the export
-  name(s) that a plugin might want to support.  Probably we should
-  deprecate the -e option entirely since it does nothing useful.
+* When using --tls=on (encryption is supported but not required),
+  plugins need to be able to differentiate which content they serve to
+  plaintext clients vs. secure clients.  This may require an
+  alteration of the signature for .list_exports and .open, or a new
+  utility function nbdkit_tls_mode() similar to nbdkit_export_name().
 
 * Background thread for filters.  Some filters (readahead, cache and
   proposed scan filter - see below) could be more effective if they
@@ -308,6 +308,7 @@ using ‘#define NBDKIT_API_VERSION <version>’.
   and filters, and the type of the values, and both check and parse
   them for the plugin.
 
-* Modify open() API so it takes an export name parameter.
+* Modify open() API so it takes an export name parameter, and maybe a
+  tls mode.
 
 * Change config_help from a variable to a function.
