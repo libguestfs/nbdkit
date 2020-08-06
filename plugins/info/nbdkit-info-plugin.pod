@@ -17,8 +17,7 @@ passed from the client into a disk image.  C<mode=base64exportname> is
 similar except the client must base64-encode the data in the export
 name, allowing arbitrary binary data to be sent (see L</EXAMPLES>
 below to make this clearer).  Export names are limited to 4096 bytes
-by the NBD protocol, and nbdkit limits them to a few bytes smaller
-than this.
+by the NBD protocol, although some clients have smaller limits.
 
 C<mode=address> creates a disk which contains the client's IP address
 and port number as a string.
