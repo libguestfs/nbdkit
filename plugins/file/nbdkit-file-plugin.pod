@@ -5,6 +5,7 @@ nbdkit-file-plugin - nbdkit file plugin
 =head1 SYNOPSIS
 
  nbdkit file [file=]FILENAME
+             [cache=default|none] [fadvise=normal|random|sequential]
 
 =head1 DESCRIPTION
 
@@ -16,6 +17,28 @@ It serves the named C<FILENAME> over NBD.  Local block devices
 =head1 PARAMETERS
 
 =over 4
+
+=item B<cache=default>
+
+=item B<cache=none>
+
+Using C<cache=none> tries to prevent the kernel from keeping parts of
+the file that have already been read or written in the page cache.
+
+=item B<fadvise=normal>
+
+=item B<fadvise=random>
+
+=item B<fadvise=sequential>
+
+This optional flag hints to the kernel that you will access the file
+normally, or in a random order, or sequentially.  The exact behaviour
+depends on your operating system, but for Linux using C<normal> causes
+the kernel to read-ahead, C<sequential> causes the kernel to
+read-ahead twice as much as C<normal>, and C<random> turns off
+read-ahead.  See also L<posix_fadvise(2)>.
+
+The default is C<normal>.
 
 =item [B<file=>]FILENAME
 
@@ -30,6 +53,27 @@ See L<nbdkit(1)/Magic parameters>.
 =back
 
 =head1 NOTES
+
+=head2 Optimizing for random or sequential access
+
+If you know in advance that the NBD client will access the file
+randomly or only sequentially then you can hint that to the kernel
+using:
+
+ nbdkit file disk.img fadvise=random
+ nbdkit file disk.img fadvise=sequential
+
+As described in the L</PARAMETERS> section above, on Linux this
+disables or increases the amount of read-ahead that the kernel does.
+
+=head2 Reducing evictions from the page cache
+
+If the file is very large and you know the client will only read/write
+the file sequentially one time (eg for making a single copy or backup)
+then this will stop other processes from being evicted from the page
+cache:
+
+ nbdkit file disk.img fadvise=sequential cache=none
 
 =head2 Files on tmpfs
 

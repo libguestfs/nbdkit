@@ -66,6 +66,18 @@
 
 static char *filename = NULL;
 
+/* posix_fadvise mode: -1 = don't set it, or POSIX_FADV_*. */
+static int fadvise_mode =
+#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_NORMAL)
+  POSIX_FADV_NORMAL
+#else
+  -1
+#endif
+  ;
+
+/* cache mode */
+static enum { cache_default, cache_none } cache_mode = cache_default;
+
 /* Any callbacks using lseek must be protected by this lock. */
 static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -96,6 +108,46 @@ file_config (const char *key, const char *value)
     filename = nbdkit_realpath (value);
     if (!filename)
       return -1;
+  }
+  else if (strcmp (key, "fadvise") == 0) {
+    /* As this is a hint, if the kernel doesn't support the feature
+     * ignore the parameter.
+     */
+    if (strcmp (value, "normal") == 0) {
+#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_NORMAL)
+      fadvise_mode = POSIX_FADV_NORMAL;
+#else
+      fadvise_mode = -1;
+#endif
+    }
+    else if (strcmp (value, "random") == 0) {
+#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_RANDOM)
+      fadvise_mode = POSIX_FADV_RANDOM;
+#else
+      fadvise_mode = -1;
+#endif
+    }
+    else if (strcmp (value, "sequential") == 0) {
+#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_SEQUENTIAL)
+      fadvise_mode = POSIX_FADV_SEQUENTIAL;
+#else
+      fadvise_mode = -1;
+#endif
+    }
+    else {
+      nbdkit_error ("unknown fadvise mode: %s", value);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "cache") == 0) {
+    if (strcmp (value, "default") == 0)
+      cache_mode = cache_default;
+    else if (strcmp (value, "none") == 0)
+      cache_mode = cache_none;
+    else {
+      nbdkit_error ("unknown cache mode: %s", value);
+      return -1;
+    }
   }
   else if (strcmp (key, "rdelay") == 0 ||
            strcmp (key, "wdelay") == 0) {
@@ -186,6 +238,17 @@ file_open (int readonly)
     nbdkit_error ("fstat: %s: %m", filename);
     free (h);
     return NULL;
+  }
+
+  if (fadvise_mode != -1) {
+    /* This is a hint so we ignore failures. */
+#ifdef HAVE_POSIX_FADVISE
+    int r = posix_fadvise (h->fd, 0, 0, fadvise_mode);
+    if (r == -1)
+      nbdkit_debug ("posix_fadvise: %s: %m (ignored)", filename);
+#else
+    nbdkit_debug ("fadvise is not supported");
+#endif
   }
 
   if (S_ISBLK (statbuf.st_mode))
@@ -338,6 +401,10 @@ file_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags)
 {
   struct handle *h = handle;
+#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_DONTNEED)
+  uint32_t orig_count = count;
+  uint64_t orig_offset = offset;
+#endif
 
   while (count > 0) {
     ssize_t r = pread (h->fd, buf, count, offset);
@@ -354,6 +421,12 @@ file_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
     offset += r;
   }
 
+#ifdef HAVE_POSIX_FADVISE
+  /* On Linux this will evict the pages we just read from the page cache. */
+  if (cache_mode == cache_none)
+    posix_fadvise (h->fd, orig_offset, orig_count, POSIX_FADV_DONTNEED);
+#endif
+
   return 0;
 }
 
@@ -363,6 +436,17 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
              uint32_t flags)
 {
   struct handle *h = handle;
+
+#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_DONTNEED)
+  uint32_t orig_count = count;
+  uint64_t orig_offset = offset;
+
+  /* If cache=none we want to force pages we have just written to the
+   * file to be flushed to disk so we can immediately evict them from
+   * the page cache.
+   */
+  if (cache_mode == cache_none) flags |= NBDKIT_FLAG_FUA;
+#endif
 
   while (count > 0) {
     ssize_t r = pwrite (h->fd, buf, count, offset);
@@ -377,6 +461,12 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 
   if ((flags & NBDKIT_FLAG_FUA) && file_flush (handle, 0) == -1)
     return -1;
+
+#ifdef HAVE_POSIX_FADVISE
+  /* On Linux this will evict the pages we just wrote from the page cache. */
+  if (cache_mode == cache_none)
+    posix_fadvise (h->fd, orig_offset, orig_count, POSIX_FADV_DONTNEED);
+#endif
 
   return 0;
 }

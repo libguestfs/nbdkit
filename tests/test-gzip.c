@@ -61,7 +61,9 @@ main (int argc, char *argv[])
   do_test ();
 
   /* Test the new filter. */
-  if (test_start_nbdkit ("file", "--filter=gzip", disk, NULL) == -1)
+  if (test_start_nbdkit ("file", "--filter=gzip", disk,
+                         "fadvise=sequential", "cache=none",
+                         NULL) == -1)
     exit (EXIT_FAILURE);
   do_test ();
 
