@@ -25,7 +25,10 @@ I<--tls=on> means that the client may choose to connect either with or
 without TLS.  In this mode, a plugin may wish to serve different
 content depending on whether the client has authenticated; the
 function C<nbdkit_is_tls()> can be used during the C<.open> callback
-for that purpose.
+for that purpose.  Or, you can opt to use
+L<nbdkit-tls-fallback-filter(1)> to provide safe fallback content to
+plaintext connections, saving the plugin content only for secure
+connections.
 
 Because I<--tls=on> is subject to downgrade attacks where a malicious
 proxy pretends not to support TLS in order to force either the client
@@ -275,6 +278,7 @@ More information can be found in L<gnutls_priority_init(3)>.
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
+L<nbdkit-tls-fallback-filter(1)>,
 L<gnutls_priority_init(3)>,
 L<psktool(1)>,
 L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md>,

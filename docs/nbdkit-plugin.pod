@@ -1479,7 +1479,9 @@ On error, C<nbdkit_error> is called and the call returns C<NULL>.
 
 A server may use C<nbdkit_is_tls> to limit which export names work
 until after a client has completed TLS authentication.  See
-L<nbdkit-tls(1)>.
+L<nbdkit-tls(1)>.  It is also possible to use
+L<nbdkit-tls-fallback-filter(1)> to automatically ensure that the
+plugin is only used with authentication.
 
 =head2 C<nbdkit_is_tls>
 
@@ -1667,7 +1669,8 @@ and then users will be able to run it like this:
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
-L<nbdkit-nozero-filter(3)>,
+L<nbdkit-nozero-filter(1)>,
+L<nbdkit-tls-fallback-filter(1)>,
 L<nbdkit-filter(3)>.
 
 Standard plugins provided by nbdkit:

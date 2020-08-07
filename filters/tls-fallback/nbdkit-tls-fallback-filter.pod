@@ -1,0 +1,73 @@
+=head1 NAME
+
+nbdkit-tls-fallback-filter - nbdkit TLS protection filter
+
+=head1 SYNOPSIS
+
+ nbdkit --tls=on --filter=tls-fallback plugin [plugin-args...]
+        [tlsreadme=MESSAGE]
+
+=head1 DESCRIPTION
+
+C<nbdkit-tls-fallback-filter> is designed to be used when offering a
+connection that allows but does not require TLS from clients, in order
+to offer safe alternative content to plaintext clients, only exposing
+the underlying plugin to authenticated users.  This may provide a
+nicer failure mode for plaintext clients than the harsher C<nbdkit
+--tls=require>.
+
+When this filter detects a plaintext connection, it ignores the
+client's export name, and provides a single read-only export with 512
+bytes of data and content that defaults to the message "This NBD
+server requires TLS authentication before it will serve useful data."
+
+When using this filter, it is recommended to place this filter first
+in the command line, to reduce the chance that any work done by
+C<.open> in later filters or the plugin can be exploited by plaintext
+connections as a denial of service attack to starve further
+authenticated connections.  Note that this plugin will fail to load if
+the plugin requests the C<SERIALIZE_CONNECTIONS> thread model, as a
+plaintext client holding its connection open indefinitely would be
+such a starvation.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<tlsreadme=>MESSAGE
+
+This optional parameter can be used to use C<MESSAGE> as the contents
+of the dummy export exposed to plaintext clients, using trailing NUL
+bytes to round the size up to 512 bytes.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-tls-fallback-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-tls-fallback-filter> first appeared in nbdkit 1.22.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-tls(1)>,
+L<nbdkit-filter(3)>.
+
+=head1 AUTHORS
+
+Eric Blake
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.

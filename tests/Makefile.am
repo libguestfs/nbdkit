@@ -1505,6 +1505,10 @@ EXTRA_DIST += \
 	test-truncate-extents.sh \
 	$(NULL)
 
+# tls-fallback filter test.
+TESTS += test-tls-fallback.sh
+EXTRA_DIST += test-tls-fallback.sh
+
 # xz filter test.
 LIBGUESTFS_TESTS += test-xz
 

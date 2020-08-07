@@ -246,6 +246,15 @@ nbdkit-extentlist-filter:
 * make non-read-only access safe by updating the extent list when the
   filter sees writes and trims
 
+nbdkit-tls-fallback-filter:
+
+* Adjust the nbdkit core to allow us to completely skip calling the
+  plugin's next_open (needed anyway if we are going to allow a filter
+  to open the plugin outside the context of a filter connection).
+
+* Adjust handling of .list_exports to mask what the plugin advertises
+  when tls is not yet active.
+
 Filters for security
 --------------------
 
