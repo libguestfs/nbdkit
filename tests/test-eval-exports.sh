@@ -41,37 +41,44 @@ set -x
 requires nbdkit -U - memory 1 --run 'nbdinfo --size --json "$uri"'
 requires jq --version
 
-files="eval-exports.list eval-exports.out"
+sock=$(mktemp -u)
+files="eval-exports.list eval-exports.out eval-exports.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
+fail=0
 
-# do_nbdkit [--skip-list] EXPNAME EXPOUT
+# Control case: no .list_exports, which defaults to advertising ""
+rm -f eval-exports.list
+nbdkit -U - -v eval \
+    open='[ "$3" = "" ] || { echo EINVAL wrong export >&2; exit 1; }' \
+    get_size='echo 0' --run 'nbdinfo --list --json "$uri"' > eval-exports.out
+cat eval-exports.out
+diff -u <(jq -c '[.exports[] | [."export-name", .description]]' \
+          eval-exports.out) <(printf %s\\n '[["",null]]')
+
+# Start a long-running server with .list_exports set to varying contents
+start_nbdkit -P eval-exports.pid -U $sock eval get_size='echo 0' \
+    list_exports="cat '$PWD'/eval-exports.list"
+
+# do_nbdkit EXPNAME EXPOUT
 do_nbdkit ()
 {
-    # Hack: since we never pass args that would go through .config, we can
-    # define a dummy .config to avoid defining .list_export
-    hack=
-    if test $1 = --skip-list; then
-        hack=config=
-        shift
-    else
-        cat eval-exports.list
-    fi
     # Check how the default export name is handled
-    nbdkit -U - -v eval ${hack}list_exports='cat eval-exports.list' \
+    # nbdinfo currently makes multiple connections, so we can't use the
+    # long-running server for validating default export name.
+    nbdkit -U - -v eval list_exports='cat eval-exports.list' \
       open='[ "$3" = "'"$1"'" ] || { echo EINVAL wrong export >&2; exit 1; }' \
       get_size='echo 0' --run 'nbdsh -u "$uri" -c "exit()"'
     # Check what exports are listed
-    nbdkit -U - -v eval ${hack}list_exports='cat eval-exports.list' \
-      get_size='echo 0' --run 'nbdinfo --list --json "$uri"' >eval-exports.out
+    nbdinfo --list --json nbd+unix://\?socket=$sock >eval-exports.out
     cat eval-exports.out
     diff -u <(jq -c '[.exports[] | [."export-name", .description]]' \
               eval-exports.out) <(printf %s\\n "$2")
 }
 
-# Control case: no .list_exports, which defaults to advertising ""
-rm -f eval-exports.list
-do_nbdkit --skip-list '' '[["",null]]'
+# With no file, .list_exports fails, but connecting works
+nbdinfo --list --json nbd+unix://\?socket=$sock && fail=1
+nbdsh -u nbd+unix://\?socket=$sock -c 'quit()'
 
 # Various spellings of empty lists, producing 0 exports
 for fmt in '' 'NAMES\n' 'INTERLEAVED\n' 'NAMES+DESCRIPTIONS\n'; do
@@ -120,7 +127,7 @@ echo $long >>eval-exports.list
 do_nbdkit $long "[[\"$long\",\"$long\"]]"
 
 # Invalid name (too long) causes an error response to NBD_OPT_LIST
-if nbdkit -U - -v eval list_exports="echo 2$long" \
-       get_size='echo 0' --run 'nbdinfo --list --json "$uri"'; then
-    echo "expected failure"; exit 1
-fi
+nbdkit -U - -v eval list_exports="echo 2$long" \
+       get_size='echo 0' --run 'nbdinfo --list --json "$uri"' && fail=1
+
+exit $fail
