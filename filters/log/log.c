@@ -100,7 +100,7 @@ log_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 
 /* Open the logfile. */
 static int
-log_get_ready (nbdkit_next_get_ready *next, void *nxdata)
+log_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
 {
   int fd;
 

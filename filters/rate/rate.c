@@ -145,7 +145,7 @@ rate_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-rate_get_ready (nbdkit_next_get_ready *next, void *nxdata)
+rate_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
 {
   /* Initialize the global buckets. */
   bucket_init (&read_bucket, rate, BUCKET_CAPACITY);

@@ -84,7 +84,7 @@ test_layers_filter_config_complete (nbdkit_next_config_complete *next,
 
 static int
 test_layers_filter_get_ready (nbdkit_next_get_ready *next,
-                              void *nxdata)
+                              void *nxdata, int thread_model)
 {
   DEBUG_FUNCTION;
   return next (nxdata);

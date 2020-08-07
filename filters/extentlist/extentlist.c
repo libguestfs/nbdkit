@@ -260,7 +260,8 @@ parse_extentlist (void)
 }
 
 static int
-extentlist_get_ready (nbdkit_next_get_ready *next, void *nxdata)
+extentlist_get_ready (nbdkit_next_get_ready *next, void *nxdata,
+                      int thread_model)
 {
   parse_extentlist ();
 

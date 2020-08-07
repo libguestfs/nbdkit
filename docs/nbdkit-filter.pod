@@ -299,10 +299,17 @@ with an error message and return C<-1>.
 
 =head2 C<.get_ready>
 
- int (*get_ready) (nbdkit_next_get_ready *next, void *nxdata);
+ int (*get_ready) (nbdkit_next_get_ready *next, void *nxdata,
+                   int thread_model);
 
 This intercepts the plugin C<.get_ready> method and can be used by the
 filter to get ready to serve requests.
+
+The C<thread_model> parameter informs the filter about the final
+thread model chosen by nbdkit after considering the results of
+C<.thread_model> of all filters in the chain after
+C<.config_complete>.  This does not need to be passed on to C<next>,
+as the model can no longer be altered at this point.
 
 If there is an error, C<.get_ready> should call C<nbdkit_error> with
 an error message and return C<-1>.

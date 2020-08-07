@@ -183,10 +183,10 @@ filter_get_ready (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
-  debug ("%s: get_ready", b->name);
+  debug ("%s: get_ready thread_model=%d", b->name, thread_model);
 
   if (f->filter.get_ready) {
-    if (f->filter.get_ready (next_get_ready, b->next) == -1)
+    if (f->filter.get_ready (next_get_ready, b->next, thread_model) == -1)
       exit (EXIT_FAILURE);
   }
   else

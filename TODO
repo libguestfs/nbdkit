@@ -15,6 +15,15 @@ General ideas for improvements
   time, up to the thread pool size limit.  Of course, once created, a
   thread is reused as possible until the connection closes.
 
+* A new threading model, SERIALIZE_RETIREMENT, which lets the client
+  queue up multiple requests and processes them in parallel in the
+  plugin, but where the responses sent back to the client are in the
+  same order as the client's request rather than the plugin's
+  completion.  This is stricter than fully parallel, but looser than
+  SERIALIZE_REQUESTS (in particular, a client can get
+  non-deterministic behavior if batched requests touch the same area
+  of the export).
+
 * Async callbacks.  The current parallel support requires one thread
   per pending message; a solution with fewer threads would split
   low-level code between request and response, where the callback has
@@ -309,5 +318,9 @@ using ‘#define NBDKIT_API_VERSION <version>’.
   them for the plugin.
 
 * Modify open() API so it takes an export name and tls parameter.
+
+* Modify get_ready() API to pass final selected thread model.  Filters
+  already get this information, but to date, we have not yet seen a
+  reason to add nbdkit_get_thread_model for use by v2 plugins.
 
 * Change config_help from a variable to a function.

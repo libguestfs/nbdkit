@@ -210,7 +210,7 @@ stats_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 }
 
 static int
-stats_get_ready (nbdkit_next_get_ready *next, void *nxdata)
+stats_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
 {
   int fd;
 
