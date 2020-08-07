@@ -201,7 +201,7 @@ backend_open (struct backend *b, int readonly, const char *exportname)
       CLEANUP_EXPORTS_FREE struct nbdkit_exports *exps = NULL;
 
       exps = nbdkit_exports_new (true);
-      if (b->list_exports (b, readonly, true, exps) == 0 &&
+      if (exps && b->list_exports (b, readonly, true, exps) == 0 &&
           nbdkit_exports_count (exps))
         h->default_exportname = strdup (nbdkit_get_export (exps, 0).name);
     }
