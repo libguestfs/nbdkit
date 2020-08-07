@@ -273,13 +273,20 @@ file_list_exports (int readonly, int default_only,
   }
   errno = 0;
   while ((entry = readdir (dir)) != NULL) {
-    /* TODO: Optimize with d_type and/or statx when present? */
-    if (fstatat (fd, entry->d_name, &sb, 0) == 0 &&
-        (S_ISREG (sb.st_mode) || S_ISBLK (sb.st_mode))) {
-      if (nbdkit_add_export (exports, entry->d_name, NULL) == -1) {
-        closedir (dir);
-        return -1;
-      }
+    int r = -1;
+#if HAVE_STRUCT_DIRENT_D_TYPE
+    if (entry->d_type == DT_BLK || entry->d_type == DT_REG)
+      r = 1;
+    else if (entry->d_type != DT_LNK && entry->d_type != DT_UNKNOWN)
+      r = 0;
+#endif
+    /* TODO: when chasing symlinks, is statx any nicer than fstatat? */
+    if (r < 0 && fstatat (fd, entry->d_name, &sb, 0) == 0 &&
+        (S_ISREG (sb.st_mode) || S_ISBLK (sb.st_mode)))
+      r = 1;
+    if (r == 1 && nbdkit_add_export (exports, entry->d_name, NULL) == -1) {
+      closedir (dir);
+      return -1;
     }
     errno = 0;
   }

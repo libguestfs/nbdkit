@@ -351,6 +351,7 @@ AC_CHECK_FUNCS([\
 	pipe2 \
 	ppoll \
 	posix_fadvise])
+AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [[#include <dirent.h>]])
 
 dnl Replacement functions that we provide for some platforms.
 AC_CONFIG_LIBOBJ_DIR([common/replacements])
