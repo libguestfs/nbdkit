@@ -55,7 +55,6 @@
 #endif
 
 #define NBDKIT_API_VERSION 2
-
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
