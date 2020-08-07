@@ -90,7 +90,7 @@ struct xz_handle {
 /* Create the per-connection handle. */
 static void *
 xz_open (nbdkit_next_open *next, void *nxdata,
-         int readonly, const char *exportname)
+         int readonly, const char *exportname, int is_tls)
 {
   struct xz_handle *h;
 

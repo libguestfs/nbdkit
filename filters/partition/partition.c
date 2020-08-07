@@ -88,7 +88,7 @@ struct handle {
 /* Open a connection. */
 static void *
 partition_open (nbdkit_next_open *next, void *nxdata,
-                int readonly, const char *exportname)
+                int readonly, const char *exportname, int is_tls)
 {
   struct handle *h;
 

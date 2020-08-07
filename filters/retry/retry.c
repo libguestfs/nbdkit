@@ -113,7 +113,7 @@ struct retry_handle {
 
 static void *
 retry_open (nbdkit_next_open *next, void *nxdata,
-            int readonly, const char *exportname)
+            int readonly, const char *exportname, int is_tls)
 {
   struct retry_handle *h;
 

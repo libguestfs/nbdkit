@@ -250,7 +250,8 @@ filter_list_exports (struct backend *b, int readonly, int default_only,
 }
 
 static void *
-filter_open (struct backend *b, int readonly, const char *exportname)
+filter_open (struct backend *b, int readonly, const char *exportname,
+             int is_tls)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle;
@@ -259,7 +260,8 @@ filter_open (struct backend *b, int readonly, const char *exportname)
    * inner-to-outer ordering.
    */
   if (f->filter.open)
-    handle = f->filter.open (backend_open, b->next, readonly, exportname);
+    handle = f->filter.open (backend_open, b->next, readonly, exportname,
+                             is_tls);
   else if (backend_open (b->next, readonly, exportname) == -1)
     handle = NULL;
   else

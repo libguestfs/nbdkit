@@ -320,11 +320,12 @@ as a name and no description.
 
 =item C<open>
 
- /path/to/script open <readonly> <exportname>
+ /path/to/script open <readonly> <exportname> <tls>
 
 The C<readonly> parameter will be C<true> or C<false>.  The
 C<exportname> parameter, if present, is the export name passed to the
-server from the client.
+server from the client.  The C<tls> parameter, if present, will be
+C<true> or C<false> depending on whether the client is using TLS.
 
 On success this should print the handle (any string) on stdout and
 exit with code C<0>.  If the handle ends with a newline character then

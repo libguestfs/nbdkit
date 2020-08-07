@@ -193,8 +193,8 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
 
-  controlpath_debug ("%s: open readonly=%d exportname=\"%s\"",
-                     b->name, readonly, exportname);
+  controlpath_debug ("%s: open readonly=%d exportname=\"%s\" tls=%d",
+                     b->name, readonly, exportname, conn->using_tls);
 
   assert (h->handle == NULL);
   assert ((h->state & HANDLE_OPEN) == 0);
@@ -219,7 +219,7 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   /* Most filters will call next_open first, resulting in
    * inner-to-outer ordering.
    */
-  h->handle = b->open (b, readonly, exportname);
+  h->handle = b->open (b, readonly, exportname, conn->using_tls);
   controlpath_debug ("%s: open returned handle %p", b->name, h->handle);
 
   if (h->handle == NULL) {

@@ -22,7 +22,10 @@ connect, it will be rejected by the server (in other words, as if the
 server doesn't support TLS).
 
 I<--tls=on> means that the client may choose to connect either with or
-without TLS.
+without TLS.  In this mode, a plugin may wish to serve different
+content depending on whether the client has authenticated; the
+function C<nbdkit_is_tls()> can be used during the C<.open> callback
+for that purpose.
 
 Because I<--tls=on> is subject to downgrade attacks where a malicious
 proxy pretends not to support TLS in order to force either the client

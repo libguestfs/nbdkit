@@ -163,7 +163,7 @@ rate_get_ready (nbdkit_next_get_ready *next, void *nxdata)
 /* Create the per-connection handle. */
 static void *
 rate_open (nbdkit_next_open *next, void *nxdata,
-           int readonly, const char *exportname)
+           int readonly, const char *exportname, int is_tls)
 {
   struct rate_handle *h;
 

@@ -51,7 +51,7 @@ static _Atomic unsigned connections;
 
 static void *
 exitlast_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
-               int readonly, const char *exportname)
+               int readonly, const char *exportname, int is_tls)
 {
   if (next (nxdata, readonly, exportname) == -1)
     return NULL;

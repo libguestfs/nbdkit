@@ -117,7 +117,7 @@ test_layers_filter_list_exports (nbdkit_next_list_exports *next, void *nxdata,
 
 static void *
 test_layers_filter_open (nbdkit_next_open *next, void *nxdata,
-                         int readonly, const char *exportname)
+                         int readonly, const char *exportname, int is_tls)
 {
   struct handle *h = malloc (sizeof *h);
 

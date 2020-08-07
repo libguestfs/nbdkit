@@ -135,6 +135,7 @@ struct handle {
   uint64_t connection;
   uint64_t id;
   char *exportname;
+  int tls;
 };
 
 /* Compute the next id number on the current connection. */
@@ -283,7 +284,7 @@ log_list_exports (nbdkit_next_list_exports *next, void *nxdata,
 /* Open a connection. */
 static void *
 log_open (nbdkit_next_open *next, void *nxdata,
-          int readonly, const char *exportname)
+          int readonly, const char *exportname, int is_tls)
 {
   struct handle *h;
 
@@ -296,9 +297,9 @@ log_open (nbdkit_next_open *next, void *nxdata,
     return NULL;
   }
 
-  /* Save the exportname in the handle so we can display it in
-   * log_prepare.  We must take a copy because this string has a short
-   * lifetime.
+  /* Save the exportname and tls state in the handle so we can display
+   * it in log_prepare.  We must take a copy because this string has a
+   * short lifetime.
    */
   h->exportname = strdup (exportname);
   if (h->exportname == NULL) {
@@ -306,6 +307,7 @@ log_open (nbdkit_next_open *next, void *nxdata,
     free (h);
     return NULL;
   }
+  h->tls = is_tls;
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   h->connection = ++connections;
@@ -343,9 +345,9 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
       e < 0 || c < 0 || Z < 0)
     return -1;
 
-  output (h, "Connect", 0, "export='%s' size=0x%" PRIx64 " write=%d flush=%d "
-          "rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d "
-          "fast_zero=%d", exportname, size, w, f, r, t, z, F, e, c, Z);
+  output (h, "Connect", 0, "export='%s' tls=%d size=0x%" PRIx64 " write=%d "
+          "flush=%d rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d "
+          "fast_zero=%d", exportname, h->tls, size, w, f, r, t, z, F, e, c, Z);
   return 0;
 }
 

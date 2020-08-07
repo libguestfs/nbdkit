@@ -175,7 +175,7 @@ struct nbdkit_filter {
                        struct nbdkit_exports *exports);
 
   void * (*open) (nbdkit_next_open *next, nbdkit_backend *nxdata,
-                  int readonly, const char *exportname);
+                  int readonly, const char *exportname, int is_tls);
   void (*close) (void *handle);
 
   int (*prepare) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,

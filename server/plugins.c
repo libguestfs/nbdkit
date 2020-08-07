@@ -292,7 +292,8 @@ plugin_list_exports (struct backend *b, int readonly, int default_only,
 }
 
 static void *
-plugin_open (struct backend *b, int readonly, const char *exportname)
+plugin_open (struct backend *b, int readonly, const char *exportname,
+             int is_tls)
 {
   GET_CONN;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
@@ -302,11 +303,14 @@ plugin_open (struct backend *b, int readonly, const char *exportname)
   /* Save the exportname since the lifetime of the string passed in
    * here is likely to be brief.  In addition this provides a place
    * for nbdkit_export_name to retrieve it if called from the plugin.
+   * While readonly and the export name can be altered in plugins, the
+   * tls mode cannot.
    *
-   * In API V3 we propose to pass the exportname as an extra parameter
-   * to the (new) plugin.open and deprecate nbdkit_export_name for V3
-   * users.  Even then we will still need to save it in the handle
-   * because of the lifetime issue.
+   * In API V3 we propose to pass the exportname and tls mode as extra
+   * parameters to the (new) plugin.open and deprecate
+   * nbdkit_export_name and nbdkit_is_tls for V3 users.  Even then we
+   * will still need to save the export name in the handle because of
+   * the lifetime issue.
    */
   if (conn->exportname == NULL) {
     conn->exportname = strdup (exportname);

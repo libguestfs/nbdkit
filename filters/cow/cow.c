@@ -94,7 +94,7 @@ cow_config (nbdkit_next_config *next, void *nxdata,
 
 static void *
 cow_open (nbdkit_next_open *next, void *nxdata,
-          int readonly, const char *exportname)
+          int readonly, const char *exportname, int is_tls)
 {
   /* Always pass readonly=1 to the underlying plugin. */
   if (next (nxdata, 1, exportname) == -1)

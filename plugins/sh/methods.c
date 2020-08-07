@@ -341,6 +341,7 @@ sh_open (int readonly)
     { script, method,
       readonly ? "true" : "false",
       nbdkit_export_name () ? : "",
+      nbdkit_is_tls () ? "true" : "false",
       NULL };
   struct sh_handle *h = malloc (sizeof *h);
 

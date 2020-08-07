@@ -670,6 +670,22 @@ nbdkit_export_name (void)
   return conn->exportname;
 }
 
+/* This function will be deprecated for API V3 users.  The preferred
+ * approach will be to get the tls mode from .open().
+ */
+int
+nbdkit_is_tls (void)
+{
+  struct connection *conn = threadlocal_get_conn ();
+
+  if (!conn) {
+    nbdkit_error ("no connection in this thread");
+    return -1;
+  }
+
+  return conn->using_tls;
+}
+
 int
 nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen)
 {

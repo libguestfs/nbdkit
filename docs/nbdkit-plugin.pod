@@ -729,10 +729,18 @@ connection to be readonly (even if this flag is false) by returning
 false from the C<.can_write> callback.  So if your plugin can only
 serve read-only, you can ignore this parameter.
 
-This callback is called after the NBD handshake has completed, which
-includes TLS authentication (if required).  If the plugin defines a
-C<.preconnect> callback, then it must be called and return with
-success before C<.open> is called.
+If the plugin wants to differentiate the content it serves based on
+client input, then this is the spot to use C<nbdkit_export_name()> to
+determine which export the client requested.  See also L</EXPORT NAME>
+below.
+
+This callback is called after the NBD handshake has completed; if the
+server requires TLS authentication, then that has occurred as well.
+But if the server is set up to have optional TLS authentication, you
+may check C<nbdkit_is_tls> to learn whether the client has completed
+TLS authentication.  When running the server in a mode that permits
+but not requires TLS, be careful that you do not allow unauthenticated
+clients to cause a denial of service against authentication.
 
 If there is an error, C<.open> should call C<nbdkit_error> with an
 error message and return C<NULL>.
@@ -1466,6 +1474,22 @@ export name does not make sense.  B<The export name is untrusted
 client data, be cautious when parsing it.>
 
 On error, C<nbdkit_error> is called and the call returns C<NULL>.
+
+=head1 AUTHENTICATION
+
+A server may use C<nbdkit_is_tls> to limit which export names work
+until after a client has completed TLS authentication.  See
+L<nbdkit-tls(1)>.
+
+=head2 C<nbdkit_is_tls>
+
+ int nbdkit_is_tls (void);
+
+Return true if the client has completed TLS authentication, or false
+if the connection is still plaintext.
+
+On error (such as calling this function outside of the context of
+C<.open>), C<nbdkit_error> is called and the call returns C<-1>.
 
 =head1 PEER NAME
 

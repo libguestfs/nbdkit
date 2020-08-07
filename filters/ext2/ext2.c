@@ -122,7 +122,7 @@ struct handle {
 /* Create the per-connection handle. */
 static void *
 ext2_open (nbdkit_next_open *next, void *nxdata,
-           int readonly, const char *exportname)
+           int readonly, const char *exportname, int is_tls)
 {
   struct handle *h;
 

@@ -367,7 +367,8 @@ struct backend {
   int (*preconnect) (struct backend *, int readonly);
   int (*list_exports) (struct backend *, int readonly, int default_only,
                        struct nbdkit_exports *exports);
-  void *(*open) (struct backend *, int readonly, const char *exportname);
+  void *(*open) (struct backend *, int readonly, const char *exportname,
+                 int is_tls);
   int (*prepare) (struct backend *, void *handle, int readonly);
   int (*finalize) (struct backend *, void *handle);
   void (*close) (struct backend *, void *handle);
