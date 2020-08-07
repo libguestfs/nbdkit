@@ -12,18 +12,18 @@
 # To upload or download images, you need to start an image transfer. The
 # easiest way is using oVirt image_transfer.py example:
 #
-#  /usr/share/doc/python3-ovirt-enigne-sdk4/eamples/image_transfer.py \
+#  /usr/share/doc/python3-ovirt-engine-sdk4/examples/image_transfer.py \
 #      --engine-url https://my.engine \
 #      --username admin@internal \
 #      --password-file password \
 #      --cafile my.engine.pem \
 #      upload disk-uuid
 #
-# This will print the trasnfer URL for this image transfer.
+# This will print the transfer URL for this image transfer.
 #
 # Run this example from the build directory:
 #
-#   ./nbdkit -t4 -f -v -U /tmp/nbd.sock -t4 python \
+#   ./nbdkit -t4 -f -v -U /tmp/nbd.sock python \
 #       ./plugins/python/examples/imageio.py \
 #       transfer_url=https://server:54322/images/ticket-id \
 #       connections=4 \
@@ -33,7 +33,8 @@
 #
 # To upload an image run:
 #
-#   qemu-img convert -n -f raw -O raw disk.img nbd+unix:///?socket=/tmp/nbd.sock
+#   qemu-img convert -n -f raw -O raw disk.img \
+#       nbd+unix:///\?socket=/tmp/nbd.sock
 #
 # Downloading image is not efficient with this version, since we don't report
 # extents yet.
@@ -89,7 +90,7 @@ def boolify(key, value):
 
 def config_complete():
     """
-    Called when configuration completed.
+    Called when configuration is completed.
     """
     if params["transfer_url"] is None:
         raise RuntimeError("'transfer_url' parameter is required")
@@ -105,7 +106,7 @@ def thread_model():
 
 def open(readonly):
     """
-    Called once when plugin is loaded. We created a pool of connected clients
+    Called once when plugin is loaded. We create a pool of connected clients
     that will be used for requests later.
     """
     pool = queue.Queue()
