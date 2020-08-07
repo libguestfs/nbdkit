@@ -37,8 +37,8 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdsh -c 'print (h.get_list_export_description)'
-requires nbdinfo --help
+# requires nbdinfo --version # nbdinfo 1.3.9 was broken, so check this instead:
+requires nbdkit -U - memory 1 --run 'nbdinfo --size --json "$uri"'
 requires jq --version
 
 files="eval-exports.list eval-exports.out"
