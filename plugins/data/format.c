@@ -41,6 +41,7 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
+#include "ascii-ctype.h"
 #include "cleanup.h"
 #include "allocator.h"
 #include "format.h"
@@ -82,6 +83,84 @@ store_file (struct allocator *a,
   }
 
   return 0;
+}
+
+/* Parse a "String" with C-like escaping, and store it in the
+ * allocator.  When this is called we have already consumed the
+ * initial double quote character.
+ */
+static unsigned char
+hexdigit (const char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  else if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+  else /* if (c >= 'A' && c <= 'F') */
+    return c - 'A' + 10;
+}
+
+static int
+store_string (struct allocator *a, const char *value, size_t i, size_t len,
+              size_t *i_rtn, uint64_t *offset)
+{
+  unsigned char c, x0, x1;
+
+  for (; i < len; ++i) {
+    c = value[i];
+    switch (c) {
+    case '"':
+      /* End of the string. */
+      *i_rtn = i+1;
+      return 0;
+
+    case '\\':
+      /* Start of escape sequence. */
+      if (++i == len) goto unexpected_end_of_string;
+      c = value[i];
+      switch (c) {
+      case 'a': c = 0x7; break;
+      case 'b': c = 0x8; break;
+      case 'f': c = 0xc; break;
+      case 'n': c = 0xa; break;
+      case 'r': c = 0xd; break;
+      case 't': c = 0x9; break;
+      case 'v': c = 0xb; break;
+      case '\\': case '"': break;
+      case 'x':
+        if (++i == len) goto unexpected_end_of_string;
+        x0 = value[i];
+        if (++i == len) goto unexpected_end_of_string;
+        x1 = value[i];
+        if (!ascii_isxdigit (x0) || !ascii_isxdigit (x1)) {
+          nbdkit_error ("data: \\xNN must be followed by exactly "
+                        "two hexadecimal characters");
+          return -1;
+        }
+        c = hexdigit (x0) * 16 + hexdigit (x1);
+        break;
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+      case 'u':
+        nbdkit_error ("data: string numeric and unicode sequences "
+                      "are not yet implemented");
+        return -1;
+      }
+      /*FALLTHROUGH*/
+    default:
+      /* Any other character is added to the allocator. */
+      if (a->write (a, &c, 1, *offset) == -1)
+        return -1;
+      (*offset)++;
+    }
+  }
+
+  /* If we reach here then we have run off the end of the data string
+   * without finding the final quote.
+   */
+ unexpected_end_of_string:
+  nbdkit_error ("data parameter: unterminated string");
+  return -1;
 }
 
 /* Parses the data parameter as described in the man page
@@ -232,6 +311,16 @@ parse (int level,
 
       break;
     }
+
+    case '"':                   /* "String" */
+      i++;
+      if (store_string (a, value, i, len, &i, &offset) == -1)
+        return -1;
+
+      if (*size < offset)
+        *size = offset;
+
+      break;
 
     case ' ': case '\t': case '\n': /* Skip whitespace. */
     case '\f': case '\r': case '\v':

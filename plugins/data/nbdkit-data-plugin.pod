@@ -87,12 +87,16 @@ The C<E<lt>FILE> syntax is used to include a file of binary data.
 Note that L<nbdkit-partitioning-plugin(1)> is easier to use and more
 flexible.
 
-=item Create a small disk filled with a test pattern:
+=item Create small disks filled with test patterns:
 
  nbdkit data data=' ( 0x55 0xAA )*2048 '
+ nbdkit data data=' ( "Hello" )*2000 ' size=8192
 
-This creates a disk containing 4096 bytes filled with the repeating
-pattern 0x55 0xAA.  See also L<nbdkit-pattern-plugin(3)>.
+The first command creates a disk containing 4096 bytes filled with the
+repeating bytes 0x55 0xAA.  The second command repeats
+C<HelloHelloHello...>, truncating the disk to exactly 8192 bytes.
+
+See also L<nbdkit-pattern-plugin(3)>.
 
 =item Create a 7 EB (exabyte) disk with one empty GPT-formatted partition:
 
@@ -250,6 +254,16 @@ Read the contents of binary F<FILE> into the disk image at the current
 offset.  The offset is incremented by the size of the file.  The
 filename can be a relative or absolute path, but cannot contain
 whitespace in the name.
+
+=item B<">STRINGB<">
+
+(nbdkit E<ge> 1.22)
+
+Write a string into the image at the current offset and advance the
+offset by the length of the string.  To include special characters in
+the string you can escape them in the same way as C strings (eg. a
+double quote character within the string should be written C<\">).  Be
+careful with shell quoting around the whole data parameter.
 
 =item B<(> ... B<)*>N
 

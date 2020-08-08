@@ -30,7 +30,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Test the data plugin with ( nesting ) construct.
+# Test the data plugin with "string".
 
 source ./functions.sh
 set -e
@@ -39,19 +39,17 @@ set -x
 requires nbdsh --version
 
 sock=`mktemp -u`
-files="data-nest.pid $sock"
+files="data-string.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-nest.pid -U $sock \
-       data data=' ( 0x55 0xAA )*4 ( @4 ( 0x21 )*4 )*4 ( "Hello" )*2'
+start_nbdkit -P data-string.pid -U $sock \
+       data data=' "hello" ( "\"" "\\" )*2 "\x01\x02\x03" "\n" '
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-print ("%d" % h.get_size())
-assert h.get_size() == 2*4 + 8*4 + 5*2
 buf = h.pread (h.get_size(), 0)
 print ("%r" % buf)
-assert buf == b"\x55\xAA"*4 + b"\0\0\0\0!!!!"*4 + b"HelloHello"
+assert buf == b"hello\"\\\"\\\x01\x02\x03\n"
 '

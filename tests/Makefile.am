@@ -592,6 +592,7 @@ TESTS += \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
+	test-data-string.sh \
 	test-disk2data.sh \
 	$(NULL)
 EXTRA_DIST += \
@@ -604,6 +605,7 @@ EXTRA_DIST += \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
+	test-data-string.sh \
 	test-disk2data.sh \
 	$(NULL)
 
