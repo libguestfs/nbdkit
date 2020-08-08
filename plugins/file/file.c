@@ -421,7 +421,7 @@ file_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
     offset += r;
   }
 
-#ifdef HAVE_POSIX_FADVISE
+#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_DONTNEED)
   /* On Linux this will evict the pages we just read from the page cache. */
   if (cache_mode == cache_none)
     posix_fadvise (h->fd, orig_offset, orig_count, POSIX_FADV_DONTNEED);
@@ -462,7 +462,7 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   if ((flags & NBDKIT_FLAG_FUA) && file_flush (handle, 0) == -1)
     return -1;
 
-#ifdef HAVE_POSIX_FADVISE
+#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_DONTNEED)
   /* On Linux this will evict the pages we just wrote from the page cache. */
   if (cache_mode == cache_none)
     posix_fadvise (h->fd, orig_offset, orig_count, POSIX_FADV_DONTNEED);
