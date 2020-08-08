@@ -38,23 +38,16 @@ supported by nbdkit (S<2⁶³-1 bytes>).
 
 =over 4
 
-=item "Hello, world" using this plugin
+=item Create small disks filled with test patterns:
 
- $ nbdkit data raw='Hello, world!' --run 'nbdcopy "$uri" - | cat'
- Hello, world!
+ nbdkit data data=' ( 0x55 0xAA )*2048 '
+ nbdkit data data=' ( "Hello" )*2000 ' size=8192
 
-This works by creating a disk containing the string
-C<"Hello, world!">.  L<nbdcopy(1)> connects to the server using an NBD
-URI (C<"$uri">) and copies the disk to stdout (C<->).  The extra
-L<cat(1)> is needed because nbdcopy refuses to write raw disk data to
-a terminal.
+The first command creates a disk containing 4096 bytes filled with the
+repeating bytes 0x55 0xAA.  The second command repeats
+C<HelloHelloHello...>, truncating the disk to exactly 8192 bytes.
 
-=item Create a 1 MB disk with some nonsense data at the beginning:
-
- nbdkit data base64=MTIz size=1M
-
-The above command serves the bytes C<0x31 0x32 0x33> (which is the
-base64 decoding of C<MTIz>), followed by S<1M - 3 bytes> of zeroes.
+See also L<nbdkit-pattern-plugin(3)>.
 
 =item Create a 1 MB disk with one empty MBR-formatted partition:
 
@@ -75,74 +68,25 @@ This example was created by running:
 The C<disk2data.pl> script is provided in the nbdkit sources
 (L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>).
 
-=item Create a disk with a partition from another file:
+See also L<nbdkit-partitioning-plugin(1)>.
 
- nbdkit data data="
-   @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
-   @0x1fe 85 170
-   @0x200 <partition-data
-   " size=1048576
+=item Create a 1 MB disk with some nonsense data at the beginning:
 
-The C<E<lt>FILE> syntax is used to include a file of binary data.
-Note that L<nbdkit-partitioning-plugin(1)> is easier to use and more
-flexible.
+ nbdkit data base64=MTIz size=1M
 
-=item Create small disks filled with test patterns:
+The above command serves the bytes C<0x31 0x32 0x33> (which is the
+base64 decoding of C<MTIz>), followed by S<1M - 3 bytes> of zeroes.
 
- nbdkit data data=' ( 0x55 0xAA )*2048 '
- nbdkit data data=' ( "Hello" )*2000 ' size=8192
+=item "Hello, world" using this plugin
 
-The first command creates a disk containing 4096 bytes filled with the
-repeating bytes 0x55 0xAA.  The second command repeats
-C<HelloHelloHello...>, truncating the disk to exactly 8192 bytes.
+ $ nbdkit data raw='Hello, world!' --run 'nbdcopy "$uri" - | cat'
+ Hello, world!
 
-See also L<nbdkit-pattern-plugin(3)>.
-
-=item Create a 7 EB (exabyte) disk with one empty GPT-formatted partition:
-
-The data plugin supports huge sparse virtual disks, up to the maximum
-size supported by nbdkit itself (S<2⁶³-1 bytes> =
-S<8 exabytes - 1 byte>).  These cause all sorts of problems for
-software and so make excellent test cases.  To partition such a huge
-disk requires the GPT (GUID Partition Table) format since MBR is
-limited to just 2 TB.
-
- nbdkit data data="
-   @0x1c0 2 0 0xee 0xfe 0xff 0xff 0x01 0  0 0 0xff 0xff 0xff 0xff
-   @0x1fe 0x55 0xaa
-   @0x200 0x45 0x46 0x49 0x20 0x50 0x41 0x52 0x54
-                 0 0 1 0 0x5c 0 0 0
-          0x9b 0xe5 0x6a 0xc5 0 0 0 0  1 0 0 0 0 0 0 0
-          0xff 0xff 0xff 0xff 0xff 0xff 0x37 0  0x22 0 0 0 0 0 0 0
-          0xde 0xff 0xff 0xff 0xff 0xff 0x37 0
-                 0x72 0xb6 0x9e 0x0c 0x6b 0x76 0xb0 0x4f
-          0xb3 0x94 0xb2 0xf1 0x61 0xec 0xdd 0x3c  2 0 0 0 0 0 0 0
-          0x80 0 0 0 0x80 0 0 0  0x79 0x8a 0xd0 0x7e 0 0 0 0
-   @0x400 0xaf 0x3d 0xc6 0x0f 0x83 0x84 0x72 0x47
-                 0x8e 0x79 0x3d 0x69 0xd8 0x47 0x7d 0xe4
-          0xd5 0x19 0x46 0x95 0xe3 0x82 0xa8 0x4c
-                 0x95 0x82 0x7a 0xbe 0x1c 0xfc 0x62 0x90
-          0x80 0 0 0 0 0 0 0  0x80 0xff 0xff 0xff 0xff 0xff 0x37 0
-          0 0 0 0 0 0 0 0  0x70 0 0x31 0 0 0 0 0
-   @0x6fffffffffffbe00
-          0xaf 0x3d 0xc6 0x0f 0x83 0x84 0x72 0x47
-                 0x8e 0x79 0x3d 0x69 0xd8 0x47 0x7d 0xe4
-          0xd5 0x19 0x46 0x95 0xe3 0x82 0xa8 0x4c
-                 0x95 0x82 0x7a 0xbe 0x1c 0xfc 0x62 0x90
-          0x80 0 0 0 0 0 0 0  0x80 0xff 0xff 0xff 0xff 0xff 0x37 0
-          0 0 0 0 0 0 0 0  0x70 0 0x31 0 0 0 0 0
-   @0x6ffffffffffffe00
-          0x45 0x46 0x49 0x20 0x50 0x41 0x52 0x54
-                 0 0 1 0 0x5c 0 0 0
-          0x6c 0x76 0xa1 0xa0 0 0 0 0
-                 0xff 0xff 0xff 0xff 0xff 0xff 0x37 0
-          1 0 0 0 0 0 0 0  0x22 0 0 0 0 0 0 0
-          0xde 0xff 0xff 0xff 0xff 0xff 0x37 0
-                 0x72 0xb6 0x9e 0x0c 0x6b 0x76 0xb0 0x4f
-          0xb3 0x94 0xb2 0xf1 0x61 0xec 0xdd 0x3c
-                 0xdf 0xff 0xff 0xff 0xff 0xff 0x37 0
-          0x80 0 0 0 0x80 0 0 0  0x79 0x8a 0xd0 0x7e 0 0 0 0
-   " size=7E
+This works by creating a disk containing the string
+C<"Hello, world!">.  L<nbdcopy(1)> connects to the server using an NBD
+URI (C<"$uri">) and copies the disk to stdout (C<->).  The extra
+L<cat(1)> is needed because nbdcopy refuses to write raw disk data to
+a terminal.
 
 =back
 
