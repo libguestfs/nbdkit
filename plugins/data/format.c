@@ -43,6 +43,8 @@
 
 #include "ascii-ctype.h"
 #include "cleanup.h"
+#include "ispowerof2.h"
+#include "rounding.h"
 #include "allocator.h"
 #include "format.h"
 
@@ -180,18 +182,79 @@ parse (int level,
     char c;
 
     switch (value[i]) {
-    case '@':                   /* @OFFSET. */
-      i++;
-      if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
-        if (j < 0) {
-          nbdkit_error ("data parameter @OFFSET must not be negative");
-          return -1;
+    case '@':                   /* @OFFSET */
+      if (++i == len) goto parse_error;
+      switch (value[i]) {
+      case '+':                 /* @+N */
+        if (++i == len) goto parse_error;
+        if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
+          if (j < 0) {
+            nbdkit_error ("data parameter after @+ must not be negative");
+            return -1;
+          }
+          /* XXX Check it does not overflow the offset. */
+          i += n;
+          offset += j;
         }
-        i += n;
-        offset = j;
-      }
-      else
+        else
+          goto parse_error;
+        break;
+      case '-':                 /* @-N */
+        if (++i == len) goto parse_error;
+        if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
+          if (j < 0) {
+            nbdkit_error ("data parameter after @- must not be negative");
+            return -1;
+          }
+          /* Can't move the current offset negative. */
+          if (j > offset) {
+            nbdkit_error ("data parameter @-%" PRIi64 " "
+                          "must not be larger than "
+                          "the current offset %" PRIi64,
+                          j, offset);
+            return -1;
+          }
+          i += n;
+          offset -= j;
+        }
+        else
+          goto parse_error;
+        break;
+      case '^':                 /* @^ALIGNMENT */
+        if (++i == len) goto parse_error;
+        if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
+          if (j < 0) {
+            nbdkit_error ("data parameter after @^ must not be negative");
+            return -1;
+          }
+          /* XXX fix this arbitrary restriction */
+          if (!is_power_of_2 (j)) {
+            nbdkit_error ("data parameter @^%" PRIi64 " must be a power of 2",
+                          j);
+            return -1;
+          }
+          i += n;
+          offset = ROUND_UP (offset, j);
+        }
+        else
+          goto parse_error;
+        break;
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+        if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
+          if (j < 0) {
+            nbdkit_error ("data parameter @OFFSET must not be negative");
+            return -1;
+          }
+          i += n;
+          offset = j;
+        }
+        else
+          goto parse_error;
+        break;
+      default:
         goto parse_error;
+      }
       break;
 
     case '(': {               /* ( */
