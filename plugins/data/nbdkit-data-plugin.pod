@@ -36,9 +36,7 @@ supported by nbdkit (S<2⁶³-1 bytes>).
 
 =head1 EXAMPLES
 
-=over 4
-
-=item Create small disks filled with test patterns:
+=head2 Create small disks filled with test patterns
 
  nbdkit data data=' ( 0x55 0xAA )*2048 '
  nbdkit data data=' ( "Hello" )*2000 ' size=8192
@@ -49,7 +47,7 @@ C<HelloHelloHello...>, truncating the disk to exactly 8192 bytes.
 
 See also L<nbdkit-pattern-plugin(3)>.
 
-=item Create a 1 MB disk with one empty MBR-formatted partition:
+=head2 Create a 1 MB disk with one empty MBR-formatted partition
 
  nbdkit data data="
    @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
@@ -70,14 +68,14 @@ The C<disk2data.pl> script is provided in the nbdkit sources
 
 See also L<nbdkit-partitioning-plugin(1)>.
 
-=item Create a 1 MB disk with some nonsense data at the beginning:
+=head2 Create a 1 MB disk with some nonsense data at the beginning
 
  nbdkit data base64=MTIz size=1M
 
 The above command serves the bytes C<0x31 0x32 0x33> (which is the
 base64 decoding of C<MTIz>), followed by S<1M - 3 bytes> of zeroes.
 
-=item "Hello, world" using this plugin
+=head2 "Hello, world" using this plugin
 
  $ nbdkit data raw='Hello, world!' --run 'nbdcopy "$uri" - | cat'
  Hello, world!
@@ -87,8 +85,6 @@ C<"Hello, world!">.  L<nbdcopy(1)> connects to the server using an NBD
 URI (C<"$uri">) and copies the disk to stdout (C<->).  The extra
 L<cat(1)> is needed because nbdcopy refuses to write raw disk data to
 a terminal.
-
-=back
 
 =head1 PARAMETERS
 
