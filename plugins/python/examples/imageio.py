@@ -4,10 +4,18 @@
 #
 # Upload and download images to oVirt with nbdkit and qemu-img.
 #
-# Install ovirt-imageio-client
+# This assumes you have an oVirt environment. If you don't please see
+# https://ovirt.org/ for info on how to install oVirt.
 #
-#   dnf copr enable nsoffer/ovirt-imageio-preview
-#   dnf install ovirt-imageio-client
+# Install ovirt-release package:
+#
+#   dnf install http://resources.ovirt.org/pub/yum-repo/ovirt-release-master.rpm
+#
+# Install required packages:
+#
+#   dnf install ovirt-imageio-client python3-ovirt-engine-sdk4
+#
+# Note: python3-ovirt-engine-sdk4 is not available yet for Fedora 31 and 32.
 #
 # To upload or download images, you need to start an image transfer. The
 # easiest way is using oVirt image_transfer.py example:
@@ -33,7 +41,7 @@
 #
 # To upload an image run:
 #
-#   qemu-img convert -n -f raw -O raw disk.img \
+#   qemu-img convert -n -f raw -O raw -W disk.img \
 #       nbd+unix:///\?socket=/tmp/nbd.sock
 #
 # Downloading image is not efficient with this version, since we don't report
