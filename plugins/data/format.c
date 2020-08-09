@@ -225,7 +225,7 @@ parse (int level,
         nbdkit_error ("strndup: %m");
         return -1;
       }
-      i += len;
+      i += flen;
 
       if (store_file (sa, filename, &offset) == -1)
         return -1;
