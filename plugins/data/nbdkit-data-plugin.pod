@@ -4,13 +4,13 @@ nbdkit-data-plugin - nbdkit plugin for serving data from the command line
 
 =head1 SYNOPSIS
 
- nbdkit data data="0 1 2 3 @0x1fe 0x55 0xaa"
+ nbdkit data [data=]'0 1 2 3 @0x1fe 0x55 0xaa'
              [size=SIZE] [allocator=sparse|...]
 
- nbdkit data base64="aGVsbG8gbmJka2l0IHVzZXI="
+ nbdkit data base64='aGVsbG8gbmJka2l0IHVzZXI='
              [size=SIZE] [allocator=sparse|...]
 
- nbdkit data raw="binary_data"
+ nbdkit data raw='binary_data'
              [size=SIZE] [allocator=sparse|...]
 
 =head1 DESCRIPTION
@@ -38,8 +38,8 @@ supported by nbdkit (S<2⁶³-1 bytes>).
 
 =head2 Create small disks filled with test patterns
 
- nbdkit data data=' ( 0x55 0xAA )*2048 '
- nbdkit data data=' ( "Hello" )*2000 ' size=8192
+ nbdkit data ' ( 0x55 0xAA )*2048 '
+ nbdkit data ' ( "Hello" )*2000 ' size=8192
 
 The first command creates a disk containing 4096 bytes filled with the
 repeating bytes 0x55 0xAA.  The second command repeats
@@ -49,10 +49,10 @@ See also L<nbdkit-pattern-plugin(3)>.
 
 =head2 Create a 1 MB disk with one empty MBR-formatted partition
 
- nbdkit data data="
+ nbdkit data '
    @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
    @0x1fe 85 170
-   " size=1048576
+   ' size=1M
 
 This example was created by running:
 
@@ -70,7 +70,7 @@ See also L<nbdkit-partitioning-plugin(1)>.
 
 =head2 Create a disk image with sector-aligned data
 
- nbdkit data data=' <file1 @^512 <file2 @^512 <file3 @^512 '
+ nbdkit data ' <file1 @^512 <file2 @^512 <file3 @^512 '
 
 Local binary files F<file1>, F<file2> and F<file3> are copied into the
 disk image.  Regardless of the size of these files, they will all be
@@ -103,10 +103,13 @@ supplied.
 
 =over 4
 
-=item B<data=>DATA
+=item [B<data=>]DATA
 
 Specify the disk data using a simple compact format.  See
 L</DATA FORMAT> below.
+
+C<data=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
 
 =item B<base64=>BASE64
 
@@ -163,7 +166,7 @@ offset where bytes are written using C<@offset>.
 
 For example:
 
- nbdkit data data="0 1 2 3 @0x1fe 0x55 0xaa"
+ nbdkit data '0 1 2 3 @0x1fe 0x55 0xaa'
 
 creates a 0x200 = 512 byte (1 sector) image containing the four bytes
 C<0 1 2 3> at the start, and the two bytes C<0x55 0xaa> at the end of
@@ -239,7 +242,7 @@ Repeat the enclosed pattern C<N> times.  The offset is incremented by
 the length of the enclosed pattern × N.  For example to create a
 repeating pattern of 0x55, 0xAA for 512 (2×256) bytes do:
 
- data="( 0x55 0xAA )*256"
+ '( 0x55 0xAA )*256'
 
 The C<( ... )> section recursively creates a new data parser so any of
 the above operators can appear inside, including nested C<(...)*N>.

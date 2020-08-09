@@ -53,11 +53,11 @@ start_nbdkit -P data-file.pid -U $sock \
        --filter=partition \
        data partition=1 \
        size=1M \
-       data="
+       '
    @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
    @0x1fe 85 170
    @0x200 <data-hello.txt
-   "
+   '
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '

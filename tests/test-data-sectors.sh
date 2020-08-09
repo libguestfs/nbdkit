@@ -54,7 +54,7 @@ truncate -s 513 sector3
 
 # Run nbdkit.
 start_nbdkit -P data-sectors.pid -U $sock \
-       data data='<sector1 @^512 <sector2 @^512 <sector3 @^512'
+       data '<sector1 @^512 <sector2 @^512 <sector3 @^512'
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '

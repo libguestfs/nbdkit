@@ -58,7 +58,7 @@ do_test ()
 {
     start_nbdkit -P "$4" -U "$sock" \
            --filter=truncate \
-           data data="$1" size="$2" \
+           data "$1" size="$2" \
            truncate="$3"
     # We use jq to normalize the output and convert it to plain text.
     nbdkit -U - nbd socket="$sock" \

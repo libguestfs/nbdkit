@@ -45,7 +45,7 @@ cleanup_fn rm -f $files
 
 # Run nbdkit.
 start_nbdkit -P data-string.pid -U $sock \
-       data data=' "hello" ( "\"" "\\" )*2 "\x01\x02\x03" "\n" '
+       data ' "hello" ( "\"" "\\" )*2 "\x01\x02\x03" "\n" '
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '

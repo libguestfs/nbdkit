@@ -53,7 +53,7 @@ do_test ()
     # We use jq to normalize the output and convert it to plain text.
     nbdkit -U - \
            --filter=truncate \
-           data data="$1" size="$2" \
+           data "$1" size="$2" \
            truncate="$3" \
            --run 'qemu-img map -f raw --output=json $nbd' |
         jq -c '.[] | {start:.start, length:.length, data:.data, zero:.zero}' \

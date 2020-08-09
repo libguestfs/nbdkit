@@ -45,7 +45,7 @@ cleanup_fn rm -f $files
 
 # Run nbdkit.
 start_nbdkit -P data-nest-malloc.pid -U $sock \
-       data data=' ( 0x55 0xAA )*4 ( @4 ( 0x21 )*4 )*4 ' \
+       data ' ( 0x55 0xAA )*4 ( @4 ( 0x21 )*4 )*4 ' \
        allocator=malloc
 
 nbdsh --connect "nbd+unix://?socket=$sock" \

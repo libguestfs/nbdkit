@@ -57,9 +57,9 @@ data="            1
      @0x100000000 9 "
 size=$((2**32 + 512))
 
-nbdkit -v -U - --filter=readahead data data="$data" size=$size \
+nbdkit -v -U - --filter=readahead data "$data" size=$size \
        --run 'qemu-img convert $nbd readahead-copy1.img'
-nbdkit -v -U -                    data data="$data" size=$size \
+nbdkit -v -U -                    data "$data" size=$size \
        --run 'qemu-img convert $nbd readahead-copy2.img'
 
 # Check the output.

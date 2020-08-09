@@ -57,7 +57,7 @@ main (int argc, char *argv[])
                           * man page creates a 1 MB disk with one
                           * empty MBR-formatted partition.
                           */
-                         "data=@0x1b8 0xf8 0x21 0xdc 0xeb 0*4 "
+                         "@0x1b8 0xf8 0x21 0xdc 0xeb 0*4 "
                          "2 0 0x83 0x20*2 0 1 0  0 0 0xff 0x7 "
                          "@0x1fe 0x55 0xaa",
                          "size=1M",

@@ -326,6 +326,7 @@ static struct nbdkit_plugin plugin = {
   .config            = data_config,
   .config_complete   = data_config_complete,
   .config_help       = data_config_help,
+  .magic_config_key  = "data",
   .dump_plugin       = data_dump_plugin,
   .get_ready         = data_get_ready,
   .open              = data_open,

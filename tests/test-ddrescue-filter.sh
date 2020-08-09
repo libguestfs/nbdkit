@@ -63,9 +63,7 @@ start_nbdkit -P ddrescue.pid -U $sock \
        --filter=ddrescue data \
        ddrescue-mapfile="ddrescue-test1.map"\
        size=1M \
-       data="
-   @0x000 <ddrescue.txt
-   "
+       '@0x000 <ddrescue.txt'
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
