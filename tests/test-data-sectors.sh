@@ -30,30 +30,38 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Test the data plugin with ( nesting ) construct.
+# Test an example from the manual.  Several files of different sizes
+# are included, but the final disk must have everything
+# sector-aligned.
 
 source ./functions.sh
 set -e
 set -x
 
 requires nbdsh --version
+requires truncate --version
 
 sock=`mktemp -u`
-files="data-nest.pid $sock"
+files="data-sectors.pid sector1 sector2 sector3 $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
+printf "1" > sector1
+printf "2" > sector2
+truncate -s 1024 sector2
+printf "3" > sector3
+truncate -s 513 sector3
+
 # Run nbdkit.
-start_nbdkit -P data-nest.pid -U $sock \
-       data data=' ( 0x55 0xAA )*4
-                   ( @4 ( 0x21 )*4 )*4
-                   ( "Hello" @^8 )*2'
+start_nbdkit -P data-sectors.pid -U $sock \
+       data data='<sector1 @^512 <sector2 @^512 <sector3 @^512'
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-print ("%d" % h.get_size())
-assert h.get_size() == 2*4 + 8*4 + 8*2
+assert h.get_size() == 512 + 1024 + 1024
 buf = h.pread (h.get_size(), 0)
 print ("%r" % buf)
-assert buf == b"\x55\xAA"*4 + b"\0\0\0\0!!!!"*4 + b"Hello\0\0\0Hello\0\0\0"
+assert buf[0] == 0x31
+assert buf[512] == 0x32
+assert buf[1536] == 0x33
 '

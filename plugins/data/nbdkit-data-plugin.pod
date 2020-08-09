@@ -70,11 +70,13 @@ See also L<nbdkit-partitioning-plugin(1)>.
 
 =head2 Create a disk image with sector-aligned data
 
- nbdkit data data=' <file1 @^512 <file2 @^512 <file3 '
+ nbdkit data data=' <file1 @^512 <file2 @^512 <file3 @^512 '
 
 Local binary files F<file1>, F<file2> and F<file3> are copied into the
 disk image.  Regardless of the size of these files, they will all be
-aligned to 512-byte sector boundaries.
+aligned to 512-byte sector boundaries.  Furthermore because of the
+final alignment operation (C<@^512>) the total size of the disk will
+also be rounded to a whole number of sectors.
 
 =head2 Create a 1 MB disk with some nonsense data at the beginning
 

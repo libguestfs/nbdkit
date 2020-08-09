@@ -255,6 +255,10 @@ parse (int level,
       default:
         goto parse_error;
       }
+
+      /* Moving the offset implicitly increases the size. */
+      if (*size < offset)
+        *size = offset;
       break;
 
     case '(': {               /* ( */
