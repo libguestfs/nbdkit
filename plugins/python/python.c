@@ -1035,7 +1035,8 @@ py_extents (void *handle, uint32_t count, uint64_t offset,
   struct handle *h = handle;
   PyObject *fn;
   PyObject *r;
-  Py_ssize_t i, size;
+  PyObject *iter, *t;
+  size_t size;
 
   if (callback_defined ("extents", &fn)) {
     PyErr_Clear ();
@@ -1045,29 +1046,25 @@ py_extents (void *handle, uint32_t count, uint64_t offset,
     if (check_python_failure ("extents") == -1)
       return -1;
 
-    /* We expect a list of extents to be returned.  Each extent is a
-     * tuple (offset, length, type).  The list must not be empty.
-     */
-    if (!PyList_Check (r)) {
-      nbdkit_error ("extents method did not return a list");
-      Py_DECREF (r);
-      return -1;
-    }
-    size = PyList_Size (r);
-    if (size < 1) {
-      nbdkit_error ("extents method cannot return an empty list");
+    iter = PyObject_GetIter (r);
+    if (iter == NULL) {
+      nbdkit_error ("extents method did not return "
+                    "something which is iterable");
       Py_DECREF (r);
       return -1;
     }
 
-    for (i = 0; i < size; ++i) {
-      PyObject *t, *py_offset, *py_length, *py_type;
+    size = 0;
+    while ((t = PyIter_Next (iter)) != NULL) {
+      PyObject *py_offset, *py_length, *py_type;
       uint64_t extent_offset, extent_length;
       uint32_t extent_type;
 
-      t = PyList_GetItem (r, i);
+      size++;
+
       if (!PyTuple_Check (t) || PyTuple_Size (t) != 3) {
-        nbdkit_error ("extents method did not return a list of 3-tuples");
+        nbdkit_error ("extents method did not return an iterable of 3-tuples");
+        Py_DECREF (iter);
         Py_DECREF (r);
         return -1;
       }
@@ -1078,16 +1075,26 @@ py_extents (void *handle, uint32_t count, uint64_t offset,
       extent_length = PyLong_AsUnsignedLongLong (py_length);
       extent_type = PyLong_AsUnsignedLong (py_type);
       if (check_python_failure ("PyLong") == -1) {
+        Py_DECREF (iter);
         Py_DECREF (r);
         return -1;
       }
       if (nbdkit_add_extent (extents,
                              extent_offset, extent_length, extent_type) == -1) {
+        Py_DECREF (iter);
         Py_DECREF (r);
         return -1;
       }
     }
 
+    if (size < 1) {
+      nbdkit_error ("extents method cannot return an empty list");
+      Py_DECREF (iter);
+      Py_DECREF (r);
+      return -1;
+    }
+
+    Py_DECREF (iter);
     Py_DECREF (r);
   }
   else {

@@ -377,7 +377,8 @@ optionally using C<nbdkit.set_error> first.
 (Optional)
 
  def extents(h, count, offset, flags):
-   # return a list of (offset, length, type) tuples:
+   # return an iterable object (eg. list) of
+   # (offset, length, type) tuples:
    return [ (off1, len1, type1), (off2, len2, type2), ... ]
 
 =back
