@@ -102,17 +102,6 @@ assert h.get_size() == 0
 EOF
 '
 
-# TODO when we add .list_extents, we should test a plugin advertising
-# a name near 4k in length. nbdkit -e no longer does this
-if false; then
-# The rest of this test uses the ‘qemu-nbd --list’ option added in qemu 4.0.
-if ! qemu-nbd --help | grep -sq -- --list; then
-    echo "$0: skipping because qemu-nbd does not support the --list option"
-    exit 77
-fi
-
-# Test response to NBD_OPT_LIST
-nbdkit -U - -e $name4k null --run 'qemu-nbd --list -k $unixsocket' || fail=1
-fi
+# See also test-eval-exports.sh for NBD_OPT_LIST with long name
 
 exit $fail
