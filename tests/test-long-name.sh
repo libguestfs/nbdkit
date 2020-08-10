@@ -38,10 +38,6 @@ fail=0
 
 # Test handling of NBD maximum string length of 4k.
 
-echo "$0: This test needs to be rewritten to use alternate method to"
-echo "send back the export name to the client."
-exit 77
-
 requires qemu-io --version
 requires qemu-nbd --version
 requires nbdsh -c 'exit(not h.supports_uri())'
