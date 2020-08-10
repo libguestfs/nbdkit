@@ -254,7 +254,7 @@ parse_exports (const char *script,
       }
       if (nbdkit_add_export (exports, name, desc) == -1)
         return -1;
-      n = p + 1;
+      n = p + !!*p;
     }
   }
   else if ((p = skip_prefix (s, "NAMES+DESCRIPTIONS\n")) != NULL) {
