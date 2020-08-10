@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # nbdkit
-# Copyright (C) 2019 Red Hat Inc.
+# Copyright (C) 2019-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -153,7 +153,19 @@ class Test (unittest.TestCase):
         self.connect ({"size": 512, "can_cache": "native"})
         assert self.h.can_cache()
 
-    # Not yet implemented: can_extents.
+    # In theory we could use a test like this, but nbdkit can
+    # always synthesize base:allocation block_status responses
+    # even if the plugin doesn't support them.
+    #
+    #def test_can_extents_true (self):
+    #    self.h.add_meta_context ("base:allocation")
+    #    self.connect ({"size": 512, "can_extents": True})
+    #    assert self.h.can_meta_context ("base:allocation")
+    #
+    #def test_can_extents_false (self):
+    #    self.h.add_meta_context ("base:allocation")
+    #    self.connect ({"size": 512, "can_extents": False})
+    #    assert not self.h.can_meta_context ("base:allocation")
 
     def test_pread (self):
         """Test pread."""
@@ -220,3 +232,60 @@ class Test (unittest.TestCase):
         """Test cache."""
         self.connect ({"size": 512, "can_cache": "native"})
         self.h.cache (512, 0)
+
+    # We don't have access to the magic constants defined in the
+    # nbdkit module, so redefine them here.
+    EXTENT_HOLE = 1
+    EXTENT_ZERO = 2
+
+    def test_extents_1 (self):
+        """Test extents."""
+
+        offset = None
+        entries = []
+
+        def f(meta_context, o, e, err):
+            nonlocal offset, entries
+            if meta_context != "base:allocation": return
+            offset = o
+            entries = e
+
+        self.h.add_meta_context ("base:allocation")
+        self.connect ({"size": 512,
+                       "can_extents": True,
+                       "extents":
+                       [ (0, 512, self.EXTENT_HOLE|self.EXTENT_ZERO) ]})
+
+        self.h.block_status (512, 0, f)
+        assert offset == 0
+        assert entries == [ 512, self.EXTENT_HOLE|self.EXTENT_ZERO ]
+
+    def test_extents_2 (self):
+        """Test extents."""
+
+        offset = None
+        entries = []
+
+        def f(meta_context, o, e, err):
+            nonlocal offset, entries
+            if meta_context != "base:allocation": return
+            offset = o
+            entries = e
+
+        self.h.add_meta_context ("base:allocation")
+        self.connect ({"size": 2048,
+                       "can_extents": True,
+                       "extents":
+                       [ (0, 512, self.EXTENT_HOLE|self.EXTENT_ZERO),
+                         (512, 512, 0),
+                         (1024, 1024, self.EXTENT_ZERO) ]})
+
+        self.h.block_status (2048, 0, f)
+        assert offset == 0
+        assert entries == [ 512, self.EXTENT_HOLE|self.EXTENT_ZERO,
+                            512, 0,
+                            1024, self.EXTENT_ZERO ]
+
+        self.h.block_status (1024, 1024, f)
+        assert offset == 1024
+        assert entries == [ 1024, self.EXTENT_ZERO ]

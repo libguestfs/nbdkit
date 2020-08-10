@@ -271,6 +271,13 @@ contents will be garbage collected.
    # return nbdkit.CACHE_NONE or nbdkit.CACHE_EMULATE
    # or nbdkit.CACHE_NATIVE
 
+=item C<can_extents>
+
+(Optional)
+
+ def can_extents(h):
+   # return a boolean
+
 =item C<pread>
 
 (Required)
@@ -365,6 +372,14 @@ indicated range.
 If the cache operation fails, your function should throw an exception,
 optionally using C<nbdkit.set_error> first.
 
+=item C<extents>
+
+(Optional)
+
+ def extents(h, count, offset, flags):
+   # return a list of (offset, length, type) tuples:
+   return [ (off1, len1, type1), (off2, len2, type2), ... ]
+
 =back
 
 =head2 Missing callbacks
@@ -382,9 +397,7 @@ C<version>,
 C<longname>,
 C<description>,
 C<config_help>,
-C<magic_config_key>,
-C<can_extents>,
-C<extents>.
+C<magic_config_key>.
 
 These are not yet supported.
 

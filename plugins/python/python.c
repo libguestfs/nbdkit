@@ -1020,6 +1020,88 @@ py_can_cache (void *handle)
     return NBDKIT_CACHE_NONE;
 }
 
+static int
+py_can_extents (void *handle)
+{
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
+  return boolean_callback (handle, "can_extents", "extents");
+}
+
+static int
+py_extents (void *handle, uint32_t count, uint64_t offset,
+            uint32_t flags, struct nbdkit_extents *extents)
+{
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
+  struct handle *h = handle;
+  PyObject *fn;
+  PyObject *r;
+  Py_ssize_t i, size;
+
+  if (callback_defined ("extents", &fn)) {
+    PyErr_Clear ();
+
+    r = PyObject_CallFunction (fn, "OiLI", h->py_h, count, offset, flags);
+    Py_DECREF (fn);
+    if (check_python_failure ("extents") == -1)
+      return -1;
+
+    /* We expect a list of extents to be returned.  Each extent is a
+     * tuple (offset, length, type).  The list must not be empty.
+     */
+    if (!PyList_Check (r)) {
+      nbdkit_error ("extents method did not return a list");
+      Py_DECREF (r);
+      return -1;
+    }
+    size = PyList_Size (r);
+    if (size < 1) {
+      nbdkit_error ("extents method cannot return an empty list");
+      Py_DECREF (r);
+      return -1;
+    }
+
+    for (i = 0; i < size; ++i) {
+      PyObject *t, *py_offset, *py_length, *py_type;
+      uint64_t extent_offset, extent_length;
+      uint32_t extent_type;
+
+      t = PyList_GetItem (r, i);
+      if (!PyTuple_Check (t) || PyTuple_Size (t) != 3) {
+        nbdkit_error ("extents method did not return a list of 3-tuples");
+        Py_DECREF (r);
+        return -1;
+      }
+      py_offset = PyTuple_GetItem (t, 0);
+      py_length = PyTuple_GetItem (t, 1);
+      py_type = PyTuple_GetItem (t, 2);
+      extent_offset = PyLong_AsUnsignedLongLong (py_offset);
+      extent_length = PyLong_AsUnsignedLongLong (py_length);
+      extent_type = PyLong_AsUnsignedLong (py_type);
+      if (check_python_failure ("PyLong") == -1) {
+        Py_DECREF (r);
+        return -1;
+      }
+      if (nbdkit_add_extent (extents,
+                             extent_offset, extent_length, extent_type) == -1) {
+        Py_DECREF (r);
+        return -1;
+      }
+    }
+
+    Py_DECREF (r);
+  }
+  else {
+    /* Do the same as the core server: synthesize a fully allocated
+     * extent covering the whole range.
+     */
+    if (nbdkit_add_extent (extents,
+                           offset, count, 0 /* allocated data */) == -1)
+      return -1;
+  }
+
+  return 0;
+}
+
 #define py_config_help \
   "script=<FILENAME>     (required) The Python plugin to run.\n" \
   "[other arguments may be used by the plugin that you load]"
@@ -1058,6 +1140,7 @@ static struct nbdkit_plugin plugin = {
   .can_fast_zero     = py_can_fast_zero,
   .can_fua           = py_can_fua,
   .can_cache         = py_can_cache,
+  .can_extents       = py_can_extents,
 
   .pread             = py_pread,
   .pwrite            = py_pwrite,
@@ -1065,6 +1148,7 @@ static struct nbdkit_plugin plugin = {
   .trim              = py_trim,
   .zero              = py_zero,
   .cache             = py_cache,
+  .extents           = py_extents,
 };
 
 NBDKIT_REGISTER_PLUGIN (plugin)
