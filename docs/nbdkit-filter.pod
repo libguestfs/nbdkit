@@ -201,7 +201,8 @@ methods.
  const char *name;
 
 This field (a string) is required, and B<must> contain only ASCII
-alphanumeric characters and be unique amongst all filters.
+alphanumeric characters or non-leading dashes, and be unique amongst
+all filters.
 
 =head2 C<.longname>
 

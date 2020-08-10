@@ -471,7 +471,8 @@ an indication of failure.  It has the following prototype:
  const char *name;
 
 This field (a string) is required, and B<must> contain only ASCII
-alphanumeric characters and be unique amongst all plugins.
+alphanumeric characters or non-leading dashes, and be unique amongst
+all filters.
 
 =head2 C<.version>
 

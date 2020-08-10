@@ -98,13 +98,20 @@ backend_load (struct backend *b, const char *name, void (*load) (void))
              program_name, b->filename, b->type);
     exit (EXIT_FAILURE);
   }
-  for (i = 0; i < len; ++i) {
+  if (! ascii_isalnum (*name)) {
+    fprintf (stderr,
+             "%s: %s: %s.name ('%s') field must begin with an "
+             "ASCII alphanumeric character\n",
+             program_name, b->filename, b->type, name);
+    exit (EXIT_FAILURE);
+  }
+  for (i = 1; i < len; ++i) {
     unsigned char c = name[i];
 
-    if (! ascii_isalnum (c)) {
+    if (! ascii_isalnum (c) && c != '-') {
       fprintf (stderr,
-               "%s: %s: %s.name ('%s') field "
-               "must contain only ASCII alphanumeric characters\n",
+               "%s: %s: %s.name ('%s') field must contain only "
+               "ASCII alphanumeric or dash characters\n",
                program_name, b->filename, b->type, name);
       exit (EXIT_FAILURE);
     }
