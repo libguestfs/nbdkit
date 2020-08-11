@@ -70,10 +70,10 @@ case $1 in
       echo insecure; exit 0
     fi
     echo $3 ;;
-  get_size) echo 6 ;;
+  get_size) echo "$2" | wc -c ;;
   pread) echo "$2" | dd skip=$4 count=$3 iflag=skip_bytes,count_bytes ;;
   can_write | can_trim) exit 0 ;;
-  *) exit 2;
+  *) exit 2 ;;
 esac
 EOF
 

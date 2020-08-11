@@ -23,12 +23,12 @@ server requires TLS authentication before it will serve useful data."
 
 When using this filter, it is recommended to place this filter first
 in the command line, to reduce the chance that any work done by
-C<.open> in later filters or the plugin can be exploited by plaintext
-connections as a denial of service attack to starve further
-authenticated connections.  Note that this plugin will fail to load if
-the plugin requests the C<SERIALIZE_CONNECTIONS> thread model, as a
-plaintext client holding its connection open indefinitely would be
-such a starvation.
+C<.open> in earlier filters can be exploited by plaintext connections
+as a denial of service attack to starve further authenticated
+connections.  Note that this filter will fail to load if the plugin
+requests the C<SERIALIZE_CONNECTIONS> thread model, as a plaintext
+client holding its connection open indefinitely would be such a
+starvation.
 
 =head1 PARAMETERS
 
