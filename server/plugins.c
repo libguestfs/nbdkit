@@ -297,8 +297,10 @@ plugin_open (struct backend *b, int readonly, const char *exportname,
 {
   GET_CONN;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  void *r;
 
   assert (p->plugin.open != NULL);
+  assert (conn->exportname == NULL);
 
   /* Save the exportname since the lifetime of the string passed in
    * here is likely to be brief.  In addition this provides a place
@@ -312,15 +314,18 @@ plugin_open (struct backend *b, int readonly, const char *exportname,
    * will still need to save the export name in the handle because of
    * the lifetime issue.
    */
+  conn->exportname = strdup (exportname);
   if (conn->exportname == NULL) {
-    conn->exportname = strdup (exportname);
-    if (conn->exportname == NULL) {
-      nbdkit_error ("strdup: %m");
-      return NULL;
-    }
+    nbdkit_error ("strdup: %m");
+    return NULL;
   }
 
-  return p->plugin.open (readonly);
+  r = p->plugin.open (readonly);
+  if (r == NULL) {
+    free (conn->exportname);
+    conn->exportname = NULL;
+  }
+  return r;
 }
 
 /* We don't expose .prepare and .finalize to plugins since they aren't
@@ -343,10 +348,13 @@ plugin_finalize (struct backend *b, void *handle)
 static void
 plugin_close (struct backend *b, void *handle)
 {
+  GET_CONN;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (handle && p->plugin.close)
     p->plugin.close (handle);
+  free (conn->exportname);
+  conn->exportname = NULL;
 }
 
 static int64_t

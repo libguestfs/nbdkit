@@ -53,12 +53,13 @@ nbdkit -U - -v eval \
     open='[ "$3" = "" ] || { echo EINVAL wrong export >&2; exit 1; }' \
     get_size='echo 0' --run 'nbdinfo --list --json "$uri"' > eval-exports.out
 cat eval-exports.out
-diff -u <(jq -c '[.exports[] | [."export-name", .description]]' \
-          eval-exports.out) <(printf %s\\n '[["",null]]')
+diff -u <(jq -c \
+          '[.exports[] | [."export-name", .description, ."export-size"]]' \
+          eval-exports.out) <(printf %s\\n '[["",null,0]]')
 
 # Start a long-running server with .list_exports set to varying contents
-start_nbdkit -P eval-exports.pid -U $sock eval get_size='echo 0' \
-    list_exports="cat '$PWD/eval-exports.list'"
+start_nbdkit -P eval-exports.pid -U $sock eval get_size='echo "$2"|wc -c' \
+    open='echo "$3"' list_exports="cat '$PWD/eval-exports.list'"
 
 # do_nbdkit EXPNAME EXPOUT
 do_nbdkit ()
@@ -72,7 +73,8 @@ do_nbdkit ()
     # Check what exports are listed
     nbdinfo --list --json nbd+unix://\?socket=$sock >eval-exports.out
     cat eval-exports.out
-    diff -u <(jq -c '[.exports[] | [."export-name", .description]]' \
+    diff -u <(jq -c \
+              '[.exports[] | [."export-name", .description, ."export-size"]]' \
               eval-exports.out) <(printf %s\\n "$2")
 }
 
@@ -90,33 +92,33 @@ done
 for fmt in '\n' 'NAMES\n\n' 'INTERLEAVED\n\n' 'INTERLEAVED\n\n\n' \
            'NAMES+DESCRIPTIONS\n\n' 'NAMES+DESCRIPTIONS\n\n\n'; do
     printf "$fmt" >eval-exports.list
-    do_nbdkit '' '[["",null]]'
+    do_nbdkit '' '[["",null,1]]'
 done
 
 # A non-default name
 for fmt in 'name\n' 'NAMES\nname\n'; do
     printf "$fmt" >eval-exports.list
-    do_nbdkit name '[["name",null]]'
+    do_nbdkit name '[["name",null,5]]'
 done
 
 # One export with a description
 for fmt in 'INTERLEAVED\nname\ndesc\n' 'NAMES+DESCRIPTIONS\nname\ndesc\n'; do
     printf "$fmt" >eval-exports.list
-    do_nbdkit name '[["name","desc"]]'
+    do_nbdkit name '[["name","desc",5]]'
 done
 
 # Multiple exports, with correct number of lines
-for fmt in 'INTERLEAVED\nname 1\ndesc 1\nname 2\ndesc 2\n' \
-           'NAMES+DESCRIPTIONS\nname 1\nname 2\ndesc 1\ndesc 2\n'; do
+for fmt in 'INTERLEAVED\nname 1\ndesc 1\nname two\ndesc 2\n' \
+           'NAMES+DESCRIPTIONS\nname 1\nname two\ndesc 1\ndesc 2\n'; do
     printf "$fmt" >eval-exports.list
-    do_nbdkit 'name 1' '[["name 1","desc 1"],["name 2","desc 2"]]'
+    do_nbdkit 'name 1' '[["name 1","desc 1",7],["name two","desc 2",9]]'
 done
 
 # Multiple exports, with final description line missing
-for fmt in 'INTERLEAVED\nname 1\ndesc 1\nname 2\n' \
-           'NAMES+DESCRIPTIONS\nname 1\nname 2\ndesc 1\n'; do
+for fmt in 'INTERLEAVED\nname 1\ndesc 1\nname two\n' \
+           'NAMES+DESCRIPTIONS\nname 1\nname two\ndesc 1\n'; do
     printf "$fmt" >eval-exports.list
-    do_nbdkit 'name 1' '[["name 1","desc 1"],["name 2",null]]'
+    do_nbdkit 'name 1' '[["name 1","desc 1",7],["name two",null,9]]'
 done
 
 # Largest possible name and description
@@ -124,7 +126,7 @@ long=$(printf %04096d 1)
 echo NAMES+DESCRIPTIONS >eval-exports.list
 echo $long >>eval-exports.list
 echo $long >>eval-exports.list
-do_nbdkit $long "[[\"$long\",\"$long\"]]"
+do_nbdkit $long "[[\"$long\",\"$long\",4097]]"
 
 # Invalid name (too long) causes an error response to NBD_OPT_LIST
 nbdkit -U - -v eval list_exports="echo 2$long" \
