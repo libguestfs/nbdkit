@@ -13,7 +13,8 @@ nbdkit-tmpdisk-plugin - create a fresh temporary filesystem for each client
 This L<nbdkit(1)> plugin is used for creating temporary filesystems
 for thin clients.  Each time a client connects it will see a fresh,
 empty filesystem for its exclusive use.  B<The filesystem is deleted>
-when the client disconnects.
+when the client disconnects.  If you want a persistent filesystem, use
+L<nbdkit-ondemand-plugin(1)> instead.
 
 When a new client connects, a blank, sparse file of the required size
 is created in C<$TMPDIR> (or F</var/tmp>).  L<mkfs(8)> is then run on

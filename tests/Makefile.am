@@ -757,6 +757,18 @@ test_null_SOURCES = test-null.c
 test_null_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_null_LDADD = $(LIBNBD_LIBS)
 
+# ondemand plugin test.
+TESTS += \
+	test-ondemand.sh \
+	test-ondemand-list.sh \
+	test-ondemand-locking.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-ondemand.sh \
+	test-ondemand-list.sh \
+	test-ondemand-locking.sh \
+	$(NULL)
+
 # partitioning plugin test.
 TESTS += \
 	test-partitioning1.sh \

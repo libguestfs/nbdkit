@@ -1,0 +1,190 @@
+=head1 NAME
+
+nbdkit-ondemand-plugin - create filesystems on demand
+
+=head1 SYNOPSIS
+
+ nbdkit ondemand dir=EXPORTSDIR [size=]SIZE
+                 { [type=ext4|xfs|vfat|...] [label=LABEL]
+                   | command=COMMAND [VAR=VALUE ...] }
+
+=head1 DESCRIPTION
+
+This is a plugin for L<nbdkit(1)> which creates persistent filesystems
+on demand.  Clients may simply connect to the server, requesting a
+particular export name, and a new filesystem is created if it does not
+exist already.  Clients can also disconnect and reconnect with the
+same export name and the same filesystem will still be available.
+Filesystems are stored in a directory on the server, so they also
+persist over nbdkit and server restarts.
+
+Each filesystem is locked while it is in use by a client, preventing
+two clients from accessing the same filesystem (which would cause
+corruption).
+
+Similar plugins include L<nbdkit-file-plugin(1)> which can serve a
+predefined set of exports (clients cannot create more),
+L<nbdkit-tmpdisk-plugin(1)> which creates a fresh temporary filesystem
+for each client, and L<nbdkit-linuxdisk-plugin(1)> which exports a
+single filesystem from a local directory on the server.
+
+When a new export name is requested by a client, a sparse file of the
+same name is created in C<dir=EXPORTSDIR> on the server.  The file
+will be formatted with L<mkfs(8)>.  The size of the file is currently
+fixed by the C<size=SIZE> parameter, but we intend to make this
+client-configurable in future.  The filesystem type and label may also
+be specified, otherwise C<ext4> and no label is used.
+
+Export names must be E<le> C<NAME_MAX> (usually 255) bytes in length
+and must not contain certain characters including C<.>, C</> and C<:>.
+There may be other limitations added in future.  Client requests which
+do not obey these restrictions are rejected.  As a special case,
+export name C<""> is mapped to the file name F<default>.
+
+=head2 Security considerations
+
+You should B<only> use this in an environment where you trust all your
+clients, since clients can use this plugin to consume arbitrary
+amounts of disk space by creating unlimited exports.  It is therefore
+best to take steps to limit where clients can connect from using
+L<nbdkit-ip-filter(1)>, firewalls, or TLS client certificates.
+
+=head2 The command parameter
+
+Instead of running mkfs you can run an arbitrary command (a shell
+script fragment) to create the disk.
+
+The other parameters to the plugin are turned into shell variables
+passed to the command.  For example C<type> becomes the shell variable
+C<$type>, etc.  Any parameters you want can be passed to the plugin
+and will be turned into shell variables (not only C<type> and
+C<label>) making this a very flexible method to create filesystems and
+disks of all kinds.
+
+Two special variables are also passed to the shell script fragment:
+
+=over 4
+
+=item C<$disk>
+
+The absolute path of the disk file.  This is partially controlled by
+the client so you should quote it carefully.  This file is not
+pre-created, the command must create it for example using:
+
+ truncate -s $size "$disk"
+
+=item C<$size>
+
+The virtual size in bytes.  This is the C<size> parameter, converted
+to bytes.  Note the final size served to the client is whatever disk
+size C<command> creates.
+
+=back
+
+=head1 EXAMPLE
+
+Run the server like this:
+
+ mkdir /var/tmp/exports
+ nbdkit ondemand dir=/var/tmp/exports 1G
+
+Clients can connect and create 1G ext4 filesystems on demand using
+commands such as these (note the different export names):
+
+ nbd-client -b 512 server /dev/nbd0 -N export1
+ mount /dev/nbd0 /mnt
+
+ guestfish --format=raw -a nbd://localhost/export2 -m /dev/sda
+
+ qemu-img info nbd:localhost:10809:exportname=export2
+
+On the server you would see two filesystems created:
+
+ $ ls -l /var/tmp/exports
+ -rw-rw-r--. 1 rjones rjones 1073741824 Aug 13 21:40 export1
+ -rw-rw-r--. 1 rjones rjones 1073741824 Aug 13 21:40 export2
+
+The plugin does not clean these up.  If they are no longer needed then
+the server admin should delete them (or use a tmp cleaner).
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<command='>COMMANDB<'>
+
+Instead of running L<mkfs(8)> to create the initial filesystem, run
+C<COMMAND> (a shell script fragment which usually must be quoted to
+protect it from the shell).  See L</The command parameter> and
+L</EXAMPLES> sections above.
+
+=item B<dir=>EXPORTSDIR
+
+The directory where filesystems are saved.  When first using this
+plugin you should point this to an empty directory.  When clients
+connect, filesystems are created here.
+
+This parameter is required.
+
+=item B<label=>LABEL
+
+Select the filesystem label.  The default is not set.
+
+=item [B<size=>]SIZE
+
+Specify the virtual size of all of the filesystems.
+
+If using C<command>, this is only a suggested size.  The actual size
+of the resulting disk will be the size of the disk created by
+C<command>.
+
+This parameter is required.
+
+C<size=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
+
+=item B<type=>FS
+
+Select the filesystem type.  The default is C<ext4>.  Most
+non-networked, non-cluster filesystem types supported by the
+L<mkfs(8)> command can be used here.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-ondemand-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-ondemand-plugin> first appeared in nbdkit 1.22.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-plugin(3)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-ip-filter(1)>,
+L<nbdkit-limit-filter(1)>,
+L<nbdkit-linuxdisk-plugin(1)>,
+L<nbdkit-memory-plugin(1)>,
+L<nbdkit-tmpdisk-plugin(1)>,
+L<nbdkit-tls(1)>,
+L<mkfs(8)>,
+L<mke2fs(8)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018-2020 Red Hat Inc.

@@ -154,6 +154,13 @@ nbdkit-torrent-plugin:
 * The C++ could be a lot more natural.  At the moment it's a kind of
   “C with C++ extensions”.
 
+nbdkit-ondemand-plugin:
+
+* Implement more callbacks, eg. .zero
+
+* Allow client to select size up to a limit, eg. by sending export
+  names like ‘export:4G’.
+
 Suggestions for language plugins
 --------------------------------
 

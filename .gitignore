@@ -77,6 +77,7 @@ plugins/*/*.3
 /plugins/golang/examples/*/nbdkit-*-plugin.h
 /plugins/golang/examples/*/nbdkit-*-plugin.so
 /plugins/ocaml/nbdkit-ocamlexample-plugin.so
+/plugins/ondemand/default-command.c
 /plugins/rust/Cargo.lock
 /plugins/rust/target
 /plugins/tmpdisk/default-command.c
