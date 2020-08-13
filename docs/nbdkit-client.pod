@@ -1,0 +1,88 @@
+=head1 NAME
+
+nbdkit-service - how to mount NBD filesystems on a client machine
+
+=head1 DESCRIPTION
+
+For NBD exports that contain filesystems there are several approaches
+to mounting them on a client machine.
+
+To ensure the nbd kernel module is loaded you may need to do:
+
+ # echo nbd > /etc/modules-load.d/nbd.conf
+
+This will not take effect until you reboot, so also do:
+
+ # modprobe nbd
+
+=head2 Easy mounting at boot time
+
+For simple setups the following method is the easiest way to get an
+NBD filesystem to mount at boot.  Create or edit F</etc/rc.local> or
+F</etc/rc.d/rc.local>:
+
+ #!/bin/sh -
+ nm-online
+ modprobe nbd
+ nbd-client server /dev/nbd0
+ mount /dev/nbd0 /mnt
+
+=head2 Mounting using systemd mount points
+
+You can use systemd mount points to mount NBD filesystems at boot
+and/or on demand.
+
+Set up an L<nbdtab(5)> mapping.  If F</etc/nbdtab> doesn't exist, then
+create it first.  Add this line:
+
+ nbd0 server / bs=512,persist
+
+As a workaround for
+L<https://github.com/NetworkBlockDevice/nbd/issues/91> you must
+currently modify the F<nbd@.service> file:
+
+ # cp /usr/lib/systemd/system/nbd@.service /etc/systemd/system/
+ # vi /etc/systemd/system/nbd@.service
+
+and edit or create these settings in the C<[Service]> section:
+
+ [Service]
+ Type=oneshot
+ RemainAfterExit=yes
+ ExecStart=/usr/sbin/nbd-client %i
+ ExecStop=/usr/sbin/nbd-client -d /dev/%i
+
+Finally create a systemd mount file called
+F</etc/systemd/system/mnt.mount>:
+
+ [Unit]
+ Requires=nbd@nbd0.service
+ [Mount]
+ What=/dev/nbd0
+ Where=/mnt
+ Type=ext4
+
+You can either reboot now or do:
+
+ # systemctl start mnt.mount
+
+Other systemd services which need this mount point can depend on this
+mount unit.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-loop(1)>,
+L<nbdkit-service(1)>,
+L<nbd-client(8)>,
+L<nbdtab(5)>,
+L<systemd(1)>,
+L<systemd.mount(5)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2020 Red Hat Inc.

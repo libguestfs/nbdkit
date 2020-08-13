@@ -137,6 +137,7 @@ You can then try running tests such as:
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
+L<nbdkit-client(1)>,
 L<nbdkit-plugin(3)>,
 L<loop(4)>,
 L<losetup(8)>,

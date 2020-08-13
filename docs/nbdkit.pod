@@ -628,6 +628,8 @@ L<nbdkit-service(1)/SOCKET ACTIVATION>.
 L<nbdkit-captive(1)> — Run nbdkit under another process and have it
 reliably cleaned up.
 
+L<nbdkit-client(1)> — How to mount NBD filesystems on a client machine.
+
 L<nbdkit-loop(1)> — Use nbdkit with the Linux kernel client to create
 loop devices and loop mounts.
 

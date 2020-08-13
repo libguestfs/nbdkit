@@ -77,15 +77,9 @@ clients.  On the server you would run (see L<nbdkit-service(1)>):
 
  nbdkit tmpdisk 16G
 
-and each thin client would have a file F</etc/rc.d/rc.local>
-containing:
-
- nm-online
- modprobe nbd
- nbd-client server /dev/nbd0
- mount /dev/nbd0 /var/scratch
-
-Clients would see a fresh, empty C</var/scratch> directory after boot.
+To set up each thin client follow the instructions in
+L<nbdkit-client(1)>.  Clients will see a fresh, empty, mounted
+directory after boot.
 
 =head2 Overriding mkfs options
 
