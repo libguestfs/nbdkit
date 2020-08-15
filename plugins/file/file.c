@@ -220,6 +220,8 @@ file_config_complete (void)
 #define file_config_help \
   "[file=]<FILENAME>     The filename to serve.\n" \
   "directory=<DIRNAME>   A directory containing files to serve.\n" \
+  "cache=<MODE>          Set use of caching (default, none).\n" \
+  "fadise=<LEVEL>        Set fadvise hint (normal, random, sequential).\n" \
 
 /* Print some extra information about how the plugin was compiled. */
 static void
