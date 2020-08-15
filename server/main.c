@@ -495,9 +495,13 @@ main (int argc, char *argv[])
    */
   umask (0022);
 
-  /* If we will or might use syslog. */
+  /* If we will or might use syslog.  This is an optimization so
+   * don't do it unless we have the openlog function.
+   */
+#ifdef HAVE_OPENLOG
   if (log_to == LOG_TO_SYSLOG || log_to == LOG_TO_DEFAULT)
     openlog (program_name, LOG_PID, 0);
+#endif
 
   /* Initialize TLS. */
   crypto_init (tls_set_on_cli);

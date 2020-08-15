@@ -321,6 +321,7 @@ AC_CHECK_FUNCS([\
 	get_current_dir_name \
 	mkostemp \
 	mlockall \
+	openlog \
 	pipe2 \
 	ppoll \
 	posix_fadvise])
