@@ -99,7 +99,7 @@ file_unload (void)
 }
 
 /* Called for each key=value passed on the command line.  This plugin
- * only accepts file=<filename> and directory=<dirname>, where exactly
+ * only accepts file=<filename> and dir=<dirname>, where exactly
  * one is required.
  */
 static int
@@ -185,12 +185,12 @@ file_config_complete (void)
 
   if (!filename && !directory) {
     nbdkit_error ("you must supply either [file=]<FILENAME> or "
-                  "directory=<DIRNAME> parameter after the plugin name "
+                  "dir=<DIRNAME> parameter after the plugin name "
                   "on the command line");
     return -1;
   }
   if (filename && directory) {
-    nbdkit_error ("file= and directory= cannot be used at the same time");
+    nbdkit_error ("file= and dir= cannot be used at the same time");
     return -1;
   }
 
@@ -201,7 +201,7 @@ file_config_complete (void)
   if (filename) {
     r = stat (filename, &sb);
     if (r == 0 && S_ISDIR (sb.st_mode)) {
-      nbdkit_error ("use directory= to serve files within %s", filename);
+      nbdkit_error ("use dir= to serve files within %s", filename);
       return -1;
     }
     if (r == -1 || !(S_ISBLK (sb.st_mode) || S_ISREG (sb.st_mode))) {
@@ -219,7 +219,7 @@ file_config_complete (void)
 
 #define file_config_help \
   "[file=]<FILENAME>     The filename to serve.\n" \
-  "directory=<DIRNAME>   A directory containing files to serve.\n" \
+  "dir=<DIRNAME>         A directory containing files to serve.\n" \
   "cache=<MODE>          Set use of caching (default, none).\n" \
   "fadise=<LEVEL>        Set fadvise hint (normal, random, sequential).\n" \
 
