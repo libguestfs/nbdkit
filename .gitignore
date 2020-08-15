@@ -52,6 +52,7 @@ plugins/*/*.3
 /common/replacements/win32/nbdkit-cat.rc
 /common/utils/test-quotes
 /common/utils/test-vector
+/common/utils/windows-errors.c
 /compile
 /config.cache
 /config.guess
@@ -86,8 +87,10 @@ plugins/*/*.3
 /plugins/rust/target
 /plugins/tmpdisk/default-command.c
 /podwrapper.pl
+/server/libnbdkit.a
 /server/local/nbdkit.pc
 /server/nbdkit
+/server/nbdkit.def
 /server/nbdkit.pc
 /server/synopsis.c
 /server/test-public

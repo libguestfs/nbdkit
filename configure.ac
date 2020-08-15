@@ -45,7 +45,7 @@ AC_USE_SYSTEM_EXTENSIONS
 dnl NB: Do not [quote] this parameter.
 AM_INIT_AUTOMAKE(foreign)
 AC_PROG_LIBTOOL
-LT_INIT
+LT_INIT([win32-dll])
 
 dnl List of plugins and filters.
 lang_plugins="\
@@ -313,11 +313,21 @@ AC_CHECK_HEADERS([\
 	alloca.h \
 	byteswap.h \
 	endian.h \
+	grp.h \
+	netdb.h \
+	netinet/in.h \
+	netinet/tcp.h \
+	pwd.h \
+	termios.h \
 	stdatomic.h \
+	syslog.h \
 	sys/endian.h \
 	sys/mman.h \
 	sys/prctl.h \
-	sys/procctl.h])
+	sys/procctl.h \
+	sys/socket.h \
+	sys/un.h \
+	sys/wait.h])
 
 AC_CHECK_HEADERS([linux/vm_sockets.h], [], [], [#include <sys/socket.h>])
 
@@ -332,6 +342,7 @@ AC_CHECK_FUNCS([\
 	mlockall \
 	munlock \
 	open_memstream \
+	pipe \
 	pipe2 \
 	ppoll \
 	posix_fadvise])
@@ -472,6 +483,7 @@ AC_MSG_CHECKING([if the target is Windows])
 AS_CASE([$host_os],
     [mingw*|msys*], [
         is_windows=yes
+        LIBS="$LIBS -lmsvcrt -lkernel32 -luser32"
         NO_UNDEFINED_ON_WINDOWS="-no-undefined"
     ],
     [is_windows=no]
@@ -480,12 +492,20 @@ AC_MSG_RESULT([$is_windows])
 AC_SUBST([NO_UNDEFINED_ON_WINDOWS])
 AM_CONDITIONAL([IS_WINDOWS],[test "x$is_windows" = "xyes"])
 
-dnl For Windows, look for the mc/windmc utility.
-dnl XXX Do we need to check for mc.exe as well?
 AS_IF([test "x$is_windows" = "xyes"],[
+    dnl For Windows, look for the mc/windmc utility.
+    dnl XXX Do we need to check for mc.exe as well?
     AC_CHECK_TOOLS([MC],[windmc mc],[no])
     AS_IF([test "x$MC" = "xno"],
           [AC_MSG_ERROR([mc/windmc utility must be available when compiling for Windows])])
+
+    dnl On Windows look for dlltool.
+    AC_CHECK_TOOLS([DLLTOOL],[dlltool],[no])
+    AS_IF([test "x$DLLTOOL" = "xno"],
+          [AC_MSG_ERROR([dlltool utility must be available when compiling for Windows])])
+
+    dnl On Windows we require winsock2.
+    AC_CHECK_LIB([ws2_32], [socket])
 ])
 
 AC_SEARCH_LIBS([getaddrinfo], [network socket])

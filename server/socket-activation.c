@@ -42,6 +42,8 @@
 
 #include "internal.h"
 
+#ifndef WIN32
+
 /* Handle socket activation.  This is controlled through special
  * environment variables inherited by nbdkit.  Returns 0 if no socket
  * activation.  Otherwise returns the number of FDs.  See also
@@ -105,3 +107,13 @@ get_socket_activation (void)
 
   return nr_fds;
 }
+
+#else /* WIN32 */
+
+unsigned int
+get_socket_activation (void)
+{
+  return 0;
+}
+
+#endif /* WIN32 */

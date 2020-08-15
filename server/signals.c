@@ -40,6 +40,8 @@
 
 #include "internal.h"
 
+#ifndef WIN32
+
 /* Set up signal handlers. */
 void
 set_up_signals (void)
@@ -59,3 +61,14 @@ set_up_signals (void)
   sa.sa_handler = SIG_IGN;
   sigaction (SIGPIPE, &sa, NULL);
 }
+
+#else /* WIN32 */
+
+void
+set_up_signals (void)
+{
+  signal (SIGINT, handle_quit);
+  signal (SIGTERM, handle_quit);
+}
+
+#endif /* WIN32 */

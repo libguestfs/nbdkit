@@ -36,8 +36,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdarg.h>
-#include <sys/socket.h>
 #include <pthread.h>
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 
 #define NBDKIT_API_VERSION 2
 #define NBDKIT_INTERNAL
@@ -47,6 +50,7 @@
 #include "nbd-protocol.h"
 #include "unix-path-max.h"
 #include "vector.h"
+#include "windows-compat.h"
 
 /* Define unlikely macro, but only for GCC.  These are used to move
  * debug and error handling code out of hot paths.
@@ -147,7 +151,11 @@ extern struct backend *top;
 
 /* quit.c */
 extern volatile int quit;
+#ifndef WIN32
 extern int quit_fd;
+#else
+extern HANDLE quit_fd;
+#endif
 extern void set_up_quit_pipe (void);
 extern void close_quit_pipe (void);
 extern void handle_quit (int sig);

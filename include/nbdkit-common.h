@@ -40,7 +40,13 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <errno.h>
+
+#if !defined(_WIN32) && !defined(__MINGW32__) && \
+    !defined(__CYGWIN__) && !defined(_MSC_VER)
 #include <sys/socket.h>
+#else
+#include <ws2tcpip.h>
+#endif
 
 #include <nbdkit-version.h>
 
@@ -76,7 +82,12 @@ extern "C" {
 #define NBDKIT_EXTENT_HOLE    (1<<0) /* Same as NBD_STATE_HOLE */
 #define NBDKIT_EXTENT_ZERO    (1<<1) /* Same as NBD_STATE_ZERO */
 
+#ifndef WIN32
 #define NBDKIT_EXTERN_DECL(ret, fn, args) extern ret fn args
+#else
+#define NBDKIT_EXTERN_DECL(ret, fn, args) \
+  extern __declspec(dllexport) ret fn args
+#endif
 
 NBDKIT_EXTERN_DECL (void, nbdkit_error,
                     (const char *msg, ...) ATTRIBUTE_FORMAT_PRINTF (1, 2));

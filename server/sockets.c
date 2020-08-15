@@ -41,11 +41,26 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
+#endif
+
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
+#ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
+#endif
+
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 
 #ifdef HAVE_LINUX_VM_SOCKETS_H
 #include <linux/vm_sockets.h>
@@ -93,6 +108,8 @@ clear_selinux_label (void)
   }
 #endif
 }
+
+#ifndef WIN32
 
 void
 bind_unix_socket (sockets *socks)
@@ -148,6 +165,16 @@ bind_unix_socket (sockets *socks)
 
   debug ("bound to unix socket %s", unixsocket);
 }
+
+#else /* WIN32 */
+
+void
+bind_unix_socket (sockets *socks)
+{
+  NOT_IMPLEMENTED_ON_WINDOWS ("-U");
+}
+
+#endif /* WIN32 */
 
 void
 bind_tcpip_socket (sockets *socks)
@@ -207,7 +234,7 @@ bind_tcpip_socket (sockets *socks)
     if (bind (sock, a->ai_addr, a->ai_addrlen) == -1) {
       if (errno == EADDRINUSE) {
         addr_in_use = true;
-        close (sock);
+        closesocket (sock);
         continue;
       }
       perror ("bind");
@@ -402,7 +429,7 @@ accept_connection (int listen_sock)
   pthread_attr_destroy (&attrs);
   if (unlikely (err != 0)) {
     fprintf (stderr, "%s: pthread_create: %s\n", program_name, strerror (err));
-    close (thread_data->sock);
+    closesocket (thread_data->sock);
     free (thread_data);
     return;
   }
@@ -411,6 +438,8 @@ accept_connection (int listen_sock)
    * closing the socket and freeing thread_data.
    */
 }
+
+#ifndef WIN32
 
 /* Check the list of sockets plus quit_fd until a POLLIN event occurs
  * on any of them.
@@ -465,6 +494,52 @@ check_sockets_and_quit_fd (const sockets *socks)
   }
 }
 
+#else /* WIN32 */
+
+static void
+check_sockets_and_quit_fd (const sockets *socks)
+{
+  const size_t nr_socks = socks->size;
+  size_t i;
+  HANDLE h, handles[nr_socks+1];
+  DWORD r;
+
+  for (i = 0; i < nr_socks; ++i) {
+    h = WSACreateEvent ();
+    WSAEventSelect (_get_osfhandle (socks->ptr[i]), h,
+                    FD_ACCEPT|FD_READ|FD_CLOSE);
+    handles[i] = h;
+  }
+  handles[nr_socks] = quit_fd;
+
+  r = WaitForMultipleObjectsEx ((DWORD) (nr_socks+1), handles,
+                                FALSE, INFINITE, TRUE);
+  debug ("WaitForMultipleObjectsEx returned %d", (int) r);
+  if (r == WAIT_FAILED) {
+    fprintf (stderr, "%s: WaitForMultipleObjectsEx: error %lu\n",
+             program_name, GetLastError ());
+    exit (EXIT_FAILURE);
+  }
+
+  for (i = 0; i < nr_socks; ++i) {
+    WSAEventSelect (_get_osfhandle (socks->ptr[i]), NULL, 0);
+    WSACloseEvent (handles[i]);
+  }
+
+  if (r == WAIT_OBJECT_0 + nr_socks) /* quit_fd signalled. */
+    return;
+
+  if (r >= WAIT_OBJECT_0 && r < WAIT_OBJECT_0 + nr_socks) {
+    i = r - WAIT_OBJECT_0;
+    accept_connection (socks->ptr[i]);
+    return;
+  }
+
+  debug ("WaitForMultipleObjectsEx: unexpected return value: %lu\n", r);
+}
+
+#endif /* WIN32 */
+
 void
 accept_incoming_connections (const sockets *socks)
 {
@@ -488,6 +563,6 @@ accept_incoming_connections (const sockets *socks)
   pthread_mutex_unlock (&count_mutex);
 
   for (i = 0; i < socks->size; ++i)
-    close (socks->ptr[i]);
+    closesocket (socks->ptr[i]);
   free (socks->ptr);
 }

@@ -39,7 +39,10 @@
 #include <inttypes.h>
 #include <assert.h>
 #include <errno.h>
+
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 
 #include "internal.h"
 #include "minmax.h"

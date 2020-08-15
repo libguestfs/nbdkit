@@ -35,4 +35,4 @@ NULL =
 plugindir = $(libdir)/nbdkit/plugins
 filterdir = $(libdir)/nbdkit/filters
 
-CLEANFILES = *~ *.cmi *.cmx *.cmxa *.so
+CLEANFILES = *~ *.cmi *.cmx *.cmxa *.so *.dll

@@ -38,13 +38,18 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <signal.h>
 #include <assert.h>
+
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 
 #include "utils.h"
 
 #include "internal.h"
+
+#ifndef WIN32
 
 /* Handle the --run option.  If run is NULL, does nothing.  If run is
  * not NULL then run nbdkit as a captive subprocess of the command.
@@ -208,3 +213,16 @@ run_command (void)
 
   debug ("forked into background (new pid = %d)", getpid ());
 }
+
+#else /* WIN32 */
+
+void
+run_command (void)
+{
+  if (!run)
+    return;
+
+  NOT_IMPLEMENTED_ON_WINDOWS ("--run");
+}
+
+#endif /* WIN32 */

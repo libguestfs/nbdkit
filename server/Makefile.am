@@ -115,6 +115,31 @@ nbdkit_LDFLAGS += -Wl,--version-script=$(srcdir)/nbdkit.syms
 endif
 endif
 
+if IS_WINDOWS
+# On Windows, generate an import library so that plugins can link
+# against the executable.
+# https://stackoverflow.com/a/18147774
+# https://sourceforge.net/p/mingw/mailman/mingw-users/thread/43694A03.2050503%40cox.net/
+# https://stackoverflow.com/questions/20007973/how-do-i-generate-an-import-lib-for-an-exe-using-automake-autoconf-libtool/20363801#20363801
+
+lib_LIBRARIES = libnbdkit.a
+
+libnbdkit.a: nbdkit$(EXEEXT) nbdkit.def
+	$(LIBTOOL) --mode=execute \
+	    $(DLLTOOL) -v $< -D nbdkit.exe -d nbdkit.def -l $@
+
+nbdkit.def: nbdkit.syms
+	rm -f $@ $@-t
+	echo '; Generated from $<' > $@-t
+	echo 'EXPORTS' >> $@-t
+	$(SED) -n -e 's/.*\(nbdkit_[a-z0-9_]*\);.*/\t\1/p' < $< >> $@-t
+	mv $@-t $@
+	chmod 0444 $@
+
+# Annoyingly this is required for make dist.
+libnbdkit_a_SOURCES =
+endif
+
 # synopsis.c is generated from docs/synopsis.txt where it is also
 # used to generate the man page.  It is included in main.c.
 

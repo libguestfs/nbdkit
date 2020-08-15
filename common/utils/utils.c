@@ -36,11 +36,19 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/socket.h>
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 
 #include <nbdkit-plugin.h>
+
+#ifndef WIN32
 
 /* Convert exit status to nbd_error.  If the exit status was nonzero
  * or another failure then -1 is returned.
@@ -66,6 +74,10 @@ exit_status_to_nbd_error (int status, const char *cmd)
 
   return 0;
 }
+
+#endif /* !WIN32 */
+
+#ifndef WIN32
 
 /* Set the FD_CLOEXEC flag on the given fd, if it is non-negative.
  * On failure, close fd and return -1; on success, return fd.
@@ -107,6 +119,18 @@ set_cloexec (int fd)
 #endif
 }
 
+#else /* WIN32 */
+
+int
+set_cloexec (int fd)
+{
+  return fd;
+}
+
+#endif /* WIN32 */
+
+#ifndef WIN32
+
 /* Set the O_NONBLOCK flag on the given fd, if it is non-negative.
  * On failure, close fd and return -1; on success, return fd.
  */
@@ -129,3 +153,13 @@ set_nonblock (int fd)
   }
   return fd;
 }
+
+#else /* WIN32 */
+
+int
+set_nonblock (int fd)
+{
+  return fd;
+}
+
+#endif /* WIN32 */

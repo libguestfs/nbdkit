@@ -39,9 +39,12 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
 #include <fcntl.h>
 #include <assert.h>
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 
 #include "internal.h"
 #include "utils.h"
@@ -269,6 +272,7 @@ new_connection (int sockin, int sockout, int nworkers)
       goto error2;
     }
 #else
+#ifdef HAVE_PIPE
     /* If we were fully parallel, then this function could be
      * accepting connections in one thread while another thread could
      * be in a plugin trying to fork.  But plugins.c forced
@@ -297,16 +301,23 @@ new_connection (int sockin, int sockout, int nworkers)
       goto error2;
     }
     unlock_request ();
+#else /* !HAVE_PIPE2 && !HAVE_PIPE */
+    /* Windows has neither pipe2 nor pipe. XXX */
+#endif
 #endif
   }
 
   conn->sockin = sockin;
   conn->sockout = sockout;
   conn->recv = raw_recv;
+#ifndef WIN32
   if (getsockopt (sockout, SOL_SOCKET, SO_TYPE, &opt, &optlen) == 0)
     conn->send = raw_send_socket;
   else
     conn->send = raw_send_other;
+#else
+  conn->send = raw_send_socket;
+#endif
   conn->close = raw_close;
 
   threadlocal_set_conn (conn);
@@ -440,7 +451,16 @@ raw_recv (void *vbuf, size_t len)
   bool first_read = true;
 
   while (len > 0) {
+    /* On Unix we want to use read(2) here because that allows us to
+     * read from non-sockets (think: nbdkit -s).  In particular this
+     * makes fuzzing possible.  However this is not possible on
+     * Windows where we must use recv.
+     */
+#ifndef WIN32
     r = read (sock, buf, len);
+#else
+    r = recv (sock, buf, len, 0);
+#endif
     if (r == -1) {
       if (errno == EINTR || errno == EAGAIN)
         continue;
@@ -470,7 +490,7 @@ raw_close (void)
   GET_CONN;
 
   if (conn->sockin >= 0)
-    close (conn->sockin);
+    closesocket (conn->sockin);
   if (conn->sockout >= 0 && conn->sockin != conn->sockout)
-    close (conn->sockout);
+    closesocket (conn->sockout);
 }

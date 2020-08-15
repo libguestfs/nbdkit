@@ -31,6 +31,8 @@
 
 include $(top_srcdir)/common-rules.mk
 
+EXTRA_DIST = windows-errors.txt
+
 noinst_LTLIBRARIES = libutils.la
 
 libutils_la_SOURCES = \
@@ -43,6 +45,9 @@ libutils_la_SOURCES = \
 	utils.h \
 	vector.c \
 	vector.h \
+	windows-compat.h \
+	windows-compat.c \
+	windows-errors.c \
 	$(NULL)
 libutils_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
@@ -54,6 +59,34 @@ libutils_la_CFLAGS = \
 libutils_la_LIBADD = \
 	$(PTHREAD_LIBS) \
 	$(NULL)
+
+# Generate the code to map Winsock errors to errno codes.
+BUILT_SOURCES = windows-errors.c
+windows-errors.c: windows-errors.txt
+	@rm -f $@ $@-t
+	@echo '/* Generated from windows-errors.txt */' > $@-t
+	@echo '#include <nbdkit-plugin.h>' >> $@-t
+	@echo '#ifdef WIN32' >> $@-t
+	@echo '#include <winsock2.h>' >> $@-t
+	@echo '#include <ws2tcpip.h>' >> $@-t
+	@echo '#include <windows.h>' >> $@-t
+	@echo '#include <errno.h>' >> $@-t
+	@echo 'int' >> $@-t
+	@echo 'translate_winsock_error (const char *fn, int err) {' >> $@-t
+# Always log the original error.
+	@echo '    nbdkit_debug ("%s: winsock error %d", fn, err);' >> $@-t
+	@echo '    switch (err) {' >> $@-t
+	@$(SED) -e '/^#/d' \
+	       -e '/^$$/d' \
+	       -e 's/\(.*\)[[:space:]][[:space:]]*\(.*\)/#if defined(\1) \&\& defined(\2)\n    case \1: return \2;\n#endif/' \
+	< $< >> $@-t
+	@echo '    default:' >> $@-t
+	@echo '    return err > 10000 && err < 10025 ? err - 10000 : EINVAL;' >> $@-t
+	@echo '    }' >> $@-t
+	@echo '}' >> $@-t
+	@echo '#endif /* WIN32 */' >> $@-t
+	mv $@-t $@
+	chmod -w $@
 
 # Unit tests.
 

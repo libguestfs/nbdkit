@@ -46,6 +46,9 @@ Linux, FreeBSD, OpenBSD or Haiku and:
 
  - GNU make
 
+(For Windows support, see the separate section at the end of this
+document.)
+
 Although it is possible to build without it, it’s recommended to
 enable TLS (authentication and encryption) support for which you will
 need:
@@ -300,3 +303,49 @@ Test coverage
 Open your browser and examine the coverage/ directory.  At the time of
 writing (2020-04) test coverage of the server is reasonable, but
 things are much worse for certain plugins and filters.
+
+WINDOWS
+=======
+
+Experimentally, the server can be compiled on Windows or
+cross-compiled from Linux using mingw-w64.  Only a small subset of
+features are available.  To find out what is missing read the TODO
+"Windows port".
+
+For the rest of this section we talk about cross-compiling for Windows
+using Linux and mingw-w64.  At a minimum you will need:
+
+    mingw-w64 GCC
+    mingw-w64 dlfcn
+    mingw-w64 winpthreads
+    mingw-w64 gnutls  (optional, but highly recommended)
+    mingw-w64 libxml2 (optional, but highly recommended)
+    wine              (if you want to run it on Linux)
+
+Other mingw-w64 libraries may be installed which will add
+functionality (see full list of requirements above), but you may end
+up hitting areas we have not compiled or tested before.
+
+To cross compile do:
+
+    mingw64-configure --disable-ocaml --disable-perl --disable-vddk
+    mingw64-make
+
+It is expected to fail, but check that it gets as far as building
+server/nbdkit.exe.  You can test if the server is working by doing:
+
+    wine server/nbdkit.exe --dump-config
+
+Now try to build plugins and filters (many will not compile):
+
+    mingw64-make -k
+
+To see which ones were compiled:
+
+    find -name '*.dll'
+
+You can run them under Wine without installing using eg:
+
+    wine server/nbdkit.exe -f -v \
+                           plugins/memory/.libs/nbdkit-memory-plugin.dll \
+                           size=1G

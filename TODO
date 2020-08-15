@@ -296,8 +296,6 @@ Build-related
   bash-completion and ocaml add-ons into their system-wide home do
   not play nicely with --prefix builds for a non-root user.
 
-* Port to Windows.
-
 * Right now, 'make check' builds keys with an expiration of 1 year
   only if they don't exist, and we leave the keys around except under
   'make distclean'.  This leads to testsuite failures when
@@ -305,6 +303,39 @@ Build-related
   ago.  Better would be having make unconditionally run the generator
   scripts, but tweak the scripts themselves to be a no-op unless the
   keys don't exist or have expired.
+
+Windows port
+------------
+
+Currently many features are missing, including:
+
+* Daemonization.  This is not really applicable for Windows where you
+  would instead want to run nbdkit as a service using something like
+  SRVANY.  You must use the -f option or one of the other options that
+  implies -f.
+
+* These options are all unimplemented:
+  --group, --log=syslog, --pidfile, --run, --selinux-label, --single
+  --swap, --unix, --user, --vsock
+
+* For possible Unix domain socket support in future see:
+  https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows/
+
+* The file plugin.  The current file plugin is essentially POSIX-only.
+  We would like to eventually write an alternate file plugin which
+  uses Windows APIs.
+
+* Many other plugins and filters.
+
+* Short names for plugins and filters don't work at the moment.
+
+* The ./nbdkit wrapper in the top directory is not built yet.
+
+* errno_is_preserved should use GetLastError and/or WSAGetLastError
+  but currently does neither so errors from plugins are probably wrong
+  in many cases.
+
+* Most tests will fail because of the missing features above.
 
 V3 plugin protocol
 ------------------

@@ -48,8 +48,15 @@
  * a race.
  */
 volatile int quit;
+
+#ifndef WIN32
 int quit_fd;
 static int write_quit_fd;
+#else
+HANDLE quit_fd;
+#endif
+
+#ifndef WIN32
 
 void
 set_up_quit_pipe (void)
@@ -98,6 +105,33 @@ set_quit (void)
   write (write_quit_fd, &c, 1);
 #pragma GCC diagnostic pop
 }
+
+#else /* WIN32 */
+
+/* Pipes don't work well with WaitForMultipleObjectsEx in Windows.  In
+ * any case, an Event is a better match with what we are trying to do
+ * here.
+ */
+void
+set_up_quit_pipe (void)
+{
+  quit_fd = CreateEventA (NULL, FALSE, FALSE, NULL);
+}
+
+void
+close_quit_pipe (void)
+{
+  CloseHandle (quit_fd);
+}
+
+void
+set_quit (void)
+{
+  quit = 1;
+  SetEvent (quit_fd);
+}
+
+#endif /* WIN32 */
 
 void
 handle_quit (int sig)

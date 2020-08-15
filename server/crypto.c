@@ -161,7 +161,12 @@ start_certificates (void)
     const char *home;
     CLEANUP_FREE char *path = NULL;
 
-    if (geteuid () != 0) {
+#ifndef WIN32
+#define RUNNING_AS_NON_ROOT_FOR_CERTIFICATES_DIR (geteuid () != 0)
+#else
+#define RUNNING_AS_NON_ROOT_FOR_CERTIFICATES_DIR 0
+#endif
+    if (RUNNING_AS_NON_ROOT_FOR_CERTIFICATES_DIR) {
       home = getenv ("HOME");
       if (home) {
         if (asprintf (&path, "%s/.pki/%s", home, PACKAGE_NAME) == -1) {
@@ -407,9 +412,9 @@ crypto_close (void)
   gnutls_bye (session, GNUTLS_SHUT_RDWR);
 
   if (sockin >= 0)
-    close (sockin);
+    closesocket (sockin);
   if (sockout >= 0 && sockin != sockout)
-    close (sockout);
+    closesocket (sockout);
 
   gnutls_deinit (session);
   conn->crypto_session = NULL;

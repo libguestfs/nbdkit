@@ -45,10 +45,21 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#include <termios.h>
 #include <errno.h>
 #include <signal.h>
+
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef WIN32
+/* For nanosleep on Windows. */
+#include <pthread_time.h>
+#endif
 
 #include "ascii-ctype.h"
 #include "ascii-string.h"
@@ -431,6 +442,7 @@ nbdkit_read_password (const char *value, char **password)
 
   /* Read from numbered file descriptor. */
   else if (value[0] == '-') {
+#ifndef WIN32
     int fd;
 
     if (nbdkit_parse_int ("password file descriptor", &value[1], &fd) == -1)
@@ -441,6 +453,15 @@ nbdkit_read_password (const char *value, char **password)
     }
     if (read_password_from_fd (&value[1], fd, password) == -1)
       return -1;
+
+#else /* WIN32 */
+    /* As far as I know this will never be possible on Windows, so
+     * it's a simple error.
+     */
+    nbdkit_error ("not possible to read passwords from file descriptors "
+                  "under Windows");
+    return -1;
+#endif /* WIN32 */
   }
 
   /* Read password from a file. */
@@ -468,6 +489,8 @@ nbdkit_read_password (const char *value, char **password)
   return 0;
 }
 
+#ifndef WIN32
+
 typedef struct termios echo_mode;
 
 static void
@@ -486,6 +509,37 @@ echo_restore (const echo_mode *old_mode)
 {
   tcsetattr (STDIN_FILENO, TCSAFLUSH, old_mode);
 }
+
+#else /* WIN32 */
+
+/* Windows implementation of tty echo off based on this:
+ * https://stackoverflow.com/a/1455007
+ */
+typedef DWORD echo_mode;
+
+static void
+echo_off (echo_mode *old_mode)
+{
+  HANDLE h_stdin;
+  DWORD mode;
+
+  h_stdin = GetStdHandle (STD_INPUT_HANDLE);
+  GetConsoleMode (h_stdin, old_mode);
+  mode = *old_mode;
+  mode &= ~ENABLE_ECHO_INPUT;
+  SetConsoleMode (h_stdin, mode);
+}
+
+static void
+echo_restore (const echo_mode *old_mode)
+{
+  HANDLE h_stdin;
+
+  h_stdin = GetStdHandle (STD_INPUT_HANDLE);
+  SetConsoleMode (h_stdin, *old_mode);
+}
+
+#endif /* WIN32 */
 
 static int
 read_password_interactive (char **password)
