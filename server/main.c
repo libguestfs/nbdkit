@@ -76,6 +76,8 @@ static struct backend *open_filter_so (struct backend *next, size_t i, const cha
 static void start_serving (void);
 static void write_pidfile (void);
 static bool is_config_key (const char *key, size_t len);
+static void error_if_stdio_closed (void);
+static void switch_stdio (void);
 
 struct debug_flag *debug_flags; /* -D */
 bool exit_with_parent;          /* --exit-with-parent */
@@ -182,16 +184,7 @@ main (int argc, char *argv[])
   size_t i;
   const char *magic_config_key;
 
-  /* Refuse to run if stdin/out/err are closed, whether or not -s is used. */
-  if (fcntl (STDERR_FILENO, F_GETFL) == -1) {
-    /* Nowhere we can report the error. Oh well. */
-    exit (EXIT_FAILURE);
-  }
-  if (fcntl (STDIN_FILENO, F_GETFL) == -1 ||
-      fcntl (STDOUT_FILENO, F_GETFL) == -1) {
-    perror ("expecting stdin/stdout to be opened");
-    exit (EXIT_FAILURE);
-  }
+  error_if_stdio_closed ();
 
 #if !ENABLE_LIBFUZZER
   threadlocal_init ();
@@ -702,39 +695,7 @@ main (int argc, char *argv[])
    */
   top->get_ready (top);
 
-  /* Sanitize stdin/stdout to /dev/null, after saving the originals
-   * when needed.  We are still single-threaded at this point, and
-   * already checked that stdin/out were open, so we don't have to
-   * worry about other threads accidentally grabbing our intended fds,
-   * or races on FD_CLOEXEC.  POSIX says that 'fflush(NULL)' is
-   * supposed to reset the underlying offset of seekable stdin, but
-   * glibc is buggy and requires an explicit fflush(stdin) as
-   * well. https://sourceware.org/bugzilla/show_bug.cgi?id=12799
-   */
-  fflush (stdin);
-  fflush (NULL);
-  if (listen_stdin || run) {
-#ifndef F_DUPFD_CLOEXEC
-#define F_DUPFD_CLOEXEC F_DUPFD
-#endif
-    saved_stdin = fcntl (STDIN_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
-    saved_stdout = fcntl (STDOUT_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
-#if F_DUPFD == F_DUPFD_CLOEXEC
-    saved_stdin = set_cloexec (saved_stdin);
-    saved_stdout = set_cloexec (saved_stdout);
-#endif
-    if (saved_stdin == -1 || saved_stdout == -1) {
-      perror ("fcntl");
-      exit (EXIT_FAILURE);
-    }
-  }
-  close (STDIN_FILENO);
-  close (STDOUT_FILENO);
-  if (open ("/dev/null", O_RDONLY) != STDIN_FILENO ||
-      open ("/dev/null", O_WRONLY) != STDOUT_FILENO) {
-    perror ("open");
-    exit (EXIT_FAILURE);
-  }
+  switch_stdio ();
   configured = true;
 
   start_serving ();
@@ -1035,4 +996,57 @@ is_config_key (const char *key, size_t len)
     return false;
 
   return true;
+}
+
+/* Refuse to run if stdin/out/err are closed, whether or not -s is used. */
+static void
+error_if_stdio_closed (void)
+{
+  if (fcntl (STDERR_FILENO, F_GETFL) == -1) {
+    /* Nowhere we can report the error. Oh well. */
+    exit (EXIT_FAILURE);
+  }
+  if (fcntl (STDIN_FILENO, F_GETFL) == -1 ||
+      fcntl (STDOUT_FILENO, F_GETFL) == -1) {
+    perror ("expecting stdin/stdout to be opened");
+    exit (EXIT_FAILURE);
+  }
+}
+
+/* Sanitize stdin/stdout to /dev/null, after saving the originals
+ * when needed.  We are still single-threaded at this point, and
+ * already checked that stdin/out were open, so we don't have to
+ * worry about other threads accidentally grabbing our intended fds,
+ * or races on FD_CLOEXEC.  POSIX says that 'fflush(NULL)' is
+ * supposed to reset the underlying offset of seekable stdin, but
+ * glibc is buggy and requires an explicit fflush(stdin) as
+ * well. https://sourceware.org/bugzilla/show_bug.cgi?id=12799
+ */
+static void
+switch_stdio (void)
+{
+  fflush (stdin);
+  fflush (NULL);
+  if (listen_stdin || run) {
+#ifndef F_DUPFD_CLOEXEC
+#define F_DUPFD_CLOEXEC F_DUPFD
+#endif
+    saved_stdin = fcntl (STDIN_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
+    saved_stdout = fcntl (STDOUT_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
+#if F_DUPFD == F_DUPFD_CLOEXEC
+    saved_stdin = set_cloexec (saved_stdin);
+    saved_stdout = set_cloexec (saved_stdout);
+#endif
+    if (saved_stdin == -1 || saved_stdout == -1) {
+      perror ("fcntl");
+      exit (EXIT_FAILURE);
+    }
+  }
+  close (STDIN_FILENO);
+  close (STDOUT_FILENO);
+  if (open ("/dev/null", O_RDONLY) != STDIN_FILENO ||
+      open ("/dev/null", O_WRONLY) != STDOUT_FILENO) {
+    perror ("open");
+    exit (EXIT_FAILURE);
+  }
 }
