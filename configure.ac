@@ -141,13 +141,19 @@ dnl Check for basic C environment.
 AC_PROG_CC_STDC
 AC_PROG_INSTALL
 AC_PROG_CPP
-AC_CANONICAL_HOST
 AC_SYS_LARGEFILE
 
 AC_C_PROTOTYPES
 test "x$U" != "x" && AC_MSG_ERROR([Compiler not ANSI compliant])
 
 AM_PROG_CC_C_O
+
+dnl Define the host CPU architecture (defines 'host_cpu').
+AC_CANONICAL_HOST
+AC_DEFINE_UNQUOTED([host_cpu],["$host_cpu"],[Host architecture.])
+
+dnl Define 'host_os'.
+AC_DEFINE_UNQUOTED([host_os],["$host_os"],[Host operating system.])
 
 dnl Defines WORDS_BIGENDIAN on big endian platforms.
 AC_C_BIGENDIAN

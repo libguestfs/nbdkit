@@ -141,6 +141,8 @@ dump_config (void)
     printf ("%s=%s\n", "binary", binary);
   printf ("%s=%s\n", "bindir", bindir);
   printf ("%s=%s\n", "filterdir", filterdir);
+  printf ("%s=%s\n", "host_cpu", host_cpu);
+  printf ("%s=%s\n", "host_os", host_os);
   printf ("%s=%s\n", "libdir", libdir);
   printf ("%s=%s\n", "mandir", mandir);
   printf ("%s=%s\n", "name", PACKAGE_NAME);
