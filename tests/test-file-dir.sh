@@ -53,7 +53,7 @@ do_nbdkit_fail ()
     # testing for witness proves that our failure was during .open and
     # not at some earlier point
     rm -f file-dir.witness
-    nbdkit -U - -v -e "$1" file directory=file-dir \
+    nbdkit -U - -v -e "$1" file dir=file-dir \
         --run 'touch file-dir.witness; nbdsh -u "$uri" -c "quit()"' && fail=1
     test -f file-dir.witness || fail=1
 }
@@ -62,13 +62,13 @@ do_nbdkit_fail ()
 # Check that export NAME serves DATA as its first byte
 do_nbdkit_pass ()
 {
-    out=$(nbdkit -U - -v -e "$1" file directory=file-dir \
+    out=$(nbdkit -U - -v -e "$1" file dir=file-dir \
         --run 'nbdsh -u "$uri" -c "print (h.pread (1, 0).decode (\"utf-8\"))"')
     test "$out" = "$2" || fail=1
 }
 
 # Not possible to serve a missing directory
-nbdkit -vf file directory=nosuchdir && fail=1
+nbdkit -vf file dir=nosuchdir && fail=1
 
 # Serving an empty directory
 mkdir file-dir
