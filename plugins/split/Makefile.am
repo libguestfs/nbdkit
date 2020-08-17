@@ -46,7 +46,7 @@ nbdkit_split_plugin_la_CPPFLAGS = \
 	$(NULL)
 nbdkit_split_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_split_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared $(SHARED_LDFLAGS) \
+	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
 nbdkit_split_plugin_la_LIBADD = \

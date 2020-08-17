@@ -451,13 +451,13 @@ AC_CHECK_FUNCS([dladdr])
 LIBS="$old_LIBS"
 
 dnl On mingw we should enable the -no-undefined flag.
-AC_MSG_CHECKING([SHARED_LDFLAGS])
+AC_MSG_CHECKING([NO_UNDEFINED_ON_WINDOWS])
 AS_CASE([$host_os],
-    [mingw*|msys*|cygwin*], [SHARED_LDFLAGS="$SHARED_LDFLAGS -no-undefined"],
+    [mingw*|msys*|cygwin*], [NO_UNDEFINED_ON_WINDOWS="$NO_UNDEFINED_ON_WINDOWS -no-undefined"],
     []
 )
-AC_MSG_RESULT([$SHARED_LDFLAGS])
-AC_SUBST([SHARED_LDFLAGS])
+AC_MSG_RESULT([$NO_UNDEFINED_ON_WINDOWS])
+AC_SUBST([NO_UNDEFINED_ON_WINDOWS])
 
 AC_SEARCH_LIBS([getaddrinfo], [network socket])
 

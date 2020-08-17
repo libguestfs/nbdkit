@@ -43,7 +43,7 @@ nbdkit_exitlast_filter_la_SOURCES = \
 nbdkit_exitlast_filter_la_CPPFLAGS = -I$(top_srcdir)/include
 nbdkit_exitlast_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_exitlast_filter_la_LDFLAGS = \
-	-module -avoid-version -shared $(SHARED_LDFLAGS) \
+	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
 

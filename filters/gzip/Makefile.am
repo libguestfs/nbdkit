@@ -56,7 +56,7 @@ nbdkit_gzip_filter_la_LIBADD = \
 	$(ZLIB_LIBS) \
 	$(NULL)
 nbdkit_gzip_filter_la_LDFLAGS = \
-	-module -avoid-version -shared $(SHARED_LDFLAGS) \
+	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
 	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
 
