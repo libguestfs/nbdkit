@@ -45,13 +45,6 @@
 #include "cleanup.h"
 #include "utils.h"
 
-/* This plugin doesn't do anything tricky with threads so we don't
- * need O_CLOEXEC on platforms where it is not defined.
- */
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 0
-#endif
-
 /* Parameters. */
 static const char *name;    /* Name or URI of container image. */
 static int layer = 0;       /* Layer (may be negative to count from end). */
