@@ -450,13 +450,16 @@ LIBS="$DL_LIBS $LIBS"
 AC_CHECK_FUNCS([dladdr])
 LIBS="$old_LIBS"
 
-dnl On mingw we should enable the -no-undefined flag.
-AC_MSG_CHECKING([NO_UNDEFINED_ON_WINDOWS])
+dnl Is this Windows?
+AC_MSG_CHECKING([if the target is Windows])
 AS_CASE([$host_os],
-    [mingw*|msys*|cygwin*], [NO_UNDEFINED_ON_WINDOWS="$NO_UNDEFINED_ON_WINDOWS -no-undefined"],
-    []
+    [mingw*|msys*|cygwin*], [
+        is_windows=yes
+        NO_UNDEFINED_ON_WINDOWS="-no-undefined"
+    ],
+    [is_windows=no]
 )
-AC_MSG_RESULT([$NO_UNDEFINED_ON_WINDOWS])
+AC_MSG_RESULT([$is_windows])
 AC_SUBST([NO_UNDEFINED_ON_WINDOWS])
 
 AC_SEARCH_LIBS([getaddrinfo], [network socket])
