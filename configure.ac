@@ -329,7 +329,9 @@ AC_CHECK_FUNCS([\
 	funlockfile \
 	get_current_dir_name \
 	mkostemp \
+	mlock \
 	mlockall \
+	munlock \
 	openlog \
 	pipe2 \
 	ppoll \

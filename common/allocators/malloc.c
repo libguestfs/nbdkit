@@ -36,7 +36,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 
 #include <pthread.h>
 
@@ -89,11 +92,13 @@ extend (struct m_alloc *ma, uint64_t new_size)
     old_size = ma->ba.alloc;
     n = new_size - ma->ba.alloc;
 
+#ifdef HAVE_MUNLOCK
     /* Since the memory might be moved by realloc, we must unlock the
      * original array.
      */
     if (ma->use_mlock)
       munlock (ma->ba.ptr, ma->ba.alloc);
+#endif
 
     if (bytearray_reserve (&ma->ba, n) == -1) {
       nbdkit_error ("realloc: %m");
@@ -122,12 +127,14 @@ extend (struct m_alloc *ma, uint64_t new_size)
     /* Initialize the newly allocated memory to 0. */
     memset (ma->ba.ptr + old_size, 0, n);
 
+#ifdef HAVE_MLOCK
     if (ma->use_mlock) {
       if (mlock (ma->ba.ptr, ma->ba.alloc) == -1) {
         nbdkit_error ("allocator=malloc: mlock: %m");
         return -1;
       }
     }
+#endif
   }
 
   return 0;
@@ -268,6 +275,12 @@ create_malloc (const parameters *params)
       int r = nbdkit_parse_bool (params->ptr[i].value);
       if (r == -1) return NULL;
       use_mlock = r;
+#ifndef HAVE_MLOCK
+      if (use_mlock) {
+        nbdkit_error ("mlock is not supported on this platform");
+        return NULL;
+      }
+#endif
     }
     else {
       nbdkit_error ("allocator=malloc: unknown parameter %s",
