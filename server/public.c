@@ -47,7 +47,6 @@
 #include <limits.h>
 #include <termios.h>
 #include <errno.h>
-#include <poll.h>
 #include <signal.h>
 #include <sys/socket.h>
 
@@ -55,6 +54,7 @@
 #include "ascii-string.h"
 #include "get_current_dir_name.h"
 #include "getline.h"
+#include "poll.h"
 #include "realpath.h"
 
 #include "internal.h"

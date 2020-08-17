@@ -45,6 +45,8 @@ EXTRA_DIST = \
 	getline.c \
 	getline.h \
 	openlog.c \
+	poll.c \
+	poll.h \
 	realpath.c \
 	realpath.h \
 	strndup.c \

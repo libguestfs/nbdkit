@@ -38,7 +38,6 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
-#include <poll.h>
 #include <errno.h>
 #include <assert.h>
 #include <sys/types.h>
@@ -59,6 +58,7 @@
 #include <pthread.h>
 
 #include "internal.h"
+#include "poll.h"
 #include "utils.h"
 #include "vector.h"
 

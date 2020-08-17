@@ -343,6 +343,7 @@ AC_REPLACE_FUNCS([\
 	getdelim \
 	getline \
 	openlog \
+	poll \
 	realpath \
 	strndup \
 	syslog \
