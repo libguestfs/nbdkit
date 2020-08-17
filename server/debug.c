@@ -67,13 +67,17 @@ nbdkit_vdebug (const char *fs, va_list args)
 
   if (!verbose)
     return;
+#ifdef HAVE_FLOCKFILE
   flockfile (stderr);
+#endif
   prologue ();
 
   vfprintf (stderr, fs, args);
 
   fprintf (stderr, "\n");
+#ifdef HAVE_FUNLOCKFILE
   funlockfile (stderr);
+#endif
 
   errno = err;
 }
@@ -88,7 +92,9 @@ nbdkit_debug (const char *fs, ...)
   if (!verbose)
     return;
 
+#ifdef HAVE_FLOCKFILE
   flockfile (stderr);
+#endif
   prologue ();
 
   va_start (args, fs);
@@ -96,7 +102,9 @@ nbdkit_debug (const char *fs, ...)
   va_end (args);
 
   fprintf (stderr, "\n");
+#ifdef HAVE_FUNLOCKFILE
   funlockfile (stderr);
+#endif
 
   errno = err;
 }

@@ -167,7 +167,9 @@ output (struct handle *h, const char *act, uint64_t id, const char *fmt, ...)
       snprintf (timestamp + s, sizeof timestamp - s, ".%06ld",
                 0L + tv.tv_usec);
     }
+#ifdef HAVE_FLOCKFILE
   flockfile (logfile);
+#endif
   if (h)
     fprintf (logfile, "%s connection=%" PRIu64 " %s ", timestamp,
              h->connection, act);
@@ -180,7 +182,9 @@ output (struct handle *h, const char *act, uint64_t id, const char *fmt, ...)
   va_end (args);
   fputc ('\n', logfile);
   fflush (logfile);
+#ifdef HAVE_FUNLOCKFILE
   funlockfile (logfile);
+#endif
 }
 
 /* Shared code for a nicer log of return value */

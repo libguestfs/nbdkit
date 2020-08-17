@@ -325,6 +325,8 @@ dnl Check for functions in libc, all optional.
 AC_CHECK_FUNCS([\
 	accept4 \
 	fdatasync \
+	flockfile \
+	funlockfile \
 	get_current_dir_name \
 	mkostemp \
 	mlockall \

@@ -51,7 +51,9 @@ log_stderr_verror (const char *fs, va_list args)
   size_t instance_num = threadlocal_get_instance_num ();
   int tty;
 
+#ifdef HAVE_FLOCKFILE
   flockfile (stderr);
+#endif
   tty = isatty (fileno (stderr));
   if (tty) fputs ("\033[1;31m", stderr);
 
@@ -71,7 +73,9 @@ log_stderr_verror (const char *fs, va_list args)
 
   if (tty) fputs ("\033[0m", stderr);
 
+#ifdef HAVE_FUNLOCKFILE
   funlockfile (stderr);
+#endif
 
   errno = err;                  /* must be last line of function */
 }
