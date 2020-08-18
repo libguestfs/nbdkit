@@ -454,7 +454,7 @@ LIBS="$old_LIBS"
 dnl Is this Windows?
 AC_MSG_CHECKING([if the target is Windows])
 AS_CASE([$host_os],
-    [mingw*|msys*|cygwin*], [
+    [mingw*|msys*], [
         is_windows=yes
         NO_UNDEFINED_ON_WINDOWS="-no-undefined"
     ],
