@@ -180,7 +180,6 @@ EXTRA_DIST += \
 	test-single-from-file.sh \
 	test-single-sh.sh \
 	test-single.sh \
-	test-socket-activation \
 	test-start.sh \
 	test-stdio.sh \
 	test-swap.sh \
