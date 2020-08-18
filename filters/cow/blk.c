@@ -71,7 +71,10 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
 
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
@@ -80,13 +83,12 @@
 #include <nbdkit-filter.h>
 
 #include "bitmap.h"
+#include "fdatasync.h"
+#include "pread.h"
+#include "pwrite.h"
 #include "utils.h"
 
 #include "blk.h"
-
-#ifndef HAVE_FDATASYNC
-#define fdatasync fsync
-#endif
 
 /* The temporary overlay. */
 static int fd = -1;

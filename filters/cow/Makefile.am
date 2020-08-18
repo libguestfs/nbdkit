@@ -46,6 +46,7 @@ nbdkit_cow_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/bitmap \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_cow_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
@@ -56,6 +57,7 @@ nbdkit_cow_filter_la_LDFLAGS = \
 nbdkit_cow_filter_la_LIBADD = \
 	$(top_builddir)/common/bitmap/libbitmap.la \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
 

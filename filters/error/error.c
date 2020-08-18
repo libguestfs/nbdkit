@@ -47,6 +47,7 @@
 
 #include "cleanup.h"
 #include "random.h"
+#include "windows-compat.h"
 
 struct error_settings {
   int error;                   /* errno, eg. EIO */

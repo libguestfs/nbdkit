@@ -39,7 +39,6 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
-#include <poll.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -49,6 +48,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "poll.h"
 #include "minmax.h"
 #include "utils.h"
 

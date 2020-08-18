@@ -36,6 +36,10 @@ EXTRA_DIST = \
 	nbdkit-ondemand-plugin.pod \
 	$(NULL)
 
+# Disabled on Windows because it requires open_memstream and other
+# porting work.
+if !IS_WINDOWS
+
 # The default command we use (if we don't use command=) comes from a
 # shell script which is turned into a C source file.
 BUILT_SOURCES = default-command.c
@@ -82,3 +86,4 @@ nbdkit-ondemand-plugin.1: nbdkit-ondemand-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

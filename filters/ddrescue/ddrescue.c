@@ -43,6 +43,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "getline.h"
 #include "vector.h"
 
 struct range {

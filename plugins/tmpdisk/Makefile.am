@@ -36,6 +36,9 @@ EXTRA_DIST = \
 	nbdkit-tmpdisk-plugin.pod \
 	$(NULL)
 
+# Requires running a bash script.
+if !IS_WINDOWS
+
 # The default command we use (if we don't use command=) comes from a
 # shell script which is turned into a C source file.
 BUILT_SOURCES = default-command.c
@@ -80,3 +83,4 @@ nbdkit-tmpdisk-plugin.1: nbdkit-tmpdisk-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

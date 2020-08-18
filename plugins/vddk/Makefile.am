@@ -37,6 +37,8 @@ EXTRA_DIST = \
 	$(NULL)
 
 if HAVE_VDDK
+# Windows VDDK likely works in a completely different way.
+if !IS_WINDOWS
 
 plugin_LTLIBRARIES = nbdkit-vddk-plugin.la
 
@@ -78,4 +80,5 @@ nbdkit-vddk-plugin.1: nbdkit-vddk-plugin.pod
 
 endif HAVE_POD
 
+endif !IS_WINDOWS
 endif HAVE_VDDK

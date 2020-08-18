@@ -49,6 +49,7 @@
 
 #include "cleanup.h"
 #include "utils.h"
+#include "windows-compat.h"
 
 static uint64_t connections;
 static char *logfilename;

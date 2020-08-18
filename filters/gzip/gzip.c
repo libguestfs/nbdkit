@@ -46,6 +46,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "pread.h"
 #include "minmax.h"
 
 /* The first thread to call gzip_prepare has to uncompress the whole

@@ -33,6 +33,9 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-tar-filter.pod
 
+# Requires open_memstream.
+if !IS_WINDOWS
+
 filter_LTLIBRARIES = nbdkit-tar-filter.la
 
 nbdkit_tar_filter_la_SOURCES = \
@@ -43,6 +46,7 @@ nbdkit_tar_filter_la_SOURCES = \
 nbdkit_tar_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_tar_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
@@ -52,6 +56,7 @@ nbdkit_tar_filter_la_LDFLAGS = \
 	$(NULL)
 nbdkit_tar_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
 
@@ -66,3 +71,4 @@ nbdkit-tar-filter.1: nbdkit-tar-filter.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

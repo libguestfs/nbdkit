@@ -33,6 +33,9 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-cdi-plugin.pod
 
+# Disabled on Windows because this needs to run a bash script.
+if !IS_WINDOWS
+
 plugin_LTLIBRARIES = nbdkit-cdi-plugin.la
 
 nbdkit_cdi_plugin_la_SOURCES = \
@@ -70,3 +73,4 @@ nbdkit-cdi-plugin.1: nbdkit-cdi-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

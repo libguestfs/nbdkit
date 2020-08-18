@@ -49,6 +49,8 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "getline.h"
+#include "windows-compat.h"
 
 #include "bucket.h"
 

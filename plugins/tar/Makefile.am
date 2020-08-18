@@ -33,6 +33,8 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-tar-plugin.pod
 
+if !IS_WINDOWS
+
 plugin_LTLIBRARIES = nbdkit-tar-plugin.la
 
 nbdkit_tar_plugin_la_SOURCES = \
@@ -66,3 +68,4 @@ nbdkit-tar-plugin.1: nbdkit-tar-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

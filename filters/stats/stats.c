@@ -48,6 +48,7 @@
 
 #include "cleanup.h"
 #include "tvdiff.h"
+#include "windows-compat.h"
 
 static char *filename;
 static bool append;

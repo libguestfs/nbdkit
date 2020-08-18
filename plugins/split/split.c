@@ -47,6 +47,9 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "pread.h"
+#include "pwrite.h"
+#include "windows-compat.h"
 #include "vector.h"
 
 /* The files. */

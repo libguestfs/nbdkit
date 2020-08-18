@@ -44,6 +44,11 @@
 
 #include "minmax.h"
 
+/* IGNORE is defined as a macro in Windows headers files ... */
+#ifdef IGNORE
+#undef IGNORE
+#endif
+
 #define MAX_WRITE (64 * 1024 * 1024)
 
 static enum ZeroMode {

@@ -33,6 +33,9 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-log-filter.pod
 
+# Requires open_memstream.
+if !IS_WINDOWS
+
 filter_LTLIBRARIES = nbdkit-log-filter.la
 
 nbdkit_log_filter_la_SOURCES = \
@@ -65,3 +68,4 @@ nbdkit-log-filter.1: nbdkit-log-filter.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

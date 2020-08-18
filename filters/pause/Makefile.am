@@ -33,6 +33,9 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-pause-filter.pod
 
+# Relies on a Unix domain socket.
+if !IS_WINDOWS
+
 filter_LTLIBRARIES = nbdkit-pause-filter.la
 
 nbdkit_pause_filter_la_SOURCES = \
@@ -66,3 +69,4 @@ nbdkit-pause-filter.1: nbdkit-pause-filter.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

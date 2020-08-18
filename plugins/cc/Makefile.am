@@ -33,6 +33,10 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-cc-plugin.pod
 
+# Disabled on Windows because we lack mkstemps, and possibly cannot
+# run shell commands.
+if !IS_WINDOWS
+
 plugin_LTLIBRARIES = nbdkit-cc-plugin.la
 
 nbdkit_cc_plugin_la_SOURCES = \
@@ -69,3 +73,4 @@ nbdkit-cc-plugin.3: nbdkit-cc-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

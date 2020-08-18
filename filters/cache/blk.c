@@ -45,7 +45,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+
+#ifdef HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
+#endif
 
 #include <nbdkit-filter.h>
 

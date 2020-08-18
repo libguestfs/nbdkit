@@ -311,6 +311,7 @@ test (void)
 dnl Check for other headers, all optional.
 AC_CHECK_HEADERS([\
 	alloca.h \
+	arpa/inet.h \
 	byteswap.h \
 	endian.h \
 	grp.h \
@@ -327,6 +328,7 @@ AC_CHECK_HEADERS([\
 	sys/prctl.h \
 	sys/procctl.h \
 	sys/socket.h \
+	sys/statvfs.h \
 	sys/un.h \
 	sys/wait.h])
 

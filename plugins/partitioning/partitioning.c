@@ -53,6 +53,8 @@
 #include "fdatasync.h"
 #include "isaligned.h"
 #include "iszero.h"
+#include "pread.h"
+#include "pwrite.h"
 #include "rounding.h"
 #include "vector.h"
 

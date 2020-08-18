@@ -33,6 +33,9 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-eval-plugin.pod
 
+# Disabled on Windows because no bash scripting.
+if !IS_WINDOWS
+
 plugin_LTLIBRARIES = nbdkit-eval-plugin.la
 
 # This plugin shares most of the same sources as nbdkit-sh-plugin.  In
@@ -83,3 +86,4 @@ nbdkit-eval-plugin.1: nbdkit-eval-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

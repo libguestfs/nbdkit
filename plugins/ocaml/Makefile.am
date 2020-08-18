@@ -39,6 +39,8 @@ EXTRA_DIST = \
 	$(NULL)
 
 if HAVE_OCAML
+# Requires some work to port to Windows.  Disable it for now.
+if !IS_WINDOWS
 
 ocamllibdir = $(OCAMLLIB)
 ocamllib_DATA = NBDKit.mli NBDKit.cmi NBDKit.cmx NBDKit.o
@@ -92,5 +94,5 @@ nbdkit-ocaml-plugin.3: nbdkit-ocaml-plugin.pod
 	    $<
 
 endif HAVE_POD
-
-endif
+endif !IS_WINDOWS
+endif HAVE_OCAML

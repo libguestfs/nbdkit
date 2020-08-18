@@ -43,6 +43,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "windows-compat.h"
 
 static unsigned retries = 5;    /* 0 = filter is disabled */
 static unsigned initial_delay = 2;

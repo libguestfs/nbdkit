@@ -33,6 +33,10 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-streaming-plugin.pod
 
+# This will require a special effort to port to Windows because named
+# pipes work quite differently.
+if !IS_WINDOWS
+
 plugin_LTLIBRARIES = nbdkit-streaming-plugin.la
 
 nbdkit_streaming_plugin_la_SOURCES = \
@@ -63,3 +67,4 @@ nbdkit-streaming-plugin.1: nbdkit-streaming-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

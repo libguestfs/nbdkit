@@ -37,6 +37,9 @@ EXTRA_DIST = \
 	example.sh \
 	$(NULL)
 
+# Disabled on Windows because no bash scripting.
+if !IS_WINDOWS
+
 plugin_LTLIBRARIES = nbdkit-sh-plugin.la
 
 nbdkit_sh_plugin_la_SOURCES = \
@@ -74,3 +77,4 @@ nbdkit-sh-plugin.3: nbdkit-sh-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

@@ -34,6 +34,9 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = nbdkit-iso-plugin.pod
 
 if HAVE_ISO
+# Disabled on Windows because it uses open_memstream to construct the
+# command.
+if !IS_WINDOWS
 
 plugin_LTLIBRARIES = nbdkit-iso-plugin.la
 
@@ -68,5 +71,5 @@ nbdkit-iso-plugin.1: nbdkit-iso-plugin.pod
 	    $<
 
 endif HAVE_POD
-
-endif
+endif !IS_WINDOWS
+endif HAVE_ISO

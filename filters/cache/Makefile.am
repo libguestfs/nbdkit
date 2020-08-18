@@ -33,6 +33,10 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-cache-filter.pod
 
+# Requires hole-punching and other OS specific features which make
+# this an effort to port to Windows.
+if !IS_WINDOWS
+
 filter_LTLIBRARIES = nbdkit-cache-filter.la
 
 nbdkit_cache_filter_la_SOURCES = \
@@ -75,3 +79,4 @@ nbdkit-cache-filter.1: nbdkit-cache-filter.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

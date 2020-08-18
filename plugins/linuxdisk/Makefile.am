@@ -34,6 +34,7 @@ include $(top_srcdir)/common-rules.mk
 EXTRA_DIST = nbdkit-linuxdisk-plugin.pod
 
 if HAVE_MKE2FS_WITH_D
+if !IS_WINDOWS
 
 plugin_LTLIBRARIES = nbdkit-linuxdisk-plugin.la
 
@@ -76,5 +77,5 @@ nbdkit-linuxdisk-plugin.1: nbdkit-linuxdisk-plugin.pod
 	    $<
 
 endif HAVE_POD
-
-endif
+endif !IS_WINDOWS
+endif HAVE_MKE2FS_WITH_D

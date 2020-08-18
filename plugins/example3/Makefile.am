@@ -33,6 +33,11 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-example3-plugin.pod
 
+# A Windows port would be quite invasive and detract from the
+# educational value of the example.  It would be better to have a
+# Windows-specific example plugin.
+if !IS_WINDOWS
+
 plugin_LTLIBRARIES = nbdkit-example3-plugin.la
 
 nbdkit_example3_plugin_la_SOURCES = \
@@ -63,3 +68,4 @@ nbdkit-example3-plugin.1: nbdkit-example3-plugin.pod
 	    $<
 
 endif HAVE_POD
+endif !IS_WINDOWS

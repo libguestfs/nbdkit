@@ -45,6 +45,7 @@ nbdkit_gzip_filter_la_SOURCES = \
 nbdkit_gzip_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_gzip_filter_la_CFLAGS = \
@@ -53,6 +54,7 @@ nbdkit_gzip_filter_la_CFLAGS = \
 	$(NULL)
 nbdkit_gzip_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(ZLIB_LIBS) \
 	$(NULL)
