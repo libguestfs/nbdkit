@@ -38,7 +38,7 @@ Requirements
 ------------
 
 To build the basic server and some plugins nbdkit needs nothing except
-Linux, FreeBSD or OpenBSD, and:
+Linux, FreeBSD, OpenBSD or Haiku and:
 
  - GCC or Clang
 
