@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_daemonizing
 requires qemu-img --version
 
 if ! qemu-img --help | grep -- --object; then

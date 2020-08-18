@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires qemu-img --version
 requires dd iflag=count_bytes </dev/null
 

@@ -35,4 +35,4 @@ set -e
 
 # We only really care that the plugin compiled, so we don't
 # need to run it properly.
-nbdkit .libs/test-ansi-c-plugin.so --version
+nbdkit .libs/test-ansi-c-plugin.$SOEXT --version

@@ -46,6 +46,8 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
+#include "getline.h"
+
 static const char *msg = "input";
 
 /* Check whether stdin/out match /dev/null */

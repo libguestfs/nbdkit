@@ -37,14 +37,21 @@
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
+
 #undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 
+#include <sys/types.h>
+
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #include "test.h"
+
+#ifndef WIN32
 
 /* 'test_start_nbdkit' below makes assumptions about the format of
  * these strings.
@@ -218,3 +225,18 @@ test_start_nbdkit (const char *arg, ...)
 
   return 0;
 }
+
+#else /* WIN32 */
+
+/* All of the above code will require a lot of porting work for
+ * Windows.  At the moment the test gets skipped.
+ */
+int
+test_start_nbdkit (const char *arg, ...)
+{
+  fprintf (stderr, "%s: test skipped because not ported to Windows.\n",
+           program_name);
+  exit (77);
+}
+
+#endif

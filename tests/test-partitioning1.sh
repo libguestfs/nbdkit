@@ -38,6 +38,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires qemu-img --version
 
 files="partitioning1.out partitioning1-p1 partitioning1-p2 partitioning1-p3 partitioning1-p4 partitioning1-p5 partitioning1-p6"

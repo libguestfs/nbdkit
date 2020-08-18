@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires jq --version
 requires qemu-img --version
 requires qemu-img map --help

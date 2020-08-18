@@ -38,6 +38,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires python3 --version
 requires python3 -c 'import nbd'
 requires dd iflag=count_bytes </dev/null

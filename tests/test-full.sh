@@ -36,6 +36,7 @@
 source ./functions.sh
 set -e
 
+requires_unix_domain_sockets
 requires nbdsh --version
 
 sock=`mktemp -u`

@@ -33,10 +33,11 @@
 source ./functions.sh
 set -x
 
+requires_unix_domain_sockets
 requires qemu-img --version
 requires qemu-io --version
 
-plugin=.libs/test-shutdown-plugin.so
+plugin=.libs/test-shutdown-plugin.$SOEXT
 requires test -f $plugin
 
 sock=`mktemp -u`

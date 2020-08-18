@@ -36,4 +36,5 @@ set -e
 # We only really care that the plugin compiled, so we don't
 # need to run it properly.
 libs=./.libs
-nbdkit --filter=$libs/test-cxx-filter.so $libs/test-cxx-plugin.so --version
+nbdkit --filter=$libs/test-cxx-filter.$SOEXT \
+       $libs/test-cxx-plugin.$SOEXT --version

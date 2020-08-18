@@ -38,6 +38,8 @@ set -x
 plugin=$SRCDIR/test-read-password-plugin.c
 requires test -x $plugin
 
+requires_unix_domain_sockets
+
 # Since we are matching on error messages.
 export LANG=C
 

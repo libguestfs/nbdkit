@@ -38,7 +38,7 @@ files="test-layers.out"
 rm -f $files
 cleanup_fn rm -f $files
 
-cmd="nbdkit --filter=.libs/test-layers-filter3.so --filter=.libs/test-layers-filter2.so --filter=.libs/test-layers-filter1.so .libs/test-layers-plugin.so"
+cmd="nbdkit --filter=.libs/test-layers-filter3.$SOEXT --filter=.libs/test-layers-filter2.$SOEXT --filter=.libs/test-layers-filter1.$SOEXT .libs/test-layers-plugin.$SOEXT"
 
 $cmd --help > test-layers.out
 cat test-layers.out ||:

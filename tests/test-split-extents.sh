@@ -36,6 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires nbdsh --base-allocation -c 'exit(not h.supports_uri())'
 requires truncate --help
 requires stat --help

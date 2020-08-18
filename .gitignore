@@ -106,6 +106,7 @@ plugins/*/*.3
 /tests/file-data
 /tests/functions.sh
 /tests/keys.psk
+/tests/nbdkit
 /tests/partition-disk
 /tests/pki
 /tests/split1

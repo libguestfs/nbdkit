@@ -33,6 +33,7 @@
 source ./functions.sh
 set -x
 
+requires_unix_domain_sockets
 requires qemu-img --version
 
 sock=`mktemp -u`

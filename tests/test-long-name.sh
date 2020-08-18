@@ -38,6 +38,7 @@ fail=0
 
 # Test handling of NBD maximum string length of 4k.
 
+requires_unix_domain_sockets
 requires qemu-io --version
 requires qemu-nbd --version
 requires nbdsh -c 'exit(not h.supports_uri())'

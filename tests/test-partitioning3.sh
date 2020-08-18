@@ -38,6 +38,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires guestfish --version
 
 sock=`mktemp -u`

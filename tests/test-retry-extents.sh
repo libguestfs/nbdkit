@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires nbdsh --base-allocation -c 'exit(not h.supports_uri())'
 
 files="retry-extents-count retry-extents-open-count"

@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_single_mode
 requires nbdsh --version
 requires dd iflag=count_bytes </dev/null
 

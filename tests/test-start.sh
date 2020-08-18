@@ -30,12 +30,14 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Test nbdkit starts up, forks in the background, writes a PID file,
+# and can be killed.
+
 source ./functions.sh
 set -e
 set -x
 
-# Test nbdkit starts up, forks in the background, writes a PID file,
-# and can be killed.
+requires_unix_domain_sockets
 
 sock=`mktemp -u`
 rm -f start.pid $sock

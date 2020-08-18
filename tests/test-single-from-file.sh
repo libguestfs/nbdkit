@@ -38,6 +38,8 @@ source ./functions.sh
 set -e
 set -x
 
+requires_single_mode
+
 testcase=$srcdir/../fuzzing/testcase_dir/newstyle-cflags-go
 
 nbdkit -f -v -s memory 1M <$testcase >/dev/null

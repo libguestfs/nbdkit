@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires nbdsh -c 'exit (not h.supports_uri ())'
 
 # - If multiple parameters appear, last one is used.

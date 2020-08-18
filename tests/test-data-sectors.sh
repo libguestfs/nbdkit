@@ -38,6 +38,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires nbdsh --version
 requires truncate --version
 

@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_single_mode
 requires socat -h
 requires qemu-img --version
 

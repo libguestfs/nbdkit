@@ -36,6 +36,8 @@
 CXX="@CXX@"
 OCAMLOPT="@OCAMLOPT@"
 PYTHON="@PYTHON@"
+SOEXT="@SOEXT@"
+EXEEXT="@EXEEXT@"
 
 # cleanup_fn f [args]
 #
@@ -137,6 +139,43 @@ requires_filter ()
     requires nbdkit --filter="$1" null --version
 }
 
+is_windows ()
+{
+    host_os="$(nbdkit --dump-config | grep ^host_os | cut -d= -f2)"
+    [[ "$host_os" =~ mingw|msys ]]
+}
+
+# The Windows port does not yet support -U (Unix domain sockets).  Add
+# a uniquely named requires test for this, so we can easily reenable
+# these tests if we support Unix domain sockets in future.
+requires_unix_domain_sockets ()
+{
+    if is_windows; then
+        echo "$0: Windows port does not support Unix domain sockets"
+        exit 77
+    fi
+}
+
+# The Windows port does not yet support -s (single mode).  Add a
+# uniquely named requires test for this.
+requires_single_mode ()
+{
+    if is_windows; then
+        echo "$0: Windows port does not support -s (single mode)"
+        exit 77
+    fi
+}
+
+# The Windows port does not yet support daemonizing.  Add a uniquely
+# named requires test for this.
+requires_daemonizing ()
+{
+    if is_windows; then
+        echo "$0: Windows port does not support daemonizing"
+        exit 77
+    fi
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to
@@ -212,7 +251,7 @@ foreach_plugin ()
     for p in @plugins@; do
         # Was the plugin built?
         d="@top_builddir@/plugins/$p"
-        if [ -f "$d/.libs/nbdkit-$p-plugin.so" ] ||
+        if [ -f "$d/.libs/nbdkit-$p-plugin.$SOEXT" ] ||
            [ -f "$d/nbdkit-$p-plugin" ]; then
             # Yes so run the test.
             "$f" "$p" "$@"

@@ -187,4 +187,5 @@ test_public_LDFLAGS = \
 	$(NULL)
 test_public_LDADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(NULL)

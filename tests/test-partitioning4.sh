@@ -42,6 +42,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires qemu-img --version
 
 # This test requires the partitioning plugin to open at least 768

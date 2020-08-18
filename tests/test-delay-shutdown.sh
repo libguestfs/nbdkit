@@ -33,6 +33,7 @@
 source ./functions.sh
 set -x
 
+requires_unix_domain_sockets
 requires qemu-io --version
 requires timeout --version
 

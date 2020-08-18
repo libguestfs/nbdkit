@@ -37,6 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires qemu-img --version
 requires nbdsh -c 'exit (not h.supports_uri ())'
 

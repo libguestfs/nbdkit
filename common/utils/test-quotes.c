@@ -43,6 +43,8 @@
 
 #include "utils.h"
 
+#ifdef HAVE_OPEN_MEMSTREAM
+
 static bool
 test (const char *orig, const char *fnname, void (*fn) (const char *, FILE *),
       const char *exp)
@@ -97,3 +99,15 @@ main (void)
   }
   return fail ? EXIT_FAILURE : EXIT_SUCCESS;
 }
+
+#else /* !OPEN_MEMSTREAM */
+
+int
+main (int argc, char *argv[])
+{
+  fprintf (stderr, "%s: test skipped because no support for open_memstream\n",
+           argv[0]);
+  exit (77);
+}
+
+#endif /* !OPEN_MEMSTREAM */

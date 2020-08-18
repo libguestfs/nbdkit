@@ -53,8 +53,14 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 
 #include <pthread.h>
 
@@ -70,6 +76,8 @@
 #else
 #define program_name "nbdkit"
 #endif
+
+#ifndef WIN32
 
 static void *start_log_capture (void *);
 static void log_verify_seen (const char *msg);
@@ -135,10 +143,10 @@ main (int argc, char *argv[])
              * isn't reliably called unless we disable parallel.
              */
             "-t", "1",
-            "--filter", ".libs/test-layers-filter3.so",
-            "--filter", ".libs/test-layers-filter2.so",
-            "--filter", ".libs/test-layers-filter1.so",
-            ".libs/test-layers-plugin.so",
+            "--filter", ".libs/test-layers-filter3." SOEXT,
+            "--filter", ".libs/test-layers-filter2." SOEXT,
+            "--filter", ".libs/test-layers-filter1." SOEXT,
+            ".libs/test-layers-plugin." SOEXT,
             "foo=bar",
             NULL);
     perror ("exec: nbdkit");
@@ -787,3 +795,16 @@ log_free (void)
   log_buf = NULL;
   log_len = 0;
 }
+
+#else /* WIN32 */
+
+/* A lot of porting work required for Windows.  For now, skip the test. */
+int
+main (int argc, char *argv[])
+{
+  fprintf (stderr, "%s: test skipped because not ported to Windows.\n",
+           argv[0]);
+  exit (77);
+}
+
+#endif /* WIN32 */

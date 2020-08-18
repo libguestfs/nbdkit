@@ -36,6 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires nbdsh --version
 
 # Test if the base64 parameter is supported in this build.

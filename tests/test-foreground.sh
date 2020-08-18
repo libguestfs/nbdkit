@@ -30,11 +30,13 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Test nbdkit -f option.
+
+source ./functions.sh
 set -e
 set -x
-source ./functions.sh
 
-# Test nbdkit -f option.
+requires_unix_domain_sockets
 
 sock=`mktemp -u`
 files="foreground.pid $sock"

@@ -30,10 +30,12 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Test nbdkit -U - + captive nbdkit.
+
 source ./functions.sh
 set -e
 set -x
 
-# Test nbdkit -U - + captive nbdkit.
+requires_unix_domain_sockets
 
 nbdkit -U - example1 --run 'sleep 5'

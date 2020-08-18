@@ -54,9 +54,18 @@
 #include <signal.h>
 #include <errno.h>
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
+#endif
+
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 
 #include "byte-swapping.h"
 #include "nbd-protocol.h"

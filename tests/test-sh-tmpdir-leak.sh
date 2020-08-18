@@ -30,12 +30,14 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Test that $tmpdir doesn't leak into --run parameter when using the
+# sh plugin.
+
 source ./functions.sh
 set -e
 set -x
 
-# Test that $tmpdir doesn't leak into --run parameter when using the
-# sh plugin.
+requires_unix_domain_sockets
 
 unset tmpdir
 nbdkit -U - sh - --run 'if test -n "$tmpdir"; then exit 1; fi' </dev/null

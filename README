@@ -345,3 +345,7 @@ To see which plugins and filters were compiled:
 You can run them under Wine without installing using eg:
 
     ./nbdkit.exe -f -v memory 1G
+
+You can run the test suite in the usual way:
+
+    mingw64-make check

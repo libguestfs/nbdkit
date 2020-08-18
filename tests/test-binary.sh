@@ -42,7 +42,8 @@ set -e
 requires cut --version
 
 binary1="$( nbdkit --dump-config           | grep ^binary= | cut -d= -f2 )"
-binary2="$( ../server/nbdkit --dump-config | grep ^binary= | cut -d= -f2 )"
+binary2="$( ../server/nbdkit$EXEEXT --dump-config |
+                                             grep ^binary= | cut -d= -f2 )"
 
 echo binary1=$binary1
 echo binary2=$binary2

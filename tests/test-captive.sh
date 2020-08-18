@@ -30,11 +30,13 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Test nbdkit --run (captive nbdkit) option.
+
 source ./functions.sh
 set -e
 set -x
 
-# Test nbdkit --run (captive nbdkit) option.
+requires_unix_domain_sockets
 
 fail=0
 

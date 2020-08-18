@@ -36,6 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires nbdcopy --version
 
 out=test-data-raw-copy.out

@@ -38,9 +38,12 @@
 #include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <errno.h>
+#include <sys/types.h>
+
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 
 #include "exit-with-parent.h"
 #include "test.h"

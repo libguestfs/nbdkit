@@ -37,6 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires guestfish --version
 requires qemu-img --version
 

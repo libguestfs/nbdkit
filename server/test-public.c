@@ -54,11 +54,20 @@ nbdkit_error (const char *fs, ...)
   error_flagged = true;
 }
 
+void
+nbdkit_debug (const char *fs, ...)
+{
+}
+
 bool listen_stdin;
 bool configured;
 
 volatile int quit;
+#ifndef WIN32
 int quit_fd = -1;
+#else
+extern HANDLE quit_fd;
+#endif
 
 struct connection *
 threadlocal_get_conn (void)
@@ -339,8 +348,10 @@ test_nbdkit_read_password (void)
 {
   bool pass = true;
   char template[] = "+/tmp/nbdkit_testpw_XXXXXX";
+#ifndef WIN32
   char template2[] = "/tmp/nbdkit_testpw2_XXXXXX";
   char fdbuf[16];
+#endif
   char *pw = template;
   int fd;
 
@@ -378,7 +389,13 @@ test_nbdkit_read_password (void)
     perror ("mkstemp");
     pass = false;
   }
-  else if (write (fd, "abc\n", 4) != 4) {
+  else if (write (fd, "abc\n", 4) != 4 ||
+           /* NB: On Windows we must close the temporary file here.
+            * This is because nbdkit_read_password will try to open a
+            * second file descriptor on this file, which will fail
+            * with ERROR_SHARING_VIOLATION because Windows is stupid.
+            */
+           close (fd) == -1) {
     fprintf (stderr, "Failed to write to file %s\n", &template[1]);
     pass = false;
   }
@@ -391,12 +408,9 @@ test_nbdkit_read_password (void)
     pass = false;
   }
   free (pw);
+  unlink (&template[1]);
 
-  if (fd >= 0) {
-    close (fd);
-    unlink (&template[1]);
-  }
-
+#ifndef WIN32
   /* Test reading password from file descriptor. */
   fd = mkstemp (template2);
   if (fd < 0) {
@@ -430,6 +444,7 @@ test_nbdkit_read_password (void)
     fprintf (stderr, "Wrong error message handling\n");
     pass = false;
   }
+#endif /* !WIN32 */
 
   /* XXX Testing reading from stdin would require setting up a pty. But
    * we can test that it is forbidden with -s.

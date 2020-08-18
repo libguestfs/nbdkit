@@ -60,14 +60,9 @@ noinst_LTLIBRARIES =
 EXTRA_DIST = README.tests
 EXTRA_PROGRAMS =
 
-# Ensure we're testing the local copy by running everything through
-# the nbdkit helper script in the top build directory.
-#
 # Use the 'direct' backend, and ensure maximum libguestfs debugging.
-#
 # Enable libnbd debugging.
 TESTS_ENVIRONMENT = \
-	PATH=$(abs_top_builddir):$(PATH) \
 	SRCDIR=$(srcdir) \
 	LIBGUESTFS_ATTACH_METHOD=appliance \
 	LIBGUESTFS_DEBUG=1 \
@@ -75,10 +70,30 @@ TESTS_ENVIRONMENT = \
 	LIBNBD_DEBUG=1 \
 	$(NULL)
 
+if !IS_WINDOWS
+# Ensure we're testing the local copy by running everything through
+# the nbdkit helper script in the top build directory.
+TESTS_ENVIRONMENT += PATH=$(abs_top_builddir):$(PATH)
+else
+# Since most tests refer to "nbdkit" but on Windows the wrapper is
+# called "nbdkit.exe", we must make a "wrapper wrapper" called
+# "nbdkit" in some other directory, and the tests/ directory is
+# convenient.  For some reason a symlink doesn't work here.
+noinst_SCRIPTS = nbdkit
+nbdkit: Makefile
+	rm -f $@
+	echo 'exec $(abs_top_builddir)/nbdkit.exe "$$@"' > $@
+	chmod 0555 $@
+CLEANFILES += nbdkit
+TESTS_ENVIRONMENT += PATH=$(abs_builddir):$(PATH)
+endif
+
 # Common disk image shared with several tests.  These are built
 # conditionally, so tests should check the files they need exist and
 # skip if not present.
+if !IS_WINDOWS
 if HAVE_MKE2FS_WITH_D
+
 check_DATA += disk disk.tar
 CLEANFILES += disk disk.tar
 
@@ -119,7 +134,8 @@ disk.tar.xz: disk.tar
 	xz --best --block-size=32768 --keep $<
 endif HAVE_LIBLZMA
 
-endif
+endif HAVE_MKE2FS_WITH_D
+endif !IS_WINDOWS
 
 #----------------------------------------------------------------------
 # Use 'make check' to run the ordinary tests as non-root.  The
@@ -183,14 +199,11 @@ TESTS += \
 	test-single.sh \
 	test-single-from-file.sh \
 	test-single-sh.sh \
-	test-stdio.sh \
 	test-captive.sh \
 	test-random-sock.sh \
 	test-tls.sh \
 	test-tls-psk.sh \
 	test-ip.sh \
-	test-vsock.sh \
-	test-socket-activation \
 	test-foreground.sh \
 	test-debug-flags.sh \
 	test-long-name.sh \
@@ -201,6 +214,11 @@ TESTS += \
 	test-read-password.sh \
 	test-read-password-interactive.sh \
 	$(NULL)
+if !IS_WINDOWS
+TESTS += \
+	test-vsock.sh \
+	$(NULL)
+endif
 EXTRA_DIST += \
 	test-captive.sh \
 	test-ddrescue-filter.sh \
@@ -239,6 +257,8 @@ EXTRA_DIST += \
 	test-vsock.sh \
 	$(NULL)
 
+if !IS_WINDOWS
+TESTS += test-socket-activation
 check_PROGRAMS += \
 	test-socket-activation \
 	$(NULL)
@@ -249,7 +269,10 @@ test_socket_activation_CPPFLAGS = \
 	-I$(top_srcdir)/common/protocol \
 	$(NULL)
 test_socket_activation_CFLAGS = $(WARNINGS_CFLAGS)
+endif
 
+if !IS_WINDOWS
+TESTS += test-stdio.sh
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.
 noinst_LTLIBRARIES += \
@@ -261,7 +284,10 @@ test_stdio_plugin_la_SOURCES = \
 	test-stdio-plugin.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
-test_stdio_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
+test_stdio_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/replacements \
+	$(NULL)
 test_stdio_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -269,8 +295,11 @@ test_stdio_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) -rpath /nowhere \
 	$(NULL)
 test_stdio_plugin_la_LIBADD = \
+	$(top_builddir)/common/replacements/libcompat.la \
+	$(top_builddir)/common/utils/libutils.la \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
+endif
 
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.

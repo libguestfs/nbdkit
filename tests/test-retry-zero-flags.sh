@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_unix_domain_sockets
 requires nbdsh -c 'i = nbd.CMD_FLAG_FAST_ZERO
 exit(not h.supports_uri())'
 

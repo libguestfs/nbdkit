@@ -33,9 +33,10 @@
 source ./functions.sh
 set -x
 
+requires_single_mode
 requires nbdsh --version
 
-plugin=.libs/test-flush-plugin.so
+plugin=.libs/test-flush-plugin.$SOEXT
 requires test -f $plugin
 
 files="test-flush.err"
