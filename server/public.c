@@ -466,11 +466,30 @@ nbdkit_read_password (const char *value, char **password)
   return 0;
 }
 
+typedef struct termios echo_mode;
+
+static void
+echo_off (echo_mode *old_mode)
+{
+  struct termios temp;
+
+  tcgetattr (STDIN_FILENO, old_mode);
+  temp = *old_mode;
+  temp.c_lflag &= ~ECHO;
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &temp);
+}
+
+static void
+echo_restore (const echo_mode *old_mode)
+{
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, old_mode);
+}
+
 static int
 read_password_interactive (char **password)
 {
   int err;
-  struct termios orig, temp;
+  echo_mode orig;
   ssize_t r;
   size_t n;
 
@@ -486,11 +505,8 @@ read_password_interactive (char **password)
 
   printf ("password: ");
 
-  /* Set no echo.  This is best-effort, ignore errors. */
-  tcgetattr (STDIN_FILENO, &orig);
-  temp = orig;
-  temp.c_lflag &= ~ECHO;
-  tcsetattr (STDIN_FILENO, TCSAFLUSH, &temp);
+  /* Set no echo. */
+  echo_off (&orig);
 
   /* To distinguish between error and EOF we have to check errno.
    * getline can return -1 and errno = 0 which means we got end of
@@ -501,7 +517,7 @@ read_password_interactive (char **password)
   err = errno;
 
   /* Restore echo. */
-  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig);
+  echo_restore (&orig);
 
   /* Complete the printf above. */
   printf ("\n");
