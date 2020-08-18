@@ -51,6 +51,10 @@ EXTRA_DIST = \
 	openlog.c \
 	poll.c \
 	poll.h \
+	pread.c \
+	pread.h \
+	pwrite.c \
+	pwrite.h \
 	realpath.c \
 	realpath.h \
 	strndup.c \
