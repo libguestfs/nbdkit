@@ -32,18 +32,18 @@
 
 #include <config.h>
 
-#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
-#include <assert.h>
-#include <fcntl.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
+
+#undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
+#include <assert.h>
 
 #define NBDKIT_API_VERSION 2
-
 #include <nbdkit-plugin.h>
 
 static const char *msg = "input";
