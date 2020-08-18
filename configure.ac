@@ -339,6 +339,8 @@ AC_CHECK_FUNCS([\
 dnl Replacement functions that we provide for some platforms.
 AC_CONFIG_LIBOBJ_DIR([common/replacements])
 AC_REPLACE_FUNCS([\
+	fdatasync \
+	fsync \
 	get_current_dir_name \
 	getdelim \
 	getline \

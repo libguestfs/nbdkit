@@ -54,11 +54,8 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "fdatasync.h"
 #include "utils.h"
-
-#ifndef HAVE_FDATASYNC
-#define fdatasync fsync
-#endif
 
 static char *dir;                   /* dir parameter */
 static DIR *exportsdir;             /* opened exports dir */

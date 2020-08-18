@@ -39,6 +39,10 @@ libcompat_la_SOURCES =
 libcompat_la_LIBADD = $(LTLIBOBJS)
 
 EXTRA_DIST = \
+	fdatasync.c \
+	fdatasync.h \
+	fsync.c \
+	fsync.h \
 	get_current_dir_name.c \
 	get_current_dir_name.h \
 	getdelim.c \

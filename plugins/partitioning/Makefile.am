@@ -49,6 +49,7 @@ nbdkit_partitioning_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/common/gpt \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/regions \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	-I. \
 	$(NULL)
@@ -61,6 +62,7 @@ nbdkit_partitioning_plugin_la_LIBADD = \
 	$(top_builddir)/common/gpt/libgpt.la \
 	$(top_builddir)/common/regions/libregions.la \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(NULL)
 
 if HAVE_POD

@@ -57,6 +57,7 @@ nbdkit_ondemand_plugin_la_SOURCES = \
 
 nbdkit_ondemand_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_ondemand_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
@@ -66,6 +67,7 @@ nbdkit_ondemand_plugin_la_LDFLAGS = \
 	$(NULL)
 nbdkit_ondemand_plugin_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(NULL)
 
 if HAVE_POD
