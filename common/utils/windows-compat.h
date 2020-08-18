@@ -103,6 +103,9 @@ extern int win_send (int fd, const void *buf, size_t len, int flags);
 #define dup _dup
 #define dup2 _dup2
 
+/* setenv replacement. */
+#define setenv(k, v, replace) _putenv_s ((k), (v));
+
 /* Unfortunately quite commonly used at the moment.  Make it a common
  * macro so we can easily find places which need porting.
  *

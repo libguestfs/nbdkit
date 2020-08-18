@@ -119,7 +119,7 @@ server (int sock)
     "nbdkit",
     "-s",         /* take input from stdin/stdout */
     "--log=null", /* discard error messages */
-    "plugins/memory/.libs/nbdkit-memory-plugin.so", "1M",
+    "plugins/memory/.libs/nbdkit-memory-plugin." SOEXT, "1M",
     NULL
   };
   const int argc = sizeof argv / sizeof argv[0] - 1;

@@ -331,21 +331,17 @@ To cross compile do:
     mingw64-configure --disable-ocaml --disable-perl --disable-vddk
     mingw64-make
 
-It is expected to fail, but check that it gets as far as building
-server/nbdkit.exe.  You can test if the server is working by doing:
+You can test if the server is working by doing:
 
-    wine server/nbdkit.exe --dump-config
+    ./nbdkit.exe --dump-config
 
-Now try to build plugins and filters (many will not compile):
+(This usually runs wine automatically.  If not, you may need to prefix
+the command "wine ./nbdkit.exe ...")
 
-    mingw64-make -k
+To see which plugins and filters were compiled:
 
-To see which ones were compiled:
-
-    find -name '*.dll'
+    find plugins filters -name '*.dll'
 
 You can run them under Wine without installing using eg:
 
-    wine server/nbdkit.exe -f -v \
-                           plugins/memory/.libs/nbdkit-memory-plugin.dll \
-                           size=1G
+    ./nbdkit.exe -f -v memory 1G

@@ -489,12 +489,17 @@ AS_CASE([$host_os],
         LIBS="$LIBS -lmsvcrt -lkernel32 -luser32"
         NO_UNDEFINED_ON_WINDOWS="-no-undefined"
         IMPORT_LIBRARY_ON_WINDOWS='-Wl,-L$(top_builddir)/server -Wl,-lnbdkit'
+        SOEXT="dll"
     ],
-    [is_windows=no]
+    [is_windows=no
+     SOEXT="so"]
 )
 AC_MSG_RESULT([$is_windows])
 AC_SUBST([NO_UNDEFINED_ON_WINDOWS])
 AC_SUBST([IMPORT_LIBRARY_ON_WINDOWS])
+AC_SUBST([SOEXT])
+AC_DEFINE_UNQUOTED([SOEXT],["$SOEXT"],[Extension used for shared objects/DLLs.])
+AC_DEFINE_UNQUOTED([EXEEXT],["$EXEEXT"],[Extension used for executables.])
 AM_CONDITIONAL([IS_WINDOWS],[test "x$is_windows" = "xyes"])
 
 AS_IF([test "x$is_windows" = "xyes"],[

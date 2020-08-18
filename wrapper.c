@@ -72,6 +72,7 @@
 #include <time.h>
 
 #include "options.h"
+#include "windows-compat.h"
 #include "utils.h"
 
 /* Construct an array of parameters passed through to real nbdkit. */
@@ -131,6 +132,46 @@ print_command (void)
   fputc ('\n', stderr);
 }
 
+#ifdef WIN32
+/* Windows behaviour of _spawnvp is completely insane:
+ * https://stackoverflow.com/questions/4146980/how-to-avoid-space-splitting-and-quote-removal-with-spawnvp
+ */
+static const char *
+quote_string_for_spawn (const char *str)
+{
+  size_t i, len;
+  char *p, *ret = (char *) str;
+
+  if (strchr (str, ' ') || strchr (str, '"')) {
+    len = strlen (str);
+
+    p = ret = malloc (2 + len*2 + 1);
+    if (ret == NULL) {
+      perror ("malloc");
+      exit (EXIT_FAILURE);
+    }
+
+    *p++ = '"';
+    for (i = 0; i < len; ++i) {
+      switch (str[i]) {
+      case '"':
+      case '\\':
+        *p++ = '\\';
+        *p++ = str[i];
+        break;
+      default:
+        *p++ = str[i];
+      }
+    }
+    *p++ = '"';
+    *p++ = '\0';
+  }
+
+  /* We never free these strings. */
+  return ret;
+}
+#endif /* WIN32 */
+
 int
 main (int argc, char *argv[])
 {
@@ -141,6 +182,7 @@ main (int argc, char *argv[])
   char ts[32];
   int r;
 
+#ifndef WIN32
   /* If NBDKIT_VALGRIND=1 is set in the environment, then we run the
    * program under valgrind.  This is used by the tests.  Similarly if
    * NBDKIT_GDB=1 is set, we run the program under GDB, useful during
@@ -167,9 +209,15 @@ main (int argc, char *argv[])
       passthru ("--args");
     }
   }
+#endif
 
   /* Needed for plugins written in OCaml. */
-  s = getenv ("LD_LIBRARY_PATH");
+#ifndef WIN32
+#define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
+#else
+#define LD_LIBRARY_PATH "PATH"
+#endif
+  s = getenv (LD_LIBRARY_PATH);
   if (s)
     r = asprintf (&s, "%s/plugins/ocaml/.libs:%s", builddir, s);
   else
@@ -178,7 +226,7 @@ main (int argc, char *argv[])
     perror ("asprintf");
     exit (EXIT_FAILURE);
   }
-  setenv ("LD_LIBRARY_PATH", s, 1);
+  setenv (LD_LIBRARY_PATH, s, 1);
   free (s);
   s = getenv ("LIBRARY_PATH");
   if (s)
@@ -193,7 +241,7 @@ main (int argc, char *argv[])
   free (s);
 
   /* Absolute path of the real nbdkit command. */
-  passthru_format ("%s/server/nbdkit", builddir);
+  passthru_format ("%s/server/nbdkit" EXEEXT, builddir);
 
   /* Option parsing.  We don't really parse options here.  We are only
    * interested in which options have arguments and which need
@@ -225,7 +273,8 @@ main (int argc, char *argv[])
     /* Filters can be rewritten if they are a short name. */
     else if (c == FILTER_OPTION) {
       if (is_short_name (optarg))
-        passthru_format ("--filter=%s/filters/%s/.libs/nbdkit-%s-filter.so",
+        passthru_format ("--filter="
+                         "%s/filters/%s/.libs/nbdkit-%s-filter." SOEXT,
                          builddir, optarg, optarg);
       else
         passthru_format ("--filter=%s", optarg);
@@ -258,13 +307,13 @@ main (int argc, char *argv[])
     if (is_short_name (argv[optind])) {
       /* Special plugins written in Perl. */
       if (is_perl_plugin (argv[optind])) {
-        passthru_format ("%s/plugins/perl/.libs/nbdkit-perl-plugin.so",
+        passthru_format ("%s/plugins/perl/.libs/nbdkit-perl-plugin." SOEXT,
                          builddir);
         passthru_format ("%s/plugins/%s/nbdkit-%s-plugin",
                          builddir, argv[optind], argv[optind]);
       }
       else {
-        passthru_format ("%s/plugins/%s/.libs/nbdkit-%s-plugin.so",
+        passthru_format ("%s/plugins/%s/.libs/nbdkit-%s-plugin." SOEXT,
                          builddir, argv[optind], argv[optind]);
       }
       ++optind;
@@ -295,7 +344,19 @@ main (int argc, char *argv[])
   setenv ("MALLOC_PERTURB_", ts, 0);
 
   /* Run the final command. */
+#ifndef WIN32
   execvp (cmd[0], (char **) cmd);
   perror (cmd[0]);
   exit (EXIT_FAILURE);
+#else /* WIN32 */
+  size_t i;
+  for (i = 1; cmd[i] != NULL; ++i)
+    cmd[i] = quote_string_for_spawn (cmd[i]);
+  r = _spawnvp (_P_WAIT, cmd[0], cmd);
+  if (r == -1) {
+    perror (cmd[0]);
+    exit (EXIT_FAILURE);
+  }
+  exit (r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
+#endif /* WIN32 */
 }

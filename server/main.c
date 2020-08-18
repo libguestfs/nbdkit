@@ -497,7 +497,7 @@ main (int argc, char *argv[])
       /* Incorrect use of --dump-plugin. */
       fprintf (stderr,
                "%s: use 'nbdkit plugin --dump-plugin' or\n"
-               "'nbdkit /path/to/plugin.so --dump-plugin'\n",
+               "'nbdkit /path/to/plugin." SOEXT " --dump-plugin'\n",
                program_name);
       exit (EXIT_FAILURE);
     }
@@ -819,7 +819,7 @@ open_plugin_so (size_t i, const char *name, int short_name)
   if (short_name) {
     /* Short names are rewritten relative to the plugindir. */
     if (asprintf (&filename,
-                  "%s/nbdkit-%s-plugin.so", plugindir, name) == -1) {
+                  "%s/nbdkit-%s-plugin." SOEXT, plugindir, name) == -1) {
       perror ("asprintf");
       exit (EXIT_FAILURE);
     }
@@ -872,7 +872,7 @@ open_filter_so (struct backend *next, size_t i,
   if (short_name) {
     /* Short names are rewritten relative to the filterdir. */
     if (asprintf (&filename,
-                  "%s/nbdkit-%s-filter.so", filterdir, name) == -1) {
+                  "%s/nbdkit-%s-filter." SOEXT, filterdir, name) == -1) {
       perror ("asprintf");
       exit (EXIT_FAILURE);
     }
