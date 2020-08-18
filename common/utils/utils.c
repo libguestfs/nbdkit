@@ -76,7 +76,8 @@ exit_status_to_nbd_error (int status, const char *cmd)
  * prevent fd leaks to plugins that want to fork().
  */
 int
-set_cloexec (int fd) {
+set_cloexec (int fd)
+{
 #if (defined SOCK_CLOEXEC && defined HAVE_MKOSTEMP && defined HAVE_PIPE2 && \
      defined HAVE_ACCEPT4)
   nbdkit_error ("prefer creating fds with CLOEXEC atomically set");
@@ -110,7 +111,8 @@ set_cloexec (int fd) {
  * On failure, close fd and return -1; on success, return fd.
  */
 int
-set_nonblock (int fd) {
+set_nonblock (int fd)
+{
   int f;
   int err;
 
