@@ -322,6 +322,7 @@ AC_CHECK_HEADERS([\
 	stdatomic.h \
 	syslog.h \
 	sys/endian.h \
+	sys/ioctl.h \
 	sys/mman.h \
 	sys/prctl.h \
 	sys/procctl.h \

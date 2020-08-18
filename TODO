@@ -321,9 +321,11 @@ Currently many features are missing, including:
 * For possible Unix domain socket support in future see:
   https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows/
 
-* The file plugin.  The current file plugin is essentially POSIX-only.
-  We would like to eventually write an alternate file plugin which
-  uses Windows APIs.
+* The current file plugin works but has limited features and doesn't
+  use the best native APIs.  It's worth considering writing an
+  alternate implementation which is used for Windows and uses all
+  native APIs and features.  Also this should be extended to allow
+  exporting block devices.
 
 * Many other plugins and filters.
 
