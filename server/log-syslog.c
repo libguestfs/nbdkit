@@ -55,7 +55,9 @@ log_syslog_verror (const char *fs, va_list args)
   size_t len = 0;
   FILE *fp = NULL;
 
+#ifdef HAVE_OPEN_MEMSTREAM
   fp = open_memstream (&msg, &len);
+#endif
   if (fp == NULL) {
     /* Fallback to logging using fs, args directly. */
     errno = err; /* Must restore in case fs contains %m */

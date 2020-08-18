@@ -332,6 +332,7 @@ AC_CHECK_FUNCS([\
 	mlock \
 	mlockall \
 	munlock \
+	open_memstream \
 	pipe2 \
 	ppoll \
 	posix_fadvise])
