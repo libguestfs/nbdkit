@@ -115,16 +115,19 @@ struct nbdkit_extent {
   uint32_t type;
 };
 
-extern struct nbdkit_extents *nbdkit_extents_new (uint64_t start, uint64_t end);
-extern void nbdkit_extents_free (struct nbdkit_extents *);
-extern size_t nbdkit_extents_count (const struct nbdkit_extents *);
-extern struct nbdkit_extent nbdkit_get_extent (const struct nbdkit_extents *,
-                                               size_t);
-extern int nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
-                                   nbdkit_backend *nxdata,
-                                   uint32_t count, uint64_t offset,
-                                   uint32_t flags, uint32_t align,
-                                   struct nbdkit_extents *extents, int *err);
+NBDKIT_EXTERN_DECL (struct nbdkit_extents *,nbdkit_extents_new,
+                    (uint64_t start, uint64_t end));
+NBDKIT_EXTERN_DECL (void, nbdkit_extents_free, (struct nbdkit_extents *));
+NBDKIT_EXTERN_DECL (size_t, nbdkit_extents_count,
+                    (const struct nbdkit_extents *));
+NBDKIT_EXTERN_DECL (struct nbdkit_extent, nbdkit_get_extent,
+                    (const struct nbdkit_extents *, size_t));
+NBDKIT_EXTERN_DECL (int, nbdkit_extents_aligned,
+                    (struct nbdkit_next_ops *next_ops,
+                     nbdkit_backend *nxdata,
+                     uint32_t count, uint64_t offset,
+                     uint32_t flags, uint32_t align,
+                     struct nbdkit_extents *extents, int *err));
 
 /* Export functions. */
 struct nbdkit_export {
@@ -132,11 +135,13 @@ struct nbdkit_export {
   char *description;
 };
 
-extern struct nbdkit_exports *nbdkit_exports_new (int default_only);
-extern void nbdkit_exports_free (struct nbdkit_exports *);
-extern size_t nbdkit_exports_count (const struct nbdkit_exports *);
-extern const struct nbdkit_export nbdkit_get_export (const struct nbdkit_exports *,
-                                                     size_t);
+NBDKIT_EXTERN_DECL (struct nbdkit_exports *, nbdkit_exports_new,
+                    (int default_only));
+NBDKIT_EXTERN_DECL (void, nbdkit_exports_free, (struct nbdkit_exports *));
+NBDKIT_EXTERN_DECL (size_t, nbdkit_exports_count,
+                    (const struct nbdkit_exports *));
+NBDKIT_EXTERN_DECL (const struct nbdkit_export, nbdkit_get_export,
+                    (const struct nbdkit_exports *, size_t));
 
 /* Filter struct. */
 struct nbdkit_filter {

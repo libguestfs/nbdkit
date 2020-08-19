@@ -144,9 +144,9 @@ struct nbdkit_plugin {
                        struct nbdkit_exports *exports);
 };
 
-extern void nbdkit_set_error (int err);
-extern const char *nbdkit_export_name (void);
-extern int nbdkit_is_tls (void);
+NBDKIT_EXTERN_DECL (void, nbdkit_set_error, (int err));
+NBDKIT_EXTERN_DECL (const char *, nbdkit_export_name, (void));
+NBDKIT_EXTERN_DECL (int, nbdkit_is_tls, (void));
 
 #define NBDKIT_REGISTER_PLUGIN(plugin)                                  \
   NBDKIT_CXX_LANG_C                                                     \
