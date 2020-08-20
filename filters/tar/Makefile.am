@@ -52,6 +52,7 @@ nbdkit_tar_filter_la_LDFLAGS = \
 	$(NULL)
 nbdkit_tar_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
 
 if HAVE_POD

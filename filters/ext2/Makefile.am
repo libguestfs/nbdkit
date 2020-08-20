@@ -53,8 +53,9 @@ nbdkit_ext2_filter_la_CFLAGS = \
 	$(EXT2FS_CFLAGS) $(COM_ERR_CFLAGS) \
 	$(NULL)
 nbdkit_ext2_filter_la_LIBADD = \
-	$(EXT2FS_LIBS) $(COM_ERR_LIBS) \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
+	$(EXT2FS_LIBS) $(COM_ERR_LIBS) \
 	$(NULL)
 nbdkit_ext2_filter_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \

@@ -58,8 +58,9 @@ nbdkit_python_plugin_la_CFLAGS = \
 	$(PYTHON_CFLAGS) \
 	$(NULL)
 nbdkit_python_plugin_la_LIBADD = \
-	$(PYTHON_LIBS) \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
+	$(PYTHON_LIBS) \
 	$(NULL)
 nbdkit_python_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \

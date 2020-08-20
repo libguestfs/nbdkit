@@ -46,12 +46,13 @@ nbdkit_tar_plugin_la_CPPFLAGS = \
 	-I. \
 	$(NULL)
 nbdkit_tar_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+nbdkit_tar_plugin_la_LIBADD = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
+	$(NULL)
 nbdkit_tar_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(NULL)
-nbdkit_tar_plugin_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 
 if HAVE_POD

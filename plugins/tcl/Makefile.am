@@ -53,6 +53,7 @@ nbdkit_tcl_plugin_la_CFLAGS = \
 	$(TCL_CFLAGS) \
 	$(NULL)
 nbdkit_tcl_plugin_la_LIBADD = \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(TCL_LIBS) \
 	$(NULL)
 nbdkit_tcl_plugin_la_LDFLAGS = \

@@ -51,8 +51,9 @@ nbdkit_guestfs_plugin_la_CFLAGS = \
 	$(LIBGUESTFS_CFLAGS) \
 	$(NULL)
 nbdkit_guestfs_plugin_la_LIBADD = \
-	$(LIBGUESTFS_LIBS) \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
+	$(LIBGUESTFS_LIBS) \
 	$(NULL)
 nbdkit_guestfs_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \

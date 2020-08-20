@@ -57,6 +57,7 @@ nbdkit_xz_filter_la_CFLAGS = \
 nbdkit_xz_filter_la_LIBADD = \
 	$(LIBLZMA_LIBS) \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
 nbdkit_xz_filter_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \

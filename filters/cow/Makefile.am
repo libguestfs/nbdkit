@@ -56,6 +56,7 @@ nbdkit_cow_filter_la_LDFLAGS = \
 nbdkit_cow_filter_la_LIBADD = \
 	$(top_builddir)/common/bitmap/libbitmap.la \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
 
 if HAVE_POD

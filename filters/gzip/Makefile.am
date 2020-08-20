@@ -53,6 +53,7 @@ nbdkit_gzip_filter_la_CFLAGS = \
 	$(NULL)
 nbdkit_gzip_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(ZLIB_LIBS) \
 	$(NULL)
 nbdkit_gzip_filter_la_LDFLAGS = \

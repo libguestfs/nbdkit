@@ -50,6 +50,7 @@ nbdkit_rate_filter_la_CPPFLAGS = \
 nbdkit_rate_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_rate_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
 nbdkit_rate_filter_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \

@@ -485,11 +485,13 @@ AS_CASE([$host_os],
         is_windows=yes
         LIBS="$LIBS -lmsvcrt -lkernel32 -luser32"
         NO_UNDEFINED_ON_WINDOWS="-no-undefined"
+        IMPORT_LIBRARY_ON_WINDOWS='-Wl,-L$(top_builddir)/server -Wl,-lnbdkit'
     ],
     [is_windows=no]
 )
 AC_MSG_RESULT([$is_windows])
 AC_SUBST([NO_UNDEFINED_ON_WINDOWS])
+AC_SUBST([IMPORT_LIBRARY_ON_WINDOWS])
 AM_CONDITIONAL([IS_WINDOWS],[test "x$is_windows" = "xyes"])
 
 AS_IF([test "x$is_windows" = "xyes"],[

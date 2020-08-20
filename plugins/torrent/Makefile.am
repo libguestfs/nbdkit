@@ -53,14 +53,15 @@ nbdkit_torrent_plugin_la_CFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	$(LIBTORRENT_CFLAGS) \
 	$(NULL)
+nbdkit_torrent_plugin_la_LIBADD = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
+	$(PTHREAD_LIBS) \
+	$(LIBTORRENT_LIBS) \
+	$(NULL)
 nbdkit_torrent_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
 	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(NULL)
-nbdkit_torrent_plugin_la_LIBADD = \
-	$(PTHREAD_LIBS) \
-	$(LIBTORRENT_LIBS) \
-	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 
 if HAVE_POD

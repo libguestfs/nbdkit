@@ -50,6 +50,7 @@ nbdkit_gzip_plugin_la_CFLAGS = \
 	$(ZLIB_CFLAGS) \
 	$(NULL)
 nbdkit_gzip_plugin_la_LIBADD = \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(ZLIB_LIBS) \
 	$(NULL)
 nbdkit_gzip_plugin_la_LDFLAGS = \

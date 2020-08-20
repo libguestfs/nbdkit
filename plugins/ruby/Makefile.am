@@ -53,6 +53,7 @@ nbdkit_ruby_plugin_la_CFLAGS = \
 	$(RUBY_CFLAGS) \
 	$(NULL)
 nbdkit_ruby_plugin_la_LIBADD = \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(RUBY_LIBS) \
 	$(NULL)
 nbdkit_ruby_plugin_la_LDFLAGS = \

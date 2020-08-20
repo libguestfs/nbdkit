@@ -52,8 +52,9 @@ nbdkit_ssh_plugin_la_CFLAGS = \
 	$(SSH_CFLAGS) \
 	$(NULL)
 nbdkit_ssh_plugin_la_LIBADD = \
-	$(SSH_LIBS) \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
+	$(SSH_LIBS) \
 	$(NULL)
 nbdkit_ssh_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \

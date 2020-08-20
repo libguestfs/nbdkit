@@ -50,6 +50,7 @@ nbdkit_libvirt_plugin_la_CFLAGS = \
 	$(LIBVIRT_CFLAGS) \
 	$(NULL)
 nbdkit_libvirt_plugin_la_LIBADD = \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(LIBVIRT_LIBS) \
 	$(NULL)
 nbdkit_libvirt_plugin_la_LDFLAGS = \

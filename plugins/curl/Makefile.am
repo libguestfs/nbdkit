@@ -54,8 +54,9 @@ nbdkit_curl_plugin_la_CFLAGS = \
 	$(CURL_CFLAGS) \
 	$(NULL)
 nbdkit_curl_plugin_la_LIBADD = \
-	$(CURL_LIBS) \
 	$(top_builddir)/common/utils/libutils.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
+	$(CURL_LIBS) \
 	$(NULL)
 nbdkit_curl_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
