@@ -103,7 +103,17 @@ requires_linux_kernel_version ()
 {
     local kver
 
-    # Test the kernel is Linux.
+    # Check that nbdkit was built for Linux.  This can appear to be a
+    # peculiar test, but if we cross-compiled nbdkit for Windows and
+    # are running it under Wine then the host kernel will still be
+    # Linux, but the test will fail anyway.
+    host_os="$(nbdkit --dump-config | grep ^host_os | cut -d= -f2)"
+    if [[ ! "$host_os" =~ linux ]]; then
+        echo "$0: binary was built for $host_os (not Linux), skipping test"
+        exit 77
+    fi
+
+    # Test the host kernel is Linux.
     requires test "$(uname -s)" = "Linux"
 
     # Test that it's the minimum version.
