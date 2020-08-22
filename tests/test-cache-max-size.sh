@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_filter cache
 # Check that this is a Linux-like system supporting /proc/$pid/fd.
 requires test -d /proc/self/fd
 requires qemu-io --version

@@ -33,6 +33,8 @@
 source ./functions.sh
 set -e
 
+requires_filter log
+
 sock=`mktemp -u`
 files="log.img log.log $sock log.pid"
 rm -f $files

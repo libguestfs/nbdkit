@@ -30,12 +30,14 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Test nbdkit -D option.
+
 source ./functions.sh
 set -x
 
-export LANG=C
+requires_plugin example2
 
-# Test nbdkit -D option.
+export LANG=C
 
 files=debug-flags.out
 rm -f $files

@@ -33,6 +33,8 @@
 source ./functions.sh
 set -e
 
+requires_filter log
+
 sock1=`mktemp -u`
 sock2=`mktemp -u`
 files="blocksize1.img blocksize1.log $sock1 blocksize1.pid

@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_plugin sh
 requires nbdsh --version
 requires dd iflag=count_bytes </dev/null
 
