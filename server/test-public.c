@@ -45,8 +45,9 @@
 
 static bool error_flagged;
 
-/* Stubs for linking against minimal source files, and for proving that
- * an error message is issued when expected.  */
+/* Stubs for linking against minimal source files, and for proving
+ * that an error message is issued when expected.
+ */
 void
 nbdkit_error (const char *fs, ...)
 {
