@@ -149,7 +149,14 @@ test_public_CPPFLAGS = \
 	-I$(top_srcdir)/common/protocol \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
-test_public_CFLAGS = $(WARNINGS_CFLAGS) $(VALGRIND_CFLAGS)
+test_public_CFLAGS = \
+	$(PTHREAD_CFLAGS) \
+	$(WARNINGS_CFLAGS) \
+	$(VALGRIND_CFLAGS) \
+	$(NULL)
+test_public_LDFLAGS = \
+	$(PTHREAD_LIBS) \
+	$(NULL)
 test_public_LDADD = \
 	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
