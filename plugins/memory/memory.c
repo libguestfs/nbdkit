@@ -100,6 +100,11 @@ memory_config_complete (void)
 static void
 memory_dump_plugin (void)
 {
+#ifdef HAVE_MLOCK
+  printf ("mlock=yes\n");
+#else
+  printf ("mlock=no\n");
+#endif
 #ifdef HAVE_LIBZSTD
   printf ("zstd=yes\n");
 #else

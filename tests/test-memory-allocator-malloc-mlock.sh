@@ -40,6 +40,11 @@ set -e
 
 requires nbdsh --version
 
+if ! nbdkit memory --dump-plugin | grep -sq mlock=yes; then
+    echo "$0: mlock not enabled in this build of nbdkit"
+    exit 77
+fi
+
 # ulimit -l is measured in kilobytes and so for this test must be at
 # least 2 (kilobytes) and we actually check it's a bit larger to allow
 # room for error.  On Linux the default is usually 64.

@@ -140,6 +140,10 @@ usually requires you to adjust the L<ulimit(1)> associated with the
 process and on some operating systems may require you to run nbdkit as
 root.  (See also the L<nbdkit(1)> I<--swap> option).
 
+The C<mlock=true> feature is only supported on some platforms.  Use
+S<C<nbdkit memory --dump-plugin>> and check that the output contains
+C<mlock=yes>.
+
 =item B<allocator=zstd>
 
 The disk image is stored in a sparse array where each page is
