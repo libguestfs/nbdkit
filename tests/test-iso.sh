@@ -35,6 +35,7 @@
 source ./functions.sh
 set -e
 
+requires_plugin iso
 requires guestfish --version
 
 sock=`mktemp -u`

@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_filter cache
 requires nbdsh --version
 
 sock=`mktemp -u`

@@ -113,6 +113,20 @@ requires_linux_kernel_version ()
     requires test "$(echo "$kver >= $1" | bc -l)" = "1"
 }
 
+# Test if a plugin has been compiled.
+requires_plugin ()
+{
+    # See nbdkit-probing(1).
+    requires nbdkit "$1" --version
+}
+
+# Test if a filter has been compiled.
+requires_filter ()
+{
+    # See nbdkit-probing(1).
+    requires nbdkit --filter="$1" null --version
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to

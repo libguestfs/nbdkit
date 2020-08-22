@@ -36,6 +36,8 @@ source ./functions.sh
 set -e
 set -x
 
+requires_plugin example2
+
 output="$(nbdkit example2 --dump-plugin)"
 if [[ ! ( "$output" =~ example2_extra\=hello ) ]]; then
     echo "$0: unexpected output from nbdkit example2 --dump-plugin"

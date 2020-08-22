@@ -37,6 +37,10 @@ source ./functions.sh
 set -e
 set -x
 
+requires_plugin file
+requires_plugin sh
+requires_filter noparallel
+
 # First, get a baseline (since a system without atomic CLOEXEC can't
 # do parallel). Then test various patterns with the sh plugin.
 max=$(nbdkit --dump-plugin file | sed -n '/^thread_model=/ s///p')

@@ -37,6 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_plugin cdi
 requires nbdsh --version
 requires truncate --version
 # Although we use fake podman, we require the real jq.

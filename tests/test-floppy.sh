@@ -35,6 +35,7 @@
 source ./functions.sh
 set -e
 
+requires_plugin floppy
 requires guestfish --version
 
 sock=`mktemp -u`

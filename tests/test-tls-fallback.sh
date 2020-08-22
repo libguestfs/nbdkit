@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_plugin sh
 requires nbdsh -c 'exit (not h.supports_tls ())'
 
 # Does the nbdkit binary support TLS?

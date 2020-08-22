@@ -34,6 +34,9 @@ source ./functions.sh
 set -e
 set -x
 
+requires_filter fua
+requires_filter log
+
 sockdir=`mktemp -d`
 files="fua.img
        fua1.log fua1.pid

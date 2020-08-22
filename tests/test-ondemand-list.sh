@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_plugin ondemand
 requires qemu-nbd --version
 
 dir=`mktemp -d`
