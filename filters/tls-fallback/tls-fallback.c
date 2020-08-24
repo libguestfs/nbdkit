@@ -74,7 +74,7 @@ tls_fallback_get_ready (nbdkit_next_get_ready *next, void *nxdata,
   return next (nxdata);
 }
 
-/* TODO: init_exports needs is_tls parameter */
+/* TODO: list_exports needs is_tls parameter */
 
 /* Helper for determining if this connection is insecure.  This works
  * because we can treat all handles on a binary basis: secure or
@@ -87,14 +87,13 @@ static void *
 tls_fallback_open (nbdkit_next_open *next, void *nxdata, int readonly,
                    const char *exportname, int is_tls)
 {
-  /* Bummer - we really do NOT want to call next() when insecure,
-   * because we don't know how long it will take.  But that requires a
-   * fix to nbdkit; right now, it asserts if we skip this :(
+  /* We do NOT want to call next() when insecure, because we don't
+   * know how long it will take.
    */
-  if (next (nxdata, readonly, exportname) == -1)
-    return NULL;
   if (!is_tls)
     return &message; /* See NOT_TLS for this choice of handle */
+  if (next (nxdata, readonly, exportname) == -1)
+    return NULL;
   return NBDKIT_HANDLE_NOT_NEEDED;
 }
 

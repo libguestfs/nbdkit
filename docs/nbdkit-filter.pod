@@ -426,7 +426,7 @@ C<NBDKIT_HANDLE_NOT_NEEDED> which is a static non-NULL pointer.
 If there is an error, C<.open> should call C<nbdkit_error> with an
 error message and return C<NULL>.
 
-This callback is optional, but if provided, it must call C<next>,
+This callback is optional, but if provided, it should call C<next>,
 passing C<readonly> and C<exportname> possibly modified according to
 how the filter plans to use the plugin (C<is_tls> is not passed,
 because a filter cannot modify it).  Typically, the filter passes the
@@ -446,7 +446,9 @@ C<nbdkit_is_tls>.
 
 The filter should generally call C<next> as its first step, to
 allocate from the plugin outwards, so that C<.close> running from the
-outer filter to the plugin will be in reverse.
+outer filter to the plugin will be in reverse.  Skipping a call to
+C<next> is acceptable if the filter will not access C<next_ops>
+during any of the remaining callbacks reached on the same connection.
 
 =head2 C<.close>
 
@@ -501,10 +503,11 @@ through the C<next_ops> structure.  Instead the core nbdkit server
 calls the prepare and finalize methods of all filters.  Prepare
 methods are called starting with the filter closest to the plugin and
 proceeding outwards (matching the order of C<.open> if all filters
-call C<next> before doing anything locally).  Finalize methods are
-called in the reverse order of prepare methods, with the outermost
-filter first (and matching the order of C<.close>), and only if the
-prepare method succeeded.
+call C<next> before doing anything locally), and only when an outer
+filter did not skip the C<next> call during C<.open>.  Finalize
+methods are called in the reverse order of prepare methods, with the
+outermost filter first (and matching the order of C<.close>), and only
+if the prepare method succeeded.
 
 If there is an error, both callbacks should call C<nbdkit_error> with
 an error message and return C<-1>.  An error in C<.prepare> is

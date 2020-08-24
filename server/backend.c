@@ -229,8 +229,6 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   }
 
   h->state |= HANDLE_OPEN;
-  if (b->i) /* A filter must not succeed unless its backend did also */
-    assert (get_handle (conn, b->i-1)->handle != NULL);
   return 0;
 }
 
@@ -244,9 +242,11 @@ backend_prepare (struct backend *b)
   assert ((h->state & (HANDLE_OPEN | HANDLE_CONNECTED)) == HANDLE_OPEN);
 
   /* Call these in order starting from the filter closest to the
-   * plugin, similar to typical .open order.
+   * plugin, similar to typical .open order.  But remember that
+   * a filter may skip opening its backend.
    */
-  if (b->i && backend_prepare (b->next) == -1)
+  if (b->i && get_handle (conn, b->i-1)->handle != NULL &&
+      backend_prepare (b->next) == -1)
     return -1;
 
   controlpath_debug ("%s: prepare readonly=%d", b->name, h->can_write == 0);

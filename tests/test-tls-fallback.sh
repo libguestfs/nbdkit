@@ -60,15 +60,10 @@ cleanup_fn rm -f $files
 # Run dual-mode server
 start_nbdkit -P $pid -U $sock --tls=on --tls-psk=keys.psk \
     --filter=tls-fallback sh - tlsreadme=$'dummy\n' <<\EOF
-if test "$2" = insecure; then
-    echo 'EINVAL insecure handle' 2>&1; exit 1
-fi
 case $1 in
   list_exports) echo NAMES; echo hello; echo world ;;
   open) if test "$4" != true; then
-      # nbdkit needs a fix to let tls-fallback skip .open when insecure...
-      # echo 'EINVAL unexpected tls mode' 2>&1; exit 1
-      echo insecure; exit 0
+      echo 'EINVAL unexpected tls mode' 2>&1; exit 1
     fi
     echo $3 ;;
   get_size) echo "$2" | wc -c ;;
