@@ -28,6 +28,8 @@ L<nbdkit-tmpdisk-plugin(1)> which creates a fresh temporary filesystem
 for each client, and L<nbdkit-linuxdisk-plugin(1)> which exports a
 single filesystem from a local directory on the server.
 
+=head2 Export names
+
 When a new export name is requested by a client, a sparse file of the
 same name is created in C<dir=EXPORTSDIR> on the server.  The file
 will be formatted with L<mkfs(8)>.  The size of the file is currently
