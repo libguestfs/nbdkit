@@ -122,7 +122,7 @@ L<nbdkit-rust-plugin(3)> bindings have been replaced by higher level
 and more idiomatic bindings.  These also support a greater range of
 server features (Alan Somers).
 
-L<nbdkit-python-python(3)> now supports parallel plugins.  These
+L<nbdkit-python-plugin(3)> now supports parallel plugins.  These
 cannot run Python code in parallel (because of the Python GIL), but
 for Python code that blocks, eg. calling out to external services,
 requests can now be handled in parallel (thanks Nir Soffer).
