@@ -56,6 +56,10 @@
 #include "cleanup.h"
 #include "utils.h"
 
+#ifndef HAVE_FDATASYNC
+#define fdatasync fsync
+#endif
+
 static char *dir;                   /* dir parameter */
 static DIR *exportsdir;             /* opened exports dir */
 static int64_t requested_size = -1; /* size parameter on the command line */
