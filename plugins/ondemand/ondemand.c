@@ -81,7 +81,8 @@ ondemand_unload (void)
     free (v);
   }
 
-  closedir (exportsdir);
+  if (exportsdir)
+    closedir (exportsdir);
   free (dir);
 }
 
