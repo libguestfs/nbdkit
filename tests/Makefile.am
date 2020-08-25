@@ -537,8 +537,8 @@ TESTS += test-eflags.sh
 EXTRA_DIST += test-eflags.sh
 
 # Test export name.
-TESTS += test-export-name.sh
-EXTRA_DIST += test-export-name.sh
+TESTS += test-export-name.sh test-export-info.sh
+EXTRA_DIST += test-export-name.sh test-export-info.sh
 
 # cdi plugin test.
 TESTS += test-cdi.sh

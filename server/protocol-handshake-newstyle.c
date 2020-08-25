@@ -156,6 +156,37 @@ send_newstyle_option_reply_info_export (uint32_t option, uint32_t reply,
   return 0;
 }
 
+/* Can be used for NBD_INFO_NAME and NBD_INFO_DESCRIPTION. */
+static int
+send_newstyle_option_reply_info_str (uint32_t option, uint32_t reply,
+                                     uint16_t info, const char *str,
+                                     size_t len)
+{
+  GET_CONN;
+  struct nbd_fixed_new_option_reply fixed_new_option_reply;
+  struct nbd_fixed_new_option_reply_info_name_or_desc name;
+
+  if (len == -1)
+    len = strlen (str);
+  assert (len <= NBD_MAX_STRING);
+
+  fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
+  fixed_new_option_reply.option = htobe32 (option);
+  fixed_new_option_reply.reply = htobe32 (reply);
+  fixed_new_option_reply.replylen = htobe32 (sizeof info + len);
+  name.info = htobe16 (info);
+
+  if (conn->send (&fixed_new_option_reply,
+                  sizeof fixed_new_option_reply, SEND_MORE) == -1 ||
+      conn->send (&name, sizeof name, SEND_MORE) == -1 ||
+      conn->send (str, len, 0) == -1) {
+    nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
+    return -1;
+  }
+
+  return 0;
+}
+
 static int
 send_newstyle_option_reply_meta_context (uint32_t option, uint32_t reply,
                                          uint32_t context_id,
@@ -533,16 +564,37 @@ negotiate_handshake_newstyle_options (void)
                                                     exportsize) == -1)
           return -1;
 
-        /* For now we ignore all other info requests (but we must
-         * ignore NBD_INFO_EXPORT if it was requested, because we
-         * replied already above).  Therefore this loop doesn't do
-         * much at the moment.
+        /* For now we send NBD_INFO_NAME if requested, and ignore all
+         * other info requests (including NBD_INFO_EXPORT if it was
+         * requested, because we replied already above).
+         * XXX NBD_INFO_DESCRIPTION is easy once we add .export_description.
          */
         for (i = 0; i < nrinfos; ++i) {
           memcpy (&info, &data[4 + exportnamelen + 2 + i*2], 2);
           info = be16toh (info);
           switch (info) {
           case NBD_INFO_EXPORT: /* ignore - reply sent above */ break;
+          case NBD_INFO_NAME:
+            {
+              const char *name = &data[4];
+              size_t namelen = exportnamelen;
+
+              if (exportnamelen == 0) {
+                name = backend_default_export (top, read_only);
+                if (!name) {
+                  debug ("newstyle negotiation: %s: "
+                         "NBD_INFO_NAME: no name to send", optname);
+                  break;
+                }
+                namelen = -1;
+              }
+              if (send_newstyle_option_reply_info_str (option,
+                                                       NBD_REP_INFO,
+                                                       NBD_INFO_NAME,
+                                                       name, namelen) == -1)
+                return -1;
+            }
+            break;
           default:
             debug ("newstyle negotiation: %s: "
                    "ignoring NBD_INFO_* request %u (%s)",

@@ -740,9 +740,11 @@ default export C<"">, where the plugin provides a UTF-8 string between
 0 and 4096 bytes.  If the plugin does not supply this callback, the
 connection continues with the empty name; if the plugin returns a
 valid string, nbdkit behaves as if the client had passed that string
-instead of an empty name.  Similarly, if the plugin does not supply a
-C<.list_exports> callback, the result of this callback determines what
-export name to advertise to a client requesting an export list.
+instead of an empty name, and returns that name to clients that
+support it (see the C<NBD_INFO_NAME> response to C<NBD_OPT_GO>).
+Similarly, if the plugin does not supply a C<.list_exports> callback,
+the result of this callback determines what export name to advertise
+to a client requesting an export list.
 
 The C<readonly> flag informs the plugin that the server was started
 with the I<-r> flag on the command line, which is the same value
