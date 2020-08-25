@@ -17,42 +17,230 @@ L<nbdkit-security(1)>.
 
 =head2 Plugins
 
+New L<nbdkit-cdi-plugin(1)> (Containerized Data Importer) lets you
+export a single layer from a container image, allowing you to access
+disk images distributed using container registry infrastructure.
+
+New L<nbdkit-ondemand-plugin(1)> creates filesystems for clients on
+demand.
+
+New L<nbdkit-torrent-plugin(1)> serves a BitTorrent file or magnet
+link over NBD.
+
+L<nbdkit-data-plugin(1)> and L<nbdkit-memory-plugin(1)> have a new
+C<allocator> parameter giving more fine-grained control over the
+allocation strategy.  Currently implemented strategies are: sparse
+array, sparse array with zstd compression, malloc, and malloc with
+mlock.
+
+L<nbdkit-data-plugin(1)> data format now supports strings and
+alignment.  The C<disk2data.pl> script has been enhanced to detect
+repeated sequences and produce a more compact output.
+
+L<nbdkit-curl-plugin(1)> adds support for arbitrary custom request
+headers.  Also it now supports scripts for generating cookies and
+custom request headers.  This is especially useful when accessing web
+servers that require authentication which has to be renewed
+periodically.
+
+L<nbdkit-curl-plugin(1)> now supports HTTP/2 servers
+(David Edmondson, Pino Toscano, Zi Liu).
+
+L<nbdkit-curl-plugin(1)> adds support for the C<User-Agent> header.
+
+L<nbdkit-sh-plugin(1)> and L<nbdkit-eval-plugin(1)> now
+support listing server exports (Eric Blake).
+
+L<nbdkit-file-plugin(1)> can export multiple files in a directory as
+separate exports (Eric Blake).
+
+L<nbdkit-file-plugin(1)> supports new C<cache=none> and
+C<fadvise=normal|random|sequential> parameters which can be used to
+optimize access patterns and avoid filling the page cache.
+
+L<nbdkit-nbd-plugin(1)> supports proxying to another NBD server over
+C<AF_VSOCK> (Eric Blake).
+
+L<nbdkit-nbd-plugin(1)> supports new C<command=> and C<socket-fd=>
+parameters which allow you to run a subordinate NBD server as a
+command directly from the plugin, or pass in an already connected NBD
+endpoint.
+
+L<nbdkit-streaming-plugin(1)> supports streaming to and from local
+pipes.
+
+L<nbdkit-vddk-plugin(1)> now has support for VDDK 7.0.  A new and
+useless "error" message printed by VDDK 7 has been suppressed
+(thanks Ming Xie, Pino Toscano).
+
+L<nbdkit-ext2-plugin(1)> has been removed.  It was deprecated in
+S<nbdkit 1.17.8>.  All existing uses can be replaced with
+L<nbdkit-ext2-filter(1)>.
+
+The C<-> character is now permitted within plugin and filter names
+(Eric Blake).
+
+
+=head2 Filters
+
+New L<nbdkit-ddrescue-filter(1)> lets you test disk images recovered
+by L<ddrescue(1)> (François Revol).
+
+New L<nbdkit-gzip-filter(1)> can decompress a plugin that contains
+gzip-compressed data.  It replaces L<nbdkit-gzip-plugin(1)> which is
+deprecated and will be removed in S<nbdkit 1.26>.
+
+New L<nbdkit-pause-filter(1)> can temporarily stop and later resume
+NBD requests.  This can be used when taking snapshots.
+
+New L<nbdkit-swab-filter(1)> swaps bytes in the underlying plugin,
+which can be used to adjust images that have an incorrect byte order
+(François Revol).
+
+New L<nbdkit-tar-filter(1)> reads and writes files inside a tar file
+in the underlying plugin.  It replaces L<nbdkit-tar-plugin(1)> which
+is deprecated and will be removed in S<nbdkit 1.26>.
+
+New L<nbdkit-tls-fallback-filter(1)> provides alternate content when a
+client connects without using TLS to a server that requires TLS
+(Eric Blake).
+
+L<nbdkit-fua-filter(1)> has new option C<fuamode=pass> to pass through
+FUA and flush requests unchanged (disabling the filter).  A new,
+unsafe C<fuamode=discard> mode was added which discards FUA and flush
+requests.
+
 
 
 =head2 Language bindings
 
+New L<nbdkit-cc-plugin(3)> lets you write small nbdkit plugins as
+inline C, C++ or OCaml "scripts" (and potentially other ahead-of-time
+compiled programming languages).
+
+L<nbdkit-rust-plugin(3)> bindings have been replaced by higher level
+and more idiomatic bindings.  These also support a greater range of
+server features (Alan Somers).
+
+L<nbdkit-python-python(3)> now supports parallel plugins.  These
+cannot run Python code in parallel (because of the Python GIL), but
+for Python code that blocks, eg. calling out to external services,
+requests can now be handled in parallel (thanks Nir Soffer).
+
+L<nbdkit-python-plugin(3)> has a greater range of examples (Nir Soffer).
+
+L<nbdkit-python-plugin(3)> adds support for getting the client export
+name, calling C<nbdkit_debug>, and also for extents.
 
 
-=head2 Filters
+
 
 
 
 =head2 Server
 
+C<nbdkit --dump-config> has new fields: C<version_major> and
+C<version_minor> to allow easier version parsing from scripts.
+C<host_cpu> and C<host_os> so you can find out if nbdkit was
+cross-compiled for another platform.  C<zstd=(yes|no)> so you can find
+out if nbdkit was compiled with zstd compression support.
+
+The I<-e>/I<--exportname> option (which never did anything useful
+previously) is now used to pass the preferred exportname to the
+I<--run> option.  In general you should never use this option except
+in very limited and exceptional circumstances (Eric Blake).
+
 
 
 =head2 API
+
+New C<.after_fork> callback which can be used for plugins which need
+to create background threads, since those threads would otherwise be
+stranded if the server forks into the background.  The VDDK plugin now
+defers VDDK library initialization til C<.after_fork> because it is
+thought that the library creates background threads especially when
+accessing remote servers.
+
+New API C<nbdkit_extents_aligned> is a helper function for filters
+that retrieves extents as needed until at least a certain range is
+covered (Eric Blake).
+
+New C<.default_export> and C<.list_exports> callbacks, and new APIs
+C<nbdkit_add_export>, C<nbdkit_exports_new>, C<nbdkit_exports_free>,
+C<nbdkit_exports_count>, C<nbdkit_get_export> can be used by plugins
+and filters to reply to clients which want to list the exports that
+the server supports (Eric Blake).
+
+New C<nbdkit_is_tls> can be called to determine if TLS was negotiated
+on the connection.  Plugins could use this to hide certain exports
+from non-authenticated/non-encrypted clients (Eric Blake).
+
+C<nbdkit_read_password> with C<password=-> will now return an error if
+the input is not a tty.  Also C<password=-FD> is disallowed if the
+file descriptor is 0, 1 or 2.
+
 
 
 
 =head2 Bug fixes
 
+The VDDK plugin was extensively refactored to fix many bugs: Reading
+passwords from a tty should work again.  The plugin should now work
+properly when daemonized or using the I<--run> option.  The threading
+model has been relaxed to C<SERIALIZE_REQUESTS> which should give
+small performance improvements when using multiple connections.
+
+The C<base64> option of L<nbdkit-data-plugin(1)> has been fixed so it
+sets the implicit size correctly.
+
+The C<E<lt>FILE> formatter of L<nbdkit-data-plugin(1)> now works if
+you use it more than once.
+
 
 
 =head2 Documentation
 
+New L<nbdkit-client(1)> manual page documents how to mount filesystems
+from NBD exports on client machines, either directly or using systemd
+mountpoints.
+
+Examples now use C<NBDKIT_API_VERSION 2> so that the examples match
+the documentation.
 
 
 =head2 Tests
+
+The tests should now pass on OpenBSD E<ge> 6.4.
+
+F<tests/Makefile.am> was refactored: There is now no longer a single
+massive C<EXTRA_DIST>.  Creation of test disks was refactored.
+
+Some tests will now use new libnbd 1.4 tools L<nbdcopy(1)> and
+L<nbdinfo(1)> if available, and skip the tests otherwise.
+
+New test functions C<requires_plugin> and C<requires_filter> allows
+tests to be skipped if the corresponding plugin/filter was not
+compiled on a particular platform.  So tests should now not fail when
+an optional external library needed by a plugin/filter is not
+available.
 
 
 
 =head2 Build
 
+Honggfuzz may now be used for fuzz testing.
+
+If L<nbdkit-python-plugin(3)> is enabled, Python E<ge> 3.6 must be
+used.
+
 
 
 =head2 Internals
 
+The export name is now passed down through filter C<.open> callbacks,
+allowing filters to modify the export name passed through to plugins.
+
+The final thread model is passed to filter C<.get_ready> callbacks.
 
 
 =head1 SEE ALSO
