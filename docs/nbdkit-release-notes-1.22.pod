@@ -1,0 +1,70 @@
+=head1 NAME
+
+nbdkit-release-notes-1.22 - release notes for nbdkit 1.22
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.22.
+This describes the major changes since 1.20.
+
+nbdkit 1.22.0 was released on B<XXX XXX 2020>.
+
+=head2 Security
+
+There were no security issues found.  All past security issues and
+information about how to report new ones can be found in
+L<nbdkit-security(1)>.
+
+=head2 Plugins
+
+
+
+=head2 Language bindings
+
+
+
+=head2 Filters
+
+
+
+=head2 Server
+
+
+
+=head2 API
+
+
+
+=head2 Bug fixes
+
+
+
+=head2 Documentation
+
+
+
+=head2 Tests
+
+
+
+=head2 Build
+
+
+
+=head2 Internals
+
+
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Authors of nbdkit 1.22:
+
+XXX
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.
