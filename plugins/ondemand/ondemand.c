@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <limits.h>
 #include <errno.h>
 #include <assert.h>
 #include <sys/types.h>
