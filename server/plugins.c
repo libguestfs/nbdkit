@@ -158,10 +158,12 @@ plugin_dump_fields (struct backend *b)
   HAS (config);
   HAS (config_complete);
   HAS (config_help);
+  HAS (thread_model);
   HAS (get_ready);
   HAS (after_fork);
   HAS (preconnect);
   HAS (list_exports);
+
   HAS (open);
   HAS (close);
   HAS (get_size);
@@ -169,25 +171,26 @@ plugin_dump_fields (struct backend *b)
   HAS (can_flush);
   HAS (is_rotational);
   HAS (can_trim);
-  HAS (_pread_v1);
-  HAS (_pwrite_v1);
-  HAS (_flush_v1);
-  HAS (_trim_v1);
-  HAS (_zero_v1);
   HAS (can_zero);
+  HAS (can_fast_zero);
+  HAS (can_extents);
   HAS (can_fua);
+  HAS (can_multi_conn);
+  HAS (can_cache);
+
   HAS (pread);
   HAS (pwrite);
   HAS (flush);
   HAS (trim);
   HAS (zero);
-  HAS (can_multi_conn);
-  HAS (can_extents);
   HAS (extents);
-  HAS (can_cache);
   HAS (cache);
-  HAS (thread_model);
-  HAS (can_fast_zero);
+
+  HAS (_pread_v1);
+  HAS (_pwrite_v1);
+  HAS (_flush_v1);
+  HAS (_trim_v1);
+  HAS (_zero_v1);
 #undef HAS
 
   /* Custom fields. */
