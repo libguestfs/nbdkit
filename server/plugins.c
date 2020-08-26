@@ -679,7 +679,6 @@ plugin_zero (struct backend *b, void *handle,
     goto done;
   }
 
-  assert (p->plugin.pwrite || p->plugin._pwrite_v1);
   flags &= ~NBDKIT_FLAG_MAY_TRIM;
   threadlocal_set_error (0);
   *err = 0;
@@ -713,8 +712,10 @@ plugin_extents (struct backend *b, void *handle,
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
-  /* This should be true because plugin_can_extents checks it. */
-  assert (p->plugin.extents);
+  if (p->plugin.extents == NULL) { /* Possible if .can_extents lied */
+    *err = EINVAL;
+    return -1;
+  }
 
   r = p->plugin.extents (handle, count, offset, flags, extents);
   if (r >= 0 && nbdkit_extents_count (extents) < 1) {
