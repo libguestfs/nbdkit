@@ -511,9 +511,9 @@ cc_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   if (subplugin.zero)
     return subplugin.zero (handle, count, offset, flags);
   else {
-    /* XXX nbdkit tries to emulate this and we should too. */
+    /* Inform nbdkit to fall back to pwrite. */
     nbdkit_error ("missing %s callback", "zero");
-    errno = EINVAL;
+    errno = EOPNOTSUPP;
     return -1;
   }
 }
