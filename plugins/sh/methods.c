@@ -239,8 +239,11 @@ sh_open (int readonly)
      */
     free (h->h);
     h->h = strdup ("");
-    if (h->h == NULL)
+    if (h->h == NULL) {
       nbdkit_error ("strdup: %m");
+      free (h);
+      return NULL;
+    }
     return h;
 
   case ERROR:
