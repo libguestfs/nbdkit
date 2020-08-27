@@ -1195,17 +1195,21 @@ endif HAVE_GOLANG
 TESTS += \
 	test-cc.sh \
 	test-cc-cpp.sh \
-	test-cc-ocaml.sh \
 	test-shebang-cc.sh \
 	$(NULL)
+if HAVE_OCAML
+TESTS += test-cc-ocaml.sh
+endif
 EXTRA_DIST += \
 	shebang.c \
 	test-cc.sh \
 	test-cc-cpp.cpp \
 	test-cc-cpp.sh \
-	test-cc-ocaml.sh \
 	test-shebang-cc.sh \
 	$(NULL)
+if HAVE_OCAML
+EXTRA_DIST += test-cc-ocaml.sh
+endif
 
 #----------------------------------------------------------------------
 # Tests of filters.
