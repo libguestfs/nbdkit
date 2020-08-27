@@ -165,12 +165,6 @@ New API C<nbdkit_extents_aligned> is a helper function for filters
 that retrieves extents as needed until at least a certain range is
 covered (Eric Blake).
 
-New C<.default_export> and C<.list_exports> callbacks, and new APIs
-C<nbdkit_add_export>, C<nbdkit_exports_new>, C<nbdkit_exports_free>,
-C<nbdkit_exports_count>, C<nbdkit_get_export> can be used by plugins
-and filters to reply to clients which want to list the exports that
-the server supports (Eric Blake).
-
 New C<nbdkit_is_tls> can be called to determine if TLS was negotiated
 on the connection.  Plugins could use this to hide certain exports
 from non-authenticated/non-encrypted clients (Eric Blake).
