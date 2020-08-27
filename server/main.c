@@ -67,6 +67,7 @@
 #include "realpath.h"
 #include "strndup.h"
 #include "syslog.h"
+#include "utils.h"
 
 #include "internal.h"
 #include "options.h"
@@ -762,49 +763,40 @@ main (int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-#ifndef WIN32
-
 /* Implementation of '-U -' */
 static char *
 make_random_fifo (void)
 {
-  char template[] = "/tmp/nbdkitXXXXXX";
   char *sock;
 
-  if (mkdtemp (template) == NULL) {
-    perror ("mkdtemp");
-    return NULL;
-  }
-
-  random_fifo_dir = strdup (template);
+  random_fifo_dir = make_temporary_directory ();
   if (random_fifo_dir == NULL) {
-    perror ("strdup");
+    perror ("make_temporary_directory");
     return NULL;
   }
 
-  if (asprintf (&random_fifo, "%s/socket", template) == -1) {
+  if (asprintf (&random_fifo, "%s" DIR_SEPARATOR_STR "socket",
+                random_fifo_dir) == -1) {
     perror ("asprintf");
-    return NULL;
+    goto error;
   }
 
   sock = strdup (random_fifo);
   if (sock == NULL) {
     perror ("strdup");
-    return NULL;
+    goto error;
   }
 
   return sock;
+
+ error:
+  free (random_fifo);
+  random_fifo = NULL;
+  rmdir (random_fifo_dir);
+  free (random_fifo_dir);
+  random_fifo_dir = NULL;
+  return NULL;
 }
-
-#else /* WIN32 */
-
-static char *
-make_random_fifo (void)
-{
-  NOT_IMPLEMENTED_ON_WINDOWS ("-U -");
-}
-
-#endif /* WIN32 */
 
 static struct backend *
 open_plugin_so (size_t i, const char *name, int short_name)

@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 
 #ifdef HAVE_SYS_SOCKET_H
@@ -47,6 +48,8 @@
 #endif
 
 #include <nbdkit-plugin.h>
+
+#include "windows-compat.h"
 
 #ifndef WIN32
 
@@ -160,6 +163,56 @@ int
 set_nonblock (int fd)
 {
   return fd;
+}
+
+#endif /* WIN32 */
+
+#ifndef WIN32
+
+char *
+make_temporary_directory (void)
+{
+  char template[] = "/tmp/nbdkitXXXXXX";
+
+  if (mkdtemp (template) == NULL)
+    return NULL;
+
+  return strdup (template);
+}
+
+#else /* WIN32 */
+
+char *
+make_temporary_directory (void)
+{
+  char tmppath[MAX_PATH];
+  char tmpname[MAX_PATH];
+  DWORD ret;
+
+  ret = GetTempPath (MAX_PATH, tmppath);
+  if (ret > MAX_PATH || ret == 0) {
+    fprintf (stderr, "mkdtemp: GetTempPath: %d\n", GetLastError ());
+    return NULL;
+  }
+
+  ret = GetTempFileName (tmppath, TEXT("nbdkit"), 0, tmpname);
+  if (!ret) {
+    fprintf (stderr, "mkdtemp: GetTempFileName: %d\n", GetLastError ());
+    return NULL;
+  }
+
+  /* The above function actually creates the file, so we must remove
+   * it before creating the directory.  Not ideal because it leaves a
+   * small window for exploitation (XXX).
+   */
+  unlink (tmpname);
+
+  if (mkdir (tmpname) == -1) {
+    fprintf (stderr, "mkdtemp: mkdir: %s: %d\n", tmpname, GetLastError ());
+    return NULL;
+  }
+
+  return strdup (tmpname);
 }
 
 #endif /* WIN32 */
