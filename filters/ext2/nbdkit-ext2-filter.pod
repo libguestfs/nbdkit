@@ -67,7 +67,8 @@ a security risk in some situations.
 
 At present, when using this mode, the server does not advertise any
 particular exports; however, you may use
-L<nbdkit-exportname-filter(1)> to perform that task.
+L<nbdkit-exportname-filter(1)> to perform that task.  Similarly, the
+underlying plugin must support the default export name, C<"">.
 
 =back
 

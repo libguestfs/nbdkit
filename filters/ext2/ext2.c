@@ -50,19 +50,15 @@
 #include "cleanup.h"
 #include "io.h"
 
-/* Filename parameter, or NULL to honor export name. */
-static char *file;
+/* Filename parameter, or NULL to honor export name. Using the export
+ * name is opt-in (see ext2_config_complete).
+ */
+static const char *file;
 
 static void
 ext2_load (void)
 {
   initialize_ext2_error_table ();
-}
-
-static void
-ext2_unload (void)
-{
-  free (file);
 }
 
 static int
@@ -74,11 +70,7 @@ ext2_config (nbdkit_next_config *next, void *nxdata,
       nbdkit_error ("ext2file parameter specified more than once");
       return -1;
     }
-    file = strdup (value);
-    if (file == NULL) {
-      nbdkit_error ("strdup: %m");
-      return -1;
-    }
+    file = value;
     return 0;
   }
   else
@@ -94,10 +86,8 @@ ext2_config_complete (nbdkit_next_config_complete *next, void *nxdata)
     return -1;
   }
 
-  if (strcmp (file, "exportname") == 0) {
-    free (file);
+  if (strcmp (file, "exportname") == 0)
     file = NULL;
-  }
   else if (file[0] != '/') {
     nbdkit_error ("the file parameter must refer to an absolute path");
     return -1;
@@ -112,12 +102,53 @@ ext2_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 
 /* The per-connection handle. */
 struct handle {
-  char *exportname;             /* Client export name. */
+  const char *exportname;       /* Client export name. */
   ext2_filsys fs;               /* Filesystem handle. */
   ext2_ino_t ino;               /* Inode of open file. */
   ext2_file_t file;             /* File handle. */
   struct nbdkit_next next;      /* "name" parameter to ext2fs_open. */
 };
+
+/* Export list. */
+static int
+ext2_list_exports (nbdkit_next_list_exports *next, void *nxdata,
+                   int readonly, int is_tls, struct nbdkit_exports *exports)
+{
+  /* If we are honoring export names, the default export "" won't
+   * work, and we must not leak export names from the underlying
+   * plugin.  Advertising all filenames within the ext2 image could be
+   * huge, and even if we wanted to, it would require that we could
+   * open the plugin prior to the client reaching our .open.  So leave
+   * the list empty instead.
+   */
+  if (!file)
+    return 0;
+
+  /* If we are serving a specific ext2file, we don't care what export
+   * name the user passes, but the underlying plugin might; there's no
+   * harm in advertising that list.
+   */
+  return next (nxdata, readonly, exports);
+}
+
+/* Default export. */
+static const char *
+ext2_default_export (nbdkit_next_default_export *next, void *nxdata,
+                     int readonly, int is_tls)
+{
+  /* If we are honoring exports, "" will fail (even if we resolve to
+   * the inode of embedded "/", we can't serve directories), and we
+   * don't really have a sane default.  XXX picking the largest
+   * embedded file might be in interesting knob to add.
+   */
+  if (!file)
+    return NULL;
+
+  /* Otherwise, we don't care about export name, so keeping things at
+   * "" is fine, regardless of the underlying plugin's default.
+   */
+  return "";
+}
 
 /* Create the per-connection handle. */
 static void *
@@ -133,9 +164,8 @@ ext2_open (nbdkit_next_open *next, void *nxdata,
   }
 
   /* Save the client exportname in the handle. */
-  h->exportname = strdup (exportname);
+  h->exportname = nbdkit_strdup_intern (exportname);
   if (h->exportname == NULL) {
-    nbdkit_error ("strdup: %m");
     free (h);
     return NULL;
   }
@@ -147,7 +177,6 @@ ext2_open (nbdkit_next_open *next, void *nxdata,
 
   /* Request write access to the underlying plugin, for journal replay. */
   if (next (nxdata, 0, exportname) == -1) {
-    free (h->exportname);
     free (h);
     return NULL;
   }
@@ -260,7 +289,6 @@ ext2_close (void *handle)
     ext2fs_file_close (h->file);
     ext2fs_close (h->fs);
   }
-  free (h->exportname);
   free (h);
 }
 
@@ -431,11 +459,12 @@ static struct nbdkit_filter filter = {
   .name               = "ext2",
   .longname           = "nbdkit ext2 filter",
   .load               = ext2_load,
-  .unload             = ext2_unload,
   .config             = ext2_config,
   .config_complete    = ext2_config_complete,
   .config_help        = ext2_config_help,
   .thread_model       = ext2_thread_model,
+  .list_exports       = ext2_list_exports,
+  .default_export     = ext2_default_export,
   .open               = ext2_open,
   .prepare            = ext2_prepare,
   .close              = ext2_close,

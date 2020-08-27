@@ -1382,22 +1382,30 @@ EXTRA_DIST += test-exportname.sh
 # ext2 filter test.
 if HAVE_MKE2FS_WITH_D
 if HAVE_EXT2
-if HAVE_GUESTFISH
 
-LIBGUESTFS_TESTS += test-ext2
+TESTS += test-ext2-exportname.sh
+EXTRA_DIST += test-ext2-exportname.sh
+
 check_DATA += ext2.img
 CLEANFILES += ext2.img
 
-ext2.img: disk
+ext2.img: disk test-ext2-exportname.sh
 	rm -f $@ $@-t
+	echo /disks/disk.img > manifest
 	guestfish \
 	    sparse $@-t 2G : \
 	    run : \
 	    mkfs ext4 /dev/sda : \
 	    mount /dev/sda / : \
 	    mkdir /disks : \
-	    upload $< /disks/disk.img
+	    upload $< /disks/disk.img : \
+	    upload manifest /manifest
+	rm manifest
 	mv $@-t $@
+
+if HAVE_GUESTFISH
+
+LIBGUESTFS_TESTS += test-ext2
 
 test_ext2_SOURCES = test-ext2.c test.h
 test_ext2_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
