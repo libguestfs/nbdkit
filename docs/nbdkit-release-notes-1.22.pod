@@ -98,8 +98,8 @@ in the underlying plugin.  It replaces L<nbdkit-tar-plugin(1)> which
 is deprecated and will be removed in S<nbdkit 1.26>.
 
 New L<nbdkit-tls-fallback-filter(1)> provides alternate content when a
-client connects without using TLS to a server that requires TLS
-(Eric Blake).
+client connects without using TLS to a server that permits but does
+not require TLS (Eric Blake).
 
 L<nbdkit-fua-filter(1)> has new option C<fuamode=pass> to pass through
 FUA and flush requests unchanged (disabling the filter).  A new,
