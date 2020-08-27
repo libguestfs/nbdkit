@@ -287,6 +287,18 @@ gzip_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   return NBDKIT_CACHE_EMULATE;
 }
 
+/* Description. */
+static const char *
+gzip_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+                         void *handle)
+{
+  const char *base = next_ops->export_description (nxdata);
+
+  if (!base)
+    return NULL;
+  return nbdkit_printf_intern ("expansion of gzip-compressed image: %s", base);
+}
+
 /* Get the file size. */
 static int64_t
 gzip_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -339,18 +351,19 @@ gzip_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static struct nbdkit_filter filter = {
-  .name              = "gzip",
-  .longname          = "nbdkit gzip filter",
-  .unload            = gzip_unload,
-  .thread_model      = gzip_thread_model,
-  .open              = gzip_open,
-  .prepare           = gzip_prepare,
-  .can_write         = gzip_can_write,
-  .can_extents       = gzip_can_extents,
-  .can_cache         = gzip_can_cache,
-  .prepare           = gzip_prepare,
-  .get_size          = gzip_get_size,
-  .pread             = gzip_pread,
+  .name               = "gzip",
+  .longname           = "nbdkit gzip filter",
+  .unload             = gzip_unload,
+  .thread_model       = gzip_thread_model,
+  .open               = gzip_open,
+  .prepare            = gzip_prepare,
+  .can_write          = gzip_can_write,
+  .can_extents        = gzip_can_extents,
+  .can_cache          = gzip_can_cache,
+  .prepare            = gzip_prepare,
+  .export_description = gzip_export_description,
+  .get_size           = gzip_get_size,
+  .pread              = gzip_pread,
 };
 
 NBDKIT_REGISTER_FILTER(filter)

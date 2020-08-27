@@ -47,6 +47,7 @@
 
 #include "xzfile.h"
 #include "blkcache.h"
+#include "cleanup.h"
 
 static uint64_t maxblock = 512 * 1024 * 1024;
 static uint32_t maxdepth = 8;
@@ -156,6 +157,18 @@ xz_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   return 0;
 }
 
+/* Description. */
+static const char *
+xz_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+                       void *handle)
+{
+  const char *base = next_ops->export_description (nxdata);
+
+  if (!base)
+    return NULL;
+  return nbdkit_printf_intern ("expansion of xz-compressed image: %s", base);
+}
+
 /* Get the file size. */
 static int64_t
 xz_get_size (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
@@ -245,19 +258,20 @@ static int xz_thread_model (void)
 }
 
 static struct nbdkit_filter filter = {
-  .name              = "xz",
-  .longname          = "nbdkit XZ filter",
-  .config            = xz_config,
-  .config_help       = xz_config_help,
-  .thread_model      = xz_thread_model,
-  .open              = xz_open,
-  .close             = xz_close,
-  .prepare           = xz_prepare,
-  .get_size          = xz_get_size,
-  .can_write         = xz_can_write,
-  .can_extents       = xz_can_extents,
-  .can_cache         = xz_can_cache,
-  .pread             = xz_pread,
+  .name               = "xz",
+  .longname           = "nbdkit XZ filter",
+  .config             = xz_config,
+  .config_help        = xz_config_help,
+  .thread_model       = xz_thread_model,
+  .open               = xz_open,
+  .close              = xz_close,
+  .prepare            = xz_prepare,
+  .export_description = xz_export_description,
+  .get_size           = xz_get_size,
+  .can_write          = xz_can_write,
+  .can_extents        = xz_can_extents,
+  .can_cache          = xz_can_cache,
+  .pread              = xz_pread,
 };
 
 NBDKIT_REGISTER_FILTER(filter)

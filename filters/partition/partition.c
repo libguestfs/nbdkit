@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #include <nbdkit-filter.h>
 
@@ -83,6 +84,7 @@ partition_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 struct handle {
   int64_t offset;
   int64_t range;
+  const char *type;
 };
 
 /* Open a connection. */
@@ -139,13 +141,17 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Is it GPT? */
   if (size >= 2 * 34 * SECTOR_SIZE &&
-      memcmp (&lba01[SECTOR_SIZE], "EFI PART", 8) == 0)
+      memcmp (&lba01[SECTOR_SIZE], "EFI PART", 8) == 0) {
     r = find_gpt_partition (next_ops, nxdata, size, &lba01[SECTOR_SIZE],
                             &h->offset, &h->range);
+    h->type = "GPT";
+  }
   /* Is it MBR? */
-  else if (lba01[0x1fe] == 0x55 && lba01[0x1ff] == 0xAA)
+  else if (lba01[0x1fe] == 0x55 && lba01[0x1ff] == 0xAA) {
     r = find_mbr_partition (next_ops, nxdata, size, lba01,
                             &h->offset, &h->range);
+    h->type = "MBR";
+  }
   else {
     nbdkit_error ("disk does not contain MBR or GPT partition table signature");
     r = -1;
@@ -166,6 +172,21 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
                 h->offset, h->range);
 
   return 0;
+}
+
+/* Description. */
+static const char *
+partition_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+                              void *handle)
+{
+  struct handle *h = handle;
+  const char *base = next_ops->export_description (nxdata);
+
+  assert (h->type);
+  if (!base)
+    return NULL;
+  return nbdkit_printf_intern ("partition %d of %s disk: %s", partnum, h->type,
+                               base);
 }
 
 /* Get the file size. */
@@ -266,21 +287,22 @@ partition_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static struct nbdkit_filter filter = {
-  .name              = "partition",
-  .longname          = "nbdkit partition filter",
-  .config            = partition_config,
-  .config_complete   = partition_config_complete,
-  .config_help       = partition_config_help,
-  .open              = partition_open,
-  .prepare           = partition_prepare,
-  .close             = partition_close,
-  .get_size          = partition_get_size,
-  .pread             = partition_pread,
-  .pwrite            = partition_pwrite,
-  .trim              = partition_trim,
-  .zero              = partition_zero,
-  .extents           = partition_extents,
-  .cache             = partition_cache,
+  .name               = "partition",
+  .longname           = "nbdkit partition filter",
+  .config             = partition_config,
+  .config_complete    = partition_config_complete,
+  .config_help        = partition_config_help,
+  .open               = partition_open,
+  .prepare            = partition_prepare,
+  .close              = partition_close,
+  .export_description = partition_export_description,
+  .get_size           = partition_get_size,
+  .pread              = partition_pread,
+  .pwrite             = partition_pwrite,
+  .trim               = partition_trim,
+  .zero               = partition_zero,
+  .extents            = partition_extents,
+  .cache              = partition_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)

@@ -295,6 +295,19 @@ tar_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Description. */
+static const char *
+tar_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+                        void *handle)
+{
+  const char *base = next_ops->export_description (nxdata);
+
+  if (!base)
+    return NULL;
+  return nbdkit_printf_intern ("embedded %s from within tar file: %s",
+                               entry, base);
+}
+
 /* Get the file size. */
 static int64_t
 tar_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -395,22 +408,23 @@ tar_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static struct nbdkit_filter filter = {
-  .name              = "tar",
-  .longname          = "nbdkit tar filter",
-  .config            = tar_config,
-  .config_complete   = tar_config_complete,
-  .config_help       = tar_config_help,
-  .thread_model      = tar_thread_model,
-  .open              = tar_open,
-  .close             = tar_close,
-  .prepare           = tar_prepare,
-  .get_size          = tar_get_size,
-  .pread             = tar_pread,
-  .pwrite            = tar_pwrite,
-  .trim              = tar_trim,
-  .zero              = tar_zero,
-  .extents           = tar_extents,
-  .cache             = tar_cache,
+  .name               = "tar",
+  .longname           = "nbdkit tar filter",
+  .config             = tar_config,
+  .config_complete    = tar_config_complete,
+  .config_help        = tar_config_help,
+  .thread_model       = tar_thread_model,
+  .open               = tar_open,
+  .close              = tar_close,
+  .prepare            = tar_prepare,
+  .export_description = tar_export_description,
+  .get_size           = tar_get_size,
+  .pread              = tar_pread,
+  .pwrite             = tar_pwrite,
+  .trim               = tar_trim,
+  .zero               = tar_zero,
+  .extents            = tar_extents,
+  .cache              = tar_cache,
 };
 
 NBDKIT_REGISTER_FILTER(filter)

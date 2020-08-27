@@ -294,6 +294,22 @@ static int ext2_thread_model (void)
   return NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS;
 }
 
+/* Description. */
+static const char *
+ext2_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+                         void *handle)
+{
+  struct handle *h = handle;
+  const char *fname = file ?: h->exportname;
+  const char *slash = fname[0] == '/' ? "" : "/";
+  const char *base = next_ops->export_description (nxdata);
+
+  if (!base)
+    return NULL;
+  return nbdkit_printf_intern ("embedded '%s%s' from within ext2 image: %s",
+                               slash, fname, base);
+}
+
 /* Get the disk size. */
 static int64_t
 ext2_get_size (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
@@ -412,23 +428,24 @@ ext2_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
  */
 
 static struct nbdkit_filter filter = {
-  .name              = "ext2",
-  .longname          = "nbdkit ext2 filter",
-  .load              = ext2_load,
-  .unload            = ext2_unload,
-  .config            = ext2_config,
-  .config_complete   = ext2_config_complete,
-  .config_help       = ext2_config_help,
-  .thread_model      = ext2_thread_model,
-  .open              = ext2_open,
-  .prepare           = ext2_prepare,
-  .close             = ext2_close,
-  .can_fua           = ext2_can_fua,
-  .can_cache         = ext2_can_cache,
-  .get_size          = ext2_get_size,
-  .pread             = ext2_pread,
-  .pwrite            = ext2_pwrite,
-  .flush             = ext2_flush,
+  .name               = "ext2",
+  .longname           = "nbdkit ext2 filter",
+  .load               = ext2_load,
+  .unload             = ext2_unload,
+  .config             = ext2_config,
+  .config_complete    = ext2_config_complete,
+  .config_help        = ext2_config_help,
+  .thread_model       = ext2_thread_model,
+  .open               = ext2_open,
+  .prepare            = ext2_prepare,
+  .close              = ext2_close,
+  .can_fua            = ext2_can_fua,
+  .can_cache          = ext2_can_cache,
+  .export_description = ext2_export_description,
+  .get_size           = ext2_get_size,
+  .pread              = ext2_pread,
+  .pwrite             = ext2_pwrite,
+  .flush              = ext2_flush,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
