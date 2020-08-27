@@ -490,9 +490,11 @@ AS_CASE([$host_os],
         NO_UNDEFINED_ON_WINDOWS="-no-undefined"
         IMPORT_LIBRARY_ON_WINDOWS='-Wl,-L$(top_builddir)/server -Wl,-lnbdkit'
         SOEXT="dll"
+        DIR_SEPARATOR_STR='\\'
     ],
     [is_windows=no
-     SOEXT="so"]
+     SOEXT="so"
+     DIR_SEPARATOR_STR=/]
 )
 AC_MSG_RESULT([$is_windows])
 AC_SUBST([NO_UNDEFINED_ON_WINDOWS])
@@ -500,6 +502,8 @@ AC_SUBST([IMPORT_LIBRARY_ON_WINDOWS])
 AC_SUBST([SOEXT])
 AC_DEFINE_UNQUOTED([SOEXT],["$SOEXT"],[Extension used for shared objects/DLLs.])
 AC_DEFINE_UNQUOTED([EXEEXT],["$EXEEXT"],[Extension used for executables.])
+AC_DEFINE_UNQUOTED([DIR_SEPARATOR_STR],["$DIR_SEPARATOR_STR"],
+                   [String that separates path elements.])
 AM_CONDITIONAL([IS_WINDOWS],[test "x$is_windows" = "xyes"])
 
 AS_IF([test "x$is_windows" = "xyes"],[
