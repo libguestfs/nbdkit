@@ -266,58 +266,6 @@ with status C<1>; unrecognized output is ignored.
 
  /path/to/script preconnect <readonly> <exportname>
 
-=item C<list_exports>
-
- /path/to/script list_exports <readonly> <default_only>
-
-The C<readonly> parameter will be C<true> or C<false>.  The
-C<default_only> parameter will be C<true> if the caller is only
-interested in the canonical name of the default export, or C<false> to
-get a full list of export names; the script may safely ignore this
-parameter and always provide a full list if desired.
-
-The first line of output informs nbdkit how to parse the rest of the
-output, the remaining lines then supply the inputs of the C
-C<nbdkit_add_export> function (see L<nbdkit-plugin(3)>), as follows:
-
-=over 4
-
-=item NAMES
-
-The remaining output provides one export name per line, and no export
-will be given a description.  For convenience, this form is also
-assumed if the first output line does not match one of the recognized
-parse modes.
-
-=item INTERLEAVED
-
-The remaining output provides pairs of lines, the first line being an
-export name, and the second the corresponding description.
-
-=item NAMES+DESCRIPTIONS
-
-The number of remaining lines is counted, with the first half being
-used as export names, and the second half providing descriptions to
-pair with names from the first half.
-
-An example of using this form to list files in the current directory,
-followed by their L<ls(1)> long description, would be:
-
- echo NAMES+DESCRIPTIONS
- ls
- ls -l
-
-=back
-
-Note that other output modes might be introduced in the future; in
-particular, none of the existing modes allow a literal newline in an
-export name or description, although this could be possible under a
-new mode supporting escape sequences.
-
-This method is I<not> required; if it is absent, the list of exports
-advertised by nbdkit will be the single export with the empty string
-as a name and no description.
-
 =item C<open>
 
  /path/to/script open <readonly> <exportname> <tls>

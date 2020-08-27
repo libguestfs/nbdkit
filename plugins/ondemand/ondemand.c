@@ -174,55 +174,6 @@ ondemand_get_ready (void)
   "type=ext4|...               The filesystem type.\n" \
   "command=<COMMAND>           Alternate command instead of mkfs."
 
-/* Because we rewind the exportsdir handle, we need a lock to protect
- * list_exports from being called in parallel.
- */
-static pthread_mutex_t exports_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static int
-ondemand_list_exports (int readonly, int default_only,
-                       struct nbdkit_exports *exports)
-{
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&exports_lock);
-  struct dirent *d;
-
-  /* First entry should be the default export.  XXX Should we check if
-   * the "default" file was created?  I don't think we need to.
-   */
-  if (nbdkit_add_export (exports, "", NULL) == -1)
-    return -1;
-  if (default_only) return 0;
-
-  /* Read the rest of the exports. */
-  rewinddir (exportsdir);
-
-  /* XXX Output is not sorted.  Does it matter? */
-  while (errno = 0, (d = readdir (exportsdir)) != NULL) {
-    /* Skip any file containing non-permitted characters '.' and ':'.
-     * As a side effect this skips all dot-files.  Commands can use
-     * dot-files to "hide" files in the export dir (eg. if needing to
-     * keep state).
-     */
-    if (strchr (d->d_name, '.') || strchr (d->d_name, ':'))
-      continue;
-
-    /* Skip the "default" filename which refers to the "" export. */
-    if (strcmp (d->d_name, "default") == 0)
-      continue;
-
-    if (nbdkit_add_export (exports, d->d_name, NULL) == -1)
-      return -1;
-  }
-
-  /* Did readdir fail? */
-  if (errno != 0) {
-    nbdkit_error ("readdir: %s: %m", dir);
-    return -1;
-  }
-
-  return 0;
-}
-
 struct handle {
   int fd;
   int64_t size;
@@ -623,8 +574,6 @@ static struct nbdkit_plugin plugin = {
   .config_help       = ondemand_config_help,
   .magic_config_key  = "size",
   .get_ready         = ondemand_get_ready,
-
-  .list_exports      = ondemand_list_exports,
 
   .can_multi_conn    = ondemand_can_multi_conn,
   .can_trim          = ondemand_can_trim,

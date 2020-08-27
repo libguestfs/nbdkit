@@ -126,11 +126,6 @@ NBDKIT_EXTERN_DECL (int, nbdkit_add_extent,
                     (struct nbdkit_extents *,
                      uint64_t offset, uint64_t length, uint32_t type));
 
-struct nbdkit_exports;
-NBDKIT_EXTERN_DECL (int, nbdkit_add_export,
-                    (struct nbdkit_exports *,
-                     const char *name, const char *description));
-
 /* A static non-NULL pointer which can be used when you don't need a
  * per-connection handle.
  */

@@ -65,6 +65,7 @@ typedef int nbdkit_next_config_complete (nbdkit_backend *nxdata);
 typedef int nbdkit_next_get_ready (nbdkit_backend *nxdata);
 typedef int nbdkit_next_after_fork (nbdkit_backend *nxdata);
 typedef int nbdkit_next_preconnect (nbdkit_backend *nxdata, int readonly);
+struct nbdkit_exports;
 typedef int nbdkit_next_list_exports (nbdkit_backend *nxdata, int readonly,
                                       int default_only,
                                       struct nbdkit_exports *exports);
@@ -130,6 +131,10 @@ NBDKIT_EXTERN_DECL (int, nbdkit_extents_aligned,
                      struct nbdkit_extents *extents, int *err));
 
 /* Export functions. */
+NBDKIT_EXTERN_DECL (int, nbdkit_add_export,
+                    (struct nbdkit_exports *,
+                     const char *name, const char *description));
+
 struct nbdkit_export {
   char *name;
   char *description;

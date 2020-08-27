@@ -616,12 +616,10 @@ test_data_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 TESTS += \
 	test-eval.sh \
 	test-eval-file.sh \
-	test-eval-exports.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-eval.sh \
 	test-eval-file.sh \
-	test-eval-exports.sh \
 	$(NULL)
 
 # file plugin test.
@@ -756,12 +754,10 @@ test_null_LDADD = $(LIBNBD_LIBS)
 # ondemand plugin test.
 TESTS += \
 	test-ondemand.sh \
-	test-ondemand-list.sh \
 	test-ondemand-locking.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-ondemand.sh \
-	test-ondemand-list.sh \
 	test-ondemand-locking.sh \
 	$(NULL)
 

@@ -326,21 +326,6 @@ main (int argc, char *argv[])
      "test_layers_plugin_preconnect",
      NULL);
 
-  /* list_exports methods called in outer-to-inner order, complete
-   * in inner-to-outer order.  But since we didn't send NBD_OPT_LIST,
-   * the outer filter does not expose a list; rather, the rest of the
-   * chain is used to resolve the canonical name of the default export.
-   */
-  log_verify_seen_in_order
-    ("filter3: test_layers_filter_list_exports",
-     "testlayersfilter2: list_exports",
-     "filter2: test_layers_filter_list_exports",
-     "testlayersfilter1: list_exports",
-     "filter1: test_layers_filter_list_exports",
-     "testlayersplugin: list_exports",
-     "test_layers_plugin_list_exports",
-     NULL);
-
   /* open methods called in outer-to-inner order, but thanks to next
    * pointer, complete in inner-to-outer order. */
   log_verify_seen_in_order

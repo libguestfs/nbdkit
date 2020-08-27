@@ -343,7 +343,10 @@ an error message and return C<-1>.
                       struct nbdkit_exports *exports);
 
 This intercepts the plugin C<.list_exports> method and can be used to
-filter which exports are advertised.
+filter which exports are advertised.  In S<nbdkit 1.22> plugins return
+just a default export called C<"">.  In S<nbdkit 1.24> we plan to
+allow plugins to control the list of exports and default export
+advertised.
 
 It is possible for filters to transform the exports list received back
 from the layer below.  Without error checking it would look like this:

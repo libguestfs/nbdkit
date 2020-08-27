@@ -85,14 +85,6 @@ case "$1" in
         echo parallel
         ;;
 
-    list_exports)
-        # The following lists the names of all files in the current
-        # directory that do not contain whitespace, backslash, or single
-        # quotes.  No description accompanies the export names.
-        # The first file listed is used when a client requests export ''.
-        find . -type f \! -name "*['\\\\[:space:]]*"
-        ;;
-
     open)
         # Open a new client connection.
 

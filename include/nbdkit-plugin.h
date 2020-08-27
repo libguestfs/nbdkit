@@ -139,9 +139,6 @@ struct nbdkit_plugin {
 
   int (*get_ready) (void);
   int (*after_fork) (void);
-
-  int (*list_exports) (int readonly, int default_only,
-                       struct nbdkit_exports *exports);
 };
 
 NBDKIT_EXTERN_DECL (void, nbdkit_set_error, (int err));
