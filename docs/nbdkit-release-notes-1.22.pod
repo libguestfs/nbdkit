@@ -7,7 +7,7 @@ nbdkit-release-notes-1.22 - release notes for nbdkit 1.22
 These are the release notes for nbdkit stable release 1.22.
 This describes the major changes since 1.20.
 
-nbdkit 1.22.0 was released on B<XXX XXX 2020>.
+nbdkit 1.22.0 was released on B<27 August 2020>.
 
 =head2 Security
 
@@ -47,9 +47,6 @@ L<nbdkit-curl-plugin(1)> now supports HTTP/2 servers
 (David Edmondson, Pino Toscano, Zi Liu).
 
 L<nbdkit-curl-plugin(1)> adds support for the C<User-Agent> header.
-
-L<nbdkit-sh-plugin(1)> and L<nbdkit-eval-plugin(1)> now
-support listing server exports (Eric Blake).
 
 L<nbdkit-file-plugin(1)> can export multiple files in a directory as
 separate exports (Eric Blake).
@@ -245,7 +242,29 @@ L<nbdkit(1)>.
 
 Authors of nbdkit 1.22:
 
-XXX
+=over 4
+
+=item Alan Somers
+
+(7 commits)
+
+=item Eric Blake
+
+(53 commits)
+
+=item François Revol
+
+(2 commits)
+
+=item Nir Soffer
+
+(2 commits)
+
+=item Richard W.M. Jones
+
+(285 commits)
+
+=back
 
 =head1 COPYRIGHT
 
