@@ -77,7 +77,6 @@ L<nbdkit-ext2-filter(1)>.
 The C<-> character is now permitted within plugin and filter names
 (Eric Blake).
 
-
 =head2 Filters
 
 New L<nbdkit-ddrescue-filter(1)> lets you test disk images recovered
@@ -107,8 +106,6 @@ FUA and flush requests unchanged (disabling the filter).  A new,
 unsafe C<fuamode=discard> mode was added which discards FUA and flush
 requests.
 
-
-
 =head2 Language bindings
 
 New L<nbdkit-cc-plugin(3)> lets you write small nbdkit plugins as
@@ -129,11 +126,6 @@ L<nbdkit-python-plugin(3)> has a greater range of examples (Nir Soffer).
 L<nbdkit-python-plugin(3)> adds support for getting the client export
 name, calling C<nbdkit_debug>, and also for extents.
 
-
-
-
-
-
 =head2 Server
 
 C<nbdkit --dump-config> has new fields: C<version_major> and
@@ -146,8 +138,6 @@ The I<-e>/I<--exportname> option (which never did anything useful
 previously) is now used to pass the preferred exportname to the
 I<--run> option.  In general you should never use this option except
 in very limited and exceptional circumstances (Eric Blake).
-
-
 
 =head2 API
 
@@ -170,9 +160,6 @@ C<nbdkit_read_password> with C<password=-> will now return an error if
 the input is not a tty.  Also C<password=-FD> is disallowed if the
 file descriptor is 0, 1 or 2.
 
-
-
-
 =head2 Bug fixes
 
 The VDDK plugin was extensively refactored to fix many bugs: Reading
@@ -187,8 +174,6 @@ sets the implicit size correctly.
 The C<E<lt>FILE> formatter of L<nbdkit-data-plugin(1)> now works if
 you use it more than once.
 
-
-
 =head2 Documentation
 
 New L<nbdkit-client(1)> manual page documents how to mount filesystems
@@ -197,7 +182,6 @@ mountpoints.
 
 Examples now use C<NBDKIT_API_VERSION 2> so that the examples match
 the documentation.
-
 
 =head2 Tests
 
@@ -215,8 +199,6 @@ compiled on a particular platform.  So tests should now not fail when
 an optional external library needed by a plugin/filter is not
 available.
 
-
-
 =head2 Build
 
 Honggfuzz may now be used for fuzz testing.
@@ -224,15 +206,12 @@ Honggfuzz may now be used for fuzz testing.
 If L<nbdkit-python-plugin(3)> is enabled, Python E<ge> 3.6 must be
 used.
 
-
-
 =head2 Internals
 
 The export name is now passed down through filter C<.open> callbacks,
 allowing filters to modify the export name passed through to plugins.
 
 The final thread model is passed to filter C<.get_ready> callbacks.
-
 
 =head1 SEE ALSO
 
