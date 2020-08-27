@@ -109,8 +109,6 @@ clear_selinux_label (void)
 #endif
 }
 
-#ifndef WIN32
-
 void
 bind_unix_socket (sockets *socks)
 {
@@ -119,7 +117,9 @@ bind_unix_socket (sockets *socks)
   struct sockaddr_un addr;
 
   assert (unixsocket);
+#ifndef WIN32 /* On Win32 the abspath might start with a drive letter. */
   assert (unixsocket[0] == '/');
+#endif
 
   len = strlen (unixsocket);
   if (len >= UNIX_PATH_MAX) {
@@ -165,16 +165,6 @@ bind_unix_socket (sockets *socks)
 
   debug ("bound to unix socket %s", unixsocket);
 }
-
-#else /* WIN32 */
-
-void
-bind_unix_socket (sockets *socks)
-{
-  NOT_IMPLEMENTED_ON_WINDOWS ("-U");
-}
-
-#endif /* WIN32 */
 
 void
 bind_tcpip_socket (sockets *socks)

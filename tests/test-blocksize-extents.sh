@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_plugin eval
 requires nbdsh --base-allocation -c 'exit(not h.supports_uri())'
 
 # Script a server that requires 512-byte aligned requests, reports only one

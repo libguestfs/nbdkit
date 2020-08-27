@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_run
 requires qemu-img --version
 
 files="rate-dynamic.img rate-dynamic.time rate-dynamic.err rate-dynamic.txt"

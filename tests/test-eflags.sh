@@ -42,7 +42,7 @@
 source ./functions.sh
 set -e
 
-requires_unix_domain_sockets
+requires_plugin sh
 requires qemu-nbd --version
 
 # This test uses the ‘qemu-nbd --list’ option added in qemu 4.0.

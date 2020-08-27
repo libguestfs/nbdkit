@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_run
 requires qemu-img --version
 
 files="swab-8.expected swab-8.actual"

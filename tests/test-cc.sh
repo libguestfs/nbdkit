@@ -48,7 +48,7 @@ if test ! -f "$script"; then
     exit 1
 fi
 
-requires_unix_domain_sockets
+requires_plugin cc
 requires nbdinfo --version
 
 out=test-cc.out

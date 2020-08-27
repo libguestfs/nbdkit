@@ -39,7 +39,7 @@ set -x
 
 fail=0
 
-requires_unix_domain_sockets
+requires_plugin sh
 requires qemu-io --version
 requires dd iflag=count_bytes </dev/null
 

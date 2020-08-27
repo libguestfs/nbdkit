@@ -34,7 +34,7 @@ source ./functions.sh
 set -x
 set -e
 
-requires_unix_domain_sockets
+requires_run
 requires qemu-img --version
 
 files="test-zero.out"

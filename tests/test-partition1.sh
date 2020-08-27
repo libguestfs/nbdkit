@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_run
 requires sfdisk --help
 requires test -r /dev/urandom
 requires qemu-img --version

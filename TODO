@@ -316,10 +316,7 @@ Currently many features are missing, including:
 
 * These options are all unimplemented:
   --group, --log=syslog, --pidfile, --run, --selinux-label, --single
-  --swap, --unix, --user, --vsock
-
-* For possible Unix domain socket support in future see:
-  https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows/
+  --swap, --user, --vsock
 
 * The current file plugin works but has limited features and doesn't
   use the best native APIs.  It's worth considering writing an

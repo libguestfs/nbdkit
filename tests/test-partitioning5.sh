@@ -40,7 +40,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_daemonizing
 requires guestfish --version
 requires mke2fs -V
 

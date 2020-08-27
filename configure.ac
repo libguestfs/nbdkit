@@ -311,6 +311,7 @@ test (void)
 dnl Check for other headers, all optional.
 AC_CHECK_HEADERS([\
 	alloca.h \
+	afunix.h \
 	arpa/inet.h \
 	byteswap.h \
 	endian.h \

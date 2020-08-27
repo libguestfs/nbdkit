@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_plugin sh
 requires qemu-io --version
 
 files="retry-readonly-count retry-readonly-open-count"

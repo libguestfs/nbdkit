@@ -37,7 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_plugin sh
 
 unset tmpdir
 nbdkit -U - sh - --run 'if test -n "$tmpdir"; then exit 1; fi' </dev/null

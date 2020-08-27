@@ -43,6 +43,27 @@
 
 #include <errno.h>
 
+/* Note that this is part of Windows 10, but not yet available in
+ * mingw-w64.
+ */
+#ifdef HAVE_AFUNIX_H
+#include <afunix.h>
+#else
+
+/* This is the same as the definition in common/include/unix-path-max.h
+ * so we should be fine here even if the other file was included.
+ */
+#ifndef UNIX_PATH_MAX
+#define UNIX_PATH_MAX 108
+#endif
+
+struct sockaddr_un
+{
+  ADDRESS_FAMILY sun_family;
+  char sun_path[UNIX_PATH_MAX];
+};
+#endif /* !HAVE_AFUNIX_H */
+
 /* Windows doesn't have O_CLOEXEC, but it also doesn't have file
  * descriptors that can be inherited across exec.  Similarly for
  * O_NOCTTY.

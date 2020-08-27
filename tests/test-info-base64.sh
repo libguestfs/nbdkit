@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_daemonizing
 requires nbdsh -c 'import base64'
 
 # Test if mode=base64exportname is supported in this build.

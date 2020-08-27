@@ -36,6 +36,6 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_run
 
 nbdkit -U - example1 --run 'sleep 5'

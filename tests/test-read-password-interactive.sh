@@ -35,10 +35,10 @@ set -e
 set -x
 
 # This is an executable C script using nbdkit-cc-plugin.
+requires_plugin cc
 plugin=$SRCDIR/test-read-password-plugin.c
 requires test -x $plugin
 
-requires_unix_domain_sockets
 requires expect -v
 
 # Since we are matching on error messages.

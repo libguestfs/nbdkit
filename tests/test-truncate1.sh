@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+requires_daemonizing
 requires qemu-io --version
 
 sock=`mktemp -u`
