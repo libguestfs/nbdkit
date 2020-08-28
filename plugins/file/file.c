@@ -312,7 +312,7 @@ file_open (int readonly)
 #ifdef HAVE_POSIX_FADVISE
     int r = posix_fadvise (h->fd, 0, 0, fadvise_mode);
     if (r == -1)
-      nbdkit_debug ("posix_fadvise: %s: %m (ignored)", filename);
+      nbdkit_debug ("posix_fadvise: %s: %m (ignored)", file);
 #else
     nbdkit_debug ("fadvise is not supported");
 #endif
