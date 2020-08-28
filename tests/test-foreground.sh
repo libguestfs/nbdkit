@@ -61,7 +61,12 @@ fi
 pid="$(cat foreground.pid)"
 cleanup_fn kill $pid
 
-test "$bg_pid" -eq "$pid"
+# Check the backgrounded PID (from $!) is the same as the PID reported
+# by nbdkit.  Note this is not true for Windows because the wrapper
+# has to use spawn since exec isn't really a thing.
+if ! is_windows; then
+    test "$bg_pid" -eq "$pid"
+fi
 
 # Check the socket was created (and is a socket).
 test -S $sock
