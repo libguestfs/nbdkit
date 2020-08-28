@@ -10,7 +10,7 @@ nbdkit-nbd-plugin - proxy / forward to another NBD server
               socket=SOCKNAME |
               socket-fd=FD |
               [uri=]URI }
-            [export=NAME] [retry=N] [shared=BOOL]
+            [dynamic-export=BOOL] [export=NAME] [retry=N] [shared=BOOL]
             [tls=MODE] [tls-certificates=DIR] [tls-verify=BOOL]
             [tls-username=NAME] [tls-psk=FILE]
 
@@ -112,6 +112,9 @@ The C<uri> parameter is only available when the plugin was compiled
 against libnbd with URI support; C<nbdkit --dump-plugin nbd> will
 contain C<libnbd_uri=1> if this is the case.
 
+The export portion of the URI is ignored when using
+C<dynamic-export=true>.
+
 C<uri=> is a magic config key and may be omitted in most
 cases.  See L<nbdkit(1)/Magic parameters>.
 
@@ -126,7 +129,8 @@ Other parameters control the NBD connection:
 If this parameter is given, and the server speaks new style protocol,
 then connect to the named export instead of the default export (the
 empty string).  If C<uri> is supplied, the export name should be
-embedded in the URI instead.
+embedded in the URI instead.  This is incompatible with
+C<dynamic-export=true>.
 
 =item B<retry=>N
 
@@ -149,6 +153,20 @@ If this parameter is set to C<true>, the plugin will open a single
 connection to the server when nbdkit is first started (the C<retry>
 parameter may be necessary to coordinate timing of the remote server
 startup), and all clients to nbdkit will share that single connection.
+This mode is incompatible with B<dynamic-export=true>.
+
+=item B<dynamic-export=false>
+
+=item B<dynamic-export=true>
+
+This parameter defaults to false, in which case all clients to nbdkit
+use the same export of the server, as set by C<export> or C<uri>,
+regardless of the client's export name request.  If it is set to true,
+nbdkit will pass the client's requested export name over to the final
+NBD server, which means clients requesting different export names can
+see different content when the server differentiates content by export
+name.  Dynamic exports prevent the use of C<shared> mode, and thus are
+not usable with C<command> or C<socket-fd>.
 
 =item B<tls=off>
 
@@ -283,6 +301,7 @@ C<nbdkit-nbd-plugin> first appeared in nbdkit 1.2.
 L<nbdkit(1)>,
 L<nbdkit-captive(1)>,
 L<nbdkit-filter(3)>,
+L<nbdkit-exportname-filter(1)>,
 L<nbdkit-tls(1)>,
 L<nbdkit-plugin(3)>,
 L<libnbd(3)>,

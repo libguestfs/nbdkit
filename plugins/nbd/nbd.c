@@ -109,8 +109,11 @@ static string_vector command = empty_vector;
 /* Connect to a socket file descriptor. */
 static int socket_fd = -1;
 
-/* Name of export on remote server, default '', ignored for oldstyle */
+/* Name of export on remote server, default '', ignored for oldstyle,
+ * NULL if dynamic.
+ */
 static const char *export;
+static bool dynamic_export;
 
 /* Number of retries */
 static unsigned retry;
@@ -126,7 +129,8 @@ static int tls_verify = -1;
 static const char *tls_username;
 static char *tls_psk;
 
-static struct handle *nbdplug_open_handle (int readonly);
+static struct handle *nbdplug_open_handle (int readonly,
+                                           const char *client_export);
 static void nbdplug_close_handle (struct handle *h);
 
 static void
@@ -180,6 +184,12 @@ nbdplug_config (const char *key, const char *value)
   }
   else if (strcmp (key, "export") == 0)
     export = value;
+  else if (strcmp (key, "dynamic-export") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    dynamic_export = r;
+  }
   else if (strcmp (key, "retry") == 0) {
     if (nbdkit_parse_unsigned ("retry", value, &retry) == -1)
       return -1;
@@ -308,10 +318,31 @@ nbdplug_config_complete (void)
     abort ();         /* can't happen, if checks above were correct */
   }
 
-  /* Check the other parameters. */
-  if (!export)
+  /* Can't mix dynamic-export with export or shared (including
+   * connection modes that imply shared).  Also, it requires
+   * new-enough libnbd if uri was used.
+   */
+  if (dynamic_export) {
+    if (export) {
+      nbdkit_error ("cannot mix 'dynamic-export' with explicit export name");
+      return -1;
+    }
+    if (shared) {
+      nbdkit_error ("cannot use 'dynamic-export' with shared connection");
+      return -1;
+    }
+#if !LIBNBD_HAVE_NBD_SET_OPT_MODE
+    if (uri) {
+      nbdkit_error ("libnbd too old to support 'dynamic-export' with uri "
+                    "connection");
+      return -1;
+    }
+#endif
+  }
+  else if (!export)
     export = "";
 
+  /* Check the other parameters. */
   if (tls == -1)
     tls = (tls_certificates || tls_verify >= 0 || tls_username || tls_psk)
       ? LIBNBD_TLS_ALLOW : LIBNBD_TLS_DISABLE;
@@ -338,7 +369,7 @@ nbdplug_config_complete (void)
 static int
 nbdplug_after_fork (void)
 {
-  if (shared && (shared_handle = nbdplug_open_handle (false)) == NULL)
+  if (shared && (shared_handle = nbdplug_open_handle (false, NULL)) == NULL)
     return -1;
   return 0;
 }
@@ -353,6 +384,7 @@ nbdplug_after_fork (void)
   "arg=<ARG>              Parameters for command.\n" \
   "socket-fd=<FD>         Socket file descriptor to connect to.\n" \
   "export=<NAME>          Export name to connect to (default \"\").\n" \
+  "dynamic-export=<BOOL>  True to enable export name pass-through.\n" \
   "retry=<N>              Retry connection up to N seconds (default 0).\n" \
   "shared=<BOOL>          True to share one server connection among all clients,\n" \
   "                       rather than a connection per client (default false).\n" \
@@ -510,12 +542,46 @@ nbdplug_reply (struct handle *h, struct transaction *trans)
   return err ? -1 : 0;
 }
 
+/* Move an nbd handle from created to negotiating/ready.  Error reporting
+ * is left to the caller.
+ */
+static int
+nbdplug_connect (struct nbd_handle *nbd)
+{
+  if (tls_certificates &&
+      nbd_set_tls_certificates (nbd, tls_certificates) == -1)
+    return -1;
+  if (tls_verify >= 0 && nbd_set_tls_verify_peer (nbd, tls_verify) == -1)
+    return -1;
+  if (tls_username && nbd_set_tls_username (nbd, tls_username) == -1)
+    return -1;
+  if (tls_psk && nbd_set_tls_psk_file (nbd, tls_psk) == -1)
+    return -1;
+  if (uri)
+    return nbd_connect_uri (nbd, uri);
+  else if (sockname)
+    return nbd_connect_unix (nbd, sockname);
+  else if (hostname)
+    return nbd_connect_tcp (nbd, hostname, port);
+  else if (raw_cid)
+#if !USE_VSOCK
+    abort ();
+#else
+    return nbd_connect_vsock (nbd, cid, vport);
+#endif
+  else if (command.size > 0)
+    return nbd_connect_systemd_socket_activation (nbd, (char **) command.ptr);
+  else if (socket_fd >= 0)
+    return nbd_connect_socket (nbd, socket_fd);
+  else
+    abort ();
+}
+
 /* Create the shared or per-connection handle. */
 static struct handle *
-nbdplug_open_handle (int readonly)
+nbdplug_open_handle (int readonly, const char *client_export)
 {
   struct handle *h;
-  int r;
   unsigned long retries = retry;
 
   h = calloc (1, sizeof *h);
@@ -550,11 +616,16 @@ nbdplug_open_handle (int readonly)
   }
 #endif
 
+  if (dynamic_export)
+    assert (client_export);
+  else
+    client_export = export;
+
  retry:
   h->nbd = nbd_create ();
   if (!h->nbd)
     goto errnbd;
-  if (nbd_set_export_name (h->nbd, export) == -1)
+  if (nbd_set_export_name (h->nbd, client_export) == -1)
     goto errnbd;
   if (nbd_add_meta_context (h->nbd, LIBNBD_CONTEXT_BASE_ALLOCATION) == -1)
     goto errnbd;
@@ -562,36 +633,17 @@ nbdplug_open_handle (int readonly)
   if (nbd_set_full_info (h->nbd, 1) == -1)
     goto errnbd;
 #endif
+  if (dynamic_export && uri) {
+#if LIBNBD_HAVE_NBD_SET_OPT_MODE
+    if (nbd_set_opt_mode (h->nbd, 1) == -1)
+      goto errnbd;
+#else
+    abort (); /* Prevented by .config_complete */
+#endif
+  }
   if (nbd_set_tls (h->nbd, tls) == -1)
     goto errnbd;
-  if (tls_certificates &&
-      nbd_set_tls_certificates (h->nbd, tls_certificates) == -1)
-    goto errnbd;
-  if (tls_verify >= 0 && nbd_set_tls_verify_peer (h->nbd, tls_verify) == -1)
-    goto errnbd;
-  if (tls_username && nbd_set_tls_username (h->nbd, tls_username) == -1)
-    goto errnbd;
-  if (tls_psk && nbd_set_tls_psk_file (h->nbd, tls_psk) == -1)
-    goto errnbd;
-  if (uri)
-    r = nbd_connect_uri (h->nbd, uri);
-  else if (sockname)
-    r = nbd_connect_unix (h->nbd, sockname);
-  else if (hostname)
-    r = nbd_connect_tcp (h->nbd, hostname, port);
-  else if (raw_cid)
-#if !USE_VSOCK
-    abort ();
-#else
-    r = nbd_connect_vsock (h->nbd, cid, vport);
-#endif
-  else if (command.size > 0)
-    r = nbd_connect_systemd_socket_activation (h->nbd, (char **) command.ptr);
-  else if (socket_fd >= 0)
-    r = nbd_connect_socket (h->nbd, socket_fd);
-  else
-    abort ();
-  if (r == -1) {
+  if (nbdplug_connect (h->nbd) == -1) {
     if (retries--) {
       nbdkit_debug ("connect failed; will try again: %s", nbd_get_error ());
       nbd_close (h->nbd);
@@ -600,6 +652,16 @@ nbdplug_open_handle (int readonly)
     }
     goto errnbd;
   }
+
+#if LIBNBD_HAVE_NBD_SET_OPT_MODE
+  /* Oldstyle servers can't change export name, but that's okay. */
+  if (uri && dynamic_export && nbd_aio_is_negotiating (h->nbd)) {
+    if (nbd_set_export_name (h->nbd, client_export) == -1)
+      goto errnbd;
+    if (nbd_opt_go (h->nbd) == -1)
+      goto errnbd;
+  }
+#endif
 
   if (readonly)
     h->readonly = true;
@@ -627,7 +689,42 @@ nbdplug_open_handle (int readonly)
 static const char *
 nbdplug_default_export (int readonly, int is_tls)
 {
-  return export;
+  const char *ret = "";
+  CLEANUP_FREE char *name = NULL;
+
+  if (!dynamic_export)
+    return export;
+#if LIBNBD_HAVE_NBD_SET_FULL_INFO
+  /* Best effort determination of server's canonical name.  If it
+   * fails, we're fine using the default name on our end (NBD_OPT_GO
+   * might still work on "" later on).
+   */
+  struct nbd_handle *nbd = nbd_create ();
+
+  if (!nbd)
+    return "";
+  if (nbd_set_full_info (nbd, 1) == -1)
+    goto out;
+  if (nbd_set_opt_mode (nbd, 1) == -1)
+    goto out;
+  if (nbdplug_connect (nbd) == -1)
+    goto out;
+  if (nbd_set_export_name (nbd, "") == -1)
+    goto out;
+  if (nbd_opt_info (nbd) == -1)
+    goto out;
+  name = nbd_get_canonical_export_name (nbd);
+  if (name)
+    ret = nbdkit_strdup_intern (name);
+
+ out:
+  if (nbd_aio_is_negotiating (nbd))
+    nbd_opt_abort (nbd);
+  else if (nbd_aio_is_ready (nbd))
+    nbd_shutdown (nbd, 0);
+  nbd_close (nbd);
+#endif
+  return ret;
 }
 
 /* Create the per-connection handle. */
@@ -636,7 +733,7 @@ nbdplug_open (int readonly)
 {
   if (shared)
     return shared_handle;
-  return nbdplug_open_handle (readonly);
+  return nbdplug_open_handle (readonly, nbdkit_export_name ());
 }
 
 /* Free up the shared or per-connection handle. */

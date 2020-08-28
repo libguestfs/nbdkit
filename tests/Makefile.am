@@ -770,6 +770,7 @@ if HAVE_LIBNBD
 # nbd plugin test.
 LIBGUESTFS_TESTS += test-nbd
 TESTS += \
+	test-nbd-dynamic-content.sh \
 	test-nbd-extents.sh \
 	test-nbd-qcow2.sh \
 	test-nbd-tls.sh \
@@ -777,6 +778,7 @@ TESTS += \
 	test-nbd-vsock.sh \
 	$(NULL)
 EXTRA_DIST += \
+	test-nbd-dynamic-content.sh \
 	test-nbd-extents.sh \
 	test-nbd-qcow2.sh \
 	test-nbd-tls.sh \
