@@ -173,7 +173,6 @@ sh_preconnect (int readonly)
   const char *args[] =
     { script, method,
       readonly ? "true" : "false",
-      nbdkit_export_name () ? : "",
       NULL };
 
   switch (call (args)) {

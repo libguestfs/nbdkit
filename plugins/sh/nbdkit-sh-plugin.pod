@@ -260,7 +260,7 @@ with status C<1>; unrecognized output is ignored.
 
 =item C<preconnect>
 
- /path/to/script preconnect <readonly> <exportname>
+ /path/to/script preconnect <readonly>
 
 =item C<open>
 
