@@ -478,22 +478,22 @@ nbdplug_open_handle (int readonly)
  retry:
   h->nbd = nbd_create ();
   if (!h->nbd)
-    goto err;
+    goto errnbd;
   if (nbd_set_export_name (h->nbd, export) == -1)
-    goto err;
+    goto errnbd;
   if (nbd_add_meta_context (h->nbd, LIBNBD_CONTEXT_BASE_ALLOCATION) == -1)
-    goto err;
+    goto errnbd;
   if (nbd_set_tls (h->nbd, tls) == -1)
-    goto err;
+    goto errnbd;
   if (tls_certificates &&
       nbd_set_tls_certificates (h->nbd, tls_certificates) == -1)
-    goto err;
+    goto errnbd;
   if (tls_verify >= 0 && nbd_set_tls_verify_peer (h->nbd, tls_verify) == -1)
-    goto err;
+    goto errnbd;
   if (tls_username && nbd_set_tls_username (h->nbd, tls_username) == -1)
-    goto err;
+    goto errnbd;
   if (tls_psk && nbd_set_tls_psk_file (h->nbd, tls_psk) == -1)
-    goto err;
+    goto errnbd;
   if (uri)
     r = nbd_connect_uri (h->nbd, uri);
   else if (sockname)
@@ -509,7 +509,7 @@ nbdplug_open_handle (int readonly)
       sleep (1);
       goto retry;
     }
-    goto err;
+    goto errnbd;
   }
 
   if (readonly)
@@ -523,10 +523,11 @@ nbdplug_open_handle (int readonly)
 
   return h;
 
+ errnbd:
+  nbdkit_error ("failure while creating nbd handle: %s", nbd_get_error ());
  err:
   close (h->fds[0]);
   close (h->fds[1]);
-  nbdkit_error ("failure while creating nbd handle: %s", nbd_get_error ());
   if (h->nbd)
     nbd_close (h->nbd);
   free (h);
