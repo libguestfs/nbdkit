@@ -329,15 +329,11 @@ Currently many features are missing, including:
 
 * Many other plugins and filters.
 
-* Short names for plugins and filters don't work at the moment.
-
-* The ./nbdkit wrapper in the top directory is not built yet.
-
 * errno_is_preserved should use GetLastError and/or WSAGetLastError
   but currently does neither so errors from plugins are probably wrong
   in many cases.
 
-* Most tests will fail because of the missing features above.
+* Most tests are skipped because of the missing features above.
 
 V3 plugin protocol
 ------------------
