@@ -38,7 +38,7 @@
 
 #include "regions.h"
 
-extern char *dir;
+extern const char *dir;
 extern const char *label;
 extern const char *type;
 extern int64_t size;

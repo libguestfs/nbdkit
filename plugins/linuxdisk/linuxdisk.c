@@ -50,7 +50,7 @@
 #include "virtual-disk.h"
 
 /* Directory, label, type, size parameters. */
-char *dir;
+const char *dir;
 const char *label;
 const char *type = "ext2";
 int64_t size;
@@ -73,7 +73,6 @@ static void
 linuxdisk_unload (void)
 {
   free_virtual_disk (&disk);
-  free (dir);
 }
 
 static int
@@ -85,9 +84,12 @@ linuxdisk_config (const char *key, const char *value)
       nbdkit_error ("dir=<DIRECTORY> must only be set once");
       return -1;
     }
-    dir = nbdkit_realpath (value);
-    if (dir == NULL)
-      return -1;
+    /* We don't actually need to use realpath here because the
+     * directory is only used in .get_ready, before we chdir.  Not
+     * doing realpath is helpful because on Windows it will munge the
+     * path in such a way that external mke2fs cannot parse it.
+     */
+    dir = value;
   }
   else if (strcmp (key, "label") == 0) {
     label = value;
