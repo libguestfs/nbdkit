@@ -36,7 +36,11 @@ source ./functions.sh
 set -e
 set -x
 
-requires_unix_domain_sockets
+# This test won't work on Windows because we cannot kill a Windows Process ID.
+if is_windows; then
+    echo "$0: test skipped because this is Windows"
+    exit 77
+fi
 
 sock=`mktemp -u`
 files="foreground.pid $sock"
