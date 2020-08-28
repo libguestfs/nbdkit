@@ -558,6 +558,10 @@ nbdplug_open_handle (int readonly)
     goto errnbd;
   if (nbd_add_meta_context (h->nbd, LIBNBD_CONTEXT_BASE_ALLOCATION) == -1)
     goto errnbd;
+#if LIBNBD_HAVE_NBD_SET_FULL_INFO
+  if (nbd_set_full_info (h->nbd, 1) == -1)
+    goto errnbd;
+#endif
   if (nbd_set_tls (h->nbd, tls) == -1)
     goto errnbd;
   if (tls_certificates &&
@@ -619,6 +623,13 @@ nbdplug_open_handle (int readonly)
   return NULL;
 }
 
+/* Canonical name of default export. */
+static const char *
+nbdplug_default_export (int readonly, int is_tls)
+{
+  return export;
+}
+
 /* Create the per-connection handle. */
 static void *
 nbdplug_open (int readonly)
@@ -650,6 +661,19 @@ nbdplug_close (void *handle)
 
   if (!shared)
     nbdplug_close_handle (h);
+}
+
+/* Description. */
+static const char *
+nbdplug_export_description (void *handle)
+{
+#if LIBNBD_HAVE_NBD_GET_EXPORT_DESCRIPTION
+  struct handle *h = handle;
+  CLEANUP_FREE char *desc = nbd_get_export_description (h->nbd);
+  if (desc)
+    return nbdkit_strdup_intern (desc);
+#endif
+  return NULL;
 }
 
 /* Get the file size. */
@@ -947,8 +971,10 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key   = "uri",
   .after_fork         = nbdplug_after_fork,
   .dump_plugin        = nbdplug_dump_plugin,
+  .default_export     = nbdplug_default_export,
   .open               = nbdplug_open,
   .close              = nbdplug_close,
+  .export_description = nbdplug_export_description,
   .get_size           = nbdplug_get_size,
   .can_write          = nbdplug_can_write,
   .can_flush          = nbdplug_can_flush,
