@@ -168,6 +168,13 @@ see different content when the server differentiates content by export
 name.  Dynamic exports prevent the use of C<shared> mode, and thus are
 not usable with C<command> or C<socket-fd>.
 
+If libnbd is new enough, dynamic export mode is able to advertise the
+same exports as listed by the server; C<nbdkit --dump-plugin nbd> will
+contain C<libnbd_dynamic_list=1> if this is the case.  Regardless of
+what this plugin lists, it is also possible to use
+L<nbdkit-exportname-filter(1)> to adjust what export names the client
+sees or uses as a default.
+
 =item B<tls=off>
 
 =item B<tls=on>

@@ -407,6 +407,11 @@ nbdplug_dump_plugin (void)
   printf ("libnbd_tls=%d\n", nbd_supports_tls (nbd));
   printf ("libnbd_uri=%d\n", nbd_supports_uri (nbd));
   printf ("libnbd_vsock=%d\n", USE_VSOCK);
+#if LIBNBD_HAVE_NBD_OPT_LIST
+  printf ("libnbd_dynamic_list=1\n");
+#else
+  printf ("libnbd_dynamic_list=0\n");
+#endif
   nbd_close (nbd);
 }
 
@@ -683,6 +688,53 @@ nbdplug_open_handle (int readonly, const char *client_export)
     nbd_close (h->nbd);
   free (h);
   return NULL;
+}
+
+#if LIBNBD_HAVE_NBD_OPT_LIST
+static int
+collect_one (void *opaque, const char *name, const char *desc)
+{
+  struct nbdkit_exports *exports = opaque;
+
+  if (nbdkit_add_export (exports, name, desc) == -1)
+    nbdkit_debug ("Unable to share export %s: %s", name, nbd_get_error ());
+  return 0;
+}
+#endif /* LIBNBD_HAVE_NBD_OPT_LIST */
+
+/* Export list. */
+static int
+nbdplug_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
+{
+#if LIBNBD_HAVE_NBD_OPT_LIST
+  if (dynamic_export) {
+    struct nbd_handle *nbd = nbd_create ();
+    int r = -1;
+
+    if (!nbd)
+      goto out;
+    if (nbd_set_opt_mode (nbd, 1) == -1)
+      goto out;
+    if (nbdplug_connect (nbd) == -1)
+      goto out;
+    if (nbd_opt_list (nbd, (nbd_list_callback) { .callback = collect_one,
+                                                 .user_data = exports }) == -1)
+      goto out;
+    r = 0;
+  out:
+    if (r == -1)
+      nbdkit_error ("Unable to get list: %s", nbd_get_error ());
+    if (nbd) {
+      if (nbd_aio_is_negotiating (nbd))
+        nbd_opt_abort (nbd);
+      else if (nbd_aio_is_ready (nbd))
+        nbd_shutdown (nbd, 0);
+      nbd_close (nbd);
+    }
+    return r;
+  }
+#endif
+  return nbdkit_use_default_export (exports);
 }
 
 /* Canonical name of default export. */
@@ -1068,6 +1120,7 @@ static struct nbdkit_plugin plugin = {
   .magic_config_key   = "uri",
   .after_fork         = nbdplug_after_fork,
   .dump_plugin        = nbdplug_dump_plugin,
+  .list_exports       = nbdplug_list_exports,
   .default_export     = nbdplug_default_export,
   .open               = nbdplug_open,
   .close              = nbdplug_close,

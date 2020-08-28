@@ -771,6 +771,7 @@ if HAVE_LIBNBD
 LIBGUESTFS_TESTS += test-nbd
 TESTS += \
 	test-nbd-dynamic-content.sh \
+	test-nbd-dynamic-list.sh \
 	test-nbd-extents.sh \
 	test-nbd-qcow2.sh \
 	test-nbd-tls.sh \
@@ -779,6 +780,7 @@ TESTS += \
 	$(NULL)
 EXTRA_DIST += \
 	test-nbd-dynamic-content.sh \
+	test-nbd-dynamic-list.sh \
 	test-nbd-extents.sh \
 	test-nbd-qcow2.sh \
 	test-nbd-tls.sh \

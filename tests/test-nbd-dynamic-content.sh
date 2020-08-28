@@ -35,7 +35,7 @@ set -e
 set -x
 
 # This test works with older libnbd, showing that dynamic mode affects
-# content.  XXX Also write a test, requiring newer libnbd, to show export list
+# content.
 requires_plugin info
 requires nbdsh --version
 
