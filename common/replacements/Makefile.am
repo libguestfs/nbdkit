@@ -49,6 +49,8 @@ EXTRA_DIST = \
 	getline.c \
 	getline.h \
 	openlog.c \
+	open_memstream.c \
+	open_memstream.h \
 	poll.c \
 	poll.h \
 	pread.c \

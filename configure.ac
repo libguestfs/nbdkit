@@ -360,6 +360,7 @@ AC_REPLACE_FUNCS([\
 	getdelim \
 	getline \
 	openlog \
+	open_memstream \
 	poll \
 	pread \
 	pwrite \
