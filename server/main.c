@@ -988,7 +988,16 @@ write_pidfile (void)
     return;
 
   pid = getpid ();
-  snprintf (pidstr, sizeof pidstr, "%d\n", pid);
+  /* Don't put a trailing \n after the PID file on Windows. It is
+   * turned into \r\n which causes problems if you process the file
+   * using a Unix tool like bash, especially when running the test
+   * suite.
+   */
+  snprintf (pidstr, sizeof pidstr, "%d"
+#ifndef WIN32
+            "\n"
+#endif
+            , (int) pid);
   len = strlen (pidstr);
 
   fd = open (pidfile, O_WRONLY|O_TRUNC|O_CREAT|O_CLOEXEC|O_NOCTTY, 0644);
