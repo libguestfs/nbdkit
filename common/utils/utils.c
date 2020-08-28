@@ -78,7 +78,22 @@ exit_status_to_nbd_error (int status, const char *cmd)
   return 0;
 }
 
-#endif /* !WIN32 */
+#else /* WIN32 */
+
+/* This assumes we're using Win32 system().  See:
+ * https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/system-wsystem?view=vs-2019
+ */
+int
+exit_status_to_nbd_error (int status, const char *cmd)
+{
+  if (status == 0)
+    return 0;
+
+  nbdkit_error ("%s: command failed: errno = %d", cmd, errno);
+  return -1;
+}
+
+#endif /* WIN32 */
 
 #ifndef WIN32
 
