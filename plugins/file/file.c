@@ -30,6 +30,10 @@
  * SUCH DAMAGE.
  */
 
+#ifdef WIN32
+#error "build error: winfile.c should be used on Windows"
+#endif
+
 #include <config.h>
 
 #include <stdio.h>
@@ -63,9 +67,6 @@
 #include "cleanup.h"
 #include "isaligned.h"
 #include "fdatasync.h"
-#include "pread.h"
-#include "pwrite.h"
-#include "windows-compat.h"
 
 static char *filename = NULL;
 static char *directory = NULL;
@@ -119,7 +120,6 @@ file_config (const char *key, const char *value)
     if (!filename)
       return -1;
   }
-#ifndef WIN32
   else if (strcmp (key, "directory") == 0 ||
            strcmp (key, "dir") == 0) {
     free (directory);
@@ -127,7 +127,6 @@ file_config (const char *key, const char *value)
     if (!directory)
       return -1;
   }
-#endif
   else if (strcmp (key, "fadvise") == 0) {
     /* As this is a hint, if the kernel doesn't support the feature
      * ignore the parameter.
@@ -268,7 +267,6 @@ file_open (int readonly)
   int dfd = -1;
 
   if (directory) {
-#ifndef WIN32
     file = nbdkit_export_name ();
     if (strchr (file, '/')) {
       nbdkit_error ("exportname cannot contain /");
@@ -280,9 +278,6 @@ file_open (int readonly)
       nbdkit_error ("open %s: %m", directory);
       return NULL;
     }
-#else
-    abort ();
-#endif
   }
   else
     file = filename;
@@ -299,11 +294,7 @@ file_open (int readonly)
   else
     flags |= O_RDWR;
 
-#ifndef WIN32
   h->fd = openat (dfd, file, flags);
-#else
-  h->fd = open (file, flags);
-#endif
   if (h->fd == -1) {
     nbdkit_error ("openat: %s: %m", file);
     if (dfd != -1)

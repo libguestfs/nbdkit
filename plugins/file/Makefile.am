@@ -35,10 +35,12 @@ EXTRA_DIST = nbdkit-file-plugin.pod
 
 plugin_LTLIBRARIES = nbdkit-file-plugin.la
 
-nbdkit_file_plugin_la_SOURCES = \
-	file.c \
-	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(NULL)
+nbdkit_file_plugin_la_SOURCES = $(top_srcdir)/include/nbdkit-plugin.h
+if !IS_WINDOWS
+nbdkit_file_plugin_la_SOURCES += file.c
+else
+nbdkit_file_plugin_la_SOURCES += winfile.c
+endif
 
 nbdkit_file_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \

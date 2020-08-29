@@ -318,12 +318,6 @@ Currently many features are missing, including:
   --group, --log=syslog, --pidfile, --run, --selinux-label, --single
   --swap, --user, --vsock
 
-* The current file plugin works but has limited features and doesn't
-  use the best native APIs.  It's worth considering writing an
-  alternate implementation which is used for Windows and uses all
-  native APIs and features.  Also this should be extended to allow
-  exporting block devices.
-
 * Many other plugins and filters.
 
 * errno_is_preserved should use GetLastError and/or WSAGetLastError
