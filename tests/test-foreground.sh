@@ -36,12 +36,6 @@ source ./functions.sh
 set -e
 set -x
 
-# This test won't work on Windows because we cannot kill a Windows Process ID.
-if is_windows; then
-    echo "$0: test skipped because this is Windows"
-    exit 77
-fi
-
 sock=`mktemp -u`
 files="foreground.pid $sock"
 rm -f $files
@@ -76,16 +70,20 @@ fi
 test -S $sock
 
 # Kill the process.
-kill $pid
+if ! is_windows; then
+    kill $pid
+else
+    wine taskkill /f /pid $pid
+fi
 
 # Check the process exits (eventually).
 for i in {1..10}; do
-    if ! kill -s 0 $pid; then
+    if ! kill -s 0 $bg_pid; then
         break;
     fi
     sleep 1
 done
-if kill -s 0 $pid; then
+if kill -s 0 $bg_pid; then
     echo "$0: process did not exit after sending a signal"
     exit 1
 fi

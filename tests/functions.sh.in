@@ -218,20 +218,24 @@ kill_nbdkit ()
 {
     local pid=$1 i
 
-    # Start with SIGTERM, and wait for graceful exit
-    kill $pid
-    for i in {1..60}; do
-        if ! kill -0 $pid 2>/dev/null; then
-            break
+    if ! is_windows; then
+        # Start with SIGTERM, and wait for graceful exit
+        kill $pid
+        for i in {1..60}; do
+            if ! kill -0 $pid 2>/dev/null; then
+                break
+            fi
+            sleep 1
+        done
+        # If nbdkit has not exited, try SIGKILL and fail the test
+        if test $i = 60; then
+            echo "error: nbdkit pid $pid failed to respond to SIGTERM"
+            kill -9 $pid
+            # Append our failure after other cleanups
+            cleanup_fn exit 1
         fi
-        sleep 1
-    done
-    # If nbdkit has not exited, try SIGKILL and fail the test
-    if test $i = 60; then
-        echo "error: nbdkit pid $pid failed to respond to SIGTERM"
-        kill -9 $pid
-        # Append our failure after other cleanups
-        cleanup_fn exit 1
+    else
+        wine taskkill /f /pid $pid
     fi
 }
 
