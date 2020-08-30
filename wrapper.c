@@ -135,14 +135,15 @@ print_command (void)
 #ifdef WIN32
 /* Windows behaviour of _spawnvp is completely insane:
  * https://stackoverflow.com/questions/4146980/how-to-avoid-space-splitting-and-quote-removal-with-spawnvp
+ * See also glib sources where it's described as "really weird".
  */
 static const char *
 quote_string_for_spawn (const char *str)
 {
-  size_t i, len;
+  size_t i, len, pb;
   char *p, *ret = (char *) str;
 
-  if (strchr (str, ' ') || strchr (str, '"')) {
+  if (strchr (str, ' ') || strchr (str, '\t')) {
     len = strlen (str);
 
     p = ret = malloc (2 + len*2 + 1);
@@ -152,17 +153,26 @@ quote_string_for_spawn (const char *str)
     }
 
     *p++ = '"';
+    pb = 0;
     for (i = 0; i < len; ++i) {
       switch (str[i]) {
       case '"':
-      case '\\':
         *p++ = '\\';
+        for (; pb > 0; --pb)
+          *p++ = '\\';
+        *p++ = '"';
+        break;
+      case '\\':
+        pb++;
         *p++ = str[i];
         break;
       default:
+        pb = 0;
         *p++ = str[i];
       }
     }
+    for (; pb > 0; --pb)
+      *p++ = '\\';
     *p++ = '"';
     *p++ = '\0';
   }
