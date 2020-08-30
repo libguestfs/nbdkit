@@ -33,7 +33,12 @@
 source ./functions.sh
 set -x
 
-requires_daemonizing
+# Cannot use kill pidfile below on Windows, but must use taskkill instead.
+if is_windows; then
+    echo "$0: this test needs to be revised to work on Windows"
+    exit 77
+fi
+
 requires qemu-io --version
 requires timeout --version
 

@@ -37,7 +37,12 @@ source ./functions.sh
 set -e
 set -x
 
-requires_daemonizing
+# Cannot use kill pidfile below to test if the process is running on
+# Windows.
+if is_windows; then
+    echo "$0: this test needs to be revised to work on Windows"
+    exit 77
+fi
 
 sock=`mktemp -u`
 rm -f start.pid $sock

@@ -36,7 +36,12 @@ source ./functions.sh
 set -e
 set -x
 
-requires_daemonizing
+# getpeername on Windows returns b'0.0.0.0:0' below.
+if is_windows; then
+    echo "$0: test does not work on Windows"
+    exit 77
+fi
+
 requires nbdsh --version
 
 sock=`mktemp -u`

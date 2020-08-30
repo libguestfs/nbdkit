@@ -165,16 +165,6 @@ requires_single_mode ()
     fi
 }
 
-# The Windows port does not yet support daemonizing.  Add a uniquely
-# named requires test for this.
-requires_daemonizing ()
-{
-    if is_windows; then
-        echo "$0: Windows port does not support daemonizing"
-        exit 77
-    fi
-}
-
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to
