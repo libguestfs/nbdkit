@@ -271,6 +271,19 @@ winfile_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 }
 
 static int
+winfile_flush (void *handle, uint32_t flags)
+{
+  struct handle *h = handle;
+
+  if (!FlushFileBuffers (h->fh)) {
+    nbdkit_error ("%s: FlushFileBuffers: %lu", filename, GetLastError ());
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
 winfile_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   struct handle *h = handle;
@@ -408,6 +421,7 @@ static struct nbdkit_plugin plugin = {
   .get_size          = winfile_get_size,
   .pread             = winfile_pread,
   .pwrite            = winfile_pwrite,
+  .flush             = winfile_flush,
   .trim              = winfile_trim,
   .zero              = winfile_zero,
   .extents           = winfile_extents,
