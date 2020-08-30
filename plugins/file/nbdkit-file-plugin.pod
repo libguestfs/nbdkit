@@ -158,6 +158,14 @@ certain features as noted in this manual.
 
 =back
 
+=head2 Windows sparse files
+
+This plugin supports sparse files on Windows (with hole punching).
+However for this to work the files must already have the sparse
+property, the plugin will not make existing files sparse.  Use the
+S<C<fsutil sparse>> command to control the sparseness property of
+files.
+
 =head2 Old C<rdelay> and C<wdelay> parameters.
 
 Before nbdkit supported filters (E<lt> 1.2) this plugin had extra
