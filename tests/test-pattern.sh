@@ -40,7 +40,6 @@
 source ./functions.sh
 set -e
 
-requires_daemonizing
 requires qemu-io --version
 
 sock=`mktemp -u`

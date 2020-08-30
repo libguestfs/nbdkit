@@ -36,7 +36,6 @@
 source ./functions.sh
 set -e
 
-requires_daemonizing
 requires ip -V
 requires qemu-img --version
 requires_ipv6_loopback

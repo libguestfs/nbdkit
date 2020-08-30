@@ -37,7 +37,6 @@ source ./functions.sh
 set -e
 set -x
 
-requires_daemonizing
 requires qemu-img --version
 
 sock=`mktemp -u`

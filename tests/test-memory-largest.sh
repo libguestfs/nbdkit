@@ -37,7 +37,6 @@
 source ./functions.sh
 set -e
 
-requires_daemonizing
 requires nbdsh --version
 
 sock=`mktemp -u`

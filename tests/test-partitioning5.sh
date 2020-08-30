@@ -40,7 +40,6 @@ source ./functions.sh
 set -e
 set -x
 
-requires_daemonizing
 requires guestfish --version
 requires mke2fs -V
 

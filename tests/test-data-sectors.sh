@@ -38,7 +38,6 @@ source ./functions.sh
 set -e
 set -x
 
-requires_daemonizing
 requires nbdsh --version
 requires truncate --version
 

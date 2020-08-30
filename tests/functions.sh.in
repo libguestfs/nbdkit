@@ -192,7 +192,10 @@ start_nbdkit ()
     _pidfile="$2"
 
     # Run nbdkit.
-    nbdkit -v "$@"
+    #
+    # Until Windows supports daemonization we run nbdkit in the
+    # foreground (-f) and background it ourselves.
+    if ! is_windows; then nbdkit -v "$@"; else nbdkit -f -v "$@" & fi
 
     # Wait for the pidfile to appear.
     for _i in {1..60}; do
