@@ -318,14 +318,25 @@ winfile_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   FILE_ZERO_DATA_INFORMATION info;
   DWORD t;
 
-  /* Note this works for both non-sparse and sparse files, but for
-   * sparse files it creates a hole.  XXX Is this bad?  Should we
-   * reject the request if !(flags & NBDKIT_FLAG_MAY_TRIM)?
+  /* This is documented to work for both non-sparse and sparse files,
+   * but for sparse files it creates a hole.  If the file is sparse
+   * and !NBDKIT_FLAG_MAY_TRIM then we should fall back to writing
+   * zeros (by returning errno ENOTSUP).  Also I found that Wine does
+   * not support this call, so in that case we also turn the Windows
+   * error ERROR_NOT_SUPPORTED into ENOTSUP.
    */
+  if (h->is_sparse && (flags & NBDKIT_FLAG_MAY_TRIM) == 0) {
+    errno = ENOTSUP;
+    return -1;
+  }
   info.FileOffset.QuadPart = offset;
   info.BeyondFinalZero.QuadPart = offset + count;
   if (!DeviceIoControl (h->fh, FSCTL_SET_ZERO_DATA, &info, sizeof info,
                         NULL, 0, &t, NULL)) {
+    if (GetLastError () == ERROR_NOT_SUPPORTED) {
+      errno = ENOTSUP;
+      return -1;
+    }
     nbdkit_error ("%s: DeviceIoControl: FSCTL_SET_ZERO_DATA: %lu",
                   filename, GetLastError ());
     return -1;
