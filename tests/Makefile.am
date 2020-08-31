@@ -623,12 +623,8 @@ EXTRA_DIST += \
 	$(NULL)
 
 # file plugin test.
-LIBNBD_TESTS += test-file
+TESTS += test-file.sh
 LIBGUESTFS_TESTS += test-file-block
-
-test_file_SOURCES = test-file.c
-test_file_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
-test_file_LDADD = $(LIBNBD_LIBS)
 
 test_file_block_SOURCES = test-file-block.c test.h
 test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
