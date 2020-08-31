@@ -178,6 +178,23 @@ See L</Threads> below.
 
 There are no arguments or return value.
 
+=item C<list_exports>
+
+(Optional)
+
+ def list_exports(readonly, is_tls):
+   # return an iterable object (eg. list) of
+   # (name, description) tuples or bare names:
+   return [ (name1, desc1), name2, (name3, desc3), ... ]
+
+=item C<default_export>
+
+(Optional)
+
+ def default_export(readonly, is_tls):
+   # return a string
+   return "name"
+
 =item C<open>
 
 (Required)
@@ -198,6 +215,14 @@ back in subsequent calls.
 After C<close> returns, the reference count of the handle is
 decremented in the C part, which usually means that the handle and its
 contents will be garbage collected.
+
+=item C<export_description>
+
+(Optional)
+
+ def export_description(h):
+   # return a string
+   return "description"
 
 =item C<get_size>
 

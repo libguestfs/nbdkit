@@ -536,6 +536,99 @@ py_get_ready (void)
   return 0;
 }
 
+static int
+py_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
+{
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
+  PyObject *fn;
+  PyObject *r;
+  PyObject *iter, *t;
+
+  if (!callback_defined ("list_exports", &fn))
+    /* Do the same as the core server */
+    return nbdkit_use_default_export (exports);
+
+  PyErr_Clear ();
+
+  r = PyObject_CallFunction (fn, "ii", readonly, is_tls);
+  Py_DECREF (fn);
+  if (check_python_failure ("list_exports") == -1)
+    return -1;
+
+  iter = PyObject_GetIter (r);
+  if (iter == NULL) {
+    nbdkit_error ("list_exports method did not return "
+                  "something which is iterable");
+    Py_DECREF (r);
+    return -1;
+  }
+
+  while ((t = PyIter_Next (iter)) != NULL) {
+    PyObject *py_name, *py_desc;
+    CLEANUP_FREE char *name = NULL;
+    CLEANUP_FREE char *desc = NULL;
+
+    name = python_to_string (t);
+    if (!name) {
+      if (!PyTuple_Check (t) || PyTuple_Size (t) != 2) {
+        nbdkit_error ("list_exports method did not return an iterable of "
+                      "2-tuples");
+        Py_DECREF (iter);
+        Py_DECREF (r);
+        return -1;
+      }
+      py_name = PyTuple_GetItem (t, 0);
+      py_desc = PyTuple_GetItem (t, 1);
+      name = python_to_string (py_name);
+      desc = python_to_string (py_desc);
+      if (name == NULL || desc == NULL) {
+        nbdkit_error ("list_exports method did not return an iterable of "
+                      "string 2-tuples");
+        Py_DECREF (iter);
+        Py_DECREF (r);
+        return -1;
+      }
+    }
+    if (nbdkit_add_export (exports, name, desc) == -1) {
+      Py_DECREF (iter);
+      Py_DECREF (r);
+      return -1;
+    }
+  }
+
+  Py_DECREF (iter);
+  Py_DECREF (r);
+  return 0;
+}
+
+static const char *
+py_default_export (int readonly, int is_tls)
+{
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
+  PyObject *fn;
+  PyObject *r;
+  CLEANUP_FREE char *name = NULL;
+
+  if (!callback_defined ("default_export", &fn))
+    return "";
+
+  PyErr_Clear ();
+
+  r = PyObject_CallFunction (fn, "ii", readonly, is_tls);
+  Py_DECREF (fn);
+  if (check_python_failure ("default_export") == -1)
+    return NULL;
+
+  name = python_to_string (r);
+  Py_DECREF (r);
+  if (!name) {
+    nbdkit_error ("default_export method did not return a string");
+    return NULL;
+  }
+
+  return nbdkit_strdup_intern (name);
+}
+
 struct handle {
   int can_zero;
   PyObject *py_h;
@@ -593,6 +686,35 @@ py_close (void *handle)
 
   Py_DECREF (h->py_h);
   free (h);
+}
+
+static const char *
+py_export_description (void *handle)
+{
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
+  struct handle *h = handle;
+  PyObject *fn;
+  PyObject *r;
+  CLEANUP_FREE char *desc = NULL;
+
+  if (!callback_defined ("export_description", &fn))
+    return NULL;
+
+  PyErr_Clear ();
+
+  r = PyObject_CallFunctionObjArgs (fn, h->py_h, NULL);
+  Py_DECREF (fn);
+  if (check_python_failure ("export_description") == -1)
+    return NULL;
+
+  desc = python_to_string (r);
+  Py_DECREF (r);
+  if (!desc) {
+    nbdkit_error ("export_description method did not return a string");
+    return NULL;
+  }
+
+  return nbdkit_strdup_intern (desc);
 }
 
 static int64_t
@@ -1120,42 +1242,45 @@ py_extents (void *handle, uint32_t count, uint64_t offset,
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 static struct nbdkit_plugin plugin = {
-  .name              = "python",
-  .version           = PACKAGE_VERSION,
+  .name               = "python",
+  .version            = PACKAGE_VERSION,
 
-  .load              = py_load,
-  .unload            = py_unload,
-  .dump_plugin       = py_dump_plugin,
+  .load               = py_load,
+  .unload             = py_unload,
+  .dump_plugin        = py_dump_plugin,
 
-  .config            = py_config,
-  .config_complete   = py_config_complete,
-  .config_help       = py_config_help,
+  .config             = py_config,
+  .config_complete    = py_config_complete,
+  .config_help        = py_config_help,
 
-  .thread_model      = py_thread_model,
-  .get_ready         = py_get_ready,
+  .thread_model       = py_thread_model,
+  .get_ready          = py_get_ready,
+  .list_exports       = py_list_exports,
+  .default_export     = py_default_export,
 
-  .open              = py_open,
-  .close             = py_close,
+  .open               = py_open,
+  .close              = py_close,
 
-  .get_size          = py_get_size,
-  .is_rotational     = py_is_rotational,
-  .can_multi_conn    = py_can_multi_conn,
-  .can_write         = py_can_write,
-  .can_flush         = py_can_flush,
-  .can_trim          = py_can_trim,
-  .can_zero          = py_can_zero,
-  .can_fast_zero     = py_can_fast_zero,
-  .can_fua           = py_can_fua,
-  .can_cache         = py_can_cache,
-  .can_extents       = py_can_extents,
+  .export_description = py_export_description,
+  .get_size           = py_get_size,
+  .is_rotational      = py_is_rotational,
+  .can_multi_conn     = py_can_multi_conn,
+  .can_write          = py_can_write,
+  .can_flush          = py_can_flush,
+  .can_trim           = py_can_trim,
+  .can_zero           = py_can_zero,
+  .can_fast_zero      = py_can_fast_zero,
+  .can_fua            = py_can_fua,
+  .can_cache          = py_can_cache,
+  .can_extents        = py_can_extents,
 
-  .pread             = py_pread,
-  .pwrite            = py_pwrite,
-  .flush             = py_flush,
-  .trim              = py_trim,
-  .zero              = py_zero,
-  .cache             = py_cache,
-  .extents           = py_extents,
+  .pread              = py_pread,
+  .pwrite             = py_pwrite,
+  .flush              = py_flush,
+  .trim               = py_trim,
+  .zero               = py_zero,
+  .cache              = py_cache,
+  .extents            = py_extents,
 };
 
 NBDKIT_REGISTER_PLUGIN (plugin)
