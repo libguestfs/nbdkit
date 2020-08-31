@@ -53,6 +53,11 @@ type extent = {
   is_zero : bool;
 }
 
+type export = {
+  name : string;
+  description : string option;
+}
+
 type 'a plugin = {
   name : string;
   longname : string;
@@ -73,10 +78,13 @@ type 'a plugin = {
   after_fork : (unit -> unit) option;
 
   preconnect : (bool -> unit) option;
+  list_exports : (bool -> bool -> export list) option;
+  default_export : (bool -> bool -> string) option;
   open_connection : (bool -> 'a) option;
   close : ('a -> unit) option;
 
   get_size : ('a -> int64) option;
+  export_description : ('a -> string) option;
 
   can_cache : ('a -> cache_flag) option;
   can_extents : ('a -> bool) option;
@@ -118,10 +126,13 @@ let default_callbacks = {
   after_fork = None;
 
   preconnect = None;
+  list_exports = None;
+  default_export = None;
   open_connection = None;
   close = None;
 
   get_size = None;
+  export_description = None;
 
   can_cache = None;
   can_extents = None;
@@ -162,10 +173,13 @@ external set_get_ready : (unit -> unit) -> unit = "ocaml_nbdkit_set_get_ready"
 external set_after_fork : (unit -> unit) -> unit = "ocaml_nbdkit_set_after_fork"
 
 external set_preconnect : (bool -> unit) -> unit = "ocaml_nbdkit_set_preconnect"
+external set_list_exports : (bool -> bool -> export list) -> unit = "ocaml_nbdkit_set_list_exports"
+external set_default_export : (bool -> bool -> string) -> unit = "ocaml_nbdkit_set_default_export"
 external set_open : (bool -> 'a) -> unit = "ocaml_nbdkit_set_open"
 external set_close : ('a -> unit) -> unit = "ocaml_nbdkit_set_close"
 
 external set_get_size : ('a -> int64) -> unit = "ocaml_nbdkit_set_get_size"
+external set_export_description : ('a -> string) -> unit = "ocaml_nbdkit_set_export_description"
 
 external set_can_cache : ('a -> cache_flag) -> unit = "ocaml_nbdkit_set_can_cache"
 external set_can_extents : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_extents"
@@ -225,10 +239,13 @@ let register_plugin plugin =
   may set_after_fork plugin.after_fork;
 
   may set_preconnect plugin.preconnect;
+  may set_list_exports plugin.list_exports;
+  may set_default_export plugin.default_export;
   may set_open plugin.open_connection;
   may set_close plugin.close;
 
   may set_get_size plugin.get_size;
+  may set_export_description plugin.export_description;
 
   may set_can_cache plugin.can_cache;
   may set_can_extents plugin.can_extents;

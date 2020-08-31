@@ -51,6 +51,12 @@ type extent = {
 }
 (** The type of the extent list returned by [.extents]. *)
 
+type export = {
+  name : string;
+  description : string option;
+}
+(** The type of the export list returned by [.list_exports]. *)
+
 type thread_model =
 | THREAD_MODEL_SERIALIZE_CONNECTIONS
 | THREAD_MODEL_SERIALIZE_ALL_REQUESTS
@@ -78,10 +84,13 @@ type 'a plugin = {
   after_fork : (unit -> unit) option;
 
   preconnect : (bool -> unit) option;
+  list_exports : (bool -> bool -> export list) option;
+  default_export : (bool -> bool -> string) option;
   open_connection : (bool -> 'a) option;          (* required *)
   close : ('a -> unit) option;
 
   get_size : ('a -> int64) option;                (* required *)
+  export_description : ('a -> string) option;
 
   can_cache : ('a -> cache_flag) option;
   can_extents : ('a -> bool) option;

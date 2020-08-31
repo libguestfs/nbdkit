@@ -41,6 +41,13 @@ let ocamlexample_config key value =
   | _ ->
      failwith (Printf.sprintf "unknown parameter: %s" key)
 
+let ocamlexample_list_exports _ _ : NBDKit.export list =
+  [ { name = "name1"; description = Some "desc1" };
+    { name = "name2"; description = None } ]
+
+let ocamlexample_default_export _ _ =
+  "name1"
+
 (* Any type (even unit) can be used as a per-connection handle.
  * This is just an example.  The same value that you return from
  * your [open_connection] function is passed back as the first
@@ -57,6 +64,9 @@ let ocamlexample_open readonly =
     readonly export_name;
   incr id;
   { h_id = !id }
+
+let ocamlexample_export_description h =
+  "some description"
 
 let ocamlexample_get_size h =
   Int64.of_int (Bytes.length !disk)
@@ -80,20 +90,23 @@ let plugin = {
     (* name, open_connection, get_size and pread are required,
      * everything else is optional.
      *)
-    NBDKit.name     = "ocamlexample";
-    version         = "1.0";
+    NBDKit.name        = "ocamlexample";
+    version            = "1.0";
 
-    load            = Some ocamlexample_load;
-    unload          = Some ocamlexample_unload;
+    load               = Some ocamlexample_load;
+    unload             = Some ocamlexample_unload;
 
-    config          = Some ocamlexample_config;
+    config             = Some ocamlexample_config;
 
-    open_connection = Some ocamlexample_open;
-    get_size        = Some ocamlexample_get_size;
-    pread           = Some ocamlexample_pread;
-    pwrite          = Some ocamlexample_pwrite;
+    list_exports       = Some ocamlexample_list_exports;
+    default_export     = Some ocamlexample_default_export;
+    open_connection    = Some ocamlexample_open;
+    export_description = Some ocamlexample_export_description;
+    get_size           = Some ocamlexample_get_size;
+    pread              = Some ocamlexample_pread;
+    pwrite             = Some ocamlexample_pwrite;
 
-    thread_model    = Some ocamlexample_thread_model;
+    thread_model       = Some ocamlexample_thread_model;
 }
 
 let () = NBDKit.register_plugin plugin

@@ -123,10 +123,13 @@ static value get_ready_fn;
 static value after_fork_fn;
 
 static value preconnect_fn;
+static value list_exports_fn;
+static value default_export_fn;
 static value open_fn;
 static value close_fn;
 
 static value get_size_fn;
+static value export_description_fn;
 
 static value can_cache_fn;
 static value can_extents_fn;
@@ -311,6 +314,65 @@ preconnect_wrapper (int readonly)
   CAMLreturnT (int, 0);
 }
 
+static int
+list_exports_wrapper (int readonly, int is_tls, struct nbdkit_exports *exports)
+{
+  CAMLparam0 ();
+  CAMLlocal2 (rv, v);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback2_exn (list_exports_fn, Val_bool (readonly),
+                           Val_bool (is_tls));
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (int, -1);
+  }
+
+  /* Convert exports list into calls to nbdkit_add_export. */
+  while (rv != Val_emptylist) {
+    const char *name, *desc = NULL;
+
+    v = Field (rv, 0);          /* export struct */
+    name = String_val (Field (v, 0));
+    if (Is_block (Field (v, 1)))
+      desc = String_val (Field (Field (v, 1), 0));
+    if (nbdkit_add_export (exports, name, desc) == -1) {
+      caml_enter_blocking_section ();
+      CAMLreturnT (int, -1);
+    }
+
+    rv = Field (rv, 1);
+  }
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (int, 0);
+}
+
+static const char *
+default_export_wrapper (int readonly, int is_tls)
+{
+  const char *name;
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback2_exn (default_export_fn, Val_bool (readonly),
+                           Val_bool (is_tls));
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (const char *, NULL);
+  }
+
+  name = nbdkit_strdup_intern (String_val (rv));
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (const char *, name);
+}
+
 static void *
 open_wrapper (int readonly)
 {
@@ -356,6 +418,28 @@ close_wrapper (void *h)
 
   caml_enter_blocking_section ();
   CAMLreturn0;
+}
+
+static const char *
+export_description_wrapper (void *h)
+{
+  const char *desc;
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+
+  caml_leave_blocking_section ();
+
+  rv = caml_callback_exn (export_description_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    caml_enter_blocking_section ();
+    CAMLreturnT (const char *, NULL);
+  }
+
+  desc = nbdkit_strdup_intern (String_val (rv));
+
+  caml_enter_blocking_section ();
+  CAMLreturnT (const char *, desc);
 }
 
 static int64_t
@@ -747,7 +831,7 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
   }
 
   /* Convert extents list into calls to nbdkit_add_extent. */
-  while (rv != Val_int (0)) {
+  while (rv != Val_emptylist) {
     uint64_t length;
     uint32_t type = 0;
 
@@ -856,10 +940,13 @@ SET(get_ready)
 SET(after_fork)
 
 SET(preconnect)
+SET(list_exports)
+SET(default_export)
 SET(open)
 SET(close)
 
 SET(get_size)
+SET(export_description)
 
 SET(can_write)
 SET(can_flush)
@@ -900,10 +987,13 @@ remove_roots (void)
   REMOVE (after_fork);
 
   REMOVE (preconnect);
+  REMOVE (list_exports);
+  REMOVE (default_export);
   REMOVE (open);
   REMOVE (close);
 
   REMOVE (get_size);
+  REMOVE (export_description);
 
   REMOVE (can_cache);
   REMOVE (can_extents);
