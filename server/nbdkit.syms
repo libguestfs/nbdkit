@@ -68,6 +68,7 @@
     nbdkit_parse_uint64_t;
     nbdkit_parse_unsigned;
     nbdkit_peer_name;
+    nbdkit_printf_intern;
     nbdkit_read_password;
     nbdkit_realpath;
     nbdkit_set_error;
@@ -77,6 +78,7 @@
     nbdkit_strndup_intern;
     nbdkit_vdebug;
     nbdkit_verror;
+    nbdkit_vprintf_intern;
 
     nbdkit_debug_*;
 

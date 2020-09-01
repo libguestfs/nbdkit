@@ -798,11 +798,24 @@ free_interns (void)
   string_vector_reset (list);
 }
 
-const char *
-nbdkit_strndup_intern (const char *str, size_t n)
+static const char *
+add_intern (char *str)
 {
   struct connection *conn = threadlocal_get_conn ();
   string_vector *list = conn ? &conn->interns : &global_interns;
+
+  if (string_vector_append (list, str) == -1) {
+    nbdkit_error ("malloc: %m");
+    free (str);
+    return NULL;
+  }
+
+  return str;
+}
+
+const char *
+nbdkit_strndup_intern (const char *str, size_t n)
+{
   char *copy;
 
   if (str == NULL) {
@@ -817,17 +830,36 @@ nbdkit_strndup_intern (const char *str, size_t n)
     return NULL;
   }
 
-  if (string_vector_append (list, copy) == -1) {
-    nbdkit_error ("malloc: %m");
-    free (copy);
-    return NULL;
-  }
-
-  return copy;
+  return add_intern (copy);
 }
 
 const char *
 nbdkit_strdup_intern (const char *str)
 {
   return nbdkit_strndup_intern (str, SIZE_MAX);
+}
+
+const char *
+nbdkit_vprintf_intern (const char *fmt, va_list ap)
+{
+  char *str = NULL;
+
+  if (vasprintf (&str, fmt, ap) == -1) {
+    nbdkit_error ("asprintf: %m");
+    return NULL;
+  }
+
+  return add_intern (str);
+}
+
+const char *
+nbdkit_printf_intern (const char *fmt, ...)
+{
+  va_list ap;
+  const char *ret;
+
+  va_start (ap, fmt);
+  ret = nbdkit_vprintf_intern (fmt, ap);
+  va_end (ap);
+  return ret;
 }

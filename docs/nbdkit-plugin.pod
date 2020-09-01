@@ -1482,9 +1482,13 @@ Some callbacks are specified to return C<const char *>, even when a
 plugin may not have a suitable compile-time constant to return.
 Returning dynamically-allocated memory for such a callback would
 induce a memory leak or otherwise complicate the plugin to perform
-additional bookkeeping.  For these cases, nbdkit provides a
-convenience function for creating a copy of a string for better
+additional bookkeeping.  For these cases, nbdkit provides several
+convenience functions for creating a copy of a string for better
 lifetime management.
+
+=head2 C<nbdkit_strdup_intern>
+
+=head2 C<nbdkit_strndup_intern>
 
  const char *nbdkit_strdup_intern (const char *str);
  const char *nbdkit_strndup_intern (const char *str, size_t n);
@@ -1497,6 +1501,20 @@ through C<.unload>.  If the copy is created after a client has
 triggered a connection (such as during C<.preconnect> or C<.open>),
 the lifetime will last at least through C<.close>, but the copy is not
 safe to share with other connections.
+
+On error, C<nbdkit_error> is called and the call returns C<NULL>.
+
+=head2 C<nbdkit_printf_intern>
+
+=head2 C<nbdkit_vprintf_intern>
+
+ const char *nbdkit_printf_intern (const char *fmt, ...);
+ const char *nbdkit_vprintf_intern (const char *fmt, va_list ap);
+
+Return a string created from a format template, with a lifetime longer
+than the current connection.  Shorthand for passing C<fmt> to
+L<asprintf(3)> on a temporary string, then passing that result to
+C<nbdkit_strdup_intern>.
 
 On error, C<nbdkit_error> is called and the call returns C<NULL>.
 
