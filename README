@@ -349,3 +349,32 @@ You can run them under Wine without installing using eg:
 You can run the test suite in the usual way:
 
     mingw64-make check
+
+Running the cross-compiled binary on Windows
+--------------------------------------------
+
+To test the binary on a real Windows system you will need to copy
+server/.libs/nbdkit.exe, any plugins and filters you need
+(plugins/*/.libs/*.dll and filters/*/.libs/*.dll), and many mingw DLLs
+(libdl.dll, libgnutls.dll, libwinpthread.dll, etc.).
+
+Notes:
+
+(1) libtool creates files called nbdkit.exe in the top level directory
+and in server/.  These are the stripped binaries.  The "real" binaries
+are located in hidden .libs/ subdirectories.
+
+(2) The top level .libs/nbdkit.exe is the wrapper used to run nbdkit
+from the build directory, not the server binary.  You need
+server/.libs/nbdkit.exe instead.
+
+(3) To find the list of mingw DLLs I ran nbdkit.exe iteratively until
+Windows stopped complaining about missing libraries.  You could also
+use a tool like Dependency Walker.
+
+If you copy everything into a single directory on the Windows server
+then you should be able to run nbdkit normally, eg:
+
+    nbdkit.exe -f -v nbdkit-memory-plugin.dll 1G
+
+You will probably need to open port 10809 on the Windows Firewall.
