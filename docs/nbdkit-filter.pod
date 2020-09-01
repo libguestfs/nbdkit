@@ -183,7 +183,8 @@ You can modify parameters when you call the C<next> function.  However
 be careful when modifying strings because for some methods
 (eg. C<.config>) the plugin may save the string pointer that you pass
 along.  So you may have to ensure that the string is not freed for the
-lifetime of the server.
+lifetime of the server; you may find C<nbdkit_strdup_intern> helpful
+for avoiding a memory leak while still obeying lifecycle constraints.
 
 Note that if your filter registers a callback but in that callback it
 doesn't call the C<next> function then the corresponding method in the
@@ -438,8 +439,10 @@ requires write access to the underlying device in case a journal needs
 to be replayed for consistency as part of the mounting process.
 
 The C<exportname> string is only guaranteed to be available during the
-call.  If the filter needs to use it (other than immediately passing
-it down to the next layer) it must take a copy.  The C<exportname> and
+call (different than the lifetime for the return of C<nbdkit_export_name>
+used by plugins).  If the filter needs to use it (other than immediately
+passing it down to the next layer) it must take a copy, although
+C<nbdkit_strdup_intern> is useful for this task.  The C<exportname> and
 C<is_tls> parameters are provided so that filters do not need to use
 the plugin-only interfaces of C<nbdkit_export_name> and
 C<nbdkit_is_tls>.

@@ -320,17 +320,13 @@ plugin_open (struct backend *b, int readonly, const char *exportname,
    * will still need to save the export name in the handle because of
    * the lifetime issue.
    */
-  conn->exportname = strdup (exportname);
-  if (conn->exportname == NULL) {
-    nbdkit_error ("strdup: %m");
+  conn->exportname = nbdkit_strdup_intern (exportname);
+  if (conn->exportname == NULL)
     return NULL;
-  }
 
   r = p->plugin.open (readonly);
-  if (r == NULL) {
-    free (conn->exportname);
+  if (r == NULL)
     conn->exportname = NULL;
-  }
   return r;
 }
 
@@ -359,7 +355,6 @@ plugin_close (struct backend *b, void *handle)
 
   if (handle && p->plugin.close)
     p->plugin.close (handle);
-  free (conn->exportname);
   conn->exportname = NULL;
 }
 

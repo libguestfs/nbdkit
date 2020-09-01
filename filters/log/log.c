@@ -135,7 +135,7 @@ log_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
 struct handle {
   uint64_t connection;
   uint64_t id;
-  char *exportname;
+  const char *exportname;
   int tls;
 };
 
@@ -306,9 +306,8 @@ log_open (nbdkit_next_open *next, void *nxdata,
    * it in log_prepare.  We must take a copy because this string has a
    * short lifetime.
    */
-  h->exportname = strdup (exportname);
+  h->exportname = nbdkit_strdup_intern (exportname);
   if (h->exportname == NULL) {
-    nbdkit_error ("strdup: %m");
     free (h);
     return NULL;
   }
@@ -323,10 +322,7 @@ log_open (nbdkit_next_open *next, void *nxdata,
 static void
 log_close (void *handle)
 {
-  struct handle *h = handle;
-
-  free (h->exportname);
-  free (h);
+  free (handle);
 }
 
 static int

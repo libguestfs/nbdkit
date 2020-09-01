@@ -371,7 +371,7 @@ free_connection (struct connection *conn)
   pthread_mutex_destroy (&conn->status_lock);
 
   free (conn->exportname_from_set_meta_context);
-  free (conn->exportname);
+  free_interns ();
 
   /* This is needed in order to free a field in struct handle. */
   for_each_backend (b)

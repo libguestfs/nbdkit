@@ -73,6 +73,8 @@
     nbdkit_set_error;
     nbdkit_shutdown;
     nbdkit_stdio_safe;
+    nbdkit_strdup_intern;
+    nbdkit_strndup_intern;
     nbdkit_vdebug;
     nbdkit_verror;
 

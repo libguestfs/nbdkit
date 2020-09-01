@@ -245,6 +245,7 @@ reset_handle (struct handle *h)
   h->can_cache = -1;
 }
 
+DEFINE_VECTOR_TYPE(string_vector, char *);
 struct connection {
   pthread_mutex_t request_lock;
   pthread_mutex_t read_lock;
@@ -266,8 +267,9 @@ struct connection {
   bool structured_replies;
   bool meta_context_base_allocation;
 
+  string_vector interns;
   char *exportname_from_set_meta_context;
-  char *exportname;
+  const char *exportname;
 
   int sockin, sockout;
   connection_recv_function recv;
@@ -305,6 +307,9 @@ extern int protocol_recv_request_send_reply (void);
  * number.
  */
 #define base_allocation_id 1
+
+/* public.c */
+extern void free_interns (void);
 
 /* crypto.c */
 #define root_tls_certificates_dir sysconfdir "/pki/" PACKAGE_NAME

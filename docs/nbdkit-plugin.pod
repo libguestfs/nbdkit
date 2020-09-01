@@ -1463,8 +1463,9 @@ content.
 
 Return the optional NBD export name if one was negotiated with the
 current client (this uses thread-local magic so no parameter is
-required).  The returned string is only valid while the client is
-connected, so if you need to store it in the plugin you must copy it.
+required).  The returned string is valid at least through the
+C<.close> of the current connection, but if you need to store it
+in the plugin for use by more than one client you must copy it.
 
 The export name is a free-form text string, it is not necessarily a
 path or filename and it does not need to begin with a C<'/'>
@@ -1472,6 +1473,30 @@ character.  The NBD protocol describes the empty string (C<"">) as a
 representing a "default export" or to be used in cases where the
 export name does not make sense.  B<The export name is untrusted
 client data, be cautious when parsing it.>
+
+On error, C<nbdkit_error> is called and the call returns C<NULL>.
+
+=head1 STRING LIFETIME
+
+Some callbacks are specified to return C<const char *>, even when a
+plugin may not have a suitable compile-time constant to return.
+Returning dynamically-allocated memory for such a callback would
+induce a memory leak or otherwise complicate the plugin to perform
+additional bookkeeping.  For these cases, nbdkit provides a
+convenience function for creating a copy of a string for better
+lifetime management.
+
+ const char *nbdkit_strdup_intern (const char *str);
+ const char *nbdkit_strndup_intern (const char *str, size_t n);
+
+Returns a copy of C<str>, possibly limited to a maximum of C<n> bytes,
+so that the caller may reclaim str and use the copy in its place.  If
+the copy is created outside the scope of a connection (such as during
+C<.load> or C<.config>), the lifetime of the copy will last at least
+through C<.unload>.  If the copy is created after a client has
+triggered a connection (such as during C<.preconnect> or C<.open>),
+the lifetime will last at least through C<.close>, but the copy is not
+safe to share with other connections.
 
 On error, C<nbdkit_error> is called and the call returns C<NULL>.
 

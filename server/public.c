@@ -67,6 +67,7 @@
 #include "getline.h"
 #include "poll.h"
 #include "realpath.h"
+#include "strndup.h"
 
 #include "internal.h"
 
@@ -781,4 +782,52 @@ nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen)
   }
 
   return 0;
+}
+
+/* Functions for manipulating intern'd strings. */
+
+static string_vector global_interns;
+
+void
+free_interns (void)
+{
+  struct connection *conn = threadlocal_get_conn ();
+  string_vector *list = conn ? &conn->interns : &global_interns;
+
+  string_vector_iter (list, (void *) free);
+  string_vector_reset (list);
+}
+
+const char *
+nbdkit_strndup_intern (const char *str, size_t n)
+{
+  struct connection *conn = threadlocal_get_conn ();
+  string_vector *list = conn ? &conn->interns : &global_interns;
+  char *copy;
+
+  if (str == NULL) {
+    nbdkit_error ("nbdkit_strndup_intern: no string given");
+    errno = EINVAL;
+    return NULL;
+  }
+
+  copy = strndup (str, n);
+  if (copy == NULL) {
+    nbdkit_error ("strndup: %m");
+    return NULL;
+  }
+
+  if (string_vector_append (list, copy) == -1) {
+    nbdkit_error ("malloc: %m");
+    free (copy);
+    return NULL;
+  }
+
+  return copy;
+}
+
+const char *
+nbdkit_strdup_intern (const char *str)
+{
+  return nbdkit_strndup_intern (str, SIZE_MAX);
 }
