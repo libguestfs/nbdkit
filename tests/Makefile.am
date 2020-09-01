@@ -663,6 +663,7 @@ EXTRA_DIST += \
 
 # file plugin test.
 TESTS += test-file.sh
+EXTRA_DIST += test-file.sh
 LIBGUESTFS_TESTS += test-file-block
 
 test_file_block_SOURCES = test-file-block.c test.h
