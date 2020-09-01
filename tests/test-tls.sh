@@ -34,13 +34,6 @@ source ./functions.sh
 set -e
 set -x
 
-# Windows + GnuTLS breaks for unclear reasons:
-# nbdkit: example1[1]: error: gnutls_handshake: Error in the push function. (-1/-1)
-if is_windows; then
-    echo "$0: this test needs to be fixed to work on Windows"
-    exit 77
-fi
-
 requires qemu-img --version
 
 if ! qemu-img --help | grep -- --object; then

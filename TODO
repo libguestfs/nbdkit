@@ -306,8 +306,6 @@ Currently many features are missing, including:
   --group, --log=syslog, --pidfile, --run, --selinux-label, --single
   --swap, --user, --vsock
 
-* GnuTLS is broken.
-
 * Many other plugins and filters.
 
 * errno_is_preserved should use GetLastError and/or WSAGetLastError

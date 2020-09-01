@@ -422,6 +422,44 @@ crypto_close (void)
   conn->crypto_session = NULL;
 }
 
+#ifdef WIN32
+/* Push/pull functions.  Only required for Windows, because on Unix we
+ * can use the default send(2) and recv(2).  Note these are actually
+ * calling the wrappers win_send and win_recv in windows-compat.h
+ */
+static ssize_t
+push (gnutls_transport_ptr_t ptr, const void *buf, size_t n)
+{
+  ssize_t r;
+
+  r = send ((intptr_t) ptr, buf, n, 0);
+  /* XXX call gnutls_transport_set_errno here */
+  return r;
+}
+
+static ssize_t
+pull (gnutls_transport_ptr_t ptr, void *buf, size_t n)
+{
+  ssize_t r;
+
+  r = recv ((intptr_t) ptr, buf, n, 0);
+  /* XXX call gnutls_transport_set_errno here */
+  return r;
+}
+
+static int
+pull_timeout (gnutls_transport_ptr_t ptr, unsigned ms)
+{
+#if 0
+  /* XXX This is what you're supposed to do, but I couldn't get it to
+   * work.
+   */
+  return gnutls_system_recv_timeout (ptr, ms);
+#endif
+  return 1;
+}
+#endif /* WIN32 */
+
 /* Turn GnuTLS debug messages into nbdkit debug messages
  * when nbdkit -D nbdkit.gnutls.log > 0
  */
@@ -527,6 +565,11 @@ crypto_negotiate_tls (int sockin, int sockout)
 
   /* Set up GnuTLS so it reads and writes on the raw sockets. */
   gnutls_transport_set_int2 (session, sockin, sockout);
+#ifdef WIN32
+  gnutls_transport_set_push_function (session, push);
+  gnutls_transport_set_pull_function (session, pull);
+  gnutls_transport_set_pull_timeout_function (session, pull_timeout);
+#endif
 
   /* Perform the handshake. */
   debug ("starting TLS handshake");
