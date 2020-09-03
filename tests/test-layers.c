@@ -78,6 +78,12 @@ static void log_verify_seen_in_order (const char *msg, ...)
 static void log_free (void);
 static void short_sleep (void);
 
+static int extent (void *opaque, const char *context, uint64_t offset,
+                   uint32_t *entries, size_t nr_entries, int *error)
+{
+  return 0;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -99,6 +105,10 @@ main (int argc, char *argv[])
   nbd = nbd_create ();
   if (nbd == NULL) {
     fprintf (stderr, "nbd_create: %s\n", nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_add_meta_context (nbd, LIBNBD_CONTEXT_BASE_ALLOCATION) == -1) {
+    fprintf (stderr, "nbd_add_meta_context: %s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
@@ -209,6 +219,12 @@ main (int argc, char *argv[])
   if (nbd_can_zero (nbd) != 1) {
     fprintf (stderr,
              "%s: unexpected eflags: NBD_FLAG_SEND_WRITE_ZEROES not set\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_can_meta_context (nbd, LIBNBD_CONTEXT_BASE_ALLOCATION) != 1) {
+    fprintf (stderr,
+             "%s: unexpected setup: META_CONTEXT not supported\n",
              program_name);
     exit (EXIT_FAILURE);
   }
@@ -503,11 +519,24 @@ main (int argc, char *argv[])
      "test_layers_plugin_cache",
      NULL);
 
-  /* XXX We should test NBD_CMD_BLOCK_STATUS here.  However it
-   * requires that we negotiate structured replies and base:allocation
-   * in the handshake, and the format of the reply is more complex
-   * than what we expect in this naive test.
-   */
+  if (nbd_block_status (nbd, sizeof data, 0,
+                        (nbd_extent_callback) { .callback = extent }, 0) != 0) {
+    fprintf (stderr, "%s: NBD_CMD_BLOCK_STATUS failed with %d %s\n",
+             program_name, nbd_get_errno (), nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
+
+  short_sleep ();
+  log_verify_seen_in_order
+    ("testlayersfilter3: extents count=512 offset=0",
+     "filter3: test_layers_filter_extents",
+     "testlayersfilter2: extents count=512 offset=0",
+     "filter2: test_layers_filter_extents",
+     "testlayersfilter1: extents count=512 offset=0",
+     "filter1: test_layers_filter_extents",
+     "testlayersplugin: extents count=512 offset=0",
+     "test_layers_plugin_extents",
+     NULL);
 
   /* Close the connection. */
   fprintf (stderr, "%s: closing the connection\n", program_name);
