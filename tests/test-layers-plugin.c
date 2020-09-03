@@ -159,6 +159,13 @@ test_layers_plugin_can_zero (void *handle)
 }
 
 static int
+test_layers_plugin_can_fast_zero (void *handle)
+{
+  DEBUG_FUNCTION;
+  return 1;
+}
+
+static int
 test_layers_plugin_can_fua (void *handle)
 {
   DEBUG_FUNCTION;
@@ -265,6 +272,7 @@ static struct nbdkit_plugin plugin = {
   .is_rotational     = test_layers_plugin_is_rotational,
   .can_trim          = test_layers_plugin_can_trim,
   .can_zero          = test_layers_plugin_can_zero,
+  .can_fast_zero     = test_layers_plugin_can_fast_zero,
   .can_fua           = test_layers_plugin_can_fua,
   .can_multi_conn    = test_layers_plugin_can_multi_conn,
   .can_extents       = test_layers_plugin_can_extents,

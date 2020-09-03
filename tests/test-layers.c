@@ -366,6 +366,12 @@ main (int argc, char *argv[])
      "test_layers_plugin_can_zero",
      NULL);
   log_verify_seen_in_order
+    ("filter3: test_layers_filter_can_fast_zero",
+     "filter2: test_layers_filter_can_fast_zero",
+     "filter1: test_layers_filter_can_fast_zero",
+     "test_layers_plugin_can_fast_zero",
+     NULL);
+  log_verify_seen_in_order
     ("filter3: test_layers_filter_can_trim",
      "filter2: test_layers_filter_can_trim",
      "filter1: test_layers_filter_can_trim",

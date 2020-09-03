@@ -236,6 +236,17 @@ test_layers_filter_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
+test_layers_filter_can_fast_zero (struct nbdkit_next_ops *next_ops,
+                                  void *nxdata, void *handle)
+{
+  struct handle *h = handle;
+
+  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  DEBUG_FUNCTION;
+  return next_ops->can_fast_zero (nxdata);
+}
+
+static int
 test_layers_filter_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata,
                             void *handle)
 {
@@ -390,6 +401,7 @@ static struct nbdkit_filter filter = {
   .is_rotational     = test_layers_filter_is_rotational,
   .can_trim          = test_layers_filter_can_trim,
   .can_zero          = test_layers_filter_can_zero,
+  .can_fast_zero     = test_layers_filter_can_fast_zero,
   .can_fua           = test_layers_filter_can_fua,
   .can_multi_conn    = test_layers_filter_can_multi_conn,
   .can_extents       = test_layers_filter_can_extents,
