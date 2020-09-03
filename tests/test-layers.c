@@ -266,6 +266,14 @@ main (int argc, char *argv[])
      "test_layers_plugin_config_complete",
      NULL);
 
+  /* thread_model methods called in inner-to-outer order. */
+  log_verify_seen_in_order
+    ("test_layers_plugin_thread_model",
+     "filter1: test_layers_filter_thread_model",
+     "filter2: test_layers_filter_thread_model",
+     "filter3: test_layers_filter_thread_model",
+     NULL);
+
   /* get_ready methods called in order. */
   log_verify_seen_in_order
     ("testlayersfilter3: get_ready",

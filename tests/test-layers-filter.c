@@ -40,8 +40,6 @@
 
 #include <nbdkit-filter.h>
 
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
-
 #define str(s) #s
 #define DEBUG_FUNCTION nbdkit_debug ("%s: %s", layer, __func__)
 
@@ -81,6 +79,13 @@ test_layers_filter_config_complete (nbdkit_next_config_complete *next,
 
 #define test_layers_filter_config_help          \
   "test_layers_" layer "_config_help"
+
+static int
+test_layers_filter_thread_model (void)
+{
+  DEBUG_FUNCTION;
+  return NBDKIT_THREAD_MODEL_PARALLEL;
+}
 
 static int
 test_layers_filter_get_ready (nbdkit_next_get_ready *next,
@@ -387,6 +392,7 @@ static struct nbdkit_filter filter = {
   .config            = test_layers_filter_config,
   .config_complete   = test_layers_filter_config_complete,
   .config_help       = test_layers_filter_config_help,
+  .thread_model      = test_layers_filter_thread_model,
   .get_ready         = test_layers_filter_get_ready,
   .after_fork        = test_layers_filter_after_fork,
   .preconnect        = test_layers_filter_preconnect,

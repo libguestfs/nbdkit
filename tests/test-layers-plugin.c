@@ -73,6 +73,13 @@ test_layers_plugin_config_complete (void)
 #define test_layers_plugin_config_help "test_layers_plugin_config_help"
 
 static int
+test_layers_plugin_thread_model (void)
+{
+  DEBUG_FUNCTION;
+  return NBDKIT_THREAD_MODEL_PARALLEL;
+}
+
+static int
 test_layers_plugin_get_ready (void)
 {
   DEBUG_FUNCTION;
@@ -260,6 +267,7 @@ static struct nbdkit_plugin plugin = {
   .config            = test_layers_plugin_config,
   .config_complete   = test_layers_plugin_config_complete,
   .config_help       = test_layers_plugin_config_help,
+  .thread_model      = test_layers_plugin_thread_model,
   .get_ready         = test_layers_plugin_get_ready,
   .after_fork        = test_layers_plugin_after_fork,
   .preconnect        = test_layers_plugin_preconnect,
