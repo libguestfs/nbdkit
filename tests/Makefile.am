@@ -1215,9 +1215,9 @@ endif
 check_PROGRAMS += test-layers
 TESTS += \
 	test-layers.sh \
-	test-layers \
 	$(NULL)
 EXTRA_DIST += test-layers.sh
+LIBNBD_TESTS += test-layers
 
 test_layers_SOURCES = \
 	test-layers.c \
@@ -1231,9 +1231,11 @@ test_layers_CPPFLAGS = \
 test_layers_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(PTHREAD_CFLAGS) \
+	$(LIBNBD_CFLAGS) \
 	$(NULL)
 test_layers_LDFLAGS = \
 	$(PTHREAD_LIBS) \
+	$(LIBNBD_LIBS) \
 	$(NULL)
 test_layers_LDADD = \
 	$(top_builddir)/common/utils/libutils.la \

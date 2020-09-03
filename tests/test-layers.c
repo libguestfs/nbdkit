@@ -37,9 +37,7 @@
  * request     └─────────┘    └─────────┘    └─────────┘    └────────┘
  *
  * We then run every possible request and ensure that each method in
- * each filter and the plugin is called in the right order.  This
- * cannot be done with libguestfs or qemu-io, instead we must make NBD
- * client requests over a socket directly.
+ * each filter and the plugin is called in the right order.
  */
 
 #include <config.h>
@@ -53,21 +51,15 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
-
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
+#include <fcntl.h>
 
 #include <pthread.h>
+
+#include <libnbd.h>
 
 #include "byte-swapping.h"
 #include "cleanup.h"
 #include "exit-with-parent.h"
-#include "nbd-protocol.h"
 
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
@@ -84,29 +76,16 @@ static void log_verify_seen (const char *msg);
 static void log_verify_seen_in_order (const char *msg, ...)
   __attribute__((sentinel));
 static void log_free (void);
-
-static inline void
-short_sleep (void)
-{
-  sleep (2);
-}
+static void short_sleep (void);
 
 int
 main (int argc, char *argv[])
 {
-  pid_t pid;
-  int sfd[2];
+  struct nbd_handle *nbd;
   int pfd[2];
   int err;
   pthread_t thread;
-  int sock;
-  struct nbd_new_handshake handshake;
-  uint32_t cflags;
-  struct nbd_new_option option;
-  struct nbd_export_name_option_reply handshake_finish;
-  uint16_t eflags;
-  struct nbd_request request;
-  struct nbd_simple_reply reply;
+  int orig_stderr;
   char data[512];
 
 #ifndef HAVE_EXIT_WITH_PARENT
@@ -115,53 +94,21 @@ main (int argc, char *argv[])
   exit (77);
 #endif
 
-  /* Socket for communicating with nbdkit. The test doesn't care about
-   * fd leaks, so we don't bother with CLOEXEC.
-   */
-  if (socketpair (AF_LOCAL, SOCK_STREAM, 0, sfd) == -1) {
-    perror ("socketpair");
+  /* Prepare libnbd. */
+  fprintf (stderr, "%s: beginning test\n", program_name);
+  nbd = nbd_create ();
+  if (nbd == NULL) {
+    fprintf (stderr, "nbd_create: %s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
-  sock = sfd[0];
-
-  /* Start nbdkit. */
-  if (pipe (pfd) == -1) {       /* Pipe for log messages. */
-    perror ("pipe");
-    exit (EXIT_FAILURE);
-  }
-  pid = fork ();
-  if (pid == 0) {               /* Child. */
-    dup2 (sfd[1], 0);
-    dup2 (sfd[1], 1);
-    close (pfd[0]);
-    dup2 (pfd[1], 2);
-    close (pfd[1]);
-    execlp ("nbdkit", "nbdkit",
-            "--exit-with-parent",
-            "-fvns",
-            /* Because of asynchronous shutdown with threads, finalize
-             * isn't reliably called unless we disable parallel.
-             */
-            "-t", "1",
-            "--filter", ".libs/test-layers-filter3." SOEXT,
-            "--filter", ".libs/test-layers-filter2." SOEXT,
-            "--filter", ".libs/test-layers-filter1." SOEXT,
-            ".libs/test-layers-plugin." SOEXT,
-            "foo=bar",
-            NULL);
-    perror ("exec: nbdkit");
-    _exit (EXIT_FAILURE);
-  }
-
-  /* Parent (test). */
-  close (sfd[1]);
-  close (pfd[1]);
-
-  fprintf (stderr, "%s: nbdkit running\n", program_name);
 
   /* Start a thread which will just listen on the pipe and
    * place the log messages in a memory buffer.
    */
+  if (pipe2 (pfd, O_CLOEXEC) == -1) {
+    perror ("pipe2");
+    exit (EXIT_FAILURE);
+  }
   err = pthread_create (&thread, NULL, start_log_capture, &pfd[0]);
   if (err) {
     errno = err;
@@ -175,84 +122,91 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
+  /* Shuffle stderr. Until we restore it later, avoid direct use of stderr.  */
+  orig_stderr = fcntl (STDERR_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO);
+  if (orig_stderr == -1) {
+    perror ("fcntl");
+    exit (EXIT_FAILURE);
+  }
+  if (dup2 (pfd[1], STDERR_FILENO) == -1) {
+    dprintf (orig_stderr, "dup2: %s\n", strerror (errno));
+    exit (EXIT_FAILURE);
+  }
+
+  /* Start nbdkit. */
+  char *args[] = {
+    "nbdkit", "--exit-with-parent", "-fvns",
+    /* Because of asynchronous shutdown with threads, finalize
+     * isn't reliably called unless we disable parallel.
+     */
+    "-t", "1",
+    "--filter", ".libs/test-layers-filter3." SOEXT,
+    "--filter", ".libs/test-layers-filter2." SOEXT,
+    "--filter", ".libs/test-layers-filter1." SOEXT,
+    ".libs/test-layers-plugin." SOEXT,
+    "foo=bar",
+    NULL};
+  if (nbd_connect_command (nbd, args) == -1) {
+    dprintf (orig_stderr, "nbd_connect_command: %s\n", nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
+
+  /* Restore normal stderr, now that child is forked. */
+  close (pfd[1]);
+  dup2 (orig_stderr, STDERR_FILENO);
+  close (orig_stderr);
+
+  short_sleep ();
+  fprintf (stderr, "%s: nbdkit running\n", program_name);
+
   /* Note for the purposes of this test we're not very careful about
-   * checking for errors (except for the bare minimum) or handling the
-   * full NBD protocol.  This is because we can be certain about
-   * exactly which server we are connecting to and what it supports.
-   * Don't use this as example code for connecting to NBD servers.
+   * checking for errors (except for the bare minimum).  This is
+   * because we can be certain about exactly which server we are
+   * connecting to and what it supports.  Don't use this as example
+   * code for connecting to NBD servers.
    *
    * Expect to receive newstyle handshake.
    */
-  if (recv (sock, &handshake, sizeof handshake,
-            MSG_WAITALL) != sizeof handshake) {
-    perror ("recv: handshake");
-    exit (EXIT_FAILURE);
-  }
-  if (be64toh (handshake.nbdmagic) != NBD_MAGIC ||
-      be64toh (handshake.version) != NBD_NEW_VERSION) {
+  if (strcmp (nbd_get_protocol (nbd), "newstyle-fixed") != 0) {
     fprintf (stderr, "%s: unexpected NBDMAGIC or version\n",
              program_name);
     exit (EXIT_FAILURE);
   }
 
-  /* Send client flags. */
-  cflags = htobe32 (be16toh (handshake.gflags));
-  if (send (sock, &cflags, sizeof cflags, 0) != sizeof cflags) {
-    perror ("send: flags");
-    exit (EXIT_FAILURE);
-  }
-
-  /* Send NBD_OPT_EXPORT_NAME with no export name. */
-  option.version = htobe64 (NBD_NEW_VERSION);
-  option.option = htobe32 (NBD_OPT_EXPORT_NAME);
-  option.optlen = htobe32 (0);
-  if (send (sock, &option, sizeof option, 0) != sizeof option) {
-    perror ("send: option");
-    exit (EXIT_FAILURE);
-  }
-
-  /* Receive handshake finish. */
-  if (recv (sock, &handshake_finish, sizeof handshake_finish - 124,
-            MSG_WAITALL) != sizeof handshake_finish - 124) {
-    perror ("recv: handshake finish");
-    exit (EXIT_FAILURE);
-  }
-
   /* Verify export size (see tests/test-layers-plugin.c). */
-  if (be64toh (handshake_finish.exportsize) != 1024) {
+  if (nbd_get_size (nbd) != 1024) {
     fprintf (stderr, "%s: unexpected export size %" PRIu64 " != 1024\n",
-             program_name, be64toh (handshake_finish.exportsize));
+             program_name, nbd_get_size (nbd));
     exit (EXIT_FAILURE);
   }
 
   /* Verify export flags. */
-  eflags = be16toh (handshake_finish.eflags);
-  if ((eflags & NBD_FLAG_READ_ONLY) != 0) {
+  if (nbd_is_read_only (nbd) != 0) {
     fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_READ_ONLY not clear\n",
              program_name);
     exit (EXIT_FAILURE);
   }
-  if ((eflags & NBD_FLAG_SEND_FLUSH) == 0) {
+  if (nbd_can_flush (nbd) != 1) {
     fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_FLUSH not set\n",
              program_name);
     exit (EXIT_FAILURE);
   }
-  if ((eflags & NBD_FLAG_SEND_FUA) == 0) {
+  if (nbd_can_fua (nbd) != 1) {
     fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_FUA not set\n",
              program_name);
     exit (EXIT_FAILURE);
   }
-  if ((eflags & NBD_FLAG_ROTATIONAL) == 0) {
+  if (nbd_is_rotational (nbd) != 1) {
     fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_ROTATIONAL not set\n",
              program_name);
     exit (EXIT_FAILURE);
   }
-  if ((eflags & NBD_FLAG_SEND_TRIM) == 0) {
+  if (nbd_can_trim (nbd) != 1) {
     fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_TRIM not set\n",
              program_name);
     exit (EXIT_FAILURE);
   }
-  if ((eflags & NBD_FLAG_SEND_WRITE_ZEROES) == 0) {
+  if (nbd_can_zero (nbd) != 1) {
     fprintf (stderr,
              "%s: unexpected eflags: NBD_FLAG_SEND_WRITE_ZEROES not set\n",
              program_name);
@@ -441,28 +395,9 @@ main (int argc, char *argv[])
   fprintf (stderr, "%s: protocol connected\n", program_name);
 
   /* Send one command of each type. */
-  request.magic = htobe32 (NBD_REQUEST_MAGIC);
-  request.handle = htobe64 (0);
-
-  request.type = htobe16 (NBD_CMD_READ);
-  request.offset = htobe64 (0);
-  request.count = htobe32 (512);
-  request.flags = htobe16 (0);
-  if (send (sock, &request, sizeof request, 0) != sizeof request) {
-    perror ("send: NBD_CMD_READ");
-    exit (EXIT_FAILURE);
-  }
-  if (recv (sock, &reply, sizeof reply, MSG_WAITALL) != sizeof reply) {
-    perror ("recv: NBD_CMD_READ reply");
-    exit (EXIT_FAILURE);
-  }
-  if (reply.error != NBD_SUCCESS) {
-    fprintf (stderr, "%s: NBD_CMD_READ failed with %d\n",
-             program_name, reply.error);
-    exit (EXIT_FAILURE);
-  }
-  if (recv (sock, data, sizeof data, MSG_WAITALL) != sizeof data) {
-    perror ("recv: NBD_CMD_READ data");
+  if (nbd_pread (nbd, data, sizeof data, 0, 0) != 0) {
+    fprintf (stderr, "%s: NBD_CMD_READ failed with %d %s\n",
+             program_name, nbd_get_errno (), nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
@@ -478,25 +413,9 @@ main (int argc, char *argv[])
      "test_layers_plugin_pread",
      NULL);
 
-  request.type = htobe16 (NBD_CMD_WRITE);
-  request.offset = htobe64 (0);
-  request.count = htobe32 (512);
-  request.flags = htobe16 (0);
-  if (send (sock, &request, sizeof request, 0) != sizeof request) {
-    perror ("send: NBD_CMD_WRITE");
-    exit (EXIT_FAILURE);
-  }
-  if (send (sock, data, sizeof data, 0) != sizeof data) {
-    perror ("send: NBD_CMD_WRITE data");
-    exit (EXIT_FAILURE);
-  }
-  if (recv (sock, &reply, sizeof reply, MSG_WAITALL) != sizeof reply) {
-    perror ("recv: NBD_CMD_WRITE");
-    exit (EXIT_FAILURE);
-  }
-  if (reply.error != NBD_SUCCESS) {
-    fprintf (stderr, "%s: NBD_CMD_WRITE failed with %d\n",
-             program_name, reply.error);
+  if (nbd_pwrite (nbd, data, sizeof data, 0, 0) != 0) {
+    fprintf (stderr, "%s: NBD_CMD_WRITE failed with %d %s\n",
+             program_name, nbd_get_errno (), nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
@@ -512,21 +431,9 @@ main (int argc, char *argv[])
      "test_layers_plugin_pwrite",
      NULL);
 
-  request.type = htobe16 (NBD_CMD_FLUSH);
-  request.offset = htobe64 (0);
-  request.count = htobe32 (0);
-  request.flags = htobe16 (0);
-  if (send (sock, &request, sizeof request, 0) != sizeof request) {
-    perror ("send: NBD_CMD_FLUSH");
-    exit (EXIT_FAILURE);
-  }
-  if (recv (sock, &reply, sizeof reply, MSG_WAITALL) != sizeof reply) {
-    perror ("recv: NBD_CMD_FLUSH");
-    exit (EXIT_FAILURE);
-  }
-  if (reply.error != NBD_SUCCESS) {
-    fprintf (stderr, "%s: NBD_CMD_FLUSH failed with %d\n",
-             program_name, reply.error);
+  if (nbd_flush (nbd, 0) != 0) {
+    fprintf (stderr, "%s: NBD_CMD_FLUSH failed with %d %s\n",
+             program_name, nbd_get_errno (), nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
@@ -542,21 +449,9 @@ main (int argc, char *argv[])
      "test_layers_plugin_flush",
      NULL);
 
-  request.type = htobe16 (NBD_CMD_TRIM);
-  request.offset = htobe64 (0);
-  request.count = htobe32 (512);
-  request.flags = htobe16 (0);
-  if (send (sock, &request, sizeof request, 0) != sizeof request) {
-    perror ("send: NBD_CMD_TRIM");
-    exit (EXIT_FAILURE);
-  }
-  if (recv (sock, &reply, sizeof reply, MSG_WAITALL) != sizeof reply) {
-    perror ("recv: NBD_CMD_TRIM");
-    exit (EXIT_FAILURE);
-  }
-  if (reply.error != NBD_SUCCESS) {
-    fprintf (stderr, "%s: NBD_CMD_TRIM failed with %d\n",
-             program_name, reply.error);
+  if (nbd_trim (nbd, sizeof data, 0, 0) != 0) {
+    fprintf (stderr, "%s: NBD_CMD_TRIM failed with %d %s\n",
+             program_name, nbd_get_errno (), nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
@@ -572,21 +467,9 @@ main (int argc, char *argv[])
      "test_layers_plugin_trim",
      NULL);
 
-  request.type = htobe16 (NBD_CMD_WRITE_ZEROES);
-  request.offset = htobe64 (0);
-  request.count = htobe32 (512);
-  request.flags = htobe16 (0);
-  if (send (sock, &request, sizeof request, 0) != sizeof request) {
-    perror ("send: NBD_CMD_WRITE_ZEROES");
-    exit (EXIT_FAILURE);
-  }
-  if (recv (sock, &reply, sizeof reply, MSG_WAITALL) != sizeof reply) {
-    perror ("recv: NBD_CMD_WRITE_ZEROES");
-    exit (EXIT_FAILURE);
-  }
-  if (reply.error != NBD_SUCCESS) {
-    fprintf (stderr, "%s: NBD_CMD_WRITE_ZEROES failed with %d\n",
-             program_name, reply.error);
+  if (nbd_zero (nbd, sizeof data, 0, 0) != 0) {
+    fprintf (stderr, "%s: NBD_CMD_WRITE_ZEROES failed with %d %s\n",
+             program_name, nbd_get_errno (), nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
@@ -602,21 +485,9 @@ main (int argc, char *argv[])
      "test_layers_plugin_zero",
      NULL);
 
-  request.type = htobe16 (NBD_CMD_CACHE);
-  request.offset = htobe64 (0);
-  request.count = htobe32 (512);
-  request.flags = htobe16 (0);
-  if (send (sock, &request, sizeof request, 0) != sizeof request) {
-    perror ("send: NBD_CMD_CACHE");
-    exit (EXIT_FAILURE);
-  }
-  if (recv (sock, &reply, sizeof reply, MSG_WAITALL) != sizeof reply) {
-    perror ("recv: NBD_CMD_CACHE");
-    exit (EXIT_FAILURE);
-  }
-  if (reply.error != NBD_SUCCESS) {
-    fprintf (stderr, "%s: NBD_CMD_CACHE failed with %d\n",
-             program_name, reply.error);
+  if (nbd_cache (nbd, sizeof data, 0, 0) != 0) {
+    fprintf (stderr, "%s: NBD_CMD_CACHE failed with %d %s\n",
+             program_name, nbd_get_errno (), nbd_get_error ());
     exit (EXIT_FAILURE);
   }
 
@@ -640,20 +511,12 @@ main (int argc, char *argv[])
 
   /* Close the connection. */
   fprintf (stderr, "%s: closing the connection\n", program_name);
-  request.type = htobe16 (NBD_CMD_DISC);
-  request.offset = htobe64 (0);
-  request.count = htobe32 (0);
-  request.flags = htobe16 (0);
-  if (send (sock, &request, sizeof request, 0) != sizeof request) {
-    perror ("send: NBD_CMD_DISC");
+  if (nbd_shutdown (nbd, 0) != 0) {
+    fprintf (stderr, "%s: NBD_CMD_DISC failed with %d %s\n",
+             program_name, nbd_get_errno (), nbd_get_error ());
     exit (EXIT_FAILURE);
   }
-  /* (no reply from NBD_CMD_DISC) */
-  close (sock);
-
-  /* Clean up the child process. */
-  if (waitpid (pid, NULL, 0) == -1)
-    perror ("waitpid");
+  nbd_close (nbd);
 
   /* finalize methods called in reverse order of prepare */
   short_sleep ();
@@ -686,6 +549,7 @@ main (int argc, char *argv[])
 /* The log from nbdkit is captured in a separate thread. */
 static char *log_buf = NULL;
 static size_t log_len = 0;
+static size_t last_out = 0;
 static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void *
@@ -716,16 +580,22 @@ start_log_capture (void *arg)
     if (r == 0)
       break;
 
-    /* Dump the log as we receive it to stderr, for debugging. */
-    if (write (2, &log_buf[log_len], r) == -1)
-      perror ("log: write");
-
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
     log_len += r;
   }
 
   /* nbdkit closed the connection. */
   pthread_exit (NULL);
+}
+
+static void short_sleep (void)
+{
+  sleep (2);
+  /* Copy what we have received so far into stderr */
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&log_lock);
+  if (fwrite (&log_buf[last_out], log_len - last_out, 1, stderr) == -1)
+    perror ("log: fwrite");
+  last_out = log_len;
 }
 
 /* These functions are called from the main thread to verify messages
