@@ -45,8 +45,10 @@
 #include <sys/types.h>
 #include <assert.h>
 
+#include "cleanup.h"
 #include "internal.h"
 #include "realpath.h"
+#include "strndup.h"
 
 #ifdef HAVE_GNUTLS
 
@@ -420,6 +422,27 @@ crypto_close (void)
   conn->crypto_session = NULL;
 }
 
+/* Turn GnuTLS debug messages into nbdkit debug messages
+ * when nbdkit -D nbdkit.gnutls.log > 0
+ */
+int nbdkit_debug_gnutls_log = 0;
+
+static void
+tls_log (int level, const char *msg)
+{
+  size_t len;
+  CLEANUP_FREE char *copy = NULL;
+
+  /* Strip trailing \n added by GnuTLS. */
+  len = strlen (msg);
+  if (len > 0 && msg[len-1] == '\n') {
+    copy = strndup (msg, len-1);
+    msg = copy;
+  }
+
+  nbdkit_debug ("gnutls: %d: %s", level, msg);
+}
+
 /* Upgrade an existing connection to TLS.  Also this should do access
  * control if enabled.  The protocol code ensures this function can
  * only be called once per connection.
@@ -439,6 +462,9 @@ crypto_negotiate_tls (int sockin, int sockout)
     free (session);
     return -1;
   }
+
+  gnutls_global_set_log_level (nbdkit_debug_gnutls_log);
+  gnutls_global_set_log_function (tls_log);
 
   switch (crypto_auth) {
   case CRYPTO_AUTH_CERTIFICATES:

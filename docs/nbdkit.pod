@@ -586,6 +586,11 @@ and not usually very interesting.
 C<-D nbdkit.backend.controlpath=0> suppresses the non-datapath
 commands (config, open, close, can_write, etc.)
 
+=item B<-D nbdkit.gnutls.log=>N
+
+Enable GnuTLS logging.  C<N> can be in the range 0 (no logging) to 99.
+See L<gnutls_global_set_log_level(3)>.
+
 =back
 
 =head1 SIGNALS
