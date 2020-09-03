@@ -836,7 +836,21 @@ nbdkit_strndup_intern (const char *str, size_t n)
 const char *
 nbdkit_strdup_intern (const char *str)
 {
-  return nbdkit_strndup_intern (str, SIZE_MAX);
+  char *copy;
+
+  if (str == NULL) {
+    nbdkit_error ("nbdkit_strdup_intern: no string given");
+    errno = EINVAL;
+    return NULL;
+  }
+
+  copy = strdup (str);
+  if (copy == NULL) {
+    nbdkit_error ("strdup: %m");
+    return NULL;
+  }
+
+  return add_intern (copy);
 }
 
 const char *
