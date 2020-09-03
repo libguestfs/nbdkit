@@ -175,18 +175,6 @@ Python:
   This requires changes to the core API so that config_help is a
   function rather than a variable (see V3 suggestions below).
 
-Rust:
-
-* Consider supporting a more idiomatic style for writing Rust plugins.
-
-* Better documentation.
-
-* Add tests.
-
-* There is no attempt to ‘make install’ or otherwise package the
-  crate.  Since it looks as if Rust code is normally distributed as
-  source it's not clear what that would even mean.
-
 Suggestions for filters
 -----------------------
 
