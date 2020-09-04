@@ -151,6 +151,8 @@ struct nbdkit_exports;
 NBDKIT_EXTERN_DECL (int, nbdkit_add_export,
                     (struct nbdkit_exports *,
                      const char *name, const char *description));
+NBDKIT_EXTERN_DECL (int, nbdkit_use_default_export,
+                    (struct nbdkit_exports *));
 
 /* A static non-NULL pointer which can be used when you don't need a
  * per-connection handle.

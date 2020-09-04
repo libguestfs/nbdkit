@@ -564,4 +564,8 @@ extern struct connection *threadlocal_get_conn (void);
   struct connection *conn = threadlocal_get_conn ();    \
   assert (conn != NULL)
 
+/* exports.c */
+extern int exports_resolve_default (struct nbdkit_exports *exports,
+                                    struct backend *b, int readonly);
+
 #endif /* NBDKIT_INTERNAL_H */

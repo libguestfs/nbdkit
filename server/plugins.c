@@ -292,7 +292,7 @@ plugin_list_exports (struct backend *b, int readonly, int default_only,
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (!p->plugin.list_exports)
-    return nbdkit_add_export (exports, "", NULL);
+    return nbdkit_use_default_export (exports);
 
   return p->plugin.list_exports (readonly, default_only, exports);
 }

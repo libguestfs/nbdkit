@@ -75,7 +75,14 @@ threadlocal_get_conn (void)
   abort ();
 }
 
-int connection_get_status (void)
+int
+connection_get_status (void)
+{
+  abort ();
+}
+
+const char *
+backend_default_export (struct backend *b, int readonly)
 {
   abort ();
 }

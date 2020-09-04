@@ -675,10 +675,11 @@ error message and return C<-1>.
 
 This optional callback is called if the client tries to list the
 exports served by the plugin (using C<NBD_OPT_LIST>).  If the plugin
-does not supply this callback then a single export called C<""> is
-returned.  The NBD protocol defines C<""> as the default export, so
-this is suitable for plugins which ignore the export name and always
-serve the same content.  See also L</EXPORT NAME> below.
+does not supply this callback then the result of C<.default_export> is
+advertised as the lone export.  The NBD protocol defines C<""> as the
+default export, so this is suitable for plugins which ignore the
+export name and always serve the same content.  See also L</EXPORT
+NAME> below.
 
 The C<readonly> flag informs the plugin that the server was started
 with the I<-r> flag on the command line, which is the same value
@@ -694,9 +695,8 @@ C<"">).  The plugin can ignore this flag and return all exports if it
 wants.
 
 The C<exports> parameter is an opaque object for collecting the list
-of exports.  Call C<nbdkit_add_export> to add a single export to the
-list.  If the plugin has a concept of a default export (usually but
-not always called C<"">) then it should return that first in the list.
+of exports.  Call C<nbdkit_add_export> as needed to add specific
+exports to the list.
 
  int nbdkit_add_export (struct nbdkit_export *exports,
                         const char *name, const char *description);
@@ -711,9 +711,25 @@ function.  C<nbdkit_add_export> returns C<0> on success or C<-1> on
 failure; on failure C<nbdkit_error> has already been called, with
 C<errno> set to a suitable value.
 
-Returning C<0> will send the list of exports back to the client.  If
-there is an error, C<.list_exports> should call C<nbdkit_error> with
-an error message and return C<-1>.
+There are also situations where a plugin may wish to duplicate the
+nbdkit default behavior of supplying an export list containing only
+the result of C<.default_export> when C<.list_exports> is missing;
+this is most common in a language binding where it is not known at
+compile time whether the language script will be providing an
+implementation for C<.list_exports>, and is done by calling
+C<nbdkit_use_default_export>.
+
+ int nbdkit_use_default_export (struct nbdkit_export *exports);
+
+C<nbdkit_use_default_export> returns C<0> on success or C<-1> on
+failure; on failure C<nbdkit_error> has already been called, with
+C<errno> set to a suitable value.
+
+The plugin may also leave the export list empty, by not calling either
+helper.  Once the plugin is happy with the list contents, returning
+C<0> will send the list of exports back to the client.  If there is an
+error, C<.list_exports> should call C<nbdkit_error> with an error
+message and return C<-1>.
 
 =head2 C<.default_export>
 
@@ -724,7 +740,9 @@ default export C<"">, where the plugin provides a UTF-8 string between
 0 and 4096 bytes.  If the plugin does not supply this callback, the
 connection continues with the empty name; if the plugin returns a
 valid string, nbdkit behaves as if the client had passed that string
-instead of an empty name.
+instead of an empty name.  Similarly, if the plugin does not supply a
+C<.list_exports> callback, the result of this callback determines what
+export name to advertise to a client requesting an export list.
 
 The C<readonly> flag informs the plugin that the server was started
 with the I<-r> flag on the command line, which is the same value

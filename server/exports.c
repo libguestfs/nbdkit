@@ -52,6 +52,7 @@ DEFINE_VECTOR_TYPE(exports, struct nbdkit_export);
 
 struct nbdkit_exports {
   exports exports;
+  bool use_default;
 };
 
 struct nbdkit_exports *
@@ -65,6 +66,7 @@ nbdkit_exports_new (void)
     return NULL;
   }
   r->exports = (exports) empty_vector;
+  r->use_default = false;
   return r;
 }
 
@@ -139,5 +141,27 @@ nbdkit_add_export (struct nbdkit_exports *exps,
     return -1;
   }
 
+  return 0;
+}
+
+int
+nbdkit_use_default_export (struct nbdkit_exports *exps)
+{
+  exps->use_default = true;
+  return 0;
+}
+
+int
+exports_resolve_default (struct nbdkit_exports *exps, struct backend *b,
+                         int readonly)
+{
+  const char *def = NULL;
+
+  if (exps->use_default) {
+    def = backend_default_export (b, readonly);
+    exps->use_default = false;
+  }
+  if (def)
+    return nbdkit_add_export (exps, def, NULL);
   return 0;
 }

@@ -315,7 +315,7 @@ sh_list_exports (int readonly, int default_only,
     return parse_exports (script, s, slen, exports);
 
   case MISSING:
-    return nbdkit_add_export (exports, "", NULL);
+    return nbdkit_use_default_export (exports);
 
   case ERROR:
     return -1;

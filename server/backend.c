@@ -164,7 +164,7 @@ backend_list_exports (struct backend *b, int readonly, int default_only,
 {
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
-  int r;
+  size_t count;
 
   assert (!default_only); /* XXX Switch to is_tls... */
   controlpath_debug ("%s: list_exports readonly=%d default_only=%d",
@@ -173,14 +173,15 @@ backend_list_exports (struct backend *b, int readonly, int default_only,
   assert (h->handle == NULL);
   assert ((h->state & HANDLE_OPEN) == 0);
 
-  r = b->list_exports (b, readonly, default_only, exports);
-  if (r == -1)
+  if (b->list_exports (b, readonly, default_only, exports) == -1 ||
+      exports_resolve_default (exports, b, readonly) == -1) {
     controlpath_debug ("%s: list_exports failed", b->name);
-  else {
-    size_t count = nbdkit_exports_count (exports);
-    controlpath_debug ("%s: list_exports returned %zu names", b->name, count);
+    return -1;
   }
-  return r;
+
+  count = nbdkit_exports_count (exports);
+  controlpath_debug ("%s: list_exports returned %zu names", b->name, count);
+  return 0;
 }
 
 const char *

@@ -76,6 +76,7 @@
     nbdkit_stdio_safe;
     nbdkit_strdup_intern;
     nbdkit_strndup_intern;
+    nbdkit_use_default_export;
     nbdkit_vdebug;
     nbdkit_verror;
     nbdkit_vprintf_intern;
