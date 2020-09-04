@@ -84,6 +84,13 @@ static int extent (void *opaque, const char *context, uint64_t offset,
   return 0;
 }
 
+#if LIBNBD_HAVE_NBD_SET_OPT_MODE
+static int export (void *opaque, const char *name, const char *desc)
+{
+  return 0;
+}
+#endif
+
 int
 main (int argc, char *argv[])
 {
@@ -111,6 +118,12 @@ main (int argc, char *argv[])
     fprintf (stderr, "nbd_add_meta_context: %s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
+#if LIBNBD_HAVE_NBD_SET_OPT_MODE
+  if (nbd_set_opt_mode (nbd, true) == -1) {
+    fprintf (stderr, "nbd_set_opt_mode: %s\n", nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
+#endif
 
   /* Start a thread which will just listen on the pipe and
    * place the log messages in a memory buffer.
@@ -167,7 +180,7 @@ main (int argc, char *argv[])
   close (orig_stderr);
 
   short_sleep ();
-  fprintf (stderr, "%s: nbdkit running\n", program_name);
+  fprintf (stderr, "%s: nbdkit passed preconnect\n", program_name);
 
   /* Note for the purposes of this test we're not very careful about
    * checking for errors (except for the bare minimum).  This is
@@ -182,59 +195,6 @@ main (int argc, char *argv[])
              program_name);
     exit (EXIT_FAILURE);
   }
-
-  /* Verify export size (see tests/test-layers-plugin.c). */
-  if (nbd_get_size (nbd) != 1024) {
-    fprintf (stderr, "%s: unexpected export size %" PRIu64 " != 1024\n",
-             program_name, nbd_get_size (nbd));
-    exit (EXIT_FAILURE);
-  }
-
-  /* Verify export flags. */
-  if (nbd_is_read_only (nbd) != 0) {
-    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_READ_ONLY not clear\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-  if (nbd_can_flush (nbd) != 1) {
-    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_FLUSH not set\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-  if (nbd_can_fua (nbd) != 1) {
-    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_FUA not set\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-  if (nbd_is_rotational (nbd) != 1) {
-    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_ROTATIONAL not set\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-  if (nbd_can_trim (nbd) != 1) {
-    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_TRIM not set\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-  if (nbd_can_zero (nbd) != 1) {
-    fprintf (stderr,
-             "%s: unexpected eflags: NBD_FLAG_SEND_WRITE_ZEROES not set\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-  if (nbd_can_meta_context (nbd, LIBNBD_CONTEXT_BASE_ALLOCATION) != 1) {
-    fprintf (stderr,
-             "%s: unexpected setup: META_CONTEXT not supported\n",
-             program_name);
-    exit (EXIT_FAILURE);
-  }
-
-  /* Sleep briefly to allow the log to catch up. */
-  short_sleep ();
-
-  /* Verify expected log messages were seen during the handshake and
-   * option negotiation phases.
-   */
 
   /* Plugin and 3 filters should run the load method in any order. */
   log_verify_seen ("test_layers_plugin_load");
@@ -312,13 +272,23 @@ main (int argc, char *argv[])
      "test_layers_plugin_preconnect",
      NULL);
 
-  /* list_exports methods called in outer-to-inner order, complete
-   * in inner-to-outer order.  But since we didn't send NBD_OPT_LIST,
-   * the outer filter does not expose a list; rather, the rest of the
-   * chain is used to resolve the canonical name of the default export.
+#if LIBNBD_HAVE_NBD_SET_OPT_MODE
+  /* We can only test .list_exports if we can send NBD_OPT_INFO; if we
+   * can test it, they are called in order.
    */
+  if (nbd_opt_list (nbd, (nbd_list_callback) { .callback = export }) == -1) {
+    fprintf (stderr, "nbd_opt_list: %s\n", nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_opt_go (nbd) == -1) {
+    fprintf (stderr, "nbd_opt_go: %s\n", nbd_get_error ());
+    exit (EXIT_FAILURE);
+  }
+
+  short_sleep ();
   log_verify_seen_in_order
-    ("filter3: test_layers_filter_list_exports",
+    ("testlayersfilter3: list_exports",
+     "filter3: test_layers_filter_list_exports",
      "testlayersfilter2: list_exports",
      "filter2: test_layers_filter_list_exports",
      "testlayersfilter1: list_exports",
@@ -326,6 +296,55 @@ main (int argc, char *argv[])
      "testlayersplugin: list_exports",
      "test_layers_plugin_list_exports",
      NULL);
+#endif /* LIBNBD_HAVE_NBD_SET_OPT_MODE */
+
+  fprintf (stderr, "%s: nbdkit running\n", program_name);
+
+  /* Verify export size (see tests/test-layers-plugin.c). */
+  if (nbd_get_size (nbd) != 1024) {
+    fprintf (stderr, "%s: unexpected export size %" PRIu64 " != 1024\n",
+             program_name, nbd_get_size (nbd));
+    exit (EXIT_FAILURE);
+  }
+
+  /* Verify export flags. */
+  if (nbd_is_read_only (nbd) != 0) {
+    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_READ_ONLY not clear\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_can_flush (nbd) != 1) {
+    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_FLUSH not set\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_can_fua (nbd) != 1) {
+    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_FUA not set\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_is_rotational (nbd) != 1) {
+    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_ROTATIONAL not set\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_can_trim (nbd) != 1) {
+    fprintf (stderr, "%s: unexpected eflags: NBD_FLAG_SEND_TRIM not set\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_can_zero (nbd) != 1) {
+    fprintf (stderr,
+             "%s: unexpected eflags: NBD_FLAG_SEND_WRITE_ZEROES not set\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
+  if (nbd_can_meta_context (nbd, LIBNBD_CONTEXT_BASE_ALLOCATION) != 1) {
+    fprintf (stderr,
+             "%s: unexpected setup: META_CONTEXT not supported\n",
+             program_name);
+    exit (EXIT_FAILURE);
+  }
 
   /* open methods called in outer-to-inner order, but thanks to next
    * pointer, complete in inner-to-outer order. */
