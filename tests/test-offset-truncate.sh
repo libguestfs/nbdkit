@@ -50,13 +50,23 @@ function do_test_info ()
 function do_test_read512 ()
 {
     nbdkit -U - --filter=offset --filter=truncate pattern size=1024 \
-           "$@" --run 'nbdsh -u "$uri" -c "h.pread (512, 0)"'
+           "$@" --run 'nbdsh -u "$uri" -c "
+try:
+  h.pread (512, 0)
+except nbd.Error as ex:
+  exit (1)
+"'
 }
 
 function do_test_zero512 ()
 {
     nbdkit -U - --filter=offset --filter=truncate memory size=1024 \
-           "$@" --run 'nbdsh -u "$uri" -c "h.zero (512, 0)"'
+           "$@" --run 'nbdsh -u "$uri" -c "
+try:
+  h.zero (512, 0)
+except nbd.Error as ex:
+  exit (1)
+"'
 }
 
 function expect_fail ()
