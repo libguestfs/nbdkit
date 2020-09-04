@@ -249,6 +249,17 @@ filter_list_exports (struct backend *b, int readonly, int default_only,
   return backend_list_exports (b->next, readonly, default_only, exports);
 }
 
+static const char *
+filter_default_export (struct backend *b, int readonly, int is_tls)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  if (f->filter.default_export)
+    return f->filter.default_export (backend_default_export, b->next,
+                                     readonly, is_tls);
+  return backend_default_export (b->next, readonly);
+}
+
 static void *
 filter_open (struct backend *b, int readonly, const char *exportname,
              int is_tls)
@@ -555,6 +566,7 @@ static struct backend filter_functions = {
   .after_fork = filter_after_fork,
   .preconnect = filter_preconnect,
   .list_exports = filter_list_exports,
+  .default_export = filter_default_export,
   .open = filter_open,
   .prepare = filter_prepare,
   .finalize = filter_finalize,

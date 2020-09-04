@@ -120,6 +120,14 @@ test_layers_filter_list_exports (nbdkit_next_list_exports *next, void *nxdata,
   return next (nxdata, readonly, default_only, exports);
 }
 
+static const char *
+test_layers_filter_default_export (nbdkit_next_default_export *next,
+                                   void *nxdata, int readonly, int is_tls)
+{
+  DEBUG_FUNCTION;
+  return next (nxdata, readonly);
+}
+
 static void *
 test_layers_filter_open (nbdkit_next_open *next, void *nxdata,
                          int readonly, const char *exportname, int is_tls)
@@ -397,6 +405,7 @@ static struct nbdkit_filter filter = {
   .after_fork        = test_layers_filter_after_fork,
   .preconnect        = test_layers_filter_preconnect,
   .list_exports      = test_layers_filter_list_exports,
+  .default_export    = test_layers_filter_default_export,
   .open              = test_layers_filter_open,
   .close             = test_layers_filter_close,
   .prepare           = test_layers_filter_prepare,

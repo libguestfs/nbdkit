@@ -66,8 +66,10 @@ typedef int nbdkit_next_get_ready (nbdkit_backend *nxdata);
 typedef int nbdkit_next_after_fork (nbdkit_backend *nxdata);
 typedef int nbdkit_next_preconnect (nbdkit_backend *nxdata, int readonly);
 typedef int nbdkit_next_list_exports (nbdkit_backend *nxdata, int readonly,
-                                      int default_only,
+                                      int ignored,
                                       struct nbdkit_exports *exports);
+typedef const char *nbdkit_next_default_export (nbdkit_backend *nxdata,
+                                                int readonly);
 typedef int nbdkit_next_open (nbdkit_backend *nxdata,
                               int readonly, const char *exportname);
 
@@ -136,7 +138,7 @@ struct nbdkit_export {
 };
 
 NBDKIT_EXTERN_DECL (struct nbdkit_exports *, nbdkit_exports_new,
-                    (int default_only));
+                    (void));
 NBDKIT_EXTERN_DECL (void, nbdkit_exports_free, (struct nbdkit_exports *));
 NBDKIT_EXTERN_DECL (size_t, nbdkit_exports_count,
                     (const struct nbdkit_exports *));
@@ -179,6 +181,9 @@ struct nbdkit_filter {
   int (*list_exports) (nbdkit_next_list_exports *next, nbdkit_backend *nxdata,
                        int readonly, int default_only,
                        struct nbdkit_exports *exports);
+  const char * (*default_export) (nbdkit_next_default_export *next,
+                                  nbdkit_backend *nxdata,
+                                  int readonly, int is_tls);
 
   void * (*open) (nbdkit_next_open *next, nbdkit_backend *nxdata,
                   int readonly, const char *exportname, int is_tls);

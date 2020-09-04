@@ -166,13 +166,12 @@ backend_list_exports (struct backend *b, int readonly, int default_only,
   struct handle *h = get_handle (conn, b->i);
   int r;
 
+  assert (!default_only); /* XXX Switch to is_tls... */
   controlpath_debug ("%s: list_exports readonly=%d default_only=%d",
                      b->name, readonly, default_only);
 
   assert (h->handle == NULL);
   assert ((h->state & HANDLE_OPEN) == 0);
-  if (default_only && h->default_exportname)
-    return nbdkit_add_export (exports, h->default_exportname, NULL);
 
   r = b->list_exports (b, readonly, default_only, exports);
   if (r == -1)
@@ -180,11 +179,38 @@ backend_list_exports (struct backend *b, int readonly, int default_only,
   else {
     size_t count = nbdkit_exports_count (exports);
     controlpath_debug ("%s: list_exports returned %zu names", b->name, count);
-    /* Best effort caching of default export name */
-    if (!h->default_exportname && count)
-      h->default_exportname = strdup (nbdkit_get_export (exports, 0).name);
   }
   return r;
+}
+
+const char *
+backend_default_export (struct backend *b, int readonly)
+{
+  GET_CONN;
+  struct handle *h = get_handle (conn, b->i);
+  const char *s;
+
+  controlpath_debug ("%s: default_export readonly=%d tls=%d",
+                     b->name, readonly, conn->using_tls);
+
+  if (h->default_exportname == NULL) {
+    assert (h->handle == NULL);
+    assert ((h->state & HANDLE_OPEN) == 0);
+    s = b->default_export (b, readonly, conn->using_tls);
+    /* Ignore over-length strings. XXX Also ignore non-UTF8? */
+    if (s && strnlen (s, NBD_MAX_STRING + 1) > NBD_MAX_STRING) {
+      controlpath_debug ("%s: default_export: ignoring invalid string",
+                         b->name);
+      s = NULL;
+    }
+    if (s) {
+      /* Best effort caching */
+      h->default_exportname = strdup (s);
+      if (h->default_exportname == NULL)
+        return s;
+    }
+  }
+  return h->default_exportname;
 }
 
 int
@@ -202,18 +228,13 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   if (readonly)
     h->can_write = 0;
 
-  /* Best-effort determination of the canonical name for default export */
+  /* Determine the canonical name for default export */
   if (!*exportname) {
-    if (!h->default_exportname) {
-      CLEANUP_EXPORTS_FREE struct nbdkit_exports *exps = NULL;
-
-      exps = nbdkit_exports_new (true);
-      if (exps && b->list_exports (b, readonly, true, exps) == 0 &&
-          nbdkit_exports_count (exps))
-        h->default_exportname = strdup (nbdkit_get_export (exps, 0).name);
+    exportname = backend_default_export (b, readonly);
+    if (exportname == NULL) {
+      nbdkit_error ("default export (\"\") not permitted");
+      return -1;
     }
-    if (h->default_exportname)
-      exportname = h->default_exportname;
   }
 
   /* Most filters will call next_open first, resulting in

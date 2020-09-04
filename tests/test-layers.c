@@ -346,6 +346,18 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
+  /* default_export called in outer-to-inner order. */
+  log_verify_seen_in_order
+    ("testlayersfilter3: default_export",
+     "filter3: test_layers_filter_default_export",
+     "testlayersfilter2: default_export",
+     "filter2: test_layers_filter_default_export",
+     "testlayersfilter1: default_export",
+     "filter1: test_layers_filter_default_export",
+     "testlayersplugin: default_export",
+     "test_layers_plugin_default_export",
+     NULL);
+
   /* open methods called in outer-to-inner order, but thanks to next
    * pointer, complete in inner-to-outer order. */
   log_verify_seen_in_order

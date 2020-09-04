@@ -76,6 +76,15 @@ tls_fallback_get_ready (nbdkit_next_get_ready *next, void *nxdata,
 
 /* TODO: list_exports needs is_tls parameter */
 
+static const char *
+tls_fallback_default_export (nbdkit_next_default_export *next, void *nxdata,
+                             int readonly, int is_tls)
+{
+  if (!is_tls)
+    return "";
+  return next (nxdata, readonly);
+}
+
 /* Helper for determining if this connection is insecure.  This works
  * because we can treat all handles on a binary basis: secure or
  * insecure, which lets .open get away without allocating a more
@@ -183,7 +192,8 @@ static struct nbdkit_filter filter = {
   .config            = tls_fallback_config,
   .config_help       = tls_fallback_config_help,
   .get_ready         = tls_fallback_get_ready,
-  /* XXX .init_exports needs is_tls parameter */
+  /* XXX .list_exports needs is_tls parameter */
+  .default_export    = tls_fallback_default_export,
   .open              = tls_fallback_open,
   .get_size          = tls_fallback_get_size,
   .can_write         = tls_fallback_can_write,

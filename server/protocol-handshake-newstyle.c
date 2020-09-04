@@ -85,7 +85,7 @@ send_newstyle_option_reply_exportnames (uint32_t option)
   size_t i;
   CLEANUP_EXPORTS_FREE struct nbdkit_exports *exps = NULL;
 
-  exps = nbdkit_exports_new (false);
+  exps = nbdkit_exports_new ();
   if (exps == NULL)
     return send_newstyle_option_reply (option, NBD_REP_ERR_TOO_BIG);
   if (backend_list_exports (top, read_only, false, exps) == -1)
@@ -301,6 +301,7 @@ negotiate_handshake_newstyle_options (void)
   struct nbd_export_name_option_reply handshake_finish;
   const char *optname;
   uint64_t exportsize;
+  struct backend *b;
 
   for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
     CLEANUP_FREE char *data = NULL;
@@ -445,6 +446,12 @@ negotiate_handshake_newstyle_options (void)
           return -1;
         conn->using_tls = true;
         debug ("using TLS on this connection");
+        /* Wipe out any cached default export name. */
+        for_each_backend (b) {
+          struct handle *h = get_handle (conn, b->i);
+          free (h->default_exportname);
+          h->default_exportname = NULL;
+        }
       }
       break;
 

@@ -129,17 +129,19 @@ which is required.
 F<nbdkit-filter.h> defines some function types (C<nbdkit_next_config>,
 C<nbdkit_next_config_complete>, C<nbdkit_next_get_ready>,
 C<nbdkit_next_after_fork>, C<nbdkit_next_preconnect>,
-C<nbdkit_next_list_exports>, C<nbdkit_next_open>) and a structure
-called C<struct nbdkit_next_ops>.  These abstract the next plugin or
-filter in the chain.  There is also an opaque pointer C<nxdata> which
-must be passed along when calling these functions.  The value of
-C<nxdata> passed to C<.open> has a stable lifetime that lasts to the
-corresponding C<.close>, with all intermediate functions (such as
-C<.pread>) receiving the same value for convenience; the only
-exceptions where C<nxdata> is not reused are C<.config>,
-C<.config_complete>, C<.get_ready>, C<.after_fork>, C<.preconnect> and
-C<.list_exports>, which are called outside the lifetime of a
-connection.
+C<nbdkit_next_list_exports>, C<nbdkit_next_default_export>,
+C<nbdkit_next_open>) and a structure called C<struct nbdkit_next_ops>.
+These abstract the next plugin or filter in the chain.  There is also
+an opaque pointer C<nxdata> which must be passed along when calling
+these functions.  The value of C<nxdata> passed to C<.open> has a
+stable lifetime that lasts to the corresponding C<.close>, with all
+intermediate functions (such as C<.pread>) receiving the same value
+for convenience.  Functions where C<nxdata> is not reused are
+C<.config>, C<.config_complete>, C<.get_ready>, and C<.after_fork>,
+which are called during initialization outside any connections, and
+C<.preconnect>, C<.list_exports>, and C<.default_export>, which are
+called based on client connections but prior to the stable lifetime of
+C<.open>.
 
 =head2 Next config, open and close
 
@@ -356,7 +358,7 @@ from the layer below.  Without error checking it would look like this:
    struct nbdkit_export e;
    char *name, *desc;
 
-   exports2 = nbdkit_exports_new (default_only);
+   exports2 = nbdkit_exports_new ();
    next_list_exports (nxdata, readonly, default_only, exports);
    for (i = 0; i < nbdkit_exports_count (exports2); ++i) {
      e = nbdkit_get_export (exports2, i);
@@ -377,11 +379,9 @@ an error message and return C<-1>.
 Two functions are provided to filters only for allocating and freeing
 the list:
 
- struct nbdkit_exports *nbdkit_exports_new (int default_only);
+ struct nbdkit_exports *nbdkit_exports_new (void);
 
-Allocates and returns a new, empty exports list.  The C<default_only>
-parameter should match whether the list is intended to grab the
-canonical name of the default export, or all exports.
+Allocates and returns a new, empty exports list.
 
 On error this function can return C<NULL>.  In this case it calls
 C<nbdkit_error> as required.  C<errno> will be set to a suitable
@@ -408,6 +408,20 @@ Returns the number of exports in the list.
                                                size_t i);
 
 Returns a copy of the C<i>'th export.
+
+=head2 C<.default_export>
+
+ const char *default_export (nbdkit_next_default_export *next, void *nxdata,
+                             int readonly, int is_tls)
+
+This intercepts the plugin C<.default_export> method and can be used to
+alter the canonical export name used in place of the default C<"">.
+
+The C<readonly> parameter matches what is passed to <.preconnect> and
+C<.open>, and may be changed by the filter when calling into the
+plugin.  The C<is_tls> parameter informs the filter whether TLS
+negotiation has been completed by the client, but is not passed on to
+C<next> because it cannot be altered.
 
 =head2 C<.open>
 

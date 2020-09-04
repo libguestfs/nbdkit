@@ -108,6 +108,13 @@ test_layers_plugin_list_exports (int readonly, int default_only,
   return nbdkit_add_export (exports, "", NULL);
 }
 
+static const char *
+test_layers_plugin_default_export (int readonly, int is_tls)
+{
+  DEBUG_FUNCTION;
+  return "";
+}
+
 static void *
 test_layers_plugin_open (int readonly)
 {
@@ -272,6 +279,7 @@ static struct nbdkit_plugin plugin = {
   .after_fork        = test_layers_plugin_after_fork,
   .preconnect        = test_layers_plugin_preconnect,
   .list_exports      = test_layers_plugin_list_exports,
+  .default_export    = test_layers_plugin_default_export,
   .open              = test_layers_plugin_open,
   .close             = test_layers_plugin_close,
   .get_size          = test_layers_plugin_get_size,

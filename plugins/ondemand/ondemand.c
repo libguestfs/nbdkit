@@ -223,6 +223,13 @@ ondemand_list_exports (int readonly, int default_only,
   return 0;
 }
 
+static const char *
+ondemand_default_export (int readonly, int is_tls)
+{
+  /* We always accept "" as an export name; canonicalize it to "default". */
+  return "default";
+}
+
 struct handle {
   int fd;
   int64_t size;
@@ -366,8 +373,7 @@ ondemand_open (int readonly)
     nbdkit_error ("internal error: expected nbdkit_export_name () != NULL");
     goto error;
   }
-  if (strcmp (h->exportname, "") == 0)
-    h->exportname = "default";
+  assert (strcmp (h->exportname, "") != 0); /* see .default_export */
 
   /* Verify that the export name is valid. */
   if (strlen (h->exportname) > NAME_MAX ||
@@ -625,6 +631,7 @@ static struct nbdkit_plugin plugin = {
   .get_ready         = ondemand_get_ready,
 
   .list_exports      = ondemand_list_exports,
+  .default_export    = ondemand_default_export,
 
   .can_multi_conn    = ondemand_can_multi_conn,
   .can_trim          = ondemand_can_trim,

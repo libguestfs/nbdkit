@@ -52,12 +52,10 @@ DEFINE_VECTOR_TYPE(exports, struct nbdkit_export);
 
 struct nbdkit_exports {
   exports exports;
-
-  bool default_only;
 };
 
 struct nbdkit_exports *
-nbdkit_exports_new (int default_only)
+nbdkit_exports_new (void)
 {
   struct nbdkit_exports *r;
 
@@ -67,7 +65,6 @@ nbdkit_exports_new (int default_only)
     return NULL;
   }
   r->exports = (exports) empty_vector;
-  r->default_only = default_only != 0;
   return r;
 }
 
@@ -106,9 +103,6 @@ nbdkit_add_export (struct nbdkit_exports *exps,
                    const char *name, const char *description)
 {
   struct nbdkit_export e = { NULL, NULL };
-
-  if (exps->default_only && exps->exports.size == 1)
-    return 0;
 
   if (exps->exports.size == MAX_EXPORTS) {
     nbdkit_error ("nbdkit_add_export: too many exports");

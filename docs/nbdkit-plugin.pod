@@ -245,6 +245,12 @@ Early in option negotiation the client may try to list the exports
 served by the plugin, and plugins can optionally implement this
 callback to answer the client.  See L</EXPORT NAME> below.
 
+=item C<.default_export>
+
+During option negotiation, if the client requests the default export
+name (C<"">), this optional callback provides a canonical name to
+use in its place prior to calling C<.open>.
+
 =item C<.open>
 
 A new client has connected and finished the NBD handshake.  TLS
@@ -708,6 +714,35 @@ C<errno> set to a suitable value.
 Returning C<0> will send the list of exports back to the client.  If
 there is an error, C<.list_exports> should call C<nbdkit_error> with
 an error message and return C<-1>.
+
+=head2 C<.default_export>
+
+ const char *default_export (int readonly, int is_tls);
+
+This optional callback is called if the client tries to connect to the
+default export C<"">, where the plugin provides a UTF-8 string between
+0 and 4096 bytes.  If the plugin does not supply this callback, the
+connection continues with the empty name; if the plugin returns a
+valid string, nbdkit behaves as if the client had passed that string
+instead of an empty name.
+
+The C<readonly> flag informs the plugin that the server was started
+with the I<-r> flag on the command line, which is the same value
+passed to C<.preconnect> and C<.open>.  However, the NBD protocol does
+not yet have a way to let the client advertise an intent to be
+read-only even when the server allows writes, so this parameter may
+not be as useful as it appears.
+
+The C<is_tls> flag informs the plugin whether the canonical name for
+the default export is being requested after the client has completed
+TLS negotiation.  When running the server in a mode that permits but
+does not require TLS, be careful that a default export name does not
+leak unintended information.
+
+If the plugin returns C<NULL> or an invalid string (such as longer
+than 4096 bytes), the client is not permitted to connect to the
+default export.  However, this is not an error in the protocol, so it
+is not necessary to call C<nbdkit_error>.
 
 =head2 C<.open>
 
