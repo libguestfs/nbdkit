@@ -1212,7 +1212,6 @@ endif
 # Tests of filters.
 
 # Generic test of filter layers.
-check_PROGRAMS += test-layers
 TESTS += \
 	test-layers.sh \
 	$(NULL)
