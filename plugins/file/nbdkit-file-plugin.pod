@@ -29,7 +29,7 @@ the server will use.
 
 =item B<cache=none>
 
-(not supported on Windows)
+(not Windows)
 
 Using C<cache=none> tries to prevent the kernel from keeping parts of
 the file that have already been read or written in the page cache.
@@ -40,7 +40,7 @@ the file that have already been read or written in the page cache.
 
 =item B<fadvise=sequential>
 
-(not supported on Windows)
+(not Windows)
 
 This optional flag hints to the kernel that you will access the file
 normally, or in a random order, or sequentially.  The exact behaviour
@@ -75,7 +75,7 @@ L<https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#win32-devi
 
 =item B<dir=>DIRNAME
 
-(nbdkit E<ge> 1.22, not supported on Windows)
+(nbdkit E<ge> 1.22, not Windows)
 
 Serve all regular files and block devices located directly within the
 directory named C<DIRNAME>, including those found by following
