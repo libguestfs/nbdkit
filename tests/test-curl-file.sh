@@ -42,20 +42,25 @@ requires qemu-img --version
 # protocol, this still exercises the paths inside the plugin.
 
 for opt in \
-    '' \
     cainfo=/dev/null \
     capath=/dev/null \
     cookie=foo=bar \
+    header="X-My-Name: John Doe" \
+    header="User-Agent:" \
+    header="X-Empty;" \
     password=secret \
+    protocols=file,http,https \
     proxy-password=secret \
     proxy-user=eve \
     sslverify=false \
     tcp-keepalive=true \
     tcp-nodelay=false \
     timeout=120 \
-    user=alice
+    timeout=0 \
+    user=alice \
+    user-agent="Mozilla/1"
 do
     nbdkit -fv -D curl.verbose=1 -U - \
-           curl file:$PWD/disk protocols=file $opt \
+           curl file:$PWD/disk protocols=file "$opt" \
            --run 'qemu-img info $nbd'
 done
