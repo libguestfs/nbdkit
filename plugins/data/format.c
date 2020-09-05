@@ -276,25 +276,34 @@ parse (int level,
       if (parse (level+1, value, &i, len, a2, &size2) == -1)
         return -1;
 
-      /* ( ... )*N */
-      if (sscanf (&value[i], "*%" SCNi64 "%n", &k, &n) == 1) {
-        if (k < 0) {
-          nbdkit_error ("data parameter *N must be >= 0");
+      switch (value[i]) {
+      case '*':                 /* ( ... )*N */
+        i++;
+        if (sscanf (&value[i], "%" SCNi64 "%n", &k, &n) == 1) {
+          if (k < 0) {
+            nbdkit_error ("enclosed pattern (...)*N must be >= 0");
+            return -1;
+          }
+          i += n;
+
+          /* Duplicate the allocator a2 N (=k) times. */
+          while (k > 0) {
+            if (a->blit (a2, a, size2, 0, offset) == -1)
+              return -1;
+            offset += size2;
+            k--;
+          }
+          if (*size < offset)
+            *size = offset;
+        }
+        else {
+          nbdkit_error ("enclosed pattern (...)*N not numeric");
           return -1;
         }
-        i += n;
+        break;
 
-        /* Duplicate the allocator a2 N (=k) times. */
-        while (k > 0) {
-          if (a->blit (a2, a, size2, 0, offset) == -1)
-            return -1;
-          offset += size2;
-          k--;
-        }
-        if (*size < offset)
-          *size = offset;
-      } else {
-        nbdkit_error ("')' in data string not followed by '*'");
+      default:
+        nbdkit_error ("enclosed pattern (...) not followed by '*'");
         return -1;
       }
       break;
