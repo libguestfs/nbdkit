@@ -53,6 +53,8 @@
 
 #include "curldefs.h"
 
+#ifndef WIN32
+
 /* This lock protects internal state in this file. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -328,3 +330,21 @@ run_cookie_script (struct curl_handle *h)
                 cookies_from_script ? "" : "no ");
   return 0;
 }
+
+#else /* WIN32 */
+
+void
+scripts_unload (void)
+{
+}
+
+int
+do_scripts (struct curl_handle *h)
+{
+  if (!header_script && !cookie_script)
+    return 0;
+
+  NOT_IMPLEMENTED_ON_WINDOWS ("header-script or cookie-script");
+}
+
+#endif /* WIN32 */

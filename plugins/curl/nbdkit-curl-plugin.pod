@@ -85,6 +85,8 @@ interactively, or C<-FD> to read it from a file descriptor.
 
 =item B<cookie-script-renew=>SECS
 
+(not Windows)
+
 Run C<SCRIPT> (a command or shell script fragment) to generate the
 HTTP/HTTPS cookies.  C<cookie-script> cannot be used with C<cookie>.
 See L</HEADER AND COOKIE SCRIPTS> below.
@@ -117,6 +119,8 @@ hosts other than the one originally requested.
 =item B<header-script=>SCRIPT
 
 =item B<header-script-renew=>SECS
+
+(not Windows)
 
 Run C<SCRIPT> (a command or shell script fragment) to generate the
 HTTP/HTTPS headers.  C<header-script> cannot be used with C<header>.

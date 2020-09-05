@@ -33,6 +33,8 @@
 #ifndef NBDKIT_CURLDEFS_H
 #define NBDKIT_CURLDEFS_H
 
+#include "windows-compat.h"
+
 extern const char *url;
 
 extern const char *cainfo;

@@ -47,6 +47,7 @@ nbdkit_curl_plugin_la_SOURCES = \
 nbdkit_curl_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_curl_plugin_la_CFLAGS = \
@@ -55,6 +56,7 @@ nbdkit_curl_plugin_la_CFLAGS = \
 	$(NULL)
 nbdkit_curl_plugin_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(CURL_LIBS) \
 	$(NULL)
