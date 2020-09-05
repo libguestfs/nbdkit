@@ -463,7 +463,7 @@ pull_timeout (gnutls_transport_ptr_t ptr, unsigned ms)
 /* Turn GnuTLS debug messages into nbdkit debug messages
  * when nbdkit -D nbdkit.gnutls.log > 0
  */
-int nbdkit_debug_gnutls_log = 0;
+SERVER_DEBUG_FLAG(nbdkit_debug_gnutls_log) = 0;
 
 static void
 tls_log (int level, const char *msg)

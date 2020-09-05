@@ -51,8 +51,8 @@
  * -D nbdkit.backend.controlpath=0 to suppress control path debugging.
  * -D nbdkit.backend.datapath=0 to suppress data path debugging.
  */
-int nbdkit_debug_backend_controlpath = 1;
-int nbdkit_debug_backend_datapath = 1;
+SERVER_DEBUG_FLAG(nbdkit_debug_backend_controlpath) = 1;
+SERVER_DEBUG_FLAG(nbdkit_debug_backend_datapath) = 1;
 
 #define controlpath_debug(fs, ...)                                     \
   do {                                                                 \
