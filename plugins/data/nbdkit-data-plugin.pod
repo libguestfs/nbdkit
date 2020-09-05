@@ -251,6 +251,17 @@ the above operators can appear inside, including nested C<(...)*N>.
 Note that offsets and alignments within the subpattern are relative to
 the start of the subpattern, not relative to the final disk image.
 
+=item B<(> ... B<)[>NB<:>MB<]>
+
+(nbdkit E<ge> 1.24)
+
+Take a slice of the enclosed pattern.  Slices are
+S<B<[>startB<:>end+1B<]>> where I<start> and I<end> are the first and
+last byte offsets of the enclosed pattern desired.  Either or both may
+be omitted.  S<B<[:>lenB<]>> means to take the first I<len> bytes.
+S<B<[>startB<:]>> means to take bytes from offset I<start> to the end
+of the enclosed pattern.
+
 =back
 
 =head2 disk2data.pl script

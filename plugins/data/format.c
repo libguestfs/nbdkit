@@ -178,7 +178,7 @@ parse (int level,
   size_t i = *start;
 
   for (; i < len; ++i) {
-    int64_t j, k;
+    int64_t j, k, m;
     int n;
     char c;
 
@@ -303,8 +303,39 @@ parse (int level,
         }
         break;
 
+      case '[':                 /* ( ... )[k:m] */
+        i++;
+        k = 0;
+        m = size2;
+        if (sscanf (&value[i], "%" SCNi64 ":%" SCNi64 "]%n", &k, &m, &n) == 2 ||
+            sscanf (&value[i], ":%" SCNi64 "]%n", &m, &n) == 1 ||
+            sscanf (&value[i], "%" SCNi64 ":]%n", &k, &n) == 1)
+          i += n;
+        else if (strncmp (&value[i], ":]", 2) == 0)
+          i += 2;
+        else {
+          nbdkit_error ("enclosed pattern (...)[N:M] not numeric");
+          return -1;
+        }
+
+        if (k < 0 || m < 0 || k > size2 || m > size2 || k > m) {
+          nbdkit_error ("enclosed pattern (...)[N:M] "
+                        "does not describe a valid slice");
+          return -1;
+        }
+
+        /* Take a slice from the allocator. */
+        if (a->blit (a2, a, m-k, k, offset) == -1)
+          return -1;
+        offset += m-k;
+
+        if (*size < offset)
+          *size = offset;
+
+        break;
+
       default:
-        nbdkit_error ("enclosed pattern (...) not followed by '*'");
+        nbdkit_error ("enclosed pattern (...) not followed by * or [");
         return -1;
       }
       break;

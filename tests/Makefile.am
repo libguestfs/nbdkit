@@ -622,6 +622,7 @@ TESTS += \
 	test-data-file.sh \
 	test-data-nest.sh \
 	test-data-nest-malloc.sh \
+	test-data-nest-slice.sh \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
@@ -636,6 +637,7 @@ EXTRA_DIST += \
 	test-data-file.sh \
 	test-data-nest.sh \
 	test-data-nest-malloc.sh \
+	test-data-nest-slice.sh \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
