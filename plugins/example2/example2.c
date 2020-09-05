@@ -179,7 +179,7 @@ example2_get_size (void *handle)
    * use debug flags.
    */
   if (example2_debug_extra)
-    nbdkit_debug ("extra debugging: statbuf.st_size = %jd\n",
+    nbdkit_debug ("extra debugging: statbuf.st_size = %jd",
                   (intmax_t)statbuf.st_size);
 
   return statbuf.st_size;
