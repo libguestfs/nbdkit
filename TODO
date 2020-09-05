@@ -303,8 +303,8 @@ Currently many features are missing, including:
   implies -f.
 
 * These options are all unimplemented:
-  --group, --log=syslog, --pidfile, --run, --selinux-label, --single
-  --swap, --user, --vsock
+  --exit-with-parent, --group, --run, --selinux-label, --single, --swap,
+  --user, --vsock
 
 * Many other plugins and filters.
 
