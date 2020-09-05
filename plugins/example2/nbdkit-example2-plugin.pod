@@ -15,6 +15,11 @@ It serves the named C<FILENAME> over NBD, readonly.
 Mainly this is useful for testing nbdkit and as an example for writing
 nbdkit plugins (L<nbdkit-plugin(3)>).
 
+There are two variations of this plugin which can be found in the
+source directory.  F<example2.c> is the regular plugin for Linux and
+other Unix-like systems.  F<winexample2.c> is the same plugin written
+for Windows using Win32 APIs to access the file.
+
 =head1 DEBUG FLAGS
 
 For extra debugging (only useful for developers) use
@@ -39,6 +44,7 @@ C<nbdkit-example2-plugin> first appeared in nbdkit 1.0.
 =head1 SEE ALSO
 
 L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example2/example2.c>,
+L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example2/winexample2.c>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>
 

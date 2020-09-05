@@ -306,8 +306,7 @@ Currently many features are missing, including:
   --group, --log=syslog, --pidfile, --run, --selinux-label, --single
   --swap, --user, --vsock
 
-* Debug flags (-D) don't work and possibly cannot work because of the
-  design of Windows DLLs.
+* Server debug flags (-D nbdkit.*) do not work.
 
 * Many other plugins and filters.
 
