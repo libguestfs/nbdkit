@@ -623,7 +623,7 @@ main (int argc, char *argv[])
   }
 
   /* Apply nbdkit.* flags for the server. */
-  apply_debug_flags (NULL, "nbdkit");
+  apply_debug_flags (RTLD_DEFAULT, "nbdkit");
 
   /* Check all debug flags were used, and free them. */
   free_debug_flags ();
