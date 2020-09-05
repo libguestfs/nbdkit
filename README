@@ -312,6 +312,13 @@ cross-compiled from Linux using mingw-w64.  Only a small subset of
 features are available.  To find out what is missing read the TODO
 "Windows port".
 
+Note that GCC or Clang is required even if you are compiling on
+Windows because of some C language extensions we use.  MSVC will not
+work.
+
+Cross-compiling from Linux to Windows
+-------------------------------------
+
 For the rest of this section we talk about cross-compiling for Windows
 using Linux and mingw-w64.  At a minimum you will need:
 
@@ -319,7 +326,6 @@ using Linux and mingw-w64.  At a minimum you will need:
     mingw-w64 dlfcn
     mingw-w64 winpthreads
     mingw-w64 gnutls  (optional, but highly recommended)
-    mingw-w64 libxml2 (optional, but highly recommended)
     wine              (if you want to run it on Linux)
 
 Other mingw-w64 libraries may be installed which will add
@@ -336,7 +342,7 @@ You can test if the server is working by doing:
     ./nbdkit.exe --dump-config
 
 (This usually runs wine automatically.  If not, you may need to prefix
-the command "wine ./nbdkit.exe ...")
+the command "wine nbdkit.exe ...")
 
 To see which plugins and filters were compiled:
 
