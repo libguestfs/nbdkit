@@ -175,6 +175,8 @@ zeroes.  In this example the size (512 bytes) is implied by the data.
 But you could additionally use the C<size> parameter to either
 truncate or extend (with zeroes) the disk image.
 
+Whitespace between fields in the string is ignored.
+
 Fields in the string can be:
 
 =over 4
@@ -250,8 +252,6 @@ Note that offsets and alignments within the subpattern are relative to
 the start of the subpattern, not relative to the final disk image.
 
 =back
-
-Whitespace between fields in the string is ignored.
 
 =head2 disk2data.pl script
 
