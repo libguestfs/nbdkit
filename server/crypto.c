@@ -501,7 +501,8 @@ crypto_negotiate_tls (int sockin, int sockout)
     return -1;
   }
 
-  gnutls_global_set_log_level (nbdkit_debug_gnutls_log);
+  if (nbdkit_debug_gnutls_log > 0)
+    gnutls_global_set_log_level (nbdkit_debug_gnutls_log);
   gnutls_global_set_log_function (tls_log);
 
   switch (crypto_auth) {
