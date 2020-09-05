@@ -1208,7 +1208,7 @@ feature ()
 {
     printf %s "    $1"
     shift
-    if $@; then echo "yes"; else echo "no"; fi
+    if "$@"; then echo "yes"; else echo "no"; fi
 }
 
 echo "Optional server features:"
