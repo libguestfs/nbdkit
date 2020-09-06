@@ -463,7 +463,7 @@ an indication of failure.  It has the following prototype:
 
 This field (a string) is required, and B<must> contain only ASCII
 alphanumeric characters or non-leading dashes, and be unique amongst
-all filters.
+all plugins.
 
 =head2 C<.version>
 
