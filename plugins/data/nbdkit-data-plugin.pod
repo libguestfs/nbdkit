@@ -207,15 +207,7 @@ will be aligned to C<ALIGNMENT>.
 
 Write C<BYTE> at the current offset and advance the offset by 1 byte.
 The byte may be specified as either decimal, octal (prefixed by C<0>)
-or hexadecimal (prefixed by C<0x>).
-
-=item BYTEB<*>N
-
-(nbdkit E<ge> 1.16)
-
-Repeat C<BYTE> C<N> times (where C<N> is a number).  Note there must
-not be any whitespace around the C<*> character.  Increases the offset
-by C<N>.
+or hexadecimal (prefixed by C<0x>).  To add repeated bytes use C<BYTE*N>
 
 =item B<E<lt>>FILE
 
@@ -236,31 +228,36 @@ the string you can escape them in the same way as C strings (eg. a
 double quote character within the string should be written C<\">).  Be
 careful with shell quoting around the whole data parameter.
 
-=item B<(> ... B<)*>N
-
-(nbdkit E<ge> 1.20)
-
-Repeat the enclosed pattern C<N> times.  The offset is incremented by
-the length of the enclosed pattern × N.  For example to create a
-repeating pattern of 0x55, 0xAA for 512 (2×256) bytes do:
-
- '( 0x55 0xAA )*256'
-
-The C<( ... )> section recursively creates a new data parser so any of
-the above operators can appear inside, including nested C<(...)*N>.
-Note that offsets and alignments within the subpattern are relative to
-the start of the subpattern, not relative to the final disk image.
-
-=item B<(> ... B<)[>NB<:>MB<]>
+=item B<(> ... B<)>
 
 (nbdkit E<ge> 1.24)
 
-Take a slice of the enclosed pattern.  Slices are
-S<B<[>startB<:>end+1B<]>> where I<start> and I<end> are the first and
-last byte offsets of the enclosed pattern desired.  Either or both may
-be omitted.  S<B<[:>lenB<]>> means to take the first I<len> bytes.
-S<B<[>startB<:]>> means to take bytes from offset I<start> to the end
-of the enclosed pattern.
+Group a set of expressions into a single expression.
+
+S<C<( ... )>> recursively creates a new data parser so any of the
+above operators can appear inside, including nested S<C<( ... )>>.
+Note that offsets and alignments within the subpattern are relative to
+the start of the subpattern, not relative to the final disk image.
+
+=item expression B<*> N
+
+(nbdkit E<ge> 1.24)
+
+Repeat the expression C<N> times.  The offset is incremented by the
+length of the expression × N.  For example to create a repeating
+pattern of 0x55, 0xAA for 512 (2×256) bytes do:
+
+ '( 0x55 0xAA ) * 256'
+
+=item expression B<[>NB<:>MB<]>
+
+(nbdkit E<ge> 1.24)
+
+Take a slice of the expression.  Slices are S<B<[>startB<:>end+1B<]>>
+where I<start> and I<end> are the first and last byte offsets of the
+expression desired.  Either or both may be omitted.  S<B<[:>lenB<]>>
+means to take the first I<len> bytes.  S<B<[>startB<:]>> means to take
+bytes from offset I<start> to the end of the expression.
 
 =back
 

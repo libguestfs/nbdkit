@@ -41,56 +41,442 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
+#include "allocator.h"
 #include "ascii-ctype.h"
 #include "cleanup.h"
 #include "ispowerof2.h"
 #include "rounding.h"
-#include "allocator.h"
 #include "strndup.h"
+#include "vector.h"
+
 #include "format.h"
 
-/* Store file at current offset in the allocator, updating the offset. */
-static int
-store_file (struct allocator *a,
-            const char *filename, uint64_t *offset)
+/* The abstract syntax tree. */
+typedef struct expr expr_t;
+
+DEFINE_VECTOR_TYPE(string, char); /* string + length, \0 allowed */
+
+struct expr {
+  enum {
+    EXPR_LIST,                  /* list     - list of expressions */
+    EXPR_BYTE,                  /* b        - single byte */
+    EXPR_ABS_OFFSET,            /* ui       - absolute offset (@OFFSET) */
+    EXPR_REL_OFFSET,            /* i        - relative offset (@+N or @-N) */
+    EXPR_ALIGN_OFFSET,          /* ui       - align offset (@^ALIGNMENT) */
+    EXPR_EXPR,                  /* expr     - nested expression */
+    EXPR_FILE,                  /* filename - read a file */
+    EXPR_STRING,                /* string   - string + length */
+    EXPR_REPEAT,                /* r.expr, r.n - expr * N */
+    EXPR_SLICE,                 /* sl.expr, sl.n, sl.m - expr[N:M] */
+  } t;
+  union {
+    struct generic_vector /* really expr_list */ list;
+    uint8_t b;
+    int64_t i;
+    uint64_t ui;
+    expr_t *expr;
+    char *filename;
+    string string;
+    struct {
+      expr_t *expr;
+      uint64_t n;
+    } r;
+    struct {
+      expr_t *expr;
+      uint64_t n;
+      int64_t m;
+    } sl;
+  };
+};
+DEFINE_VECTOR_TYPE(expr_list, expr_t);
+
+static void free_expr (expr_t *e);
+
+static void
+free_expr_fields (expr_t *e)
 {
-  FILE *fp;
-  char buf[BUFSIZ];
-  size_t n;
+  expr_list list;
+  size_t i;
 
-  fp = fopen (filename, "r");
-  if (fp == NULL) {
-    nbdkit_error ("%s: %m", filename);
-    return -1;
-  }
-
-  while (!feof (fp)) {
-    n = fread (buf, 1, BUFSIZ, fp);
-    if (n > 0) {
-      if (a->write (a, buf, n, *offset) == -1) {
-        fclose (fp);
-        return -1;
-      }
+  if (e) {
+    switch (e->t) {
+    case EXPR_LIST:
+      memcpy (&list, &e->list, sizeof list);
+      for (i = 0; i < list.size; ++i)
+        free_expr_fields (&list.ptr[i]);
+      free (list.ptr);
+      break;
+    case EXPR_EXPR:   free_expr (e->expr); break;
+    case EXPR_FILE:   free (e->filename); break;
+    case EXPR_STRING: free (e->string.ptr); break;
+    case EXPR_REPEAT: free_expr (e->r.expr); break;
+    case EXPR_SLICE:  free_expr (e->sl.expr); break;
+    default: break;
     }
-    if (ferror (fp)) {
-      nbdkit_error ("fread: %s: %m", filename);
-      fclose (fp);
-      return -1;
-    }
-    (*offset) += n;
   }
-
-  if (fclose (fp) == EOF) {
-    nbdkit_error ("fclose: %s: %m", filename);
-    return -1;
-  }
-
-  return 0;
 }
 
-/* Parse a "String" with C-like escaping, and store it in the
- * allocator.  When this is called we have already consumed the
- * initial double quote character.
+static void
+free_expr (expr_t *e)
+{
+  free_expr_fields (e);
+  free (e);
+}
+
+/* Note this only does a shallow copy. */
+static expr_t *
+copy_expr (const expr_t *e)
+{
+  expr_t *r;
+
+  r = malloc (sizeof *r);
+  if (r == NULL) {
+    nbdkit_error ("malloc: %m");
+    return NULL;
+  }
+  memcpy (r, e, sizeof *r);
+  return r;
+}
+
+#define CLEANUP_FREE_EXPR __attribute__((cleanup (cleanup_free_expr)))
+static void
+cleanup_free_expr (expr_t **ptr)
+{
+  free_expr (*ptr);
+}
+
+static void
+print_expr (expr_t *e, FILE *fp)
+{
+  expr_list list;
+  size_t i;
+
+  switch (e->t) {
+  case EXPR_LIST:
+    memcpy (&list, &e->list, sizeof list);
+    for (i = 0; i < list.size; ++i)
+      print_expr (&list.ptr[i], fp);
+    break;
+  case EXPR_BYTE:
+    fprintf (fp, "%" PRIu8 " ", e->b);
+    break;
+  case EXPR_ABS_OFFSET:
+    fprintf (fp, "@%" PRIu64 " ", e->ui);
+    break;
+  case EXPR_REL_OFFSET:
+    fprintf (fp, "@%" PRIi64 " ", e->i);
+    break;
+  case EXPR_ALIGN_OFFSET:
+    fprintf (fp, "@^%" PRIi64 " ", e->ui);
+    break;
+  case EXPR_EXPR:
+    fprintf (fp, "( ");
+    print_expr (e->expr, fp);
+    fprintf (fp, ") ");
+    break;
+  case EXPR_FILE:
+    fprintf (fp, "<%s ", e->filename);
+    break;
+  case EXPR_STRING:
+    fprintf (fp, "\"");
+    for (i = 0; i < e->string.size; ++i) {
+      unsigned char c = (unsigned char) e->string.ptr[i];
+
+      if (c >= 32 && c < 127)
+        fprintf (fp, "%c", c);
+      else
+        fprintf (fp, "\\x%02x", c);
+    }
+    fprintf (fp, "\" ");
+    break;
+  case EXPR_REPEAT:
+    fprintf (fp, "( ");
+    print_expr (e->r.expr, fp);
+    fprintf (fp, ")*%" PRIu64 " ", e->r.n);
+    break;
+  case EXPR_SLICE:
+    fprintf (fp, "( ");
+    print_expr (e->sl.expr, fp);
+    fprintf (fp, ")[%" PRIu64 ":%" PRIi64 "] ", e->sl.n, e->sl.m);
+    break;
+  }
+}
+
+static expr_t *parser (int level, const char *value, size_t *start, size_t len);
+static int evaluate (const expr_t *expr, struct allocator *a,
+                     uint64_t *offset, uint64_t *size);
+
+int
+read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
+{
+  size_t i = 0;
+  CLEANUP_FREE_EXPR expr_t *expr = NULL;
+  uint64_t offset = 0;
+
+  /* Run the parser across the entire string, returning the top level
+   * expression.
+   */
+  expr = parser (0, value, &i, strlen (value));
+  if (!expr)
+    return -1;
+
+  /* Don't actually do this, but I want to keep print_expr around. */
+  if (0) {
+    print_expr (expr, stderr);
+    fprintf (stderr, "\n");
+  }
+
+  /* Evaluate the expression into the allocator. */
+  return evaluate (expr, a, &offset, size_rtn);
+}
+
+static int parse_string (const char *value, size_t i, size_t len,
+                         size_t *i_rtn, string *rtn);
+
+/* This is the format parser.  It returns an expression that must be
+ * freed by the caller (or NULL in case of an error).
+ */
+static expr_t *
+parser (int level, const char *value, size_t *start, size_t len)
+{
+  size_t i = *start;
+  /* List of expr_t that we are building up at this level.  This is
+   * leaked on error paths, but we're going to call exit(1).
+   */
+  expr_list list = empty_vector;
+  /* Used as a scratch buffer while creating an expr to append to list. */
+  expr_t e;
+
+  while (i < len) {
+    expr_t *ep;
+    int j, n;
+    int64_t i64;
+    size_t flen;
+
+    switch (value[i]) {
+    case '@':                   /* @OFFSET */
+      if (++i == len) goto parse_error;
+      switch (value[i]) {
+      case '+':                 /* @+N */
+        if (++i == len) goto parse_error;
+        e.t = EXPR_REL_OFFSET;
+        if (sscanf (&value[i], "%" SCNi64 "%n", &e.i, &n) == 1) {
+          if (e.i < 0) {
+            nbdkit_error ("data parameter after @+ must not be negative");
+            return NULL;
+          }
+          i += n;
+          if (expr_list_append (&list, e) == -1) return NULL;
+        }
+        else
+          goto parse_error;
+        break;
+      case '-':                 /* @-N */
+        if (++i == len) goto parse_error;
+        e.t = EXPR_REL_OFFSET;
+        if (sscanf (&value[i], "%" SCNi64 "%n", &e.i, &n) == 1) {
+          if (e.i < 0) {
+            nbdkit_error ("data parameter after @- must not be negative");
+            return NULL;
+          }
+          i += n;
+          if (expr_list_append (&list, e) == -1) return NULL;
+        }
+        else
+          goto parse_error;
+        break;
+      case '^':                 /* @^ALIGNMENT */
+        if (++i == len) goto parse_error;
+        e.t = EXPR_ALIGN_OFFSET;
+        /* We must use %i into i64 in order to parse 0x etc. */
+        if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
+          if (i64 < 0) {
+            nbdkit_error ("data parameter after @^ must not be negative");
+            return NULL;
+          }
+          e.ui = (uint64_t) i64;
+          /* XXX fix this arbitrary restriction */
+          if (!is_power_of_2 (e.ui)) {
+            nbdkit_error ("data parameter @^%" PRIu64 " must be a power of 2",
+                          e.ui);
+            return NULL;
+          }
+          i += n;
+          if (expr_list_append (&list, e) == -1) return NULL;
+        }
+        else
+          goto parse_error;
+        break;
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+        e.t = EXPR_ABS_OFFSET;
+        /* We must use %i into i64 in order to parse 0x etc. */
+        if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
+          if (i64 < 0) {
+            nbdkit_error ("data parameter @OFFSET must not be negative");
+            return NULL;
+          }
+          e.ui = (uint64_t) i64;
+          i += n;
+          if (expr_list_append (&list, e) == -1) return NULL;
+        }
+        else
+          goto parse_error;
+        break;
+      default:
+        goto parse_error;
+      }
+      break;
+
+    case '(':                   /* ( */
+      i++;
+
+      /* Call self recursively. */
+      ep = parser (level+1, value, &i, len);
+      if (ep == NULL)
+        return NULL;
+      e.t = EXPR_EXPR;
+      e.expr = ep;
+      if (expr_list_append (&list, e) == -1) return NULL;
+      break;
+
+    case '*':                   /* expr*N */
+      i++;
+      if (list.size == 0) {
+        nbdkit_error ("*N must follow an expression");
+        return NULL;
+      }
+      e.t = EXPR_REPEAT;
+      if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
+        if (i64 < 0) {
+          nbdkit_error ("data parameter @OFFSET must not be negative");
+          return NULL;
+        }
+        i += n;
+      }
+      else {
+        nbdkit_error ("*N not numeric");
+        return NULL;
+      }
+      e.r.n = (uint64_t) i64;
+      e.r.expr = copy_expr (&list.ptr[list.size-1]);
+      if (e.r.expr == NULL) return NULL;
+      list.size--;
+      if (expr_list_append (&list, e) == -1) return NULL;
+      break;
+
+    case '[':                 /* expr[k:m] */
+      i++;
+      if (list.size == 0) {
+        nbdkit_error ("[N:M] must follow an expression");
+        return NULL;
+      }
+      e.t = EXPR_SLICE;
+      i64 = 0;
+      e.sl.m = -1;
+      if (sscanf (&value[i], "%" SCNi64 ":%" SCNi64 "]%n",
+                  &i64, &e.sl.m, &n) == 2 ||
+          sscanf (&value[i], ":%" SCNi64 "]%n", &e.sl.m, &n) == 1 ||
+          sscanf (&value[i], "%" SCNi64 ":]%n", &i64, &n) == 1)
+        i += n;
+      else if (strncmp (&value[i], ":]", 2) == 0)
+        i += 2;
+      else {
+        nbdkit_error ("enclosed pattern (...)[N:M] not numeric");
+        return NULL;
+      }
+      e.sl.n = i64;
+      e.sl.expr = copy_expr (&list.ptr[list.size-1]);
+      if (e.sl.expr == NULL) return NULL;
+      list.size--;
+      if (expr_list_append (&list, e) == -1) return NULL;
+      break;
+
+    case '<':                   /* <FILE */
+      i++;
+
+      e.t = EXPR_FILE;
+      /* The filename follows next in the string. */
+      flen = strcspn (&value[i], "*[) \t\n");
+      if (flen == 0) {
+        nbdkit_error ("data parameter <FILE not a filename");
+        return NULL;
+      }
+      e.filename = strndup (&value[i], flen);
+      if (e.filename == NULL) {
+        nbdkit_error ("strndup: %m");
+        return NULL;
+      }
+      i += flen;
+      if (expr_list_append (&list, e) == -1) return NULL;
+
+      break;
+
+    case '"':                   /* "String" */
+      i++;
+      e.t = EXPR_STRING;
+      e.string = (string) empty_vector;
+      if (parse_string (value, i, len, &i, &e.string) == -1)
+        return NULL;
+      if (expr_list_append (&list, e) == -1) return NULL;
+      break;
+
+    case '0': case '1': case '2': case '3': case '4': /* BYTE */
+    case '5': case '6': case '7': case '8': case '9':
+      e.t = EXPR_BYTE;
+      /* We need to use %i here so it scans 0x etc correctly. */
+      if (sscanf (&value[i], "%i%n", &j, &n) == 1)
+        i += n;
+      else
+        goto parse_error;
+      if (j < 0 || j > 255) {
+        nbdkit_error ("data parameter BYTE must be in the range 0..255");
+        return NULL;
+      }
+      e.b = j;
+      if (expr_list_append (&list, e) == -1) return NULL;
+      break;
+
+    case ')':                   /* ) */
+      if (level < 1) {
+        nbdkit_error ("unmatched ')' in data string");
+        return NULL;
+      }
+      i++;
+      goto out;
+
+    case ' ': case '\t': case '\n': /* Skip whitespace. */
+    case '\f': case '\r': case '\v':
+      i++;
+      break;
+
+    default:
+    parse_error:
+      nbdkit_error ("data parameter: parsing error at offset %zu", i);
+      return NULL;
+    } /* switch */
+  } /* for */
+
+  /* If we reach the end of the string and level != 0 that means
+   * there is an unmatched '(' in the string.
+   */
+  if (level > 0) {
+    nbdkit_error ("unmatched '(' in data string");
+    return NULL;
+  }
+
+ out:
+  *start = i;
+
+  /* Return the expression node. */
+  e.t = EXPR_LIST;
+  memcpy (&e.list, &list, sizeof e.list);
+  return copy_expr (&e);
+}
+
+/* Parse a "String" with C-like escaping, and store it in the string
+ * vector.  When this is called we have already consumed the initial
+ * double quote character.
  */
 static unsigned char
 hexdigit (const char c)
@@ -104,8 +490,8 @@ hexdigit (const char c)
 }
 
 static int
-store_string (struct allocator *a, const char *value, size_t i, size_t len,
-              size_t *i_rtn, uint64_t *offset)
+parse_string (const char *value, size_t i, size_t len,
+              size_t *i_rtn, string *rtn)
 {
   unsigned char c, x0, x1;
 
@@ -151,10 +537,9 @@ store_string (struct allocator *a, const char *value, size_t i, size_t len,
       }
       /*FALLTHROUGH*/
     default:
-      /* Any other character is added to the allocator. */
-      if (a->write (a, &c, 1, *offset) == -1)
+      /* Any other character is added to the string. */
+      if (string_append (rtn, c) == -1)
         return -1;
-      (*offset)++;
     }
   }
 
@@ -166,299 +551,161 @@ store_string (struct allocator *a, const char *value, size_t i, size_t len,
   return -1;
 }
 
-/* Parses the data parameter as described in the man page
- * under "DATA FORMAT".
+static int store_file (struct allocator *a,
+                       const char *filename, uint64_t *offset);
+
+/* This is the evaluator.  It takes a parsed expression (expr_t) and
+ * evaulates it into the allocator.
  */
 static int
-parse (int level,
-       const char *value, size_t *start, size_t len,
-       struct allocator *a, uint64_t *size)
+evaluate (const expr_t *e, struct allocator *a,
+          uint64_t *offset, uint64_t *size)
 {
-  uint64_t offset = 0;
-  size_t i = *start;
+  expr_list list;
+  size_t i;
 
-  for (; i < len; ++i) {
-    int64_t j, k, m;
-    int n;
-    char c;
-
-    switch (value[i]) {
-    case '@':                   /* @OFFSET */
-      if (++i == len) goto parse_error;
-      switch (value[i]) {
-      case '+':                 /* @+N */
-        if (++i == len) goto parse_error;
-        if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
-          if (j < 0) {
-            nbdkit_error ("data parameter after @+ must not be negative");
-            return -1;
-          }
-          /* XXX Check it does not overflow the offset. */
-          i += n;
-          offset += j;
-        }
-        else
-          goto parse_error;
-        break;
-      case '-':                 /* @-N */
-        if (++i == len) goto parse_error;
-        if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
-          if (j < 0) {
-            nbdkit_error ("data parameter after @- must not be negative");
-            return -1;
-          }
-          /* Can't move the current offset negative. */
-          if (j > offset) {
-            nbdkit_error ("data parameter @-%" PRIi64 " "
-                          "must not be larger than "
-                          "the current offset %" PRIi64,
-                          j, offset);
-            return -1;
-          }
-          i += n;
-          offset -= j;
-        }
-        else
-          goto parse_error;
-        break;
-      case '^':                 /* @^ALIGNMENT */
-        if (++i == len) goto parse_error;
-        if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
-          if (j < 0) {
-            nbdkit_error ("data parameter after @^ must not be negative");
-            return -1;
-          }
-          /* XXX fix this arbitrary restriction */
-          if (!is_power_of_2 (j)) {
-            nbdkit_error ("data parameter @^%" PRIi64 " must be a power of 2",
-                          j);
-            return -1;
-          }
-          i += n;
-          offset = ROUND_UP (offset, j);
-        }
-        else
-          goto parse_error;
-        break;
-      case '0': case '1': case '2': case '3': case '4':
-      case '5': case '6': case '7': case '8': case '9':
-        if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
-          if (j < 0) {
-            nbdkit_error ("data parameter @OFFSET must not be negative");
-            return -1;
-          }
-          i += n;
-          offset = j;
-        }
-        else
-          goto parse_error;
-        break;
-      default:
-        goto parse_error;
-      }
-
-      /* Moving the offset implicitly increases the size. */
-      if (*size < offset)
-        *size = offset;
-      break;
-
-    case '(': {               /* ( */
-      CLEANUP_FREE_ALLOCATOR struct allocator *a2;
-      uint64_t size2 = 0;
-
-      i++;
-
-      /* Call self recursively to create a new sparse array. */
-      a2 = create_allocator ("sparse", false);
-      if (a2 == NULL) {
-        nbdkit_error ("malloc: %m");
+  switch (e->t) {
+  case EXPR_LIST:
+    memcpy (&list, &e->list, sizeof list);
+    for (i = 0; i < list.size; ++i) {
+      if (evaluate (&list.ptr[i], a, offset, size) == -1)
         return -1;
-      }
-      if (parse (level+1, value, &i, len, a2, &size2) == -1)
-        return -1;
-
-      switch (value[i]) {
-      case '*':                 /* ( ... )*N */
-        i++;
-        if (sscanf (&value[i], "%" SCNi64 "%n", &k, &n) == 1) {
-          if (k < 0) {
-            nbdkit_error ("enclosed pattern (...)*N must be >= 0");
-            return -1;
-          }
-          i += n;
-
-          /* Duplicate the allocator a2 N (=k) times. */
-          while (k > 0) {
-            if (a->blit (a2, a, size2, 0, offset) == -1)
-              return -1;
-            offset += size2;
-            k--;
-          }
-          if (*size < offset)
-            *size = offset;
-        }
-        else {
-          nbdkit_error ("enclosed pattern (...)*N not numeric");
-          return -1;
-        }
-        break;
-
-      case '[':                 /* ( ... )[k:m] */
-        i++;
-        k = 0;
-        m = size2;
-        if (sscanf (&value[i], "%" SCNi64 ":%" SCNi64 "]%n", &k, &m, &n) == 2 ||
-            sscanf (&value[i], ":%" SCNi64 "]%n", &m, &n) == 1 ||
-            sscanf (&value[i], "%" SCNi64 ":]%n", &k, &n) == 1)
-          i += n;
-        else if (strncmp (&value[i], ":]", 2) == 0)
-          i += 2;
-        else {
-          nbdkit_error ("enclosed pattern (...)[N:M] not numeric");
-          return -1;
-        }
-
-        if (k < 0 || m < 0 || k > size2 || m > size2 || k > m) {
-          nbdkit_error ("enclosed pattern (...)[N:M] "
-                        "does not describe a valid slice");
-          return -1;
-        }
-
-        /* Take a slice from the allocator. */
-        if (a->blit (a2, a, m-k, k, offset) == -1)
-          return -1;
-        offset += m-k;
-
-        if (*size < offset)
-          *size = offset;
-
-        break;
-
-      default:
-        nbdkit_error ("enclosed pattern (...) not followed by * or [");
-        return -1;
-      }
-      break;
     }
+    break;
 
-    case ')':                   /* ) */
-      if (level < 1) {
-        nbdkit_error ("unmatched ')' in data string");
-        return -1;
-      }
-      i++;
-      *start = i;
-      return 0;
-
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-      /* BYTE*N */
-      if (sscanf (&value[i], "%" SCNi64 "*%" SCNi64 "%n",
-                  &j, &k, &n) == 2) {
-        if (j < 0 || j > 255) {
-          nbdkit_error ("data parameter BYTE must be in the range 0..255");
-          return -1;
-        }
-        if (k < 0) {
-          nbdkit_error ("data parameter *N must be >= 0");
-          return -1;
-        }
-        i += n;
-
-        if (a->fill (a, j, k, offset) == -1)
-          return -1;
-        offset += k;
-        if (*size < offset)
-          *size = offset;
-      }
-      /* BYTE */
-      else if (sscanf (&value[i], "%" SCNi64 "%n", &j, &n) == 1) {
-        if (j < 0 || j > 255) {
-          nbdkit_error ("data parameter BYTE must be in the range 0..255");
-          return -1;
-        }
-        i += n;
-
-        if (*size < offset+1)
-          *size = offset+1;
-
-        /* Store the byte. */
-        c = j;
-        if (a->write (a, &c, 1, offset) == -1)
-          return -1;
-        offset++;
-      }
-      else
-        goto parse_error;
-      break;
-
-    case '<': {                 /* <FILE */
-      CLEANUP_FREE char *filename = NULL;
-      size_t flen;
-
-      i++;
-
-      /* The filename follows next in the string. */
-      flen = strcspn (&value[i], " \t\n");
-      if (flen == 0) {
-        nbdkit_error ("data parameter <FILE not a filename");
-        return -1;
-      }
-      filename = strndup (&value[i], flen);
-      if (filename == NULL) {
-        nbdkit_error ("strndup: %m");
-        return -1;
-      }
-      i += flen;
-
-      if (store_file (a, filename, &offset) == -1)
-        return -1;
-
-      if (*size < offset)
-        *size = offset;
-
-      break;
-    }
-
-    case '"':                   /* "String" */
-      i++;
-      if (store_string (a, value, i, len, &i, &offset) == -1)
-        return -1;
-
-      if (*size < offset)
-        *size = offset;
-
-      break;
-
-    case ' ': case '\t': case '\n': /* Skip whitespace. */
-    case '\f': case '\r': case '\v':
-      break;
-
-    default:
-    parse_error:
-      nbdkit_error ("data parameter: parsing error at offset %zu", i);
+  case EXPR_BYTE:
+    /* Store the byte. */
+    if (a->write (a, &e->b, 1, *offset) == -1)
       return -1;
-    } /* switch */
-  } /* for */
+    (*offset)++;
+    break;
 
-  /* If we reach the end of the string and level != 0 that means
-   * there is an unmatched '(' in the string.
-   */
-  if (level > 0) {
-    nbdkit_error ("unmatched '(' in data string");
-    return -1;
+  case EXPR_ABS_OFFSET:
+    /* XXX Check it does not overflow 63 bits. */
+    *offset = e->ui;
+    break;
+
+  case EXPR_REL_OFFSET:
+    if (e->i < 0 && e->i > *offset) {
+      nbdkit_error ("data parameter @-%" PRIi64 " "
+                    "must not be larger than the current offset %" PRIu64,
+                    e->i, *offset);
+      return -1;
+    }
+    /* XXX Check it does not overflow 63 bits. */
+    *offset += e->i;
+    break;
+
+  case EXPR_ALIGN_OFFSET:
+    *offset = ROUND_UP (*offset, e->ui);
+    break;
+
+  case EXPR_FILE:
+    if (store_file (a, e->filename, offset) == -1)
+      return -1;
+    break;
+
+  case EXPR_STRING:
+    /* Copy the string into the allocator. */
+    if (a->write (a, e->string.ptr, e->string.size, *offset) == -1)
+      return -1;
+    *offset += e->string.size;
+    break;
+
+  case EXPR_EXPR:
+  case EXPR_REPEAT:
+  case EXPR_SLICE: {
+    /* Nesting creates a new context where there is a new allocator
+     * and the offset is reset to 0.
+     */
+    CLEANUP_FREE_ALLOCATOR struct allocator *a2 = NULL;
+    uint64_t offset2 = 0, size2 = 0, m;
+
+    a2 = create_allocator ("sparse", false);
+    if (a2 == NULL) {
+      nbdkit_error ("malloc: %m");
+      return -1;
+    }
+    if (evaluate (e->expr, a2, &offset2, &size2) == -1)
+      return -1;
+
+    switch (e->t) {
+    case EXPR_EXPR:
+      if (a->blit (a2, a, size2, 0, *offset) == -1)
+        return -1;
+      *offset += size2;
+      break;
+    case EXPR_REPEAT:
+      /* Duplicate the allocator a2 N times. */
+      for (i = 0; i < e->r.n; ++i) {
+        if (a->blit (a2, a, size2, 0, *offset) == -1)
+          return -1;
+        *offset += size2;
+      }
+      break;
+    case EXPR_SLICE:
+      /* Slice [N:M] */
+      m = e->sl.m < 0 ? size2 : e->sl.m;
+      if (e->sl.n < 0 || m < 0 ||
+          e->sl.n > size2 || m > size2 ||
+          e->sl.n > m ) {
+        nbdkit_error ("[N:M] does not describe a valid slice");
+        return -1;
+      }
+      /* Take a slice from the allocator. */
+      if (a->blit (a2, a, m-e->sl.n, e->sl.n, *offset) == -1)
+          return -1;
+      *offset += m-e->sl.n;
+      break;
+    default:
+      abort ();
+    }
+    break;
+  }
   }
 
-  *start = i;
+  /* Adjust the size if the offset is now larger. */
+  if (*size < *offset)
+    *size = *offset;
+
   return 0;
 }
 
-int
-read_data_format (const char *value,
-                  struct allocator *a, uint64_t *size)
+/* Store file at current offset in the allocator, updating the offset. */
+static int
+store_file (struct allocator *a,
+            const char *filename, uint64_t *offset)
 {
-  size_t i = 0;
-  size_t len = strlen (value);
+  FILE *fp;
+  char buf[BUFSIZ];
+  size_t n;
 
-  return parse (0, value, &i, len, a, size);
+  fp = fopen (filename, "r");
+  if (fp == NULL) {
+    nbdkit_error ("%s: %m", filename);
+    return -1;
+  }
+
+  while (!feof (fp)) {
+    n = fread (buf, 1, BUFSIZ, fp);
+    if (n > 0) {
+      if (a->write (a, buf, n, *offset) == -1) {
+        fclose (fp);
+        return -1;
+      }
+    }
+    if (ferror (fp)) {
+      nbdkit_error ("fread: %s: %m", filename);
+      fclose (fp);
+      return -1;
+    }
+    (*offset) += n;
+  }
+
+  if (fclose (fp) == EOF) {
+    nbdkit_error ("fclose: %s: %m", filename);
+    return -1;
+  }
+
+  return 0;
 }
