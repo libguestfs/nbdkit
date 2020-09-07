@@ -45,6 +45,7 @@
 #include "ascii-ctype.h"
 #include "cleanup.h"
 #include "ispowerof2.h"
+#include "minmax.h"
 #include "rounding.h"
 #include "strndup.h"
 #include "vector.h"
@@ -553,6 +554,9 @@ parse_string (const char *value, size_t i, size_t len,
 
 static int store_file (struct allocator *a,
                        const char *filename, uint64_t *offset);
+static int store_file_slice (struct allocator *a,
+                             const char *filename,
+                             uint64_t skip, int64_t end, uint64_t *offset);
 
 /* This is the evaluator.  It takes a parsed expression (expr_t) and
  * evaulates it into the allocator.
@@ -614,54 +618,80 @@ evaluate (const expr_t *e, struct allocator *a,
 
   case EXPR_EXPR:
   case EXPR_REPEAT:
-  case EXPR_SLICE: {
-    /* Nesting creates a new context where there is a new allocator
-     * and the offset is reset to 0.
+  case EXPR_SLICE:
+    /* Optimize some cases so we don't always have to create a
+     * new allocator.
      */
-    CLEANUP_FREE_ALLOCATOR struct allocator *a2 = NULL;
-    uint64_t offset2 = 0, size2 = 0, m;
 
-    a2 = create_allocator ("sparse", false);
-    if (a2 == NULL) {
-      nbdkit_error ("malloc: %m");
-      return -1;
-    }
-    if (evaluate (e->expr, a2, &offset2, &size2) == -1)
-      return -1;
-
-    switch (e->t) {
-    case EXPR_EXPR:
-      if (a->blit (a2, a, size2, 0, *offset) == -1)
+    /* BYTE*N was optimized in the previous ad hoc parser so it makes
+     * sense to optimize it here.
+     */
+    if (e->t == EXPR_REPEAT && e->expr->t == EXPR_BYTE) {
+      if (a->fill (a, e->expr->b, e->r.n, *offset) == -1)
         return -1;
-      *offset += size2;
-      break;
-    case EXPR_REPEAT:
-      /* Duplicate the allocator a2 N times. */
-      for (i = 0; i < e->r.n; ++i) {
+      *offset += e->r.n;
+    }
+
+    /* <FILE[N:M] can be optimized by not reading in the whole file.
+     * For files like /dev/urandom which are infinite this stops an
+     * infinite loop.
+     */
+    else if (e->t == EXPR_SLICE && e->expr->t == EXPR_FILE) {
+      if (store_file_slice (a, e->expr->filename,
+                            e->sl.n, e->sl.m, offset) == -1)
+        return -1;
+    }
+
+    else {
+      /* This is the non-optimized case.
+       *
+       * Nesting creates a new context where there is a new allocator
+       * and the offset is reset to 0.
+       */
+      CLEANUP_FREE_ALLOCATOR struct allocator *a2 = NULL;
+      uint64_t offset2 = 0, size2 = 0, m;
+
+      a2 = create_allocator ("sparse", false);
+      if (a2 == NULL) {
+        nbdkit_error ("malloc: %m");
+        return -1;
+      }
+      if (evaluate (e->expr, a2, &offset2, &size2) == -1)
+        return -1;
+
+      switch (e->t) {
+      case EXPR_EXPR:
         if (a->blit (a2, a, size2, 0, *offset) == -1)
           return -1;
         *offset += size2;
-      }
-      break;
-    case EXPR_SLICE:
-      /* Slice [N:M] */
-      m = e->sl.m < 0 ? size2 : e->sl.m;
-      if (e->sl.n < 0 || m < 0 ||
-          e->sl.n > size2 || m > size2 ||
-          e->sl.n > m ) {
-        nbdkit_error ("[N:M] does not describe a valid slice");
-        return -1;
-      }
-      /* Take a slice from the allocator. */
-      if (a->blit (a2, a, m-e->sl.n, e->sl.n, *offset) == -1)
+        break;
+      case EXPR_REPEAT:
+        /* Duplicate the allocator a2 N times. */
+        for (i = 0; i < e->r.n; ++i) {
+          if (a->blit (a2, a, size2, 0, *offset) == -1)
+            return -1;
+          *offset += size2;
+        }
+        break;
+      case EXPR_SLICE:
+        /* Slice [N:M] */
+        m = e->sl.m < 0 ? size2 : e->sl.m;
+        if (e->sl.n < 0 || m < 0 ||
+            e->sl.n > size2 || m > size2 ||
+            e->sl.n > m ) {
+          nbdkit_error ("[N:M] does not describe a valid slice");
           return -1;
-      *offset += m-e->sl.n;
-      break;
-    default:
-      abort ();
+        }
+        /* Take a slice from the allocator. */
+        if (a->blit (a2, a, m-e->sl.n, e->sl.n, *offset) == -1)
+          return -1;
+        *offset += m-e->sl.n;
+        break;
+      default:
+        abort ();
+      }
     }
     break;
-  }
   }
 
   /* Adjust the size if the offset is now larger. */
@@ -700,6 +730,61 @@ store_file (struct allocator *a,
       return -1;
     }
     (*offset) += n;
+  }
+
+  if (fclose (fp) == EOF) {
+    nbdkit_error ("fclose: %s: %m", filename);
+    return -1;
+  }
+
+  return 0;
+}
+
+/* <FILE[N:M] */
+static int
+store_file_slice (struct allocator *a,
+                  const char *filename,
+                  uint64_t skip, int64_t end, uint64_t *offset)
+{
+  FILE *fp;
+  char buf[BUFSIZ];
+  size_t n;
+  uint64_t len = 0;
+
+  if ((end >= 0 && skip > end) || end < -2) {
+    nbdkit_error ("<FILE[N:M] does not describe a valid slice");
+    return -1;
+  }
+
+  if (end >= 0)
+    len = end - skip;
+
+  fp = fopen (filename, "r");
+  if (fp == NULL) {
+    nbdkit_error ("%s: %m", filename);
+    return -1;
+  }
+
+  if (fseek (fp, skip, SEEK_SET) == -1) {
+    nbdkit_error ("%s: fseek: %m", filename);
+    return -1;
+  }
+
+  while (!feof (fp) && (end == -1 || len > 0)) {
+    n = fread (buf, 1, end == -1 ? BUFSIZ : MIN (len, BUFSIZ), fp);
+    if (n > 0) {
+      if (a->write (a, buf, n, *offset) == -1) {
+        fclose (fp);
+        return -1;
+      }
+    }
+    if (ferror (fp)) {
+      nbdkit_error ("fread: %s: %m", filename);
+      fclose (fp);
+      return -1;
+    }
+    (*offset) += n;
+    len -= n;
   }
 
   if (fclose (fp) == EOF) {

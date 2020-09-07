@@ -78,6 +78,14 @@ aligned to 512-byte sector boundaries.  Furthermore because of the
 final alignment operation (C<@^512>) the total size of the disk will
 also be rounded to a whole number of sectors.
 
+=head2 Create a disk with the same random data in each sector
+
+ nbdkit data ' </dev/urandom[:512]*16 '
+
+The expression C<E<lt>/dev/urandom[:512]> reads 512 bytes (one sector)
+of randomness from the system.  The same random data is repeated over
+16 sectors.
+
 =head2 Create a 1 MB disk with some nonsense data at the beginning
 
  nbdkit data base64=MTIz size=1M

@@ -626,6 +626,7 @@ TESTS += \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
+	test-data-random-slice.sh \
 	test-data-sectors.sh \
 	test-data-string.sh \
 	test-disk2data.sh \
@@ -641,6 +642,7 @@ EXTRA_DIST += \
 	test-data-nest-zstd.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
+	test-data-random-slice.sh \
 	test-data-sectors.sh \
 	test-data-string.sh \
 	test-disk2data.sh \
