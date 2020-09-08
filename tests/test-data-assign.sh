@@ -39,12 +39,12 @@ set -x
 requires nbdsh --version
 
 sock=`mktemp -u`
-files="data-nest-slice.pid $sock"
+files="data-assign.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-nest-slice.pid -U $sock \
+start_nbdkit -P data-assign.pid -U $sock \
        data '
 # Assign to \a in the outer scope.
 (0x31 0x32) -> \a
