@@ -71,6 +71,8 @@
 
 #include "internal.h"
 
+#ifndef WIN32
+
 char *
 nbdkit_absolute_path (const char *path)
 {
@@ -97,13 +99,28 @@ nbdkit_absolute_path (const char *path)
     return NULL;
   }
 
-  if (asprintf (&ret, "%s/%s", pwd, path) == -1) {
+  if (asprintf (&ret, "%s" DIR_SEPARATOR_STR "%s", pwd, path) == -1) {
     nbdkit_error ("asprintf: %m");
     return NULL;
   }
 
   return ret;
 }
+
+#else /* WIN32 */
+
+/* On Windows realpath() is replaced by GetFullPathName which doesn't
+ * bother to check if the final path exists.  Therefore we can simply
+ * replace nbdkit_absolute_path with nbdkit_realpath and everything
+ * should work the same.
+ */
+char *
+nbdkit_absolute_path (const char *path)
+{
+  return nbdkit_realpath (path);
+}
+
+#endif /* WIN32 */
 
 char *
 nbdkit_realpath (const char *path)
