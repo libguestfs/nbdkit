@@ -166,6 +166,22 @@ nbdkit-ondemand-plugin:
 * Allow client to select size up to a limit, eg. by sending export
   names like ‘export:4G’.
 
+nbdkit-data-plugin:
+
+* Substitute $VAR with parameters or environment variables, eg:
+
+  nbdkit data '$pattern*16' pattern='0x55 0xAA'
+
+  or:
+
+  export pattern='0x55 0xAA'
+  nbdkit data '$pattern*16'
+
+* Allow expressions to evaluate to numbers, offsets, etc so that this
+  works:
+
+  nbdkit data '(0x55 0xAA)*n' n=1000
+
 Suggestions for language plugins
 --------------------------------
 
