@@ -245,10 +245,10 @@ parser (int level, const char *value, size_t *start, size_t len)
    * leaked on error paths, but we're going to call exit(1).
    */
   expr_list list = empty_vector;
-  /* Used as a scratch buffer while creating an expr to append to list. */
-  expr_t e;
 
   while (i < len) {
+    /* Used as a scratch buffer while creating an expr to append to list. */
+    expr_t e = { 0 };
     expr_t *ep;
     int j, n;
     int64_t i64;
@@ -468,10 +468,10 @@ parser (int level, const char *value, size_t *start, size_t len)
  out:
   *start = i;
 
-  /* Return the expression node. */
-  e.t = EXPR_LIST;
-  memcpy (&e.list, &list, sizeof e.list);
-  return copy_expr (&e);
+  /* Return a new expression node. */
+  expr_t e2 = { .t = EXPR_LIST };
+  memcpy (&e2.list, &list, sizeof e2.list);
+  return copy_expr (&e2);
 }
 
 /* Parse a "String" with C-like escaping, and store it in the string
