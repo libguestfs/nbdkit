@@ -631,6 +631,7 @@ TESTS += \
 	test-data-random-slice2.sh \
 	test-data-sectors.sh \
 	test-data-string.sh \
+	test-data-string0.sh \
 	test-data-var.sh \
 	test-disk2data.sh \
 	$(NULL)
@@ -650,6 +651,7 @@ EXTRA_DIST += \
 	test-data-random-slice2.sh \
 	test-data-sectors.sh \
 	test-data-string.sh \
+	test-data-string0.sh \
 	test-data-var.sh \
 	test-disk2data.sh \
 	$(NULL)
