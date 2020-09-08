@@ -231,8 +231,8 @@ read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
   return evaluate (expr, a, &offset, size_rtn);
 }
 
-static int parse_string (const char *value, size_t i, size_t len,
-                         size_t *i_rtn, string *rtn);
+static int parse_string (const char *value, size_t *start, size_t len,
+                         string *rtn);
 
 /* This is the format parser.  It returns an expression that must be
  * freed by the caller (or NULL in case of an error).
@@ -416,8 +416,7 @@ parser (int level, const char *value, size_t *start, size_t len)
     case '"':                   /* "String" */
       i++;
       e.t = EXPR_STRING;
-      e.string = (string) empty_vector;
-      if (parse_string (value, i, len, &i, &e.string) == -1)
+      if (parse_string (value, &i, len, &e.string) == -1)
         return NULL;
       if (expr_list_append (&list, e) == -1) return NULL;
       break;
@@ -491,17 +490,19 @@ hexdigit (const char c)
 }
 
 static int
-parse_string (const char *value, size_t i, size_t len,
-              size_t *i_rtn, string *rtn)
+parse_string (const char *value, size_t *start, size_t len, string *rtn)
 {
+  size_t i = *start;
   unsigned char c, x0, x1;
+
+  *rtn = (string) empty_vector;
 
   for (; i < len; ++i) {
     c = value[i];
     switch (c) {
     case '"':
       /* End of the string. */
-      *i_rtn = i+1;
+      *start = i+1;
       return 0;
 
     case '\\':
