@@ -291,6 +291,11 @@ parser (int level, const char *value, size_t *start, size_t len)
   while (i < len) {
     /* Used as a scratch buffer while creating an expr to append to list. */
     expr_t e = { 0 };
+#define APPEND_EXPR                          \
+    if (expr_list_append (&list, e) == -1) { \
+      nbdkit_error ("nbdkit_realloc: %m");   \
+      return NULL;                           \
+    }
     expr_t *ep;
     int j, n;
     int64_t i64;
@@ -315,7 +320,7 @@ parser (int level, const char *value, size_t *start, size_t len)
             return NULL;
           }
           i += n;
-          if (expr_list_append (&list, e) == -1) return NULL;
+          APPEND_EXPR;
         }
         else
           goto parse_error;
@@ -329,7 +334,7 @@ parser (int level, const char *value, size_t *start, size_t len)
             return NULL;
           }
           i += n;
-          if (expr_list_append (&list, e) == -1) return NULL;
+          APPEND_EXPR;
         }
         else
           goto parse_error;
@@ -351,7 +356,7 @@ parser (int level, const char *value, size_t *start, size_t len)
             return NULL;
           }
           i += n;
-          if (expr_list_append (&list, e) == -1) return NULL;
+          APPEND_EXPR;
         }
         else
           goto parse_error;
@@ -367,7 +372,7 @@ parser (int level, const char *value, size_t *start, size_t len)
           }
           e.ui = (uint64_t) i64;
           i += n;
-          if (expr_list_append (&list, e) == -1) return NULL;
+          APPEND_EXPR;
         }
         else
           goto parse_error;
@@ -386,7 +391,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         return NULL;
       e.t = EXPR_EXPR;
       e.expr = ep;
-      if (expr_list_append (&list, e) == -1) return NULL;
+      APPEND_EXPR;
       break;
 
     case '*':                   /* expr*N */
@@ -415,7 +420,7 @@ parser (int level, const char *value, size_t *start, size_t len)
       e.r.expr = copy_expr (&list.ptr[list.size-1]);
       if (e.r.expr == NULL) return NULL;
       list.size--;
-      if (expr_list_append (&list, e) == -1) return NULL;
+      APPEND_EXPR;
       break;
 
     case '[':                 /* expr[k:m] */
@@ -446,7 +451,7 @@ parser (int level, const char *value, size_t *start, size_t len)
       e.sl.expr = copy_expr (&list.ptr[list.size-1]);
       if (e.sl.expr == NULL) return NULL;
       list.size--;
-      if (expr_list_append (&list, e) == -1) return NULL;
+      APPEND_EXPR;
       break;
 
     case '<':                   /* <FILE */
@@ -465,8 +470,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         return NULL;
       }
       i += flen;
-      if (expr_list_append (&list, e) == -1) return NULL;
-
+      APPEND_EXPR;
       break;
 
     case '"':                   /* "String" */
@@ -474,7 +478,7 @@ parser (int level, const char *value, size_t *start, size_t len)
       e.t = EXPR_STRING;
       if (parse_string (value, &i, len, &e.string) == -1)
         return NULL;
-      if (expr_list_append (&list, e) == -1) return NULL;
+      APPEND_EXPR;
       break;
 
     case '\\':                  /* \\NAME */
@@ -487,7 +491,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         return NULL;
       }
       i += flen;
-      if (expr_list_append (&list, e) == -1) return NULL;
+      APPEND_EXPR;
       break;
 
     case '-':                   /* -> \\NAME */
@@ -514,7 +518,7 @@ parser (int level, const char *value, size_t *start, size_t len)
       if (e.a.expr == NULL) return NULL;
       i += flen;
       list.size--;
-      if (expr_list_append (&list, e) == -1) return NULL;
+      APPEND_EXPR;
       break;
 
     case '$': {                 /* $VAR */
@@ -548,7 +552,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         return NULL;
       e.t = EXPR_EXPR;
       e.expr = ep;
-      if (expr_list_append (&list, e) == -1) return NULL;
+      APPEND_EXPR;
       break;
     }
 
@@ -565,7 +569,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         return NULL;
       }
       e.b = j;
-      if (expr_list_append (&list, e) == -1) return NULL;
+      APPEND_EXPR;
       break;
 
     case ')':                   /* ) */
@@ -730,8 +734,10 @@ parse_string (const char *value, size_t *start, size_t len, string *rtn)
       /*FALLTHROUGH*/
     default:
       /* Any other character is added to the string. */
-      if (string_append (rtn, c) == -1)
+      if (string_append (rtn, c) == -1) {
+        nbdkit_error ("realloc: %m");
         return -1;
+      }
     }
   }
 
