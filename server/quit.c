@@ -115,7 +115,7 @@ set_quit (void)
 void
 set_up_quit_pipe (void)
 {
-  quit_fd = CreateEventA (NULL, FALSE, FALSE, NULL);
+  quit_fd = CreateEvent (NULL, FALSE, FALSE, NULL);
 }
 
 void
