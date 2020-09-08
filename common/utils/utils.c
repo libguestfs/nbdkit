@@ -206,13 +206,13 @@ make_temporary_directory (void)
 
   ret = GetTempPath (MAX_PATH, tmppath);
   if (ret > MAX_PATH || ret == 0) {
-    fprintf (stderr, "mkdtemp: GetTempPath: %d\n", GetLastError ());
+    fprintf (stderr, "mkdtemp: GetTempPath: %lu\n", GetLastError ());
     return NULL;
   }
 
   ret = GetTempFileName (tmppath, TEXT("nbdkit"), 0, tmpname);
   if (!ret) {
-    fprintf (stderr, "mkdtemp: GetTempFileName: %d\n", GetLastError ());
+    fprintf (stderr, "mkdtemp: GetTempFileName: %lu\n", GetLastError ());
     return NULL;
   }
 
@@ -223,7 +223,7 @@ make_temporary_directory (void)
   unlink (tmpname);
 
   if (mkdir (tmpname) == -1) {
-    fprintf (stderr, "mkdtemp: mkdir: %s: %d\n", tmpname, GetLastError ());
+    fprintf (stderr, "mkdtemp: mkdir: %s: %lu\n", tmpname, GetLastError ());
     return NULL;
   }
 
