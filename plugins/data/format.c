@@ -34,6 +34,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
@@ -203,6 +204,17 @@ print_expr (expr_t *e, FILE *fp)
   }
 }
 
+/* Is the expression something which contains data, or something else
+ * (like an offset).  Just a light check to reject nonsense
+ * expressions like "@0 * 10".
+ */
+static bool
+is_data_expr (const expr_t *e)
+{
+  return e->t != EXPR_ABS_OFFSET && e->t != EXPR_REL_OFFSET
+    && e->t != EXPR_ALIGN_OFFSET;
+}
+
 static expr_t *parser (int level, const char *value, size_t *start, size_t len);
 static int evaluate (const expr_t *expr, struct allocator *a,
                      uint64_t *offset, uint64_t *size);
@@ -347,6 +359,10 @@ parser (int level, const char *value, size_t *start, size_t len)
         nbdkit_error ("*N must follow an expression");
         return NULL;
       }
+      if (! is_data_expr (&list.ptr[list.size-1])) {
+        nbdkit_error ("*N cannot be applied to this type of expression");
+        return NULL;
+      }
       e.t = EXPR_REPEAT;
       if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
         if (i64 < 0) {
@@ -370,6 +386,10 @@ parser (int level, const char *value, size_t *start, size_t len)
       i++;
       if (list.size == 0) {
         nbdkit_error ("[N:M] must follow an expression");
+        return NULL;
+      }
+      if (! is_data_expr (&list.ptr[list.size-1])) {
+        nbdkit_error ("[N:M] cannot be applied to this type of expression");
         return NULL;
       }
       e.t = EXPR_SLICE;
