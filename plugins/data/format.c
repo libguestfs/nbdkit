@@ -294,6 +294,12 @@ parser (int level, const char *value, size_t *start, size_t len)
     size_t flen;
 
     switch (value[i]) {
+    case '#':                   /* # comment */
+      i++;
+      while (i < len && value[i] != '\n')
+        i++;
+      break;
+
     case '@':                   /* @OFFSET */
       if (++i == len) goto parse_error;
       switch (value[i]) {

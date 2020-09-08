@@ -46,20 +46,25 @@ cleanup_fn rm -f $files
 # Run nbdkit.
 start_nbdkit -P data-nest-slice.pid -U $sock \
        data '
+# Assign to \a in the outer scope.
 (0x31 0x32) -> \a
+(0x35 0x36) -> \b
 (
+  # Assign to \a and \c in the inner scope.
   (0x33 0x34) -> \a
-  (0x35 0x36) -> \b
-  \a \a \b \a
+  (0x37 0x38) -> \c
+  \a \a \b \c
 )
-\a
+# The end of the inner scope should restore the outer
+# scope definition of \a.
+\a \b
 '
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 print ("%d" % h.get_size())
-assert h.get_size() == 2+2+2+2+2
+assert h.get_size() == 2+2+2+2+2+2
 buf = h.pread (h.get_size(), 0)
 print ("%r" % buf)
-assert buf == b"3434563412"
+assert buf == b"343456781256"
 '

@@ -46,10 +46,12 @@ cleanup_fn rm -f $files
 # Run nbdkit.
 start_nbdkit -P data-nest-slice.pid -U $sock \
        data '
+# Try various slices of a string.
 ( "Hello" )[:4]
 ( "Hello" )[3:]
 ( "Hello" )[3:5]
-( "Hello" )[:]
+# With the new parser it should work without the parens too.
+"Hello"[:]
 '
 
 nbdsh --connect "nbd+unix://?socket=$sock" \

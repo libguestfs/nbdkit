@@ -284,6 +284,12 @@ containing a boot signature at the end:
    ( @0x1fe \boot-signature ) -> \sector
    \sector \sector '
 
+=item B<#> COMMENT
+
+(nbdkit E<ge> 1.24)
+
+C<#> begins a comment stretching to the end of the current line.
+
 =back
 
 =head2 disk2data.pl script
