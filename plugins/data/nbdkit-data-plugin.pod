@@ -267,6 +267,23 @@ expression desired.  Either or both may be omitted.  S<B<[:>lenB<]>>
 means to take the first I<len> bytes.  S<B<[>startB<:]>> means to take
 bytes from offset I<start> to the end of the expression.
 
+=item expression B<-E<gt> \>NAME
+
+=item B<\>NAME
+
+(nbdkit E<ge> 1.24)
+
+Assign an expression to a name which can be used later.  Names can be
+used in the current scope (or any scopes nested within the current
+scope), but disappear at the end of the current scope.  Names start
+with a backslash character followed by one or more alphanumeric, dash
+and underscore.  For example this makes two identical sectors both
+containing a boot signature at the end:
+
+ ' ( 0x55 0xAA ) -> \boot-signature
+   ( @0x1fe \boot-signature ) -> \sector
+   \sector \sector '
+
 =back
 
 =head2 disk2data.pl script

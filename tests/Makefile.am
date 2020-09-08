@@ -617,6 +617,7 @@ endif HAVE_MKE2FS_WITH_D
 LIBGUESTFS_TESTS += test-data
 TESTS += \
 	test-data-7E.sh \
+	test-data-assign.sh \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \
@@ -633,6 +634,7 @@ TESTS += \
 	$(NULL)
 EXTRA_DIST += \
 	test-data-7E.sh \
+	test-data-assign.sh \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \

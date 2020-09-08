@@ -68,6 +68,8 @@ struct expr {
     EXPR_EXPR,                  /* expr     - nested expression */
     EXPR_FILE,                  /* filename - read a file */
     EXPR_STRING,                /* string   - string + length */
+    EXPR_NAME,                  /* name     - insert a named expression */
+    EXPR_ASSIGN,                /* a.name, a.expr - assign name to expr */
     EXPR_REPEAT,                /* r.expr, r.n - expr * N */
     EXPR_SLICE,                 /* sl.expr, sl.n, sl.m - expr[N:M] */
   } t;
@@ -79,6 +81,11 @@ struct expr {
     expr_t *expr;
     char *filename;
     string string;
+    char *name;
+    struct {
+      char *name;
+      expr_t *expr;
+    } a;
     struct {
       expr_t *expr;
       uint64_t n;
@@ -111,6 +118,8 @@ free_expr_fields (expr_t *e)
     case EXPR_EXPR:   free_expr (e->expr); break;
     case EXPR_FILE:   free (e->filename); break;
     case EXPR_STRING: free (e->string.ptr); break;
+    case EXPR_NAME:   free (e->name); break;
+    case EXPR_ASSIGN: free (e->a.name); free_expr (e->a.expr); break;
     case EXPR_REPEAT: free_expr (e->r.expr); break;
     case EXPR_SLICE:  free_expr (e->sl.expr); break;
     default: break;
@@ -191,6 +200,13 @@ print_expr (expr_t *e, FILE *fp)
     }
     fprintf (fp, "\" ");
     break;
+  case EXPR_NAME:
+    fprintf (fp, "\\%s ", e->name);
+    break;
+  case EXPR_ASSIGN:
+    print_expr (e->a.expr, fp);
+    fprintf (fp, "->\\%s ", e->a.name);
+    break;
   case EXPR_REPEAT:
     fprintf (fp, "( ");
     print_expr (e->r.expr, fp);
@@ -215,8 +231,17 @@ is_data_expr (const expr_t *e)
     && e->t != EXPR_ALIGN_OFFSET;
 }
 
+/* Simple dictionary of name -> expression. */
+typedef struct dict dict_t;
+struct dict {
+  dict_t *next;
+  const char *name;             /* Name excluding \ character. */
+  const expr_t *expr;           /* Associated expression. */
+};
+
 static expr_t *parser (int level, const char *value, size_t *start, size_t len);
-static int evaluate (const expr_t *expr, struct allocator *a,
+static int evaluate (const dict_t *dict, const expr_t *expr,
+                     struct allocator *a,
                      uint64_t *offset, uint64_t *size);
 
 int
@@ -240,11 +265,13 @@ read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
   }
 
   /* Evaluate the expression into the allocator. */
-  return evaluate (expr, a, &offset, size_rtn);
+  return evaluate (NULL, expr, a, &offset, size_rtn);
 }
 
 static int parse_string (const char *value, size_t *start, size_t len,
                          string *rtn);
+static size_t get_name (const char *value, size_t i, size_t len,
+                        size_t *initial);
 
 /* This is the format parser.  It returns an expression that must be
  * freed by the caller (or NULL in case of an error).
@@ -441,6 +468,46 @@ parser (int level, const char *value, size_t *start, size_t len)
       if (expr_list_append (&list, e) == -1) return NULL;
       break;
 
+    case '\\':                  /* \\NAME */
+      flen = get_name (value, i, len, &i);
+      if (flen == 0) goto parse_error;
+      e.t = EXPR_NAME;
+      e.name = strndup (&value[i], flen);
+      if (e.name == NULL) {
+        nbdkit_error ("strndup: %m");
+        return NULL;
+      }
+      i += flen;
+      if (expr_list_append (&list, e) == -1) return NULL;
+      break;
+
+    case '-':                   /* -> \\NAME */
+      i++;
+      if (value[i] != '>') goto parse_error;
+      i++;
+      if (list.size == 0) {
+        nbdkit_error ("-> must follow an expression");
+        return NULL;
+      }
+      if (! is_data_expr (&list.ptr[list.size-1])) {
+        nbdkit_error ("-> cannot be applied to this type of expression");
+        return NULL;
+      }
+      flen = get_name (value, i, len, &i);
+      if (flen == 0) goto parse_error;
+      e.t = EXPR_ASSIGN;
+      e.a.name = strndup (&value[i], flen);
+      if (e.a.name == NULL) {
+        nbdkit_error ("strndup: %m");
+        return NULL;
+      }
+      e.a.expr = copy_expr (&list.ptr[list.size-1]);
+      if (e.a.expr == NULL) return NULL;
+      i += flen;
+      list.size--;
+      if (expr_list_append (&list, e) == -1) return NULL;
+      break;
+
     case '0': case '1': case '2': case '3': case '4': /* BYTE */
     case '5': case '6': case '7': case '8': case '9':
       e.t = EXPR_BYTE;
@@ -492,6 +559,35 @@ parser (int level, const char *value, size_t *start, size_t len)
   expr_t e2 = { .t = EXPR_LIST };
   memcpy (&e2.list, &list, sizeof e2.list);
   return copy_expr (&e2);
+}
+
+/* Return the next \NAME in the input.  This skips whitespace, setting
+ * *initial to the index of the start of the NAME (minus backslash).
+ * It returns the length of NAME (minus backslash), or 0 if not found.
+ */
+static size_t
+get_name (const char *value, size_t i, size_t len, size_t *initial)
+{
+  size_t r = 0;
+
+  while (i < len) {
+    if (!ascii_isspace (value[i]))
+      break;
+    i++;
+  }
+
+  if (i >= len || value[i] != '\\') return 0;
+  i++;
+  if (i >= len) return 0;
+  *initial = i;
+
+  while (i < len &&
+         (ascii_isalnum (value[i]) || value[i] == '_' || value[i] == '-')) {
+    i++;
+    r++;
+  }
+
+  return r;
 }
 
 /* Parse a "String" with C-like escaping, and store it in the string
@@ -583,141 +679,205 @@ static int store_file_slice (struct allocator *a,
  * evaulates it into the allocator.
  */
 static int
-evaluate (const expr_t *e, struct allocator *a,
-          uint64_t *offset, uint64_t *size)
+evaluate (const dict_t *dict, const expr_t *e,
+          struct allocator *a, uint64_t *offset, uint64_t *size)
 {
-  expr_list list;
-  size_t i;
+  /* 'd' is the local dictionary for this function.  Assignments are
+   * added to the dictionary in this scope and passed to nested
+   * scopes.  This is leaked on error paths, but we're going to call
+   * exit(1).
+   */
+  dict_t *d = (dict_t *) dict;
+  expr_list list = empty_vector;
+  size_t i, j;
 
-  switch (e->t) {
-  case EXPR_LIST:
+  if (e->t == EXPR_LIST)
     memcpy (&list, &e->list, sizeof list);
-    for (i = 0; i < list.size; ++i) {
-      if (evaluate (&list.ptr[i], a, offset, size) == -1)
+  else {
+    list.size = 1;
+    list.ptr = (expr_t *) e;
+  }
+
+  for (i = 0; i < list.size; ++i) {
+    e = &list.ptr[i];
+
+    switch (e->t) {
+    case EXPR_LIST: abort ();
+
+    case EXPR_BYTE:
+      /* Store the byte. */
+      if (a->write (a, &e->b, 1, *offset) == -1)
         return -1;
-    }
-    break;
+      (*offset)++;
+      break;
 
-  case EXPR_BYTE:
-    /* Store the byte. */
-    if (a->write (a, &e->b, 1, *offset) == -1)
-      return -1;
-    (*offset)++;
-    break;
+    case EXPR_ABS_OFFSET:
+      /* XXX Check it does not overflow 63 bits. */
+      *offset = e->ui;
+      break;
 
-  case EXPR_ABS_OFFSET:
-    /* XXX Check it does not overflow 63 bits. */
-    *offset = e->ui;
-    break;
-
-  case EXPR_REL_OFFSET:
-    if (e->i < 0 && e->i > *offset) {
-      nbdkit_error ("data parameter @-%" PRIi64 " "
-                    "must not be larger than the current offset %" PRIu64,
-                    e->i, *offset);
-      return -1;
-    }
-    /* XXX Check it does not overflow 63 bits. */
-    *offset += e->i;
-    break;
-
-  case EXPR_ALIGN_OFFSET:
-    *offset = ROUND_UP (*offset, e->ui);
-    break;
-
-  case EXPR_FILE:
-    if (store_file (a, e->filename, offset) == -1)
-      return -1;
-    break;
-
-  case EXPR_STRING:
-    /* Copy the string into the allocator. */
-    if (a->write (a, e->string.ptr, e->string.size, *offset) == -1)
-      return -1;
-    *offset += e->string.size;
-    break;
-
-  case EXPR_EXPR:
-  case EXPR_REPEAT:
-  case EXPR_SLICE:
-    /* Optimize some cases so we don't always have to create a
-     * new allocator.
-     */
-
-    /* BYTE*N was optimized in the previous ad hoc parser so it makes
-     * sense to optimize it here.
-     */
-    if (e->t == EXPR_REPEAT && e->expr->t == EXPR_BYTE) {
-      if (a->fill (a, e->expr->b, e->r.n, *offset) == -1)
+    case EXPR_REL_OFFSET:
+      if (e->i < 0 && e->i > *offset) {
+        nbdkit_error ("data parameter @-%" PRIi64 " "
+                      "must not be larger than the current offset %" PRIu64,
+                      e->i, *offset);
         return -1;
-      *offset += e->r.n;
-    }
+      }
+      /* XXX Check it does not overflow 63 bits. */
+      *offset += e->i;
+      break;
 
-    /* <FILE[N:M] can be optimized by not reading in the whole file.
-     * For files like /dev/urandom which are infinite this stops an
-     * infinite loop.
-     */
-    else if (e->t == EXPR_SLICE && e->expr->t == EXPR_FILE) {
-      if (store_file_slice (a, e->expr->filename,
-                            e->sl.n, e->sl.m, offset) == -1)
+    case EXPR_ALIGN_OFFSET:
+      *offset = ROUND_UP (*offset, e->ui);
+      break;
+
+    case EXPR_FILE:
+      if (store_file (a, e->filename, offset) == -1)
         return -1;
+      break;
+
+    case EXPR_STRING:
+      /* Copy the string into the allocator. */
+      if (a->write (a, e->string.ptr, e->string.size, *offset) == -1)
+        return -1;
+      *offset += e->string.size;
+      break;
+
+    case EXPR_ASSIGN: {
+      dict_t *d_next = d;
+
+      d = malloc (sizeof *d);
+      if (d == NULL) {
+        nbdkit_error ("malloc: %m");
+        return -1;
+      }
+      d->next = d_next;
+      d->name = e->a.name;
+      d->expr = e->a.expr;
+      break;
     }
 
-    else {
-      /* This is the non-optimized case.
-       *
-       * Nesting creates a new context where there is a new allocator
-       * and the offset is reset to 0.
-       */
+    case EXPR_NAME: {
       CLEANUP_FREE_ALLOCATOR struct allocator *a2 = NULL;
-      uint64_t offset2 = 0, size2 = 0, m;
+      uint64_t offset2 = 0, size2 = 0;
+      dict_t *t;
 
+      /* Look up the expression in the current dictionary. */
+      for (t = d; t != NULL; t = t->next)
+        if (strcmp (t->name, e->name) == 0)
+          break;
+      if (t == NULL) {
+        nbdkit_error ("\\%s not defined", e->name);
+        return -1;
+      }
+
+      /* Evaluate and then substitute the expression. */
       a2 = create_allocator ("sparse", false);
       if (a2 == NULL) {
         nbdkit_error ("malloc: %m");
         return -1;
       }
-      if (evaluate (e->expr, a2, &offset2, &size2) == -1)
+      /* NB: We pass the environment at the time that the assignment was
+       * made (t->next) not the current environment.  This is deliberate.
+       */
+      if (evaluate (t->next, t->expr, a2, &offset2, &size2) == -1)
         return -1;
 
-      switch (e->t) {
-      case EXPR_EXPR:
-        if (a->blit (a2, a, size2, 0, *offset) == -1)
+      if (a->blit (a2, a, size2, 0, *offset) == -1)
+        return -1;
+      *offset += size2;
+      break;
+    }
+
+    case EXPR_EXPR:
+    case EXPR_REPEAT:
+    case EXPR_SLICE:
+      /* Optimize some cases so we don't always have to create a
+       * new allocator.
+       */
+
+      /* BYTE*N was optimized in the previous ad hoc parser so it makes
+       * sense to optimize it here.
+       */
+      if (e->t == EXPR_REPEAT && e->expr->t == EXPR_BYTE) {
+        if (a->fill (a, e->expr->b, e->r.n, *offset) == -1)
           return -1;
-        *offset += size2;
-        break;
-      case EXPR_REPEAT:
-        /* Duplicate the allocator a2 N times. */
-        for (i = 0; i < e->r.n; ++i) {
+        *offset += e->r.n;
+      }
+
+      /* <FILE[N:M] can be optimized by not reading in the whole file.
+       * For files like /dev/urandom which are infinite this stops an
+       * infinite loop.
+       */
+      else if (e->t == EXPR_SLICE && e->expr->t == EXPR_FILE) {
+        if (store_file_slice (a, e->expr->filename,
+                              e->sl.n, e->sl.m, offset) == -1)
+          return -1;
+      }
+
+      else {
+        /* This is the non-optimized case.
+         *
+         * Nesting creates a new context where there is a new allocator
+         * and the offset is reset to 0.
+         */
+        CLEANUP_FREE_ALLOCATOR struct allocator *a2 = NULL;
+        uint64_t offset2 = 0, size2 = 0, m;
+
+        a2 = create_allocator ("sparse", false);
+        if (a2 == NULL) {
+          nbdkit_error ("malloc: %m");
+          return -1;
+        }
+        if (evaluate (d, e->expr, a2, &offset2, &size2) == -1)
+          return -1;
+
+        switch (e->t) {
+        case EXPR_EXPR:
           if (a->blit (a2, a, size2, 0, *offset) == -1)
             return -1;
           *offset += size2;
+          break;
+        case EXPR_REPEAT:
+          /* Duplicate the allocator a2 N times. */
+          for (j = 0; j < e->r.n; ++j) {
+            if (a->blit (a2, a, size2, 0, *offset) == -1)
+              return -1;
+            *offset += size2;
+          }
+          break;
+        case EXPR_SLICE:
+          /* Slice [N:M] */
+          m = e->sl.m < 0 ? size2 : e->sl.m;
+          if (e->sl.n < 0 || m < 0 ||
+              e->sl.n > size2 || m > size2 ||
+              e->sl.n > m ) {
+            nbdkit_error ("[N:M] does not describe a valid slice");
+            return -1;
+          }
+          /* Take a slice from the allocator. */
+          if (a->blit (a2, a, m-e->sl.n, e->sl.n, *offset) == -1)
+            return -1;
+          *offset += m-e->sl.n;
+          break;
+        default:
+          abort ();
         }
-        break;
-      case EXPR_SLICE:
-        /* Slice [N:M] */
-        m = e->sl.m < 0 ? size2 : e->sl.m;
-        if (e->sl.n < 0 || m < 0 ||
-            e->sl.n > size2 || m > size2 ||
-            e->sl.n > m ) {
-          nbdkit_error ("[N:M] does not describe a valid slice");
-          return -1;
-        }
-        /* Take a slice from the allocator. */
-        if (a->blit (a2, a, m-e->sl.n, e->sl.n, *offset) == -1)
-          return -1;
-        *offset += m-e->sl.n;
-        break;
-      default:
-        abort ();
       }
+      break;
     }
-    break;
-  }
 
-  /* Adjust the size if the offset is now larger. */
-  if (*size < *offset)
-    *size = *offset;
+    /* Adjust the size if the offset is now larger. */
+    if (*size < *offset)
+      *size = *offset;
+  } /* for */
+
+  /* Free assignments in the local dictionary. */
+  while (d != dict) {
+    dict_t *t = d;
+    d = d->next;
+    free (t);
+  }
 
   return 0;
 }
