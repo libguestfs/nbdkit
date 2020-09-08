@@ -628,8 +628,10 @@ TESTS += \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
 	test-data-random-slice.sh \
+	test-data-random-slice2.sh \
 	test-data-sectors.sh \
 	test-data-string.sh \
+	test-data-var.sh \
 	test-disk2data.sh \
 	$(NULL)
 EXTRA_DIST += \
@@ -645,8 +647,10 @@ EXTRA_DIST += \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
 	test-data-random-slice.sh \
+	test-data-random-slice2.sh \
 	test-data-sectors.sh \
 	test-data-string.sh \
+	test-data-var.sh \
 	test-disk2data.sh \
 	$(NULL)
 

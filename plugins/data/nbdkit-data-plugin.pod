@@ -284,6 +284,22 @@ containing a boot signature at the end:
    ( @0x1fe \boot-signature ) -> \sector
    \sector \sector '
 
+=item B<$>VAR
+
+(nbdkit E<ge> 1.24)
+
+Substitute command line parameters or environment variables.  The
+variable is written in the same language as the C<data> parameter, and
+when substituted it creates a nested scope like S<C<( ... )>>
+expressions.  These are all equivalent:
+
+ nbdkit data '$pattern*16' pattern='0x55 0xAA'
+
+ export pattern='0x55 0xAA'
+ nbdkit data '$pattern*16'
+
+ nbdkit data '( 0x55 0xAA )*16'
+
 =item B<#> COMMENT
 
 (nbdkit E<ge> 1.24)

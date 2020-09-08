@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # nbdkit
 # Copyright (C) 2018-2020 Red Hat Inc.
 #
@@ -29,54 +30,37 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Test the data plugin with </dev/urandom[N:M] and $var substitutions
 
-EXTRA_DIST = \
-	disk2data.pl \
-	nbdkit-data-plugin.pod \
-	$(NULL)
+source ./functions.sh
+set -e
+set -x
 
-plugin_LTLIBRARIES = nbdkit-data-plugin.la
+requires nbdsh --version
+requires test -r /dev/urandom
 
-nbdkit_data_plugin_la_SOURCES = \
-	data.c \
-	data.h \
-	format.c \
-	format.h \
-	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(NULL)
+sock=`mktemp -u`
+files="data-random-slice.pid $sock"
+rm -f $files
+cleanup_fn rm -f $files
 
-nbdkit_data_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/allocators \
-	-I$(top_srcdir)/common/replacements \
-	-I$(top_srcdir)/common/utils \
-	$(NULL)
-nbdkit_data_plugin_la_CFLAGS = \
-	$(WARNINGS_CFLAGS) \
-	$(GNUTLS_CFLAGS) \
-	$(NULL)
-nbdkit_data_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(NULL)
-nbdkit_data_plugin_la_LIBADD = \
-	$(top_builddir)/common/allocators/liballocators.la \
-	$(top_builddir)/common/utils/libutils.la \
-	$(top_builddir)/common/replacements/libcompat.la \
-	$(IMPORT_LIBRARY_ON_WINDOWS) \
-	$(GNUTLS_LIBS) \
-	$(NULL)
+# Run nbdkit.
+start_nbdkit -P data-random-slice.pid -U $sock \
+       data '$rand4*4' rand4=' </dev/random[:4] '
 
-if HAVE_POD
+nbdsh --connect "nbd+unix://?socket=$sock" \
+      -c '
+print ("%d" % h.get_size())
+assert h.get_size() == 4*4
 
-man_MANS = nbdkit-data-plugin.1
-CLEANFILES += $(man_MANS)
+# We do not know what the content will be but it must
+# be the same 4 bytes repeated 4 times.
+buf1 = h.pread (4, 0)
+buf2 = h.pread (4, 4)
+buf3 = h.pread (4, 8)
+buf4 = h.pread (4, 12)
 
-nbdkit-data-plugin.1: nbdkit-data-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+assert buf1 == buf2
+assert buf2 == buf3
+assert buf3 == buf4
+'

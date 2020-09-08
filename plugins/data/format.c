@@ -51,6 +51,7 @@
 #include "strndup.h"
 #include "vector.h"
 
+#include "data.h"
 #include "format.h"
 
 /* The abstract syntax tree. */
@@ -272,6 +273,8 @@ static int parse_string (const char *value, size_t *start, size_t len,
                          string *rtn);
 static size_t get_name (const char *value, size_t i, size_t len,
                         size_t *initial);
+static size_t get_var (const char *value, size_t i, size_t len,
+                       size_t *initial);
 
 /* This is the format parser.  It returns an expression that must be
  * freed by the caller (or NULL in case of an error).
@@ -514,6 +517,41 @@ parser (int level, const char *value, size_t *start, size_t len)
       if (expr_list_append (&list, e) == -1) return NULL;
       break;
 
+    case '$': {                 /* $VAR */
+      CLEANUP_FREE char *name = NULL;
+      const char *content;
+      size_t ci;
+
+      flen = get_var (value, i, len, &i);
+      if (flen == 0) goto parse_error;
+      name = strndup (&value[i], flen);
+      if (name == NULL) {
+        nbdkit_error ("strndup: %m");
+        return NULL;
+      }
+      i += flen;
+
+      /* Look up the variable. */
+      content = get_extra_param (name);
+      if (!content) {
+        content = getenv (name);
+        if (!content) {
+          nbdkit_error ("$%s: variable not found", name);
+          return NULL;
+        }
+      }
+
+      /* Call self recursively on the variable content. */
+      ci = 0;
+      ep = parser (0, content, &ci, strlen (content));
+      if (ep == NULL)
+        return NULL;
+      e.t = EXPR_EXPR;
+      e.expr = ep;
+      if (expr_list_append (&list, e) == -1) return NULL;
+      break;
+    }
+
     case '0': case '1': case '2': case '3': case '4': /* BYTE */
     case '5': case '6': case '7': case '8': case '9':
       e.t = EXPR_BYTE;
@@ -589,6 +627,36 @@ get_name (const char *value, size_t i, size_t len, size_t *initial)
 
   while (i < len &&
          (ascii_isalnum (value[i]) || value[i] == '_' || value[i] == '-')) {
+    i++;
+    r++;
+  }
+
+  return r;
+}
+
+/* Like get_name above, but for $VAR variables.  The accepted variable
+ * name is /\$[a-z_][a-z0-9_]+/i
+ */
+static size_t
+get_var (const char *value, size_t i, size_t len, size_t *initial)
+{
+  size_t r = 0;
+
+  while (i < len) {
+    if (!ascii_isspace (value[i]))
+      break;
+    i++;
+  }
+
+  if (i >= len || value[i] != '$') return 0;
+  i++;
+  if (i >= len) return 0;
+  *initial = i;
+
+  if (!ascii_isalpha (value[i]) && value[i] != '_')
+    return 0;
+
+  while (i < len && (ascii_isalnum (value[i]) || value[i] == '_')) {
     i++;
     r++;
   }

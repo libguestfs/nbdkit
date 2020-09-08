@@ -45,8 +45,11 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
-#include "cleanup.h"
 #include "allocator.h"
+#include "cleanup.h"
+#include "vector.h"
+
+#include "data.h"
 #include "format.h"
 
 /* Data (raw|base64|data) parameter. */
@@ -64,6 +67,11 @@ const char *allocator_type = "sparse";
 
 /* Debug directory operations (-D data.dir=1). */
 int data_debug_dir;
+
+/* Collect extra parameters for data $VARs. */
+struct param { const char *key; const char *value; };
+DEFINE_VECTOR_TYPE(param_list, struct param);
+static param_list params;
 
 /* On unload, free the sparse array. */
 static void
@@ -134,11 +142,29 @@ data_config (const char *key, const char *value)
     data_param = value;
   }
   else {
-    nbdkit_error ("unknown parameter '%s'", key);
-    return -1;
+    if (param_list_append (&params,
+                           (struct param){ .key = key, .value = value })
+        == -1) {
+      nbdkit_error ("realloc: %m");
+      return -1;
+    }
   }
 
   return 0;
+}
+
+const char *
+get_extra_param (const char *name)
+{
+  size_t i;
+
+  for (i = 0; i < params.size; ++i) {
+    if (strcmp (params.ptr[i].key, name) == 0)
+      return params.ptr[i].value;
+  }
+
+  /* XXX Allow $size to work by returning @$size. */
+  return NULL;
 }
 
 /* Check the raw|base64|data was specified. */
@@ -147,6 +173,11 @@ data_config_complete (void)
 {
   if (data_seen == NOT_SEEN) {
     nbdkit_error ("raw|base64|data parameter was not specified");
+    return -1;
+  }
+
+  if (data_seen != DATA && params.size != 0) {
+    nbdkit_error ("extra parameters passed and not using data='...'");
     return -1;
   }
 
