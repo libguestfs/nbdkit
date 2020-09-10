@@ -228,7 +228,7 @@ insert_l1_entry (struct sparse_array *sa, const struct l1_entry *entry)
  */
 static void *
 lookup (struct sparse_array *sa, uint64_t offset, bool create,
-        uint32_t *remaining, struct l2_entry **l2_entry)
+        uint64_t *remaining, struct l2_entry **l2_entry)
 {
   struct l1_entry *entry;
   struct l2_entry *l2_dir;
@@ -297,11 +297,11 @@ lookup (struct sparse_array *sa, uint64_t offset, bool create,
 
 static int
 sparse_array_read (struct allocator *a,
-                   void *buf, uint32_t count, uint64_t offset)
+                   void *buf, uint64_t count, uint64_t offset)
 {
   struct sparse_array *sa = (struct sparse_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
-  uint32_t n;
+  uint64_t n;
   void *p;
 
   while (count > 0) {
@@ -324,11 +324,11 @@ sparse_array_read (struct allocator *a,
 
 static int
 sparse_array_write (struct allocator *a,
-                    const void *buf, uint32_t count, uint64_t offset)
+                    const void *buf, uint64_t count, uint64_t offset)
 {
   struct sparse_array *sa = (struct sparse_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
-  uint32_t n;
+  uint64_t n;
   void *p;
 
   while (count > 0) {
@@ -349,14 +349,14 @@ sparse_array_write (struct allocator *a,
 }
 
 static int sparse_array_zero (struct allocator *a,
-                              uint32_t count, uint64_t offset);
+                              uint64_t count, uint64_t offset);
 
 static int
 sparse_array_fill (struct allocator *a, char c,
-                   uint32_t count, uint64_t offset)
+                   uint64_t count, uint64_t offset)
 {
   struct sparse_array *sa = (struct sparse_array *) a;
-  uint32_t n;
+  uint64_t n;
   void *p;
 
   if (c == 0)
@@ -381,11 +381,11 @@ sparse_array_fill (struct allocator *a, char c,
 }
 
 static int
-sparse_array_zero (struct allocator *a, uint32_t count, uint64_t offset)
+sparse_array_zero (struct allocator *a, uint64_t count, uint64_t offset)
 {
   struct sparse_array *sa = (struct sparse_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
-  uint32_t n;
+  uint64_t n;
   void *p;
   struct l2_entry *l2_entry;
 
@@ -420,12 +420,12 @@ sparse_array_zero (struct allocator *a, uint32_t count, uint64_t offset)
 static int
 sparse_array_blit (struct allocator *a1,
                    struct allocator *a2,
-                   uint32_t count,
+                   uint64_t count,
                    uint64_t offset1, uint64_t offset2)
 {
   struct sparse_array *sa2 = (struct sparse_array *) a2;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa2->lock);
-  uint32_t n;
+  uint64_t n;
   void *p;
   struct l2_entry *l2_entry;
 
@@ -465,12 +465,12 @@ sparse_array_blit (struct allocator *a1,
 
 static int
 sparse_array_extents (struct allocator *a,
-                      uint32_t count, uint64_t offset,
+                      uint64_t count, uint64_t offset,
                       struct nbdkit_extents *extents)
 {
   struct sparse_array *sa = (struct sparse_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
-  uint32_t n, type;
+  uint64_t n, type;
   void *p;
 
   while (count > 0) {
