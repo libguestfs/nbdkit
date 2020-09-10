@@ -58,6 +58,9 @@ C<version_minor> fields:
 These fields were first added in nbdkit 1.16.5 and were not present in
 earlier versions.
 
+You can also probe the minimum version using L<pkg-config(1)>.  See
+L<nbdkit-plugin(3)/PKG-CONFIG/PKGCONF>.
+
 =head2 Query information about a particular plugin
 
  nbdkit pluginname --dump-plugin
