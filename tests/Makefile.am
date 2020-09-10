@@ -616,6 +616,7 @@ endif HAVE_MKE2FS_WITH_D
 # data plugin test.
 LIBGUESTFS_TESTS += test-data
 TESTS += \
+	test-data-64b.sh \
 	test-data-7E.sh \
 	test-data-assign.sh \
 	test-data-base64.sh \
@@ -637,6 +638,7 @@ TESTS += \
 	test-disk2data.sh \
 	$(NULL)
 EXTRA_DIST += \
+	test-data-64b.sh \
 	test-data-7E.sh \
 	test-data-assign.sh \
 	test-data-base64.sh \

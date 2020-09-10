@@ -77,26 +77,26 @@ struct allocator {
   /* Read bytes from [offset, offset+count-1] and copy into buf.
    */
   int (*read) (struct allocator *a, void *buf,
-               uint32_t count, uint64_t offset)
+               uint64_t count, uint64_t offset)
   __attribute__((__nonnull__ (1, 2)));
 
   /* Write bytes from buf to [offset, offset+count-1].  Because this
    * can allocate memory, it can fail (returning -1).
    */
   int (*write) (struct allocator *a, const void *buf,
-                uint32_t count, uint64_t offset)
+                uint64_t count, uint64_t offset)
   __attribute__((__nonnull__ (1, 2)));
 
   /* Fill range [offset, offset+count-1] with a single byte ‘c’.
    * If c == '\0', this is the same as .zero below.
    */
-  int (*fill) (struct allocator *a, char c, uint32_t count, uint64_t offset)
+  int (*fill) (struct allocator *a, char c, uint64_t count, uint64_t offset)
   __attribute__((__nonnull__ (1)));
 
   /* Zero range [offset, offset+count-1].  For all allocators zero and
    * trim are the same operation.
    */
-  int (*zero) (struct allocator *a, uint32_t count, uint64_t offset)
+  int (*zero) (struct allocator *a, uint64_t count, uint64_t offset)
   __attribute__((__nonnull__ (1)));
 
   /* Blit (copy) between two allocators.  Copy count bytes from
@@ -110,12 +110,12 @@ struct allocator {
    * (because of locks), ie. a1 must != a2.
    */
   int (*blit) (struct allocator *a1, struct allocator *a2,
-               uint32_t count, uint64_t offset1, uint64_t offset2)
+               uint64_t count, uint64_t offset1, uint64_t offset2)
   __attribute__((__nonnull__ (1, 2)));
 
   /* Return information about allocated pages and holes. */
   int (*extents) (struct allocator *a,
-                  uint32_t count, uint64_t offset,
+                  uint64_t count, uint64_t offset,
                   struct nbdkit_extents *extents)
   __attribute__((__nonnull__ (1, 4)));
 };
