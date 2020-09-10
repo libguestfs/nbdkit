@@ -149,7 +149,7 @@ m_alloc_set_size_hint (struct allocator *a, uint64_t size_hint)
 
 static int
 m_alloc_read (struct allocator *a, void *buf,
-              uint32_t count, uint64_t offset)
+              uint64_t count, uint64_t offset)
 {
   struct m_alloc *ma = (struct m_alloc *) a;
   ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE (&ma->lock);
@@ -171,7 +171,7 @@ m_alloc_read (struct allocator *a, void *buf,
 
 static int
 m_alloc_write (struct allocator *a, const void *buf,
-               uint32_t count, uint64_t offset)
+               uint64_t count, uint64_t offset)
 {
   struct m_alloc *ma = (struct m_alloc *) a;
 
@@ -188,7 +188,7 @@ m_alloc_write (struct allocator *a, const void *buf,
 }
 
 static int
-m_alloc_fill (struct allocator *a, char c, uint32_t count, uint64_t offset)
+m_alloc_fill (struct allocator *a, char c, uint64_t count, uint64_t offset)
 {
   struct m_alloc *ma = (struct m_alloc *) a;
 
@@ -202,7 +202,7 @@ m_alloc_fill (struct allocator *a, char c, uint32_t count, uint64_t offset)
 }
 
 static int
-m_alloc_zero (struct allocator *a, uint32_t count, uint64_t offset)
+m_alloc_zero (struct allocator *a, uint64_t count, uint64_t offset)
 {
   struct m_alloc *ma = (struct m_alloc *) a;
   ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE (&ma->lock);
@@ -222,7 +222,7 @@ m_alloc_zero (struct allocator *a, uint32_t count, uint64_t offset)
 
 static int
 m_alloc_blit (struct allocator *a1, struct allocator *a2,
-              uint32_t count, uint64_t offset1, uint64_t offset2)
+              uint64_t count, uint64_t offset1, uint64_t offset2)
 {
   struct m_alloc *ma2 = (struct m_alloc *) a2;
 
@@ -239,7 +239,7 @@ m_alloc_blit (struct allocator *a1, struct allocator *a2,
 
 static int
 m_alloc_extents (struct allocator *a,
-                 uint32_t count, uint64_t offset,
+                 uint64_t count, uint64_t offset,
                  struct nbdkit_extents *extents)
 {
   /* Always fully allocated.  XXX In theory we could detect zeroes

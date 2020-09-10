@@ -220,7 +220,7 @@ insert_l1_entry (struct zstd_array *za, const struct l1_entry *entry)
  */
 static void *
 lookup_decompress (struct zstd_array *za, uint64_t offset, void *buf,
-                   uint32_t *remaining, struct l2_entry **l2_entry)
+                   uint64_t *remaining, struct l2_entry **l2_entry)
 {
   struct l1_entry *entry;
   struct l2_entry *l2_dir;
@@ -353,12 +353,12 @@ compress (struct zstd_array *za, uint64_t offset, void *buf)
 
 static int
 zstd_array_read (struct allocator *a,
-                 void *buf, uint32_t count, uint64_t offset)
+                 void *buf, uint64_t count, uint64_t offset)
 {
   struct zstd_array *za = (struct zstd_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&za->lock);
   CLEANUP_FREE void *tbuf = NULL;
-  uint32_t n;
+  uint64_t n;
   void *p;
 
   tbuf = malloc (PAGE_SIZE);
@@ -384,12 +384,12 @@ zstd_array_read (struct allocator *a,
 
 static int
 zstd_array_write (struct allocator *a,
-                  const void *buf, uint32_t count, uint64_t offset)
+                  const void *buf, uint64_t count, uint64_t offset)
 {
   struct zstd_array *za = (struct zstd_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&za->lock);
   CLEANUP_FREE void *tbuf = NULL;
-  uint32_t n;
+  uint64_t n;
   void *p;
 
   tbuf = malloc (PAGE_SIZE);
@@ -417,15 +417,15 @@ zstd_array_write (struct allocator *a,
 }
 
 static int zstd_array_zero (struct allocator *a,
-                            uint32_t count, uint64_t offset);
+                            uint64_t count, uint64_t offset);
 
 static int
 zstd_array_fill (struct allocator *a, char c,
-                   uint32_t count, uint64_t offset)
+                   uint64_t count, uint64_t offset)
 {
   struct zstd_array *za = (struct zstd_array *) a;
   CLEANUP_FREE void *tbuf = NULL;
-  uint32_t n;
+  uint64_t n;
   void *p;
 
   if (c == 0) {
@@ -459,12 +459,12 @@ zstd_array_fill (struct allocator *a, char c,
 }
 
 static int
-zstd_array_zero (struct allocator *a, uint32_t count, uint64_t offset)
+zstd_array_zero (struct allocator *a, uint64_t count, uint64_t offset)
 {
   struct zstd_array *za = (struct zstd_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&za->lock);
   CLEANUP_FREE void *tbuf = NULL;
-  uint32_t n;
+  uint64_t n;
   void *p;
   struct l2_entry *l2_entry;
 
@@ -506,13 +506,13 @@ zstd_array_zero (struct allocator *a, uint32_t count, uint64_t offset)
 static int
 zstd_array_blit (struct allocator *a1,
                  struct allocator *a2,
-                 uint32_t count,
+                 uint64_t count,
                  uint64_t offset1, uint64_t offset2)
 {
   struct zstd_array *za2 = (struct zstd_array *) a2;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&za2->lock);
   CLEANUP_FREE void *tbuf = NULL;
-  uint32_t n;
+  uint64_t n;
   void *p;
 
   assert (a1 != a2);
@@ -549,13 +549,13 @@ zstd_array_blit (struct allocator *a1,
 
 static int
 zstd_array_extents (struct allocator *a,
-                      uint32_t count, uint64_t offset,
+                      uint64_t count, uint64_t offset,
                       struct nbdkit_extents *extents)
 {
   struct zstd_array *za = (struct zstd_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&za->lock);
   CLEANUP_FREE void *buf = NULL;
-  uint32_t n, type;
+  uint64_t n, type;
   void *p;
   struct l2_entry *l2_entry;
 
