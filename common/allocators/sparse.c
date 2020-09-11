@@ -427,12 +427,13 @@ sparse_array_blit (struct allocator *a1,
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa2->lock);
   uint32_t n;
   void *p;
+  struct l2_entry *l2_entry;
 
   assert (a1 != a2);
   assert (strcmp (a2->type, "sparse") == 0);
 
   while (count > 0) {
-    p = lookup (sa2, offset2, true, &n, NULL);
+    p = lookup (sa2, offset2, true, &n, &l2_entry);
     if (p == NULL)
       return -1;
 
@@ -444,6 +445,15 @@ sparse_array_blit (struct allocator *a1,
      */
     if (a1->read (a1, p, n, offset1) == -1)
       return -1;
+
+    /* If the whole page is now zero, free it. */
+    if (is_zero (l2_entry->page, PAGE_SIZE)) {
+      if (sa2->a.debug)
+        nbdkit_debug ("%s: freeing zero page at offset %" PRIu64,
+                      __func__, offset2);
+      free (l2_entry->page);
+      l2_entry->page = NULL;
+    }
 
     count -= n;
     offset1 += n;
