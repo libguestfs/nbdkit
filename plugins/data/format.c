@@ -334,6 +334,7 @@ parser (int level, const char *value, size_t *start, size_t len)
             return NULL;
           }
           i += n;
+          e.i = -e.i;
           APPEND_EXPR;
         }
         else
@@ -797,10 +798,10 @@ evaluate (const dict_t *dict, const expr_t *e,
       break;
 
     case EXPR_REL_OFFSET:
-      if (e->i < 0 && e->i > *offset) {
+      if (e->i < 0 && -e->i > *offset) {
         nbdkit_error ("data parameter @-%" PRIi64 " "
                       "must not be larger than the current offset %" PRIu64,
-                      e->i, *offset);
+                      -e->i, *offset);
         return -1;
       }
       /* XXX Check it does not overflow 63 bits. */

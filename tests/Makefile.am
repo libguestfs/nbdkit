@@ -629,6 +629,7 @@ TESTS += \
 	test-data-raw-copy.sh \
 	test-data-random-slice.sh \
 	test-data-random-slice2.sh \
+	test-data-reloffset.sh \
 	test-data-sectors.sh \
 	test-data-string.sh \
 	test-data-string0.sh \
@@ -649,6 +650,7 @@ EXTRA_DIST += \
 	test-data-raw-copy.sh \
 	test-data-random-slice.sh \
 	test-data-random-slice2.sh \
+	test-data-reloffset.sh \
 	test-data-sectors.sh \
 	test-data-string.sh \
 	test-data-string0.sh \
