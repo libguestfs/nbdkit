@@ -516,7 +516,7 @@ zstd_array_blit (struct allocator *a1,
   void *p;
 
   assert (a1 != a2);
-  assert (strcmp (a2->type, "zstd") == 0);
+  assert (strcmp (a2->f->type, "zstd") == 0);
 
   tbuf = malloc (PAGE_SIZE);
   if (tbuf == NULL) {
@@ -533,7 +533,7 @@ zstd_array_blit (struct allocator *a1,
     /* Read the source allocator (a1) directly to p which points into
      * the right place in za2.
      */
-    if (a1->read (a1, p, n, offset1) == -1)
+    if (a1->f->read (a1, p, n, offset1) == -1)
       return -1;
 
     if (compress (za2, offset2, tbuf) == -1)
@@ -593,20 +593,10 @@ zstd_array_extents (struct allocator *a,
   return 0;
 }
 
-static struct allocator functions = {
-  .free = zstd_array_free,
-  .set_size_hint = zstd_array_set_size_hint,
-  .read = zstd_array_read,
-  .write = zstd_array_write,
-  .fill = zstd_array_fill,
-  .zero = zstd_array_zero,
-  .blit = zstd_array_blit,
-  .extents = zstd_array_extents,
-};
-
 struct allocator *
-create_zstd_array (const parameters *params)
+zstd_array_create (const void *paramsv)
 {
+  const allocator_parameters *params  = paramsv;
   struct zstd_array *za;
 
   if (params->size > 0) {
@@ -619,7 +609,6 @@ create_zstd_array (const parameters *params)
     nbdkit_error ("calloc: %m");
     return NULL;
   }
-  za->a = functions;
 
   pthread_mutex_init (&za->lock, NULL);
 
@@ -642,4 +631,42 @@ create_zstd_array (const parameters *params)
   return (struct allocator *) za;
 }
 
-#endif /* HAVE_LIBZSTD */
+static struct allocator_functions functions = {
+  .type = "zstd",
+  .create = zstd_array_create,
+  .free = zstd_array_free,
+  .set_size_hint = zstd_array_set_size_hint,
+  .read = zstd_array_read,
+  .write = zstd_array_write,
+  .fill = zstd_array_fill,
+  .zero = zstd_array_zero,
+  .blit = zstd_array_blit,
+  .extents = zstd_array_extents,
+};
+
+#else /* !HAVE_LIBZSTD */
+
+/* If zstd is not compiled in, this is a dummy allocator that always
+ * fails with an error.
+ */
+struct allocator *
+zstd_array_create (const void *params)
+{
+  nbdkit_error ("allocator=zstd is not supported in this build of nbdkit");
+  return NULL;
+}
+
+static struct allocator_functions functions = {
+  .type = "zstd",
+  .create = zstd_array_create,
+};
+
+#endif /* !HAVE_LIBZSTD */
+
+static void register_zstd_array (void) __attribute__((constructor));
+
+static void
+register_zstd_array (void)
+{
+  register_allocator (&functions);
+}

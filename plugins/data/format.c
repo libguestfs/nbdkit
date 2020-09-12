@@ -839,7 +839,7 @@ evaluate (const dict_t *dict, const expr_t *e,
 
     case EXPR_BYTE:
       /* Store the byte. */
-      if (a->write (a, &e->b, 1, *offset) == -1)
+      if (a->f->write (a, &e->b, 1, *offset) == -1)
         return -1;
       (*offset)++;
       break;
@@ -876,7 +876,7 @@ evaluate (const dict_t *dict, const expr_t *e,
 
     case EXPR_STRING:
       /* Copy the string into the allocator. */
-      if (a->write (a, e->string.ptr, e->string.size, *offset) == -1)
+      if (a->f->write (a, e->string.ptr, e->string.size, *offset) == -1)
         return -1;
       *offset += e->string.size;
       break;
@@ -921,7 +921,7 @@ evaluate (const dict_t *dict, const expr_t *e,
       if (evaluate (t->next, t->expr, a2, &offset2, &size2) == -1)
         return -1;
 
-      if (a->blit (a2, a, size2, 0, *offset) == -1)
+      if (a->f->blit (a2, a, size2, 0, *offset) == -1)
         return -1;
       *offset += size2;
       break;
@@ -938,7 +938,7 @@ evaluate (const dict_t *dict, const expr_t *e,
        * sense to optimize it here.
        */
       if (e->t == EXPR_REPEAT && e->expr->t == EXPR_BYTE) {
-        if (a->fill (a, e->expr->b, e->r.n, *offset) == -1)
+        if (a->f->fill (a, e->expr->b, e->r.n, *offset) == -1)
           return -1;
         *offset += e->r.n;
       }
@@ -981,14 +981,14 @@ evaluate (const dict_t *dict, const expr_t *e,
 
         switch (e->t) {
         case EXPR_EXPR:
-          if (a->blit (a2, a, size2, 0, *offset) == -1)
+          if (a->f->blit (a2, a, size2, 0, *offset) == -1)
             return -1;
           *offset += size2;
           break;
         case EXPR_REPEAT:
           /* Duplicate the allocator a2 N times. */
           for (j = 0; j < e->r.n; ++j) {
-            if (a->blit (a2, a, size2, 0, *offset) == -1)
+            if (a->f->blit (a2, a, size2, 0, *offset) == -1)
               return -1;
             *offset += size2;
           }
@@ -1003,7 +1003,7 @@ evaluate (const dict_t *dict, const expr_t *e,
             return -1;
           }
           /* Take a slice from the allocator. */
-          if (a->blit (a2, a, m-e->sl.n, e->sl.n, *offset) == -1)
+          if (a->f->blit (a2, a, m-e->sl.n, e->sl.n, *offset) == -1)
             return -1;
           *offset += m-e->sl.n;
           break;
@@ -1047,7 +1047,7 @@ store_file (struct allocator *a,
   while (!feof (fp)) {
     n = fread (buf, 1, BUFSIZ, fp);
     if (n > 0) {
-      if (a->write (a, buf, n, *offset) == -1) {
+      if (a->f->write (a, buf, n, *offset) == -1) {
         fclose (fp);
         return -1;
       }
@@ -1101,7 +1101,7 @@ store_file_slice (struct allocator *a,
   while (!feof (fp) && (end == -1 || len > 0)) {
     n = fread (buf, 1, end == -1 ? BUFSIZ : MIN (len, BUFSIZ), fp);
     if (n > 0) {
-      if (a->write (a, buf, n, *offset) == -1) {
+      if (a->f->write (a, buf, n, *offset) == -1) {
         fclose (fp);
         return -1;
       }
@@ -1143,7 +1143,7 @@ store_script (struct allocator *a,
   while (!feof (pp)) {
     n = fread (buf, 1, BUFSIZ, pp);
     if (n > 0) {
-      if (a->write (a, buf, n, *offset) == -1) {
+      if (a->f->write (a, buf, n, *offset) == -1) {
         pclose (pp);
         return -1;
       }
@@ -1185,7 +1185,7 @@ store_script_len (struct allocator *a,
   while (!feof (pp) && len > 0) {
     n = fread (buf, 1, MIN (len, BUFSIZ), pp);
     if (n > 0) {
-      if (a->write (a, buf, n, *offset) == -1) {
+      if (a->f->write (a, buf, n, *offset) == -1) {
         pclose (pp);
         return -1;
       }
