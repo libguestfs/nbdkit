@@ -36,6 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_run
 requires nbdcopy --version
 requires hexdump --version
 
