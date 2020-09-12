@@ -40,12 +40,12 @@ requires nbdsh --version
 requires test -r /dev/urandom
 
 sock=`mktemp -u`
-files="data-random-slice.pid $sock"
+files="data-random-slice2.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-random-slice.pid -U $sock \
+start_nbdkit -P data-random-slice2.pid -U $sock \
        data '$rand4*4' rand4=' </dev/random[:4] '
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
