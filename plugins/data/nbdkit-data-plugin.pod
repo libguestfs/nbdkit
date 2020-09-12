@@ -255,7 +255,7 @@ Repeat the expression C<N> times.  The offset is incremented by the
 length of the expression × N.  For example to create a repeating
 pattern of 0x55, 0xAA for 512 (2×256) bytes do:
 
- '( 0x55 0xAA ) * 256'
+ nbdkit data '( 0x55 0xAA ) * 256'
 
 =item expression B<[>NB<:>MB<]>
 
@@ -280,9 +280,9 @@ with a backslash character followed by one or more alphanumeric, dash
 and underscore.  For example this makes two identical sectors both
 containing a boot signature at the end:
 
- ' ( 0x55 0xAA ) -> \boot-signature
-   ( @0x1fe \boot-signature ) -> \sector
-   \sector \sector '
+ nbdkit data ' ( 0x55 0xAA ) -> \boot-signature
+               ( @0x1fe \boot-signature ) -> \sector
+               \sector \sector '
 
 =item B<$>VAR
 
