@@ -66,7 +66,7 @@ store_file (struct allocator *a,
   while (!feof (fp)) {
     n = fread (buf, 1, BUFSIZ, fp);
     if (n > 0) {
-      if (a->write (a, buf, n, *offset) == -1) {
+      if (a->f->write (a, buf, n, *offset) == -1) {
         fclose (fp);
         return -1;
       }
@@ -151,7 +151,7 @@ store_string (struct allocator *a, const char *value, size_t i, size_t len,
       /*FALLTHROUGH*/
     default:
       /* Any other character is added to the allocator. */
-      if (a->write (a, &c, 1, *offset) == -1)
+      if (a->f->write (a, &c, 1, *offset) == -1)
         return -1;
       (*offset)++;
     }
@@ -288,7 +288,7 @@ parse (int level,
 
           /* Duplicate the allocator a2 N (=k) times. */
           while (k > 0) {
-            if (a->blit (a2, a, size2, 0, offset) == -1)
+            if (a->f->blit (a2, a, size2, 0, offset) == -1)
               return -1;
             offset += size2;
             k--;
@@ -333,7 +333,7 @@ parse (int level,
         }
         i += n;
 
-        if (a->fill (a, j, k, offset) == -1)
+        if (a->f->fill (a, j, k, offset) == -1)
           return -1;
         offset += k;
         if (*size < offset)
@@ -352,7 +352,7 @@ parse (int level,
 
         /* Store the byte. */
         c = j;
-        if (a->write (a, &c, 1, offset) == -1)
+        if (a->f->write (a, &c, 1, offset) == -1)
           return -1;
         offset++;
       }

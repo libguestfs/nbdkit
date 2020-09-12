@@ -227,14 +227,14 @@ m_alloc_blit (struct allocator *a1, struct allocator *a2,
   struct m_alloc *ma2 = (struct m_alloc *) a2;
 
   assert (a1 != a2);
-  assert (strcmp (a2->type, "malloc") == 0);
+  assert (strcmp (a2->f->type, "malloc") == 0);
 
   if (extend (ma2, offset2+count) == -1)
     return -1;
 
   /* See comment in m_alloc_write. */
   ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE (&ma2->lock);
-  return a1->read (a1, ma2->ba.ptr + offset2, count, offset1);
+  return a1->f->read (a1, ma2->ba.ptr + offset2, count, offset1);
 }
 
 static int
@@ -251,20 +251,10 @@ m_alloc_extents (struct allocator *a,
   return nbdkit_add_extent (extents, offset, count, 0);
 }
 
-static struct allocator functions = {
-  .free = m_alloc_free,
-  .set_size_hint = m_alloc_set_size_hint,
-  .read = m_alloc_read,
-  .write = m_alloc_write,
-  .fill = m_alloc_fill,
-  .zero = m_alloc_zero,
-  .blit = m_alloc_blit,
-  .extents = m_alloc_extents,
-};
-
 struct allocator *
-create_malloc (const parameters *params)
+m_alloc_create (const void *paramsv)
 {
+  const allocator_parameters *params  = paramsv;
   struct m_alloc *ma;
   bool use_mlock = false;
   size_t i;
@@ -294,9 +284,29 @@ create_malloc (const parameters *params)
     nbdkit_error ("calloc: %m");
     return NULL;
   }
-  ma->a = functions;
   ma->use_mlock = use_mlock;
   pthread_rwlock_init (&ma->lock, NULL);
   ma->ba = (bytearray) empty_vector;
   return (struct allocator *) ma;
+}
+
+static struct allocator_functions functions = {
+  .type = "malloc",
+  .create = m_alloc_create,
+  .free = m_alloc_free,
+  .set_size_hint = m_alloc_set_size_hint,
+  .read = m_alloc_read,
+  .write = m_alloc_write,
+  .fill = m_alloc_fill,
+  .zero = m_alloc_zero,
+  .blit = m_alloc_blit,
+  .extents = m_alloc_extents,
+};
+
+static void register_malloc (void) __attribute__((constructor));
+
+static void
+register_malloc (void)
+{
+  register_allocator (&functions);
 }

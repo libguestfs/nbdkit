@@ -430,7 +430,7 @@ sparse_array_blit (struct allocator *a1,
   struct l2_entry *l2_entry;
 
   assert (a1 != a2);
-  assert (strcmp (a2->type, "sparse") == 0);
+  assert (strcmp (a2->f->type, "sparse") == 0);
 
   while (count > 0) {
     p = lookup (sa2, offset2, true, &n, &l2_entry);
@@ -443,7 +443,7 @@ sparse_array_blit (struct allocator *a1,
     /* Read the source allocator (a1) directly to p which points into
      * the right place in sa2.
      */
-    if (a1->read (a1, p, n, offset1) == -1)
+    if (a1->f->read (a1, p, n, offset1) == -1)
       return -1;
 
     /* If the whole page is now zero, free it. */
@@ -501,20 +501,10 @@ sparse_array_extents (struct allocator *a,
   return 0;
 }
 
-static struct allocator functions = {
-  .free = sparse_array_free,
-  .set_size_hint = sparse_array_set_size_hint,
-  .read = sparse_array_read,
-  .write = sparse_array_write,
-  .fill = sparse_array_fill,
-  .zero = sparse_array_zero,
-  .blit = sparse_array_blit,
-  .extents = sparse_array_extents,
-};
-
-struct allocator *
-create_sparse_array (const parameters *params)
+static struct allocator *
+sparse_array_create (const void *paramsv)
 {
+  const allocator_parameters *params  = paramsv;
   struct sparse_array *sa;
 
   if (params->size > 0) {
@@ -527,7 +517,28 @@ create_sparse_array (const parameters *params)
     nbdkit_error ("calloc: %m");
     return NULL;
   }
-  sa->a = functions;
   pthread_mutex_init (&sa->lock, NULL);
+
   return (struct allocator *) sa;
+}
+
+static struct allocator_functions functions = {
+  .type = "sparse",
+  .create = sparse_array_create,
+  .free = sparse_array_free,
+  .set_size_hint = sparse_array_set_size_hint,
+  .read = sparse_array_read,
+  .write = sparse_array_write,
+  .fill = sparse_array_fill,
+  .zero = sparse_array_zero,
+  .blit = sparse_array_blit,
+  .extents = sparse_array_extents,
+};
+
+static void register_sparse_array (void) __attribute__((constructor));
+
+static void
+register_sparse_array (void)
+{
+  register_allocator (&functions);
 }

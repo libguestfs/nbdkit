@@ -47,14 +47,17 @@
 
 struct nbdkit_extents;
 
-struct allocator {
+struct allocator_functions {
   /* Allocator type (eg. "sparse").
    * This does not include the parameters.
    */
   const char *type;
 
-  /* Debug flag. */
-  bool debug;
+  /* Private function called to create an allocator.  It should return
+   * a new struct which is at least as large as struct allocator.  It
+   * may have extra fields for the specific allocator to use.
+   */
+  struct allocator *(*create) (const void *);
 
   /* Free the allocator instance. */
   void (*free) (struct allocator *a);
@@ -118,6 +121,13 @@ struct allocator {
                   uint64_t count, uint64_t offset,
                   struct nbdkit_extents *extents)
   __attribute__((__nonnull__ (1, 4)));
+};
+
+struct allocator {
+  const struct allocator_functions *f;
+
+  /* Debug flag. */
+  bool debug;
 };
 
 /* Create a new allocator, usually from the type passed in the
