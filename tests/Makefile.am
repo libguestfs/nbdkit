@@ -632,6 +632,8 @@ TESTS += \
 	test-data-random-slice2.sh \
 	test-data-reloffset.sh \
 	test-data-sectors.sh \
+	test-data-script.sh \
+	test-data-script-slice.sh \
 	test-data-string.sh \
 	test-data-string0.sh \
 	test-data-var.sh \
@@ -654,6 +656,8 @@ EXTRA_DIST += \
 	test-data-random-slice2.sh \
 	test-data-reloffset.sh \
 	test-data-sectors.sh \
+	test-data-script.sh \
+	test-data-script-slice.sh \
 	test-data-string.sh \
 	test-data-string0.sh \
 	test-data-var.sh \

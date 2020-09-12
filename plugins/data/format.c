@@ -50,6 +50,7 @@
 #include "rounding.h"
 #include "strndup.h"
 #include "vector.h"
+#include "windows-compat.h"
 
 #include "data.h"
 #include "format.h"
@@ -68,6 +69,7 @@ struct expr {
     EXPR_ALIGN_OFFSET,          /* ui       - align offset (@^ALIGNMENT) */
     EXPR_EXPR,                  /* expr     - nested expression */
     EXPR_FILE,                  /* filename - read a file */
+    EXPR_SCRIPT,                /* script   - run script */
     EXPR_STRING,                /* string   - string + length */
     EXPR_NAME,                  /* name     - insert a named expression */
     EXPR_ASSIGN,                /* a.name, a.expr - assign name to expr */
@@ -81,6 +83,7 @@ struct expr {
     uint64_t ui;
     expr_t *expr;
     char *filename;
+    char *script;
     string string;
     char *name;
     struct {
@@ -118,6 +121,7 @@ free_expr_fields (expr_t *e)
       break;
     case EXPR_EXPR:   free_expr (e->expr); break;
     case EXPR_FILE:   free (e->filename); break;
+    case EXPR_SCRIPT: free (e->script); break;
     case EXPR_STRING: free (e->string.ptr); break;
     case EXPR_NAME:   free (e->name); break;
     case EXPR_ASSIGN: free (e->a.name); free_expr (e->a.expr); break;
@@ -188,6 +192,9 @@ print_expr (expr_t *e, FILE *fp)
     break;
   case EXPR_FILE:
     fprintf (fp, "<%s ", e->filename);
+    break;
+  case EXPR_SCRIPT:
+    fprintf (fp, "<(%s)", e->script);
     break;
   case EXPR_STRING:
     fprintf (fp, "\"");
@@ -275,6 +282,7 @@ static size_t get_name (const char *value, size_t i, size_t len,
                         size_t *initial);
 static size_t get_var (const char *value, size_t i, size_t len,
                        size_t *initial);
+static size_t get_script (const char *value, size_t i, size_t len);
 
 /* This is the format parser.  It returns an expression that must be
  * freed by the caller (or NULL in case of an error).
@@ -455,22 +463,37 @@ parser (int level, const char *value, size_t *start, size_t len)
       APPEND_EXPR;
       break;
 
-    case '<':                   /* <FILE */
-      i++;
+    case '<':
+      if (i+1 < len && value[i+1] == '(') { /* <(SCRIPT) */
+        i += 2;
 
-      e.t = EXPR_FILE;
-      /* The filename follows next in the string. */
-      flen = strcspn (&value[i], "*[) \t\n");
-      if (flen == 0) {
-        nbdkit_error ("data parameter <FILE not a filename");
-        return NULL;
+        e.t = EXPR_SCRIPT;
+        flen = get_script (value, i, len);
+        if (flen == 0) goto parse_error;
+        e.script = strndup (&value[i], flen);
+        if (e.script == NULL) {
+          nbdkit_error ("strndup: %m");
+          return NULL;
+        }
+        i += flen + 1;          /* +1 for trailing ) */
       }
-      e.filename = strndup (&value[i], flen);
-      if (e.filename == NULL) {
-        nbdkit_error ("strndup: %m");
-        return NULL;
+      else {                    /* <FILE */
+        i++;
+
+        e.t = EXPR_FILE;
+        /* The filename follows next in the string. */
+        flen = strcspn (&value[i], "*[) \t\n");
+        if (flen == 0) {
+          nbdkit_error ("data parameter <FILE not a filename");
+          return NULL;
+        }
+        e.filename = strndup (&value[i], flen);
+        if (e.filename == NULL) {
+          nbdkit_error ("strndup: %m");
+          return NULL;
+        }
+        i += flen;
       }
-      i += flen;
       APPEND_EXPR;
       break;
 
@@ -669,6 +692,30 @@ get_var (const char *value, size_t i, size_t len, size_t *initial)
   return r;
 }
 
+/* Find end of a <(SCRIPT), ignoring nested (). */
+static size_t
+get_script (const char *value, size_t i, size_t len)
+{
+  int lvl = 0;
+  size_t r = 0;
+
+  for (; i < len; ++i, ++r) {
+    if (value[i] == '(')
+      lvl++;
+    else if (value[i] == ')') {
+      if (lvl > 0)
+        lvl--;
+      else
+        break;
+    }
+  }
+
+  if (i >= len)
+    return 0;
+
+  return r;
+}
+
 /* Parse a "String" with C-like escaping, and store it in the string
  * vector.  When this is called we have already consumed the initial
  * double quote character.
@@ -755,6 +802,11 @@ static int store_file (struct allocator *a,
 static int store_file_slice (struct allocator *a,
                              const char *filename,
                              uint64_t skip, int64_t end, uint64_t *offset);
+static int store_script (struct allocator *a,
+                         const char *script, uint64_t *offset);
+static int store_script_len (struct allocator *a,
+                             const char *script,
+                             int64_t len, uint64_t *offset);
 
 /* This is the evaluator.  It takes a parsed expression (expr_t) and
  * evaulates it into the allocator.
@@ -814,6 +866,11 @@ evaluate (const dict_t *dict, const expr_t *e,
 
     case EXPR_FILE:
       if (store_file (a, e->filename, offset) == -1)
+        return -1;
+      break;
+
+    case EXPR_SCRIPT:
+      if (store_script (a, e->script, offset) == -1)
         return -1;
       break;
 
@@ -893,6 +950,15 @@ evaluate (const dict_t *dict, const expr_t *e,
       else if (e->t == EXPR_SLICE && e->expr->t == EXPR_FILE) {
         if (store_file_slice (a, e->expr->filename,
                               e->sl.n, e->sl.m, offset) == -1)
+          return -1;
+      }
+
+      /* <(SCRIPT)[:LEN] must be optimized by truncating the
+       * output of the script.
+       */
+      else if (e->t == EXPR_SLICE && e->sl.n == 0 &&
+               e->expr->t == EXPR_SCRIPT) {
+        if (store_script_len (a, e->expr->script, e->sl.m, offset) == -1)
           return -1;
       }
 
@@ -1056,3 +1122,106 @@ store_file_slice (struct allocator *a,
 
   return 0;
 }
+
+#ifndef WIN32
+
+/* Run the script and store the output in the allocator from offset. */
+static int
+store_script (struct allocator *a,
+              const char *script, uint64_t *offset)
+{
+  FILE *pp;
+  char buf[BUFSIZ];
+  size_t n;
+
+  pp = popen (script, "r");
+  if (pp == NULL) {
+    nbdkit_error ("popen: %m");
+    return -1;
+  }
+
+  while (!feof (pp)) {
+    n = fread (buf, 1, BUFSIZ, pp);
+    if (n > 0) {
+      if (a->write (a, buf, n, *offset) == -1) {
+        pclose (pp);
+        return -1;
+      }
+    }
+    if (ferror (pp)) {
+      nbdkit_error ("fread: %m");
+      pclose (pp);
+      return -1;
+    }
+    (*offset) += n;
+  }
+
+  if (pclose (pp) == EOF) {
+    nbdkit_error ("pclose: %m");
+    return -1;
+  }
+
+  return 0;
+}
+
+/* Run the script and store up to len bytes of the output in the
+ * allocator from offset.
+ */
+static int
+store_script_len (struct allocator *a,
+                  const char *script,
+                  int64_t len, uint64_t *offset)
+{
+  FILE *pp;
+  char buf[BUFSIZ];
+  size_t n;
+
+  pp = popen (script, "r");
+  if (pp == NULL) {
+    nbdkit_error ("popen: %m");
+    return -1;
+  }
+
+  while (!feof (pp) && len > 0) {
+    n = fread (buf, 1, MIN (len, BUFSIZ), pp);
+    if (n > 0) {
+      if (a->write (a, buf, n, *offset) == -1) {
+        pclose (pp);
+        return -1;
+      }
+    }
+    if (ferror (pp)) {
+      nbdkit_error ("fread: %m");
+      pclose (pp);
+      return -1;
+    }
+    (*offset) += n;
+    len -= n;
+  }
+
+  if (pclose (pp) == EOF) {
+    nbdkit_error ("pclose: %m");
+    return -1;
+  }
+
+  return 0;
+}
+
+#else /* WIN32 */
+
+static int
+store_script (struct allocator *a,
+              const char *script, uint64_t *offset)
+{
+  NOT_IMPLEMENTED_ON_WINDOWS ("<(SCRIPT)");
+}
+
+static int
+store_script_len (struct allocator *a,
+                  const char *script,
+                  int64_t len, uint64_t *offset)
+{
+  NOT_IMPLEMENTED_ON_WINDOWS ("<(SCRIPT)");
+}
+
+#endif /* WIN32 */

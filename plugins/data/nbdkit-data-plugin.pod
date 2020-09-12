@@ -226,6 +226,31 @@ offset.  The offset is incremented by the size of the file.  The
 filename can be a relative or absolute path, but cannot contain
 whitespace in the name.
 
+=item B<E<lt>(>SCRIPTB<)>
+
+(nbdkit E<ge> 1.24, not Windows)
+
+Substitute the output of the shell script or external program as a
+binary blob and advance the offset by the length in bytes of the
+output.  You can use this to create more complex test patterns.  For
+example this produces a 32K disk image with an incrementing test
+pattern in groups of 4 bytes:
+
+ nbdkit data ' <( i=0
+                  while :; do
+                      printf "%04d" $((i++))
+                  done )[:32768] '
+
+The script may contain C<(> and C<)> characters, but they must be in
+matching pairs.  A script can produce a finite amount of output; or
+(as in the example) an infinite amount which must be truncated using
+the C<[:len]> slice operator.
+
+Scripts must be idempotent, producing the same output each time they
+are run.  This is because optimizations might change the order of
+evaluation or number of times the script is called and you could get
+different output in a future version of nbdkit.
+
 =item B<">STRINGB<">
 
 (nbdkit E<ge> 1.22)
