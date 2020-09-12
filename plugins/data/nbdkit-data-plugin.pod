@@ -244,7 +244,7 @@ Repeat the enclosed pattern C<N> times.  The offset is incremented by
 the length of the enclosed pattern × N.  For example to create a
 repeating pattern of 0x55, 0xAA for 512 (2×256) bytes do:
 
- '( 0x55 0xAA )*256'
+ nbdkit data '( 0x55 0xAA )*256'
 
 The C<( ... )> section recursively creates a new data parser so any of
 the above operators can appear inside, including nested C<(...)*N>.
