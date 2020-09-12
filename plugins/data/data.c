@@ -70,7 +70,7 @@ static void
 data_unload (void)
 {
   if (a)
-    a->free (a);
+    a->f->free (a);
 }
 
 /* Parse the base64 parameter. */
@@ -89,7 +89,7 @@ read_base64 (const char *value, uint64_t *size_ret)
     return -1;
   }
 
-  if (a->write (a, out.data, out.size, 0) == -1)
+  if (a->f->write (a, out.data, out.size, 0) == -1)
     return -1;
   free (out.data);
   *size_ret = out.size;
@@ -170,7 +170,7 @@ data_get_ready (void)
   switch (data_seen) {
   case RAW:
     data_size = strlen (data_param);
-    if (a->write (a, data_param, data_size, 0) == -1)
+    if (a->f->write (a, data_param, data_size, 0) == -1)
       return -1;
     break;
 
@@ -198,7 +198,7 @@ data_get_ready (void)
     size = data_size;
   nbdkit_debug ("final size: %" PRIi64, size);
 
-  if (a->set_size_hint (a, size) == -1)
+  if (a->f->set_size_hint (a, size) == -1)
     return -1;
 
   return 0;
@@ -276,7 +276,7 @@ data_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags)
 {
   assert (!flags);
-  return a->read (a, buf, count, offset);
+  return a->f->read (a, buf, count, offset);
 }
 
 /* Write data. */
@@ -286,7 +286,7 @@ data_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 {
   /* Flushing, and thus FUA flag, is a no-op */
   assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
-  return a->write (a, buf, count, offset);
+  return a->f->write (a, buf, count, offset);
 }
 
 /* Zero. */
@@ -294,10 +294,10 @@ static int
 data_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* Flushing, and thus FUA flag, is a no-op. Assume that
-   * a->zero generally beats writes, so FAST_ZERO is a no-op. */
+   * a->f->zero generally beats writes, so FAST_ZERO is a no-op. */
   assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
                      NBDKIT_FLAG_FAST_ZERO)) == 0);
-  return a->zero (a, count, offset);
+  return a->f->zero (a, count, offset);
 }
 
 /* Trim (same as zero). */
@@ -306,7 +306,7 @@ data_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* Flushing, and thus FUA flag, is a no-op */
   assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
-  return a->zero (a, count, offset);
+  return a->f->zero (a, count, offset);
 }
 
 /* Nothing is persistent, so flush is trivially supported */
@@ -321,7 +321,7 @@ static int
 data_extents (void *handle, uint32_t count, uint64_t offset,
               uint32_t flags, struct nbdkit_extents *extents)
 {
-  return a->extents (a, count, offset, extents);
+  return a->f->extents (a, count, offset, extents);
 }
 
 static struct nbdkit_plugin plugin = {

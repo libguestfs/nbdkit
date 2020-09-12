@@ -61,7 +61,7 @@ static void
 memory_unload (void)
 {
   if (a)
-    a->free (a);
+    a->f->free (a);
 }
 
 static int
@@ -118,7 +118,7 @@ memory_get_ready (void)
   a = create_allocator (allocator_type, memory_debug_dir);
   if (a == NULL)
     return -1;
-  if (a->set_size_hint (a, size) == -1)
+  if (a->f->set_size_hint (a, size) == -1)
     return -1;
   return 0;
 }
@@ -176,7 +176,7 @@ memory_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
               uint32_t flags)
 {
   assert (!flags);
-  return a->read (a, buf, count, offset);
+  return a->f->read (a, buf, count, offset);
 }
 
 /* Write data. */
@@ -186,7 +186,7 @@ memory_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 {
   /* Flushing, and thus FUA flag, is a no-op */
   assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
-  return a->write (a, buf, count, offset);
+  return a->f->write (a, buf, count, offset);
 }
 
 /* Zero. */
@@ -194,10 +194,10 @@ static int
 memory_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* Flushing, and thus FUA flag, is a no-op. Assume that
-   * a->zero generally beats writes, so FAST_ZERO is a no-op. */
+   * a->f->zero generally beats writes, so FAST_ZERO is a no-op. */
   assert ((flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
                      NBDKIT_FLAG_FAST_ZERO)) == 0);
-  return a->zero (a, count, offset);
+  return a->f->zero (a, count, offset);
 }
 
 /* Trim (same as zero). */
@@ -206,7 +206,7 @@ memory_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
   /* Flushing, and thus FUA flag, is a no-op */
   assert ((flags & ~NBDKIT_FLAG_FUA) == 0);
-  a->zero (a, count, offset);
+  a->f->zero (a, count, offset);
   return 0;
 }
 
@@ -222,7 +222,7 @@ static int
 memory_extents (void *handle, uint32_t count, uint64_t offset,
                 uint32_t flags, struct nbdkit_extents *extents)
 {
-  return a->extents (a, count, offset, extents);
+  return a->f->extents (a, count, offset, extents);
 }
 
 static struct nbdkit_plugin plugin = {

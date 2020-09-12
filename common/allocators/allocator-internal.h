@@ -33,18 +33,11 @@
 #ifndef NBDKIT_ALLOCATOR_INTERNAL_H
 #define NBDKIT_ALLOCATOR_INTERNAL_H
 
-#include <stdbool.h>
-
 #include "vector.h"
 
 struct key_value { char *key, *value; };
-DEFINE_VECTOR_TYPE(parameters, struct key_value);
+DEFINE_VECTOR_TYPE(allocator_parameters, struct key_value);
 
-extern struct allocator *create_malloc (const parameters *);
-extern struct allocator *create_sparse_array (const parameters *);
-
-#ifdef HAVE_LIBZSTD
-extern struct allocator *create_zstd_array (const parameters *);
-#endif
+extern void register_allocator (const struct allocator_functions *);
 
 #endif /* NBDKIT_ALLOCATOR_INTERNAL_H */

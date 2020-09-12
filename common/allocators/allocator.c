@@ -41,6 +41,20 @@
 
 #include "allocator.h"
 #include "allocator-internal.h"
+#include "vector.h"
+
+/* The list of registered allocators. */
+DEFINE_VECTOR_TYPE(allocator_list, const struct allocator_functions *);
+static allocator_list allocators = empty_vector;
+
+void
+register_allocator (const struct allocator_functions *f)
+{
+  if (allocator_list_append (&allocators, f) == -1) {
+    perror ("realloc");
+    exit (EXIT_FAILURE);
+  }
+}
 
 static void
 free_key_value (struct key_value kv)
@@ -50,15 +64,16 @@ free_key_value (struct key_value kv)
 }
 
 static void
-free_parameters (parameters *params)
+free_allocator_parameters (allocator_parameters *params)
 {
-  parameters_iter (params, free_key_value);
+  allocator_parameters_iter (params, free_key_value);
   free (params->ptr);
 }
 
 /* The type may be followed by parameters "type,key=value[,...]" */
 static int
-parse_parameters (const char *type, size_t *type_len, parameters *params)
+parse_parameters (const char *type, size_t *type_len,
+                  allocator_parameters *params)
 {
   size_t i, j, len;
 
@@ -80,7 +95,7 @@ parse_parameters (const char *type, size_t *type_len, parameters *params)
     j = strcspn (&type[i], "=");
     if (j == 0) {
       nbdkit_error ("invalid allocator parameter");
-      free_parameters (params);
+      free_allocator_parameters (params);
       return -1;
     }
     if (j < len) {
@@ -95,14 +110,14 @@ parse_parameters (const char *type, size_t *type_len, parameters *params)
       nbdkit_error ("strdup: %m");
       free (kv.key);
       free (kv.value);
-      free_parameters (params);
+      free_allocator_parameters (params);
       return -1;
     }
 
     nbdkit_debug ("allocator parameter: %s=%s", kv.key, kv.value);
-    if (parameters_append (params, kv) == -1) {
+    if (allocator_parameters_append (params, kv) == -1) {
       nbdkit_error ("realloc: %m");
-      free_parameters (params);
+      free_allocator_parameters (params);
       return -1;
     }
     i += len;
@@ -115,38 +130,30 @@ struct allocator *
 create_allocator (const char *type, bool debug)
 {
   struct allocator *ret = NULL;
-  parameters params = empty_vector;
-  size_t type_len;
+  allocator_parameters params = empty_vector;
+  size_t i, type_len;
 
   if (parse_parameters (type, &type_len, &params) == -1)
     return NULL;
 
-  if (strncmp (type, "sparse", type_len) == 0) {
-    ret = create_sparse_array (&params);
-    if (ret) ret->type = "sparse";
+  /* See if we can find the allocator. */
+  for (i = 0; i < allocators.size; ++i) {
+    if (strncmp (type, allocators.ptr[i]->type, type_len) == 0) {
+      ret = allocators.ptr[i]->create (&params);
+      break;
+    }
   }
 
-  else if (strncmp (type, "malloc", type_len) == 0) {
-    ret = create_malloc (&params);
-    if (ret) ret->type = "malloc";
-  }
-
-  else if (strncmp (type, "zstd", type_len) == 0) {
-#ifdef HAVE_LIBZSTD
-    ret = create_zstd_array (&params);
-    if (ret) ret->type = "zstd";
-#else
-    nbdkit_error ("allocator=zstd is not supported in this build of nbdkit");
-#endif
-  }
-
-  else
+  if (ret == NULL)
     nbdkit_error ("unknown allocator \"%s\"", type);
 
   /* Free the parameters allocated above. */
-  free_parameters (&params);
+  free_allocator_parameters (&params);
 
-  if (ret) ret->debug = debug;
+  if (ret) {
+    ret->debug = debug;
+    ret->f = allocators.ptr[i];
+  }
   return ret;
 }
 
@@ -155,6 +162,6 @@ cleanup_free_allocator (struct allocator **ap)
 {
   struct allocator *a = *ap;
 
-  if (a)
-    a->free (a);
+  if (a && a->f)
+    a->f->free (a);
 }
