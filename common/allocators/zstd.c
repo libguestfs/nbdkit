@@ -644,25 +644,6 @@ static struct allocator_functions functions = {
   .extents = zstd_array_extents,
 };
 
-#else /* !HAVE_LIBZSTD */
-
-/* If zstd is not compiled in, this is a dummy allocator that always
- * fails with an error.
- */
-struct allocator *
-zstd_array_create (const void *params)
-{
-  nbdkit_error ("allocator=zstd is not supported in this build of nbdkit");
-  return NULL;
-}
-
-static struct allocator_functions functions = {
-  .type = "zstd",
-  .create = zstd_array_create,
-};
-
-#endif /* !HAVE_LIBZSTD */
-
 static void register_zstd_array (void) __attribute__((constructor));
 
 static void
@@ -670,3 +651,5 @@ register_zstd_array (void)
 {
   register_allocator (&functions);
 }
+
+#endif /* !HAVE_LIBZSTD */
