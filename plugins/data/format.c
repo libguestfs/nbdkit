@@ -55,6 +55,9 @@
 #include "data.h"
 #include "format.h"
 
+/* To print the AST, use -D data.AST=1 */
+int data_debug_AST = 0;
+
 /* The abstract syntax tree. */
 typedef struct expr expr_t;
 
@@ -161,8 +164,19 @@ cleanup_free_expr (expr_t **ptr)
   free_expr (*ptr);
 }
 
+static const char *
+debug_indent (int level)
+{
+  static const char spaces[41] = "                                        ";
+
+  if (level >= 10)
+    return spaces;
+  else
+    return &spaces[40-4*level];
+}
+
 static void
-print_expr (expr_t *e, FILE *fp)
+debug_expr (expr_t *e, int level)
 {
   expr_list list;
   size_t i;
@@ -170,60 +184,55 @@ print_expr (expr_t *e, FILE *fp)
   switch (e->t) {
   case EXPR_LIST:
     memcpy (&list, &e->list, sizeof list);
+    nbdkit_debug ("%s[", debug_indent (level));
     for (i = 0; i < list.size; ++i)
-      print_expr (&list.ptr[i], fp);
+      debug_expr (&list.ptr[i], level+1);
+    nbdkit_debug ("%s]", debug_indent (level));
     break;
   case EXPR_BYTE:
-    fprintf (fp, "%" PRIu8 " ", e->b);
+    nbdkit_debug ("%s%" PRIu8, debug_indent (level), e->b);
     break;
   case EXPR_ABS_OFFSET:
-    fprintf (fp, "@%" PRIu64 " ", e->ui);
+    nbdkit_debug ("%s@%" PRIu64, debug_indent (level), e->ui);
     break;
   case EXPR_REL_OFFSET:
-    fprintf (fp, "@%" PRIi64 " ", e->i);
+    nbdkit_debug ("%s@%" PRIi64, debug_indent (level), e->i);
     break;
   case EXPR_ALIGN_OFFSET:
-    fprintf (fp, "@^%" PRIi64 " ", e->ui);
+    nbdkit_debug ("%s@^%" PRIi64, debug_indent (level), e->ui);
     break;
   case EXPR_EXPR:
-    fprintf (fp, "( ");
-    print_expr (e->expr, fp);
-    fprintf (fp, ") ");
+    nbdkit_debug ("%s(", debug_indent (level));
+    debug_expr (e->expr, level+1);
+    nbdkit_debug ("%s)", debug_indent (level));
     break;
   case EXPR_FILE:
-    fprintf (fp, "<%s ", e->filename);
+    nbdkit_debug ("%s<%s", debug_indent (level), e->filename);
     break;
   case EXPR_SCRIPT:
-    fprintf (fp, "<(%s)", e->script);
+    nbdkit_debug ("%s<(%s)", debug_indent (level), e->script);
     break;
   case EXPR_STRING:
-    fprintf (fp, "\"");
-    for (i = 0; i < e->string.size; ++i) {
-      unsigned char c = (unsigned char) e->string.ptr[i];
-
-      if (c >= 32 && c < 127)
-        fprintf (fp, "%c", c);
-      else
-        fprintf (fp, "\\x%02x", c);
-    }
-    fprintf (fp, "\" ");
+    nbdkit_debug ("%s\"<STRING>\"", debug_indent (level));
     break;
   case EXPR_NAME:
-    fprintf (fp, "\\%s ", e->name);
+    nbdkit_debug ("%s\\%s", debug_indent (level), e->name);
     break;
   case EXPR_ASSIGN:
-    print_expr (e->a.expr, fp);
-    fprintf (fp, "->\\%s ", e->a.name);
+    nbdkit_debug ("%s(", debug_indent (level));
+    debug_expr (e->a.expr, level+1);
+    nbdkit_debug ("%s) -> \\%s", debug_indent (level), e->a.name);
     break;
   case EXPR_REPEAT:
-    fprintf (fp, "( ");
-    print_expr (e->r.expr, fp);
-    fprintf (fp, ")*%" PRIu64 " ", e->r.n);
+    nbdkit_debug ("%s(", debug_indent (level));
+    debug_expr (e->r.expr, level+1);
+    nbdkit_debug ("%s) *%" PRIu64, debug_indent (level), e->r.n);
     break;
   case EXPR_SLICE:
-    fprintf (fp, "( ");
-    print_expr (e->sl.expr, fp);
-    fprintf (fp, ")[%" PRIu64 ":%" PRIi64 "] ", e->sl.n, e->sl.m);
+    nbdkit_debug ("%s(", debug_indent (level));
+    debug_expr (e->sl.expr, level+1);
+    nbdkit_debug ("%s)[%" PRIu64 ":%" PRIi64 "]",
+                  debug_indent (level), e->sl.n, e->sl.m);
     break;
   }
 }
@@ -266,11 +275,8 @@ read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
   if (!expr)
     return -1;
 
-  /* Don't actually do this, but I want to keep print_expr around. */
-  if (0) {
-    print_expr (expr, stderr);
-    fprintf (stderr, "\n");
-  }
+  if (data_debug_AST)
+    debug_expr (expr, 0);
 
   /* Evaluate the expression into the allocator. */
   return evaluate (NULL, expr, a, &offset, size_rtn);
