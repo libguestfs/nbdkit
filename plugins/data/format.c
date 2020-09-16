@@ -69,6 +69,7 @@ DEFINE_VECTOR_TYPE(node_ids, node_id);
 
 struct expr {
   enum {
+    EXPR_NULL,                  /* null expression, no effect */
     EXPR_LIST,                  /* list     - list of node IDs */
     EXPR_BYTE,                  /* b        - single byte */
     EXPR_ABS_OFFSET,            /* ui       - absolute offset (@OFFSET) */
@@ -178,6 +179,9 @@ debug_expr (node_id id, int level)
   size_t i;
 
   switch (e->t) {
+  case EXPR_NULL:
+    nbdkit_debug ("%snull", debug_indent (level));
+    break;
   case EXPR_LIST:
     nbdkit_debug ("%s[", debug_indent (level));
     for (i = 0; i < e->list.size; ++i)
@@ -253,6 +257,7 @@ struct dict {
 
 static int parser (int level, const char *value, size_t *start, size_t len,
                    node_id *root_rtn);
+static int optimize_ast (node_id root, node_id *root_rtn);
 static int evaluate (const dict_t *dict, node_id root,
                      struct allocator *a,
                      uint64_t *offset, uint64_t *size);
@@ -271,6 +276,9 @@ read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
    * expression.
    */
   if (parser (0, value, &i, strlen (value), &root) == -1)
+    goto out;
+
+  if (optimize_ast (root, &root) == -1)
     goto out;
 
   if (data_debug_AST)
@@ -802,6 +810,135 @@ parse_string (const char *value, size_t *start, size_t len, string *rtn)
   return -1;
 }
 
+/* This simple optimization pass over the AST simplifies some
+ * expressions.
+ */
+static int
+optimize_ast (node_id root, node_id *root_rtn)
+{
+  size_t i, j;
+  node_id id;
+  expr_t e = { 0 };
+
+  switch (get_node (root)->t) {
+  case EXPR_LIST:
+    /* Optimize each element of the list.  For convenience this
+     * builds a new node.
+     */
+    e.t = EXPR_LIST;
+#define APPEND_EXPR                             \
+    do {                                        \
+      node_id _id = new_node (e);               \
+      if (node_ids_append (&list, _id) == -1) { \
+        nbdkit_error ("realloc: %m");           \
+        exit (EXIT_FAILURE);                    \
+      }                                         \
+    } while (0)
+
+    for (i = 0; i < get_node (root)->list.size; ++i) {
+      id = get_node (root)->list.ptr[i];
+      if (optimize_ast (id, &id) == -1)
+        return -1;
+      switch (get_node (id)->t) {
+      case EXPR_NULL:
+        /* null elements of a list can be ignored. */
+        break;
+      case EXPR_LIST:
+        /* List within a list is flattened. */
+        for (j = 0; j < get_node (id)->list.size; ++j) {
+          if (node_ids_append (&e.list, get_node (id)->list.ptr[j]) == -1) {
+          append_error:
+            nbdkit_error ("realloc: %m");
+            exit (EXIT_FAILURE);
+          }
+        }
+        break;
+      default:
+        if (node_ids_append (&e.list, id) == -1) goto append_error;
+      }
+    }
+
+    /* List of length 0 is replaced with null. */
+    if (e.list.size == 0) {
+      free (e.list.ptr);
+      e.t = EXPR_NULL;
+      *root_rtn = new_node (e);
+      return 0;
+    }
+
+    /* List of length 1 is replaced with the first element. */
+    if (e.list.size == 1) {
+      id = e.list.ptr[0];
+      free (e.list.ptr);
+      *root_rtn = id;
+      return 0;
+    }
+
+    *root_rtn = new_node (e);
+    return 0;
+
+  case EXPR_EXPR:
+    id = get_node (root)->id;
+    if (optimize_ast (id, &id) == -1)
+      return -1;
+    /* If the nested subexpression is null, can replace the entire
+     * nest with null.
+     */
+    if (get_node (id)->t == EXPR_NULL) {
+      *root_rtn = id;
+      return 0;
+    }
+    get_node (root)->id = id;
+    *root_rtn = root;
+    return 0;
+
+  case EXPR_ASSIGN:
+    id = get_node (root)->a.id;
+    if (optimize_ast (id, &id) == -1)
+      return -1;
+    get_node (root)->a.id = id;
+    *root_rtn = root;
+    return 0;
+
+  case EXPR_REPEAT:
+    id = get_node (root)->r.id;
+    if (optimize_ast (id, &id) == -1)
+      return -1;
+    /* If the subexpression we're repeating is null, then the entire
+     * repeat will be null.
+     */
+    if (get_node (id)->t == EXPR_NULL) {
+      *root_rtn = id;
+      return 0;
+    }
+    get_node (root)->r.id = id;
+    *root_rtn = root;
+    return 0;
+
+  case EXPR_SLICE:
+    id = get_node (root)->sl.id;
+    if (optimize_ast (id, &id) == -1)
+      return -1;
+    get_node (root)->sl.id = id;
+    *root_rtn = root;
+    return 0;
+
+  case EXPR_NULL:
+  case EXPR_BYTE:
+  case EXPR_ABS_OFFSET:
+  case EXPR_REL_OFFSET:
+  case EXPR_ALIGN_OFFSET:
+  case EXPR_FILE:
+  case EXPR_SCRIPT:
+  case EXPR_STRING:
+  case EXPR_NAME:
+    *root_rtn = root;
+    return 0;
+  }
+
+  abort ();
+}
+
 static int store_file (struct allocator *a,
                        const char *filename, uint64_t *offset);
 static int store_file_slice (struct allocator *a,
@@ -843,6 +980,8 @@ evaluate (const dict_t *dict, node_id root,
 
     switch (e->t) {
     case EXPR_LIST: abort ();
+
+    case EXPR_NULL: /* does nothing */ break;
 
     case EXPR_BYTE:
       /* Store the byte. */
