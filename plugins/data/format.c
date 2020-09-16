@@ -38,6 +38,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
+#include <assert.h>
 
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
@@ -63,105 +64,100 @@ typedef struct expr expr_t;
 
 DEFINE_VECTOR_TYPE(string, char); /* string + length, \0 allowed */
 
+typedef size_t node_id;         /* references a node in expr_table below */
+DEFINE_VECTOR_TYPE(node_ids, node_id);
+
 struct expr {
   enum {
-    EXPR_LIST,                  /* list     - list of expressions */
+    EXPR_LIST,                  /* list     - list of node IDs */
     EXPR_BYTE,                  /* b        - single byte */
     EXPR_ABS_OFFSET,            /* ui       - absolute offset (@OFFSET) */
     EXPR_REL_OFFSET,            /* i        - relative offset (@+N or @-N) */
     EXPR_ALIGN_OFFSET,          /* ui       - align offset (@^ALIGNMENT) */
-    EXPR_EXPR,                  /* expr     - nested expression */
+    EXPR_EXPR,                  /* id       - nested expression */
     EXPR_FILE,                  /* filename - read a file */
     EXPR_SCRIPT,                /* script   - run script */
     EXPR_STRING,                /* string   - string + length */
     EXPR_NAME,                  /* name     - insert a named expression */
-    EXPR_ASSIGN,                /* a.name, a.expr - assign name to expr */
-    EXPR_REPEAT,                /* r.expr, r.n - expr * N */
-    EXPR_SLICE,                 /* sl.expr, sl.n, sl.m - expr[N:M] */
+    EXPR_ASSIGN,                /* a.name, a.id - assign name to expr */
+    EXPR_REPEAT,                /* r.id, r.n - expr * N */
+    EXPR_SLICE,                 /* sl.id, sl.n, sl.m - expr[N:M] */
   } t;
   union {
-    struct generic_vector /* really expr_list */ list;
+    node_ids list;
     uint8_t b;
     int64_t i;
     uint64_t ui;
-    expr_t *expr;
+    node_id id;
     char *filename;
     char *script;
     string string;
     char *name;
     struct {
       char *name;
-      expr_t *expr;
+      node_id id;
     } a;
     struct {
-      expr_t *expr;
+      node_id id;
       uint64_t n;
     } r;
     struct {
-      expr_t *expr;
+      node_id id;
       uint64_t n;
       int64_t m;
     } sl;
   };
 };
-DEFINE_VECTOR_TYPE(expr_list, expr_t);
 
-static void free_expr (expr_t *e);
+/* We store a list of expressions (expr_t) in a global table.  When
+ * referencing one expression from another (eg. for EXPR_EXPR) we
+ * refer to the index into this table (node_id) instead of pointing to
+ * the sub-expr_t directly.  This allows us to have nodes which
+ * reference each other or are shared or removed without having to
+ * worry about reference counting.
+ */
+DEFINE_VECTOR_TYPE(expr_list, expr_t);
+static expr_list expr_table;
+
+/* Add expression to the table, returning the node_id. */
+static node_id
+new_node (const expr_t e)
+{
+  if (expr_list_append (&expr_table, e) == -1) {
+    nbdkit_error ("realloc");
+    exit (EXIT_FAILURE);
+  }
+  return expr_table.size-1;
+}
+
+/* Get a pointer to an expression by node_id. */
+static expr_t *
+get_node (node_id id)
+{
+  assert (id < expr_table.size);
+  return &expr_table.ptr[id];
+}
 
 static void
-free_expr_fields (expr_t *e)
+free_expr_table (void)
 {
-  expr_list list;
   size_t i;
+  expr_t *e;
 
-  if (e) {
+  for (i = 0; i < expr_table.size; ++i) {
+    e = get_node (i);
     switch (e->t) {
-    case EXPR_LIST:
-      memcpy (&list, &e->list, sizeof list);
-      for (i = 0; i < list.size; ++i)
-        free_expr_fields (&list.ptr[i]);
-      free (list.ptr);
-      break;
-    case EXPR_EXPR:   free_expr (e->expr); break;
+    case EXPR_LIST:   free (e->list.ptr); break;
     case EXPR_FILE:   free (e->filename); break;
     case EXPR_SCRIPT: free (e->script); break;
     case EXPR_STRING: free (e->string.ptr); break;
     case EXPR_NAME:   free (e->name); break;
-    case EXPR_ASSIGN: free (e->a.name); free_expr (e->a.expr); break;
-    case EXPR_REPEAT: free_expr (e->r.expr); break;
-    case EXPR_SLICE:  free_expr (e->sl.expr); break;
+    case EXPR_ASSIGN: free (e->a.name); break;
     default: break;
     }
   }
-}
 
-static void
-free_expr (expr_t *e)
-{
-  free_expr_fields (e);
-  free (e);
-}
-
-/* Note this only does a shallow copy. */
-static expr_t *
-copy_expr (const expr_t *e)
-{
-  expr_t *r;
-
-  r = malloc (sizeof *r);
-  if (r == NULL) {
-    nbdkit_error ("malloc: %m");
-    return NULL;
-  }
-  memcpy (r, e, sizeof *r);
-  return r;
-}
-
-#define CLEANUP_FREE_EXPR __attribute__((cleanup (cleanup_free_expr)))
-static void
-cleanup_free_expr (expr_t **ptr)
-{
-  free_expr (*ptr);
+  expr_list_reset (&expr_table);
 }
 
 static const char *
@@ -176,17 +172,16 @@ debug_indent (int level)
 }
 
 static void
-debug_expr (expr_t *e, int level)
+debug_expr (node_id id, int level)
 {
-  expr_list list;
+  const expr_t *e = get_node (id);
   size_t i;
 
   switch (e->t) {
   case EXPR_LIST:
-    memcpy (&list, &e->list, sizeof list);
     nbdkit_debug ("%s[", debug_indent (level));
-    for (i = 0; i < list.size; ++i)
-      debug_expr (&list.ptr[i], level+1);
+    for (i = 0; i < e->list.size; ++i)
+      debug_expr (e->list.ptr[i], level+1);
     nbdkit_debug ("%s]", debug_indent (level));
     break;
   case EXPR_BYTE:
@@ -203,7 +198,7 @@ debug_expr (expr_t *e, int level)
     break;
   case EXPR_EXPR:
     nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e->expr, level+1);
+    debug_expr (e->id, level+1);
     nbdkit_debug ("%s)", debug_indent (level));
     break;
   case EXPR_FILE:
@@ -220,17 +215,17 @@ debug_expr (expr_t *e, int level)
     break;
   case EXPR_ASSIGN:
     nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e->a.expr, level+1);
+    debug_expr (e->a.id, level+1);
     nbdkit_debug ("%s) -> \\%s", debug_indent (level), e->a.name);
     break;
   case EXPR_REPEAT:
     nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e->r.expr, level+1);
+    debug_expr (e->r.id, level+1);
     nbdkit_debug ("%s) *%" PRIu64, debug_indent (level), e->r.n);
     break;
   case EXPR_SLICE:
     nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e->sl.expr, level+1);
+    debug_expr (e->sl.id, level+1);
     nbdkit_debug ("%s)[%" PRIu64 ":%" PRIi64 "]",
                   debug_indent (level), e->sl.n, e->sl.m);
     break;
@@ -253,11 +248,12 @@ typedef struct dict dict_t;
 struct dict {
   dict_t *next;
   const char *name;             /* Name excluding \ character. */
-  const expr_t *expr;           /* Associated expression. */
+  node_id id;                   /* Associated expression. */
 };
 
-static expr_t *parser (int level, const char *value, size_t *start, size_t len);
-static int evaluate (const dict_t *dict, const expr_t *expr,
+static int parser (int level, const char *value, size_t *start, size_t len,
+                   node_id *root_rtn);
+static int evaluate (const dict_t *dict, node_id root,
                      struct allocator *a,
                      uint64_t *offset, uint64_t *size);
 
@@ -265,21 +261,27 @@ int
 read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
 {
   size_t i = 0;
-  CLEANUP_FREE_EXPR expr_t *expr = NULL;
+  node_id root;
   uint64_t offset = 0;
+  int r = -1;
+
+  assert (expr_table.size == 0);
 
   /* Run the parser across the entire string, returning the top level
    * expression.
    */
-  expr = parser (0, value, &i, strlen (value));
-  if (!expr)
-    return -1;
+  if (parser (0, value, &i, strlen (value), &root) == -1)
+    goto out;
 
   if (data_debug_AST)
-    debug_expr (expr, 0);
+    debug_expr (root, 0);
 
   /* Evaluate the expression into the allocator. */
-  return evaluate (NULL, expr, a, &offset, size_rtn);
+  r = evaluate (NULL, root, a, &offset, size_rtn);
+
+ out:
+  free_expr_table ();
+  return r;
 }
 
 static int parse_string (const char *value, size_t *start, size_t len,
@@ -290,27 +292,29 @@ static size_t get_var (const char *value, size_t i, size_t len,
                        size_t *initial);
 static size_t get_script (const char *value, size_t i, size_t len);
 
-/* This is the format parser.  It returns an expression that must be
- * freed by the caller (or NULL in case of an error).
- */
-static expr_t *
-parser (int level, const char *value, size_t *start, size_t len)
+/* This is the format parser. */
+static int
+parser (int level, const char *value, size_t *start, size_t len,
+        node_id *rtn)
 {
   size_t i = *start;
-  /* List of expr_t that we are building up at this level.  This is
+  /* List of node_ids that we are building up at this level.  This is
    * leaked on error paths, but we're going to call exit(1).
    */
-  expr_list list = empty_vector;
+  node_ids list = empty_vector;
 
   while (i < len) {
     /* Used as a scratch buffer while creating an expr to append to list. */
     expr_t e = { 0 };
-#define APPEND_EXPR                          \
-    if (expr_list_append (&list, e) == -1) { \
-      nbdkit_error ("nbdkit_realloc: %m");   \
-      return NULL;                           \
-    }
-    expr_t *ep;
+#define APPEND_EXPR                             \
+    do {                                        \
+      node_id _id = new_node (e);               \
+      if (node_ids_append (&list, _id) == -1) { \
+        nbdkit_error ("realloc: %m");           \
+        exit (EXIT_FAILURE);                    \
+      }                                         \
+    } while (0)
+    node_id id;
     int j, n;
     int64_t i64;
     size_t flen;
@@ -331,7 +335,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         if (sscanf (&value[i], "%" SCNi64 "%n", &e.i, &n) == 1) {
           if (e.i < 0) {
             nbdkit_error ("data parameter after @+ must not be negative");
-            return NULL;
+            return -1;
           }
           i += n;
           APPEND_EXPR;
@@ -345,7 +349,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         if (sscanf (&value[i], "%" SCNi64 "%n", &e.i, &n) == 1) {
           if (e.i < 0) {
             nbdkit_error ("data parameter after @- must not be negative");
-            return NULL;
+            return -1;
           }
           i += n;
           e.i = -e.i;
@@ -361,14 +365,14 @@ parser (int level, const char *value, size_t *start, size_t len)
         if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
           if (i64 < 0) {
             nbdkit_error ("data parameter after @^ must not be negative");
-            return NULL;
+            return -1;
           }
           e.ui = (uint64_t) i64;
           /* XXX fix this arbitrary restriction */
           if (!is_power_of_2 (e.ui)) {
             nbdkit_error ("data parameter @^%" PRIu64 " must be a power of 2",
                           e.ui);
-            return NULL;
+            return -1;
           }
           i += n;
           APPEND_EXPR;
@@ -383,7 +387,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
           if (i64 < 0) {
             nbdkit_error ("data parameter @OFFSET must not be negative");
-            return NULL;
+            return -1;
           }
           e.ui = (uint64_t) i64;
           i += n;
@@ -401,11 +405,10 @@ parser (int level, const char *value, size_t *start, size_t len)
       i++;
 
       /* Call self recursively. */
-      ep = parser (level+1, value, &i, len);
-      if (ep == NULL)
-        return NULL;
+      if (parser (level+1, value, &i, len, &id) == -1)
+        return -1;
       e.t = EXPR_EXPR;
-      e.expr = ep;
+      e.id = id;
       APPEND_EXPR;
       break;
 
@@ -413,27 +416,26 @@ parser (int level, const char *value, size_t *start, size_t len)
       i++;
       if (list.size == 0) {
         nbdkit_error ("*N must follow an expression");
-        return NULL;
+        return -1;
       }
-      if (! is_data_expr (&list.ptr[list.size-1])) {
+      if (! is_data_expr (get_node (list.ptr[list.size-1]))) {
         nbdkit_error ("*N cannot be applied to this type of expression");
-        return NULL;
+        return -1;
       }
       e.t = EXPR_REPEAT;
       if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
         if (i64 < 0) {
           nbdkit_error ("data parameter @OFFSET must not be negative");
-          return NULL;
+          return -1;
         }
         i += n;
       }
       else {
         nbdkit_error ("*N not numeric");
-        return NULL;
+        return -1;
       }
       e.r.n = (uint64_t) i64;
-      e.r.expr = copy_expr (&list.ptr[list.size-1]);
-      if (e.r.expr == NULL) return NULL;
+      e.r.id = list.ptr[list.size-1];
       list.size--;
       APPEND_EXPR;
       break;
@@ -442,11 +444,11 @@ parser (int level, const char *value, size_t *start, size_t len)
       i++;
       if (list.size == 0) {
         nbdkit_error ("[N:M] must follow an expression");
-        return NULL;
+        return -1;
       }
-      if (! is_data_expr (&list.ptr[list.size-1])) {
+      if (! is_data_expr (get_node (list.ptr[list.size-1]))) {
         nbdkit_error ("[N:M] cannot be applied to this type of expression");
-        return NULL;
+        return -1;
       }
       e.t = EXPR_SLICE;
       i64 = 0;
@@ -460,11 +462,10 @@ parser (int level, const char *value, size_t *start, size_t len)
         i += 2;
       else {
         nbdkit_error ("enclosed pattern (...)[N:M] not numeric");
-        return NULL;
+        return -1;
       }
       e.sl.n = i64;
-      e.sl.expr = copy_expr (&list.ptr[list.size-1]);
-      if (e.sl.expr == NULL) return NULL;
+      e.sl.id = list.ptr[list.size-1];
       list.size--;
       APPEND_EXPR;
       break;
@@ -479,7 +480,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         e.script = strndup (&value[i], flen);
         if (e.script == NULL) {
           nbdkit_error ("strndup: %m");
-          return NULL;
+          return -1;
         }
         i += flen + 1;          /* +1 for trailing ) */
       }
@@ -491,12 +492,12 @@ parser (int level, const char *value, size_t *start, size_t len)
         flen = strcspn (&value[i], "*[) \t\n");
         if (flen == 0) {
           nbdkit_error ("data parameter <FILE not a filename");
-          return NULL;
+          return -1;
         }
         e.filename = strndup (&value[i], flen);
         if (e.filename == NULL) {
           nbdkit_error ("strndup: %m");
-          return NULL;
+          return -1;
         }
         i += flen;
       }
@@ -507,7 +508,7 @@ parser (int level, const char *value, size_t *start, size_t len)
       i++;
       e.t = EXPR_STRING;
       if (parse_string (value, &i, len, &e.string) == -1)
-        return NULL;
+        return -1;
       APPEND_EXPR;
       break;
 
@@ -518,7 +519,7 @@ parser (int level, const char *value, size_t *start, size_t len)
       e.name = strndup (&value[i], flen);
       if (e.name == NULL) {
         nbdkit_error ("strndup: %m");
-        return NULL;
+        return -1;
       }
       i += flen;
       APPEND_EXPR;
@@ -530,11 +531,11 @@ parser (int level, const char *value, size_t *start, size_t len)
       i++;
       if (list.size == 0) {
         nbdkit_error ("-> must follow an expression");
-        return NULL;
+        return -1;
       }
-      if (! is_data_expr (&list.ptr[list.size-1])) {
+      if (! is_data_expr (get_node (list.ptr[list.size-1]))) {
         nbdkit_error ("-> cannot be applied to this type of expression");
-        return NULL;
+        return -1;
       }
       flen = get_name (value, i, len, &i);
       if (flen == 0) goto parse_error;
@@ -542,10 +543,9 @@ parser (int level, const char *value, size_t *start, size_t len)
       e.a.name = strndup (&value[i], flen);
       if (e.a.name == NULL) {
         nbdkit_error ("strndup: %m");
-        return NULL;
+        return -1;
       }
-      e.a.expr = copy_expr (&list.ptr[list.size-1]);
-      if (e.a.expr == NULL) return NULL;
+      e.a.id = list.ptr[list.size-1];
       i += flen;
       list.size--;
       APPEND_EXPR;
@@ -561,7 +561,7 @@ parser (int level, const char *value, size_t *start, size_t len)
       name = strndup (&value[i], flen);
       if (name == NULL) {
         nbdkit_error ("strndup: %m");
-        return NULL;
+        return -1;
       }
       i += flen;
 
@@ -571,17 +571,16 @@ parser (int level, const char *value, size_t *start, size_t len)
         content = getenv (name);
         if (!content) {
           nbdkit_error ("$%s: variable not found", name);
-          return NULL;
+          return -1;
         }
       }
 
       /* Call self recursively on the variable content. */
       ci = 0;
-      ep = parser (0, content, &ci, strlen (content));
-      if (ep == NULL)
-        return NULL;
+      if (parser (0, content, &ci, strlen (content), &id) == -1)
+        return -1;
       e.t = EXPR_EXPR;
-      e.expr = ep;
+      e.id = id;
       APPEND_EXPR;
       break;
     }
@@ -596,7 +595,7 @@ parser (int level, const char *value, size_t *start, size_t len)
         goto parse_error;
       if (j < 0 || j > 255) {
         nbdkit_error ("data parameter BYTE must be in the range 0..255");
-        return NULL;
+        return -1;
       }
       e.b = j;
       APPEND_EXPR;
@@ -605,7 +604,7 @@ parser (int level, const char *value, size_t *start, size_t len)
     case ')':                   /* ) */
       if (level < 1) {
         nbdkit_error ("unmatched ')' in data string");
-        return NULL;
+        return -1;
       }
       i++;
       goto out;
@@ -618,7 +617,7 @@ parser (int level, const char *value, size_t *start, size_t len)
     default:
     parse_error:
       nbdkit_error ("data parameter: parsing error at offset %zu", i);
-      return NULL;
+      return -1;
     } /* switch */
   } /* for */
 
@@ -627,16 +626,16 @@ parser (int level, const char *value, size_t *start, size_t len)
    */
   if (level > 0) {
     nbdkit_error ("unmatched '(' in data string");
-    return NULL;
+    return -1;
   }
 
  out:
   *start = i;
 
-  /* Return a new expression node. */
-  expr_t e2 = { .t = EXPR_LIST };
-  memcpy (&e2.list, &list, sizeof e2.list);
-  return copy_expr (&e2);
+  /* Return the node ID. */
+  expr_t e2 = { .t = EXPR_LIST, .list = list };
+  *rtn = new_node (e2);
+  return 0;
 }
 
 /* Return the next \NAME in the input.  This skips whitespace, setting
@@ -814,11 +813,11 @@ static int store_script_len (struct allocator *a,
                              const char *script,
                              int64_t len, uint64_t *offset);
 
-/* This is the evaluator.  It takes a parsed expression (expr_t) and
- * evaulates it into the allocator.
+/* This is the evaluator.  It takes the root (node_id) of the parsed
+ * abstract syntax treea and evaulates it into the allocator.
  */
 static int
-evaluate (const dict_t *dict, const expr_t *e,
+evaluate (const dict_t *dict, node_id root,
           struct allocator *a, uint64_t *offset, uint64_t *size)
 {
   /* 'd' is the local dictionary for this function.  Assignments are
@@ -827,18 +826,20 @@ evaluate (const dict_t *dict, const expr_t *e,
    * exit(1).
    */
   dict_t *d = (dict_t *) dict;
-  expr_list list = empty_vector;
   size_t i, j;
+  const expr_t *e;
+  node_ids list;
 
+  e = get_node (root);
   if (e->t == EXPR_LIST)
     memcpy (&list, &e->list, sizeof list);
   else {
     list.size = 1;
-    list.ptr = (expr_t *) e;
+    list.ptr = &root;
   }
 
   for (i = 0; i < list.size; ++i) {
-    e = &list.ptr[i];
+    e = get_node (list.ptr[i]);
 
     switch (e->t) {
     case EXPR_LIST: abort ();
@@ -897,7 +898,7 @@ evaluate (const dict_t *dict, const expr_t *e,
       }
       d->next = d_next;
       d->name = e->a.name;
-      d->expr = e->a.expr;
+      d->id = e->a.id;
       break;
     }
 
@@ -924,7 +925,7 @@ evaluate (const dict_t *dict, const expr_t *e,
       /* NB: We pass the environment at the time that the assignment was
        * made (t->next) not the current environment.  This is deliberate.
        */
-      if (evaluate (t->next, t->expr, a2, &offset2, &size2) == -1)
+      if (evaluate (t->next, t->id, a2, &offset2, &size2) == -1)
         return -1;
 
       if (a->f->blit (a2, a, size2, 0, *offset) == -1)
@@ -943,8 +944,8 @@ evaluate (const dict_t *dict, const expr_t *e,
       /* BYTE*N was optimized in the previous ad hoc parser so it makes
        * sense to optimize it here.
        */
-      if (e->t == EXPR_REPEAT && e->expr->t == EXPR_BYTE) {
-        if (a->f->fill (a, e->expr->b, e->r.n, *offset) == -1)
+      if (e->t == EXPR_REPEAT && get_node (e->id)->t == EXPR_BYTE) {
+        if (a->f->fill (a, get_node (e->id)->b, e->r.n, *offset) == -1)
           return -1;
         *offset += e->r.n;
       }
@@ -953,8 +954,8 @@ evaluate (const dict_t *dict, const expr_t *e,
        * For files like /dev/urandom which are infinite this stops an
        * infinite loop.
        */
-      else if (e->t == EXPR_SLICE && e->expr->t == EXPR_FILE) {
-        if (store_file_slice (a, e->expr->filename,
+      else if (e->t == EXPR_SLICE && get_node (e->sl.id)->t == EXPR_FILE) {
+        if (store_file_slice (a, get_node (e->sl.id)->filename,
                               e->sl.n, e->sl.m, offset) == -1)
           return -1;
       }
@@ -963,8 +964,9 @@ evaluate (const dict_t *dict, const expr_t *e,
        * output of the script.
        */
       else if (e->t == EXPR_SLICE && e->sl.n == 0 &&
-               e->expr->t == EXPR_SCRIPT) {
-        if (store_script_len (a, e->expr->script, e->sl.m, offset) == -1)
+               get_node (e->sl.id)->t == EXPR_SCRIPT) {
+        if (store_script_len (a, get_node (e->sl.id)->script, e->sl.m,
+                              offset) == -1)
           return -1;
       }
 
@@ -982,7 +984,7 @@ evaluate (const dict_t *dict, const expr_t *e,
           nbdkit_error ("malloc: %m");
           return -1;
         }
-        if (evaluate (d, e->expr, a2, &offset2, &size2) == -1)
+        if (evaluate (d, e->id, a2, &offset2, &size2) == -1)
           return -1;
 
         switch (e->t) {
