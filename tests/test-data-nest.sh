@@ -44,16 +44,32 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Run nbdkit.
-start_nbdkit -P data-nest.pid -U $sock \
-       data ' ( 0x55 0xAA )*4
-              ( @4 ( 0x21 )*4 )*4
-              ( "Hello" @^8 )*2 '
+start_nbdkit -P data-nest.pid -U $sock -D data.AST=1 \
+       data '
+# Simple nested expression without any operator.
+( 0x55 0xAA )
+
+# Repeated nest.
+( 0x55 0xAA )*4
+
+# Doubly-nested.
+( @4 ( 0x21 )*4 )*4
+
+# Nest + offset alignment at the end.
+( "Hello" @^8 )*2
+
+# These should all expand to nothing.  They are here to test corner
+# cases in the parser and optimizer.
+() ()*2 ( () ) ( ()*2 ) ( () () )*2
+() -> \a
+\a (\a) (\a)*2 (\a \a) (\a*2 \a)
+'
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 print ("%d" % h.get_size())
-assert h.get_size() == 2*4 + 8*4 + 8*2
+assert h.get_size() == 2 + 2*4 + 8*4 + 8*2
 buf = h.pread (h.get_size(), 0)
 print ("%r" % buf)
-assert buf == b"\x55\xAA"*4 + b"\0\0\0\0!!!!"*4 + b"Hello\0\0\0Hello\0\0\0"
+assert buf == b"\x55\xAA" + b"\x55\xAA"*4 + b"\0\0\0\0!!!!"*4 + b"Hello\0\0\0Hello\0\0\0"
 '
