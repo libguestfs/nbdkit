@@ -200,6 +200,20 @@ request is no faster than a counterpart write would be, while normal
 zero requests still benefit from compressed network traffic regardless
 of the time taken.
 
+=item C<NBD_INFO_NAME>, C<NBD_INFO_DESCRIPTION>
+
+Supported in nbdkit E<ge> 1.23.6.
+
+These protocol extensions allow a client to learn more information
+about an export during C<NBD_OPT_GO>.  The C<.default_export> callback
+can inform a client of a canonical non-empty name in place of the
+default export C<"">, and the C<.export_description> callback can give
+a client more details about the export.
+
+=item C<NBD_INFO_BLOCK_SIZE>
+
+I<Not supported>.
+
 =item Resize Extension
 
 I<Not supported>.

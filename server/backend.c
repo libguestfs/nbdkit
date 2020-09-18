@@ -360,6 +360,28 @@ backend_reopen (struct backend *b, int readonly, const char *exportname)
   return 0;
 }
 
+const char *
+backend_export_description (struct backend *b)
+{
+  GET_CONN;
+  struct handle *h = get_handle (conn, b->i);
+  const char *s;
+
+  controlpath_debug ("%s: export_description", b->name);
+
+  assert (h->handle && (h->state & HANDLE_CONNECTED));
+  /* Caching is not useful for this value. */
+  s = b->export_description (b, h->handle);
+
+  /* Ignore over-length strings. XXX Also ignore non-UTF8? */
+  if (s && strnlen (s, NBD_MAX_STRING + 1) > NBD_MAX_STRING) {
+    controlpath_debug ("%s: export_description: ignoring invalid string",
+                       b->name);
+    s = NULL;
+  }
+  return s;
+}
+
 int64_t
 backend_get_size (struct backend *b)
 {

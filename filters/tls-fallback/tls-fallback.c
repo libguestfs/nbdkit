@@ -119,6 +119,15 @@ tls_fallback_open (nbdkit_next_open *next, void *nxdata, int readonly,
  * can_zero, can_fast_zero, and can_fua).
  */
 
+static const char *
+tls_fallback_export_description (struct nbdkit_next_ops *next_ops,
+                                 void *nxdata, void *handle)
+{
+  if (NOT_TLS)
+    return NULL;
+  return next_ops->export_description (nxdata);
+}
+
 static int64_t
 tls_fallback_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
                        void *handle)
@@ -195,22 +204,23 @@ tls_fallback_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static struct nbdkit_filter filter = {
-  .name              = "tls-fallback",
-  .longname          = "nbdkit tls-fallback filter",
-  .config            = tls_fallback_config,
-  .config_help       = tls_fallback_config_help,
-  .get_ready         = tls_fallback_get_ready,
-  .list_exports      = tls_fallback_list_exports,
-  .default_export    = tls_fallback_default_export,
-  .open              = tls_fallback_open,
-  .get_size          = tls_fallback_get_size,
-  .can_write         = tls_fallback_can_write,
-  .can_flush         = tls_fallback_can_flush,
-  .is_rotational     = tls_fallback_is_rotational,
-  .can_extents       = tls_fallback_can_extents,
-  .can_multi_conn    = tls_fallback_can_multi_conn,
-  .can_cache         = tls_fallback_can_cache,
-  .pread             = tls_fallback_pread,
+  .name               = "tls-fallback",
+  .longname           = "nbdkit tls-fallback filter",
+  .config             = tls_fallback_config,
+  .config_help        = tls_fallback_config_help,
+  .get_ready          = tls_fallback_get_ready,
+  .list_exports       = tls_fallback_list_exports,
+  .default_export     = tls_fallback_default_export,
+  .open               = tls_fallback_open,
+  .export_description = tls_fallback_export_description,
+  .get_size           = tls_fallback_get_size,
+  .can_write          = tls_fallback_can_write,
+  .can_flush          = tls_fallback_can_flush,
+  .is_rotational      = tls_fallback_is_rotational,
+  .can_extents        = tls_fallback_can_extents,
+  .can_multi_conn     = tls_fallback_can_multi_conn,
+  .can_cache          = tls_fallback_can_cache,
+  .pread              = tls_fallback_pread,
 };
 
 NBDKIT_REGISTER_FILTER(filter)

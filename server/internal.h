@@ -395,6 +395,7 @@ struct backend {
   int (*finalize) (struct backend *, void *handle);
   void (*close) (struct backend *, void *handle);
 
+  const char *(*export_description) (struct backend *, void *handle);
   int64_t (*get_size) (struct backend *, void *handle);
   int (*can_write) (struct backend *, void *handle);
   int (*can_flush) (struct backend *, void *handle);
@@ -438,6 +439,8 @@ extern int backend_list_exports (struct backend *b, int readonly,
                                  struct nbdkit_exports *exports)
   __attribute__((__nonnull__ (1, 3)));
 extern const char *backend_default_export (struct backend *b, int readonly)
+  __attribute__((__nonnull__ (1)));
+extern const char *backend_export_description (struct backend *b)
   __attribute__((__nonnull__ (1)));
 /* exportname is only valid for this call and almost certainly will be
  * freed on return of this function, so backends must save the

@@ -825,6 +825,26 @@ to get the size (in bytes) of the block device being exported.
 The returned size must be E<ge> 0.  If there is an error, C<.get_size>
 should call C<nbdkit_error> with an error message and return C<-1>.
 
+=head2 C<.export_description>
+
+ const char *export_description (void *handle);
+
+This is called during the option negotiation phase only if the
+client specifically requested an export description (see the
+C<NBD_INFO_DESCRIPTION> response to C<NBD_OPT_GO>).  Any
+description provided must be human-readable UTF-8, no longer
+than 4096 bytes.  Ideally, this description should match any
+description set during C<.list_exports>, but that is not
+enforced.
+
+If the plugin returns C<NULL> or an invalid string (such as longer
+than 4096 bytes), or if this callback is omitted, no description is
+offered to the client.  As this is not an error in the protocol, it is
+not necessary to call C<nbdkit_error>.  If the callback will not be
+returning a compile-time constant string, you may find
+C<nbdkit_strdup_intern> helpful for returning a value that avoids a
+memory leak.
+
 =head2 C<.can_write>
 
  int can_write (void *handle);

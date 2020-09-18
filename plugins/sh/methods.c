@@ -456,6 +456,38 @@ sh_close (void *handle)
   }
 }
 
+const char *
+sh_export_description (void *handle)
+{
+  const char *method = "export_description";
+  const char *script = get_script (method);
+  struct sh_handle *h = handle;
+  const char *args[] = { script, method, h->h, NULL };
+  CLEANUP_FREE char *s = NULL;
+  size_t slen;
+
+  switch (call_read (&s, &slen, args)) {
+  case OK:
+    if (slen > 0 && s[slen-1] == '\n')
+      s[slen-1] = '\0';
+    return nbdkit_strdup_intern (s);
+
+  case MISSING:
+    return NULL;
+
+  case ERROR:
+    return NULL;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, method);
+    errno = EIO;
+    return NULL;
+
+  default: abort ();
+  }
+}
+
 int64_t
 sh_get_size (void *handle)
 {

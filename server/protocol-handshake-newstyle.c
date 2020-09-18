@@ -564,10 +564,10 @@ negotiate_handshake_newstyle_options (void)
                                                     exportsize) == -1)
           return -1;
 
-        /* For now we send NBD_INFO_NAME if requested, and ignore all
-         * other info requests (including NBD_INFO_EXPORT if it was
-         * requested, because we replied already above).
-         * XXX NBD_INFO_DESCRIPTION is easy once we add .export_description.
+        /* For now we send NBD_INFO_NAME and NBD_INFO_DESCRIPTION if
+         * requested, and ignore all other info requests (including
+         * NBD_INFO_EXPORT if it was requested, because we replied
+         * already above).
          */
         for (i = 0; i < nrinfos; ++i) {
           memcpy (&info, &data[4 + exportnamelen + 2 + i*2], 2);
@@ -592,6 +592,23 @@ negotiate_handshake_newstyle_options (void)
                                                        NBD_REP_INFO,
                                                        NBD_INFO_NAME,
                                                        name, namelen) == -1)
+                return -1;
+            }
+            break;
+          case NBD_INFO_DESCRIPTION:
+            {
+              const char *desc = backend_export_description (top);
+
+              if (!desc) {
+                debug ("newstyle negotiation: %s: "
+                       "NBD_INFO_DESCRIPTION: no description to send",
+                       optname);
+                break;
+              }
+              if (send_newstyle_option_reply_info_str (option,
+                                                       NBD_REP_INFO,
+                                                       NBD_INFO_DESCRIPTION,
+                                                       desc, -1) == -1)
                 return -1;
             }
             break;

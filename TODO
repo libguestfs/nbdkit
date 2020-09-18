@@ -71,11 +71,6 @@ General ideas for improvements
   continue to keep their non-standard handshake while utilizing nbdkit
   to prototype new behaviors in serving the kernel.
 
-* At present, we ignore NBD_INFO_DESCRIPTION requests from a client
-  during NBD_OPT_GO.  This may be easiest if we add a new
-  .get_description callback, called after .open alongside .get_size
-  and .can_write.
-
 * Background thread for filters.  Some filters (readahead, cache and
   proposed scan filter - see below) could be more effective if they
   were able to defer work to a background thread.  However it's not as

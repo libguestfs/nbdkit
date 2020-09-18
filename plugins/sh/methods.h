@@ -49,6 +49,7 @@ extern int sh_list_exports (int readonly, int default_only,
 extern const char *sh_default_export (int readonly, int is_tls);
 extern void *sh_open (int readonly);
 extern void sh_close (void *handle);
+extern const char *sh_export_description (void *handle);
 extern int64_t sh_get_size (void *handle);
 extern int sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
                      uint32_t flags);

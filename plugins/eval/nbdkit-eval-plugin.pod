@@ -100,6 +100,8 @@ features):
 
 =item B<dump_plugin=>SCRIPT
 
+=item B<export_description=>SCRIPT
+
 =item B<extents=>SCRIPT
 
 =item B<flush=>SCRIPT

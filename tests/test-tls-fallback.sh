@@ -93,6 +93,11 @@ h.connect_unix(os.environ["sock"])
 assert h.opt_list(f) == 1
 h.opt_info()
 assert h.get_canonical_export_name() == ""
+try:
+  h.get_export_description()
+  assert False
+except nbd.Error:
+  pass
 h.set_export_name("hello")
 h.opt_go()
 assert h.get_size() == 512
@@ -121,6 +126,7 @@ h.connect_unix(os.environ["sock"])
 assert h.opt_list(f) == 2
 h.opt_info()
 assert h.get_canonical_export_name() == "hello"
+assert h.get_export_description() == "=hello="
 h.opt_go()
 assert h.get_size() == 6
 assert h.can_trim()

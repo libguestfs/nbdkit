@@ -377,6 +377,14 @@ cc_close (void *handle)
     subplugin.close (handle);
 }
 
+static const char *
+cc_export_description (void *handle)
+{
+  if (subplugin.export_description)
+    return subplugin.export_description (handle);
+  return NULL;
+}
+
 static int64_t
 cc_get_size (void *handle)
 {
@@ -575,34 +583,35 @@ static struct nbdkit_plugin plugin = {
   /* And we must provide callbacks for everything else, which are
    * passed through to the subplugin.
    */
-  .get_ready         = cc_get_ready,
-  .after_fork        = cc_after_fork,
+  .get_ready          = cc_get_ready,
+  .after_fork         = cc_after_fork,
 
-  .preconnect        = cc_preconnect,
-  .list_exports      = cc_list_exports,
-  .default_export    = cc_default_export,
-  .open              = cc_open,
-  .close             = cc_close,
+  .preconnect         = cc_preconnect,
+  .list_exports       = cc_list_exports,
+  .default_export     = cc_default_export,
+  .open               = cc_open,
+  .close              = cc_close,
 
-  .get_size          = cc_get_size,
-  .can_write         = cc_can_write,
-  .can_flush         = cc_can_flush,
-  .is_rotational     = cc_is_rotational,
-  .can_trim          = cc_can_trim,
-  .can_zero          = cc_can_zero,
-  .can_fast_zero     = cc_can_fast_zero,
-  .can_extents       = cc_can_extents,
-  .can_fua           = cc_can_fua,
-  .can_multi_conn    = cc_can_multi_conn,
-  .can_cache         = cc_can_cache,
+  .export_description = cc_export_description,
+  .get_size           = cc_get_size,
+  .can_write          = cc_can_write,
+  .can_flush          = cc_can_flush,
+  .is_rotational      = cc_is_rotational,
+  .can_trim           = cc_can_trim,
+  .can_zero           = cc_can_zero,
+  .can_fast_zero      = cc_can_fast_zero,
+  .can_extents        = cc_can_extents,
+  .can_fua            = cc_can_fua,
+  .can_multi_conn     = cc_can_multi_conn,
+  .can_cache          = cc_can_cache,
 
-  .pread             = cc_pread,
-  .pwrite            = cc_pwrite,
-  .flush             = cc_flush,
-  .trim              = cc_trim,
-  .zero              = cc_zero,
-  .extents           = cc_extents,
-  .cache             = cc_cache,
+  .pread              = cc_pread,
+  .pwrite             = cc_pwrite,
+  .flush              = cc_flush,
+  .trim               = cc_trim,
+  .zero               = cc_zero,
+  .extents            = cc_extents,
+  .cache              = cc_cache,
 
   .errno_is_preserved = 1,
 };

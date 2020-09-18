@@ -291,6 +291,7 @@ filter_close (struct backend *b, void *handle)
 
 static struct nbdkit_next_ops next_ops = {
   .reopen = backend_reopen,
+  .export_description = backend_export_description,
   .get_size = backend_get_size,
   .can_write = backend_can_write,
   .can_flush = backend_can_flush,
@@ -332,6 +333,17 @@ filter_finalize (struct backend *b, void *handle)
       f->filter.finalize (&next_ops, b->next, handle) == -1)
     return -1;
   return 0;
+}
+
+static const char *
+filter_export_description (struct backend *b, void *handle)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  if (f->filter.export_description)
+    return f->filter.export_description (&next_ops, b->next, handle);
+  else
+    return backend_export_description (b->next);
 }
 
 static int64_t
@@ -571,6 +583,7 @@ static struct backend filter_functions = {
   .prepare = filter_prepare,
   .finalize = filter_finalize,
   .close = filter_close,
+  .export_description = filter_export_description,
   .get_size = filter_get_size,
   .can_write = filter_can_write,
   .can_flush = filter_can_flush,

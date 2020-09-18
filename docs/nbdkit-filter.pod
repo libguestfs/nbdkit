@@ -553,6 +553,15 @@ This function is only called once per connection and cached by nbdkit.
 Similarly, repeated calls to C<next_ops-E<gt>get_size> will return a
 cached value.
 
+=head2 C<.export_description>
+
+ const char *export_description (struct nbdkit_next_ops *next_ops,
+                                 void *nxdata, void *handle);
+
+This intercepts the plugin C<.export_description> method and can be
+used to read or modify the export description that the NBD client
+will see.
+
 =head2 C<.can_write>
 
 =head2 C<.can_flush>

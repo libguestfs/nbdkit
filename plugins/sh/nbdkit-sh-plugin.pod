@@ -350,6 +350,17 @@ handle will be C<""> (empty string).
 
  /path/to/script close <handle>
 
+=item C<export_description>
+
+ /path/to/script export_description <handle>
+
+The script should print a human-readable description of the disk image
+on stdout.  If the description ends with a newline character then the
+newline is removed.
+
+This method is I<not> required; if it is absent, no export description
+will be provided to the client.
+
 =item C<get_size>
 
  /path/to/script get_size <handle>

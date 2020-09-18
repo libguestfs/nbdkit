@@ -170,6 +170,7 @@ plugin_dump_fields (struct backend *b)
 
   HAS (open);
   HAS (close);
+  HAS (export_description);
   HAS (get_size);
   HAS (can_write);
   HAS (can_flush);
@@ -367,6 +368,17 @@ plugin_close (struct backend *b, void *handle)
   if (handle && p->plugin.close)
     p->plugin.close (handle);
   conn->exportname = NULL;
+}
+
+static const char *
+plugin_export_description (struct backend *b, void *handle)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
+  if (p->plugin.export_description)
+    return p->plugin.export_description (handle);
+  else
+    return NULL;
 }
 
 static int64_t
@@ -775,6 +787,7 @@ static struct backend plugin_functions = {
   .prepare = plugin_prepare,
   .finalize = plugin_finalize,
   .close = plugin_close,
+  .export_description = plugin_export_description,
   .get_size = plugin_get_size,
   .can_write = plugin_can_write,
   .can_flush = plugin_can_flush,

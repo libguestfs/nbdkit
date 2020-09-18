@@ -143,6 +143,7 @@ struct nbdkit_plugin {
   int (*list_exports) (int readonly, int is_tls,
                        struct nbdkit_exports *exports);
   const char * (*default_export) (int readonly, int is_tls);
+  const char * (*export_description) (void *handle);
 };
 
 NBDKIT_EXTERN_DECL (void, nbdkit_set_error, (int err));

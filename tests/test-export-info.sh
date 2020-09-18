@@ -43,7 +43,6 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create an nbdkit sh plugin for checking NBD_INFO replies to NBD_OPT_GO.
-# XXX Update when .export_description is implemented in sh
 start_nbdkit -P export-info.pid -U $sock \
              sh - <<'EOF'
 case "$1" in
@@ -59,36 +58,34 @@ EOF
 nbdsh -c '
 import os
 
+def must_fail(f, *args, **kwds):
+  try:
+    f(*args, **kwds)
+    assert False
+  except nbd.Error:
+    pass
+
 h.set_opt_mode(True)
 h.connect_unix(os.environ["sock"])
 
 h.set_export_name("a")
 h.opt_info()
-try:
-  h.get_canonical_export_name()
-  assert False
-except nbd.Error as ex:
-  pass
+must_fail(h.get_canonical_export_name)
+must_fail(h.get_export_description)
 
 h.set_export_name("")
 h.opt_info()
-try:
-  h.get_canonical_export_name()
-  assert False
-except nbd.Error as ex:
-  pass
+must_fail(h.get_canonical_export_name)
+must_fail(h.get_export_description)
 
 h.opt_go()
-try:
-  h.get_canonical_export_name()
-  assert False
-except nbd.Error as ex:
-  pass
+must_fail(h.get_canonical_export_name)
+must_fail(h.get_export_description)
 
 h.shutdown()
 '
 
-# With client request, reflect the export name back
+# With client request, reflect the export name and description back
 nbdsh -c '
 import os
 
@@ -99,13 +96,16 @@ h.connect_unix(os.environ["sock"])
 h.set_export_name("a")
 h.opt_info()
 assert h.get_canonical_export_name() == "a"
+assert h.get_export_description() == "a world"
 
 h.set_export_name("")
 h.opt_info()
 assert h.get_canonical_export_name() == "hello"
+assert h.get_export_description() == "hello world"
 
 h.opt_go()
 assert h.get_canonical_export_name() == "hello"
+assert h.get_export_description() == "hello world"
 
 h.shutdown()
 '

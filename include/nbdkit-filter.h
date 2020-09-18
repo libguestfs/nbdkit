@@ -80,6 +80,7 @@ struct nbdkit_next_ops {
 
   /* The rest of the next ops are the same as normal plugin operations. */
   int64_t (*get_size) (nbdkit_backend *nxdata);
+  const char * (*export_description) (nbdkit_backend *nxdata);
 
   int (*can_write) (nbdkit_backend *nxdata);
   int (*can_flush) (nbdkit_backend *nxdata);
@@ -195,6 +196,8 @@ struct nbdkit_filter {
 
   int64_t (*get_size) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
                        void *handle);
+  const char * (*export_description) (struct nbdkit_next_ops *next_ops,
+                                      nbdkit_backend *nxdata, void *handle);
 
   int (*can_write) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
                     void *handle);
