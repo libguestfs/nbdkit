@@ -51,9 +51,9 @@ for i in {1..100}; do
     nbdsh --connect "nbd+unix://?socket=$sock" \
           -c '
 try:
-    h.pread (512, 0)
+    h.pread(512, 0)
     # This should not happen.
-    exit (1)
+    exit(1)
 except nbd.Error as ex:
     # Check the errno is expected.
     assert ex.errno == "EIO"

@@ -51,9 +51,9 @@ start_nbdkit -P data-nest.pid -U $sock \
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-print ("%d" % h.get_size())
+print("%d" % h.get_size())
 assert h.get_size() == 2*4 + 8*4 + 8*2
-buf = h.pread (h.get_size(), 0)
-print ("%r" % buf)
+buf = h.pread(h.get_size(), 0)
+print("%r" % buf)
 assert buf == b"\x55\xAA"*4 + b"\0\0\0\0!!!!"*4 + b"Hello\0\0\0Hello\0\0\0"
 '

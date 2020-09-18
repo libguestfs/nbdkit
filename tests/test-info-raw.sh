@@ -54,15 +54,15 @@ do
 import os
 
 e = os.environ["e"]
-h.set_export_name (e)
-h.connect_unix (os.environ["sock"])
+h.set_export_name(e)
+h.connect_unix(os.environ["sock"])
 
-size = h.get_size ()
-assert size == len (e.encode("utf-8"))
+size = h.get_size()
+assert size == len(e.encode("utf-8"))
 
 # Zero-sized reads are not defined in the NBD protocol.
 if size > 0:
-   buf = h.pread (size, 0)
+   buf = h.pread(size, 0)
    assert buf == e.encode("utf-8")
 '
 done

@@ -62,7 +62,7 @@ for i in range(0, 512-8, 8):
 expected = expected + b"\x7f\xff\xff\xff\xff\xff\xff"
 
 # Read and compare.
-buf = h.pread (511, 9223372036854775296)
-print ("buf = %r\nexpected = %r\n" % (buf, expected))
+buf = h.pread(511, 9223372036854775296)
+print("buf = %r\nexpected = %r\n" % (buf, expected))
 assert buf == expected
 '

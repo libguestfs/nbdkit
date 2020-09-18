@@ -45,7 +45,7 @@ set -e
 set -x
 
 requires nbdsh --version
-requires nbdsh -c 'print (h.connect_vsock)'
+requires nbdsh -c 'print(h.connect_vsock)'
 requires_linux_kernel_version 5.6
 
 # Because vsock ports are 32 bits, we can basically pick one at random
@@ -65,8 +65,8 @@ nbdsh -c - <<'EOF'
 import os
 
 # 1 = VMADDR_CID_LOCAL
-h.connect_vsock (1, int (os.environ["port"]))
+h.connect_vsock(1, int(os.environ["port"]))
 
-size = h.get_size ()
+size = h.get_size()
 assert size == 1048576
 EOF

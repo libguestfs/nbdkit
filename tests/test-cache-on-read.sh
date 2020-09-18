@@ -55,10 +55,10 @@ nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 # Write some pattern data to the overlay and check it reads back OK.
 buf = b"abcd" * 16384
-h.pwrite (buf, 32768)
-zero = h.pread (32768, 0)
-assert zero == bytearray (32768)
-buf2 = h.pread (65536, 32768)
+h.pwrite(buf, 32768)
+zero = h.pread(32768, 0)
+assert zero == bytearray(32768)
+buf2 = h.pread(65536, 32768)
 assert buf == buf2
 
 # XXX Suggestion to improve this test: Use the delay filter below the

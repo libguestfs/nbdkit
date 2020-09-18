@@ -59,6 +59,6 @@ for i in range(0,1000):
 # Unfortunately there is no "right answer" here, so our policy is if we
 # see the error number in a real test run we will extend the
 # boundaries here.
-print ("error rate: %d/1000" % errors)
+print("error rate: %d/1000" % errors)
 assert errors >= 50 and errors <= 150
 '

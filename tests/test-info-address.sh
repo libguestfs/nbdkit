@@ -52,12 +52,12 @@ nbdsh -c - <<'EOF'
 import os
 import re
 
-h.connect_unix (os.environ["sock"])
+h.connect_unix(os.environ["sock"])
 
-size = h.get_size ()
+size = h.get_size()
 assert size > 0
 
-buf = h.pread (size, 0)
-print ("buf = %r" % buf)
+buf = h.pread(size, 0)
+print("buf = %r" % buf)
 assert buf == b'unix'
 EOF

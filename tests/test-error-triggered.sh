@@ -52,26 +52,26 @@ nbdsh --connect "nbd+unix://?socket=$sock" \
 import os
 
 # The first operations should be fine.
-h.pread (512, 0)
-h.pread (512, 512)
-h.pread (512, 1024)
+h.pread(512, 0)
+h.pread(512, 512)
+h.pread(512, 1024)
 
 # Then we create the error-trigger file which should cause
 # subsequent operations to fail with ENOSPC.
-open ("error-trigger", "a").close ()
+open("error-trigger", "a").close()
 
 try:
-    h.pread (512, 0)
+    h.pread(512, 0)
     # This should not happen.
-    exit (1)
+    exit(1)
 except nbd.Error as ex:
     # Check the errno is expected.
     assert ex.errno == "ENOSPC"
 
 # Remove the error-trigger file, operations should all succeed again.
-os.unlink ("error-trigger")
+os.unlink("error-trigger")
 
-h.pread (512, 0)
-h.pread (512, 512)
-h.pread (512, 1024)
+h.pread(512, 0)
+h.pread(512, 512)
+h.pread(512, 1024)
 '

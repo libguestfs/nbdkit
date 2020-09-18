@@ -61,6 +61,6 @@ start_nbdkit -P data-file.pid -U $sock \
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-buf = h.pread (900, 0)
+buf = h.pread(900, 0)
 assert buf == b"hello " * 150
 '
