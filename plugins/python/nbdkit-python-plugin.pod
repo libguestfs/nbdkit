@@ -299,7 +299,7 @@ C<nbdkit.set_error> first.
 (Optional)
 
  def pwrite(h, buf, offset, flags):
-   length = len (buf)
+   length = len(buf)
    # no return value
 
 The body of your C<pwrite> function should write the buffer C<buf> to
@@ -357,7 +357,7 @@ exception, optionally using C<nbdkit.set_error> first.  In particular,
 if you would like to automatically fall back to C<pwrite> (perhaps
 because there is nothing to optimize if
 S<C<flags & nbdkit.FLAG_MAY_TRIM>> is false), use
-S<C<nbdkit.set_error (errno.EOPNOTSUPP)>>.
+S<C<nbdkit.set_error(errno.EOPNOTSUPP)>>.
 
 =item C<cache>
 

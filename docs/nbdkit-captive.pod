@@ -42,7 +42,7 @@ When guestfish exits, nbdkit is killed.
 
 Running nbdkit captive under nbdsh for unit testing:
 
- nbdkit -U - memory 1 --run 'nbdsh -u "$uri" -c "print (h.pread (1, 0))"'
+ nbdkit -U - memory 1 --run 'nbdsh -u "$uri" -c "print(h.pread(1, 0))"'
 
 The following shell variables are available in the I<--run> argument:
 
