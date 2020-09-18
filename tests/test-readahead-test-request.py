@@ -37,8 +37,8 @@
 import nbd
 import sys
 
-h = nbd.NBD ()
-h.connect_unix (sys.argv[1])
+h = nbd.NBD()
+h.connect_unix(sys.argv[1])
 
-for i in range (0, 512*10, 512):
-    h.pread (512, i)
+for i in range(0, 512*10, 512):
+    h.pread(512, i)

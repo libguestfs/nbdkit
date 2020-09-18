@@ -9,7 +9,7 @@
 #
 # Install ovirt-release package:
 #
-#   dnf install http://resources.ovirt.org/pub/yum-repo/ovirt-release-master.rpm
+#  dnf install http://resources.ovirt.org/pub/yum-repo/ovirt-release-master.rpm
 #
 # Install required packages:
 #
@@ -51,7 +51,6 @@
 # the foreground and print debugging, which is useful when testing.
 
 import queue
-import threading
 from contextlib import contextmanager
 
 from ovirt_imageio.client import ImageioClient
@@ -124,7 +123,7 @@ def open(readonly):
             cafile=params["ca_file"],
             secure=params["secure"])
         pool.put(client)
-    return { "pool": pool }
+    return {"pool": pool}
 
 
 def close(h):

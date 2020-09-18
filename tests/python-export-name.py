@@ -32,18 +32,20 @@
 # Create an nbdkit sh plugin which reflects the export name back to
 # the caller in the virtual device data and size.
 
-import builtins
 import nbdkit
+
 
 def open(readonly):
     # The export name is a Unicode string, but to return this to the
     # client we have to convert it to bytes.
     name = nbdkit.export_name()
     nbdkit.debug("export name = '%s'" % name)
-    return { 'name': str.encode(name) }
+    return {'name': str.encode(name)}
+
 
 def get_size(h):
     return len(h['name'])
+
 
 def pread(h, count, offset):
     end = offset + count

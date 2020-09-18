@@ -32,7 +32,6 @@
 """See test-python.py."""
 
 import nbdkit
-import sys
 import pickle
 import base64
 
@@ -40,45 +39,57 @@ API_VERSION = 2
 
 cfg = {}
 
-def config (k, v):
+
+def config(k, v):
     global cfg
     if k == "cfg":
-        cfg = pickle.loads (base64.b64decode (v.encode()))
+        cfg = pickle.loads(base64.b64decode(v.encode()))
 
-def config_complete ():
-    print ("set_error = %r" % nbdkit.set_error)
 
-def open (readonly):
+def config_complete():
+    print("set_error = %r" % nbdkit.set_error)
+
+
+def open(readonly):
     return {
-        'disk': bytearray (cfg.get ('size', 0))
+        'disk': bytearray(cfg.get('size', 0))
     }
 
-def get_size (h):
-    return len (h['disk'])
 
-def is_rotational (h):
-    return cfg.get ('is_rotational', False)
+def get_size(h):
+    return len(h['disk'])
 
-def can_multi_conn (h):
-    return cfg.get ('can_multi_conn', False)
 
-def can_write (h):
-    return cfg.get ('can_write', True)
+def is_rotational(h):
+    return cfg.get('is_rotational', False)
 
-def can_flush (h):
-    return cfg.get ('can_flush', False)
 
-def can_trim (h):
-    return cfg.get ('can_trim', False)
+def can_multi_conn(h):
+    return cfg.get('can_multi_conn', False)
 
-def can_zero (h):
-    return cfg.get ('can_zero', False)
 
-def can_fast_zero (h):
-    return cfg.get ('can_fast_zero', False)
+def can_write(h):
+    return cfg.get('can_write', True)
 
-def can_fua (h):
-    fua = cfg.get ('can_fua', "none")
+
+def can_flush(h):
+    return cfg.get('can_flush', False)
+
+
+def can_trim(h):
+    return cfg.get('can_trim', False)
+
+
+def can_zero(h):
+    return cfg.get('can_zero', False)
+
+
+def can_fast_zero(h):
+    return cfg.get('can_fast_zero', False)
+
+
+def can_fua(h):
+    fua = cfg.get('can_fua', "none")
     if fua == "none":
         return nbdkit.FUA_NONE
     elif fua == "emulate":
@@ -86,8 +97,9 @@ def can_fua (h):
     elif fua == "native":
         return nbdkit.FUA_NATIVE
 
-def can_cache (h):
-    cache = cfg.get ('can_cache', "none")
+
+def can_cache(h):
+    cache = cfg.get('can_cache', "none")
     if cache == "none":
         return nbdkit.CACHE_NONE
     elif cache == "emulate":
@@ -95,45 +107,53 @@ def can_cache (h):
     elif cache == "native":
         return nbdkit.CACHE_NATIVE
 
-def can_extents (h):
-    return cfg.get ('can_extents', False)
 
-def pread (h, buf, offset, flags):
+def can_extents(h):
+    return cfg.get('can_extents', False)
+
+
+def pread(h, buf, offset, flags):
     assert flags == 0
     end = offset + len(buf)
     buf[:] = h['disk'][offset:end]
 
-def pwrite (h, buf, offset, flags):
-    expect_fua = cfg.get ('pwrite_expect_fua', False)
-    actual_fua = bool (flags & nbdkit.FLAG_FUA)
+
+def pwrite(h, buf, offset, flags):
+    expect_fua = cfg.get('pwrite_expect_fua', False)
+    actual_fua = bool(flags & nbdkit.FLAG_FUA)
     assert expect_fua == actual_fua
     end = offset + len(buf)
     h['disk'][offset:end] = buf
 
-def flush (h, flags):
+
+def flush(h, flags):
     assert flags == 0
 
-def trim (h, count, offset, flags):
-    expect_fua = cfg.get ('trim_expect_fua', False)
-    actual_fua = bool (flags & nbdkit.FLAG_FUA)
+
+def trim(h, count, offset, flags):
+    expect_fua = cfg.get('trim_expect_fua', False)
+    actual_fua = bool(flags & nbdkit.FLAG_FUA)
     assert expect_fua == actual_fua
     h['disk'][offset:offset+count] = bytearray(count)
 
-def zero (h, count, offset, flags):
-    expect_fua = cfg.get ('zero_expect_fua', False)
-    actual_fua = bool (flags & nbdkit.FLAG_FUA)
+
+def zero(h, count, offset, flags):
+    expect_fua = cfg.get('zero_expect_fua', False)
+    actual_fua = bool(flags & nbdkit.FLAG_FUA)
     assert expect_fua == actual_fua
-    expect_may_trim = cfg.get ('zero_expect_may_trim', False)
-    actual_may_trim = bool (flags & nbdkit.FLAG_MAY_TRIM)
+    expect_may_trim = cfg.get('zero_expect_may_trim', False)
+    actual_may_trim = bool(flags & nbdkit.FLAG_MAY_TRIM)
     assert expect_may_trim == actual_may_trim
-    expect_fast_zero = cfg.get ('zero_expect_fast_zero', False)
-    actual_fast_zero = bool (flags & nbdkit.FLAG_FAST_ZERO)
+    expect_fast_zero = cfg.get('zero_expect_fast_zero', False)
+    actual_fast_zero = bool(flags & nbdkit.FLAG_FAST_ZERO)
     assert expect_fast_zero == actual_fast_zero
     h['disk'][offset:offset+count] = bytearray(count)
 
-def cache (h, count, offset, flags):
+
+def cache(h, count, offset, flags):
     assert flags == 0
     # do nothing
 
+
 def extents(h, count, offset, flags):
-    return cfg.get ('extents', [])
+    return cfg.get('extents', [])

@@ -36,14 +36,18 @@
 import nbdkit
 import time
 
+
 def thread_model():
     return nbdkit.THREAD_MODEL_PARALLEL
+
 
 def open(readonly):
     return {}
 
+
 def get_size(h):
     return 512
+
 
 def pread(h, count, offset):
     time.sleep(10)
