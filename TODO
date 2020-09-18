@@ -254,8 +254,8 @@ nbdkit-tls-fallback-filter:
 Filters for security
 --------------------
 
-Things like blacklisting or whitelisting IP addresses can be done
-using external wrappers (TCP wrappers, systemd), or nbdkit-ip-filter.
+Things like filtering by IP address can be done using external
+wrappers (TCP wrappers, systemd), or nbdkit-ip-filter.
 
 However it might be nice to have a configurable filter for preventing
 valid but not sensible requests.  The server already filters invalid
