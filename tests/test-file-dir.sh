@@ -40,22 +40,26 @@ set -x
 requires nbdkit -U - memory 1 --run 'nbdinfo --size --json "$uri"'
 requires jq --version
 
-files="file-dir file-dir.out file-dir.witness"
+files="file-dir file-dir.out"
 rm -rf $files
 cleanup_fn rm -rf $files
 fail=0
+
+nbdsh_connect_fail_script='
+import os
+try:
+  h.connect_uri(os.environ["uri"])
+  exit(1)
+except nbd.Error:
+  pass
+'
 
 # do_nbdkit_fail NAME
 # Check that attempting to connect to export NAME fails
 do_nbdkit_fail ()
 {
-    # The --run script occurs only if nbdkit gets past .config_complete;
-    # testing for witness proves that our failure was during .open and
-    # not at some earlier point
-    rm -f file-dir.witness
     nbdkit -U - -v -e "$1" file dir=file-dir \
-        --run 'touch file-dir.witness; nbdsh -u "$uri" -c "quit()"' && fail=1
-    test -f file-dir.witness || fail=1
+        --run 'export uri; nbdsh -c "$nbdsh_connect_fail_script"' || fail=1
 }
 
 # do_nbdkit_pass NAME DATA
