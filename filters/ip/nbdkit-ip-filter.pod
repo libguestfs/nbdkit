@@ -9,7 +9,7 @@ nbdkit-ip-filter - filter clients by IP address
 
 =head1 DESCRIPTION
 
-C<nbdkit-ip-filter> can whitelist or blacklist clients by their IP
+C<nbdkit-ip-filter> can allow or deny client connections by their IP
 address.  Usually it is better to control this outside nbdkit, for
 example using TCP wrappers or a firewall, but this filter can be used
 if these are not available.
