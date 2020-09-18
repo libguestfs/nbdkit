@@ -641,10 +641,10 @@ B<not> been negotiated at this point.
 For security reasons (to avoid denial of service attacks) this
 callback should be written to be as fast and take as few resources as
 possible.  If you use this callback, only use it to do basic access
-control, such as checking C<nbdkit_peer_name> against a whitelist (see
-L</PEER NAME> and L<nbdkit-ip-filter(1)>).  It may be better to do
-access control outside the server, for example using TCP wrappers or a
-firewall.
+control, such as checking C<nbdkit_peer_name> against a list of
+permitted IP addresses (see L</PEER NAME> and L<nbdkit-ip-filter(1)>).
+It may be better to do access control outside the server, for example
+using TCP wrappers or a firewall.
 
 The C<readonly> flag informs the plugin that the server was started
 with the I<-r> flag on the command line.
