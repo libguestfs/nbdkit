@@ -54,9 +54,9 @@ start_nbdkit -P data-script.pid -U $sock \
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-print ("%d" % h.get_size())
+print("%d" % h.get_size())
 assert h.get_size() == 4*8
-buf = h.pread (h.get_size(), 0)
-print ("%r" % buf)
+buf = h.pread(h.get_size(), 0)
+print("%r" % buf)
 assert buf == b"00000001000200030004000500060007"
 '

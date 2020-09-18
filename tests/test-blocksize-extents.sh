@@ -63,7 +63,7 @@ export script='
 size = h.get_size()
 offs = 0
 entries = []
-def f (metacontext, offset, e, err):
+def f(metacontext, offset, e, err):
     global entries
     global offs
     assert offs == offset
@@ -76,24 +76,24 @@ def f (metacontext, offset, e, err):
 
 # Test a loop over the entire device
 while offs < size:
-    h.block_status (size - offs, offs, f)
+    h.block_status(size - offs, offs, f)
 assert entries == [(4096, 0), (4096, 3), (57344, 0)]
 
 # Unaligned status queries must also work
 offs = 1
 entries = []
-h.block_status (1, offs, f, nbd.CMD_FLAG_REQ_ONE)
+h.block_status(1, offs, f, nbd.CMD_FLAG_REQ_ONE)
 assert entries == [(1, 0)]
 
 offs = 512
 entries = []
-h.block_status (512, offs, f)
+h.block_status(512, offs, f)
 assert entries == [(3584, 0)]
 
 offs = 4095
 entries=[]
 while offs < 4097:
-    h.block_status (4097 - offs, offs, f, nbd.CMD_FLAG_REQ_ONE)
+    h.block_status(4097 - offs, offs, f, nbd.CMD_FLAG_REQ_ONE)
 assert entries == [(1, 0), (1, 3)]
 '
 

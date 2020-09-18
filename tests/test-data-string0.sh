@@ -49,7 +49,7 @@ start_nbdkit -P data-string0.pid -U $sock data ' "\x00hello\x00" '
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 assert h.get_size() == 7
-buf = h.pread (h.get_size(), 0)
-print ("%r" % buf)
+buf = h.pread(h.get_size(), 0)
+print("%r" % buf)
 assert buf == b"\x00hello\x00"
 '

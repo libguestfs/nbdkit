@@ -50,13 +50,13 @@ nbdkit -v -U - \
        sh - \
        --filter=retry retry-delay=1 \
        --run 'nbdsh --uri "$uri" -c "
-h.zero (512, 0)
+h.zero(512, 0)
 try:
-    h.zero (512, 0,
-            nbd.CMD_FLAG_FUA | nbd.CMD_FLAG_NO_HOLE | nbd.CMD_FLAG_FAST_ZERO)
+    h.zero(512, 0,
+           nbd.CMD_FLAG_FUA | nbd.CMD_FLAG_NO_HOLE | nbd.CMD_FLAG_FAST_ZERO)
 except nbd.Error as ex:
     assert ex.errno == \"ENOTSUP\"
-h.zero (512, 0, nbd.CMD_FLAG_FUA)
+h.zero(512, 0, nbd.CMD_FLAG_FUA)
        "' <<'EOF'
 #!/usr/bin/env bash
 case "$1" in

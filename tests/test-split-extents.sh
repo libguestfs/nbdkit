@@ -59,17 +59,17 @@ truncate --size=1M test-split-extents.2
 nbdkit -v -U - split test-split-extents.1 test-split-extents.2 \
        --run 'nbdsh --base-allocation --uri "$uri" -c "
 entries = []
-def f (metacontext, offset, e, err):
+def f(metacontext, offset, e, err):
     global entries
     assert err.value == 0
     assert metacontext == nbd.CONTEXT_BASE_ALLOCATION
     entries = e
-h.block_status (2 * 1024 * 1024, 0, f)
+h.block_status(2 * 1024 * 1024, 0, f)
 assert entries == [ 512 * 1024, 3,
                     1024 * 1024, 0,
                     512 * 1024, 3 ]
 entries = []
 # With req one, extents stop at file boundaries
-h.block_status (1024 * 1024, 768 * 1024, f, nbd.CMD_FLAG_REQ_ONE)
+h.block_status(1024 * 1024, 768 * 1024, f, nbd.CMD_FLAG_REQ_ONE)
 assert entries == [ 256 * 1024, 0 ]
        "'

@@ -58,9 +58,9 @@ $hello[:]
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-print ("%d" % h.get_size())
+print("%d" % h.get_size())
 assert h.get_size() == 4+2+2+5+5
-buf = h.pread (h.get_size(), 0)
-print ("%r" % buf)
+buf = h.pread(h.get_size(), 0)
+print("%r" % buf)
 assert buf == b"HellloloHelloHello"
 '

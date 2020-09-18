@@ -50,78 +50,78 @@ marker() {
 marker "Test what happens when a plugin fails .can_flush"
 nbdsh -c '
 try:
-    h.connect_command (["nbdkit", "-s", "-v", "'$plugin'"])
-except nbd.Error as ex:
-    exit (0)
-# If we got here, things are broken
-exit (1)
+    h.connect_command(["nbdkit", "-s", "-v", "'$plugin'"])
+    # If we got here, things are broken
+    exit(1)
+except nbd.Error:
+    pass
 ' 2>>test-flush.err
 
 marker "A read-only server still triggers .can_flush, which still fails"
 nbdsh -c '
 try:
-    h.connect_command (["nbdkit", "-s", "-r", "-v", "'$plugin'"])
-except nbd.Error as ex:
-    exit (0)
-# If we got here, things are broken
-exit (1)
+    h.connect_command(["nbdkit", "-s", "-r", "-v", "'$plugin'"])
+    # If we got here, things are broken
+    exit(1)
+except nbd.Error:
+    pass
 ' 2>>test-flush.err
 
 marker "Disable flush and FUA"
 nbdsh -c '
-h.connect_command (["nbdkit", "-s", "-v", "'$plugin'", "0"])
-assert h.is_read_only () == 0
-assert h.can_flush () == 0
-assert h.can_fua () == 0
+h.connect_command(["nbdkit", "-s", "-v", "'$plugin'", "0"])
+assert h.is_read_only() == 0
+assert h.can_flush() == 0
+assert h.can_fua() == 0
 ' 2>>test-flush.err
 
 marker "Normal flush, emulated FUA"
 nbdsh -c '
-h.connect_command (["nbdkit", "-s", "-v", "'$plugin'", "1"])
-assert h.is_read_only () == 0
-assert h.can_flush () == 1
-assert h.can_fua () == 1
-h.flush () # expect "handling flush"
-h.pwrite (bytearray (512), 0, nbd.CMD_FLAG_FUA) # expect "handling flush"
+h.connect_command(["nbdkit", "-s", "-v", "'$plugin'", "1"])
+assert h.is_read_only() == 0
+assert h.can_flush() == 1
+assert h.can_fua() == 1
+h.flush() # expect "handling flush"
+h.pwrite(bytearray(512), 0, nbd.CMD_FLAG_FUA) # expect "handling flush"
 ' 2>>test-flush.err
 
 marker "Normal flush, .can_fua is not consulted or advertised when read-only"
 nbdsh -c '
-h.connect_command (["nbdkit", "-s", "-r", "-v", "'$plugin'", "1"])
-assert h.is_read_only () == 1
-assert h.can_flush () == 1
-assert h.can_fua () == 0
-h.flush () # expect "handling flush"
+h.connect_command(["nbdkit", "-s", "-r", "-v", "'$plugin'", "1"])
+assert h.is_read_only() == 1
+assert h.can_flush() == 1
+assert h.can_fua() == 0
+h.flush() # expect "handling flush"
 ' 2>>test-flush.err
 
 marker "Unusual return value for .can_flush, native FUA"
 nbdsh -c '
-h.connect_command (["nbdkit", "-s", "-v", "'$plugin'", "2"])
-assert h.is_read_only () == 0
-assert h.can_flush () == 1
-assert h.can_fua () == 1
-h.flush () # expect "handling flush"
-h.pwrite (bytearray (512), 0, nbd.CMD_FLAG_FUA) # expect "handling native FUA"
+h.connect_command(["nbdkit", "-s", "-v", "'$plugin'", "2"])
+assert h.is_read_only() == 0
+assert h.can_flush() == 1
+assert h.can_fua() == 1
+h.flush() # expect "handling flush"
+h.pwrite(bytearray(512), 0, nbd.CMD_FLAG_FUA) # expect "handling native FUA"
 ' 2>>test-flush.err
 
 marker "Unusual return value for .can_flush, bogus for .can_fua"
 nbdsh -c '
-h.connect_command (["nbdkit", "-s", "-v", "'$plugin'", "3"])
+h.connect_command(["nbdkit", "-s", "-v", "'$plugin'", "3"])
 try:
-    h.connect_command (["nbdkit", "-s", "-r", "-v", "'$plugin'"])
-except nbd.Error as ex:
-    exit (0)
-# If we got here, things are broken
-exit (1)
+    h.connect_command(["nbdkit", "-s", "-r", "-v", "'$plugin'"])
+    # If we got here, things are broken
+    exit(1)
+except nbd.Error:
+    pass
 ' 2>>test-flush.err
 
 marker "Unusual return value for .can_flush, -r means .can_fua unused"
 nbdsh -c '
-h.connect_command (["nbdkit", "-s", "-r", "-v", "'$plugin'", "3"])
-assert h.is_read_only () == 1
-assert h.can_flush () == 1
-assert h.can_fua () == 0
-h.flush () # expect "handling flush"
+h.connect_command(["nbdkit", "-s", "-r", "-v", "'$plugin'", "3"])
+assert h.is_read_only() == 1
+assert h.can_flush() == 1
+assert h.can_fua() == 0
+h.flush() # expect "handling flush"
 ' 2>>test-flush.err
 
 cat test-flush.err

@@ -54,16 +54,16 @@ sock = os.environ["sock"]
 
 # It should be possible to connect two clients.
 # Note that nbdsh creates the ‘h’ handle implicitly.
-h.connect_unix (sock)
-h2 = nbd.NBD ()
-h2.connect_unix (sock)
+h.connect_unix(sock)
+h2 = nbd.NBD()
+h2.connect_unix(sock)
 
 # A third connection is expected to fail.
 try:
-    h3 = nbd.NBD ()
-    h3.connect_unix (sock)
+    h3 = nbd.NBD()
+    h3.connect_unix(sock)
     # This should not happen.
-    sys.exit (1)
+    sys.exit(1)
 except nbd.Error:
     pass
 
@@ -72,10 +72,10 @@ del h2
 
 # There's a possible race between closing the client socket
 # and nbdkit noticing and closing the connection.
-time.sleep (5)
+time.sleep(5)
 
 # Now a new connection should be possible.
-h4 = nbd.NBD ()
-h4.connect_unix (sock)
+h4 = nbd.NBD()
+h4.connect_unix(sock)
 
 EOF

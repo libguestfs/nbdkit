@@ -50,12 +50,12 @@ nbdkit -v -U - \
        --filter=retry retry-delay=1 \
        --run 'nbdsh --base-allocation --uri "$uri" -c "
 entries = []
-def f (metacontext, offset, e, err):
+def f(metacontext, offset, e, err):
     global entries
     assert err.value == 0
     assert metacontext == nbd.CONTEXT_BASE_ALLOCATION
     entries = e
-h.block_status (1024, 0, f)
+h.block_status(1024, 0, f)
 assert entries == [ 512, 0,
                     512, 3]
        "' <<'EOF'

@@ -102,7 +102,7 @@ export script='
 size = h.get_size()
 offs = 0
 entries = []
-def f (metacontext, offset, e, err):
+def f(metacontext, offset, e, err):
     global entries
     global offs
     assert offs == offset
@@ -113,8 +113,8 @@ def f (metacontext, offset, e, err):
             entries.append((length, flags))
         offs = offs + length
 while offs < size:
-    h.block_status (size - offs, offs, f)
-print (entries)
+    h.block_status(size - offs, offs, f)
+print(entries)
 '
 
 # Now to test the combinations:

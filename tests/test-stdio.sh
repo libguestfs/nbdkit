@@ -33,7 +33,7 @@
 source ./functions.sh
 set -xe
 
-requires nbdsh -c 'exit (not h.supports_uri ())'
+requires nbdsh -c 'exit(not h.supports_uri())'
 
 plugin=.libs/test-stdio-plugin.$SOEXT
 requires test -f $plugin
@@ -78,18 +78,18 @@ if ! test -s test-stdio.pid1; then
     echo "$0: PID file $pidfile was not created"
     exit 1
 fi
-nbdsh -u "nbd+unix:///?socket=$sock1" -c 'buf = h.pread (512, 0)'
+nbdsh -u "nbd+unix:///?socket=$sock1" -c 'buf = h.pread(512, 0)'
 wait $pid
 grep "two=string" test-stdio.out
 
 # Test as daemon
 echo "string" | start_nbdkit -P test-stdio.pid2 --filter=exitlast \
     -U $sock2 $plugin three=3 | tee test-stdio.out
-nbdsh -u "nbd+unix:///?socket=$sock2" -c 'buf = h.pread (512, 0)'
+nbdsh -u "nbd+unix:///?socket=$sock2" -c 'buf = h.pread(512, 0)'
 grep "three=string" test-stdio.out
 
 # Test with -s; here, the plugin produces no output.
 nbdsh -c '
-h.connect_command (["nbdkit", "-v", "-s", "'$plugin'", "four=4"])
-buf = h.pread (512, 0)
+h.connect_command(["nbdkit", "-v", "-s", "'$plugin'", "four=4"])
+buf = h.pread(512, 0)
 '

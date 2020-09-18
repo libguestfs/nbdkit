@@ -66,22 +66,22 @@ nbdsh -c '
 import os
 import time
 
-h.connect_unix (os.environ["sock"])
+h.connect_unix(os.environ["sock"])
 
 # We should be able to issue multiple requests in parallel,
 # and the total time taken should not be much more than 10 seconds
 # because all sleeps in the plugin should happen in parallel.
 start_t = time.time()
-for i in range (10):
-    buf = nbd.Buffer (512)
-    h.aio_pread (buf, 0)
+for i in range(10):
+    buf = nbd.Buffer(512)
+    h.aio_pread(buf, 0)
 
 while h.aio_in_flight() > 0:
     h.poll(-1)
 end_t = time.time()
 
 t = end_t - start_t
-print (t)
+print(t)
 
 # Since we launched 10 requests, if we serialized on them we
 # would have waited at least 100 seconds.  We would expect to

@@ -40,8 +40,8 @@ requires test `id -u` -eq 0
 requires nbdsh --version
 
 nbdsh -c -<<'EOF'
-h.connect_command (
+h.connect_command(
     ["nbdkit", "-fv", "-s", "--exit-with-parent", "--swap", "null"]
 )
-assert h.get_size () == 0
+assert h.get_size() == 0
 EOF

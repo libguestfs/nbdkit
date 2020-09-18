@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_plugin tmpdisk
-requires nbdsh -c 'exit (not h.supports_uri ())'
+requires nbdsh -c 'exit(not h.supports_uri())'
 
 # - If multiple parameters appear, last one is used.
 # - Test quoting.

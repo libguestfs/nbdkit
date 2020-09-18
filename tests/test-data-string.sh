@@ -49,7 +49,7 @@ start_nbdkit -P data-string.pid -U $sock \
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-buf = h.pread (h.get_size(), 0)
-print ("%r" % buf)
+buf = h.pread(h.get_size(), 0)
+print("%r" % buf)
 assert buf == b"hello\"\\\"\\\x01\x02\x03\n"
 '

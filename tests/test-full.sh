@@ -48,22 +48,22 @@ start_nbdkit -P full.pid -U $sock full 1M
 
 # All reads should succeed.
 nbdsh --connect "nbd+unix://?socket=$sock" \
-      -c 'h.pread (512, 0)' \
-      -c 'h.pread (512, 512)' \
-      -c 'h.pread (512, 1048064)'
+      -c 'h.pread(512, 0)' \
+      -c 'h.pread(512, 512)' \
+      -c 'h.pread(512, 1048064)'
 
 # All writes should fail with the ENOSPC error.
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-def test (offset):
+def test(offset):
     try:
-        h.pwrite (bytearray (512), offset)
+        h.pwrite(bytearray (512), offset)
         # This should not happen.
-        exit (1)
+        exit(1)
     except nbd.Error as ex:
         # Check the errno is expected.
         assert ex.errno == "ENOSPC"
 
-test (0)
-test (1048064)
+test(0)
+test(1048064)
 '

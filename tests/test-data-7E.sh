@@ -88,6 +88,6 @@ start_nbdkit -P data-7E.pid -U $sock \
 # Since we're reading the empty first partition, any read returns zeroes.
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-buf = h.pread (16, 498)
+buf = h.pread(16, 498)
 assert buf == bytearray(16)
 '

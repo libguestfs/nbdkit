@@ -67,8 +67,8 @@ assert h.get_size() == 0x800000000
 # Read the markers.
 for i in range(4):
     offset = i * 0x200000000
-    buf = h.pread (2, offset)
+    buf = h.pread(2, offset)
     assert buf == b"\x55\xAA"
-    buf = h.pread (2, offset + 0x200000000 - 2)
+    buf = h.pread(2, offset + 0x200000000 - 2)
     assert buf == b"\x55\xAA"
 '

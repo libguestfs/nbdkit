@@ -52,15 +52,15 @@ start_nbdkit -P data-random-slice.pid -U $sock \
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-print ("%d" % h.get_size())
+print("%d" % h.get_size())
 assert h.get_size() == 4*4
 
 # We do not know what the content will be but it must
 # be the same 4 bytes repeated 4 times.
-buf1 = h.pread (4, 0)
-buf2 = h.pread (4, 4)
-buf3 = h.pread (4, 8)
-buf4 = h.pread (4, 12)
+buf1 = h.pread(4, 0)
+buf2 = h.pread(4, 4)
+buf3 = h.pread(4, 8)
+buf4 = h.pread(4, 12)
 
 assert buf1 == buf2
 assert buf2 == buf3

@@ -48,7 +48,7 @@ truncate -s 512 $file
 
 # Write to the file through the filter.
 nbdkit -U - --filter=swab file $file swab-bits=64 --run '
-    nbdsh --uri "$uri" -c "h.pwrite (b\"abcdefghijklmnop\", 256)"
+    nbdsh --uri "$uri" -c "h.pwrite(b\"abcdefghijklmnop\", 256)"
 '
 
 # Check byte-swapped data was written.

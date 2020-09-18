@@ -50,17 +50,17 @@ nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 # Write some stuff to the beginning, middle and end.
 buf1 = b"1" * 512
-h.pwrite (buf1, 0)
+h.pwrite(buf1, 0)
 buf2 = b"2" * 65536
-h.pwrite (buf2, 8*1024*1024+1)
+h.pwrite(buf2, 8*1024*1024+1)
 buf3 = b"3" * 512
-h.pwrite (buf3, 16*1024*1024-512)
+h.pwrite(buf3, 16*1024*1024-512)
 
 # Read it back.
-buf11 = h.pread (len(buf1), 0)
+buf11 = h.pread(len(buf1), 0)
 assert buf1 == buf11
-buf22 = h.pread (len(buf2), 8*1024*1024+1)
+buf22 = h.pread(len(buf2), 8*1024*1024+1)
 assert buf2 == buf22
-buf33 = h.pread (len(buf3), 16*1024*1024-512)
+buf33 = h.pread(len(buf3), 16*1024*1024-512)
 assert buf3 == buf33
 '
