@@ -64,8 +64,9 @@ def pread(h, buf, offset, flags):
     global disk
     end = offset + len(buf)
     buf[:] = disk[offset:end]
-    # or if reading from a file you can use:
-    #f.readinto(buf)
+    #  or if reading from a file you can use:
+    # f.readinto(buf)
+
 
 def pwrite(h, buf, offset, flags):
     global disk

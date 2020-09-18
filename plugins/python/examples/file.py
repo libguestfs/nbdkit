@@ -22,9 +22,12 @@ import nbdkit
 # version at the time this example was written.
 API_VERSION = 2
 
+# The file we want to serve.
+filename = None
+
+
 # Parse the file parameter which contains the name of the file that we
 # want to serve.
-filename = None
 def config(key, value):
     global filename
     if key == "file":
@@ -32,16 +35,19 @@ def config(key, value):
     else:
         raise RuntimeError("unknown parameter: " + key)
 
+
 def config_complete():
     global filename
     if filename is None:
         raise RuntimeError("file parameter is required")
+
 
 # Although Python code cannot be run in parallel, if your
 # plugin callbacks sleep then you can improve parallelism
 # by relaxing the thread model.
 def thread_model():
     return nbdkit.THREAD_MODEL_PARALLEL
+
 
 # This is called when a client connects.
 def open(readonly):
@@ -50,16 +56,19 @@ def open(readonly):
     else:
         flags = os.O_RDWR
     fd = os.open(filename, flags)
-    return { 'fd': fd }
+    return {'fd': fd}
+
 
 def get_size(h):
     sb = os.stat(h['fd'])
     return sb.st_size
 
+
 def pread(h, buf, offset, flags):
     n = os.preadv(h['fd'], [buf], offset)
     if n != len(buf):
         raise RuntimeError("unexpected short read from file")
+
 
 def pwrite(h, buf, offset, flags):
     n = os.pwritev(h['fd'], [buf], offset)

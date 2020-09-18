@@ -33,6 +33,7 @@
 
 test = "simple"
 
+
 def config(k, v):
     global test
     if k == "test":
@@ -40,11 +41,14 @@ def config(k, v):
     else:
         raise RuntimeError("unknown config parameter")
 
+
 def raise_error2():
     raise RuntimeError("this is the test string")
 
+
 def raise_error1():
     raise_error2()
+
 
 def config_complete():
     if test == "simple":
@@ -53,6 +57,7 @@ def config_complete():
         raise_error1()
     else:
         raise RuntimeError("unknown test")
+
 
 def open(readonly):
     return 1
