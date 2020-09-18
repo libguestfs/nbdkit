@@ -68,6 +68,7 @@ static const char *known_methods[] = {
   "close",
   "config",
   "config_complete",
+  "default_export",
   "dump_plugin",
   "extents",
   "flush",
@@ -395,6 +396,7 @@ static struct nbdkit_plugin plugin = {
 
   .preconnect        = sh_preconnect,
   .list_exports      = sh_list_exports,
+  .default_export    = sh_default_export,
   .open              = sh_open,
   .close             = sh_close,
 

@@ -46,6 +46,7 @@ extern int sh_after_fork (void);
 extern int sh_preconnect (int readonly);
 extern int sh_list_exports (int readonly, int default_only,
                             struct nbdkit_exports *exports);
+extern const char *sh_default_export (int readonly, int is_tls);
 extern void *sh_open (int readonly);
 extern void sh_close (void *handle);
 extern int64_t sh_get_size (void *handle);

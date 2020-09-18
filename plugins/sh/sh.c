@@ -301,6 +301,7 @@ static struct nbdkit_plugin plugin = {
 
   .preconnect        = sh_preconnect,
   .list_exports      = sh_list_exports,
+  .default_export    = sh_default_export,
   .open              = sh_open,
   .close             = sh_close,
 

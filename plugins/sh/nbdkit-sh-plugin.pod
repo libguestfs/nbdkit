@@ -315,8 +315,24 @@ export name or description, although this could be possible under a
 new mode supporting escape sequences.
 
 This method is I<not> required; if it is absent, the list of exports
-advertised by nbdkit will be the single export with the empty string
-as a name and no description.
+advertised by nbdkit will be the single name result of C<default_export>
+and no description.
+
+=item C<default_export>
+
+ /path/to/script default_export <readonly> <tls>
+
+The C<readonly> and C<tls> parameters will be C<true> or C<false>.
+
+On success this should print a name on stdout to use in place of the
+default export C<"">, then exit with code C<0>.  For convenience, the
+output can be any of the list forms recognized by C<list_exports>, in
+which case the first listed export name is used, and where an empty
+list uses C<"">.  Given the current set of recognized export lists, it
+is not possible for the resulting name to include a newline.
+
+This method is I<not> required; if it is absent, the default export
+name will be the empty string, C<"">.
 
 =item C<open>
 

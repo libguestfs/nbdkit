@@ -96,6 +96,8 @@ features):
 
 =item B<config_complete=>SCRIPT
 
+=item B<default_export=>SCRIPT
+
 =item B<dump_plugin=>SCRIPT
 
 =item B<extents=>SCRIPT
@@ -109,6 +111,8 @@ features):
 =item B<is_rotational=>SCRIPT
 
 =item B<list_exports=>SCRIPT
+
+=item B<default_export=>SCRIPT
 
 =item B<open=>SCRIPT
 

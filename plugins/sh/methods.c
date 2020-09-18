@@ -240,7 +240,9 @@ parse_exports (const char *script,
 {
   const char *n, *d, *p, *q;
 
-  /* The first line determines how to parse the rest of s */
+  /* The first line determines how to parse the rest of s.  Keep
+   * sh_default_export in sync with this.
+   */
   if ((p = skip_prefix (s, "INTERLEAVED\n")) != NULL) {
     n = p;
     while ((d = strchr (n, '\n')) != NULL) {
@@ -325,6 +327,47 @@ sh_list_exports (int readonly, int default_only,
                   script, method);
     errno = EIO;
     return -1;
+
+  default: abort ();
+  }
+}
+
+const char *
+sh_default_export (int readonly, int is_tls)
+{
+  const char *method = "default_export";
+  const char *script = get_script (method);
+  const char *args[] = { script, method, readonly ? "true" : "false",
+                         is_tls ? "true" : "false", NULL };
+  CLEANUP_FREE char *s = NULL;
+  size_t slen;
+  const char *p, *n;
+
+  switch (call_read (&s, &slen, args)) {
+  case OK:
+    /* The first line determines how to parse the rest of s.  For now,
+     * all export modes treat the next line as the first export.
+     */
+    if ((p = skip_prefix (s, "INTERLEAVED\n")) != NULL ||
+        (p = skip_prefix (s, "NAMES+DESCRIPTIONS\n")) != NULL ||
+        (p = skip_prefix (s, "NAMES\n")) != NULL)
+      ;
+    else
+      p = s;
+    n = strchr (p, '\n') ?: s + slen;
+    return nbdkit_strndup_intern (p, n - p);
+
+  case MISSING:
+    return "";
+
+  case ERROR:
+    return NULL;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, method);
+    errno = EIO;
+    return NULL;
 
   default: abort ();
   }

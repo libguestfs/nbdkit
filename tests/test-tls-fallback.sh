@@ -60,12 +60,15 @@ cleanup_fn rm -f $files
 # Run dual-mode server
 start_nbdkit -P $pid -U $sock --tls=on --tls-psk=keys.psk \
     --filter=tls-fallback sh - tlsreadme=$'dummy\n' <<\EOF
+check () {
+ if test "$1" != true; then
+   echo 'EINVAL unexpected tls mode' 2>&1; exit 1
+ fi
+}
 case $1 in
   list_exports) echo NAMES; echo hello; echo world ;;
-  open) if test "$4" != true; then
-      echo 'EINVAL unexpected tls mode' 2>&1; exit 1
-    fi
-    echo $3 ;;
+  default_export) check "$3"; echo hello ;;
+  open) check "$4"; echo $3 ;;
   get_size) echo "$2" | wc -c ;;
   pread) echo "$2" | dd skip=$4 count=$3 iflag=skip_bytes,count_bytes ;;
   can_write | can_trim) exit 0 ;;

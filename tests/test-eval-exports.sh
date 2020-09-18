@@ -37,8 +37,8 @@ source ./functions.sh
 set -e
 set -x
 
-# requires nbdinfo --version # nbdinfo 1.3.9 was broken, so check this instead:
-requires nbdkit -U - memory 1 --run 'nbdinfo --size --json "$uri"'
+requires nbdinfo --version
+requires nbdsh -c 'print(h.set_full_info)'
 requires jq --version
 
 sock=$(mktemp -u)
@@ -57,20 +57,19 @@ diff -u <(jq -c \
           '[.exports[] | [."export-name", .description, ."export-size"]]' \
           eval-exports.out) <(printf %s\\n '[["",null,0]]')
 
-# Start a long-running server with .list_exports set to varying contents
+# Start a long-running server with .list_exports and .default_export
+# set to varying contents
 start_nbdkit -P eval-exports.pid -U $sock eval get_size='echo "$2"|wc -c' \
-    open='echo "$3"' list_exports="cat '$PWD/eval-exports.list'"
+    open='echo "$3"' list_exports="cat '$PWD/eval-exports.list'" \
+    default_export="cat '$PWD/eval-exports.list'"
 
 # do_nbdkit EXPNAME EXPOUT
 do_nbdkit ()
 {
     # Check how the default export name is handled
-    # nbdinfo currently makes multiple connections, so we can't use the
-    # long-running server for validating default export name.
-    # XXX FIXME: requires .default_export in eval
-    : || nbdkit -U - -v eval list_exports="cat '$PWD/eval-exports.list'" \
-      open='[ "$3" = "'"$1"'" ] || { echo EINVAL wrong export >&2; exit 1; }' \
-      get_size='echo 0' --run 'nbdsh -u "$uri" -c "exit()"'
+    nbdinfo --no-content nbd+unix://\?socket=$sock >eval-exports.out
+    diff -u <(sed -n 's/export="\(.*\)":/\1/p' eval-exports.out) \
+         <(printf %s\\n "$1")
     # Check what exports are listed
     nbdinfo --list --json nbd+unix://\?socket=$sock >eval-exports.out
     cat eval-exports.out
@@ -79,9 +78,28 @@ do_nbdkit ()
               eval-exports.out) <(printf %s\\n "$2")
 }
 
-# With no file, .list_exports fails, but connecting works
+# With no file, .list_exports and .default_export both fail, preventing
+# connection to the default export, but not other exports
 nbdinfo --list --json nbd+unix://\?socket=$sock && fail=1
-nbdsh -u nbd+unix://\?socket=$sock -c 'quit()'
+nbdsh -c '
+import os
+try:
+  h.connect_uri("nbd+unix://?socket='"$sock"'")
+  exit(1)
+except nbd.Error:
+  pass
+' || fail=1
+nbdsh -u nbd+unix:///name\?socket=$sock -c 'quit()'
+
+# Setting .default_export but not .list_exports advertises the canonical name
+nbdkit -U - eval default_export='echo hello' get_size='echo 0' \
+       --run 'nbdinfo --list "$uri"' >eval-exports.out
+diff -u <(grep '^export=' eval-exports.out) <(echo 'export="hello":')
+
+# Failing .default_export without .list_exports results in an empty list
+nbdkit -U - eval default_export='echo ENOENT >&2; exit 1' get_size='echo 0' \
+       --run 'nbdinfo --list "$uri"' >eval-exports.out
+diff -u <(grep '^export=' eval-exports.out) /dev/null
 
 # Various spellings of empty lists, producing 0 exports
 for fmt in '' 'NAMES\n' 'INTERLEAVED\n' 'NAMES+DESCRIPTIONS\n'; do

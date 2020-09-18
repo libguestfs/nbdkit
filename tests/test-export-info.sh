@@ -43,7 +43,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create an nbdkit sh plugin for checking NBD_INFO replies to NBD_OPT_GO.
-# XXX Update when .default_export and .export_description are implemented in sh
+# XXX Update when .export_description is implemented in sh
 start_nbdkit -P export-info.pid -U $sock \
              sh - <<'EOF'
 case "$1" in
@@ -102,11 +102,10 @@ assert h.get_canonical_export_name() == "a"
 
 h.set_export_name("")
 h.opt_info()
-# XXX Adjust once default export works
-assert h.get_canonical_export_name() == ""
+assert h.get_canonical_export_name() == "hello"
 
 h.opt_go()
-assert h.get_canonical_export_name() == ""
+assert h.get_canonical_export_name() == "hello"
 
 h.shutdown()
 '
