@@ -159,6 +159,15 @@ check-vddk:
 endif HAVE_VDDK
 
 #----------------------------------------------------------------------
+# Syntax checking.
+TESTS += \
+	pycodestyle.sh \
+	$(NULL)
+EXTRA_DIST += \
+	pycodestyle.sh \
+	$(NULL)
+
+#----------------------------------------------------------------------
 # Basic server command line and start-up tests.
 
 TESTS += \

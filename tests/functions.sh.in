@@ -38,6 +38,7 @@ OCAMLOPT="@OCAMLOPT@"
 PYTHON="@PYTHON@"
 SOEXT="@SOEXT@"
 EXEEXT="@EXEEXT@"
+abs_top_srcdir="@abs_top_srcdir@"
 
 # cleanup_fn f [args]
 #

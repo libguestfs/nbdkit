@@ -181,6 +181,8 @@ For non-essential enhancements to the test suite:
 
  - expect
 
+ - flake8
+
  - hexdump
 
  - ip, ss (from iproute package)
