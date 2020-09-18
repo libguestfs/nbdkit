@@ -57,7 +57,7 @@ nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 def test(offset):
     try:
-        h.pwrite(bytearray (512), offset)
+        h.pwrite(bytearray(512), offset)
         # This should not happen.
         exit(1)
     except nbd.Error as ex:

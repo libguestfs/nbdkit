@@ -84,9 +84,9 @@ nbdsh -c '
 import os
 import sys
 
-h.set_export_name ("xyz")
+h.set_export_name("xyz")
 try:
-    h.connect_unix (os.environ["sock"])
+    h.connect_unix(os.environ["sock"])
     # This should not happen.
     sys.exit(1)
 except nbd.Error:
