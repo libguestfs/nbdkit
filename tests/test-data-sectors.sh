@@ -59,8 +59,8 @@ start_nbdkit -P data-sectors.pid -U $sock \
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 assert h.get_size() == 512 + 1024 + 1024
-buf = h.pread (h.get_size(), 0)
-print ("%r" % buf)
+buf = h.pread(h.get_size(), 0)
+print("%r" % buf)
 assert buf[0] == 0x31
 assert buf[512] == 0x32
 assert buf[1536] == 0x33

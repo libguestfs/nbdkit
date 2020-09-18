@@ -59,19 +59,19 @@ sock = os.environ["sock"]
 
 # Open export1 with the default nbdsh handle.
 # This should take an exclusive lock.
-h.set_export_name ("export1")
-h.connect_unix (sock)
+h.set_export_name("export1")
+h.connect_unix(sock)
 
 # Trying to reopen export1 on a new handle should fail.
 h2 = nbd.NBD()
-h2.set_export_name ("export1")
+h2.set_export_name("export1")
 try:
-    h2.connect_unix (sock)
+    h2.connect_unix(sock)
 except nbd.Error:
     pass
 
 # But opening a different export should succeed.
 h3 = nbd.NBD()
-h3.set_export_name ("export2")
-h3.connect_unix (sock)
+h3.set_export_name("export2")
+h3.connect_unix(sock)
 EOF

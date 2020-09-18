@@ -45,7 +45,7 @@ set -e
 set -x
 
 requires nbdsh --version
-requires nbdsh -c 'print (h.connect_vsock)'
+requires nbdsh -c 'print(h.connect_vsock)'
 requires_linux_kernel_version 5.6
 
 # Because vsock ports are 32 bits, we can basically pick one at random
@@ -62,6 +62,6 @@ start_nbdkit -P nbd-vsock.pid --vsock --port $port memory 1M
 
 # Run a second nbdkit as a vsock->Unix bridge.
 nbdkit -U - nbd vsock=1 port=$port --run 'nbdsh -u "$uri" -c "
-size = h.get_size ()
+size = h.get_size()
 assert size == 1048576
 "'

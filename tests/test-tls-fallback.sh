@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_plugin sh
-requires nbdsh -c 'exit (not h.supports_tls ())'
+requires nbdsh -c 'exit(not h.supports_tls())'
 
 # Does the nbdkit binary support TLS?
 if ! nbdkit --dump-config | grep -sq tls=yes; then
@@ -76,22 +76,22 @@ EOF
 # Plaintext client sees only dummy volume
 nbdsh -c '
 import os
-h.set_export_name ("hello")
-h.connect_unix (os.environ["sock"])
-assert h.get_size () == 512
+h.set_export_name("hello")
+h.connect_unix(os.environ["sock"])
+assert h.get_size() == 512
 assert not h.can_trim()
-assert h.pread (5, 0) == b"dummy"
+assert h.pread(5, 0) == b"dummy"
 '
 
 # Encrypted client sees desired volumes
 nbdsh -c '
 import os
-h.set_export_name ("hello")
-h.set_tls (nbd.TLS_REQUIRE)
-h.set_tls_psk_file ("keys.psk")
-h.set_tls_username ("qemu")
-h.connect_unix (os.environ["sock"])
-assert h.get_size () == 6
-assert h.can_trim ()
-assert h.pread (5, 0) == b"hello"
+h.set_export_name("hello")
+h.set_tls(nbd.TLS_REQUIRE)
+h.set_tls_psk_file("keys.psk")
+h.set_tls_username("qemu")
+h.connect_unix(os.environ["sock"])
+assert h.get_size() == 6
+assert h.can_trim()
+assert h.pread(5, 0) == b"hello"
 '

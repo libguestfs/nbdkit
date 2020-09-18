@@ -51,18 +51,18 @@ nbdsh -c - <<'EOF'
 import os
 import time
 
-h.connect_unix (os.environ["sock"])
+h.connect_unix(os.environ["sock"])
 
-size = h.get_size ()
+size = h.get_size()
 assert size == 12
 
-buf = h.pread (size, 0)
-secs = int.from_bytes (buf[0:8], byteorder='big')
-usecs = int.from_bytes (buf[8:12], byteorder='big')
-print ("%d, %d" % (secs, usecs))
+buf = h.pread(size, 0)
+secs = int.from_bytes(buf[0:8], byteorder='big')
+usecs = int.from_bytes(buf[8:12], byteorder='big')
+print("%d, %d" % (secs, usecs))
 
 # Assume it's correct if it's within 60 seconds of
 # our time.  Obviously it should be much closer.
-expected = int (time.time ())
-assert abs (secs - expected) <= 60
+expected = int(time.time())
+assert abs(secs - expected) <= 60
 EOF

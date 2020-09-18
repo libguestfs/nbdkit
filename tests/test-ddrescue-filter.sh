@@ -67,15 +67,15 @@ start_nbdkit -P ddrescue.pid -U $sock \
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-buf = h.pread (512, 0)
+buf = h.pread(512, 0)
 assert buf == b"ddrescue" * 64
 try:
-    h.pread (512, 512)
+    h.pread(512, 512)
     # This should not happen.
-    exit (1)
+    exit(1)
 except nbd.Error as ex:
     # Check the errno is expected.
     assert ex.errno == "EIO"
-buf = h.pread (512, 2 * 512)
+buf = h.pread(512, 2 * 512)
 assert buf == b"ddrescue" * 64
 '

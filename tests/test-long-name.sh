@@ -91,13 +91,13 @@ nbdkit -U - -e $almost4k null --run 'export exportname uri
 nbdsh -c - <<\EOF
 import os
 long = os.environ["exportname"]
-h.set_export_name (long)
-h.add_meta_context ("a" + long)
-h.add_meta_context ("b" + long)
-h.add_meta_context ("c" + long)
-h.add_meta_context ("d" + long)
-h.add_meta_context ("e" + long)
-h.connect_uri (os.environ["uri"])
+h.set_export_name(long)
+h.add_meta_context("a" + long)
+h.add_meta_context("b" + long)
+h.add_meta_context("c" + long)
+h.add_meta_context("d" + long)
+h.add_meta_context("e" + long)
+h.connect_uri(os.environ["uri"])
 assert h.get_size() == 0
 EOF
 '

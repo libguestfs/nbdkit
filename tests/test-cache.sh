@@ -52,18 +52,18 @@ nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 # Write some pattern data to the overlay and check it reads back OK.
 buf = b"abcd" * 16384
-h.pwrite (buf, 32768)
-zero = h.pread (32768, 0)
-assert zero == bytearray (32768)
-buf2 = h.pread (65536, 32768)
+h.pwrite(buf, 32768)
+zero = h.pread(32768, 0)
+assert zero == bytearray(32768)
+buf2 = h.pread(65536, 32768)
 assert buf == buf2
 
 # Flushing should write through to the underlying file.
-h.flush ()
+h.flush()
 
-with open ("cache.img", "rb") as file:
-    zero = file.read (32768)
-    assert zero == bytearray (32768)
-    buf2 = file.read (65536)
+with open("cache.img", "rb") as file:
+    zero = file.read(32768)
+    assert zero == bytearray(32768)
+    buf2 = file.read(65536)
     assert buf == buf2
 '

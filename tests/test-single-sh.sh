@@ -69,10 +69,10 @@ chmod +x single-sh.script
 # The sh plugin sets up pipes to handle stdin/out per each run of the
 # script, but this is not incompatible with using -s for the client
 nbdsh -c '
-h.connect_command (["nbdkit", "-s", "sh", "single-sh.script"])
+h.connect_command(["nbdkit", "-s", "sh", "single-sh.script"])
 assert h.get_size() == 1024 * 1024
-buf1 = h.pread (512, 0)
-buf2 = bytearray (512)
+buf1 = h.pread(512, 0)
+buf2 = bytearray(512)
 assert buf1 == buf2
 '
 

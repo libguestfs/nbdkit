@@ -63,16 +63,16 @@ import base64
 
 e = os.environ["e"]
 b = base64.b64encode(e.encode("utf-8")).decode("utf-8")
-print ("e = %r, b = %r" % (e,b))
-h.set_export_name (b)
-h.connect_unix (os.environ["sock"])
+print("e = %r, b = %r" % (e,b))
+h.set_export_name(b)
+h.connect_unix(os.environ["sock"])
 
-size = h.get_size ()
-assert size == len (e.encode("utf-8"))
+size = h.get_size()
+assert size == len(e.encode("utf-8"))
 
 # Zero-sized reads are not defined in the NBD protocol.
 if size > 0:
-   buf = h.pread (size, 0)
+   buf = h.pread(size, 0)
    assert buf == e.encode("utf-8")
 '
 done
@@ -88,9 +88,7 @@ h.set_export_name ("xyz")
 try:
     h.connect_unix (os.environ["sock"])
     # This should not happen.
-    sys.exit (1)
-except nbd.Error as ex:
-    sys.exit (0)
-# This should not happen.
-sys.exit (1)
+    sys.exit(1)
+except nbd.Error:
+    pass
 '

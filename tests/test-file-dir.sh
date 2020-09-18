@@ -67,7 +67,7 @@ do_nbdkit_fail ()
 do_nbdkit_pass ()
 {
     out=$(nbdkit -U - -v -e "$1" file dir=file-dir \
-        --run 'nbdsh -u "$uri" -c "print (h.pread (1, 0).decode (\"utf-8\"))"')
+        --run 'nbdsh -u "$uri" -c "print(h.pread(1, 0).decode(\"utf-8\"))"')
     test "$out" = "$2" || fail=1
 }
 

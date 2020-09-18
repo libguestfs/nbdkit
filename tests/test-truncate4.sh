@@ -71,36 +71,36 @@ sock = os.environ["sock"]
 
 def restore_file():
     # Original test data, 1024 bytes of "TEST" repeated.
-    with open (data, "w") as file:
-        file.write ("TEST"*256)
+    with open(data, "w") as file:
+        file.write("TEST"*256)
 
-restore_file ()
+restore_file()
 
-print ("Connection A.", flush=True)
-connA = nbd.NBD ()
-connA.set_handle_name ("A")
-connA.connect_unix (sock)
-print ("Check the size.", flush=True)
-assert connA.get_size () == 1024
+print("Connection A.", flush=True)
+connA = nbd.NBD()
+connA.set_handle_name("A")
+connA.connect_unix(sock)
+print("Check the size.", flush=True)
+assert connA.get_size() == 1024
 
-print ("Truncate %s to 512 bytes." % data, flush=True)
-os.truncate (data, 512)
+print("Truncate %s to 512 bytes." % data, flush=True)
+os.truncate(data, 512)
 
-print ("Connection B.", flush=True)
-connB = nbd.NBD ()
-connB.set_handle_name ("B")
-connB.connect_unix (sock)
-print ("Check the size.", flush=True)
-assert connB.get_size () == 1024 # because of the round-up parameter
-print ("Read data from connection B.", flush=True)
-buf = connB.pread (1024, 0)
+print("Connection B.", flush=True)
+connB = nbd.NBD()
+connB.set_handle_name("B")
+connB.connect_unix(sock)
+print("Check the size.", flush=True)
+assert connB.get_size() == 1024 # because of the round-up parameter
+print("Read data from connection B.", flush=True)
+buf = connB.pread(1024, 0)
 assert buf == b"TEST"*128 + b"\0"*512
 
-print ("Restore the file size and original data.", flush=True)
-restore_file ()
+print("Restore the file size and original data.", flush=True)
+restore_file()
 
-print ("Read data from connection A.", flush=True)
-buf = connA.pread (1024, 0)
-assert 1024 == len (buf)
+print("Read data from connection A.", flush=True)
+buf = connA.pread(1024, 0)
+assert 1024 == len(buf)
 assert buf == b"TEST"*256
 '

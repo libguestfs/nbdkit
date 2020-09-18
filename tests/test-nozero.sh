@@ -90,7 +90,7 @@ done
 
 # Check that zero with trim results in a sparse image.
 requires nbdkit -U - --filter=log file logfile=nozero1.log nozero1.img \
-    --run 'nbdsh -u "$uri" -c "h.zero (1024*1024, 0)"'
+    --run 'nbdsh -u "$uri" -c "h.zero(1024*1024, 0)"'
 if test "$(stat -c %b nozero1.img)" = "${sizes[1]}"; then
     echo "$0: can't trim file by writing zeroes"
     exit 77
@@ -120,13 +120,13 @@ start_nbdkit -P nozero6.pid -U $sock6 --filter=nozero --filter=log \
 
 # Perform the zero write.
 nbdsh -u "nbd+unix://?socket=$sock2" -c '
-assert not h.can_zero ()
-h.pwrite (bytearray (1024*1024), 0)
+assert not h.can_zero()
+h.pwrite (bytearray(1024*1024), 0)
 '
-nbdsh -u "nbd+unix://?socket=$sock3" -c 'h.zero (1024*1024, 0)'
-nbdsh -u "nbd+unix://?socket=$sock4" -c 'h.zero (1024*1024, 0)'
-nbdsh -u "nbd+unix://?socket=$sock5b" -c 'h.zero (1024*1024, 0)'
-nbdsh -u "nbd+unix://?socket=$sock6" -c 'h.zero (1024*1024, 0)'
+nbdsh -u "nbd+unix://?socket=$sock3" -c 'h.zero(1024*1024, 0)'
+nbdsh -u "nbd+unix://?socket=$sock4" -c 'h.zero(1024*1024, 0)'
+nbdsh -u "nbd+unix://?socket=$sock5b" -c 'h.zero(1024*1024, 0)'
+nbdsh -u "nbd+unix://?socket=$sock6" -c 'h.zero(1024*1024, 0)'
 
 # Check for expected ZERO vs. WRITE results
 grep 'connection=1 Zero' nozero1.log

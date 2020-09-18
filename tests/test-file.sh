@@ -56,23 +56,23 @@ assert not h.is_read_only()
 buf0 = bytearray(1024)
 buf1 = b"1" * 1024
 buf2 = b"2" * 1024
-h.pwrite (buf1 + buf2 + buf1 + buf2, 1024)
-buf = h.pread (8192, 0)
+h.pwrite(buf1 + buf2 + buf1 + buf2, 1024)
+buf = h.pread(8192, 0)
 assert buf == buf0 + buf1 + buf2 + buf1 + buf2 + buf0*3
 
 if h.can_flush():
    h.flush()
 
 if h.can_trim():
-   h.trim (1024, 1024)
-   buf = h.pread (8192, 0)
+   h.trim(1024, 1024)
+   buf = h.pread(8192, 0)
    assert buf == buf0*2 + buf2 + buf1 + buf2 + buf0*3
 
    # It would be nice to test base:allocation here, but
    # unfortunately it is not practical because it would
    # depend on the host filesystem block size.
 
-h.zero (4096, 1024)
-buf = h.pread (8192, 0)
+h.zero(4096, 1024)
+buf = h.pread(8192, 0)
 assert buf == buf0*8
 '
