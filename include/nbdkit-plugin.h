@@ -140,7 +140,7 @@ struct nbdkit_plugin {
   int (*get_ready) (void);
   int (*after_fork) (void);
 
-  int (*list_exports) (int readonly, int default_only,
+  int (*list_exports) (int readonly, int is_tls,
                        struct nbdkit_exports *exports);
   const char * (*default_export) (int readonly, int is_tls);
 };

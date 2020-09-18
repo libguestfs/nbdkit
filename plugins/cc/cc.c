@@ -348,6 +348,14 @@ cc_preconnect (int readonly)
   return 0;
 }
 
+static int
+cc_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
+{
+  if (subplugin.list_exports)
+    return subplugin.list_exports (readonly, is_tls, exports);
+  return nbdkit_use_default_export (exports);
+}
+
 static const char *
 cc_default_export (int readonly, int is_tls)
 {
@@ -571,6 +579,7 @@ static struct nbdkit_plugin plugin = {
   .after_fork        = cc_after_fork,
 
   .preconnect        = cc_preconnect,
+  .list_exports      = cc_list_exports,
   .default_export    = cc_default_export,
   .open              = cc_open,
   .close             = cc_close,

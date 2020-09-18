@@ -670,7 +670,7 @@ error message and return C<-1>.
 
 =head2 C<.list_exports>
 
- int list_exports (int readonly, int default_only,
+ int list_exports (int readonly, int is_tls,
                    struct nbdkit_exports *exports);
 
 This optional callback is called if the client tries to list the
@@ -688,11 +688,11 @@ not yet have a way to let the client advertise an intent to be
 read-only even when the server allows writes, so this parameter may
 not be as useful as it appears.
 
-If the C<default_only> flag is set then the client is querying for the
-name of the default export, and the plugin may optimize by adding only
-a single export to the returned list (the default export name, usually
-C<"">).  The plugin can ignore this flag and return all exports if it
-wants.
+The C<is_tls> flag informs the plugin whether this listing was
+requested after the client has completed TLS negotiation.  When
+running the server in a mode that permits but does not require TLS, be
+careful that any exports listed when C<is_tls> is C<false> do not leak
+unintended information.
 
 The C<exports> parameter is an opaque object for collecting the list
 of exports.  Call C<nbdkit_add_export> as needed to add specific
@@ -794,8 +794,9 @@ server requires TLS authentication, then that has occurred as well.
 But if the server is set up to have optional TLS authentication, you
 may check C<nbdkit_is_tls> to learn whether the client has completed
 TLS authentication.  When running the server in a mode that permits
-but not requires TLS, be careful that you do not allow unauthenticated
-clients to cause a denial of service against authentication.
+but does not require TLS, be careful that you do not allow
+unauthenticated clients to cause a denial of service against
+authentication.
 
 If there is an error, C<.open> should call C<nbdkit_error> with an
 error message and return C<NULL>.

@@ -342,11 +342,17 @@ an error message and return C<-1>.
 =head2 C<.list_exports>
 
  int (*list_exports) (nbdkit_next_list_exports *next, void *nxdata,
-                      int readonly, int default_only,
+                      int readonly, int is_tls,
                       struct nbdkit_exports *exports);
 
 This intercepts the plugin C<.list_exports> method and can be used to
 filter which exports are advertised.
+
+The C<readonly> parameter matches what is passed to <.preconnect> and
+C<.open>, and may be changed by the filter when calling into the
+plugin.  The C<is_tls> parameter informs the filter whether TLS
+negotiation has been completed by the client, but is not passed on to
+C<next> because it cannot be altered.
 
 It is possible for filters to transform the exports list received back
 from the layer below.  Without error checking it would look like this:
@@ -359,7 +365,7 @@ from the layer below.  Without error checking it would look like this:
    char *name, *desc;
 
    exports2 = nbdkit_exports_new ();
-   next_list_exports (nxdata, readonly, default_only, exports);
+   next_list_exports (nxdata, readonly, exports);
    for (i = 0; i < nbdkit_exports_count (exports2); ++i) {
      e = nbdkit_get_export (exports2, i);
      name = adjust (e.name);

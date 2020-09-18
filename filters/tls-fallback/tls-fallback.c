@@ -74,7 +74,15 @@ tls_fallback_get_ready (nbdkit_next_get_ready *next, void *nxdata,
   return next (nxdata);
 }
 
-/* TODO: list_exports needs is_tls parameter */
+static int
+tls_fallback_list_exports (nbdkit_next_list_exports *next, void *nxdata,
+                           int readonly, int is_tls,
+                           struct nbdkit_exports *exports)
+{
+  if (!is_tls)
+    return nbdkit_add_export (exports, "", NULL);
+  return next (nxdata, readonly, exports);
+}
 
 static const char *
 tls_fallback_default_export (nbdkit_next_default_export *next, void *nxdata,
@@ -192,7 +200,7 @@ static struct nbdkit_filter filter = {
   .config            = tls_fallback_config,
   .config_help       = tls_fallback_config_help,
   .get_ready         = tls_fallback_get_ready,
-  /* XXX .list_exports needs is_tls parameter */
+  .list_exports      = tls_fallback_list_exports,
   .default_export    = tls_fallback_default_export,
   .open              = tls_fallback_open,
   .get_size          = tls_fallback_get_size,

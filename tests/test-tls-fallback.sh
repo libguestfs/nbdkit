@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_plugin sh
-requires nbdsh -c 'exit(not h.supports_tls())'
+requires nbdsh -c 'print(h.set_full_info)' -c 'exit(not h.supports_tls())'
 
 # Does the nbdkit binary support TLS?
 if ! nbdkit --dump-config | grep -sq tls=yes; then
@@ -66,9 +66,12 @@ check () {
  fi
 }
 case $1 in
-  list_exports) echo NAMES; echo hello; echo world ;;
+  list_exports) check "$3"; echo INTERLEAVED
+     echo hello; echo world
+     echo world; echo tour ;;
   default_export) check "$3"; echo hello ;;
   open) check "$4"; echo $3 ;;
+  export_description) echo "=$2=" ;;
   get_size) echo "$2" | wc -c ;;
   pread) echo "$2" | dd skip=$4 count=$3 iflag=skip_bytes,count_bytes ;;
   can_write | can_trim) exit 0 ;;
@@ -79,8 +82,19 @@ EOF
 # Plaintext client sees only dummy volume
 nbdsh -c '
 import os
-h.set_export_name("hello")
+
+def f(name, desc):
+  assert name == ""
+  assert desc == ""
+
+h.set_opt_mode(True)
+h.set_full_info(True)
 h.connect_unix(os.environ["sock"])
+assert h.opt_list(f) == 1
+h.opt_info()
+assert h.get_canonical_export_name() == ""
+h.set_export_name("hello")
+h.opt_go()
 assert h.get_size() == 512
 assert not h.can_trim()
 assert h.pread(5, 0) == b"dummy"
@@ -89,11 +103,25 @@ assert h.pread(5, 0) == b"dummy"
 # Encrypted client sees desired volumes
 nbdsh -c '
 import os
-h.set_export_name("hello")
+
+def f(name, desc):
+  if name == "hello":
+    assert desc == "world"
+  elif name == "world":
+    assert desc == "tour"
+  else:
+    assert False
+
+h.set_opt_mode(True)
+h.set_full_info(True)
 h.set_tls(nbd.TLS_REQUIRE)
 h.set_tls_psk_file("keys.psk")
 h.set_tls_username("qemu")
 h.connect_unix(os.environ["sock"])
+assert h.opt_list(f) == 2
+h.opt_info()
+assert h.get_canonical_export_name() == "hello"
+h.opt_go()
 assert h.get_size() == 6
 assert h.can_trim()
 assert h.pread(5, 0) == b"hello"

@@ -268,13 +268,9 @@ with status C<1>; unrecognized output is ignored.
 
 =item C<list_exports>
 
- /path/to/script list_exports <readonly> <default_only>
+ /path/to/script list_exports <readonly> <tls>
 
-The C<readonly> parameter will be C<true> or C<false>.  The
-C<default_only> parameter will be C<true> if the caller is only
-interested in the canonical name of the default export, or C<false> to
-get a full list of export names; the script may safely ignore this
-parameter and always provide a full list if desired.
+The C<readonly> and C<tls> parameters will be C<true> or C<false>.
 
 The first line of output informs nbdkit how to parse the rest of the
 output, the remaining lines then supply the inputs of the C

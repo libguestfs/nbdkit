@@ -238,15 +238,15 @@ plugin_magic_config_key (struct backend *b)
 }
 
 static int
-filter_list_exports (struct backend *b, int readonly, int default_only,
+filter_list_exports (struct backend *b, int readonly, int is_tls,
                      struct nbdkit_exports *exports)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.list_exports)
     return f->filter.list_exports (backend_list_exports, b->next,
-                                   readonly, default_only, exports);
-  return backend_list_exports (b->next, readonly, default_only, exports);
+                                   readonly, is_tls, exports);
+  return backend_list_exports (b->next, readonly, exports);
 }
 
 static const char *

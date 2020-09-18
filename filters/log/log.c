@@ -248,16 +248,16 @@ output_return (struct handle *h, const char *act, uint64_t id, int r, int *err)
 /* List exports. */
 static int
 log_list_exports (nbdkit_next_list_exports *next, void *nxdata,
-                  int readonly, int default_only,
+                  int readonly, int is_tls,
                   struct nbdkit_exports *exports)
 {
   static uint64_t id;
   int r;
   int err;
 
-  output (NULL, "ListExports", ++id, "readonly=%d default_only=%d ...",
-          readonly, default_only);
-  r = next (nxdata, readonly, default_only, exports);
+  output (NULL, "ListExports", ++id, "readonly=%d tls=%d ...",
+          readonly, is_tls);
+  r = next (nxdata, readonly, exports);
   if (r == -1) {
     err = errno;
     output_return (NULL, "...ListExports", id, r, &err);

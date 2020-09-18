@@ -113,11 +113,11 @@ test_layers_filter_preconnect (nbdkit_next_preconnect *next,
 
 static int
 test_layers_filter_list_exports (nbdkit_next_list_exports *next, void *nxdata,
-                                 int readonly, int default_only,
+                                 int readonly, int is_tls,
                                  struct nbdkit_exports *exports)
 {
   DEBUG_FUNCTION;
-  return next (nxdata, readonly, default_only, exports);
+  return next (nxdata, readonly, exports);
 }
 
 static const char *

@@ -386,7 +386,7 @@ struct backend {
   void (*get_ready) (struct backend *);
   void (*after_fork) (struct backend *);
   int (*preconnect) (struct backend *, int readonly);
-  int (*list_exports) (struct backend *, int readonly, int ignored,
+  int (*list_exports) (struct backend *, int readonly, int is_tls,
                        struct nbdkit_exports *exports);
   const char *(*default_export) (struct backend *, int readonly, int is_tls);
   void *(*open) (struct backend *, int readonly, const char *exportname,
@@ -435,9 +435,8 @@ extern void backend_unload (struct backend *b, void (*unload) (void))
   __attribute__((__nonnull__ (1)));
 
 extern int backend_list_exports (struct backend *b, int readonly,
-                                 int ignored,
                                  struct nbdkit_exports *exports)
-  __attribute__((__nonnull__ (1, 4)));
+  __attribute__((__nonnull__ (1, 3)));
 extern const char *backend_default_export (struct backend *b, int readonly)
   __attribute__((__nonnull__ (1)));
 /* exportname is only valid for this call and almost certainly will be

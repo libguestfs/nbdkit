@@ -88,7 +88,7 @@ send_newstyle_option_reply_exportnames (uint32_t option)
   exps = nbdkit_exports_new ();
   if (exps == NULL)
     return send_newstyle_option_reply (option, NBD_REP_ERR_TOO_BIG);
-  if (backend_list_exports (top, read_only, false, exps) == -1)
+  if (backend_list_exports (top, read_only, exps) == -1)
     return send_newstyle_option_reply (option, NBD_REP_ERR_PLATFORM);
 
   for (i = 0; i < nbdkit_exports_count (exps); i++) {

@@ -159,21 +159,20 @@ backend_unload (struct backend *b, void (*unload) (void))
 }
 
 int
-backend_list_exports (struct backend *b, int readonly, int default_only,
+backend_list_exports (struct backend *b, int readonly,
                       struct nbdkit_exports *exports)
 {
   GET_CONN;
   struct handle *h = get_handle (conn, b->i);
   size_t count;
 
-  assert (!default_only); /* XXX Switch to is_tls... */
-  controlpath_debug ("%s: list_exports readonly=%d default_only=%d",
-                     b->name, readonly, default_only);
+  controlpath_debug ("%s: list_exports readonly=%d tls=%d",
+                     b->name, readonly, conn->using_tls);
 
   assert (h->handle == NULL);
   assert ((h->state & HANDLE_OPEN) == 0);
 
-  if (b->list_exports (b, readonly, default_only, exports) == -1 ||
+  if (b->list_exports (b, readonly, conn->using_tls, exports) == -1 ||
       exports_resolve_default (exports, b, readonly) == -1) {
     controlpath_debug ("%s: list_exports failed", b->name);
     return -1;

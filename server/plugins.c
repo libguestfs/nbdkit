@@ -286,7 +286,7 @@ plugin_preconnect (struct backend *b, int readonly)
 }
 
 static int
-plugin_list_exports (struct backend *b, int readonly, int default_only,
+plugin_list_exports (struct backend *b, int readonly, int is_tls,
                      struct nbdkit_exports *exports)
 {
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
@@ -294,7 +294,7 @@ plugin_list_exports (struct backend *b, int readonly, int default_only,
   if (!p->plugin.list_exports)
     return nbdkit_use_default_export (exports);
 
-  return p->plugin.list_exports (readonly, default_only, exports);
+  return p->plugin.list_exports (readonly, is_tls, exports);
 }
 
 static const char *

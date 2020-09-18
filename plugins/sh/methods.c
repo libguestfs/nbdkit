@@ -302,13 +302,12 @@ parse_exports (const char *script,
 }
 
 int
-sh_list_exports (int readonly, int default_only,
-                 struct nbdkit_exports *exports)
+sh_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
 {
   const char *method = "list_exports";
   const char *script = get_script (method);
   const char *args[] = { script, method, readonly ? "true" : "false",
-                         default_only ? "true" : "false", NULL };
+                         is_tls ? "true" : "false", NULL };
   CLEANUP_FREE char *s = NULL;
   size_t slen;
 
