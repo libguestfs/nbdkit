@@ -51,8 +51,10 @@ start_nbdkit -P data-nest-malloc.pid -U $sock -D data.AST=1 \
 ( @4 ( 0x21 )*4 )*4
 ( "Hello" @^8 )*2
 () ()*2 ( () ) ( ()*2 ) ( () () )*2
+()*2[:0] ()[:0]*2 (()[:0]*2)[:0]*2
 () -> \a
 \a (\a) (\a)*2 (\a \a) (\a*2 \a)
+\a*2[:0] \a[:0]*2
 ' \
        allocator=malloc
 

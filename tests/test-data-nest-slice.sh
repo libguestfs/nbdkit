@@ -53,14 +53,17 @@ start_nbdkit -P data-nest-slice.pid -U $sock \
 # With the new parser it should work without the parens too.
 "Hello"[:]
 $hello[:]
+$hello[:4]
+"Hello"[3:]
+"Hello"[3:5]
 ' \
        hello=' "Hello" '
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
 print("%d" % h.get_size())
-assert h.get_size() == 4+2+2+5+5
+assert h.get_size() == 4+2+2+5+5+4+2+2
 buf = h.pread(h.get_size(), 0)
 print("%r" % buf)
-assert buf == b"HellloloHelloHello"
+assert buf == b"HellloloHelloHelloHelllolo"
 '

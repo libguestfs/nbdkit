@@ -61,8 +61,10 @@ start_nbdkit -P data-nest.pid -U $sock -D data.AST=1 \
 # These should all expand to nothing.  They are here to test corner
 # cases in the parser and optimizer.
 () ()*2 ( () ) ( ()*2 ) ( () () )*2
+()*2[:0] ()[:0]*2 (()[:0]*2)[:0]*2
 () -> \a
 \a (\a) (\a)*2 (\a \a) (\a*2 \a)
+\a*2[:0] \a[:0]*2
 '
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
