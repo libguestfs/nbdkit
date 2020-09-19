@@ -917,6 +917,14 @@ optimize_ast (node_id root, node_id *root_rtn)
       *root_rtn = id;
       return 0;
     }
+    /* expr*X*Y can be replaced by expr*(X*Y). */
+    if (get_node (id)->t == EXPR_REPEAT) {
+      e.t = EXPR_REPEAT;
+      e.r.n = get_node (root)->r.n * get_node (id)->r.n;
+      e.r.id = get_node (id)->r.id;
+      *root_rtn = new_node (e);
+      return 0;
+    }
     get_node (root)->r.id = id;
     *root_rtn = root;
     return 0;
