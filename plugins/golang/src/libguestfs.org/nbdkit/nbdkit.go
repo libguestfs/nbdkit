@@ -529,7 +529,7 @@ func PluginInitialize(name string, impl PluginInterface) unsafe.Pointer {
 
 	// Set up the hidden plugin fields as for C.
 	struct_size := C.ulong(unsafe.Sizeof(plugin))
-	plugin._struct_size = struct_size
+	plugin._struct_size = C.uint64_t(struct_size)
 	plugin._api_version = C.NBDKIT_API_VERSION
 	plugin._thread_model = C.NBDKIT_THREAD_MODEL_PARALLEL
 
@@ -563,7 +563,7 @@ func PluginInitialize(name string, impl PluginInterface) unsafe.Pointer {
 	// Return a newly malloced copy of the struct.  This must be
 	// globally available to the C code in the server, so it is
 	// never freed.
-	p := (*C.struct_nbdkit_plugin)(C.malloc(struct_size))
+	p := (*C.struct_nbdkit_plugin)(C.malloc(C.size_t(struct_size)))
 	*p = plugin
 	return unsafe.Pointer(p)
 }
