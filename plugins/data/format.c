@@ -830,6 +830,8 @@ parse_string (const char *value, size_t *start, size_t len, string *rtn)
 /* This simple optimization pass over the AST simplifies some
  * expressions.
  */
+static bool expr_list_only_bytes (const expr_t *);
+
 static int
 optimize_ast (node_id root, node_id *root_rtn)
 {
@@ -888,6 +890,23 @@ optimize_ast (node_id root, node_id *root_rtn)
       id = e.list.ptr[0];
       free (e.list.ptr);
       *root_rtn = id;
+      return 0;
+    }
+
+    /* List that contains only byte elements can be replaced by a string. */
+    if (expr_list_only_bytes (&e)) {
+      string s = empty_vector;
+      for (i = 0; i < e.list.size; ++i) {
+        char c = (char) get_node (e.list.ptr[i])->b;
+        if (string_append (&s, c) == -1) {
+          nbdkit_error ("realloc: %m");
+          exit (EXIT_FAILURE);
+        }
+      }
+      free (e.list.ptr);
+      e.t = EXPR_STRING;
+      e.string = s;
+      *root_rtn = new_node (e);
       return 0;
     }
 
@@ -981,6 +1000,19 @@ optimize_ast (node_id root, node_id *root_rtn)
   }
 
   abort ();
+}
+
+static bool
+expr_list_only_bytes (const expr_t *e)
+{
+  size_t i;
+
+  assert (e->t == EXPR_LIST);
+  for (i = 0; i < e->list.size; ++i) {
+    if (get_node (e->list.ptr[i])->t != EXPR_BYTE)
+      return false;
+  }
+  return true;
 }
 
 static int store_file (struct allocator *a,
