@@ -901,6 +901,12 @@ optimize_ast (node_id root, node_id *root_rtn)
     return 0;
 
   case EXPR_REPEAT:
+    /* Repeating zero times can be replaced by null. */
+    if (get_node (root)->r.n == 0) {
+      e.t = EXPR_NULL;
+      *root_rtn = new_node (e);
+      return 0;
+    }
     id = get_node (root)->r.id;
     if (optimize_ast (id, &id) == -1)
       return -1;

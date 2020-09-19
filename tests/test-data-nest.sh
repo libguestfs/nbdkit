@@ -62,6 +62,7 @@ start_nbdkit -P data-nest.pid -U $sock -D data.AST=1 \
 # cases in the parser and optimizer.
 () ()*2 ( () ) ( ()*2 ) ( () () )*2
 ()*2[:0] ()[:0]*2 (()[:0]*2)[:0]*2
+()*0 ( 1 2 3 )*0
 () -> \a
 \a (\a) (\a)*2 (\a \a) (\a*2 \a)
 \a*2[:0] \a[:0]*2
