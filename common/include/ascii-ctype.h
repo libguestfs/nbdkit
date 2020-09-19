@@ -69,4 +69,6 @@
 #define ascii_toupper(c)                        \
   (ascii_islower ((c)) ? (c) - 32 : (c))
 
+#define ascii_isprint(c) ((c) >= 32 && (c) <= 126)
+
 #endif /* NBDKIT_ASCII_CTYPE_H */

@@ -211,9 +211,26 @@ debug_expr (node_id id, int level)
   case EXPR_SCRIPT:
     nbdkit_debug ("%s<(%s)", debug_indent (level), e->script);
     break;
-  case EXPR_STRING:
-    nbdkit_debug ("%s\"<STRING>\"", debug_indent (level));
+  case EXPR_STRING: {
+    string s = empty_vector;
+    static const char hex[] = "0123456789abcdef";
+
+    for (i = 0; i < e->string.size; ++i) {
+      char c = e->string.ptr[i];
+      if (ascii_isprint ((char) c))
+        string_append (&s, e->string.ptr[i]);
+      else {
+        string_append (&s, '\\');
+        string_append (&s, 'x');
+        string_append (&s, hex[(c & 0xf0) >> 4]);
+        string_append (&s, hex[c & 0xf]);
+      }
+    }
+    string_append (&s, '\0');
+    nbdkit_debug ("%s\"%s\"", debug_indent (level), s.ptr);
+    free (s.ptr);
     break;
+  }
   case EXPR_NAME:
     nbdkit_debug ("%s\\%s", debug_indent (level), e->name);
     break;
