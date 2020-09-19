@@ -953,6 +953,7 @@ optimize_ast (node_id root, node_id *root_rtn)
     id = get_node (root)->r.id;
     if (optimize_ast (id, &id) == -1)
       return -1;
+
     /* expr*1 can be replaced with simply expr.
      * null*N can be replaced with null.
      */
@@ -968,6 +969,31 @@ optimize_ast (node_id root, node_id *root_rtn)
       *root_rtn = new_node (e);
       return 0;
     }
+    /* For short strings and small values or N, string*N can be
+     * replaced by N copies of the string.
+     */
+    if (get_node (id)->t == EXPR_STRING &&
+        get_node (root)->r.n <= 4 &&
+        get_node (id)->string.size <= 512) {
+      string s = empty_vector;
+      size_t n = get_node (root)->r.n;
+      const string *sub = &get_node (id)->string;
+
+      for (i = 0; i < n; ++i) {
+        for (j = 0; j < sub->size; ++j) {
+          if (string_append (&s, sub->ptr[j]) == -1) {
+            nbdkit_error ("realloc: %m");
+            return -1;
+          }
+        }
+      }
+
+      e.t = EXPR_STRING;
+      e.string = s;
+      *root_rtn = new_node (e);
+      return 0;
+    }
+
     get_node (root)->r.id = id;
     *root_rtn = root;
     return 0;
