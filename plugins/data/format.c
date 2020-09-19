@@ -986,6 +986,16 @@ optimize_ast (node_id root, node_id *root_rtn)
     *root_rtn = root;
     return 0;
 
+  case EXPR_STRING:
+    /* A zero length string can be replaced with null. */
+    if (get_node (root)->string.size == 0) {
+      e.t = EXPR_NULL;
+      *root_rtn = new_node (e);
+      return 0;
+    }
+    *root_rtn = root;
+    return 0;
+
   case EXPR_NULL:
   case EXPR_BYTE:
   case EXPR_ABS_OFFSET:
@@ -993,7 +1003,6 @@ optimize_ast (node_id root, node_id *root_rtn)
   case EXPR_ALIGN_OFFSET:
   case EXPR_FILE:
   case EXPR_SCRIPT:
-  case EXPR_STRING:
   case EXPR_NAME:
     *root_rtn = root;
     return 0;
