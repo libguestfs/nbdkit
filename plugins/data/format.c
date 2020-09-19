@@ -917,12 +917,20 @@ optimize_ast (node_id root, node_id *root_rtn)
     id = get_node (root)->id;
     if (optimize_ast (id, &id) == -1)
       return -1;
-    /* If the nested subexpression is null, can replace the entire
-     * nest with null.
+    /* For a range of constant subexpressions we can simply replace
+     * the nested expression with the constant, eg.
+     * ( "String" ) => "String", ( null ) => null.
      */
-    if (get_node (id)->t == EXPR_NULL) {
+    switch (get_node (id)->t) {
+    case EXPR_NULL:
+    case EXPR_BYTE:
+    case EXPR_FILE:
+    case EXPR_SCRIPT:
+    case EXPR_STRING:
+    case EXPR_NAME:
       *root_rtn = id;
       return 0;
+    default: ;
     }
     /* ( ( expr ) ) can be replaced by ( expr ) */
     if (get_node (id)->t == EXPR_EXPR) {
