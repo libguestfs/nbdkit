@@ -910,10 +910,10 @@ optimize_ast (node_id root, node_id *root_rtn)
     id = get_node (root)->r.id;
     if (optimize_ast (id, &id) == -1)
       return -1;
-    /* If the subexpression we're repeating is null, then the entire
-     * repeat will be null.
+    /* expr*1 can be replaced with simply expr.
+     * null*N can be replaced with null.
      */
-    if (get_node (id)->t == EXPR_NULL) {
+    if (get_node (root)->r.n == 1 || get_node (id)->t == EXPR_NULL) {
       *root_rtn = id;
       return 0;
     }
