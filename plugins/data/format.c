@@ -888,6 +888,13 @@ optimize_ast (node_id root, node_id *root_rtn)
       *root_rtn = id;
       return 0;
     }
+    /* ( ( expr ) ) can be replaced by ( expr ) */
+    if (get_node (id)->t == EXPR_EXPR) {
+      e.t = EXPR_EXPR;
+      e.id = get_node (id)->id;
+      *root_rtn = new_node (e);
+      return 0;
+    }
     get_node (root)->id = id;
     *root_rtn = root;
     return 0;
