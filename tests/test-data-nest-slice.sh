@@ -56,6 +56,9 @@ $hello[:]
 $hello[:4]
 "Hello"[3:]
 "Hello"[3:5]
+# Zero length slices are optimized out.  The first index is ignored.
+"Hello"[:0]
+"Hello"[99:99]
 ' \
        hello=' "Hello" '
 
