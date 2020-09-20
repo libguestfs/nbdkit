@@ -627,51 +627,31 @@ LIBGUESTFS_TESTS += test-data
 TESTS += \
 	test-data-64b.sh \
 	test-data-7E.sh \
-	test-data-assign.sh \
-	test-data-assign-capture.sh \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \
-	test-data-nest.sh \
-	test-data-nest-malloc.sh \
-	test-data-nest-slice.sh \
-	test-data-nest-zstd.sh \
+	test-data-format.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
 	test-data-random-slice.sh \
 	test-data-random-slice2.sh \
 	test-data-reloffset.sh \
 	test-data-sectors.sh \
-	test-data-script.sh \
-	test-data-script-slice.sh \
-	test-data-string.sh \
-	test-data-string0.sh \
-	test-data-var.sh \
 	test-disk2data.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-data-64b.sh \
 	test-data-7E.sh \
-	test-data-assign.sh \
-	test-data-assign-capture.sh \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \
-	test-data-nest.sh \
-	test-data-nest-malloc.sh \
-	test-data-nest-slice.sh \
-	test-data-nest-zstd.sh \
+	test-data-format.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
 	test-data-random-slice.sh \
 	test-data-random-slice2.sh \
 	test-data-reloffset.sh \
 	test-data-sectors.sh \
-	test-data-script.sh \
-	test-data-script-slice.sh \
-	test-data-string.sh \
-	test-data-string0.sh \
-	test-data-var.sh \
 	test-disk2data.sh \
 	$(NULL)
 
