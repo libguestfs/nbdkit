@@ -140,6 +140,26 @@ do_test '
 ' 'b""'
 
 #----------------------------------------------------------------------
+# Test various optimizations preserve the meaning.
+
+# expr*X*Y is equivalent to expr*(X*Y)
+do_test '1*2*3' 'b"\x01" * 6'
+do_test '1*2*3*4' 'b"\x01" * 24'
+
+# ( ( expr ) ) optimized to ( expr )
+do_test '( ( ( ( 1 2 ) ) ) )' 'b"\x01\x02"'
+
+# string*N is sometimes optimized to N copies of string.
+do_test '"foo"*2' 'b"foo" * 2'
+do_test '"foo"*2*2' 'b"foo" * 4'
+do_test '"foo"*2*50' 'b"foo" * 100'
+
+# ( const ) is sometimes optimized to const
+do_test '( "foo" )' 'b"foo"'
+do_test '( <(echo hello) )' 'b"hello\n"'
+do_test '( $hello )' 'b"hello"' hello=' "hello" '
+
+#----------------------------------------------------------------------
 # Assignments.
 do_test '
 # Assign to \a in the outer scope.
