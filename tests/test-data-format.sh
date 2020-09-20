@@ -65,8 +65,9 @@ if size > 0:
     actual = h.pread(size, 0)
 else:
     actual = b\"\"
-print(\"actual:   %r\" % actual)
-print(\"expected: %r\" % expected)
+def trunc(s): return s[:128] + (s[128:] and b\"...\")
+print(\"actual:   %r\" % trunc(actual))
+print(\"expected: %r\" % trunc(expected))
 assert actual == expected
 "'
     done
@@ -297,3 +298,18 @@ fi
 unset a
 unset b
 unset c
+
+#----------------------------------------------------------------------
+# Some tests at offsets.
+#
+# Most of the tests above fit into a single page for sparse and zstd
+# allocators (32K).  It could be useful to test at page boundaries.
+
+do_test '@32766 1 2 3'   'b"\0"*32766 + b"\x01\x02\x03"'
+do_test '@32766 1*6'     'b"\0"*32766 + b"\x01"*6'
+do_test '@32766 1*32800' 'b"\0"*32766 + b"\x01"*32800'
+
+# Since we do sparseness detection, automatically trimming whole
+# pages if they are zero, this should be interesting:
+do_test '@32766 1*5 @65534 2*5 @32768 0*32768' \
+        'b"\0"*32766 + b"\x01\x01" + b"\0"*32768 + b"\x02\x02\x02"'
