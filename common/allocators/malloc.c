@@ -197,7 +197,7 @@ m_alloc_fill (struct allocator *a, char c, uint64_t count, uint64_t offset)
 
   /* See comment in m_alloc_write. */
   ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE (&ma->lock);
-  memset (ma->ba.ptr + offset, 0, count);
+  memset (ma->ba.ptr + offset, c, count);
   return 0;
 }
 
