@@ -17,55 +17,76 @@ testing client or server fallbacks.
 
 =head1 PARAMETERS
 
+The parameters C<zeromode> and C<fastzeromode> are optional and
+control which mode the filter will use.
+
 =over 4
 
 =item B<zeromode=none>
 
+Zero support is not advertised to the client; clients must explicitly
+write any regions of zero like any other normal write.
+
+This is the default if the C<zeromode> parameter is not specified.
+
 =item B<zeromode=emulate>
+
+Zero support is advertised, but emulated by the filter by using the
+plugin's C<pwrite> callback, regardless of whether the plugin itself
+has a more efficient CC<zero> callback.
 
 =item B<zeromode=notrim>
 
+(nbdkit E<ge> 1.14)
+
+Zero requests are forwarded on to the plugin, except that the plugin
+will never see the C<NBDKIT_MAY_TRIM> flag.  This can help determine
+if the client permitting trimming during zero operations makes a
+difference.  It is an error to request this mode if the plugin lacks
+the C<zero> callback.
+
 =item B<zeromode=plugin>
 
-Optional, controls which mode the filter will use.  Mode B<none>
-(default) means that zero support is not advertised to the
-client. Mode B<emulate> means that zero support is emulated by the
-filter using the plugin's C<pwrite> callback, regardless of whether
-the plugin itself implemented the C<zero> callback with a more
-efficient way to write zeros. Since nbdkit E<ge> 1.13.4, mode
-B<notrim> means that zero requests are forwarded on to the plugin,
-except that the plugin will never see the NBDKIT_MAY_TRIM flag, to
-determine if the client permitting trimming during zero operations
-makes a difference.  Since nbdkit E<ge> 1.15.0, mode B<plugin> leaves
-normal zero requests up to the plugin, useful when combined with
-C<fastzeromode> for experimenting with the effects of fast zero
-requests.  It is an error to request B<notrim> or B<plugin> if the
-plugin does not support the C<zero> callback.
+(nbdkit E<ge> 1.16)
+
+Zero requests are forwarded on to the plugin, unchanged by the filter;
+this mode is helpful when experimenting with the C<fastzeromode>
+parameter.  It is an error to request this mode if the plugin lacks
+the C<zero> callback.
 
 =item B<fastzeromode=none>
 
+(nbdkit E<ge> 1.16)
+
+Support for fast zeroing is not advertised to the client.
+
 =item B<fastzeromode=slow>
+
+(nbdkit E<ge> 1.16)
+
+Fast zero support is advertised to the client, but all fast zero
+requests result in an immediate C<ENOTSUP> failure rather than
+performing any fallback attempts.
 
 =item B<fastzeromode=ignore>
 
+(nbdkit E<ge> 1.16)
+
+B<This mode is unsafe>: Fast zero support is advertised to the client,
+but all fast zero requests behave as if the fast zero flag had not
+been included.  This behavior is typically contrary to the NBD
+specification, but can be useful for comparison against the actual
+fast zero implementation to see if fast zeroes make a difference.
+
 =item B<fastzeromode=default>
 
-Optional since nbdkit E<ge> 1.15.0, controls whether fast zeroes are
-advertised to the client, and if so, how the filter will react to a
-client fast zero request.  Mode B<none> avoids advertising fast zero
-support.  Mode B<slow> advertises fast zero support unconditionally,
-but treats all fast zero requests as an immediate C<ENOTSUP> failure
-rather than performing a fallback.  Mode B<ignore> advertises fast
-zero support, but treats all client fast zero requests as if the flag
-had not been used (this behavior is typically contrary to the NBD
-specification, but can be useful for comparison against the actual
-fast zero implementation to see if fast zeroes make a difference).
-Mode B<default> is selected by default; when paired with
-C<zeromode=emulate>, fast zeroes are advertised but fast zero requests
-always fail (similar to C<slow>); when paired with C<zeromode=notrim>
-or C<zeromode=plugin>, fast zero support is left to the plugin
-(although in the latter case, the nozero filter could be omitted for
-the same behavior).
+(nbdkit E<ge> 1.16)
+
+This mode is the default.  When paired with C<zeromode=emulate>, fast
+zeroes are advertised but fast zero requests always fail (similar to
+C<slow>); when paired with C<zeromode=notrim> or C<zeromode=plugin>,
+fast zero support is left to the plugin (although in the latter case,
+the nozero filter could be omitted for the same behavior).
 
 =back
 
@@ -102,7 +123,7 @@ Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
 
 =head1 VERSION
 
-C<nbdkit-nozero-filter> first appeared in nbdkit 1.2.
+C<nbdkit-nozero-filter> first appeared in nbdkit 1.4.
 
 =head1 SEE ALSO
 
