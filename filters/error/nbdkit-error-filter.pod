@@ -110,10 +110,14 @@ settings to NBD zero requests.
 
 =item B<error-extents>, B<error-extents-rate>, B<error-extents-file>.
 
+(nbdkit E<ge> 1.12)
+
 Same as C<error>, C<error-rate> and C<error-file> but only apply the
 settings to NBD block status requests to read extents.
 
 =item B<error-cache>, B<error-cache-rate>, B<error-cache-file>.
+
+(nbdkit E<ge> 1.14)
 
 Same as C<error>, C<error-rate> and C<error-file> but only apply the
 settings to NBD cache requests.
