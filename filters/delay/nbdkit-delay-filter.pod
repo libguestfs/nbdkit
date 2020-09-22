@@ -57,6 +57,8 @@ Delay write operations by C<SECS> seconds or C<NN> milliseconds.
 
 =item B<delay-zero=>NNB<ms>
 
+(nbdkit E<ge> 1.10)
+
 Delay zero operations by C<SECS> seconds or C<NN> milliseconds.  See
 also B<delay-fast-zero>.
 
@@ -64,11 +66,15 @@ also B<delay-fast-zero>.
 
 =item B<delay-trim=>NNB<ms>
 
+(nbdkit E<ge> 1.10)
+
 Delay trim/discard operations by C<SECS> seconds or C<NN> milliseconds.
 
 =item B<delay-extents=>SECS
 
 =item B<delay-extents=>NNB<ms>
+
+(nbdkit E<ge> 1.12)
 
 Delay block status (extents) operations by C<SECS> seconds or C<NN>
 milliseconds.
@@ -76,6 +82,8 @@ milliseconds.
 =item B<delay-cache=>SECS
 
 =item B<delay-cache=>NNB<ms>
+
+(nbdkit E<ge> 1.14)
 
 Delay advisory cache operations by C<SECS> seconds or C<NN>
 milliseconds.
@@ -88,6 +96,8 @@ Delay write, zero and trim operations by C<SECS> seconds or C<NN>
 milliseconds.
 
 =item B<delay-fast-zero=>BOOL
+
+(nbdkit E<ge> 1.16)
 
 The NBD specification documents an extension called fast zero, in
 which the client may request that a server should reply with

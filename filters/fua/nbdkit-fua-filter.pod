@@ -128,7 +128,7 @@ Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
 
 =head1 VERSION
 
-C<nbdkit-fua-filter> first appeared in nbdkit 1.2.
+C<nbdkit-fua-filter> first appeared in nbdkit 1.4.
 
 =head1 SEE ALSO
 

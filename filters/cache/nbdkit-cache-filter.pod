@@ -71,9 +71,13 @@ or can cheaply reconstruct.
 
 =item B<cache-low-threshold=>N
 
+(nbdkit E<ge> 1.10)
+
 Limit the size of the cache to C<SIZE>.  See L</CACHE MAXIMUM SIZE> below.
 
 =item B<cache-on-read=true>
+
+(nbdkit E<ge> 1.10)
 
 Cache read requests as well as write and cache requests.  Any time a
 block is read from the plugin, it is saved in the cache (if there is
