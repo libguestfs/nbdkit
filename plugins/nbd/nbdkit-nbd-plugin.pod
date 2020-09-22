@@ -51,6 +51,8 @@ given to specify which NBD server to forward to:
 
 =item B<arg=>ARG
 
+(nbdkit E<ge> 1.22)
+
 Run an NBD server, usually L<qemu-nbd(8)>, as an external command.
 See L</EXAMPLES> below.
 
@@ -71,6 +73,8 @@ This option implies C<shared=true>.
 
 =item B<port=>PORT
 
+(nbdkit E<ge> 1.14)
+
 Connect to the NBD server at the remote C<HOST> using a TCP socket.
 The optional port parameter overrides the default port (10809), and
 may be a 16-bit number or a non-numeric string to look up the
@@ -79,6 +83,8 @@ well-known port for a service name.
 =item B<vsock=>CID
 
 =item B<port=>PORT
+
+(nbdkit E<ge> 1.22)
 
 Connect to the NBD server at the given vsock C<CID> (for example, in a
 guest VM, using the cid 2 will connect to a server in the host).  The
@@ -95,11 +101,15 @@ Connect to the NBD server using Unix domain socket C<SOCKNAME>.
 
 =item B<socket-fd=>FD
 
+(nbdkit E<ge> 1.22)
+
 Connect to the NBD server over a socket file descriptor inherited by
 nbdkit.  This uses the libnbd API L<nbd_connect_socket(3)>.  This
 option implies C<shared=true>.
 
 =item [B<uri=>]URI
+
+(nbdkit E<ge> 1.14)
 
 When C<uri> is supplied, decode C<URI> to determine the address to
 connect to.  A URI can specify a TCP connection (such as
@@ -134,12 +144,16 @@ C<dynamic-export=true>.
 
 =item B<retry=>N
 
+(nbdkit E<ge> 1.14)
+
 If the initial connection attempt to the server fails, retry up to
 C<N> times more after a one-second delay between tries (default 0).
 
 =item B<shared=false>
 
 =item B<shared=true>
+
+(nbdkit E<ge> 1.14)
 
 If using C<command> or C<socket-fd> modes then this defaults to true,
 otherwise false.
@@ -158,6 +172,8 @@ This mode is incompatible with B<dynamic-export=true>.
 =item B<dynamic-export=false>
 
 =item B<dynamic-export=true>
+
+(nbdkit E<ge> 1.24)
 
 This parameter defaults to false, in which case all clients to nbdkit
 use the same export of the server, as set by C<export> or C<uri>,
@@ -181,6 +197,8 @@ sees or uses as a default.
 
 =item B<tls=require>
 
+(nbdkit E<ge> 1.14)
+
 Selects which TLS mode to use with the server.  If no other tls option
 is present, this defaults to C<off>, where the client does not attempt
 encryption (and may be rejected by a server that requires it).  If
@@ -199,10 +217,14 @@ controlling what the nbd plugin connects to as a client.
 
 =item B<tls-certificates=>DIR
 
+(nbdkit E<ge> 1.14)
+
 This specifies the directory containing X.509 client certificates to
 present to the server.
 
 =item B<tls-verify=false>
+
+(nbdkit E<ge> 1.14)
 
 Setting this parameter to false disables server name verification,
 which opens you to potential Man-in-the-Middle (MITM) attacks, but
@@ -210,10 +232,14 @@ allows for a simpler setup for distributing certificates.
 
 =item B<tls-username=>NAME
 
+(nbdkit E<ge> 1.14)
+
 If provided, this overrides the user name to present to the server
 alongside the certificate.
 
 =item B<tls-psk=>FILE
+
+(nbdkit E<ge> 1.14)
 
 If provided, this is the filename containing the Pre-Shared Keys (PSK)
 to present to the server.  While this is easier to set up than X.509,
