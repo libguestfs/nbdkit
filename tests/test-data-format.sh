@@ -128,6 +128,11 @@ do_test '( @4 ( 0x21 )*4 )*4' 'b"\0\0\0\0!!!!"*4'
 # Nest + offset alignment at the end.
 do_test '( "Hello" @^8 )*2' 'b"Hello\0\0\0Hello\0\0\0"'
 
+# Nest with only an offset.
+do_test '( @4 )' 'bytearray(4)'
+do_test '( @4 )*4 1' 'bytearray(16) + b"\x01"'
+do_test '( @7 )*4' 'bytearray(28)'
+
 # These should all expand to nothing.  They are here to test corner
 # cases in the parser and optimizer.
 do_test '
