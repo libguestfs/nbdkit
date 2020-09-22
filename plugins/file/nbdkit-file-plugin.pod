@@ -29,7 +29,7 @@ the server will use.
 
 =item B<cache=none>
 
-(not Windows)
+(nbdkit E<ge> 1.22, not Windows)
 
 Using C<cache=none> tries to prevent the kernel from keeping parts of
 the file that have already been read or written in the page cache.
@@ -40,7 +40,7 @@ the file that have already been read or written in the page cache.
 
 =item B<fadvise=sequential>
 
-(not Windows)
+(nbdkit E<ge> 1.22, not Windows)
 
 This optional flag hints to the kernel that you will access the file
 normally, or in a random order, or sequentially.  The exact behaviour
