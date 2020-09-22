@@ -1389,6 +1389,13 @@ EXTRA_DIST += test-exportname.sh
 # ext2 filter test.
 if HAVE_MKE2FS_WITH_D
 if HAVE_EXT2
+if HAVE_GUESTFISH
+
+LIBGUESTFS_TESTS += test-ext2
+
+test_ext2_SOURCES = test-ext2.c test.h
+test_ext2_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
+test_ext2_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 TESTS += test-ext2-exportname.sh
 EXTRA_DIST += test-ext2-exportname.sh
@@ -1409,14 +1416,6 @@ ext2.img: disk test-ext2-exportname.sh
 	    upload manifest /manifest
 	rm manifest
 	mv $@-t $@
-
-if HAVE_GUESTFISH
-
-LIBGUESTFS_TESTS += test-ext2
-
-test_ext2_SOURCES = test-ext2.c test.h
-test_ext2_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
-test_ext2_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 endif HAVE_GUESTFISH
 endif HAVE_EXT2
