@@ -37,7 +37,8 @@ set -e
 set -x
 
 requires_plugin eval
-requires nbdsh --base-allocation -c 'exit(not h.supports_uri())'
+requires_nbdsh_uri
+requires nbdsh --base-allocation
 
 # Script a server that requires 512-byte aligned requests, reports only one
 # extent at a time, and with a hole placed unaligned to 4k bounds

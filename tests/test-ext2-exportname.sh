@@ -36,6 +36,7 @@ set -x
 
 requires_plugin file
 requires nbdinfo --version
+requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
 
 sock=`mktemp -u`

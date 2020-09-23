@@ -37,7 +37,7 @@ set -e
 set -x
 
 requires_run
-requires nbdsh --version
+requires_nbdsh_uri
 requires hexdump --version
 
 file=swab-32w.img

@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdsh --version
+requires_nbdsh_uri
 
 # Test if the base64 parameter is supported in this build.
 if ! nbdkit data --dump-plugin | grep -sq "data_base64=yes"; then

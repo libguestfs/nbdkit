@@ -33,7 +33,7 @@
 source ./functions.sh
 set -xe
 
-requires nbdsh -c 'exit(not h.supports_uri())'
+requires_nbdsh_uri
 
 plugin=.libs/test-stdio-plugin.$SOEXT
 requires test -f $plugin

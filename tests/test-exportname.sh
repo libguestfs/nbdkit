@@ -36,6 +36,7 @@ set -x
 
 requires_plugin sh
 requires nbdinfo --version
+requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
 requires jq --version
 

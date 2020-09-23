@@ -39,7 +39,7 @@ set -x
 
 requires_run
 requires qemu-img --version
-requires nbdsh -c 'exit(not h.supports_uri())'
+requires_nbdsh_uri
 
 function do_test_info ()
 {

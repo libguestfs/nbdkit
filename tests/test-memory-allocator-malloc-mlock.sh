@@ -38,7 +38,7 @@
 source ./functions.sh
 set -e
 
-requires nbdsh --version
+requires_nbdsh_uri
 
 if ! nbdkit memory --dump-plugin | grep -sq mlock=yes; then
     echo "$0: mlock not enabled in this build of nbdkit"

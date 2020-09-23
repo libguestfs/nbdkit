@@ -37,6 +37,7 @@ set -x
 # This test works with newer libnbd, showing that dynamic mode affects
 # export listing.
 requires_plugin sh
+requires_nbdsh_uri
 requires nbdinfo --version
 
 # Does the nbd plugin support dynamic lists?

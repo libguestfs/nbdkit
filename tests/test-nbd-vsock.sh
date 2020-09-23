@@ -44,7 +44,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdsh --version
+requires_nbdsh_uri
 requires nbdsh -c 'print(h.connect_vsock)'
 requires_linux_kernel_version 5.6
 

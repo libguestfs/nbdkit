@@ -47,6 +47,7 @@ requires_run
 requires perl --version
 requires python3 --version
 requires python3 -c 'import random'
+requires_nbdsh_uri
 requires nbdcopy --version
 requires hexdump --version
 

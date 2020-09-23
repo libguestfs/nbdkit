@@ -38,7 +38,7 @@ set -e
 set -x
 
 requires_plugin cdi
-requires nbdsh --version
+requires_nbdsh_uri
 requires truncate --version
 # Although we use fake podman, we require the real jq.
 requires jq --version

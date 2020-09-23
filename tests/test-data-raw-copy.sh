@@ -37,6 +37,7 @@ set -e
 set -x
 
 requires_run
+requires_nbdsh_uri
 requires nbdcopy --version
 
 out=test-data-raw-copy.out

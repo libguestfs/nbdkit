@@ -46,6 +46,7 @@ if [ "$NBDKIT_VALGRIND" = "1" ]; then
 fi
 
 requires nbdinfo --version
+requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
 requires jq --version
 

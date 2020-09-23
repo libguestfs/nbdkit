@@ -37,7 +37,8 @@ set -e
 set -x
 
 requires_run
-requires nbdsh --base-allocation -c 'exit(not h.supports_uri())'
+requires_nbdsh_uri
+requires nbdsh --base-allocation
 requires truncate --help
 requires stat --help
 

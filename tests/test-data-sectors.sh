@@ -38,7 +38,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdsh --version
+requires_nbdsh_uri
 requires truncate --version
 
 sock=`mktemp -u`

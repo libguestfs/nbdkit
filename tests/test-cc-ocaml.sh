@@ -50,6 +50,7 @@ fi
 
 requires_plugin cc
 requires $OCAMLOPT -version
+requires_nbdsh_uri
 requires nbdinfo --version
 
 out=test-cc-ocaml.out

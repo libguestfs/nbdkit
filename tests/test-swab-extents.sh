@@ -37,7 +37,8 @@ set -e
 set -x
 
 requires_plugin eval
-requires nbdsh --base-allocation -c 'exit(not h.supports_uri())'
+requires_nbdsh_uri
+requires nbdsh --base-allocation
 
 files="swab-extents.out swab-extents.exp8 swab-extents.exp16
        swab-extents.exp32 swab-extents.exp64"

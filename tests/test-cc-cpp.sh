@@ -50,6 +50,7 @@ fi
 
 requires_plugin cc
 requires $CXX --version
+requires_nbdsh_uri
 requires nbdinfo --version
 
 out=test-cc-cpp.out

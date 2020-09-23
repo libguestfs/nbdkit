@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdsh --version
+requires_nbdsh_uri
 
 # Which allocators can we test?
 allocators="sparse malloc"

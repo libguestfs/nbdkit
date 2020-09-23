@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_filter cache
-requires nbdsh --version
+requires_nbdsh_uri
 
 sock=`mktemp -u`
 files="cache.img $sock cache.pid"

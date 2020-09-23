@@ -41,7 +41,7 @@ fail=0
 requires_run
 requires qemu-io --version
 requires qemu-nbd --version
-requires nbdsh -c 'exit(not h.supports_uri())'
+requires_nbdsh_uri
 
 name16=1234567812345678
 name64=$name16$name16$name16$name16

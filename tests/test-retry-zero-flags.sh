@@ -35,8 +35,8 @@ set -e
 set -x
 
 requires_plugin sh
-requires nbdsh -c 'i = nbd.CMD_FLAG_FAST_ZERO
-exit(not h.supports_uri())'
+requires_nbdsh_uri
+requires nbdsh -c 'i = nbd.CMD_FLAG_FAST_ZERO'
 
 files="retry-zero-flags-count retry-zero-flags-open-count"
 rm -f $files

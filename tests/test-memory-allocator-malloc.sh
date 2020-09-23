@@ -35,7 +35,7 @@
 source ./functions.sh
 set -e
 
-requires nbdsh --version
+requires_nbdsh_uri
 
 sock=`mktemp -u`
 files="memory-allocator-malloc.pid $sock"

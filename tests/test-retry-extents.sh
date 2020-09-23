@@ -35,7 +35,8 @@ set -e
 set -x
 
 requires_plugin sh
-requires nbdsh --base-allocation -c 'exit(not h.supports_uri())'
+requires_nbdsh_uri
+requires nbdsh --base-allocation
 
 files="retry-extents-count retry-extents-open-count"
 rm -f $files

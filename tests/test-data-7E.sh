@@ -37,7 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdsh --version
+requires_nbdsh_uri
 
 sock=`mktemp -u`
 files="data-7E.pid $sock"

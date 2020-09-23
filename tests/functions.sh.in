@@ -126,6 +126,12 @@ requires_linux_kernel_version ()
     requires test "$(echo "$kver >= $1" | bc -l)" = "1"
 }
 
+# Test if nbdkit supports URI
+requires_nbdsh_uri ()
+{
+    requires nbdsh -c 'exit(not h.supports_uri())'
+}
+
 # Test if a plugin has been compiled.
 requires_plugin ()
 {

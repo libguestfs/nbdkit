@@ -49,6 +49,7 @@ if test ! -f "$script"; then
 fi
 
 requires_plugin cc
+requires_nbdsh_uri
 requires nbdinfo --version
 
 out=test-cc.out
