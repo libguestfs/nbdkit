@@ -68,6 +68,9 @@ static unsigned cookie_iteration = 0;
 static struct curl_slist *headers_from_script = NULL;
 static char *cookies_from_script = NULL;
 
+/* Debug scripts by setting -D curl.scripts=1 */
+int curl_debug_scripts;
+
 void
 scripts_unload (void)
 {
@@ -136,6 +139,8 @@ do_scripts (struct curl_handle *h)
     h->headers_copy = NULL;
   }
   for (p = headers_from_script; p != NULL; p = p->next) {
+    if (curl_debug_scripts)
+      nbdkit_debug ("header-script: setting header %s", p->data);
     h->headers_copy = curl_slist_append (h->headers_copy, p->data);
     if (h->headers_copy == NULL) {
       nbdkit_error ("curl_slist_append: %m");
@@ -144,6 +149,8 @@ do_scripts (struct curl_handle *h)
   }
   curl_easy_setopt (h->c, CURLOPT_HTTPHEADER, h->headers_copy);
 
+  if (curl_debug_scripts && cookies_from_script)
+    nbdkit_debug ("cookie-script: setting cookie %s", cookies_from_script);
   curl_easy_setopt (h->c, CURLOPT_COOKIE, cookies_from_script);
 
   return 0;
