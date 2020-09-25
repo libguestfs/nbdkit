@@ -53,6 +53,7 @@
 #ifdef HAVE_GNUTLS
 
 #include <gnutls/gnutls.h>
+#include <gnutls/x509.h>
 
 static int crypto_auth;
 #define CRYPTO_AUTH_CERTIFICATES 1
@@ -465,6 +466,11 @@ pull_timeout (gnutls_transport_ptr_t ptr, unsigned ms)
  */
 SERVER_DEBUG_FLAG(nbdkit_debug_gnutls_log) = 0;
 
+/* Print additional information about the session using
+ * nbdkit -D nbdkit.gnutls.session=1
+ */
+SERVER_DEBUG_FLAG(nbdkit_debug_gnutls_session) = 0;
+
 static void
 tls_log (int level, const char *msg)
 {
@@ -479,6 +485,119 @@ tls_log (int level, const char *msg)
   }
 
   nbdkit_debug ("gnutls: %d: %s", level, msg);
+}
+
+/* https://gnutls.org/manual/html_node/Obtaining-session-information.html */
+static void
+debug_x590_cert (gnutls_session_t session)
+{
+  const gnutls_datum_t *cert_list;
+  unsigned int i, cert_list_size = 0;
+
+  cert_list = gnutls_certificate_get_peers (session, &cert_list_size);
+  if (cert_list == NULL) {
+    /* Note unless you use --tls-verify-peer you will always see the
+     * following message.
+     */
+    nbdkit_debug ("TLS: no peer certificates found");
+    return;
+  }
+
+  nbdkit_debug ("TLS: peer provided %u certificate(s)", cert_list_size);
+  for (i = 0; i < cert_list_size; ++i) {
+    int ret;
+    gnutls_x509_crt_t cert;
+    size_t size;
+    gnutls_datum_t cinfo;
+    char dn[256];
+
+    gnutls_x509_crt_init (&cert);
+    gnutls_x509_crt_import (cert, &cert_list[i], GNUTLS_X509_FMT_DER);
+
+    ret = gnutls_x509_crt_print (cert, GNUTLS_CRT_PRINT_ONELINE, &cinfo);
+    if (ret == 0) {
+      nbdkit_debug ("TLS: %s", cinfo.data);
+      gnutls_free (cinfo.data);
+    }
+
+    size = sizeof dn;
+    gnutls_x509_crt_get_dn (cert, dn, &size);
+    nbdkit_debug ("TLS: DN: %s", dn);
+
+    size = sizeof dn;
+    gnutls_x509_crt_get_issuer_dn (cert, dn, &size);
+    nbdkit_debug ("TLS: issuer's DN: %s", dn);
+
+    gnutls_x509_crt_deinit (cert);
+  }
+}
+
+static void
+debug_session (gnutls_session_t session)
+{
+  gnutls_credentials_type_t cred;
+  gnutls_kx_algorithm_t kx;
+  bool dhe = false, ecdh = false;
+  int grp;
+  const char *desc, *username, *hint;
+
+  desc = gnutls_session_get_desc (session);
+  if (desc) nbdkit_debug ("TLS session: %s", desc);
+
+  kx = gnutls_kx_get (session);
+  cred = gnutls_auth_get_type (session);
+  switch (cred) {
+  case GNUTLS_CRD_SRP:
+    nbdkit_debug ("TLS: authentication: SRP (Secure Remote Password)");
+    username = gnutls_srp_server_get_username (session);
+    if (username)
+      nbdkit_debug ("TLS: SRP session username: %s", username);
+    break;
+  case GNUTLS_CRD_PSK:
+    nbdkit_debug ("TLS: authentication: PSK (Pre-Shared Key)");
+    hint = gnutls_psk_client_get_hint (session);
+    if (hint)
+      nbdkit_debug ("TLS: PSK hint: %s", hint);
+    username = gnutls_psk_server_get_username (session);
+    if (username)
+      nbdkit_debug ("TLS: PSK username: %s", username);
+    if (kx == GNUTLS_KX_ECDHE_PSK)
+      ecdh = true;
+    else if (kx == GNUTLS_KX_DHE_PSK)
+      dhe = true;
+    break;
+  case GNUTLS_CRD_ANON:
+    nbdkit_debug ("TLS: authentication: anonymous");
+    if (kx == GNUTLS_KX_ANON_ECDH)
+      ecdh = true;
+    else if (kx == GNUTLS_KX_ANON_DH)
+      dhe = true;
+    break;
+  case GNUTLS_CRD_CERTIFICATE:
+    nbdkit_debug ("TLS: authentication: certificate");
+    if (gnutls_certificate_type_get (session) == GNUTLS_CRT_X509)
+      debug_x590_cert (session);
+    if (kx == GNUTLS_KX_DHE_RSA || kx == GNUTLS_KX_DHE_DSS)
+      dhe = true;
+    else if (kx == GNUTLS_KX_ECDHE_RSA || kx == GNUTLS_KX_ECDHE_ECDSA)
+      ecdh = true;
+    break;
+  default:
+    nbdkit_debug ("TLS: authentication: unknown (%d)", (int) cred);
+  }
+
+  grp = gnutls_group_get (session);
+  if (grp)
+    nbdkit_debug ("TLS: negotiated group: %s",
+                  gnutls_group_get_name (grp));
+  else {
+    if (ecdh)
+      nbdkit_debug ("TLS: ephemeral ECDH using curve %s",
+                    gnutls_ecc_curve_get_name (gnutls_ecc_curve_get (session)));
+    else if (dhe)
+      nbdkit_debug ("TLS: ephemeral DH using prime of %d bits",
+                    gnutls_dh_get_prime_bits (session));
+  }
 }
 
 /* Upgrade an existing connection to TLS.  Also this should do access
@@ -594,6 +713,10 @@ crypto_negotiate_tls (int sockin, int sockout)
     goto error;
   }
   debug ("TLS handshake completed");
+
+  /* Print some additional information about the negotiated encryption. */
+  if (nbdkit_debug_gnutls_session > 0)
+    debug_session (session);
 
   /* Set up the connection recv/send/close functions so they call
    * GnuTLS wrappers instead.

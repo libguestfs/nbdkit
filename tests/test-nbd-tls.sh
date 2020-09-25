@@ -73,7 +73,8 @@ start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
 
 # Run encrypted server
 start_nbdkit -P "$pid1" -U "$sock1" \
-    --tls=require --tls-certificates="$pkidir" example1
+    --tls=require --tls-certificates="$pkidir" -D nbdkit.gnutls.session=1 \
+    example1
 
 # Run unencrypted client
 qemu-img info --output=json -f raw "nbd+unix:///?socket=$sock2" > nbd-tls.out

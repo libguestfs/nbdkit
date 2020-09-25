@@ -591,6 +591,11 @@ commands (config, open, close, can_write, etc.)
 Enable GnuTLS logging.  C<N> can be in the range 0 (no logging) to 99.
 See L<gnutls_global_set_log_level(3)>.
 
+=item B<-D nbdkit.gnutls.session=1>
+
+Print additional information about the TLS session, such as the type
+of authentication and encryption, and client certificate information.
+
 =back
 
 =head1 SIGNALS

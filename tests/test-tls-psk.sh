@@ -69,7 +69,8 @@ pick_unused_port
 
 cleanup_fn rm -f tls-psk.pid tls-psk.out
 start_nbdkit -P tls-psk.pid -p $port -n \
-             --tls=require --tls-psk=keys.psk example1
+             --tls=require --tls-psk=keys.psk -D nbdkit.gnutls.session=1 \
+             example1
 
 # Run qemu-img against the server.
 qemu-img info --output=json \
