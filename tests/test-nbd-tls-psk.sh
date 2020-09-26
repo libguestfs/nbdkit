@@ -81,7 +81,7 @@ sleep 1
 
 # Run encrypted server
 start_nbdkit -P "$pid1" -U "$sock1" \
-    --tls=require --tls-psk=keys.psk -D nbdkit.gnutls.session=1 example1
+    --tls=require --tls-psk=keys.psk -D nbdkit.tls.session=1 example1
 
 wait $info_pid
 cat nbd-tls-psk.out

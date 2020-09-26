@@ -59,7 +59,7 @@ cleanup_fn rm -f $files
 
 # Run dual-mode server
 start_nbdkit -P $pid -U $sock \
-             --tls=on --tls-psk=keys.psk -D nbdkit.gnutls.session=1 \
+             --tls=on --tls-psk=keys.psk -D nbdkit.tls.session=1 \
              --filter=tls-fallback sh - tlsreadme=$'dummy\n' <<\EOF
 check () {
  if test "$1" != true; then

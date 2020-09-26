@@ -63,7 +63,7 @@ pick_unused_port
 cleanup_fn rm -f tls.pid tls.out
 start_nbdkit -P tls.pid -p $port -n \
              --tls=require --tls-certificates="$pkidir" --tls-verify-peer \
-             -D nbdkit.gnutls.session=1 \
+             -D nbdkit.tls.session=1 \
              example1
 
 # Run qemu-img against the server.

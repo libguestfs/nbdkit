@@ -586,12 +586,12 @@ and not usually very interesting.
 C<-D nbdkit.backend.controlpath=0> suppresses the non-datapath
 commands (config, open, close, can_write, etc.)
 
-=item B<-D nbdkit.gnutls.log=>N
+=item B<-D nbdkit.tls.log=>N
 
-Enable GnuTLS logging.  C<N> can be in the range 0 (no logging) to 99.
+Enable TLS logging.  C<N> can be in the range 0 (no logging) to 99.
 See L<gnutls_global_set_log_level(3)>.
 
-=item B<-D nbdkit.gnutls.session=1>
+=item B<-D nbdkit.tls.session=1>
 
 Print additional information about the TLS session, such as the type
 of authentication and encryption, and client certificate information.

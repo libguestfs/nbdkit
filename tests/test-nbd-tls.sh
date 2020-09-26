@@ -73,7 +73,7 @@ start_nbdkit -P "$pid2" -U "$sock2" --tls=off \
 
 # Run encrypted server
 start_nbdkit -P "$pid1" -U "$sock1" \
-    --tls=require --tls-certificates="$pkidir" -D nbdkit.gnutls.session=1 \
+    --tls=require --tls-certificates="$pkidir" -D nbdkit.tls.session=1 \
     example1
 
 # Run unencrypted client

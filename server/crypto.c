@@ -462,14 +462,9 @@ pull_timeout (gnutls_transport_ptr_t ptr, unsigned ms)
 #endif /* WIN32 */
 
 /* Turn GnuTLS debug messages into nbdkit debug messages
- * when nbdkit -D nbdkit.gnutls.log > 0
+ * when nbdkit -D nbdkit.tls.log > 0
  */
-SERVER_DEBUG_FLAG(nbdkit_debug_gnutls_log) = 0;
-
-/* Print additional information about the session using
- * nbdkit -D nbdkit.gnutls.session=1
- */
-SERVER_DEBUG_FLAG(nbdkit_debug_gnutls_session) = 0;
+SERVER_DEBUG_FLAG(nbdkit_debug_tls_log) = 0;
 
 static void
 tls_log (int level, const char *msg)
@@ -487,7 +482,13 @@ tls_log (int level, const char *msg)
   nbdkit_debug ("gnutls: %d: %s", level, msg);
 }
 
-/* https://gnutls.org/manual/html_node/Obtaining-session-information.html */
+/* Print additional information about the session using
+ * nbdkit -D nbdkit.tls.session=1
+ *
+ * https://gnutls.org/manual/html_node/Obtaining-session-information.html
+ */
+SERVER_DEBUG_FLAG(nbdkit_debug_tls_session) = 0;
+
 static void
 debug_x590_cert (gnutls_session_t session)
 {
@@ -507,9 +508,7 @@ debug_x590_cert (gnutls_session_t session)
   for (i = 0; i < cert_list_size; ++i) {
     int ret;
     gnutls_x509_crt_t cert;
-    size_t size;
     gnutls_datum_t cinfo;
-    char dn[256];
 
     gnutls_x509_crt_init (&cert);
     gnutls_x509_crt_import (cert, &cert_list[i], GNUTLS_X509_FMT_DER);
@@ -519,14 +518,6 @@ debug_x590_cert (gnutls_session_t session)
       nbdkit_debug ("TLS: %s", cinfo.data);
       gnutls_free (cinfo.data);
     }
-
-    size = sizeof dn;
-    gnutls_x509_crt_get_dn (cert, dn, &size);
-    nbdkit_debug ("TLS: DN: %s", dn);
-
-    size = sizeof dn;
-    gnutls_x509_crt_get_issuer_dn (cert, dn, &size);
-    nbdkit_debug ("TLS: issuer's DN: %s", dn);
 
     gnutls_x509_crt_deinit (cert);
   }
@@ -540,6 +531,9 @@ debug_session (gnutls_session_t session)
   bool dhe = false, ecdh = false;
   int grp;
   const char *desc, *username, *hint;
+
+  if (nbdkit_debug_tls_session <= 0)
+    return;
 
   desc = gnutls_session_get_desc (session);
   if (desc) nbdkit_debug ("TLS session: %s", desc);
@@ -620,8 +614,8 @@ crypto_negotiate_tls (int sockin, int sockout)
     return -1;
   }
 
-  if (nbdkit_debug_gnutls_log > 0)
-    gnutls_global_set_log_level (nbdkit_debug_gnutls_log);
+  if (nbdkit_debug_tls_log > 0)
+    gnutls_global_set_log_level (nbdkit_debug_tls_log);
   gnutls_global_set_log_function (tls_log);
 
   switch (crypto_auth) {
@@ -713,10 +707,7 @@ crypto_negotiate_tls (int sockin, int sockout)
     goto error;
   }
   debug ("TLS handshake completed");
-
-  /* Print some additional information about the negotiated encryption. */
-  if (nbdkit_debug_gnutls_session > 0)
-    debug_session (session);
+  debug_session (session);
 
   /* Set up the connection recv/send/close functions so they call
    * GnuTLS wrappers instead.
