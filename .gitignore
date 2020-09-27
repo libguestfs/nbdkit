@@ -120,7 +120,6 @@ plugins/*/*.3
 /tests/test-delay
 /tests/test-exit-with-parent
 /tests/test-ext2
-/tests/test-file
 /tests/test-file-block
 /tests/test-golang
 /tests/test-gzip
