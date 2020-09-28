@@ -71,28 +71,32 @@ if test -s captive.out; then
     fail=1
 fi
 
-# Check that nbdkit death from unhandled signal affects exit status
-status=0
-nbdkit -U - -P captive.pid example1 --run '
-for i in {1..60}; do
-    if test -s captive.pid; then break; fi
-    sleep 1
-done
-if ! test -s captive.pid; then
-    echo "$0: no pidfile yet"
-    exit 10
-fi
-kill -s ABRT $(cat captive.pid) || exit 10
-sleep 10
-' > captive.out || status=$?
-if test $status != $(( 128 + $(kill -l ABRT) )); then
-    echo "$0: unexpected exit status $status"
-    fail=1
-fi
-if test -s captive.out; then
-    echo "$0: unexpected output"
-    cat captive.out
-    fail=1
+# Check that nbdkit death from unhandled signal affects exit status.
+# Don't run this under valgrind because it causes a vgcore file
+# to be created.
+if [ "$NBDKIT_VALGRIND" != "1" ]; then
+    status=0
+    nbdkit -U - -P captive.pid example1 --run '
+    for i in {1..60}; do
+        if test -s captive.pid; then break; fi
+        sleep 1
+    done
+    if ! test -s captive.pid; then
+        echo "$0: no pidfile yet"
+        exit 10
+    fi
+    kill -s ABRT $(cat captive.pid) || exit 10
+    sleep 10
+    ' > captive.out || status=$?
+    if test $status != $(( 128 + $(kill -l ABRT) )); then
+        echo "$0: unexpected exit status $status"
+        fail=1
+    fi
+    if test -s captive.out; then
+        echo "$0: unexpected output"
+        cat captive.out
+        fail=1
+    fi
 fi
 
 exit $fail
