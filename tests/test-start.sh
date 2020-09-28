@@ -44,7 +44,7 @@ if is_windows; then
     exit 77
 fi
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 rm -f start.pid $sock
 cleanup_fn rm -f start.pid $sock
 

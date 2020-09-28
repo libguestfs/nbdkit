@@ -44,7 +44,7 @@ if ! nbdkit data --dump-plugin | grep -sq "data_base64=yes"; then
     exit 77
 fi
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="data-base64.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

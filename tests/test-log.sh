@@ -35,7 +35,7 @@ set -e
 
 requires_filter log
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="log.img log.log $sock log.pid"
 rm -f $files
 

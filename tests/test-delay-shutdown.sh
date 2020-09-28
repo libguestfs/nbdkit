@@ -43,7 +43,7 @@ requires qemu-io --version
 requires timeout --version
 
 pidfile=delay-shutdown.pid
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$pidfile $sock"
 cleanup_fn rm -f $files
 fail=0

@@ -39,7 +39,7 @@ set -x
 
 requires_nbdsh_uri
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="ddrescue.pid $sock ddrescue.txt ddrescue-test1.map"
 rm -f $files
 cleanup_fn rm -f $files

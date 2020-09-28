@@ -55,8 +55,8 @@ if [ ! -s keys.psk ]; then
     exit 77
 fi
 
-sock1=`mktemp -u`
-sock2=`mktemp -u`
+sock1=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 pid1="test-nbd-tls-psk.pid1"
 pid2="test-nbd-tls-psk.pid2"
 

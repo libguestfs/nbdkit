@@ -38,7 +38,7 @@ requires_plugin sh
 requires nbdsh --version
 requires dd iflag=count_bytes </dev/null
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock exportname.pid"
 rm -f $files
 cleanup_fn rm -f $files

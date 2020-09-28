@@ -44,7 +44,7 @@ requires qemu-img map --help
 
 out="test-nbd-extents.out"
 expected="test-nbd-extents.expected"
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 pid1="test-nbd-extents.pid1"
 pid2="test-nbd-extents.pid2"
 pid3="test-nbd-extents.pid3"

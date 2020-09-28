@@ -39,7 +39,7 @@ set -x
 
 requires qemu-img --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="truncate3.out truncate3.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

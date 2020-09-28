@@ -40,10 +40,10 @@ requires_plugin ondemand
 requires qemu-img --version
 requires nbdsh --version
 
-dir=`mktemp -d`
+dir=$(mktemp -d /tmp/nbdkit-test-dir.XXXXXX)
 cleanup_fn rm -rf $dir
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="ondemand-locking.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

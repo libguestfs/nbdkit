@@ -39,7 +39,7 @@ requires nbdinfo --version
 requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock ext2-exportname.pid ext2-exportname.out"
 rm -f $files
 cleanup_fn rm -f $files

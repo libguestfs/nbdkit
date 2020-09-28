@@ -40,7 +40,7 @@ requires_plugin file
 requires_nbdsh_uri
 requires truncate --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="file.pid file.img $sock"
 rm -f $files
 cleanup_fn rm -f $files

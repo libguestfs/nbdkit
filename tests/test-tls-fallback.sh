@@ -50,7 +50,7 @@ if [ ! -s keys.psk ]; then
     exit 77
 fi
 
-export sock=`mktemp -u`
+export sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 pid="tls-fallback.pid"
 
 files="$sock $pid"

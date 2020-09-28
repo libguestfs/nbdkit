@@ -48,7 +48,7 @@ fi
 requires nbdsh --version
 
 pid=test-python-export-name.pid
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

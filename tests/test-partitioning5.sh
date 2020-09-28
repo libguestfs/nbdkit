@@ -43,7 +43,7 @@ set -x
 requires guestfish --version
 requires mke2fs -V
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="partitioning5.pid $sock
        partitioning5.fs
        partitioning5.p1 partitioning5.p2 partitioning5.p3 partitioning5.p5 partitioning5.p6 partitioning5.p7 partitioning5.p8 partitioning5.p9 partitioning5.p10 partitioning5.p11 partitioning5.p13"

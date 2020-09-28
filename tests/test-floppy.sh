@@ -38,7 +38,7 @@ set -e
 requires_plugin floppy
 requires guestfish --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="floppy.pid $sock floppy.test1 floppy.test2"
 rm -f $files
 cleanup_fn rm -f $files

@@ -63,7 +63,7 @@ requires test -f "$f"
 requires test "$(uname -m)" = "$test_arch"
 requires test "$(uname -s)" = "$test_os"
 
-disk="`mktemp`"
+disk="$(mktemp /tmp/nbdkit-test-disk.XXXXXX)"
 files="$disk"
 cleanup_fn rm -f $files
 

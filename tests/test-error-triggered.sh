@@ -36,7 +36,7 @@ set -x
 
 requires_nbdsh_uri
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock error-triggered.pid error-trigger"
 rm -f $files
 cleanup_fn rm -f $files

@@ -46,7 +46,7 @@ requires qemu-io --version
 plugin=.libs/test-shutdown-plugin.$SOEXT
 requires test -f $plugin
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="shutdown.pid $sock"
 cleanup_fn rm -f $files
 

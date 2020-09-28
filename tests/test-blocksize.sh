@@ -35,8 +35,8 @@ set -e
 
 requires_filter log
 
-sock1=`mktemp -u`
-sock2=`mktemp -u`
+sock1=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="blocksize1.img blocksize1.log $sock1 blocksize1.pid
        blocksize2.img blocksize2.log $sock2 blocksize2.pid"
 rm -f $files

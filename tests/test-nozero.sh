@@ -34,12 +34,12 @@ source ./functions.sh
 set -e
 set -x
 
-sock2=`mktemp -u`
-sock3=`mktemp -u`
-sock4=`mktemp -u`
-sock5a=`mktemp -u`
-sock5b=`mktemp -u`
-sock6=`mktemp -u`
+sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock3=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock4=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock5a=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock5b=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock6=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="nozero1.img nozero1.log
        nozero2.img nozero2.log $sock2 nozero2.pid
        nozero3.img nozero3.log $sock3 nozero3.pid

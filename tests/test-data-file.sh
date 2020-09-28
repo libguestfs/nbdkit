@@ -38,7 +38,7 @@ set -x
 
 requires_nbdsh_uri
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="data-file.pid $sock data-hello.txt"
 rm -f $files
 cleanup_fn rm -f $files

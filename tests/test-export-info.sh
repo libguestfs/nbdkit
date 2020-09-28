@@ -37,7 +37,7 @@ set -x
 requires_plugin sh
 requires nbdsh -c 'print(h.set_full_info)'
 
-export sock=`mktemp -u`
+export sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock export-info.pid"
 rm -f $files
 cleanup_fn rm -f $files

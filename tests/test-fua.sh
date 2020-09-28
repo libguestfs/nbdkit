@@ -37,7 +37,7 @@ set -x
 requires_filter fua
 requires_filter log
 
-sockdir=`mktemp -d`
+sockdir=$(mktemp -d /tmp/nbdkit-test-socks.XXXXXX)
 files="fua.img
        fua1.log fua1.pid
        fua2.log fua2.pid

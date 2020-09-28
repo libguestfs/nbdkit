@@ -50,7 +50,7 @@ requires nbdsh --version
 
 out=test-python-thread-model.out
 pid=test-python-thread-model.pid
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$out $pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

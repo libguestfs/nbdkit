@@ -37,7 +37,7 @@ set -x
 requires_filter cache
 requires_nbdsh_uri
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="cache.img $sock cache.pid"
 rm -f $files
 cleanup_fn rm -f $files

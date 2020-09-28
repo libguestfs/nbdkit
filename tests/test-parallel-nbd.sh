@@ -40,7 +40,7 @@ requires timeout --version
 nbdkit --dump-plugin nbd | grep -q ^thread_model=parallel ||
     { echo "nbdkit lacks support for parallel requests"; exit 77; }
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="test-parallel-nbd.out $sock test-parallel-nbd.data test-parallel-nbd.pid"
 rm -f $files
 cleanup_fn rm -f $files

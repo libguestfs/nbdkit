@@ -33,7 +33,7 @@
 source ./functions.sh
 
 pidfile=shebang-ruby.pid
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 script=./shebang.rb
 
 rm -f $pidfile $sock

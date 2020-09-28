@@ -44,7 +44,7 @@ fi
 
 requires nbdsh --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="info-address.out info-address.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

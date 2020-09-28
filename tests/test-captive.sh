@@ -40,7 +40,7 @@ requires_run
 
 fail=0
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock captive.out captive.pid"
 rm -f $files
 cleanup_fn rm -f $files

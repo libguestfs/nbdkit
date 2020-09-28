@@ -42,7 +42,7 @@ fi
 
 requires qemu-img --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="exitlast.pid $sock"
 cleanup_fn rm -f $files
 

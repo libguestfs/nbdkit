@@ -39,8 +39,8 @@ set -x
 requires_plugin info
 requires nbdsh --version
 
-sock1=`mktemp -u`
-export sock2=`mktemp -u`
+sock1=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+export sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 pid1="test-nbd-dynamic-content.pid1"
 pid2="test-nbd-dynamic-content.pid2"
 files="$sock1 $sock2 $pid1 $pid2"

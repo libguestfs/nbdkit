@@ -47,7 +47,7 @@ set -x
 
 requires nbdsh --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 data=truncate4.data
 files="truncate4.pid $sock $data"
 rm -f $files

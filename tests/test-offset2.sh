@@ -38,7 +38,7 @@ set -x
 
 requires qemu-io --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="offset2.out offset2.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

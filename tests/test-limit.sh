@@ -36,7 +36,7 @@ set -x
 
 requires nbdsh --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="limit.pid $sock"
 cleanup_fn rm -f $files
 

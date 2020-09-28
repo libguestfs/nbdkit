@@ -47,8 +47,8 @@ if ! nbdkit --dump-plugin nbd | grep -sq libnbd_dynamic_list=1; then
 fi
 
 base=test-nbd-dynamic-list
-sock1=`mktemp -u`
-sock2=`mktemp -u`
+sock1=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 pid1="$base.pid1"
 pid2="$base.pid2"
 files="$sock1 $sock2 $pid1 $pid2 $base.list $base.out1 $base.out2"

@@ -50,7 +50,7 @@ fi
 # room for error.  On Linux the default is usually 64.
 requires test `ulimit -l` -gt 8
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="memory-allocator-malloc-mlock.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

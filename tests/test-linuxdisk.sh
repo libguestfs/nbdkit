@@ -40,7 +40,7 @@ requires_plugin linuxdisk
 requires guestfish --version
 requires mkfifo --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 d=linuxdisk.d
 rm -rf $d
 cleanup_fn rm -rf $d

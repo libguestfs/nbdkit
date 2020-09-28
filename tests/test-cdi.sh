@@ -43,7 +43,7 @@ requires truncate --version
 # Although we use fake podman, we require the real jq.
 requires jq --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="cdi.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

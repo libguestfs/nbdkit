@@ -33,7 +33,7 @@
 source ./functions.sh
 
 pidfile=shebang-python.pid
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 script=$SRCDIR/shebang.py
 
 if test ! -d "$SRCDIR"; then

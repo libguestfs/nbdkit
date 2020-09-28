@@ -38,7 +38,7 @@ requires_single_mode
 requires socat -h
 requires qemu-img --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock single.disk"
 rm -f $files
 

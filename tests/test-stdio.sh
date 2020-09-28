@@ -38,8 +38,8 @@ requires_nbdsh_uri
 plugin=.libs/test-stdio-plugin.$SOEXT
 requires test -f $plugin
 
-sock1=`mktemp -u`
-sock2=`mktemp -u`
+sock1=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="test-stdio.in test-stdio.out test-stdio.err
   test-stdio.pid1 test-stdio.pid2 $sock1 $sock2"
 rm -f $files

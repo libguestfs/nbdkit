@@ -37,7 +37,7 @@ set -x
 requires_plugin ondemand
 requires qemu-nbd --version
 
-dir=`mktemp -d`
+dir=$(mktemp -d /tmp/nbdkit-test-dir.XXXXXX)
 cleanup_fn rm -rf $dir
 
 out=test-ondemand-list.out

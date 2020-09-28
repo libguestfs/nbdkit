@@ -38,7 +38,7 @@ set -x
 
 requires nbdsh --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="info-uptime.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

@@ -43,7 +43,7 @@ requires stat --version
 requires cut --version
 requires tr --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 d=cache-max-size.d
 rm -rf $d
 mkdir -p $d

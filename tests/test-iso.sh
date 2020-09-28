@@ -38,7 +38,7 @@ set -e
 requires_plugin iso
 requires guestfish --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="iso.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

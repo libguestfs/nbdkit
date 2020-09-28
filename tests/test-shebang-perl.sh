@@ -33,7 +33,7 @@
 source ./functions.sh
 
 pidfile=shebang-perl.pid
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 script=$SRCDIR/shebang.pl
 
 if test ! -d "$SRCDIR"; then

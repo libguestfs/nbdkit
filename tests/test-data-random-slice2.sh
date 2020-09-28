@@ -39,7 +39,7 @@ set -x
 requires_nbdsh_uri
 requires test -r /dev/urandom
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="data-random-slice2.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

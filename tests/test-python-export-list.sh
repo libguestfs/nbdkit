@@ -51,7 +51,7 @@ requires nbdsh -c 'print(h.set_full_info)'
 requires jq --version
 
 pid=test-python-export-list.pid
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 out=test-python-export-list.out
 files="$pid $sock $out"
 rm -f $files

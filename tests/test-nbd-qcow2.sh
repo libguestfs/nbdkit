@@ -41,7 +41,7 @@ requires qemu-nbd --version
 
 disk=nbd-qcow2-disk.qcow2
 pid=nbd-qcow2.pid
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$disk $pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

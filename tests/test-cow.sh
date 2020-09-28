@@ -37,7 +37,7 @@ set -x
 requires_plugin linuxdisk
 requires guestfish --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="cow-base.img cow-diff.qcow2 $sock cow.pid"
 rm -f $files
 cleanup_fn rm -f $files

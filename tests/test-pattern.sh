@@ -42,7 +42,7 @@ set -e
 
 requires qemu-io --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="pattern.out pattern.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

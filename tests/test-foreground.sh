@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="foreground.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files

@@ -38,7 +38,7 @@ requires test -f disk
 requires guestfish --version
 requires tar --version
 
-sock=`mktemp -u`
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="tar.pid tar.tar $sock"
 rm -f $files
 cleanup_fn rm -f $files
