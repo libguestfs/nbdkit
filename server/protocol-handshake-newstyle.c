@@ -44,7 +44,10 @@
 #include "nbd-protocol.h"
 #include "protostrings.h"
 
-/* Maximum number of client options we allow before giving up. */
+/* Initial bound of client options we allow before giving up.
+ * However, a client that issues NBD_OPT_LIST is permitted to follow
+ * up with another round of options per export listed.
+ */
 #define MAX_NR_OPTIONS 32
 
 /* Receive newstyle options. */
@@ -78,11 +81,11 @@ send_newstyle_option_reply (uint32_t option, uint32_t reply)
 /* Reply to NBD_OPT_LIST with the plugin's list of export names.
  */
 static int
-send_newstyle_option_reply_exportnames (uint32_t option)
+send_newstyle_option_reply_exportnames (uint32_t option, size_t *nr_options)
 {
   GET_CONN;
   struct nbd_fixed_new_option_reply fixed_new_option_reply;
-  size_t i;
+  size_t i, list_len;
   CLEANUP_EXPORTS_FREE struct nbdkit_exports *exps = NULL;
 
   exps = nbdkit_exports_new ();
@@ -91,7 +94,11 @@ send_newstyle_option_reply_exportnames (uint32_t option)
   if (backend_list_exports (top, read_only, exps) == -1)
     return send_newstyle_option_reply (option, NBD_REP_ERR_PLATFORM);
 
-  for (i = 0; i < nbdkit_exports_count (exps); i++) {
+  /* Allow additional per-export NBD_OPT_INFO and friends. */
+  list_len = nbdkit_exports_count (exps);
+  *nr_options += MAX_NR_OPTIONS * list_len;
+
+  for (i = 0; i < list_len; i++) {
     const struct nbdkit_export export = nbdkit_get_export (exps, i);
     size_t name_len = strlen (export.name);
     size_t desc_len = export.description ? strlen (export.description) : 0;
@@ -326,6 +333,7 @@ negotiate_handshake_newstyle_options (void)
   GET_CONN;
   struct nbd_new_option new_option;
   size_t nr_options;
+  bool list_seen = false;
   uint64_t version;
   uint32_t option;
   uint32_t optlen;
@@ -334,7 +342,7 @@ negotiate_handshake_newstyle_options (void)
   uint64_t exportsize;
   struct backend *b;
 
-  for (nr_options = 0; nr_options < MAX_NR_OPTIONS; ++nr_options) {
+  for (nr_options = MAX_NR_OPTIONS; nr_options > 0; --nr_options) {
     CLEANUP_FREE char *data = NULL;
 
     if (conn_recv_full (&new_option, sizeof new_option,
@@ -431,11 +439,21 @@ negotiate_handshake_newstyle_options (void)
         continue;
       }
 
-      /* Send back the exportname list. */
-      debug ("newstyle negotiation: %s: advertising exports",
-             name_of_nbd_opt (option));
-      if (send_newstyle_option_reply_exportnames (option) == -1)
-        return -1;
+      if (list_seen) {
+        debug ("newstyle negotiation: %s: export list already advertised",
+               name_of_nbd_opt (option));
+        if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID) == -1)
+          return -1;
+        continue;
+      }
+      else {
+        /* Send back the exportname list. */
+        debug ("newstyle negotiation: %s: advertising exports",
+               name_of_nbd_opt (option));
+        if (send_newstyle_option_reply_exportnames (option, &nr_options) == -1)
+          return -1;
+        list_seen = true;
+      }
       break;
 
     case NBD_OPT_STARTTLS:
@@ -826,9 +844,9 @@ negotiate_handshake_newstyle_options (void)
       break;
   }
 
-  if (nr_options >= MAX_NR_OPTIONS) {
-    nbdkit_error ("client exceeded maximum number of options (%d)",
-                  MAX_NR_OPTIONS);
+  if (nr_options == 0) {
+    nbdkit_error ("client spent too much time negotiating without selecting "
+                  "an export");
     return -1;
   }
 
