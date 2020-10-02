@@ -37,6 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_plugin eval
 requires nbdinfo --version
 requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
