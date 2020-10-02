@@ -43,15 +43,18 @@ nbdkit_exportname_filter_la_SOURCES = \
 nbdkit_exportname_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_exportname_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
-nbdkit_exportname_filter_la_LDFLAGS = \
-	-module -avoid-version -shared $(SHARED_LDFLAGS) \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
-	$(NULL)
 nbdkit_exportname_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
+	$(IMPORT_LIBRARY_ON_WINDOWS) \
+	$(NULL)
+nbdkit_exportname_filter_la_LDFLAGS = \
+	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
 
 if HAVE_POD
