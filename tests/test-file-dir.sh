@@ -36,6 +36,13 @@ source ./functions.sh
 set -e
 set -x
 
+# The dir parameter does not exist in the Windows version
+# of the file plugin.
+if is_windows; then
+    echo "$0: this test needs to be revised to work on Windows"
+    exit 77
+fi
+
 requires nbdinfo --version
 requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
