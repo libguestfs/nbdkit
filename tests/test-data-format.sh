@@ -36,6 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_run
 requires_nbdsh_uri
 
 # Which allocators can we test?
