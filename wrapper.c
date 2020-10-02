@@ -143,7 +143,7 @@ quote_string_for_spawn (const char *str)
   size_t i, len, pb;
   char *p, *ret = (char *) str;
 
-  if (strchr (str, ' ') || strchr (str, '\t')) {
+  if (*str == 0 || strchr (str, ' ') || strchr (str, '\t')) {
     len = strlen (str);
 
     p = ret = malloc (2 + len*2 + 1);
