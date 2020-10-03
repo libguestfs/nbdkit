@@ -67,7 +67,10 @@
     nbdkit_parse_uint32_t;
     nbdkit_parse_uint64_t;
     nbdkit_parse_unsigned;
+    nbdkit_peer_gid;
     nbdkit_peer_name;
+    nbdkit_peer_pid;
+    nbdkit_peer_uid;
     nbdkit_printf_intern;
     nbdkit_read_password;
     nbdkit_realpath;

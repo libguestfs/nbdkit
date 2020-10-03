@@ -47,6 +47,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <signal.h>
+#include <sys/types.h>
 
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
@@ -799,6 +800,113 @@ nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen)
   }
 
   return 0;
+}
+
+#ifdef SO_PEERCRED
+
+static int
+get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
+{
+  struct ucred ucred;
+  socklen_t n = sizeof ucred;
+
+  if (getsockopt (s, SOL_SOCKET, SO_PEERCRED, &ucred, &n) == -1) {
+    nbdkit_error ("getsockopt: SO_PEERCRED: %m");
+    return -1;
+  }
+
+  if (pid && ucred.pid >= 1) {
+    if (ucred.pid <= INT64_MAX)
+      *pid = ucred.pid;
+    else
+      nbdkit_error ("pid out of range: cannot be mapped to int64_t");
+  }
+  if (uid && ucred.uid >= 0) {
+    if (ucred.uid <= INT64_MAX)
+      *uid = ucred.uid;
+    else
+      nbdkit_error ("uid out of range: cannot be mapped to int64_t");
+  }
+  if (gid && ucred.gid >= 0) {
+    if (ucred.gid <= INT64_MAX)
+      *gid = ucred.gid;
+    else
+      nbdkit_error ("gid out of range: cannot be mapped to int64_t");
+  }
+
+  return 0;
+}
+
+#else /* !SO_PEERCRED */
+
+/* Note this could be ported to FreeBSD, see LOCAL_PEERCRED in:
+ * https://www.freebsd.org/cgi/man.cgi?query=unix&sektion=4
+ */
+static int
+get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
+{
+  nbdkit_error ("nbdkit_peer_pid, nbdkit_peer_uid and nbdkit_peer_gid "
+                "are not supported on this platform");
+  return -1;
+}
+
+#endif /* !SO_PEERCRED */
+
+static int
+get_peercred_common (int64_t *pid, int64_t *uid, int64_t *gid)
+{
+  struct connection *conn = threadlocal_get_conn ();
+  int s;
+
+  if (pid) *pid = -1;
+  if (uid) *uid = -1;
+  if (gid) *gid = -1;
+
+  if (!conn) {
+    nbdkit_error ("no connection in this thread");
+    return -1;
+  }
+
+  s = conn->sockin;
+  if (s == -1) {
+    nbdkit_error ("socket not open");
+    return -1;
+  }
+
+  return get_peercred (s, pid, uid, gid);
+}
+
+int64_t
+nbdkit_peer_pid ()
+{
+  int64_t pid;
+
+  if (get_peercred_common (&pid, NULL, NULL) == -1)
+    return -1;
+
+  return pid;
+}
+
+int64_t
+nbdkit_peer_uid ()
+{
+  int64_t uid;
+
+  if (get_peercred_common (NULL, &uid, NULL) == -1)
+    return -1;
+
+  return uid;
+}
+
+int64_t
+nbdkit_peer_gid ()
+{
+  int64_t gid;
+
+  if (get_peercred_common (NULL, NULL, &gid) == -1)
+    return -1;
+
+  return gid;
 }
 
 /* Functions for manipulating intern'd strings. */

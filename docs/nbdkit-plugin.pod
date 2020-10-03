@@ -656,9 +656,10 @@ B<not> been negotiated at this point.
 For security reasons (to avoid denial of service attacks) this
 callback should be written to be as fast and take as few resources as
 possible.  If you use this callback, only use it to do basic access
-control, such as checking C<nbdkit_peer_name> against a list of
-permitted IP addresses (see L</PEER NAME> and L<nbdkit-ip-filter(1)>).
-It may be better to do access control outside the server, for example
+control, such as checking C<nbdkit_peer_name>, C<nbdkit_peer_pid>,
+C<nbdkit_peer_uid>, C<nbdkit_peer_gid> against a list of permitted
+source addresses (see L</PEER NAME> and L<nbdkit-ip-filter(1)>).  It
+may be better to do access control outside the server, for example
 using TCP wrappers or a firewall.
 
 The C<readonly> flag informs the plugin that the server was started
@@ -1614,8 +1615,8 @@ C<.open>), C<nbdkit_error> is called and the call returns C<-1>.
 
 =head1 PEER NAME
 
-It is possible to get the address of the client when you are running
-in any connected callback.
+It is possible to get the source address of the client when you are
+running in any connected callback.
 
 =head2 C<nbdkit_peer_name>
 
@@ -1634,6 +1635,42 @@ specify the current connection.
 
 On success this returns C<0>.  On error, C<nbdkit_error> is called and
 this call returns C<-1>.
+
+=head2 C<nbdkit_peer_pid>
+
+(nbdkit E<ge> 1.24, Linux only)
+
+ int64_t nbdkit_peer_pid (void);
+
+Return the peer process ID.  This is only available when the client
+connected over a Unix domain socket.
+
+On success this returns the peer process ID.  On error,
+C<nbdkit_error> is called and this call returns C<-1>.
+
+=head2 C<nbdkit_peer_uid>
+
+(nbdkit E<ge> 1.24, Linux only)
+
+ int64_t nbdkit_peer_uid (void);
+
+Return the peer user ID.  This is only available when the client
+connected over a Unix domain socket.
+
+On success this returns the user ID.  On error, C<nbdkit_error> is
+called and this call returns C<-1>.
+
+=head2 C<nbdkit_peer_gid>
+
+(nbdkit E<ge> 1.24, Linux only)
+
+ int64_t nbdkit_peer_gid (void);
+
+Return the peer group ID.  This is only available when the client
+connected over a Unix domain socket.
+
+On success this returns the user ID.  On error, C<nbdkit_error> is
+called and this call returns C<-1>.
 
 =head1 DEBUGGING
 

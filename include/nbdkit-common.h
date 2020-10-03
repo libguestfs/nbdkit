@@ -130,6 +130,9 @@ NBDKIT_EXTERN_DECL (char *, nbdkit_realpath, (const char *path));
 NBDKIT_EXTERN_DECL (int, nbdkit_nanosleep, (unsigned sec, unsigned nsec));
 NBDKIT_EXTERN_DECL (int, nbdkit_peer_name,
                     (struct sockaddr *addr, socklen_t *addrlen));
+NBDKIT_EXTERN_DECL (int64_t, nbdkit_peer_pid, (void));
+NBDKIT_EXTERN_DECL (int64_t, nbdkit_peer_uid, (void));
+NBDKIT_EXTERN_DECL (int64_t, nbdkit_peer_gid, (void));
 NBDKIT_EXTERN_DECL (void, nbdkit_shutdown, (void));
 
 NBDKIT_EXTERN_DECL (const char *, nbdkit_strdup_intern,
