@@ -1437,8 +1437,18 @@ test_gzip_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_gzip_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 # ip filter test.
-TESTS += test-ip-filter.sh
-EXTRA_DIST += test-ip-filter.sh
+TESTS += \
+	test-ip-filter.sh \
+	test-ip-filter-pid.sh \
+	test-ip-filter-uid.sh \
+	test-ip-filter-gid.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-ip-filter.sh \
+	test-ip-filter-pid.sh \
+	test-ip-filter-uid.sh \
+	test-ip-filter-gid.sh \
+	$(NULL)
 
 # limit filter test.
 TESTS += test-limit.sh

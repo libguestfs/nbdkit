@@ -1,6 +1,7 @@
 =head1 NAME
 
-nbdkit-ip-filter - filter clients by IP address
+nbdkit-ip-filter - filter clients by IP address, process ID, user ID
+or group ID
 
 =head1 SYNOPSIS
 
@@ -13,6 +14,9 @@ C<nbdkit-ip-filter> can allow or deny client connections by their IP
 address.  Usually it is better to control this outside nbdkit, for
 example using TCP wrappers or a firewall, but this filter can be used
 if these are not available.
+
+nbdkit E<ge> 1.24 added the ability to filter clients connecting over
+local Unix domain sockets by client process ID, user ID and group ID.
 
 =head1 EXAMPLES
 
@@ -28,13 +32,24 @@ network.
 
  nbdkit --filter=ip [...] allow=anyipv6 deny=all
 
-Allow IPv6 clients to connect from anywhere, deny all IPv4
-connections.
+Allow IPv6 clients to connect from anywhere, deny all other sources.
+
+ nbdkit -U $tmpdir/sock --filter=ip [...] allow=uid:`id -u` deny=all
+
+Only allow the current user (S<C<id -u>>) to connect over the socket.
+It is better to use this as an additional line of defense — also
+create a temporary directory, make sure it is only accessible by the
+user, and place the socket there.
+
+ nbdkit -U sock --filter=ip [...] allow=gid:`id -g` deny=all
+
+Allow anyone in the same group as the current user to connect to the
+Unix domain socket.
 
 =head1 RULES
 
-When a client connects, this filter checks its IP address against the
-allow and deny lists as follows:
+When a client connects, this filter checks its source address against
+the allow and deny lists as follows:
 
 =over 4
 
@@ -66,8 +81,7 @@ list of any of the following:
 
 =item B<any>
 
-These keywords (which both have the same meaning) match any IP
-address.
+These keywords (which both have the same meaning) match any source.
 
 =item B<allipv4>
 
@@ -100,6 +114,31 @@ address representations can be used (see S<RFC 5952>).
 
 This matches a range of IPv6 addresses C<A:B:.../NN>.
 
+=item B<pid:>PID
+
+(nbdkit E<ge> 1.24, Linux only)
+
+This matches the process ID C<PID>, if the client connects over a Unix
+domain socket.
+
+Note that process IDs are recycled so this alone is not secure enough
+to ensure that only a single desired process can connect.  However you
+could use it as an additional check.
+
+=item B<uid:>UID
+
+(nbdkit E<ge> 1.24)
+
+This matches the numeric user ID C<UID>, if the client connects over a
+Unix domain socket.
+
+=item B<gid:>GID
+
+(nbdkit E<ge> 1.24)
+
+This matches the numeric group ID C<GID>, if the client connects over
+a Unix domain socket.
+
 =back
 
 =head2 Not filtered
@@ -107,8 +146,9 @@ This matches a range of IPv6 addresses C<A:B:.../NN>.
 If neither the C<allow> nor the C<deny> parameter is given the filter
 does nothing.
 
-The filter permits non-IP connections, such as Unix domain sockets or
-AF_VSOCK.
+C<AF_VSOCK> connections are always unfiltered.
+
+Unix domain sockets were always unfiltered in S<nbdkit E<le> 1.22>.
 
 =head1 PARAMETERS
 
@@ -155,4 +195,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2019 Red Hat Inc.
+Copyright (C) 2019-2020 Red Hat Inc.

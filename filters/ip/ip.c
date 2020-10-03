@@ -62,12 +62,13 @@ int ip_debug_rules;
 
 struct rule {
   struct rule *next;
-  enum { BAD = 0, ANY, ANYV4, ANYV6, IPV4, IPV6 } type;
+  enum { BAD = 0, ANY, ANYV4, ANYV6, IPV4, IPV6, PID, UID, GID } type;
   union {
-    struct in_addr ipv4;
+    struct in_addr ipv4;        /* for IPV4, IPV6 */
     struct in6_addr ipv6;
+    int64_t id;                 /* for PID, UID and GID */
   } u;
-  unsigned prefixlen;
+  unsigned prefixlen;           /* for IPV4, IPV6 */
 };
 
 static struct rule *allow_rules, *allow_rules_last;
@@ -98,6 +99,16 @@ print_rule (const char *name, const struct rule *rule, const char *suffix)
   case IPV6:
     inet_ntop (AF_INET6, &rule->u.ipv6, u.addr6, sizeof u.addr6);
     nbdkit_debug ("%s=ipv6:[%s]/%u%s", name, u.addr6, rule->prefixlen, suffix);
+    break;
+
+  case PID:
+    nbdkit_debug ("%s=pid:%" PRIi64 "%s", name, rule->u.id, suffix);
+    break;
+  case UID:
+    nbdkit_debug ("%s=uid:%" PRIi64 "%s", name, rule->u.id, suffix);
+    break;
+  case GID:
+    nbdkit_debug ("%s=gid:%" PRIi64 "%s", name, rule->u.id, suffix);
     break;
 
   case BAD:
@@ -224,6 +235,37 @@ parse_rule (const char *paramname,
   if (n == 7 && (ascii_strncasecmp (value, "allipv6", 7) == 0 ||
                  ascii_strncasecmp (value, "anyipv6", 7) == 0)) {
     new_rule->type = ANYV6;
+    return 0;
+  }
+
+  if (n >= 4 && ascii_strncasecmp (value, "pid:", 4) == 0) {
+    new_rule->type = PID;
+    if (nbdkit_parse_int64_t ("pid:", &value[4], &new_rule->u.id) == -1)
+      return -1;
+    if (new_rule->u.id <= 0) {
+      nbdkit_error ("pid: parameter out of range");
+      return -1;
+    }
+    return 0;
+  }
+  if (n >= 4 && ascii_strncasecmp (value, "uid:", 4) == 0) {
+    new_rule->type = UID;
+    if (nbdkit_parse_int64_t ("uid:", &value[4], &new_rule->u.id) == -1)
+      return -1;
+    if (new_rule->u.id < 0) {
+      nbdkit_error ("uid: parameter out of range");
+      return -1;
+    }
+    return 0;
+  }
+  if (n >= 4 && ascii_strncasecmp (value, "gid:", 4) == 0) {
+    new_rule->type = GID;
+    if (nbdkit_parse_int64_t ("gid:", &value[4], &new_rule->u.id) == -1)
+      return -1;
+    if (new_rule->u.id < 0) {
+      nbdkit_error ("gid: parameter out of range");
+      return -1;
+    }
     return 0;
   }
 
@@ -401,6 +443,19 @@ matches_rule (const struct rule *rule,
     sin6 = (struct sockaddr_in6 *) addr;
     return ipv6_equal (sin6->sin6_addr, rule->u.ipv6, rule->prefixlen);
 
+    /* Note these work even if the underlying nbdkit_peer_* call fails. */
+  case PID:
+    if (family != AF_UNIX) return false;
+    return nbdkit_peer_pid () == rule->u.id;
+
+  case UID:
+    if (family != AF_UNIX) return false;
+    return nbdkit_peer_uid () == rule->u.id;
+
+  case GID:
+    if (family != AF_UNIX) return false;
+    return nbdkit_peer_gid () == rule->u.id;
+
   case BAD:
   default:
     abort ();
@@ -430,8 +485,10 @@ check_if_allowed (const struct sockaddr *addr)
 {
   int family = ((struct sockaddr_in *)addr)->sin_family;
 
-  /* There's an implicit allow all for non-IP sockets, see the manual. */
-  if (family != AF_INET && family != AF_INET6)
+  /* There's an implicit allow all for non-IP, non-Unix sockets,
+   * see the manual.
+   */
+  if (family != AF_INET && family != AF_INET6 && family != AF_UNIX)
     return true;
 
   if (matches_rules_list ("ip: match source with allow",
@@ -457,7 +514,7 @@ ip_preconnect (nbdkit_next_preconnect *next, void *nxdata, int readonly)
   /* Follow the rules. */
   if (check_if_allowed ((struct sockaddr *) &addr) == false) {
     nbdkit_error ("client not permitted to connect "
-                  "because of IP address restriction");
+                  "because of source address restriction");
     return -1;
   }
 
