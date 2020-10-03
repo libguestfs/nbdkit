@@ -52,6 +52,12 @@ let test_open readonly =
 let test_close () =
   ()
 
+let test_list_exports _ _ =
+  [ { NBDKit.name = "name1"; description = Some "desc1" };
+    { name = "name2"; description = None } ]
+
+let test_default_export _ _ = "name1"
+
 let test_get_size () =
   Int64.of_int (Bytes.length disk)
 
@@ -96,6 +102,8 @@ let plugin = {
 
     open_connection = Some test_open;
     close           = Some test_close;
+    list_exports    = Some test_list_exports;
+    default_export  = Some test_default_export;
     get_size        = Some test_get_size;
     pread           = Some test_pread;
     pwrite          = Some test_pwrite;
