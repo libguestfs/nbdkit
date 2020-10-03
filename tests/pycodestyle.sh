@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # nbdkit
 # Checking python style
 # Copyright (C) 2017-2020 Red Hat Inc.
