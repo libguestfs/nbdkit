@@ -107,48 +107,13 @@ plugin_init (void)
   return &plugin;
 }
 
-/* These globals store the OCaml functions that we actually call.
- * Also the assigned ones are roots to ensure the GC doesn't free them.
+/* There is one global per callback called <callback>_fn.  These
+ * globals store the OCaml functions that we actually call.  Also the
+ * assigned ones are roots to ensure the GC doesn't free them.
  */
-static value load_fn;
-static value unload_fn;
-
-static value dump_plugin_fn;
-
-static value config_fn;
-static value config_complete_fn;
-static value thread_model_fn;
-
-static value get_ready_fn;
-static value after_fork_fn;
-
-static value preconnect_fn;
-static value list_exports_fn;
-static value default_export_fn;
-static value open_fn;
-static value close_fn;
-
-static value get_size_fn;
-static value export_description_fn;
-
-static value can_cache_fn;
-static value can_extents_fn;
-static value can_fast_zero_fn;
-static value can_flush_fn;
-static value can_fua_fn;
-static value can_multi_conn_fn;
-static value can_trim_fn;
-static value can_write_fn;
-static value can_zero_fn;
-static value is_rotational_fn;
-
-static value pread_fn;
-static value pwrite_fn;
-static value flush_fn;
-static value trim_fn;
-static value zero_fn;
-static value extents_fn;
-static value cache_fn;
+#define CB(name) static value name##_fn;
+#include "callbacks.h"
+#undef CB
 
 /*----------------------------------------------------------------------*/
 /* Wrapper functions that translate calls from C (ie. nbdkit) to OCaml. */
@@ -882,6 +847,7 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
  * fields in the plugin struct.
  */
 
+/* NB: noalloc function */
 value
 ocaml_nbdkit_set_name (value namev)
 {
@@ -889,6 +855,7 @@ ocaml_nbdkit_set_name (value namev)
   return Val_unit;
 }
 
+/* NB: noalloc function */
 value
 ocaml_nbdkit_set_longname (value longnamev)
 {
@@ -896,6 +863,7 @@ ocaml_nbdkit_set_longname (value longnamev)
   return Val_unit;
 }
 
+/* NB: noalloc function */
 value
 ocaml_nbdkit_set_version (value versionv)
 {
@@ -903,6 +871,7 @@ ocaml_nbdkit_set_version (value versionv)
   return Val_unit;
 }
 
+/* NB: noalloc function */
 value
 ocaml_nbdkit_set_description (value descriptionv)
 {
@@ -910,6 +879,7 @@ ocaml_nbdkit_set_description (value descriptionv)
   return Val_unit;
 }
 
+/* NB: noalloc function */
 value
 ocaml_nbdkit_set_config_help (value helpv)
 {
@@ -917,249 +887,37 @@ ocaml_nbdkit_set_config_help (value helpv)
   return Val_unit;
 }
 
-#define SET(fn)                                         \
-  value                                                 \
-  ocaml_nbdkit_set_##fn (value fv)                      \
-  {                                                     \
-    plugin.fn = fn##_wrapper;                           \
-    fn##_fn = fv;                                       \
-    caml_register_generational_global_root (&fn##_fn);  \
-    return Val_unit;                                    \
-  }
+/* NB: noalloc function */
+value
+ocaml_nbdkit_set_field (value fieldv, value fv)
+{
+  const char *field = String_val (fieldv);
+  value *root;
 
-SET(load)
-SET(unload)
+  /* This isn't very efficient because we string-compare the field
+   * names.  However it is only called when the plugin is being loaded
+   * for a handful of fields so it's not performance critical.
+   */
+#define CB(name)                                \
+  if (strcmp (field, #name) == 0) {             \
+    plugin.name = name##_wrapper;               \
+    name##_fn = fv;                             \
+    root = &name##_fn;                          \
+  } else
+#include "callbacks.h"
+#undef CB
+  /* else if the field is not known */ abort ();
 
-SET(dump_plugin)
+  caml_register_generational_global_root (root);
+  return Val_unit;
+}
 
-SET(config)
-SET(config_complete)
-SET(thread_model)
-
-SET(get_ready)
-SET(after_fork)
-
-SET(preconnect)
-SET(list_exports)
-SET(default_export)
-SET(open)
-SET(close)
-
-SET(get_size)
-SET(export_description)
-
-SET(can_write)
-SET(can_flush)
-SET(is_rotational)
-SET(can_trim)
-SET(can_zero)
-SET(can_fua)
-SET(can_multi_conn)
-SET(can_extents)
-SET(can_cache)
-SET(can_fast_zero)
-
-SET(pread)
-SET(pwrite)
-SET(flush)
-SET(trim)
-SET(zero)
-SET(extents)
-SET(cache)
-
-#undef SET
-
+/* Called from unload() to remove the GC roots registered by set* functions. */
 static void
 remove_roots (void)
 {
-#define REMOVE(fn) \
-  if (fn##_fn) caml_remove_generational_global_root (&fn##_fn)
-  REMOVE (load);
-  REMOVE (unload);
-
-  REMOVE (dump_plugin);
-
-  REMOVE (config);
-  REMOVE (config_complete);
-  REMOVE (thread_model);
-
-  REMOVE (get_ready);
-  REMOVE (after_fork);
-
-  REMOVE (preconnect);
-  REMOVE (list_exports);
-  REMOVE (default_export);
-  REMOVE (open);
-  REMOVE (close);
-
-  REMOVE (get_size);
-  REMOVE (export_description);
-
-  REMOVE (can_cache);
-  REMOVE (can_extents);
-  REMOVE (can_fast_zero);
-  REMOVE (can_flush);
-  REMOVE (can_fua);
-  REMOVE (can_multi_conn);
-  REMOVE (can_trim);
-  REMOVE (can_write);
-  REMOVE (can_zero);
-  REMOVE (is_rotational);
-
-  REMOVE (pread);
-  REMOVE (pwrite);
-  REMOVE (flush);
-  REMOVE (trim);
-  REMOVE (zero);
-
-  REMOVE (extents);
-
-  REMOVE (cache);
-
-#undef REMOVE
-}
-
-/*----------------------------------------------------------------------*/
-/* Bindings for miscellaneous nbdkit_* utility functions. */
-
-/* NB: noalloc function. */
-value
-ocaml_nbdkit_set_error (value nv)
-{
-  int err;
-
-  switch (Int_val (nv)) {
-    /* Host errno values that will map to NBD protocol values */
-  case 1: err = EPERM; break;
-  case 2: err = EIO; break;
-  case 3: err = ENOMEM; break;
-  case 4: err = EINVAL; break;
-  case 5: err = ENOSPC; break;
-  case 6: err = ESHUTDOWN; break;
-  case 7: err = EOVERFLOW; break;
-  case 8: err = EOPNOTSUPP; break;
-    /* Other errno values that server/protocol.c treats specially */
-  case 9: err = EROFS; break;
-  case 10: err = EFBIG; break;
-  default: abort ();
-  }
-
-  nbdkit_set_error (err);
-
-  return Val_unit;
-}
-
-value
-ocaml_nbdkit_parse_size (value strv)
-{
-  CAMLparam1 (strv);
-  CAMLlocal1 (rv);
-  int64_t r;
-
-  r = nbdkit_parse_size (String_val (strv));
-  if (r == -1)
-    caml_invalid_argument ("nbdkit_parse_size");
-  rv = caml_copy_int64 (r);
-
-  CAMLreturn (rv);
-}
-
-value
-ocaml_nbdkit_parse_bool (value strv)
-{
-  CAMLparam1 (strv);
-  CAMLlocal1 (rv);
-  int r;
-
-  r = nbdkit_parse_bool (String_val (strv));
-  if (r == -1)
-    caml_invalid_argument ("nbdkit_parse_bool");
-  rv = Val_bool (r);
-
-  CAMLreturn (rv);
-}
-
-value
-ocaml_nbdkit_read_password (value strv)
-{
-  CAMLparam1 (strv);
-  CAMLlocal1 (rv);
-  char *password;
-  int r;
-
-  r = nbdkit_read_password (String_val (strv), &password);
-  if (r == -1)
-    caml_invalid_argument ("nbdkit_read_password");
-  rv = caml_copy_string (password);
-  free (password);
-
-  CAMLreturn (rv);
-}
-
-value
-ocaml_nbdkit_realpath (value strv)
-{
-  CAMLparam1 (strv);
-  CAMLlocal1 (rv);
-  char *ret;
-
-  ret = nbdkit_realpath (String_val (strv));
-  if (ret == NULL)
-    caml_failwith ("nbdkit_realpath");
-  rv = caml_copy_string (ret);
-  free (ret);
-
-  CAMLreturn (rv);
-}
-
-value
-ocaml_nbdkit_nanosleep (value secv, value nsecv)
-{
-  CAMLparam2 (secv, nsecv);
-  int r;
-
-  caml_enter_blocking_section ();
-  r = nbdkit_nanosleep (Int_val (secv), Int_val (nsecv));
-  caml_leave_blocking_section ();
-  if (r == -1)
-    caml_failwith ("nbdkit_nanosleep");
-
-  CAMLreturn (Val_unit);
-}
-
-value
-ocaml_nbdkit_export_name (value unitv)
-{
-  CAMLparam1 (unitv);
-  CAMLlocal1 (rv);
-  const char *ret;
-
-  ret = nbdkit_export_name ();
-  /* Note that NULL indicates error.  Default export name is [""] even
-   * for oldstyle.
-   */
-  if (ret == NULL)
-    caml_failwith ("nbdkit_export_name");
-  rv = caml_copy_string (ret);
-
-  CAMLreturn (rv);
-}
-
-/* NB: noalloc function. */
-value
-ocaml_nbdkit_shutdown (value unitv)
-{
-  CAMLparam1 (unitv);
-
-  nbdkit_shutdown ();
-  CAMLreturn (Val_unit);
-}
-
-/* NB: noalloc function. */
-value
-ocaml_nbdkit_debug (value strv)
-{
-  nbdkit_debug ("%s", String_val (strv));
-
-  return Val_unit;
+#define CB(name) \
+  if (name##_fn) caml_remove_generational_global_root (&name##_fn);
+#include "callbacks.h"
+#undef CB
 }

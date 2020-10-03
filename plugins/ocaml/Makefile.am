@@ -59,7 +59,9 @@ NBDKit.o: NBDKit.cmx
 lib_LTLIBRARIES = libnbdkitocaml.la
 
 libnbdkitocaml_la_SOURCES = \
-	ocaml.c \
+	bindings.c \
+	callbacks.h \
+	plugin.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
 

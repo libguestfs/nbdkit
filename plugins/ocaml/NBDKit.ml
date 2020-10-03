@@ -158,54 +158,13 @@ external set_name : string -> unit = "ocaml_nbdkit_set_name" "noalloc"
 external set_longname : string -> unit = "ocaml_nbdkit_set_longname" "noalloc"
 external set_version : string -> unit = "ocaml_nbdkit_set_version" "noalloc"
 external set_description : string -> unit = "ocaml_nbdkit_set_description" "noalloc"
-
-external set_load : (unit -> unit) -> unit = "ocaml_nbdkit_set_load"
-external set_unload : (unit -> unit) -> unit = "ocaml_nbdkit_set_unload"
-
-external set_dump_plugin : (unit -> unit) -> unit = "ocaml_nbdkit_set_dump_plugin" "noalloc"
-
-external set_config : (string -> string -> unit) -> unit = "ocaml_nbdkit_set_config"
-external set_config_complete : (unit -> unit) -> unit = "ocaml_nbdkit_set_config_complete"
 external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" "noalloc"
-external set_thread_model : (unit -> thread_model) -> unit = "ocaml_nbdkit_set_thread_model"
 
-external set_get_ready : (unit -> unit) -> unit = "ocaml_nbdkit_set_get_ready"
-external set_after_fork : (unit -> unit) -> unit = "ocaml_nbdkit_set_after_fork"
-
-external set_preconnect : (bool -> unit) -> unit = "ocaml_nbdkit_set_preconnect"
-external set_list_exports : (bool -> bool -> export list) -> unit = "ocaml_nbdkit_set_list_exports"
-external set_default_export : (bool -> bool -> string) -> unit = "ocaml_nbdkit_set_default_export"
-external set_open : (bool -> 'a) -> unit = "ocaml_nbdkit_set_open"
-external set_close : ('a -> unit) -> unit = "ocaml_nbdkit_set_close"
-
-external set_get_size : ('a -> int64) -> unit = "ocaml_nbdkit_set_get_size"
-external set_export_description : ('a -> string) -> unit = "ocaml_nbdkit_set_export_description"
-
-external set_can_cache : ('a -> cache_flag) -> unit = "ocaml_nbdkit_set_can_cache"
-external set_can_extents : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_extents"
-external set_can_fast_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_fast_zero"
-external set_can_flush : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_flush"
-external set_can_fua : ('a -> fua_flag) -> unit = "ocaml_nbdkit_set_can_fua"
-external set_can_multi_conn : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_multi_conn"
-external set_can_trim : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_trim"
-external set_can_write : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_write"
-external set_can_zero : ('a -> bool) -> unit = "ocaml_nbdkit_set_can_zero"
-external set_is_rotational : ('a -> bool) -> unit = "ocaml_nbdkit_set_is_rotational"
-
-external set_pread : ('a -> int32 -> int64 -> flags -> string) -> unit = "ocaml_nbdkit_set_pread"
-external set_pwrite : ('a -> string -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_pwrite"
-external set_flush : ('a -> flags -> unit) -> unit = "ocaml_nbdkit_set_flush"
-external set_trim : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_trim"
-external set_zero : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_zero"
-external set_extents : ('a -> int32 -> int64 -> flags -> extent list) -> unit = "ocaml_nbdkit_set_extents"
-external set_cache : ('a -> int32 -> int64 -> flags -> unit) -> unit = "ocaml_nbdkit_set_cache"
-
-let may f = function None -> () | Some a -> f a
+external set_field : string -> 'a -> unit = "ocaml_nbdkit_set_field" "noalloc"
 
 let register_plugin plugin =
   (* Check the required fields have been set by the caller. *)
-  let required fieldname =
-    function
+  let required fieldname = function
     | true -> ()
     | false ->
        if plugin.name = "" then
@@ -219,52 +178,48 @@ let register_plugin plugin =
   required "get_size"        (plugin.get_size <> None);
   required "pread"           (plugin.pread <> None);
 
-  (* Set the fields in the C code. *)
+  (* Set fields in the C plugin struct. *)
   set_name plugin.name;
   if plugin.longname <> "" then    set_longname plugin.longname;
   if plugin.version <> "" then     set_version plugin.version;
   if plugin.description <> "" then set_description plugin.description;
-
-  may set_load plugin.load;
-  may set_unload plugin.unload;
-
-  may set_dump_plugin plugin.dump_plugin;
-
-  may set_config plugin.config;
-  may set_config_complete plugin.config_complete;
   if plugin.config_help <> "" then set_config_help plugin.config_help;
-  may set_thread_model plugin.thread_model;
 
-  may set_get_ready plugin.get_ready;
-  may set_after_fork plugin.after_fork;
+  let may f = function None -> () | Some a -> f a in
+  may (set_field "load") plugin.load;
+  may (set_field "unload") plugin.unload;
+  may (set_field "dump_plugin") plugin.dump_plugin;
+  may (set_field "config") plugin.config;
+  may (set_field "config_complete") plugin.config_complete;
+  may (set_field "thread_model") plugin.thread_model;
+  may (set_field "get_ready") plugin.get_ready;
+  may (set_field "after_fork") plugin.after_fork;
+  may (set_field "preconnect") plugin.preconnect;
+  may (set_field "list_exports") plugin.list_exports;
+  may (set_field "default_export") plugin.default_export;
+  may (set_field "open") plugin.open_connection;
+  may (set_field "close") plugin.close;
+  may (set_field "get_size") plugin.get_size;
+  may (set_field "export_description") plugin.export_description;
+  may (set_field "can_cache") plugin.can_cache;
+  may (set_field "can_extents") plugin.can_extents;
+  may (set_field "can_fast_zero") plugin.can_fast_zero;
+  may (set_field "can_flush") plugin.can_flush;
+  may (set_field "can_fua") plugin.can_fua;
+  may (set_field "can_multi_conn") plugin.can_multi_conn;
+  may (set_field "can_trim") plugin.can_trim;
+  may (set_field "can_write") plugin.can_write;
+  may (set_field "can_zero") plugin.can_zero;
+  may (set_field "is_rotational") plugin.is_rotational;
+  may (set_field "pread") plugin.pread;
+  may (set_field "pwrite") plugin.pwrite;
+  may (set_field "flush") plugin.flush;
+  may (set_field "trim") plugin.trim;
+  may (set_field "zero") plugin.zero;
+  may (set_field "extents") plugin.extents;
+  may (set_field "cache") plugin.cache
 
-  may set_preconnect plugin.preconnect;
-  may set_list_exports plugin.list_exports;
-  may set_default_export plugin.default_export;
-  may set_open plugin.open_connection;
-  may set_close plugin.close;
-
-  may set_get_size plugin.get_size;
-  may set_export_description plugin.export_description;
-
-  may set_can_cache plugin.can_cache;
-  may set_can_extents plugin.can_extents;
-  may set_can_fast_zero plugin.can_fast_zero;
-  may set_can_flush plugin.can_flush;
-  may set_can_fua plugin.can_fua;
-  may set_can_multi_conn plugin.can_multi_conn;
-  may set_can_trim plugin.can_trim;
-  may set_can_write plugin.can_write;
-  may set_can_zero plugin.can_zero;
-  may set_is_rotational plugin.is_rotational;
-
-  may set_pread plugin.pread;
-  may set_pwrite plugin.pwrite;
-  may set_flush plugin.flush;
-  may set_trim plugin.trim;
-  may set_zero plugin.zero;
-  may set_extents plugin.extents;
-  may set_cache plugin.cache
+(* Bindings to nbdkit server functions. *)
 
 external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
 

@@ -24,9 +24,9 @@ let test_load () =
   NBDKit.debug "test ocaml plugin loaded"
 
 let test_unload () =
-  NBDKit.debug "test ocaml plugin unloaded";
   (* A good way to find memory bugs: *)
-  Gc.compact ()
+  Gc.compact ();
+  NBDKit.debug "test ocaml plugin unloaded"
 
 let params = ref []
 
