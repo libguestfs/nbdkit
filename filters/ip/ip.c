@@ -65,7 +65,7 @@ static struct rule *allow_rules, *allow_rules_last;
 static struct rule *deny_rules, *deny_rules_last;
 
 static void
-print_rule (const char *name, const struct rule *rule)
+print_rule (const char *name, const struct rule *rule, const char *suffix)
 {
   union {
     char addr4[INET_ADDRSTRLEN];
@@ -74,28 +74,28 @@ print_rule (const char *name, const struct rule *rule)
 
   switch (rule->type) {
   case ANY:
-    nbdkit_debug ("%s=any", name);
+    nbdkit_debug ("%s=any%s", name, suffix);
     break;
   case ANYV4:
-    nbdkit_debug ("%s=anyipv4", name);
+    nbdkit_debug ("%s=anyipv4%s", name, suffix);
     break;
   case ANYV6:
-    nbdkit_debug ("%s=anyipv6", name);
+    nbdkit_debug ("%s=anyipv6%s", name, suffix);
     break;
   case IPV4:
     inet_ntop (AF_INET, &rule->u.ipv4, u.addr4, sizeof u.addr4);
-    nbdkit_debug ("%s=ipv4:%s/%u", name, u.addr4, rule->prefixlen);
+    nbdkit_debug ("%s=ipv4:%s/%u%s", name, u.addr4, rule->prefixlen, suffix);
     break;
   case IPV6:
     inet_ntop (AF_INET6, &rule->u.ipv6, u.addr6, sizeof u.addr6);
-    nbdkit_debug ("%s=ipv6:[%s]/%u", name, u.addr6, rule->prefixlen);
+    nbdkit_debug ("%s=ipv6:[%s]/%u%s", name, u.addr6, rule->prefixlen, suffix);
     break;
 
   case BAD:
-    nbdkit_debug ("%s=BAD(!)", name);
+    nbdkit_debug ("%s=BAD(!)%s", name, suffix);
     break;
   default:
-    nbdkit_debug ("%s=UNKNOWN RULE TYPE(!)", name);
+    nbdkit_debug ("%s=UNKNOWN RULE TYPE(!)%s", name, suffix);
   }
 }
 
@@ -105,7 +105,7 @@ print_rules (const char *name, const struct rule *rules)
   const struct rule *rule;
 
   for (rule = rules; rule != NULL; rule = rule->next)
-    print_rule (name, rule);
+    print_rule (name, rule, "");
 }
 
 static void
@@ -320,8 +320,8 @@ static int
 ip_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 {
   if (ip_debug_rules) {
-    print_rules ("allow", allow_rules);
-    print_rules ("deny", deny_rules);
+    print_rules ("ip: parsed allow", allow_rules);
+    print_rules ("ip: parsed deny", deny_rules);
   }
 
   return next (nxdata);
@@ -399,7 +399,7 @@ matches_rule (const struct rule *rule,
 }
 
 static bool
-matches_rules_list (const struct rule *rules,
+matches_rules_list (const char *name, const struct rule *rules,
                     int family, const struct sockaddr *addr)
 {
   const struct rule *rule;
@@ -407,10 +407,8 @@ matches_rules_list (const struct rule *rules,
 
   for (rule = rules; rule != NULL; rule = rule->next) {
     b = matches_rule (rule, family, addr);
-    if (ip_debug_rules) {
-      print_rule ("matching", rule);
-      nbdkit_debug ("returned %s", b ? "true" : "false");
-    }
+    if (ip_debug_rules)
+      print_rule (name, rule, b ? " => yes" : " => no");
     if (b)
       return true;
   }
@@ -427,10 +425,12 @@ check_if_allowed (const struct sockaddr *addr)
   if (family != AF_INET && family != AF_INET6)
     return true;
 
-  if (matches_rules_list (allow_rules, family, addr))
+  if (matches_rules_list ("ip: match source with allow",
+                          allow_rules, family, addr))
     return true;
 
-  if (matches_rules_list (deny_rules, family, addr))
+  if (matches_rules_list ("ip: match source with deny",
+                          deny_rules, family, addr))
     return false;
 
   return true;
