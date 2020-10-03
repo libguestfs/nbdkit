@@ -24,7 +24,7 @@ L<https://github.com/libguestfs/nbdkit/blob/master/plugins/ocaml/example.ml>
 Broadly speaking, OCaml nbdkit plugins work like C ones, so you should
 read L<nbdkit-plugin(3)> first.
 
-You should also look at C<NBDKit.mli> which describes the plugin
+You should also look at L<NBDKit(3)> which describes the plugin
 interface for OCaml plugins.
 
 Your OCaml code should call C<NBDKit.register_plugin> like this:
@@ -148,6 +148,7 @@ OCaml plugins first appeared in nbdkit 1.2.
 
 =head1 SEE ALSO
 
+L<NBDKit(3)>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<ocamlopt(1)>.

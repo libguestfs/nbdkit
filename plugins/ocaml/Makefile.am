@@ -86,12 +86,20 @@ example.cmx: example.ml NBDKit.cmi NBDKit.cmx
 if HAVE_POD
 
 man_MANS = nbdkit-ocaml-plugin.3
+if HAVE_OCAMLDOC
+man_MANS += NBDKit.3
+endif
 CLEANFILES += $(man_MANS)
 
 nbdkit-ocaml-plugin.3: nbdkit-ocaml-plugin.pod
 	$(PODWRAPPER) --section=3 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
+
+if HAVE_OCAMLDOC
+NBDKit.3: NBDKit.mli
+	$(OCAMLDOC) -man -man-mini -man-suffix 3 $<
+endif HAVE_OCAMLDOC
 
 endif HAVE_POD
 endif !IS_WINDOWS

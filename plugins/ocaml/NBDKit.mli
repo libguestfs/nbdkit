@@ -31,39 +31,40 @@
  * SUCH DAMAGE.
  *)
 
-(** The interface between nbdkit plugins written in OCaml and nbdkit.
+(** Interface between plugins written in OCaml and the nbdkit server.
 
-    Reading [nbdkit-ocaml-plugin(3)] is advised. *)
+    Read [nbdkit-ocaml-plugin(3)] first. *)
 
+(** Flags passed from the server to various callbacks. *)
 type flags = flag list
 and flag = May_trim | FUA | Req_one
-(** Flags passed from the server to various callbacks. *)
 
 type fua_flag = FuaNone | FuaEmulate | FuaNative
 
 type cache_flag = CacheNone | CacheEmulate | CacheNop
 
+(** The type of the extent list returned by {!plugin.extents} *)
 type extent = {
   offset : int64;
   length : int64;
   is_hole : bool;
   is_zero : bool;
 }
-(** The type of the extent list returned by [.extents]. *)
 
+(** The type of the export list returned by {!plugin.list_exports} *)
 type export = {
   name : string;
   description : string option;
 }
-(** The type of the export list returned by [.list_exports]. *)
 
+(** The type of the thread model returned by {!plugin.thread_model} *)
 type thread_model =
 | THREAD_MODEL_SERIALIZE_CONNECTIONS
 | THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 | THREAD_MODEL_SERIALIZE_REQUESTS
 | THREAD_MODEL_PARALLEL
-(** The type of the thread model returned by [.thread_model]. *)
 
+(** The plugin fields and callbacks.  ['a] is the handle type. *)
 type 'a plugin = {
   name : string;                                  (* required *)
   longname : string;
@@ -111,22 +112,29 @@ type 'a plugin = {
   extents : ('a -> int32 -> int64 -> flags -> extent list) option;
   cache : ('a -> int32 -> int64 -> flags -> unit) option;
 }
-(** The plugin fields and callbacks.  ['a] is the handle type. *)
 
-val default_callbacks : 'a plugin
 (** The plugin with all fields set to [None], so you can write
     [{ defaults_callbacks with field1 = Some foo1; field2 = Some foo2 }] *)
+val default_callbacks : 'a plugin
 
-val register_plugin : 'a plugin -> unit
 (** Register the plugin with nbdkit. *)
+val register_plugin : 'a plugin -> unit
 
-val set_error : Unix.error -> unit
 (** Set the errno returned over the NBD protocol to the client.
 
     Notice however that the NBD protocol only supports a small
     handful of errno values.  Any other errno will be translated
     into [EINVAL]. *)
+val set_error : Unix.error -> unit
 
+(** Bindings for [nbdkit_parse_size], [nbdkit_parse_bool] and
+    [nbdkit_read_password].  See nbdkit-plugin(3) for information
+    about these functions.
+
+    On error these functions all raise [Invalid_argument].  The
+    actual error is sent to the nbdkit error log and is not
+    available from the OCaml code.  It is usually best to let
+    the exception escape. *)
 (* Note OCaml has functions already for parsing other integers, so
  * there is no need to bind them here.  We only bind the functions
  * which have special abilities in nbdkit: [parse_size] can parse
@@ -136,29 +144,21 @@ val set_error : Unix.error -> unit
 val parse_size : string -> int64
 val parse_bool : string -> bool
 val read_password : string -> string
-(** Bindings for [nbdkit_parse_size], [nbdkit_parse_bool] and
-    [nbdkit_read_password].  See nbdkit-plugin(3) for information
-    about these functions.
 
-    On error these functions all raise [Invalid_argument].  The
-    actual error is sent to the nbdkit error log and is not
-    available from the OCaml code.  It is usually best to let
-    the exception escape. *)
-
-(* OCaml's [Filename] module can handle [absolute_path]. *)
-val realpath : string -> string
 (** Binding for [nbdkit_realpath].
     Returns the canonical path from a path parameter. *)
+(* OCaml's [Filename] module can handle [absolute_path]. *)
+val realpath : string -> string
 
-val nanosleep : int -> int -> unit
 (** Binding for [nbdkit_nanosleep].  Sleeps for seconds and nanoseconds. *)
+val nanosleep : int -> int -> unit
 
-val export_name : unit -> string
 (** Binding for [nbdkit_export_name].  Returns the name of the
     export as requested by the client. *)
+val export_name : unit -> string
 
-val shutdown : unit -> unit
 (** Binding for [nbdkit_shutdown].  Requests the server shut down. *)
+val shutdown : unit -> unit
 
-val debug : ('a, unit, string, unit) format4 -> 'a
 (** Print a debug message when nbdkit is in verbose mode. *)
+val debug : ('a, unit, string, unit) format4 -> 'a

@@ -791,6 +791,7 @@ AS_IF([test "x$OCAMLOPT" != "xno" && test "x$enable_ocaml" != "xno"],[
 ])
 AM_CONDITIONAL([HAVE_OCAML],[test "x$OCAMLOPT" != "xno" &&
                              test "x$ocaml_link_shared" = "xyes"])
+AM_CONDITIONAL([HAVE_OCAMLDOC],[test "x$OCAMLDOC" != "xno"])
 
 dnl Check if OCaml has caml_alloc_initialized_string (added 2017).
 AS_IF([test "x$OCAMLC" != "xno" && test "x$OCAMLFIND" != "xno" && \
