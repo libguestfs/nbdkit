@@ -78,7 +78,9 @@ windows-errors.c: windows-errors.txt
 	@echo '    switch (err) {' >> $@-t
 	@$(SED) -e '/^#/d' \
 	       -e '/^$$/d' \
-	       -e 's/\(.*\)[[:space:]][[:space:]]*\(.*\)/#if defined(\1) \&\& defined(\2)\n    case \1: return \2;\n#endif/' \
+	       -e 's/\(.*\)[[:space:]][[:space:]]*\(.*\)/#if defined(\1) \&\& defined(\2)\
+    case \1: return \2;\
+\#endif/' \
 	< $< >> $@-t
 	@echo '    default:' >> $@-t
 	@echo '    return err > 10000 && err < 10025 ? err - 10000 : EINVAL;' >> $@-t
