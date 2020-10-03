@@ -190,3 +190,36 @@ ocaml_nbdkit_debug (value strv)
 
   return Val_unit;
 }
+
+value
+ocaml_nbdkit_peer_pid (value unitv)
+{
+  CAMLparam1 (unitv);
+  CAMLlocal1 (rv);
+  int64_t id = nbdkit_peer_pid ();
+  if (id == -1) caml_failwith ("nbdkit_peer_pid");
+  rv = caml_copy_int64 (id);
+  CAMLreturn (rv);
+}
+
+value
+ocaml_nbdkit_peer_uid (value unitv)
+{
+  CAMLparam1 (unitv);
+  CAMLlocal1 (rv);
+  int64_t id = nbdkit_peer_uid ();
+  if (id == -1) caml_failwith ("nbdkit_peer_uid");
+  rv = caml_copy_int64 (id);
+  CAMLreturn (rv);
+}
+
+value
+ocaml_nbdkit_peer_gid (value unitv)
+{
+  CAMLparam1 (unitv);
+  CAMLlocal1 (rv);
+  int64_t id = nbdkit_peer_gid ();
+  if (id == -1) caml_failwith ("nbdkit_peer_gid");
+  rv = caml_copy_int64 (id);
+  CAMLreturn (rv);
+}
