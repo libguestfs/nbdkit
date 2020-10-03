@@ -1,5 +1,4 @@
 # nbdkit
-# Common functions used by the tests.
 # @configure_input@
 # Copyright (C) 2017-2020 Red Hat Inc.
 #
@@ -31,6 +30,14 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+# Common functions and variables used by tests.
+#
+# Most test scripts (tests/*.sh files) start with:
+#
+# source ./functions.sh
+# set -e
+# set -x
+
 # Various variables defined by autoconf that test scripts might want
 # to use.
 CXX="@CXX@"
@@ -40,10 +47,15 @@ SOEXT="@SOEXT@"
 EXEEXT="@EXEEXT@"
 abs_top_srcdir="@abs_top_srcdir@"
 
-# cleanup_fn f [args]
+# cleanup_fn cmd [args]
 #
-# A generic trap handling function.  This runs the function or command
-# f plus optional args when the script exits for any reason.
+# Run the command ‘cmd [args]’ when the test script exits.  This is
+# run in all cases when the script exits, so is a reliable way to
+# clean up test files, external processes etc.
+#
+# Examples:
+#   cleanup_fn rm -f test.out
+#   cleanup_fn kill $pid
 declare -a _cleanup_hook
 cleanup_fn ()
 {
@@ -81,8 +93,11 @@ requires ()
     }
 }
 
-# qemu cannot connect to ::1 if IPv6 is disabled because of
-# the way it uses getaddrinfo.  See:
+# qemu cannot connect to ::1 if IPv6 is disabled because of the way it
+# uses getaddrinfo.  This checks that the IPv6 loopback address is
+# available and qemu can connect to it, else it skips.
+#
+# See:
 # https://bugzilla.redhat.com/show_bug.cgi?id=808147
 # https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/SXDLSZ3GKXL6NDAKP4MPJ25IMHKN67X3/
 requires_ipv6_loopback ()
@@ -99,9 +114,11 @@ requires_ipv6_loopback ()
     fi
 }
 
-# Test host kernel is Linux and minimum version.  It's usually better
-# to test features rather than using this, but there are cases where
-# testing features of the current kernel is too hard.
+# Test host kernel is Linux and minimum version.
+#
+# It's usually better to test features rather than using this, but
+# there are cases where testing features of the current kernel is too
+# hard.
 requires_linux_kernel_version ()
 {
     local kver
@@ -126,26 +143,27 @@ requires_linux_kernel_version ()
     requires test "$(echo "$kver >= $1" | bc -l)" = "1"
 }
 
-# Test if nbdkit supports URI
+# Test if nbdsh was compiled with support for URIs.
 requires_nbdsh_uri ()
 {
     requires nbdsh -c 'exit(not h.supports_uri())'
 }
 
-# Test if a plugin has been compiled.
+# Test if a plugin has been built locally.
 requires_plugin ()
 {
     # See nbdkit-probing(1).
     requires nbdkit "$1" --version
 }
 
-# Test if a filter has been compiled.
+# Test if a filter has been built locally.
 requires_filter ()
 {
     # See nbdkit-probing(1).
     requires nbdkit --filter="$1" null --version
 }
 
+# Return true if nbdkit was built (or cross-compiled) for Windows.
 is_windows ()
 {
     host_os="$(nbdkit --dump-config | grep ^host_os | cut -d= -f2)"
