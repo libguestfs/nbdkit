@@ -1650,7 +1650,7 @@ C<nbdkit_error> is called and this call returns C<-1>.
 
 =head2 C<nbdkit_peer_uid>
 
-(nbdkit E<ge> 1.24, Linux only)
+(nbdkit E<ge> 1.24)
 
  int64_t nbdkit_peer_uid (void);
 
@@ -1662,7 +1662,7 @@ called and this call returns C<-1>.
 
 =head2 C<nbdkit_peer_gid>
 
-(nbdkit E<ge> 1.24, Linux only)
+(nbdkit E<ge> 1.24)
 
  int64_t nbdkit_peer_gid (void);
 

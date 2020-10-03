@@ -57,6 +57,14 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_SYS_UCRED_H
+#include <sys/ucred.h>
+#endif
+
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
+
 #ifdef WIN32
 /* For nanosleep on Windows. */
 #include <pthread_time.h>
@@ -837,11 +845,57 @@ get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
   return 0;
 }
 
-#else /* !SO_PEERCRED */
+#endif /* SO_PEERCRED */
 
-/* Note this could be ported to FreeBSD, see LOCAL_PEERCRED in:
- * https://www.freebsd.org/cgi/man.cgi?query=unix&sektion=4
- */
+#ifdef LOCAL_PEERCRED
+
+/* FreeBSD supports LOCAL_PEERCRED and struct xucred. */
+static int
+get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
+{
+  struct xucred xucred;
+  socklen_t n = sizeof xucred;
+
+  if (getsockopt (s, 0, LOCAL_PEERCRED, &xucred, &n) == -1) {
+    nbdkit_error ("getsockopt: LOCAL_PEERCRED: %m");
+    return -1;
+  }
+
+  if (xucred.cr_version != XUCRED_VERSION) {
+    nbdkit_error ("getsockopt: LOCAL_PEERCRED: "
+                  "struct xucred version (%u) "
+                  "did not match expected version (%u)",
+                  xucred.cr_version, XUCRED_VERSION);
+    return -1;
+  }
+
+  if (n != sizeof xucred) {
+    nbdkit_error ("getsockopt: LOCAL_PEERCRED: did not return full struct");
+    return -1;
+  }
+
+  if (pid)
+    nbdkit_error ("nbdkit_peer_pid is not supported on this platform");
+  if (uid && xucred.cr_uid >= 0) {
+    if (xucred.cr_uid <= INT64_MAX)
+      *uid = xucred.cr_uid;
+    else
+      nbdkit_error ("uid out of range: cannot be mapped to int64_t");
+  }
+  if (gid && xucred.cr_ngroups > 0) {
+    if (xucred.cr_gid <= INT64_MAX)
+      *gid = xucred.cr_gid;
+    else
+      nbdkit_error ("gid out of range: cannot be mapped to int64_t");
+  }
+
+  return 0;
+}
+
+#endif /* LOCAL_PEERCRED */
+
+#if !defined(SO_PEERCRED) && !defined(LOCAL_PEERCRED)
+
 static int
 get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
 {
@@ -850,7 +904,7 @@ get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
   return -1;
 }
 
-#endif /* !SO_PEERCRED */
+#endif
 
 static int
 get_peercred_common (int64_t *pid, int64_t *uid, int64_t *gid)

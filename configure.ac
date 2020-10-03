@@ -331,6 +331,7 @@ AC_CHECK_HEADERS([\
 	sys/procctl.h \
 	sys/socket.h \
 	sys/statvfs.h \
+	sys/ucred.h \
 	sys/un.h \
 	sys/wait.h])
 
