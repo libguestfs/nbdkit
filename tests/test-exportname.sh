@@ -172,12 +172,12 @@ test "$(jq -c "$query" exportname.out)" = '[["c","cc",3]]'
 # Test strict mode
 nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
        --run 'nbdinfo --no-content --json "$uri"' > exportname.out && fail=1
-test ! -s exportname.out
+cat exportname.out
 
 nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
        exportname=a exportname=b exportname=c \
        --run 'nbdinfo --no-content --json "$uri"' > exportname.out && fail=1
-test ! -s exportname.out
+cat exportname.out
 
 nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
        exportname=a exportname=b exportname= default-export=a\
