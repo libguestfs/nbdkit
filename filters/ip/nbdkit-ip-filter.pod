@@ -16,9 +16,11 @@ example using TCP wrappers or a firewall, but this filter can be used
 if these are not available.
 
 nbdkit E<ge> 1.24 added the ability to filter clients connecting over
-local Unix domain sockets by client process ID, user ID and group ID.
+Unix domain sockets by client process ID, user ID and group ID.
 
 =head1 EXAMPLES
+
+=head2 Filter by IP address
 
  nbdkit --filter=ip [...] allow=127.0.0.1,::1 deny=all
 
@@ -34,17 +36,22 @@ network.
 
 Allow IPv6 clients to connect from anywhere, deny all other sources.
 
+=head2 Filter by Unix domain socket peer
+
  nbdkit -U $tmpdir/sock --filter=ip [...] allow=uid:`id -u` deny=all
 
 Only allow the current user (S<C<id -u>>) to connect over the socket.
-It is better to use this as an additional line of defense — also
-create a temporary directory, make sure it is only accessible by the
-user, and place the socket there.
 
- nbdkit -U sock --filter=ip [...] allow=gid:`id -g` deny=all
+Layer extra security by creating the socket inside a temporary
+directory only accessible by the user.
+
+ nbdkit -U $tmpdir/sock --filter=ip [...] allow=gid:`id -g` deny=all
 
 Allow anyone in the same group as the current user to connect to the
 Unix domain socket.
+
+As in the previous example, layer extra security by creating the
+socket inside a temporary directory only accessible by the group.
 
 =head1 RULES
 
