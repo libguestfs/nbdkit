@@ -1439,12 +1439,14 @@ test_gzip_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 # ip filter test.
 TESTS += \
 	test-ip-filter.sh \
+	test-ip-filter-anyunix.sh \
 	test-ip-filter-pid.sh \
 	test-ip-filter-uid.sh \
 	test-ip-filter-gid.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-ip-filter.sh \
+	test-ip-filter-anyunix.sh \
 	test-ip-filter-pid.sh \
 	test-ip-filter-uid.sh \
 	test-ip-filter-gid.sh \

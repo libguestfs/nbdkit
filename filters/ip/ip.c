@@ -62,7 +62,7 @@ int ip_debug_rules;
 
 struct rule {
   struct rule *next;
-  enum { BAD = 0, ANY, ANYV4, ANYV6, IPV4, IPV6, PID, UID, GID } type;
+  enum { BAD = 0, ANY, ANYV4, ANYV6, IPV4, IPV6, ANYUNIX, PID, UID, GID } type;
   union {
     struct in_addr ipv4;        /* for IPV4, IPV6 */
     struct in6_addr ipv6;
@@ -101,6 +101,9 @@ print_rule (const char *name, const struct rule *rule, const char *suffix)
     nbdkit_debug ("%s=ipv6:[%s]/%u%s", name, u.addr6, rule->prefixlen, suffix);
     break;
 
+  case ANYUNIX:
+    nbdkit_debug ("%s=anyunix%s", name, suffix);
+    break;
   case PID:
     nbdkit_debug ("%s=pid:%" PRIi64 "%s", name, rule->u.id, suffix);
     break;
@@ -235,6 +238,12 @@ parse_rule (const char *paramname,
   if (n == 7 && (ascii_strncasecmp (value, "allipv6", 7) == 0 ||
                  ascii_strncasecmp (value, "anyipv6", 7) == 0)) {
     new_rule->type = ANYV6;
+    return 0;
+  }
+
+  if (n == 7 && (ascii_strncasecmp (value, "allunix", 7) == 0 ||
+                 ascii_strncasecmp (value, "anyunix", 7) == 0)) {
+    new_rule->type = ANYUNIX;
     return 0;
   }
 
@@ -442,6 +451,9 @@ matches_rule (const struct rule *rule,
     if (family != AF_INET6) return false;
     sin6 = (struct sockaddr_in6 *) addr;
     return ipv6_equal (sin6->sin6_addr, rule->u.ipv6, rule->prefixlen);
+
+  case ANYUNIX:
+    return family == AF_UNIX;
 
     /* Note these work even if the underlying nbdkit_peer_* call fails. */
   case PID:

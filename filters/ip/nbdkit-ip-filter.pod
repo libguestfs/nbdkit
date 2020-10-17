@@ -102,6 +102,12 @@ These keywords match any IPv4 address.
 
 These keywords match any IPv6 address.
 
+=item B<allunix>
+
+=item B<anyunix>
+
+These keywords match any connection over a Unix domain socket.
+
 =item AB<.>BB<.>CB<.>D
 
 This matches the single IPv4 address C<A.B.C.D>, for example
