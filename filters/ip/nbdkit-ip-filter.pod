@@ -179,6 +179,16 @@ Unix domain sockets and C<AF_VSOCK> sockets were always unfiltered in
 S<nbdkit E<le> 1.22>.  In S<nbdkit E<ge> 1.24> the ability to filter
 them was added.
 
+=head2 Common patterns of usage
+
+Permit known good connections and deny everything else:
+
+ nbdkit --filter=ip ... allow=good1,good2,... deny=all
+
+Block troublemakers but allow everything else:
+
+ nbdkit --filter=ip ... deny=bad1,bad2,...
+
 =head1 PARAMETERS
 
 =over 4
