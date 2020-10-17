@@ -52,6 +52,10 @@
 #include <netinet/in.h>
 #endif
 
+#ifdef HAVE_LINUX_VM_SOCKETS_H
+#include <linux/vm_sockets.h>
+#endif
+
 #include <nbdkit-filter.h>
 
 #include "ascii-string.h"
@@ -62,11 +66,14 @@ int ip_debug_rules;
 
 struct rule {
   struct rule *next;
-  enum { BAD = 0, ANY, ANYV4, ANYV6, IPV4, IPV6, ANYUNIX, PID, UID, GID } type;
+  enum { BAD = 0,
+         ANY, ANYV4, ANYV6, IPV4, IPV6,
+         ANYUNIX, PID, UID, GID,
+         ANYVSOCK, VSOCKCID, VSOCKPORT } type;
   union {
     struct in_addr ipv4;        /* for IPV4, IPV6 */
     struct in6_addr ipv6;
-    int64_t id;                 /* for PID, UID and GID */
+    int64_t id;                 /* for PID, UID, GID, VSOCKCID, VSOCKPORT */
   } u;
   unsigned prefixlen;           /* for IPV4, IPV6 */
 };
@@ -112,6 +119,16 @@ print_rule (const char *name, const struct rule *rule, const char *suffix)
     break;
   case GID:
     nbdkit_debug ("%s=gid:%" PRIi64 "%s", name, rule->u.id, suffix);
+    break;
+
+  case ANYVSOCK:
+    nbdkit_debug ("%s=anyvsock%s", name, suffix);
+    break;
+  case VSOCKCID:
+    nbdkit_debug ("%s=vsock-cid:%" PRIi64 "%s", name, rule->u.id, suffix);
+    break;
+  case VSOCKPORT:
+    nbdkit_debug ("%s=vsock-port:%" PRIi64 "%s", name, rule->u.id, suffix);
     break;
 
   case BAD:
@@ -278,6 +295,32 @@ parse_rule (const char *paramname,
     return 0;
   }
 
+  if (n == 8 && (ascii_strncasecmp (value, "allvsock", 8) == 0 ||
+                 ascii_strncasecmp (value, "anyvsock", 8) == 0)) {
+    new_rule->type = ANYVSOCK;
+    return 0;
+  }
+  if (n >= 10 && ascii_strncasecmp (value, "vsock-cid:", 10) == 0) {
+    new_rule->type = VSOCKCID;
+    if (nbdkit_parse_int64_t ("vsock-cid:", &value[10], &new_rule->u.id) == -1)
+      return -1;
+    if (new_rule->u.id < 0 || new_rule->u.id > UINT32_MAX) {
+      nbdkit_error ("vsock-cid: parameter out of range");
+      return -1;
+    }
+    return 0;
+  }
+  if (n >= 11 && ascii_strncasecmp (value, "vsock-port:", 11) == 0) {
+    new_rule->type = VSOCKPORT;
+    if (nbdkit_parse_int64_t ("vsock-port:", &value[11], &new_rule->u.id) == -1)
+      return -1;
+    if (new_rule->u.id < 0 || new_rule->u.id > UINT32_MAX) {
+      nbdkit_error ("vsock-port: parameter out of range");
+      return -1;
+    }
+    return 0;
+  }
+
   /* Address with prefixlen. */
   if ((p = strchr (value, '/')) != NULL) {
     size_t pllen = &value[n] - &p[1];
@@ -428,6 +471,9 @@ matches_rule (const struct rule *rule,
   const struct sockaddr_in *sin;
   uint32_t cin, rin, mask;
   const struct sockaddr_in6 *sin6;
+#ifdef AF_VSOCK
+  const struct sockaddr_vm *svm;
+#endif
 
   switch (rule->type) {
   case ANY:
@@ -468,6 +514,27 @@ matches_rule (const struct rule *rule,
     if (family != AF_UNIX) return false;
     return nbdkit_peer_gid () == rule->u.id;
 
+#ifdef AF_VSOCK
+  case ANYVSOCK:
+    return family == AF_VSOCK;
+
+  case VSOCKCID:
+    if (family != AF_VSOCK) return false;
+    svm = (struct sockaddr_vm *) addr;
+    return svm->svm_cid == rule->u.id;
+
+  case VSOCKPORT:
+    if (family != AF_VSOCK) return false;
+    svm = (struct sockaddr_vm *) addr;
+    return svm->svm_port == rule->u.id;
+
+#else /* !AF_VSOCK */
+  case ANYVSOCK:
+  case VSOCKCID:
+  case VSOCKPORT:
+    return false;
+#endif
+
   case BAD:
   default:
     abort ();
@@ -497,10 +564,14 @@ check_if_allowed (const struct sockaddr *addr)
 {
   int family = ((struct sockaddr_in *)addr)->sin_family;
 
-  /* There's an implicit allow all for non-IP, non-Unix sockets,
-   * see the manual.
+  /* There's an implicit allow all for non-IP, non-Unix, non-AF_VSOCK
+   * sockets, see the manual.
    */
-  if (family != AF_INET && family != AF_INET6 && family != AF_UNIX)
+  if (family != AF_INET && family != AF_INET6 && family != AF_UNIX
+#ifdef AF_VSOCK
+      && family != AF_VSOCK
+#endif
+      )
     return true;
 
   if (matches_rules_list ("ip: match source with allow",

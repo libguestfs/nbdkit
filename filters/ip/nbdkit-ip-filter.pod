@@ -16,7 +16,9 @@ example using TCP wrappers or a firewall, but this filter can be used
 if these are not available.
 
 nbdkit E<ge> 1.24 added the ability to filter clients connecting over
-Unix domain sockets by client process ID, user ID and group ID.
+Unix domain sockets by client process ID, user ID and group ID.  Also
+this version added support for filtering C<AF_VSOCK> sockets by peer
+CID or port.
 
 =head1 EXAMPLES
 
@@ -108,6 +110,12 @@ These keywords match any IPv6 address.
 
 These keywords match any connection over a Unix domain socket.
 
+=item B<allvsock>
+
+=item B<anyvsock>
+
+These keywords match any connection over an C<AF_VSOCK> socket.
+
 =item AB<.>BB<.>CB<.>D
 
 This matches the single IPv4 address C<A.B.C.D>, for example
@@ -152,6 +160,14 @@ Unix domain socket.
 This matches the numeric group ID C<GID>, if the client connects over
 a Unix domain socket.
 
+=item B<vsock-cid:>CID
+
+=item B<vsock-port:>PORT
+
+(nbdkit E<ge> 1.24)
+
+These match the CID or port number for C<AF_VSOCK> sockets.
+
 =back
 
 =head2 Not filtered
@@ -159,9 +175,9 @@ a Unix domain socket.
 If neither the C<allow> nor the C<deny> parameter is given the filter
 does nothing.
 
-C<AF_VSOCK> connections are always unfiltered.
-
-Unix domain sockets were always unfiltered in S<nbdkit E<le> 1.22>.
+Unix domain sockets and C<AF_VSOCK> sockets were always unfiltered in
+S<nbdkit E<le> 1.22>.  In S<nbdkit E<ge> 1.24> the ability to filter
+them was added.
 
 =head1 PARAMETERS
 
