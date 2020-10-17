@@ -558,8 +558,7 @@ main (int argc, char *argv[])
       (listen_stdin && run) ||
       (listen_stdin && dump_plugin) ||
       (vsock && unixsocket) ||
-      (vsock && listen_stdin) ||
-      (vsock && run)) {
+      (vsock && listen_stdin)) {
     fprintf (stderr,
              "%s: --dump-plugin, -p, --run, -s, -U or --vsock options "
              "cannot be used in this combination\n",

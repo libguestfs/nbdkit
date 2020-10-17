@@ -36,37 +36,26 @@
 # version supporting loopback AF_VSOCK (so you can run client and
 # server on the same host without needing to use a virtual machine).
 #
-# It also requires nbdsh with vsock support, and tests that 32 bit
-# ports are supported - ie. that we didn't make any 16 bit assumptions
-# about port numbers anywhere in the stack.
+# It also requires libnbd with nbdinfo, URI and vsock support.
 
 source ./functions.sh
 set -e
 set -x
 
+requires nbdinfo --version
 requires nbdsh --version
 requires nbdsh -c 'print(h.connect_vsock)'
+requires_nbdsh_uri
 requires_linux_kernel_version 5.6
 
 # Because vsock ports are 32 bits, we can basically pick one at random
 # and be sure that it's not used.  However we must pick one >= 1024
 # because the ports below this are privileged.
-port=$(( 1024 + $RANDOM + ($RANDOM << 16) ))
+#port=$(( 1024 + $RANDOM + ($RANDOM << 16) ))
+#
+# We would do that, but libxml2 is broken, see:
+# https://mail.gnome.org/archives/xml/2020-October/msg00001.html
+# https://mail.gnome.org/archives/xml/2020-October/msg00002.html
+port=$(( 1024 + $RANDOM + ($RANDOM << 11) ))
 
-files="vsock.pid"
-rm -f $files
-cleanup_fn rm -f $files
-
-# Run nbdkit.
-start_nbdkit -P vsock.pid --vsock --port $port memory 1M
-
-export port
-nbdsh -c - <<'EOF'
-import os
-
-# 1 = VMADDR_CID_LOCAL
-h.connect_vsock(1, int(os.environ["port"]))
-
-size = h.get_size()
-assert size == 1048576
-EOF
+nbdkit --vsock --port $port -v null 1M --run 'nbdinfo "$uri"'

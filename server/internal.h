@@ -133,6 +133,7 @@ extern bool tls_verify_peer;
 extern char *unixsocket;
 extern const char *user, *group;
 extern bool verbose;
+extern bool vsock;
 extern int saved_stdin;
 extern int saved_stdout;
 

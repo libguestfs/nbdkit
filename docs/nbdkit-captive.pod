@@ -66,6 +66,8 @@ Note there is some magic here, since qemu and guestfish URLs have a
 different format, so nbdkit tries to guess which you are running.  If
 the magic doesn't work, try using the variables below instead.
 
+This is not defined when you use I<--vsock>.  Use C<$uri> instead.
+
 =item C<$port>
 
 If E<ne> "", the port number that nbdkit is listening on.

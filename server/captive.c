@@ -78,11 +78,21 @@ run_command (void)
   /* Construct $uri. */
   fprintf (fp, "uri=");
   if (port) {
-    fprintf (fp, "nbd://localhost:");
-    shell_quote (port, fp);
-    if (strcmp (export_name, "") != 0) {
-      putc ('/', fp);
-      uri_quote (export_name, fp);
+    if (!vsock) {
+      fprintf (fp, "nbd://localhost:");
+      shell_quote (port, fp);
+      if (strcmp (export_name, "") != 0) {
+        putc ('/', fp);
+        uri_quote (export_name, fp);
+      }
+    }
+    else {
+      fprintf (fp, "nbd+vsock://1:"); /* 1 = VMADDR_CID_LOCAL */
+      shell_quote (port, fp);
+      if (strcmp (export_name, "") != 0) {
+        putc ('/', fp);
+        uri_quote (export_name, fp);
+      }
     }
   }
   else if (unixsocket) {
@@ -101,35 +111,39 @@ run_command (void)
   shell_quote (export_name, fp);
   putc ('\n', fp);
 
-  /* Construct older $nbd "URL".  Unfortunately guestfish and qemu take
-   * different syntax, so try to guess which one we need.
+  /* Construct older $nbd "URL".  Unfortunately guestfish and qemu
+   * take different syntax, so try to guess which one we need.  We
+   * cannot generate the $nbd variable when using vsock, use $uri
+   * instead.
    */
-  fprintf (fp, "nbd=");
-  if (strstr (run, "guestfish")) {
-    if (port) {
-      fprintf (fp, "nbd://localhost:");
-      shell_quote (port, fp);
+  if (!vsock) {
+    fprintf (fp, "nbd=");
+    if (strstr (run, "guestfish")) {
+      if (port) {
+        fprintf (fp, "nbd://localhost:");
+        shell_quote (port, fp);
+      }
+      else if (unixsocket) {
+        fprintf (fp, "nbd://\\?socket=");
+        shell_quote (unixsocket, fp);
+      }
+      else
+        abort ();
     }
-    else if (unixsocket) {
-      fprintf (fp, "nbd://\\?socket=");
-      shell_quote (unixsocket, fp);
+    else /* qemu */ {
+      if (port) {
+        fprintf (fp, "nbd:localhost:");
+        shell_quote (port, fp);
+      }
+      else if (unixsocket) {
+        fprintf (fp, "nbd:unix:");
+        shell_quote (unixsocket, fp);
+      }
+      else
+        abort ();
     }
-    else
-      abort ();
+    putc ('\n', fp);
   }
-  else /* qemu */ {
-    if (port) {
-      fprintf (fp, "nbd:localhost:");
-      shell_quote (port, fp);
-    }
-    else if (unixsocket) {
-      fprintf (fp, "nbd:unix:");
-      shell_quote (unixsocket, fp);
-    }
-    else
-      abort ();
-  }
-  putc ('\n', fp);
 
   /* Construct $port and $unixsocket. */
   fprintf (fp, "port=");
