@@ -40,7 +40,7 @@ requires qemu-img --version
 
 # Not supported on Windows.
 if is_windows; then
-    echo "$0: nbdkit-ip-filter uid: not implemented on Windows"
+    echo "$0: nbdkit-ip-filter gid: not implemented on Windows"
     exit 77
 fi
 
