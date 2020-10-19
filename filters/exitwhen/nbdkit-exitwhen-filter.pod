@@ -1,0 +1,185 @@
+=head1 NAME
+
+nbdkit-exitwhen-filter - exit gracefully when an event occurs
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=exitwhen PLUGIN
+                          [exit-when-file-created=FILENAME]
+                          [exit-when-file-deleted=FILENAME]
+                          [exit-when-pipe-closed=FD]
+                          [exit-when-process-exits=PID]
+                          [exit-when-script=SCRIPT]
+                          [exit-when-poll=SECS]
+
+=head1 DESCRIPTION
+
+C<nbdkit-exitwhen-filter> is an nbdkit filter that causes nbdkit to
+exit gracefully when some external event occurs.  Built-in events are:
+a file being created or deleted, a pipe being closed, or a process
+exiting.  You can also define custom events using an external script
+or command.
+
+After the event occurs nbdkit refuses new connections, waits for all
+current clients to disconnect, and then exits.
+
+A similar filter is L<nbdkit-exitlast-filter(1)>.  For other ways to
+ensure that nbdkit exits when you want see L<nbdkit-captive(1)> and
+L<nbdkit-service(1)>.
+
+=head1 EXAMPLES
+
+ nbdkit --filter=exitwhen memory 1G exit-when-file-created=/tmp/stop
+
+nbdkit will run normally until something creates F</tmp/stop>,
+whereupon nbdkit will refuse new connections and exit as soon as the
+last client has disconnected.  If F</tmp/stop> exists before nbdkit
+starts, it will exit immediately.
+
+ nbdkit --filter=exitwhen memory 1G exit-when-process-exits=1234
+
+nbdkit will exit gracefully when PID 1234 exits and all connections
+close.  If you want to exit when the parent process of nbdkit exits,
+consider using the I<--exit-with-parent> flag instead.
+
+=head1 PARAMETERS
+
+You can define multiple C<exit-when-*> events on the command line:
+nbdkit will exit if any of the events happens.  If there are no
+C<exit-when-*> events then the filter does nothing.
+
+=over 4
+
+=item B<exit-when-file-created=>FILENAME
+
+=item B<exit-when-file-deleted=>FILENAME
+
+Exit when the named file is created or deleted.
+
+=item B<exit-when-pipe-closed=>FD
+
+The read end of a L<pipe(2)> is passed to nbdkit in the given file
+descriptor number.  Exit when the pipe is closed.  The filter does not
+read any data from the pipe.
+
+=item B<exit-when-process-exits=>PID
+
+Exit when process ID C<PID> exits.
+
+Note there is a small race between passing the process ID to the
+filter and the filter checking it for the first time.  During this
+window the original PID might exit and an unrelated program might get
+the same PID, thus holding nbdkit open for longer than wanted.  The
+pipe method above is more reliable if you are able to modify the other
+process.
+
+=item B<exit-when-script=">SCRIPTB<">
+
+Create a custom event using the script or command C<SCRIPT>.  The
+C<SCRIPT> can be a program, shell script or a command with optional
+parameters.  Note if using a filename here: you may need to use the
+absolute path because nbdkit changes directory when it daemonizes.
+
+The script should exit with code 88 if the event is detected.  The
+filter does different things depending on the exit code of the script:
+
+=over 4
+
+=item C<0>
+
+I<The event has not been triggered>, so nbdkit continues to process
+requests as normal.
+
+=item C<1-87>
+
+An error is logged, but the event is I<not> triggered and nbdkit
+continues to process requests as normal.
+
+=item C<88>
+
+I<The event has been triggered>.  nbdkit will refuse new connections
+and exit gracefully as soon as all current clients disconnect.
+
+=item C<89->
+
+Exit codes 89 and above are reserved for future use.  The behaviour
+may change in future if scripts return any of these exit codes.
+
+=back
+
+=item B<exit-when-poll=>SECS
+
+When nbdkit is serving clients this filter does not need to poll
+because it can check for events when a client connects or disconnects.
+However when nbdkit is idle the filter needs to poll for events every
+C<SECS> seconds and if any event happens exit immediately.
+
+The default is 60 seconds.
+
+=back
+
+=head1 NOTES
+
+=head2 Compared to I<--exit-with-parent>
+
+The nbdkit server option I<--exit-with-parent> causes nbdkit to exit
+when the parent process exits.  It seems similar to:
+
+ nbdkit --filter=exitwhen ... exit-when-process-exits=$$
+
+(C<$$> is the parent PID of nbdkit).
+
+But there are significant differences caused by the implementation.
+I<--exit-with-parent> is implemented using the Linux feature
+C<PR_SET_PDEATHSIG> (C<PROC_PDEATHSIG_CTL> on FreeBSD).  This causes a
+signal to be sent to the server when the parent process dies.  On
+receiving the signal nbdkit closes client connections and terminates
+at once.
+
+On the other hand C<exit-when-process-exits> monitors the other
+process (which does not need to be the parent) and shuts down the
+server in a different way: currently open connections are allowed to
+continue until they close.
+
+Neither of these methods is completely reliable in all cases: signals
+can be lost and there is a possible (albeit very small) race when
+passing the PID to C<exit-when-process-exits>.  More reliable methods
+of clean up are C<exit-when-pipe-closed> or putting all of the
+processes into a cgroup.  (See L<nbdkit-captive(1)> and
+L<nbdkit-service(1)>).
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-exitwhen-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-exitwhen-filter> first appeared in nbdkit 1.24.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-exitlast-filter(1)>,
+L<nbdkit-ip-filter(1)>,
+L<nbdkit-limit-filter(1)>,
+L<nbdkit-rate-filter(1)>,
+L<nbdkit-captive(1)>,
+L<nbdkit-service(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-plugin(3)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 Red Hat Inc.

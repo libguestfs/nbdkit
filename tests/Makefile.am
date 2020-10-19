@@ -1382,6 +1382,30 @@ EXTRA_DIST += \
 TESTS += test-exitlast.sh
 EXTRA_DIST += test-exitlast.sh
 
+# exitwhen filter test.
+check_PROGRAMS += test-exitwhen-pipe-closed
+TESTS += \
+	test-exitwhen-file-already-created.sh \
+	test-exitwhen-file-created.sh \
+	test-exitwhen-file-created-reject-new.sh \
+	test-exitwhen-file-created-when-idle.sh \
+	test-exitwhen-file-deleted.sh \
+	test-exitwhen-pipe-closed \
+	test-exitwhen-process-exits.sh \
+	test-exitwhen-script.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-exitwhen-file-already-created.sh \
+	test-exitwhen-file-created.sh \
+	test-exitwhen-file-created-reject-new.sh \
+	test-exitwhen-file-created-when-idle.sh \
+	test-exitwhen-file-deleted.sh \
+	test-exitwhen-process-exits.sh \
+	test-exitwhen-script.sh \
+	$(NULL)
+
+test_exitwhen_pipe_closed_CFLAGS = $(WARNINGS_CFLAGS)
+
 # exportname filter test.
 TESTS += test-exportname.sh
 EXTRA_DIST += test-exportname.sh

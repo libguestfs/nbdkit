@@ -17,6 +17,8 @@ resources when nbdkit is not in use (see L<nbdkit-service(1)>).
 Another use is to ensure nbdkit exits after the client has finished
 (but see also nbdkit-captive(1) for other ways to do this).
 
+To exit when an event occurs, try L<nbdkit-exitwhen-filter(1)>.
+
 =head1 PARAMETERS
 
 There are no parameters specific to nbdkit-exitlast-filter.  Any
@@ -42,6 +44,7 @@ C<nbdkit-exitlast-filter> first appeared in nbdkit 1.20.
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
+L<nbdkit-exitwhen-filter(1)>,
 L<nbdkit-ip-filter(1)>,
 L<nbdkit-limit-filter(1)>,
 L<nbdkit-rate-filter(1)>,

@@ -15,8 +15,9 @@ You can run nbdkit under another process and have nbdkit reliably
 clean up.  There are two techniques depending on whether you want
 nbdkit to start the other process (L</CAPTIVE NBDKIT>), or if you want
 the other process to start nbdkit (L</EXIT WITH PARENT>).  Another way
-is to have nbdkit exit after the last client connection, see
-L<nbdkit-exitlast-filter(1)>.
+is to have nbdkit exit after the last client connection
+(L<nbdkit-exitlast-filter(1)>) or after an event
+(L<nbdkit-exitwhen-filter(1)>).
 
 =head1 CAPTIVE NBDKIT
 
@@ -150,10 +151,14 @@ C<nbdkit --exit-with-parent> only from the main thread (unless you
 actually want nbdkit to exit with the thread, but that may not work
 reliably on all operating systems).
 
+To exit when an unrelated process exits, use
+L<nbdkit-exitwhen-filter(1)> C<exit-when-process-exits> feature.
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
 L<nbdkit-exitlast-filter(1)>,
+L<nbdkit-exitwhen-filter(1)>,
 L<prctl(2)> (on Linux),
 L<procctl(2)> (on FreeBSD).
 

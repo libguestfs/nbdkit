@@ -46,6 +46,7 @@ C<nbdkit-limit-filter> first appeared in nbdkit 1.20.
 
 L<nbdkit(1)>,
 L<nbdkit-exitlast-filter(1)>,
+L<nbdkit-exitwhen-filter(1)>,
 L<nbdkit-ip-filter(1)>,
 L<nbdkit-noparallel-filter(1)>,
 L<nbdkit-rate-filter(1)>,

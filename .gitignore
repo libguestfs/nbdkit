@@ -127,6 +127,7 @@ plugins/*/*.3
 /tests/test-data
 /tests/test-delay
 /tests/test-exit-with-parent
+/tests/test-exitwhen-pipe-closed
 /tests/test-ext2
 /tests/test-file-block
 /tests/test-golang
