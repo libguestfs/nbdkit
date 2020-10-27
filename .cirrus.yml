@@ -1,8 +1,8 @@
 rust_test_task:
   matrix:
-    - name: rust-1.40.0
+    - name: rust-1.42.0
       container:
-        image: rust:1.40.0
+        image: rust:1.42.0
       env:
         RUSTFLAGS: -Dwarnings
         RUSTDOCFLAGS: -Dwarnings
@@ -34,7 +34,7 @@ rust_test_task:
 minver_task:
   name: minver
   depends_on:
-    - rust-1.40.0
+    - rust-1.42.0
     - rust-stable
     - rust-nightly
     - rust-clippy
