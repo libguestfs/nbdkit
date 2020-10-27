@@ -4,6 +4,7 @@ Rust bindings to the Network Block Device Kit library.
 
 [![Crates.io](https://img.shields.io/crates/v/nbdkit.svg)](https://crates.io/crates/nbdkit)
 [![Documentation](https://docs.rs/nbdkit/badge.svg)](https://docs.rs/nbdkit)
+[![Build Status](https://api.cirrus-ci.com/github/libguestfs/nbdkit.svg)](https://cirrus-ci.com/github/libguestfs/nbdkit)
 
 ## Overview
 
