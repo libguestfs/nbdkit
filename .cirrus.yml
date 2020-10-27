@@ -1,0 +1,65 @@
+rust_test_task:
+  matrix:
+    - name: rust-1.42.0
+      container:
+        image: rust:1.42.0
+      env:
+        RUSTFLAGS: -Dwarnings
+        RUSTDOCFLAGS: -Dwarnings
+    - name: rust-stable
+      container:
+        image: rust:latest
+      env:
+        RUSTFLAGS: -Dwarnings
+        RUSTDOCFLAGS: -Dwarnings
+    - name: rust-nightly
+      container:
+        image: rustlang/rust:nightly
+      env:
+        CARGO_ARGS: --all-features
+        RUSTFLAGS: -Dwarnings
+        RUSTDOCFLAGS: -Dwarnings
+  cargo_cache:
+    folder: $CARGO_HOME/registry
+  build_script:
+    - cd plugins/rust; cargo build $CARGO_ARGS
+  test_script:
+    - cd plugins/rust; cargo test $CARGO_ARGS
+  example_script:
+    - cd plugins/rust; cargo build $CARGO_ARGS --examples
+  doc_script:
+    - cd plugins/rust; cargo doc $CARGO_ARGS --no-deps
+  before_cache_script: rm -rf $CARGO_HOME/registry/index
+
+minver_task:
+  name: minver
+  depends_on:
+    - rust-1.42.0
+    - rust-stable
+    - rust-nightly
+    - rust-clippy
+  container:
+    image: rustlang/rust:nightly
+  env:
+    RUSTFLAGS: -Dwarnings
+    RUSTDOCFLAGS: -Dwarnings
+  cargo_cache:
+    folder: $CARGO_HOME/registry
+  test_script:
+    - cd plugins/rust
+    - cargo update -Zminimal-versions
+    - cargo test --all-features
+  before_cache_script: rm -rf $CARGO_HOME/registry/index
+
+rust_clippy_task:
+  name: rust-clippy
+  matrix:
+    - container:
+        image: rustlang/rust:nightly
+  cargo_cache:
+    folder: $CARGO_HOME/registry
+  lint_script:
+    - rustup component add clippy
+    - cd plugins/rust
+    - cargo clippy --all-features --all-targets -- -D warnings
+  before_cache_script: rm -rf $CARGO_HOME/registry/index
