@@ -9,7 +9,7 @@ repository = "https://github.com/libguestfs/nbdkit"
 categories = ["api-bindings", "filesystem"]
 keywords = ["network-block-device", "nbd"]
 homepage = "http://libguestfs.org/"
-exclude = ["nbdkit-rust-plugin.*", "Cargo.toml.in", "Makefile*"]
+exclude = ["nbdkit-rust-plugin.*", "Makefile*", "test.sh"]
 description = """
 Rust bindings to the NBDKit framework for creating Network Block Device servers
 """

@@ -30,6 +30,40 @@
 //! NBDKit is a toolkit for building Network Block Device servers.
 //!
 //! [https://github.com/libguestfs/nbdkit](https://github.com/libguestfs/nbdkit)
+//!
+//! To use nbdkit, build your project as a cdylib.  Define your plugin by
+//! implementing [`Server`], and then register it with [`plugin!`].  See 
+//! ramdisk.rs in the source code for a complete example.
+//!
+//! ```no_run
+//! # use nbdkit::*;
+//! #[derive(Default)]
+//! struct MyPlugin {
+//!     // ...
+//!     # _not_used: i32,
+//! }
+//! impl Server for MyPlugin {
+//!     fn get_size(&self) -> Result<i64> {
+//!         // ...
+//!         # Ok(0)
+//!     }
+//!
+//!     fn name() -> &'static str {
+//!         "my_plugin"
+//!     }
+//!
+//!     fn open(_readonly: bool) -> Box<dyn Server> {
+//!         Box::new(MyPlugin::default())
+//!     }
+//!
+//!     fn read_at(&self, buf: &mut [u8], offset: u64) -> Result<()> {
+//!         // ...
+//!         # Ok(())
+//!     }
+//! }
+//! plugin!(MyPlugin {});
+//! # fn main() {}
+//! ```
 #![cfg_attr(feature = "nightly-docs", feature(doc_cfg))]
 #![deny(missing_docs)]
 
