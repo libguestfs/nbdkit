@@ -149,6 +149,8 @@ For the Python plugin:
 
  - python unittest to run the test suite
 
+ - boto3 is required to run the S3 plugin written in Python
+
 For the OCaml plugin:
 
  - OCaml >= 4.02.2

@@ -85,6 +85,7 @@ plugins/*/*.3
 /plugins/ondemand/default-command.c
 /plugins/rust/Cargo.lock
 /plugins/rust/target
+/plugins/S3/nbdkit-S3-plugin
 /plugins/tmpdisk/default-command.c
 /podwrapper.pl
 /server/libnbdkit.a

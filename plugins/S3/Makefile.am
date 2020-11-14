@@ -1,6 +1,5 @@
-#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2016 Red Hat Inc.
+# Copyright (C) 2013-2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -30,36 +29,36 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-source ./functions.sh
-set -e
-set -x
+include $(top_srcdir)/common-rules.mk
 
-run_test ()
-{
-    nbdkit $1 --version
-}
+source = S3.py
 
-do_test ()
-{
-    vg=; [ "$NBDKIT_VALGRIND" = "1" ] && vg="-valgrind"
-    case "$1$vg" in
-        python-valgrind | ruby-valgrind | tcl-valgrind)
-            echo "$0: skipping $1$vg because this language doesn't support valgrind"
-            ;;
-        example4*)
-            # These tests are written in Perl so we have to check that
-            # the Perl plugin was compiled.
-            if nbdkit perl --version; then run_test $1; fi
-            ;;
-        S3*)
-            # Requires Python plugin and boto3 library.
-            if nbdkit python --version && $PYTHON -c 'import boto3'; then
-                run_test $1
-            fi
-            ;;
-        *)
-            run_test $1
-            ;;
-    esac
-}
-foreach_plugin do_test
+EXTRA_DIST = \
+	$(source) \
+	$(NULL)
+
+if HAVE_PYTHON
+
+plugin_SCRIPTS = nbdkit-S3-plugin
+CLEANFILES += nbdkit-S3-plugin
+
+# We have to do the rewriting here to avoid stupid exec_prefix.
+nbdkit-S3-plugin: $(source)
+	rm -f $@ $@-t
+	sed 's,\@sbindir\@,${sbindir},g' < $< > $@-t
+	mv $@-t $@
+	chmod 0555 $@
+
+if HAVE_POD
+
+man_MANS = nbdkit-S3-plugin.1
+CLEANFILES += $(man_MANS)
+
+nbdkit-S3-plugin.1: nbdkit-S3-plugin.pod
+	$(PODWRAPPER) --section=1 --man $@ \
+	    --html $(top_builddir)/html/$@.html \
+	    $<
+
+endif HAVE_POD
+
+endif

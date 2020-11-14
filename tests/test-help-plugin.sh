@@ -51,6 +51,12 @@ do_test ()
             # the Perl plugin was compiled.
             if nbdkit perl --version; then run_test $1; fi
             ;;
+        S3*)
+            # Requires Python plugin and boto3 library.
+            if nbdkit python --version && $PYTHON -c 'import boto3'; then
+                run_test $1
+            fi
+            ;;
         *)
             run_test $1
             ;;

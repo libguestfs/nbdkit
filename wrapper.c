@@ -79,14 +79,23 @@
 static const char **cmd;
 static size_t len;
 
-/* Plugins written in scripting languages (only Perl right now) need
- * to be rewritten on the command line in a different way from plugins
- * written in C.  So we have to list those here.
+/* Plugins written in scripting languages need to be rewritten on the
+ * command line in a different way from plugins written in C.  So we
+ * have to list those here, and return the language plugin needed to
+ * run them.
  */
 static bool
-is_perl_plugin (const char *name)
+is_script_plugin (const char *name, const char **language)
 {
-  return strcmp (name, "example4") == 0;
+  if (strcmp (name, "example4") == 0) {
+    *language = "perl";
+    return true;
+  }
+  if (strcmp (name, "S3") == 0) {
+    *language = "python";
+    return true;
+  }
+  return false;
 }
 
 static void
@@ -315,13 +324,18 @@ main (int argc, char *argv[])
      * short name then rewrite it.
      */
     if (is_short_name (argv[optind])) {
-      /* Special plugins written in Perl. */
-      if (is_perl_plugin (argv[optind])) {
-        passthru_format ("%s/plugins/perl/.libs/nbdkit-perl-plugin." SOEXT,
-                         builddir);
+      const char *language;
+
+      /* Plugins written in scripting languages. */
+      if (is_script_plugin (argv[optind], &language)) {
+        passthru_format ("%s/plugins/%s/.libs/nbdkit-%s-plugin." SOEXT,
+                         builddir, language, language);
         passthru_format ("%s/plugins/%s/nbdkit-%s-plugin",
                          builddir, argv[optind], argv[optind]);
       }
+      /* Otherwise normal plugins written in C or other languages that
+       * compile to .so files.
+       */
       else {
         passthru_format ("%s/plugins/%s/.libs/nbdkit-%s-plugin." SOEXT,
                          builddir, argv[optind], argv[optind]);

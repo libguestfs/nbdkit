@@ -85,6 +85,7 @@ non_lang_plugins="\
         partitioning \
         pattern \
         random \
+        S3 \
         split \
         ssh \
         streaming \
@@ -1210,6 +1211,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/random/Makefile
                  plugins/ruby/Makefile
                  plugins/rust/Makefile
+                 plugins/S3/Makefile
                  plugins/sh/Makefile
                  plugins/ssh/Makefile
                  plugins/split/Makefile
@@ -1313,6 +1315,8 @@ feature "linuxdisk .............................. " \
         test "x$HAVE_MKE2FS_WITH_D_TRUE" = "x"
 feature "nbd .................................... " \
         test "x$HAVE_LIBNBD_TRUE" = "x"
+feature "S3 ..................................... " \
+        test "x$HAVE_PYTHON_TRUE" = "x"
 feature "ssh .................................... " \
         test "x$HAVE_SSH_TRUE" = "x"
 feature "torrent ................................ " \
