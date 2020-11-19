@@ -35,6 +35,7 @@ source = S3.py
 
 EXTRA_DIST = \
 	$(source) \
+	nbdkit-S3-plugin.pod \
 	$(NULL)
 
 if HAVE_PYTHON
