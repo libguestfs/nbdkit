@@ -75,6 +75,13 @@ the C<AWS_PROFILE> environment variable.
 There is much more information about credentials in
 L<the Boto3 documentation|https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html>.
 
+=head1 COMPARED TO S3FS-FUSE
+
+s3fs-fuse (L<https://github.com/s3fs-fuse/s3fs-fuse>) presents a whole
+S3 bucket as a FUSE filesystem, with each object in the bucket
+corresponding to a single file.  It is therefore quite different from
+this plugin which turns a single S3 object into a block device.
+
 =head1 FILES
 
 =over 4
