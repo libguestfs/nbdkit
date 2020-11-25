@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 files="rate-dynamic.img rate-dynamic.time rate-dynamic.err rate-dynamic.txt"
 rm -f $files
@@ -49,11 +49,20 @@ cleanup_fn rm -f $files
 #
 # However if the dynamic rate isn't being picked up then
 # it will take much longer (approx 200 seconds).
+#
+# Note that we use the blocksize filter because nbdcopy issues very
+# large requests, causing lumpy long sleeps.  The filter breaks these
+# data requests up.
+
 echo 10M > rate-dynamic.txt
 
 start_t=$SECONDS
-nbdkit -U - --filter=rate pattern 25M rate=1M rate-file=rate-dynamic.txt \
-       --run 'qemu-img convert -p $nbd rate-dynamic.img'
+nbdkit -U - \
+       --filter=blocksize --filter=rate \
+       pattern 25M \
+       maxdata=65536 \
+       rate=1M rate-file=rate-dynamic.txt \
+       --run 'nbdcopy "$uri" rate-dynamic.img'
 end_t=$SECONDS
 
 seconds=$(( end_t - start_t ))

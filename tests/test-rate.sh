@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 files="rate.img rate.time rate.err"
 rm -f $files
@@ -46,10 +46,18 @@ cleanup_fn rm -f $files
 # but because the bucket is full at the start the filter will
 # burst for a couple of seconds to begin with, therefore the
 # expected minimum time is more like 18-19 seconds.
+#
+# Note that we use the blocksize filter because nbdcopy issues very
+# large requests, causing lumpy long sleeps.  The filter breaks these
+# data requests up.
 
 start_t=$SECONDS
-nbdkit -U - --filter=rate pattern 25M rate=10M \
-       --run 'qemu-img convert -p $nbd rate.img'
+nbdkit -U - \
+       --filter=blocksize --filter=rate \
+       pattern 25M \
+       maxdata=65536 \
+       rate=10M \
+       --run 'nbdcopy "$uri" rate.img'
 end_t=$SECONDS
 
 if [ $((end_t - start_t)) -lt 18 ]; then
