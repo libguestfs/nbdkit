@@ -39,7 +39,7 @@ set -x
 
 requires_plugin linuxdisk
 requires guestfish --version
-requires qemu-img --version
+requires nbdcopy --version
 
 files="linuxdisk-copy-out.img
        linuxdisk-copy-out.test1 linuxdisk-copy-out.test2
@@ -50,7 +50,7 @@ cleanup_fn rm -f $files
 nbdkit -f -v -U - \
        --filter=partition \
        linuxdisk $srcdir/../plugins partition=1 label=ROOT \
-       --run 'qemu-img convert $nbd linuxdisk-copy-out.img'
+       --run 'nbdcopy "$uri" linuxdisk-copy-out.img'
 
 # Check the disk content.
 guestfish --ro -a linuxdisk-copy-out.img -m /dev/sda <<EOF

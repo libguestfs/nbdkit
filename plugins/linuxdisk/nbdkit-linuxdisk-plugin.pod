@@ -58,7 +58,7 @@ filesystem (ie. the first partition, see
 L<nbdkit-partition-filter(1)>).
 
 =item nbdkit -U - linuxdisk /path/to/directory
---run 'qemu-img convert $nbd ext2fs.img'
+--run 'nbdcopy "$uri" ext2fs.img'
 
 This serves nothing.  Instead it turns a directory into a disk image,
 writing it to F<ext2fs.img> (see L<nbdkit-captive(1)>).  The resulting
