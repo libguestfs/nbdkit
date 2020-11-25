@@ -37,7 +37,7 @@ set -x
 requires_run
 requires sfdisk --help
 requires test -r /dev/urandom
-requires qemu-img --version
+requires nbdcopy --version
 
 # RHEL 7 sfdisk didn't have the -X option, so skip the tests here.
 if LANG=C sfdisk -X |& grep -sq "invalid option"; then
@@ -69,10 +69,10 @@ do_test ()
         if [ "$part" != "$skip_extended" ]; then
             nbdkit -f -v -U - \
                    --filter=partition file $d/disk partition=$part \
-                   --run "qemu-img convert -n $d/rand \$nbd"
+                   --run "nbdcopy $d/rand \$uri"
             nbdkit -f -v -U - \
                    --filter=partition file $d/disk partition=$part \
-                   --run "qemu-img convert \$nbd $d/out"
+                   --run "nbdcopy \$uri $d/out"
             truncate -s 512 $d/out
             cmp $d/rand $d/out
         fi

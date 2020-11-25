@@ -35,13 +35,13 @@ set -x
 set -e
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 files="test-zero.out"
 rm -f $files
 cleanup_fn rm -f $files
 
-nbdkit -U - zero --run 'qemu-img convert $nbd test-zero.out'
+nbdkit -U - zero --run 'nbdcopy "$uri" test-zero.out'
 
 # Resulting file should be zero-sized.
 test -f test-zero.out

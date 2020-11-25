@@ -39,7 +39,7 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 files="partitioning1.out partitioning1-p1 partitioning1-p2 partitioning1-p3 partitioning1-p4 partitioning1-p5 partitioning1-p6"
 rm -f $files
@@ -68,7 +68,7 @@ nbdkit -f -v -D partitioning.regions=1 -U - \
        partitioning1-p3 \
        partition-type=mbr \
        partition=3 \
-       --run 'qemu-img convert $nbd partitioning1.out'
+       --run 'nbdcopy "$uri" partitioning1.out'
 
 # Contents of partitioning1.out should be identical to file-data.
 cmp file-data partitioning1.out
@@ -87,7 +87,7 @@ nbdkit -f -v -D partitioning.regions=1 -U - \
        partitioning1-p6 \
        partition-type=mbr \
        partition=6 \
-       --run 'qemu-img convert $nbd partitioning1.out'
+       --run 'nbdcopy "$uri" partitioning1.out'
 
 cmp file-data partitioning1.out
 
@@ -106,6 +106,6 @@ nbdkit -f -v -D partitioning.regions=1 -U - \
        partitioning1-p6 \
        partition-type=gpt \
        partition=5 \
-       --run 'qemu-img convert $nbd partitioning1.out'
+       --run 'nbdcopy "$uri" partitioning1.out'
 
 cmp file-data partitioning1.out

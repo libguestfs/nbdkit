@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_plugin sh
-requires qemu-img --version
+requires nbdcopy --version
 requires dd iflag=count_bytes </dev/null
 
 files="retry.img retry-count retry-open-count"
@@ -49,7 +49,7 @@ start_t=$SECONDS
 nbdkit -v -U - \
        sh - \
        --filter=retry retry-delay=1 \
-       --run 'qemu-img convert $nbd retry.img' <<'EOF'
+       --run 'nbdcopy "$uri" retry.img' <<'EOF'
 #!/usr/bin/env bash
 case "$1" in
     open)

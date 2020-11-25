@@ -37,15 +37,15 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 files="swab-8.expected swab-8.actual"
 rm -f $files
 cleanup_fn rm -f $files
 
 nbdkit -U - pattern size=$((128*1024)) \
-       --run 'qemu-img convert $nbd swab-8.expected'
+       --run 'nbdcopy "$uri" swab-8.expected'
 nbdkit -U - --filter=swab pattern size=$((128*1024)) swab-bits=8 \
-       --run 'qemu-img convert $nbd swab-8.actual'
+       --run 'nbdcopy "$uri" swab-8.actual'
 
 cmp swab-8.expected swab-8.actual

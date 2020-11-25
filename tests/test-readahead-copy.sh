@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 files="readahead-copy1.img readahead-copy2.img"
 rm -f $files
@@ -44,9 +44,6 @@ cleanup_fn rm -f $files
 # Run nbdkit with and without the readahead filter and a very sparse
 # disk with bytes scattered around.  Compare the two outputs which
 # should be identical.
-#
-# Note we must set the size to a multiple of 512 bytes else qemu-img
-# cannot cope.
 data="            1
          @0x10001 2
         @0x100020 3
@@ -56,12 +53,11 @@ data="            1
       @0x40604020 7
       @0x87050300 8
      @0x100000000 9 "
-size=$((2**32 + 512))
 
-nbdkit -v -U - --filter=readahead data "$data" size=$size \
-       --run 'qemu-img convert $nbd readahead-copy1.img'
-nbdkit -v -U -                    data "$data" size=$size \
-       --run 'qemu-img convert $nbd readahead-copy2.img'
+nbdkit -v -U - --filter=readahead data "$data"  \
+       --run 'nbdcopy "$uri" readahead-copy1.img'
+nbdkit -v -U -                    data "$data" \
+       --run 'nbdcopy "$uri" readahead-copy2.img'
 
 # Check the output.
 cmp readahead-copy{1,2}.img

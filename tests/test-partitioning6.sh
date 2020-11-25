@@ -43,7 +43,7 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 # This test requires the partitioning plugin to open at least 768
 # files (say 800 to make it a round number).  On OpenBSD the limit on
@@ -81,7 +81,7 @@ nbdkit -f -v -D partitioning.regions=1 -U - \
              $d/part.* \
              partition-type=mbr \
              partition=251 \
-             --run "qemu-img convert \$nbd $d/out"
+             --run "nbdcopy \$uri $d/out"
 
 # The output should be identical to partition 250.
 cmp $d/part.0250 $d/out

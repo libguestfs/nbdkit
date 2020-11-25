@@ -38,6 +38,7 @@ requires test "x$vddkdir" != "x"
 requires test -d "$vddkdir"
 requires test -f "$vddkdir/lib64/libvixDiskLib.so"
 requires qemu-img --version
+requires nbdcopy --version
 requires stat --version
 
 # VDDK > 5.1.1 only supports x86_64.
@@ -60,7 +61,7 @@ fail=0
 nbdkit -f -v -U - \
        --filter=readahead \
        vddk libdir="$vddkdir" test-vddk-real.vmdk \
-       --run 'qemu-img convert $nbd -O raw test-vddk-real.out' \
+       --run 'nbdcopy "$uri" test-vddk-real.out' \
        > test-vddk-real.log 2>&1 || fail=1
 
 # Check the log for missing modules

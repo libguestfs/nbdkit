@@ -35,11 +35,11 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 files="nofilter.img"
 rm -f $files
 cleanup_fn rm -f $files
 
 nbdkit -U - -v --filter=nofilter memory 10M \
-       --run 'qemu-img convert $nbd nofilter.img'
+       --run 'nbdcopy "$uri" nofilter.img'

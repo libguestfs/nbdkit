@@ -36,7 +36,7 @@ set -x
 
 requires test -f disk
 requires sshd -t -f ssh/sshd_config
-requires qemu-img --version
+requires nbdcopy --version
 requires cut --version
 
 # Check that ssh to localhost will work without any passwords or phrases.
@@ -61,7 +61,7 @@ port="$(grep ^Port ssh/sshd_config | cut -f 2)"
 # Run nbdkit with the ssh plugin to copy a file.
 nbdkit -v -D ssh.log=2 -U - \
        ssh host=localhost $PWD/disk \
-       --run 'qemu-img convert $nbd ssh.img'
+       --run 'nbdcopy "$uri" ssh.img'
 
 # The output should be identical.
 cmp disk ssh.img

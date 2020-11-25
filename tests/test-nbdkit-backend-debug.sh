@@ -35,7 +35,7 @@ set -x
 set -e
 
 requires_run
-requires qemu-img --version
+requires nbdcopy --version
 
 out="test-nbdkit-backend-debug.out"
 debug="test-nbdkit-backend-debug.debug"
@@ -47,7 +47,7 @@ nbdkit -U - \
        -v \
        --filter=noextents \
        memory 10M \
-       --run "qemu-img convert \$nbd $out" |& tee $debug
+       --run "nbdcopy \$uri $out" |& tee $debug
 
 # Should contain all debugging messages.
 grep '^nbdkit:.*debug: noextents: open' $debug
@@ -59,7 +59,7 @@ nbdkit -U - \
        -v -D nbdkit.backend.controlpath=0 \
        --filter=noextents \
        memory 10M \
-       --run "qemu-img convert \$nbd $out" |& tee $debug
+       --run "nbdcopy \$uri $out" |& tee $debug
 
 # Should contain only datapath messages.
 grep -v '^nbdkit:.*debug: noextents: open' $debug
@@ -71,7 +71,7 @@ nbdkit -U - \
        -v -D nbdkit.backend.datapath=0 \
        --filter=noextents \
        memory 10M \
-       --run "qemu-img convert \$nbd $out" |& tee $debug
+       --run "nbdcopy \$uri $out" |& tee $debug
 
 # Should contain only controlpath messages.
 grep '^nbdkit:.*debug: noextents: open' $debug

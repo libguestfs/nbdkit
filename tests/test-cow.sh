@@ -36,6 +36,8 @@ set -x
 
 requires_plugin linuxdisk
 requires guestfish --version
+requires nbdcopy --version
+requires qemu-img --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="cow-base.img cow-diff.qcow2 $sock cow.pid"
@@ -47,7 +49,7 @@ rm -rf cow.d
 mkdir cow.d
 cleanup_fn rm -rf cow.d
 nbdkit -fv -U - linuxdisk cow.d size=100M \
-       --run 'qemu-img convert $nbd cow-base.img'
+       --run 'nbdcopy "$uri" cow-base.img'
 lastmod="$(stat -c "%y" cow-base.img)"
 
 # Run nbdkit with a COW overlay.
