@@ -680,7 +680,9 @@ L<nbdkit-release-notes-1.22(1)>.
 L<guestfish(1)>,
 L<libnbd(3)>,
 L<nbd-client(1)>,
+L<nbdcopy(1)>,
 L<nbdfuse(1)>,
+L<nbdinfo(1)>,
 L<nbdsh(1)>,
 L<qemu(1)>.
 
