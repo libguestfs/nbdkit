@@ -175,6 +175,11 @@ nbdkit-S3-plugin:
 
 * Write support (using PUT).
 
+nbdkit-cdi-plugin:
+
+* Look at using skopeo instead of podman pull
+  (https://github.com/containers/skopeo)
+
 Suggestions for language plugins
 --------------------------------
 
