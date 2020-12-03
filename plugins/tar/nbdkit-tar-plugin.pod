@@ -8,7 +8,7 @@ nbdkit-tar-plugin - read and write files inside tar files without unpacking
 
 =head1 DEPRECATED
 
-B<The tar plugin is deprecated in S<nbdkit E<ge> 1.22.16> and will be
+B<The tar plugin is deprecated in S<nbdkit E<ge> 1.22> and will be
 removed in S<nbdkit 1.26>>.  It has been replaced with a filter with
 the same functionality, see L<nbdkit-tar-filter(1)>.  You can use the
 filter like this:
