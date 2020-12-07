@@ -202,6 +202,13 @@ Suggestions for filters
 * masking plugin features for testing clients (see 'nozero' and 'fua'
   filters for examples)
 
+* "event" filter which triggers shell scripts on significant events
+  (like connection, close, read, write, etc).  It would not modify the
+  requests but allow more flexible logging.
+
+* "bandwidth quota" filter which would close a connection after it
+  exceeded a certain amount of bandwidth up or down.
+
 * nbdkit-cache-filter should handle ENOSPC errors automatically by
   reclaiming blocks from the cache
 
