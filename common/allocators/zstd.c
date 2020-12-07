@@ -555,7 +555,8 @@ zstd_array_extents (struct allocator *a,
   struct zstd_array *za = (struct zstd_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&za->lock);
   CLEANUP_FREE void *buf = NULL;
-  uint64_t n, type;
+  uint64_t n;
+  uint32_t type;
   void *p;
   struct l2_entry *l2_entry;
 

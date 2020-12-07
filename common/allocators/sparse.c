@@ -470,7 +470,8 @@ sparse_array_extents (struct allocator *a,
 {
   struct sparse_array *sa = (struct sparse_array *) a;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&sa->lock);
-  uint64_t n, type;
+  uint64_t n;
+  uint32_t type;
   void *p;
 
   while (count > 0) {
