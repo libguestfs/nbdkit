@@ -86,6 +86,7 @@ non_lang_plugins="\
         pattern \
         random \
         S3 \
+        sparse-random \
         split \
         ssh \
         streaming \
@@ -1214,6 +1215,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/S3/Makefile
                  plugins/sh/Makefile
                  plugins/ssh/Makefile
+                 plugins/sparse-random/Makefile
                  plugins/split/Makefile
                  plugins/streaming/Makefile
                  plugins/tar/Makefile

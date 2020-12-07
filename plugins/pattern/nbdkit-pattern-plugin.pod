@@ -90,6 +90,7 @@ L<nbdkit-full-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
 L<nbdkit-offset-filter(1)>,
 L<nbdkit-random-plugin(1)>,
+L<nbdkit-sparse-random-plugin(1)>,
 L<nbdkit-swab-filter(1)>,
 L<nbdkit-zero-plugin(1)>.
 

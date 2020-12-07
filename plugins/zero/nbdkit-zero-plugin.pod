@@ -38,7 +38,8 @@ L<nbdkit-data-plugin(1)>,
 L<nbdkit-full-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
-L<nbdkit-random-plugin(1)>.
+L<nbdkit-random-plugin(1)>,
+L<nbdkit-sparse-random-plugin(1)>.
 
 =head1 AUTHORS
 

@@ -852,6 +852,16 @@ test_random_CPPFLAGS = -I $(top_srcdir)/common/include
 test_random_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_random_LDADD = $(LIBNBD_LIBS)
 
+# sparse-random plugin test.
+TESTS += \
+	test-sparse-random-copy.sh \
+	test-sparse-random-info.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-sparse-random-copy.sh \
+	test-sparse-random-info.sh \
+	$(NULL)
+
 # split files plugin test.
 check_DATA += split1 split2 split3
 CLEANFILES += split1 split2 split3

@@ -9,14 +9,15 @@ nbdkit-random-plugin - plugin to serve random data
 =head1 DESCRIPTION
 
 C<nbdkit-random-plugin> is a plugin for L<nbdkit(1)> which serves
-random data, read only.
+random data, read only.  This plugin is mainly good for testing NBD
+clients.  This plugin creates a non-sparse random disk, for a sparse
+random disk see L<nbdkit-sparse-random-plugin(1)>.
 
 The size of the virtual disk must be specified using the C<size>
 parameter.  If you specify the C<seed> parameter then you will get the
 same random data over multiple runs with the same seed.
 
-The random data is generated using an I<insecure> method.  This plugin
-is mainly good for testing NBD clients.
+The random data is generated using an I<insecure> method.
 
 =head1 PARAMETERS
 
@@ -63,6 +64,7 @@ L<nbdkit-data-plugin(1)>,
 L<nbdkit-full-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
+L<nbdkit-sparse-random-plugin(1)>,
 L<nbdkit-zero-plugin(1)>.
 
 =head1 AUTHORS
