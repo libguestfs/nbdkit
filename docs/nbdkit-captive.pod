@@ -49,25 +49,23 @@ The following shell variables are available in the I<--run> argument:
 
 =over 4
 
+=item C<$nbd>
+
 =item C<$uri>
 
 A URI that refers to the nbdkit port or socket in the preferred form
-documented by the NBD project.  As this variable may contain a bare
-C<?> for Unix sockets, it is safest to use $uri within double quotes
-to avoid unintentional globbing.  For plugins that support distinct
-data based on export names, the B<-e> option to nbdkit controls which
-export name will be set in the URI.
+documented by the NBD project.
 
-=item C<$nbd>
+As this variable may contain a bare C<?> for Unix sockets, it is
+safest to use $uri within double quotes to avoid unintentional
+globbing.  For plugins that support distinct data based on export
+names, the B<-e> option to nbdkit controls which export name will be
+set in the URI.
 
-An older URL that refers to the nbdkit port or socket in a manner
-specific to certain tools.
-
-Note there is some magic here, since qemu and guestfish URLs have a
-different format, so nbdkit tries to guess which you are running.  If
-the magic doesn't work, try using the variables below instead.
-
-This is not defined when you use I<--vsock>.  Use C<$uri> instead.
+In nbdkit E<le> 1.22 C<$nbd> tried to guess if you were using qemu or
+guestfish and expanded differently.  Since NBD URIs are now widely
+supported this magic is no longer necessary.  In nbdkit E<ge> 1.24
+both variables expand to the same URI.
 
 =item C<$port>
 

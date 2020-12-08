@@ -106,44 +106,13 @@ run_command (void)
   }
   putc ('\n', fp);
 
+  /* Since nbdkit 1.24, $nbd is a synonym for $uri. */
+  fprintf (fp, "nbd=\"$uri\"\n");
+
   /* Expose $exportname. */
   fprintf (fp, "exportname=");
   shell_quote (export_name, fp);
   putc ('\n', fp);
-
-  /* Construct older $nbd "URL".  Unfortunately guestfish and qemu
-   * take different syntax, so try to guess which one we need.  We
-   * cannot generate the $nbd variable when using vsock, use $uri
-   * instead.
-   */
-  if (!vsock) {
-    fprintf (fp, "nbd=");
-    if (strstr (run, "guestfish")) {
-      if (port) {
-        fprintf (fp, "nbd://localhost:");
-        shell_quote (port, fp);
-      }
-      else if (unixsocket) {
-        fprintf (fp, "nbd://\\?socket=");
-        shell_quote (unixsocket, fp);
-      }
-      else
-        abort ();
-    }
-    else /* qemu */ {
-      if (port) {
-        fprintf (fp, "nbd:localhost:");
-        shell_quote (port, fp);
-      }
-      else if (unixsocket) {
-        fprintf (fp, "nbd:unix:");
-        shell_quote (unixsocket, fp);
-      }
-      else
-        abort ();
-    }
-    putc ('\n', fp);
-  }
 
   /* Construct $port and $unixsocket. */
   fprintf (fp, "port=");
