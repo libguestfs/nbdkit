@@ -78,6 +78,9 @@ xsrandom (uint64_t seed, struct random_state *state)
 static inline uint64_t
 rotl (const uint64_t x, int k)
 {
+  /* RWMJ: I checked and GCC 10 emits either ‘rol’ or ‘ror’ correctly
+   * for this code.
+   */
   return (x << k) | (x >> (64 - k));
 }
 
