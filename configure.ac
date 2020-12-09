@@ -1120,7 +1120,7 @@ AC_ARG_ENABLE([torrent],
     [],
     [enable_torrent=check]
 )
-AS_IF([test "$enable_torrent" != "xno"], [
+AS_IF([test "x$enable_torrent" != "xno"], [
     PKG_CHECK_MODULES([LIBTORRENT], [libtorrent-rasterbar], [
         AC_SUBST([LIBTORRENT_CFLAGS])
         AC_SUBST([LIBTORRENT_LIBS])
