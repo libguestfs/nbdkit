@@ -56,6 +56,12 @@ Specify the average length of runs of random data.  This is expressed
 in bytes and the usual modifiers can be used.  The default is 16M,
 meaning that (on average) data runs will be 16 megabytes in length.
 
+=item B<seed=>SEED
+
+Specify the random seed to get repeatable data over multiple runs.
+
+If not specified then a random seed is chosen.
+
 =item [B<size=>]SIZE
 
 Specify the virtual size of the disk image.
@@ -64,12 +70,6 @@ This parameter is required.
 
 C<size=> is a magic config key and may be omitted in most cases.
 See L<nbdkit(1)/Magic parameters>.
-
-=item B<seed=>SEED
-
-Specify the random seed to get repeatable data over multiple runs.
-
-If not specified then a random seed is chosen.
 
 =back
 
