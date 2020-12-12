@@ -43,6 +43,7 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
 #include "random.h"
 
 /* The size of disk in bytes (initialized by size=<SIZE> parameter). */
@@ -154,6 +155,48 @@ random_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
   return 0;
 }
 
+/* Write data.
+ *
+ * This verifies that the data matches what is read.  This is
+ * implemented by calling random_pread above internally and comparing
+ * the two buffers.
+ */
+static int
+random_pwrite (void *handle, const void *buf,
+               uint32_t count, uint64_t offset,
+               uint32_t flags)
+{
+  CLEANUP_FREE char *expected = malloc (count);
+  if (expected == NULL) {
+    nbdkit_error ("malloc: %m");
+    return -1;
+  }
+
+  if (random_pread (handle, expected, count, offset, flags) == -1)
+    return -1;
+
+  if (memcmp (buf, expected, count) != 0) {
+    errno = EIO;
+    nbdkit_error ("data written does not match expected");
+    return -1;
+  }
+
+  return 0;
+}
+
+/* Trim and zero are always errors.  By providing these functions we
+ * short-circuit the fallback paths which would be very slow and
+ * return EIO anyway.
+ */
+static int
+random_trim_zero (void *handle, uint32_t count, uint64_t offset,
+                  uint32_t flags)
+{
+  errno = EIO;
+  nbdkit_error ("attempt to trim or zero non-sparse random disk");
+  return -1;
+}
+
 static struct nbdkit_plugin plugin = {
   .name              = "random",
   .version           = PACKAGE_VERSION,
@@ -166,6 +209,9 @@ static struct nbdkit_plugin plugin = {
   .can_multi_conn    = random_can_multi_conn,
   .can_cache         = random_can_cache,
   .pread             = random_pread,
+  .pwrite            = random_pwrite,
+  .trim              = random_trim_zero,
+  .zero              = random_trim_zero,
   /* In this plugin, errno is preserved properly along error return
    * paths from failed system calls.
    */

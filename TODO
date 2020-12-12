@@ -209,10 +209,6 @@ Suggestions for filters
 * "bandwidth quota" filter which would close a connection after it
   exceeded a certain amount of bandwidth up or down.
 
-* nbdkit-random-plugin should enable writes and then check that writes
-  match the random data, allowing testing of copying from and to the
-  plugin.
-
 * nbdkit-cache-filter should handle ENOSPC errors automatically by
   reclaiming blocks from the cache
 

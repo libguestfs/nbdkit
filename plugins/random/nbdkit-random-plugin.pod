@@ -9,15 +9,27 @@ nbdkit-random-plugin - plugin to serve random data
 =head1 DESCRIPTION
 
 C<nbdkit-random-plugin> is a plugin for L<nbdkit(1)> which serves
-random data, read only.  This plugin is mainly good for testing NBD
-clients.  This plugin creates a non-sparse random disk, for a sparse
-random disk see L<nbdkit-sparse-random-plugin(1)>.
+random data.  This plugin is mainly good for testing NBD clients.
+This plugin creates a non-sparse random disk, for a sparse random disk
+see L<nbdkit-sparse-random-plugin(1)>.
 
 The size of the virtual disk must be specified using the C<size>
 parameter.  If you specify the C<seed> parameter then you will get the
 same random data over multiple runs with the same seed.
 
 The random data is generated using an I<insecure> method.
+
+=head2 Writes and testing copying
+
+Writing to the disk is possible.  If you do this the plugin will check
+that what you are writing exactly matches what would be read at the
+same offset (if not, it returns EIO error).  You can use this to test
+copying programs by making the source and destination NBD URIs be the
+same:
+
+ nbdkit -U - random size=100M --run 'nbdcopy "$uri" "$uri"'
+
+C<qemu-img convert> could be used in place of nbdcopy.
 
 =head1 PARAMETERS
 
@@ -65,7 +77,9 @@ L<nbdkit-full-plugin(1)>,
 L<nbdkit-null-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-sparse-random-plugin(1)>,
-L<nbdkit-zero-plugin(1)>.
+L<nbdkit-zero-plugin(1)>,
+L<nbdcopy(1)>,
+L<qemu-img(1)>.
 
 =head1 AUTHORS
 
@@ -73,4 +87,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018 Red Hat Inc.
+Copyright (C) 2018-2020 Red Hat Inc.

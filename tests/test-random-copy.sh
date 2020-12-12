@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2017-2020 Red Hat Inc.
+# Copyright (C) 2020 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -29,40 +30,12 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-include $(top_srcdir)/common-rules.mk
+# Test the sparse-random plugin.
 
-EXTRA_DIST = nbdkit-random-plugin.pod
+source ./functions.sh
+set -e
 
-plugin_LTLIBRARIES = nbdkit-random-plugin.la
+requires nbdcopy --version
 
-nbdkit_random_plugin_la_SOURCES = \
-	random.c \
-	$(top_srcdir)/include/nbdkit-plugin.h \
-	$(NULL)
-
-nbdkit_random_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/common/include \
-	-I$(top_srcdir)/common/utils \
-	-I$(top_srcdir)/include \
-	$(NULL)
-nbdkit_random_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
-nbdkit_random_plugin_la_LIBADD = \
-	$(top_builddir)/common/utils/libutils.la \
-	$(IMPORT_LIBRARY_ON_WINDOWS) \
-	$(NULL)
-nbdkit_random_plugin_la_LDFLAGS = \
-	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
-	$(NULL)
-
-if HAVE_POD
-
-man_MANS = nbdkit-random-plugin.1
-CLEANFILES += $(man_MANS)
-
-nbdkit-random-plugin.1: nbdkit-random-plugin.pod
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-endif HAVE_POD
+# Copy from self to self which is what this plugin is intended for.
+nbdkit -U - random size=100M --run 'nbdcopy "$uri" "$uri"'
