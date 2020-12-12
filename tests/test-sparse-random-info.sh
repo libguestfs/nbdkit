@@ -36,5 +36,9 @@ source ./functions.sh
 set -e
 
 requires nbdinfo --version
+if ! nbdinfo --help | grep -- --map ; then
+    echo "$0: nbdinfo --map option required to run this test"
+    exit 77
+fi
 
 nbdkit -U - sparse-random size=10G --run 'nbdinfo --map "$uri"'
