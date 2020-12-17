@@ -40,6 +40,8 @@ filter_LTLIBRARIES = nbdkit-log-filter.la
 
 nbdkit_log_filter_la_SOURCES = \
 	log.c \
+	log.h \
+	output.c \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
 

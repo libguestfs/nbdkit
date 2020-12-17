@@ -40,7 +40,6 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <pthread.h>
-#include <sys/time.h>
 #include <assert.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -51,11 +50,13 @@
 #include "utils.h"
 #include "windows-compat.h"
 
-static uint64_t connections;
-static char *logfilename;
-static FILE *logfile;
-static int append;
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+#include "log.h"
+
+uint64_t connections;
+char *logfilename;
+FILE *logfile;
+int append;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void
 log_unload (void)
@@ -99,6 +100,10 @@ log_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   return next (nxdata);
 }
 
+#define log_config_help \
+  "logfile=<FILE>    (required) The file to place the log in.\n" \
+  "logappend=<BOOL>  True to append to the log (default false).\n"
+
 /* Open the logfile. */
 static int
 log_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
@@ -128,139 +133,21 @@ log_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
   return next (nxdata);
 }
 
-#define log_config_help \
-  "logfile=<FILE>    (required) The file to place the log in.\n" \
-  "logappend=<BOOL>  True to append to the log (default false).\n"
-
-struct handle {
-  uint64_t connection;
-  uint64_t id;
-  const char *exportname;
-  int tls;
-};
-
-/* Compute the next id number on the current connection. */
-static uint64_t
-get_id (struct handle *h)
-{
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  return ++h->id;
-}
-
-/* Output a timestamp and the log message. */
-static void __attribute__ ((format (printf, 4, 5)))
-output (struct handle *h, const char *act, uint64_t id, const char *fmt, ...)
-{
-  va_list args;
-  struct timeval tv;
-  struct tm tm;
-  char timestamp[27] = "Time unknown";
-
-  /* Logging is best effort, so ignore failure to get timestamp */
-  if (!gettimeofday (&tv, NULL))
-    {
-      size_t s;
-
-      gmtime_r (&tv.tv_sec, &tm);
-      s = strftime (timestamp, sizeof timestamp - sizeof ".000000" + 1,
-                    "%F %T", &tm);
-      assert (s);
-      snprintf (timestamp + s, sizeof timestamp - s, ".%06ld",
-                0L + tv.tv_usec);
-    }
-#ifdef HAVE_FLOCKFILE
-  flockfile (logfile);
-#endif
-  if (h)
-    fprintf (logfile, "%s connection=%" PRIu64 " %s ", timestamp,
-             h->connection, act);
-  else
-    fprintf (logfile, "%s %s ", timestamp, act);
-  if (id)
-    fprintf (logfile, "id=%" PRIu64 " ", id);
-  va_start (args, fmt);
-  vfprintf (logfile, fmt, args);
-  va_end (args);
-  fputc ('\n', logfile);
-  fflush (logfile);
-#ifdef HAVE_FUNLOCKFILE
-  funlockfile (logfile);
-#endif
-}
-
-/* Shared code for a nicer log of return value */
-static void
-output_return (struct handle *h, const char *act, uint64_t id, int r, int *err)
-{
-  const char *s = "Other=>EINVAL";
-
-  /* Only decode what protocol.c:nbd_errno() recognizes */
-  if (r == -1) {
-    switch (*err) {
-    case EROFS:
-      s = "EROFS=>EPERM";
-      break;
-    case EPERM:
-      s = "EPERM";
-      break;
-    case EIO:
-      s = "EIO";
-      break;
-    case ENOMEM:
-      s = "ENOMEM";
-      break;
-#ifdef EDQUOT
-    case EDQUOT:
-      s = "EDQUOT=>ENOSPC";
-      break;
-#endif
-    case EFBIG:
-      s = "EFBIG=>ENOSPC";
-      break;
-    case ENOSPC:
-      s = "ENOSPC";
-      break;
-#ifdef ESHUTDOWN
-    case ESHUTDOWN:
-      s = "ESHUTDOWN";
-      break;
-#endif
-    case ENOTSUP:
-#if ENOTSUP != EOPNOTSUPP
-    case EOPNOTSUPP:
-#endif
-      s = "ENOTSUP";
-      break;
-    case EOVERFLOW:
-      s = "EOVERFLOW";
-      break;
-    case EINVAL:
-      s = "EINVAL";
-      break;
-    }
-  }
-  else {
-    s = "Success";
-  }
-  output (h, act, id, "return=%d (%s)", r, s);
-}
-
 /* List exports. */
 static int
 log_list_exports (nbdkit_next_list_exports *next, void *nxdata,
                   int readonly, int is_tls,
                   struct nbdkit_exports *exports)
 {
-  static uint64_t id;
+  static log_id_t id;
   int r;
   int err;
 
-  output (NULL, "ListExports", ++id, "readonly=%d tls=%d ...",
-          readonly, is_tls);
+  enter (NULL, ++id, "ListExports", "readonly=%d tls=%d", readonly, is_tls);
   r = next (nxdata, readonly, exports);
   if (r == -1) {
     err = errno;
-    output_return (NULL, "...ListExports", id, r, &err);
+    leave_simple (NULL, id, "ListExports", r, &err);
   }
   else {
     FILE *fp;
@@ -280,8 +167,8 @@ log_list_exports (nbdkit_next_list_exports *next, void *nxdata,
       fclose (fp);
     }
 
-    output (NULL, "...ListExports", id, "exports=[%s] return=0",
-            exports_str ? exports_str : "(null)");
+    leave (NULL, id, "ListExports", "exports=[%s] return=0",
+           exports_str ? exports_str : "(null)");
   }
   return r;
 }
@@ -346,9 +233,9 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
       e < 0 || c < 0 || Z < 0)
     return -1;
 
-  output (h, "Connect", 0, "export='%s' tls=%d size=0x%" PRIx64 " write=%d "
-          "flush=%d rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d "
-          "fast_zero=%d", exportname, h->tls, size, w, f, r, t, z, F, e, c, Z);
+  print (h, "Connect", "export='%s' tls=%d size=0x%" PRIx64 " write=%d "
+         "flush=%d rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d "
+         "fast_zero=%d", exportname, h->tls, size, w, f, r, t, z, F, e, c, Z);
   return 0;
 }
 
@@ -357,7 +244,7 @@ log_finalize (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
   struct handle *h = handle;
 
-  output (h, "Disconnect", 0, "transactions=%" PRId64, h->id);
+  print (h, "Disconnect", "transactions=%" PRId64, h->id);
   return 0;
 }
 
@@ -368,15 +255,12 @@ log_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
            uint32_t flags, int *err)
 {
   struct handle *h = handle;
-  uint64_t id = get_id (h);
   int r;
 
+  LOG (h, "Read", r, err, "offset=0x%" PRIx64 " count=0x%x", offs, count);
+
   assert (!flags);
-  output (h, "Read", id, "offset=0x%" PRIx64 " count=0x%x ...",
-          offs, count);
-  r = next_ops->pread (nxdata, buf, count, offs, flags, err);
-  output_return (h, "...Read", id, r, err);
-  return r;
+  return r = next_ops->pread (nxdata, buf, count, offs, flags, err);
 }
 
 /* Write data. */
@@ -386,15 +270,14 @@ log_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
             uint32_t flags, int *err)
 {
   struct handle *h = handle;
-  uint64_t id = get_id (h);
   int r;
 
+  LOG (h, "Write", r, err,
+       "offset=0x%" PRIx64 " count=0x%x fua=%d",
+       offs, count, !!(flags & NBDKIT_FLAG_FUA));
+
   assert (!(flags & ~NBDKIT_FLAG_FUA));
-  output (h, "Write", id, "offset=0x%" PRIx64 " count=0x%x fua=%d ...",
-          offs, count, !!(flags & NBDKIT_FLAG_FUA));
-  r = next_ops->pwrite (nxdata, buf, count, offs, flags, err);
-  output_return (h, "...Write", id, r, err);
-  return r;
+  return r = next_ops->pwrite (nxdata, buf, count, offs, flags, err);
 }
 
 /* Flush. */
@@ -403,14 +286,15 @@ log_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
            uint32_t flags, int *err)
 {
   struct handle *h = handle;
-  uint64_t id = get_id (h);
   int r;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-zero-length"
+  LOG (h, "Flush", r, err, "");
+#pragma GCC diagnostic pop
+
   assert (!flags);
-  output (h, "Flush", id, "...");
-  r = next_ops->flush (nxdata, flags, err);
-  output_return (h, "...Flush", id, r, err);
-  return r;
+  return r = next_ops->flush (nxdata, flags, err);
 }
 
 /* Trim data. */
@@ -420,15 +304,14 @@ log_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
           int *err)
 {
   struct handle *h = handle;
-  uint64_t id = get_id (h);
   int r;
 
+  LOG (h, "Trim", r, err,
+       "offset=0x%" PRIx64 " count=0x%x fua=%d",
+       offs, count, !!(flags & NBDKIT_FLAG_FUA));
+
   assert (!(flags & ~NBDKIT_FLAG_FUA));
-  output (h, "Trim", id, "offset=0x%" PRIx64 " count=0x%x fua=%d ...",
-          offs, count, !!(flags & NBDKIT_FLAG_FUA));
-  r = next_ops->trim (nxdata, count, offs, flags, err);
-  output_return (h, "...Trim", id, r, err);
-  return r;
+  return r = next_ops->trim (nxdata, count, offs, flags, err);
 }
 
 /* Zero data. */
@@ -438,19 +321,17 @@ log_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
           int *err)
 {
   struct handle *h = handle;
-  uint64_t id = get_id (h);
   int r;
+
+  LOG (h, "Zero", r, err,
+       "offset=0x%" PRIx64 " count=0x%x trim=%d fua=%d fast=%d",
+       offs, count, !!(flags & NBDKIT_FLAG_MAY_TRIM),
+       !!(flags & NBDKIT_FLAG_FUA),
+       !!(flags & NBDKIT_FLAG_FAST_ZERO));
 
   assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
                       NBDKIT_FLAG_FAST_ZERO)));
-  output (h, "Zero", id,
-          "offset=0x%" PRIx64 " count=0x%x trim=%d fua=%d fast=%d...",
-          offs, count, !!(flags & NBDKIT_FLAG_MAY_TRIM),
-          !!(flags & NBDKIT_FLAG_FUA),
-          !!(flags & NBDKIT_FLAG_FAST_ZERO));
-  r = next_ops->zero (nxdata, count, offs, flags, err);
-  output_return (h, "...Zero", id, r, err);
-  return r;
+  return r = next_ops->zero (nxdata, count, offs, flags, err);
 }
 
 /* Extents. */
@@ -460,16 +341,16 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
              struct nbdkit_extents *extents, int *err)
 {
   struct handle *h = handle;
-  uint64_t id = get_id (h);
+  log_id_t id = get_id (h);
   int r;
 
   assert (!(flags & ~(NBDKIT_FLAG_REQ_ONE)));
-  output (h, "Extents", id,
-          "offset=0x%" PRIx64 " count=0x%x req_one=%d ...",
-          offs, count, !!(flags & NBDKIT_FLAG_REQ_ONE));
+  enter (h, id, "Extents",
+         "offset=0x%" PRIx64 " count=0x%x req_one=%d",
+         offs, count, !!(flags & NBDKIT_FLAG_REQ_ONE));
   r = next_ops->extents (nxdata, count, offs, flags, extents, err);
   if (r == -1)
-    output_return (h, "...Extents", id, r, err);
+    leave_simple (h, id, "Extents", r, err);
   else {
     FILE *fp;
     CLEANUP_FREE char *extents_str = NULL;
@@ -492,8 +373,8 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
       fclose (fp);
     }
 
-    output (h, "...Extents", id, "extents=[%s] return=0",
-            extents_str ? extents_str : "(null)");
+    leave (h, id, "Extents", "extents=[%s] return=0",
+           extents_str ? extents_str : "(null)");
   }
   return r;
 }
@@ -505,15 +386,12 @@ log_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
            int *err)
 {
   struct handle *h = handle;
-  uint64_t id = get_id (h);
   int r;
 
+  LOG (h, "Cache", r, err, "offset=0x%" PRIx64 " count=0x%x", offs, count);
+
   assert (!flags);
-  output (h, "Cache", id, "offset=0x%" PRIx64 " count=0x%x ...",
-          offs, count);
-  r = next_ops->cache (nxdata, count, offs, flags, err);
-  output_return (h, "...Cache", id, r, err);
-  return r;
+  return r = next_ops->cache (nxdata, count, offs, flags, err);
 }
 
 static struct nbdkit_filter filter = {
