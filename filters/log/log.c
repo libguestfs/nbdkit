@@ -143,7 +143,7 @@ struct handle {
 static uint64_t
 get_id (struct handle *h)
 {
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE(&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   return ++h->id;
 }
 
