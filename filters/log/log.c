@@ -43,6 +43,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 #include <nbdkit-filter.h>
 
@@ -57,6 +58,7 @@ char *logfilename;
 FILE *logfile;
 int append;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pid_t saved_pid;
 
 static void
 log_unload (void)
@@ -130,6 +132,22 @@ log_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
     return -1;
   }
 
+  saved_pid = getpid ();
+
+  print (NULL, "Ready", "thread_model=%d", thread_model);
+  return next (nxdata);
+}
+
+static int
+log_after_fork (nbdkit_next_after_fork *next, void *nxdata)
+{
+  /* Only issue this message if we actually fork. */
+  if (getpid () != saved_pid) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-zero-length"
+    print (NULL, "Fork", "");
+#pragma GCC diagnostic pop
+  }
   return next (nxdata);
 }
 
@@ -170,6 +188,22 @@ log_list_exports (nbdkit_next_list_exports *next, void *nxdata,
     leave (NULL, id, "ListExports", "exports=[%s] return=0",
            exports_str ? exports_str : "(null)");
   }
+  return r;
+}
+
+static int
+log_preconnect (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
+                int readonly)
+{
+  static log_id_t id;
+  int r;
+  int err;
+
+  enter (NULL, ++id, "Preconnect", "readonly=%d", readonly);
+  r = next (nxdata, readonly);
+  if (r == -1)
+    err = errno;
+  leave_simple (NULL, id, "Preconnect", r, &err);
   return r;
 }
 
@@ -402,7 +436,9 @@ static struct nbdkit_filter filter = {
   .config_help       = log_config_help,
   .unload            = log_unload,
   .get_ready         = log_get_ready,
+  .after_fork        = log_after_fork,
   .list_exports      = log_list_exports,
+  .preconnect        = log_preconnect,
   .open              = log_open,
   .close             = log_close,
   .prepare           = log_prepare,

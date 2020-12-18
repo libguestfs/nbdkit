@@ -32,41 +32,42 @@
 
 source ./functions.sh
 set -e
+set -x
 
+requires nbdsh
 requires_filter log
 
-sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
-files="log.img log.log $sock log.pid"
-rm -f $files
+cleanup_fn rm -f log.log
+rm -f log.log
 
-# Test that qemu-io works
-truncate -s 10M log.img
-if ! qemu-io -f raw -c 'w 1M 2M' log.img; then
-    echo "$0: missing or broken qemu-io"
-    exit 77
-fi
-
-# Run nbdkit with logging enabled to file.
 echo '# My log' > log.log
-start_nbdkit -P log.pid -U $sock --filter=log file log.img \
-	     logfile=log.log logappend=1
 
-# For easier debugging, dump the final log files before removing them
-# on exit.
-cleanup ()
-{
-    echo "Log file contents:"
-    cat log.log
-    rm -f $files
-}
-cleanup_fn cleanup
+nbdsh -c '
+h.connect_command(["nbdkit", "-s", "--filter=log", "null", "size=10M",
+                   "logfile=log.log", "logappend=1"])
+mb = 1024*1024
+ba = b"x"*(2*mb)
+h.pwrite(ba, mb)
+h.pread(mb, mb*2)
+'
 
-# Write, then read some data in the file.
-qemu-io -f raw -c 'w -P 11 1M 2M' "nbd+unix://?socket=$sock"
-qemu-io -r -f raw -c 'r -P 11 2M 1M' "nbd+unix://?socket=$sock"
+# Print the full log to help with debugging.
+cat log.log
 
 # The log should have been appended, preserving our marker.
 grep '# My log' log.log
-# The log should show a write on connection 1, and read on connection 2.
+
+# The log should show Ready.
+grep ' Ready ' log.log
+
+# The log should _not_ show Fork, because the server didn't fork.
+grep -v ' Fork ' log.log
+
+# The log should show Preconnect, Connect and Disconnect stages.
+grep ' Preconnect ' log.log
+grep ' Connect ' log.log
+grep ' Disconnect ' log.log
+
+# The log should show a write and read.
 grep 'connection=1 Write id=1 offset=0x100000 count=0x200000 ' log.log
-grep 'connection=2 Read id=1 offset=0x200000 count=0x100000 ' log.log
+grep 'connection=1 Read id=2 offset=0x200000 count=0x100000 ' log.log
