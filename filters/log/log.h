@@ -50,6 +50,7 @@ struct handle {
 extern uint64_t connections;
 extern const char *logfilename;
 extern FILE *logfile;
+extern const char *logscript;
 extern int append;
 extern pthread_mutex_t lock;
 

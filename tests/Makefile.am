@@ -1509,11 +1509,15 @@ TESTS += \
 	test-log.sh \
 	test-log-error.sh \
 	test-log-extents.sh \
+	test-log-script.sh \
+	test-log-script-info.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-log.sh \
 	test-log-error.sh \
 	test-log-extents.sh \
+	test-log-script.sh \
+	test-log-script-info.sh \
 	$(NULL)
 
 # nofilter test.

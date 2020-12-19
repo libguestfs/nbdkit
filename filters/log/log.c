@@ -62,6 +62,7 @@
 uint64_t connections;
 const char *logfilename;
 FILE *logfile;
+const char *logscript;
 int append;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pid_t saved_pid;
@@ -88,23 +89,17 @@ log_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     return 0;
   }
+  if (strcmp (key, "logscript") == 0) {
+    logscript = value;
+    return 0;
+  }
   return next (nxdata, key, value);
 }
 
-static int
-log_config_complete (nbdkit_next_config_complete *next, void *nxdata)
-{
-  if (!logfilename) {
-    nbdkit_error ("missing logfile= parameter for the log filter");
-    return -1;
-  }
-
-  return next (nxdata);
-}
-
 #define log_config_help \
-  "logfile=<FILE>    (required) The file to place the log in.\n" \
-  "logappend=<BOOL>  True to append to the log (default false).\n"
+  "logfile=<FILE>               The file to place the log in.\n" \
+  "logappend=<BOOL>             True to append to the log (default false).\n" \
+  "logscript=<SCRIPT>           Script to run for logging."
 
 /* Open the logfile. */
 static int
@@ -112,24 +107,26 @@ log_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
 {
   int fd;
 
-  /* Using fopen("ae"/"we") would be more convenient, but as Haiku
-   * still lacks that, use this instead. Atomicity is not essential
-   * here since .config completes before threads that might fork, if
-   * we have to later add yet another fallback to fcntl(fileno()) for
-   * systems without O_CLOEXEC.
-   */
-  fd = open (logfilename,
-             O_CLOEXEC | O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC),
-             0666);
-  if (fd < 0) {
-    nbdkit_error ("open: %s: %m", logfilename);
-    return -1;
-  }
-  logfile = fdopen (fd, append ? "a" : "w");
-  if (!logfile) {
-    nbdkit_error ("fdopen: %s: %m", logfilename);
-    close (fd);
-    return -1;
+  if (logfilename) {
+    /* Using fopen("ae"/"we") would be more convenient, but as Haiku
+     * still lacks that, use this instead. Atomicity is not essential
+     * here since .config completes before threads that might fork, if
+     * we have to later add yet another fallback to fcntl(fileno()) for
+     * systems without O_CLOEXEC.
+     */
+    fd = open (logfilename,
+               O_CLOEXEC | O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC),
+               0666);
+    if (fd < 0) {
+      nbdkit_error ("open: %s: %m", logfilename);
+      return -1;
+    }
+    logfile = fdopen (fd, append ? "a" : "w");
+    if (!logfile) {
+      nbdkit_error ("fdopen: %s: %m", logfilename);
+      close (fd);
+      return -1;
+    }
   }
 
   saved_pid = getpid ();
@@ -450,7 +447,6 @@ static struct nbdkit_filter filter = {
   .name              = "log",
   .longname          = "nbdkit log filter",
   .config            = log_config,
-  .config_complete   = log_config_complete,
   .config_help       = log_config_help,
   .unload            = log_unload,
   .get_ready         = log_get_ready,

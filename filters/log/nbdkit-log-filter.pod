@@ -4,15 +4,24 @@ nbdkit-log-filter - nbdkit log filter
 
 =head1 SYNOPSIS
 
- nbdkit --filter=log plugin logfile=FILE [logappend=BOOL] [plugin-args...]
+ nbdkit --filter=log PLUGIN
+                     [logfile=FILE | logscript=SCRIPT] [logappend=BOOL]
+                     [PLUGIN-ARGS...]
 
 =head1 DESCRIPTION
 
-C<nbdkit-log-filter> is a filter that logs all transactions to a file.
+C<nbdkit-log-filter> is a filter that logs all transactions to a file
+or external script.
+
 When used as the first filter, it can show the original client
 requests.  As a later filter, it can show how earlier filters have
-modified the original request.  The format of the log file is
-described in L</LOG FILE FORMAT> below.
+modified the original request.
+
+When using C<logfile=FILE>, logs are written to a log file with the
+format described in L</LOG FILE FORMAT> below.
+
+When using C<logscript=SCRIPT>, logs invoke the external script.  See
+L</LOG SCRIPT> below.
 
 An alternative to this filter is simply to run nbdkit with the I<-f>
 and I<-v> flags which enable verbose debugging to stderr.  This logs
@@ -22,11 +31,20 @@ parsable format and works when nbdkit runs in the background.
 
 =head1 PARAMETERS
 
+C<logfile> or C<logscript> or both can be given.  If neither then the
+filter is inactive.
+
 =over 4
 
 =item B<logfile=>FILE
 
-The file where the log is written.  This parameter is required.
+The file where the log is written.  See L</LOG FILE FORMAT> below.
+
+=item B<logscript=>SCRIPT
+
+(nbdkit E<ge> 1.24)
+
+Log lines invoke an external script.  See L</LOG SCRIPT> below.
 
 =item B<logappend=true>
 
@@ -34,9 +52,9 @@ The file where the log is written.  This parameter is required.
 
 (nbdkit E<ge> 1.8)
 
-When set to C<false> (the default), if the file already exists it will
-be truncated.  When set to C<true>, the filter appends to the existing
-file.
+This only affects C<logfile>.  If C<false> (the default), if the file
+already exists it will be truncated.  If C<true>, the filter appends
+to the existing log file.
 
 =back
 
@@ -83,6 +101,85 @@ may be intermingled.  Use the C<id=N> field for correlation, it is
 unique per connection.
 
 Strings and lists are shell-quoted.
+
+=head1 LOG SCRIPT
+
+If C<logscript=SCRIPT> is given on the command line then log entries
+are passed to the external script.
+
+The script is passed several shell variables:
+
+=over 4
+
+=item C<$act>
+
+The action name, like C<"Read">, C<"Write"> etc.
+
+=item C<$connection>
+
+The connection ID identifying the client, only for connected calls
+like C<"Read">.
+
+=item C<$error>
+
+For messages of type C<"LEAVE"> which fail (C<$return = -1>), this
+contains the errno as a string, for example C<"EIO">.
+
+=item C<$id>
+
+The transaction ID, used to correlate actions which are split into two
+messages C<"ENTER"> and C<"LEAVE">.
+
+=item C<$return>
+
+For messages of type C<"LEAVE"> this is the return code, usually C<0>
+for success and C<-1> if there was an error.
+
+=item C<$type>
+
+The message type: C<"ENTER">, C<"LEAVE"> or C<"PRINT">.
+
+=item other shell variables
+
+Other parameters like C<offset=N> are turned into shell variables
+C<$offset> etc.
+
+=back
+
+Note the return value of the script is ignored.  Log scripts cannot
+modify or interrupt request processing.
+
+=head2 Log script examples
+
+The script:
+
+ nbdkit -f --filter=log null 10M \
+        logscript='echo $connection $type $id $act $offset >&2'
+
+might print lines like:
+
+ PRINT Ready
+ 1 ENTER 1 Read 0x0
+ 1 ENTER 2 Write 0x200
+ 1 LEAVE 2 Write
+ 1 LEAVE 1 Read
+
+corresponding to log file lines:
+
+ Ready thread_model=3
+ connection=1 Read id=1 offset=0x0 count=0x200 ...
+ connection=1 Write id=2 offset=0x200 count=0x200 ...
+ connection=1 ...Write id=2
+ connection=1 ...Read id=1
+
+This script will trigger a message when any client reads:
+
+ nbdkit -f --filter=log memory 10M \
+        logscript='
+            if [ "$act" = "Read" -a "$type" = "ENTER" ]; then
+                echo Client is reading $count bytes from $offset >&2
+            fi
+        '
 
 =head1 FILES
 

@@ -55,9 +55,10 @@
 
 enum type { ENTER, LEAVE, PRINT };
 
+/* Adds an entry to the logfile. */
 static void
-output (struct handle *h, log_id_t id, const char *act, enum type type,
-        const char *fmt, va_list args)
+to_file (struct handle *h, log_id_t id, const char *act, enum type type,
+         const char *fmt, va_list args)
 {
   struct timeval tv;
   struct tm tm;
@@ -103,15 +104,62 @@ output (struct handle *h, log_id_t id, const char *act, enum type type,
 #endif
 }
 
+/* Runs the script. */
+static void
+to_script (struct handle *h, log_id_t id, const char *act, enum type type,
+           const char *fmt, va_list args)
+{
+  FILE *fp;
+  CLEANUP_FREE char *str = NULL;
+  size_t len = 0;
+  int r;
+
+  /* Create the shell variables + script. */
+  fp = open_memstream (&str, &len);
+  if (!fp) {
+    /* Not much we can do, but at least record the error. */
+    nbdkit_error ("logscript: open_memstream: %m");
+    return;
+  }
+
+  fprintf (fp, "act=%s\n", act);
+  if (h)
+    fprintf (fp, "connection=%" PRIu64 "\n", h->connection);
+  switch (type) {
+  case ENTER: fprintf (fp, "type=ENTER\n"); break;
+  case LEAVE: fprintf (fp, "type=LEAVE\n"); break;
+  case PRINT: fprintf (fp, "type=PRINT\n"); break;
+  }
+  if (id)
+    fprintf (fp, "id=%" PRIu64 "\n", id);
+
+  vfprintf (fp, fmt, args);
+  fprintf (fp, "\n");
+
+  fprintf (fp, "%s", logscript);
+  fclose (fp);
+
+  /* Run the script.  Log the status, but ignore it. */
+  r = system (str);
+  exit_status_to_nbd_error (r, "logscript");
+}
+
 void
 enter (struct handle *h, log_id_t id, const char *act,
        const char *fmt, ...)
 {
   va_list args;
 
-  va_start (args, fmt);
-  output (h, id, act, ENTER, fmt, args);
-  va_end (args);
+  if (logfile) {
+    va_start (args, fmt);
+    to_file (h, id, act, ENTER, fmt, args);
+    va_end (args);
+  }
+  if (logscript) {
+    va_start (args, fmt);
+    to_script (h, id, act, ENTER, fmt, args);
+    va_end (args);
+  }
 }
 
 void
@@ -120,9 +168,16 @@ leave (struct handle *h, log_id_t id, const char *act,
 {
   va_list args;
 
-  va_start (args, fmt);
-  output (h, id, act, LEAVE, fmt, args);
-  va_end (args);
+  if (logfile) {
+    va_start (args, fmt);
+    to_file (h, id, act, LEAVE, fmt, args);
+    va_end (args);
+  }
+  if (logscript) {
+    va_start (args, fmt);
+    to_script (h, id, act, LEAVE, fmt, args);
+    va_end (args);
+  }
 }
 
 void
@@ -130,9 +185,16 @@ print (struct handle *h, const char *act, const char *fmt, ...)
 {
   va_list args;
 
-  va_start (args, fmt);
-  output (h, 0, act, PRINT, fmt, args);
-  va_end (args);
+  if (logfile) {
+    va_start (args, fmt);
+    to_file (h, 0, act, PRINT, fmt, args);
+    va_end (args);
+  }
+  if (logscript) {
+    va_start (args, fmt);
+    to_script (h, 0, act, PRINT, fmt, args);
+    va_end (args);
+  }
 }
 
 void
