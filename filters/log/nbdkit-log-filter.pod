@@ -8,15 +8,17 @@ nbdkit-log-filter - nbdkit log filter
 
 =head1 DESCRIPTION
 
-C<nbdkit-log-filter> is a filter that logs all transactions.  When
-used as the first filter, it can show the original client requests; as
-a later filter, it can show how earlier filters have modified the
-original request.  The log results are placed in a user-specified
-file; for more details on the log format, see L<FILES>.  Note that
-using C<nbdkit -v -f> produces much more verbose logging details to
-stderr about every aspect of nbdkit operation, although this requires
-running nbdkit in the foreground; while the log filter is designed to
-work even when nbdkit is run as a daemon.
+C<nbdkit-log-filter> is a filter that logs all transactions to a file.
+When used as the first filter, it can show the original client
+requests.  As a later filter, it can show how earlier filters have
+modified the original request.  The format of the log file is
+described in L</LOG FILE FORMAT> below.
+
+An alternative to this filter is simply to run nbdkit with the I<-f>
+and I<-v> flags which enable verbose debugging to stderr.  This logs
+many aspects of nbdkit operation, but requires running nbdkit in the
+foreground.  The log filter uses a more parsimonious and more easily
+parsable format and works when nbdkit runs in the background.
 
 =head1 PARAMETERS
 
@@ -54,20 +56,7 @@ After running a client that performs the same operations under each of
 the two servers, you can compare F<disk.log> and F<disk.log2> to see
 the impact of the caching.
 
-=head1 FILES
-
-=over 4
-
-=item C<logfile=FILE> parameter
-
-This filter writes to the file specified by the C<logfile=FILE>
-parameter.  All lines include a timestamp, a connection counter, then
-details about the command.  The following actions are logged: ListExports,
-Connect, Read, Write, Zero, Trim, Extents, Cache, Flush, and Disconnect.
-Except for Connect and Disconnect, an event is logged across two lines
-for call and return value, to allow tracking duration and tracing any
-parallel execution, using id for correlation (incremented per action
-on the connection).
+=head1 LOG FILE FORMAT
 
 An example logging session of a client that requests an export list
 before performing a single successful read is:
@@ -78,6 +67,29 @@ before performing a single successful read is:
  2020-08-06 02:07:23.080907 connection=1 Read id=1 offset=0x0 count=0x200 ...
  2020-08-06 02:07:23.080927 connection=1 ...Read id=1 return=0 (Success)
  2020-08-06 02:07:23.081255 connection=1 Disconnect transactions=1
+
+All lines start with a timestamp in C<YYYY-MM-DD HH:MM:ZZ.MS> format.
+
+For connected calls, C<connection=N> is present to distinguish
+between clients.
+
+The action follows.  Currently the following actions are logged:
+ListExports, Ready, Fork, Preconnect, Connect, Read, Write, Zero,
+Trim, Extents, Cache, Flush and Disconnect.
+
+Some actions are logged across two lines showing the call and return
+value.  Because nbdkit handles requests in parallel different requests
+may be intermingled.  Use the C<id=N> field for correlation, it is
+unique per connection.
+
+=head1 FILES
+
+=over 4
+
+=item C<logfile=FILE> parameter
+
+This filter writes to the file specified by the C<logfile=FILE>
+parameter.
 
 =item F<$filterdir/nbdkit-log-filter.so>
 
