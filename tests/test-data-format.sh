@@ -39,6 +39,14 @@ set -x
 requires_run
 requires_nbdsh_uri
 
+# Recent valgrind deadlocks when running this test.
+# XXX Temporarily disable it until valgrind is fixed.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1755400
+if test -n "$NBDKIT_VALGRIND"; then
+    echo "$0: test skipped because valgrind is broken"
+    exit 77
+fi
+
 # Which allocators can we test?
 allocators="sparse malloc"
 
