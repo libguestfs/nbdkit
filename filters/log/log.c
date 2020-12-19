@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdarg.h>
 #include <errno.h>
@@ -165,24 +166,25 @@ log_list_exports (nbdkit_next_list_exports *next, void *nxdata,
   }
   else {
     FILE *fp;
-    CLEANUP_FREE char *exports_str = NULL;
+    CLEANUP_FREE char *str = NULL;
     size_t i, n, len = 0;
 
-    fp = open_memstream (&exports_str, &len);
+    fp = open_memstream (&str, &len);
     if (fp != NULL) {
+      fprintf (fp, "exports=(");
       n = nbdkit_exports_count (exports);
       for (i = 0; i < n; ++i) {
         struct nbdkit_export e = nbdkit_get_export (exports, i);
         if (i > 0)
-          fprintf (fp, ", ");
+          fprintf (fp, " ");
         shell_quote (e.name, fp);
       }
-
+      fprintf (fp, ") return=0");
       fclose (fp);
+      leave (NULL, id, "ListExports", "%s", str);
     }
-
-    leave (NULL, id, "ListExports", "exports=[%s] return=0",
-           exports_str ? exports_str : "(null)");
+    else
+      leave (NULL, id, "ListExports", "");
   }
   return r;
 }
@@ -246,6 +248,9 @@ static int
 log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
              int readonly)
 {
+  FILE *fp;
+  CLEANUP_FREE char *str = NULL;
+  size_t len = 0;
   struct handle *h = handle;
   const char *exportname = h->exportname;
   int64_t size = next_ops->get_size (nxdata);
@@ -263,9 +268,21 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
       e < 0 || c < 0 || Z < 0)
     return -1;
 
-  print (h, "Connect", "export='%s' tls=%d size=0x%" PRIx64 " write=%d "
-         "flush=%d rotational=%d trim=%d zero=%d fua=%d extents=%d cache=%d "
-         "fast_zero=%d", exportname, h->tls, size, w, f, r, t, z, F, e, c, Z);
+  fp = open_memstream (&str, &len);
+  if (fp) {
+    fprintf (fp, "export=");
+    shell_quote (exportname, fp);
+    fprintf (fp,
+             " tls=%d size=0x%" PRIx64 " write=%d "
+             "flush=%d rotational=%d trim=%d zero=%d fua=%d extents=%d "
+             "cache=%d fast_zero=%d",
+             h->tls, size, w, f, r, t, z, F, e, c, Z);
+    fclose (fp);
+    print (h, "Connect", "%s", str);
+  }
+  else
+    print (h, "Connect", "");
+
   return 0;
 }
 
@@ -380,28 +397,36 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     leave_simple (h, id, "Extents", r, err);
   else {
     FILE *fp;
-    CLEANUP_FREE char *extents_str = NULL;
+    CLEANUP_FREE char *str = NULL;
     size_t i, n, len = 0;
 
-    fp = open_memstream (&extents_str, &len);
+    fp = open_memstream (&str, &len);
     if (fp != NULL) {
+      fprintf (fp, "extents=(");
       n = nbdkit_extents_count (extents);
       for (i = 0; i < n; ++i) {
+        bool comma = false;
         struct nbdkit_extent e = nbdkit_get_extent (extents, i);
         if (i > 0)
-          fprintf (fp, ", ");
-        fprintf (fp, "{ offset=0x%" PRIx64 ", length=0x%" PRIx64 ", "
-                 "hole=%d, zero=%d }",
-                 e.offset, e.length,
-                 !!(e.type & NBDKIT_EXTENT_HOLE),
-                 !!(e.type & NBDKIT_EXTENT_ZERO));
+          fprintf (fp, " ");
+        fprintf (fp, "0x%" PRIx64 " 0x%" PRIx64, e.offset, e.length);
+        fprintf (fp, " \"");
+        if ((e.type & NBDKIT_EXTENT_HOLE) != 0) {
+          fprintf (fp, "hole");
+          comma = true;
+        }
+        if ((e.type & NBDKIT_EXTENT_ZERO) != 0) {
+          if (comma) fprintf (fp, ",");
+          fprintf (fp, "zero");
+        }
+        fprintf (fp, "\"");
       }
-
+      fprintf (fp, ") return=0");
       fclose (fp);
+      leave (h, id, "Extents", "%s", str);
     }
-
-    leave (h, id, "Extents", "extents=[%s] return=0",
-           extents_str ? extents_str : "(null)");
+    else
+      leave (h, id, "Extents", "");
   }
   return r;
 }

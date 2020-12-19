@@ -140,57 +140,49 @@ leave_simple (struct handle *h, log_id_t id, const char *act, int r, int *err)
 {
   const char *s;
 
-  /* Only decode what protocol.c:nbd_errno() recognizes */
+  /* Only decode what server/protocol.c:nbd_errno() recognizes */
   if (r == -1) {
     switch (*err) {
     case EROFS:
-      s = "EROFS=>EPERM";
-      break;
     case EPERM:
-      s = "EPERM";
+      s = " error=EPERM";
       break;
     case EIO:
-      s = "EIO";
+      s = " error=EIO";
       break;
     case ENOMEM:
-      s = "ENOMEM";
+      s = " error=ENOMEM";
       break;
 #ifdef EDQUOT
     case EDQUOT:
-      s = "EDQUOT=>ENOSPC";
-      break;
 #endif
     case EFBIG:
-      s = "EFBIG=>ENOSPC";
-      break;
     case ENOSPC:
-      s = "ENOSPC";
+      s = " error=ENOSPC";
       break;
 #ifdef ESHUTDOWN
     case ESHUTDOWN:
-      s = "ESHUTDOWN";
+      s = " error=ESHUTDOWN";
       break;
 #endif
     case ENOTSUP:
 #if ENOTSUP != EOPNOTSUPP
     case EOPNOTSUPP:
 #endif
-      s = "ENOTSUP";
+      s = " error=ENOTSUP";
       break;
     case EOVERFLOW:
-      s = "EOVERFLOW";
+      s = " error=EOVERFLOW";
       break;
     case EINVAL:
-      s = "EINVAL";
-      break;
     default:
-      s = "Other=>EINVAL";
+      s = " error=EINVAL";
     }
   }
   else
-    s = "Success";
+    s = "";
 
-  leave (h, id, act, "return=%d (%s)", r, s);
+  leave (h, id, act, "return=%d%s", r, s);
 }
 
 void

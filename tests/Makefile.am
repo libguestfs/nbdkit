@@ -1505,8 +1505,16 @@ TESTS += test-limit.sh
 EXTRA_DIST += test-limit.sh
 
 # log filter test.
-TESTS += test-log.sh
-EXTRA_DIST += test-log.sh
+TESTS += \
+	test-log.sh \
+	test-log-error.sh \
+	test-log-extents.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-log.sh \
+	test-log-error.sh \
+	test-log-extents.sh \
+	$(NULL)
 
 # nofilter test.
 TESTS += test-nofilter.sh
