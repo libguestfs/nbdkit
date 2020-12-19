@@ -53,6 +53,11 @@
 
 #include "log.h"
 
+/* We use the equivalent of printf ("") several times in this file
+ * which worries GCC.  Ignore these.
+ */
+#pragma GCC diagnostic ignored "-Wformat-zero-length"
+
 uint64_t connections;
 char *logfilename;
 FILE *logfile;
@@ -142,12 +147,9 @@ static int
 log_after_fork (nbdkit_next_after_fork *next, void *nxdata)
 {
   /* Only issue this message if we actually fork. */
-  if (getpid () != saved_pid) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-zero-length"
+  if (getpid () != saved_pid)
     print (NULL, "Fork", "");
-#pragma GCC diagnostic pop
-  }
+
   return next (nxdata);
 }
 
@@ -322,10 +324,7 @@ log_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   struct handle *h = handle;
   int r;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-zero-length"
   LOG (h, "Flush", r, err, "");
-#pragma GCC diagnostic pop
 
   assert (!flags);
   return r = next_ops->flush (nxdata, flags, err);
