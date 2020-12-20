@@ -48,7 +48,7 @@ struct handle {
 };
 
 extern uint64_t connections;
-extern char *logfilename;
+extern const char *logfilename;
 extern FILE *logfile;
 extern int append;
 extern pthread_mutex_t lock;

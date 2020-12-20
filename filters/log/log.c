@@ -59,7 +59,7 @@
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
 
 uint64_t connections;
-char *logfilename;
+const char *logfilename;
 FILE *logfile;
 int append;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -68,9 +68,8 @@ pid_t saved_pid;
 static void
 log_unload (void)
 {
-  if (logfilename)
+  if (logfile)
     fclose (logfile);
-  free (logfilename);
 }
 
 /* Called for each key=value passed on the command line. */
@@ -79,12 +78,7 @@ log_config (nbdkit_next_config *next, void *nxdata,
             const char *key, const char *value)
 {
   if (strcmp (key, "logfile") == 0) {
-    free (logfilename);
-    logfilename = strdup (value);
-    if (!logfilename) {
-      nbdkit_error ("strdup: %m");
-      return -1;
-    }
+    logfilename = value;
     return 0;
   }
   if (strcmp (key, "logappend") == 0) {
