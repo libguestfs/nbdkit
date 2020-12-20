@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdsh
+requires nbdsh --version
 requires_filter log
 
 cleanup_fn rm -f log.log
