@@ -78,9 +78,11 @@ L<nbdkit-curl-plugin(1)> or L<nbdkit-ssh-plugin(1)>:
 
 =item *
 
-Create a RAM disk using L<nbdkit-memory-plugin(1)>:
+Create a sparse 1 terabyte RAM disk using L<nbdkit-memory-plugin(1)>
+and use it as a loop device (L<nbdkit-loop(1)>):
 
- nbdkit memory 64M
+ nbdkit memory 1T
+ nbd-client -b 512 localhost /dev/nbd0
 
 =item *
 
