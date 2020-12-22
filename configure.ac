@@ -101,6 +101,7 @@ filters="\
         blocksize \
         cache \
         cacheextents \
+        checkwrite \
         cow \
         ddrescue \
         delay \
@@ -1228,6 +1229,7 @@ AC_CONFIG_FILES([Makefile
                  filters/blocksize/Makefile
                  filters/cache/Makefile
                  filters/cacheextents/Makefile
+                 filters/checkwrite/Makefile
                  filters/cow/Makefile
                  filters/ddrescue/Makefile
                  filters/delay/Makefile

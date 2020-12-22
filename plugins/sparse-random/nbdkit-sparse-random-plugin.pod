@@ -38,6 +38,7 @@ use a single instance of this plugin for both read and write:
  nbdkit -U - sparse-random size=1T --run 'nbdcopy "$uri" "$uri"'
 
 C<qemu-img convert> could be used in place of nbdcopy.
+See also L<nbdkit-checkwrite-filter(1)>.
 
 =head1 PARAMETERS
 

@@ -76,4 +76,8 @@
 
 #endif
 
+/* Helpful to have MIN3, MAX3 and maybe more in future. */
+#define MIN3(x0, x1, x2) (MIN (MIN ((x0), (x1)), (x2)))
+#define MAX3(x0, x1, x2) (MAX (MAX ((x0), (x1)), (x2)))
+
 #endif /* NBDKIT_MINMAX_H */

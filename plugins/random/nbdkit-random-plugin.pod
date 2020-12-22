@@ -30,6 +30,7 @@ same:
  nbdkit -U - random size=100M --run 'nbdcopy "$uri" "$uri"'
 
 C<qemu-img convert> could be used in place of nbdcopy.
+See also L<nbdkit-checkwrite-filter(1)>.
 
 =head1 PARAMETERS
 

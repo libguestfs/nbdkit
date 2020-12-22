@@ -1357,6 +1357,16 @@ EXTRA_DIST += \
 TESTS += test-cacheextents.sh
 EXTRA_DIST += test-cacheextents.sh
 
+# checkwrite filter test.
+TESTS += \
+	test-checkwrite.sh \
+	test-checkwrite-fail.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-checkwrite.sh \
+	test-checkwrite-fail.sh \
+	$(NULL)
+
 # cow filter test.
 if HAVE_MKE2FS_WITH_D
 TESTS += test-cow.sh
