@@ -35,6 +35,8 @@
 source ./functions.sh
 set -e
 
+requires_run
+
 # nbdcopy >= 1.6 required for this test.
 requires nbdcopy --version
 minor=$( nbdcopy --version | sed -n -e 's|.* 1\.\([0-9]*\)\..*|\1|p' )
