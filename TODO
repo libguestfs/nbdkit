@@ -224,8 +224,6 @@ Suggestions for filters
   could inject a flush after pausing.  However this requires that
   filter background threads have access to the plugin (see above).
 
-* nbdkit-swab-filter should be able to swap 32 and 64 bits.
-
 nbdkit-rate-filter:
 
 * allow other kinds of traffic shaping such as VBR
