@@ -8,23 +8,30 @@ nbdkit-checkwrite-filter - check writes match contents of plugin
 
 =head1 DESCRIPTION
 
-C<nbdkit-checkwrite-filter> is an nbdkit filter that checks writes to
-the underlying plugin match the content of the plugin.  If a client
-tries to write non-matching data to the plugin then the filter injects
-an EIO Input/output error.  All write-like operations are covered by
-this filter, such as trimming and zeroing.
+C<nbdkit-checkwrite-filter> is an nbdkit filter that turns write
+operations into checks that what is written matches the existing
+content of the plugin.  If the content matches then the write
+operation succeeds (doing nothing).  If not then the write operation
+fails returning EIO Input/output error.
+
+The purpose of this filter is to test copying tools as described
+below.
 
 The underlying plugin is opened read-only and is never written to.
+All write-like operations are covered by this filter, such as trimming
+and zeroing.  This filter tests the logical equivalence of the writes,
+ignoring differences in sparseness.
 
 =head2 Using this filter to test copying tools
-
-This filter is usually used for testing other NBD tools.
 
 You can check that a copying tool is copying data correctly by
 creating an nbdkit instance containing some test data, overlaying this
 filter, and copying from and to nbdkit at the same time:
 
  nbdkit -U - --filter=checkwrite data "@32768 1" \
+        --run 'nbdcopy "$uri" "$uri"'
+
+ nbdkit -U - --filter=checkwrite file disk.img \
         --run 'nbdcopy "$uri" "$uri"'
 
 If the copying program is buggy then you will see EIO errors and (if

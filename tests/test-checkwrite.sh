@@ -46,7 +46,7 @@ requires test $minor -ge 6
 
 do_test ()
 {
-    nbdkit -U - --filter=checkwrite "$@" --run 'nbdcopy "$uri" "$uri"'
+    nbdkit -U - -v --filter=checkwrite "$@" --run 'nbdcopy "$uri" "$uri"'
 }
 
 # Tests zero-sized disk.
@@ -71,3 +71,7 @@ do_test pattern 1M
 # Use of an odd offset here should test corner cases in extent
 # handling.
 do_test --filter=offset data "1 @0x100000000 1" offset=1
+
+if test -f disk; then
+    do_test file disk
+fi
