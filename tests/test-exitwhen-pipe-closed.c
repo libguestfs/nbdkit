@@ -43,6 +43,11 @@ main (int argc, char *argv[])
   int fd[2];
   pid_t pid;
 
+#ifdef WIN32
+  fprintf (stderr, "%s: test skipped on Windows: no pipe(2)\n", argv[0]);
+  exit (77);
+#endif
+
   if (pipe (fd) == -1) {
     perror ("pipe");
     exit (EXIT_FAILURE);

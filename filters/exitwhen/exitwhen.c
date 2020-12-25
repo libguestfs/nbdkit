@@ -39,7 +39,6 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <poll.h>
 #include <assert.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -49,6 +48,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "poll.h"
 #include "utils.h"
 #include "vector.h"
 
@@ -60,8 +60,14 @@ static bool exiting = false;
 
 /* The list of events generated from command line parameters. */
 struct event {
-  enum { EVENT_FILE_CREATED = 1, EVENT_FILE_DELETED, EVENT_PROCESS_EXITS,
-         EVENT_FD_CLOSED, EVENT_SCRIPT } type;
+  int type;
+#define EVENT_FILE_CREATED  1
+#define EVENT_FILE_DELETED  2
+#ifndef WIN32
+#define EVENT_PROCESS_EXITS 3
+#define EVENT_FD_CLOSED     4
+#define EVENT_SCRIPT        5
+#endif
   union {
     char *filename;             /* Filename or script. */
     int fd;                     /* For PROCESS_EXITS or FD_CLOSED. */
@@ -77,21 +83,27 @@ static void
 free_event (struct event event)
 {
   switch (event.type) {
+#ifdef EVENT_FILE_CREATED
   case EVENT_FILE_CREATED:
+#endif
+#ifdef EVENT_FILE_DELETED
   case EVENT_FILE_DELETED:
+#endif
+#ifdef EVENT_SCRIPT
   case EVENT_SCRIPT:
+#endif
     free (event.u.filename);
     break;
+#ifdef EVENT_PROCESS_EXITS
   case EVENT_PROCESS_EXITS:
+#endif
+#ifdef EVENT_FD_CLOSED
+  case EVENT_FD_CLOSED:
+#endif
 #ifdef __linux__
-  case EVENT_FD_CLOSED:
-#endif
     close (event.u.fd);
-    break;
-#ifndef __linux__
-  case EVENT_FD_CLOSED:
-    break;
 #endif
+    break;
   }
 }
 
@@ -109,11 +121,21 @@ exitwhen_unload (void)
  *
  * This must be called with &lock held.
  */
+#ifdef EVENT_FILE_CREATED
 static void check_for_event_file_created (const struct event *);
+#endif
+#ifdef EVENT_FILE_DELETED
 static void check_for_event_file_deleted (const struct event *);
+#endif
+#ifdef EVENT_PROCESS_EXITS
 static void check_for_event_process_exits (const struct event *);
+#endif
+#ifdef EVENT_FD_CLOSED
 static void check_for_event_fd_closed (const struct event *);
+#endif
+#ifdef EVENT_SCRIPT
 static void check_for_event_script (const struct event *);
+#endif
 
 static bool
 check_for_event (void)
@@ -125,21 +147,31 @@ check_for_event (void)
       const struct event *event = &events.ptr[i];
 
       switch (event->type) {
+#ifdef EVENT_FILE_CREATED
       case EVENT_FILE_CREATED:
         check_for_event_file_created (event);
         break;
+#endif
+#ifdef EVENT_FILE_DELETED
       case EVENT_FILE_DELETED:
         check_for_event_file_deleted (event);
         break;
+#endif
+#ifdef EVENT_PROCESS_EXITS
       case EVENT_PROCESS_EXITS:
         check_for_event_process_exits (event);
         break;
+#endif
+#ifdef EVENT_FD_CLOSED
       case EVENT_FD_CLOSED:
         check_for_event_fd_closed (event);
         break;
+#endif
+#ifdef EVENT_SCRIPT
       case EVENT_SCRIPT:
         check_for_event_script (event);
         break;
+#endif
       }
     }
   }
@@ -147,6 +179,7 @@ check_for_event (void)
   return exiting;
 }
 
+#ifdef EVENT_FILE_CREATED
 static void
 check_for_event_file_created (const struct event *event)
 {
@@ -156,7 +189,9 @@ check_for_event_file_created (const struct event *event)
     exiting = true;
   }
 }
+#endif
 
+#ifdef EVENT_FILE_DELETED
 static void
 check_for_event_file_deleted (const struct event *event)
 {
@@ -173,7 +208,9 @@ check_for_event_file_deleted (const struct event *event)
     }
   }
 }
+#endif
 
+#ifdef EVENT_PROCESS_EXITS
 static void
 check_for_event_process_exits (const struct event *event)
 {
@@ -205,7 +242,9 @@ check_for_event_process_exits (const struct event *event)
   }
 #endif /* !__linux__ */
 }
+#endif
 
+#ifdef EVENT_FD_CLOSED
 static void
 check_for_event_fd_closed (const struct event *event)
 {
@@ -238,7 +277,9 @@ check_for_event_fd_closed (const struct event *event)
     nbdkit_error ("exit-when-pipe-closed: poll: %m");
   }
 }
+#endif
 
+#ifdef EVENT_SCRIPT
 static void
 check_for_event_script (const struct event *event)
 {
@@ -264,6 +305,7 @@ check_for_event_script (const struct event *event)
     exit_status_to_nbd_error (r, "exit-when-script");
   }
 }
+#endif
 
 /* The background polling thread.
  *
@@ -315,7 +357,9 @@ exitwhen_config (nbdkit_next_config *next, void *nxdata,
 {
   struct event event;
 
-  if (strcmp (key, "exit-when-file-created") == 0 ||
+  if (0) ;
+#if defined(EVENT_FILE_CREATED) && defined(EVENT_FILE_DELETED)
+  else if (strcmp (key, "exit-when-file-created") == 0 ||
       strcmp (key, "exit-when-file-deleted") == 0) {
     char c = key[15];
 
@@ -329,6 +373,8 @@ exitwhen_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     return 0;
   }
+#endif
+#ifdef EVENT_FD_CLOSED
   else if (strcmp (key, "exit-when-pipe-closed") == 0 ||
            strcmp (key, "exit-when-fd-closed") == 0) {
     event.type = EVENT_FD_CLOSED;
@@ -336,6 +382,8 @@ exitwhen_config (nbdkit_next_config *next, void *nxdata,
       return -1;
     goto append_event;
   }
+#endif
+#ifdef EVENT_PROCESS_EXITS
   else if (strcmp (key, "exit-when-process-exits") == 0 ||
            strcmp (key, "exit-when-pid-exits") == 0) {
     uint64_t pid;
@@ -360,6 +408,8 @@ exitwhen_config (nbdkit_next_config *next, void *nxdata,
 #endif
     goto append_event;
   }
+#endif
+#ifdef EVENT_SCRIPT
   else if (strcmp (key, "exit-when-script") == 0) {
     event.type = EVENT_SCRIPT;
     event.u.filename = strdup (value);
@@ -369,6 +419,7 @@ exitwhen_config (nbdkit_next_config *next, void *nxdata,
     }
     goto append_event;
   }
+#endif
 
   /* This is a setting, not an event. */
   if (strcmp (key, "exit-when-poll") == 0) {
