@@ -34,13 +34,13 @@
 
 source ./functions.sh
 set -e
+set -x
 
 requires_run
 
-# nbdcopy >= 1.6 required for this test.
+# nbdcopy >= 1.5.9 required for this test.
 requires nbdcopy --version
-minor=$( nbdcopy --version | sed -n -e 's|.* 1\.\([0-9]*\)\..*|\1|p' )
-requires test $minor -ge 6
+requires_libnbd_version 1.5.9
 
 # Copy from self to self which is what this plugin is intended for.
 nbdkit -U - sparse-random size=10G --run 'nbdcopy "$uri" "$uri"'

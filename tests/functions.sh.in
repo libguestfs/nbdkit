@@ -190,6 +190,26 @@ requires_single_mode ()
     fi
 }
 
+# Check for minimum version of libnbd (also nbdsh, nbdinfo, nbdcopy etc.)
+# eg: requires_libnbd_version 1.6
+requires_libnbd_version ()
+{
+    requires nbdsh --version
+    requires $PYTHON --version
+    requires $PYTHON -c 'from packaging import version'
+    export v="$1"
+    if ! nbdsh -c '
+import os
+import sys
+from packaging import version
+v=os.getenv("v")
+vv=h.get_version()
+if version.parse(vv) < version.parse(v):
+    print("libnbd is too old to run this test: %s < %s" % (vv, v))
+    sys.exit(1)
+'; then exit 77; fi
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to
