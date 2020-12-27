@@ -62,6 +62,7 @@ libnbdkitocaml_la_SOURCES = \
 	bindings.c \
 	callbacks.h \
 	plugin.c \
+	plugin.h \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
 

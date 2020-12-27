@@ -44,8 +44,9 @@
 #include <caml/threads.h>
 
 #define NBDKIT_API_VERSION 2
-
 #include <nbdkit-plugin.h>
+
+#include "plugin.h"
 
 /* Bindings for miscellaneous nbdkit_* utility functions. */
 

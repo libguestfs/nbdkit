@@ -46,21 +46,9 @@
 #include <caml/threads.h>
 
 #define NBDKIT_API_VERSION 2
-
 #include <nbdkit-plugin.h>
 
-/* Replacement if caml_alloc_initialized_string is missing, added
- * to OCaml runtime in 2017.
- */
-#ifndef HAVE_CAML_ALLOC_INITIALIZED_STRING
-static inline value
-caml_alloc_initialized_string (mlsize_t len, const char *p)
-{
-  value sv = caml_alloc_string (len);
-  memcpy ((char *) String_val (sv), p, len);
-  return sv;
-}
-#endif
+#include "plugin.h"
 
 /* This constructor runs when the plugin loads, and initializes the
  * OCaml runtime, and lets the plugin set up its callbacks.
@@ -121,9 +109,8 @@ plugin_init (void)
 static void
 load_wrapper (void)
 {
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
   caml_callback (load_fn, Val_unit);
-  caml_enter_blocking_section ();
 }
 
 /* We always have an unload function, since it also has to free the
@@ -133,9 +120,8 @@ static void
 unload_wrapper (void)
 {
   if (unload_fn) {
-    caml_leave_blocking_section ();
+    LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
     caml_callback (unload_fn, Val_unit);
-    caml_enter_blocking_section ();
   }
 
   free ((char *) plugin.name);
@@ -152,13 +138,11 @@ dump_plugin_wrapper (void)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (dump_plugin_fn, Val_unit);
   if (Is_exception_result (rv))
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-  caml_enter_blocking_section ();
   CAMLreturn0;
 }
 
@@ -167,8 +151,7 @@ config_wrapper (const char *key, const char *val)
 {
   CAMLparam0 ();
   CAMLlocal3 (keyv, valv, rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   keyv = caml_copy_string (key);
   valv = caml_copy_string (val);
@@ -176,11 +159,9 @@ config_wrapper (const char *key, const char *val)
   rv = caml_callback2_exn (config_fn, keyv, valv);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -189,17 +170,14 @@ config_complete_wrapper (void)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (config_complete_fn, Val_unit);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -208,17 +186,14 @@ thread_model_wrapper (void)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (thread_model_fn, Val_unit);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Int_val (rv));
 }
 
@@ -227,17 +202,14 @@ get_ready_wrapper (void)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (get_ready_fn, Val_unit);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -246,17 +218,14 @@ after_fork_wrapper (void)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (after_fork_fn, Val_unit);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -265,17 +234,14 @@ preconnect_wrapper (int readonly)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (preconnect_fn, Val_bool (readonly));
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -284,14 +250,12 @@ list_exports_wrapper (int readonly, int is_tls, struct nbdkit_exports *exports)
 {
   CAMLparam0 ();
   CAMLlocal2 (rv, v);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback2_exn (list_exports_fn, Val_bool (readonly),
                            Val_bool (is_tls));
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
@@ -304,37 +268,31 @@ list_exports_wrapper (int readonly, int is_tls, struct nbdkit_exports *exports)
     if (Is_block (Field (v, 1)))
       desc = String_val (Field (Field (v, 1), 0));
     if (nbdkit_add_export (exports, name, desc) == -1) {
-      caml_enter_blocking_section ();
       CAMLreturnT (int, -1);
     }
 
     rv = Field (rv, 1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
 static const char *
 default_export_wrapper (int readonly, int is_tls)
 {
-  const char *name;
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  const char *name;
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback2_exn (default_export_fn, Val_bool (readonly),
                            Val_bool (is_tls));
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (const char *, NULL);
   }
 
   name = nbdkit_strdup_intern (String_val (rv));
-
-  caml_enter_blocking_section ();
   CAMLreturnT (const char *, name);
 }
 
@@ -344,13 +302,11 @@ open_wrapper (int readonly)
   CAMLparam0 ();
   CAMLlocal1 (rv);
   value *ret;
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (open_fn, Val_bool (readonly));
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (void *, NULL);
   }
 
@@ -360,7 +316,6 @@ open_wrapper (int readonly)
   *ret = rv;
   caml_register_generational_global_root (ret);
 
-  caml_enter_blocking_section ();
   CAMLreturnT (void *, ret);
 }
 
@@ -369,8 +324,7 @@ close_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (close_fn, *(value *) h);
   if (Is_exception_result (rv)) {
@@ -381,29 +335,24 @@ close_wrapper (void *h)
   caml_remove_generational_global_root (h);
   free (h);
 
-  caml_enter_blocking_section ();
   CAMLreturn0;
 }
 
 static const char *
 export_description_wrapper (void *h)
 {
-  const char *desc;
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  const char *desc;
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (export_description_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (const char *, NULL);
   }
 
   desc = nbdkit_strdup_intern (String_val (rv));
-
-  caml_enter_blocking_section ();
   CAMLreturnT (const char *, desc);
 }
 
@@ -413,19 +362,15 @@ get_size_wrapper (void *h)
   CAMLparam0 ();
   CAMLlocal1 (rv);
   int64_t r;
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (get_size_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int64_t, -1);
   }
 
   r = Int64_val (rv);
-
-  caml_enter_blocking_section ();
   CAMLreturnT (int64_t, r);
 }
 
@@ -434,17 +379,14 @@ can_write_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_write_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Bool_val (rv));
 }
 
@@ -453,17 +395,14 @@ can_flush_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_flush_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Bool_val (rv));
 }
 
@@ -472,17 +411,14 @@ is_rotational_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (is_rotational_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Bool_val (rv));
 }
 
@@ -491,17 +427,14 @@ can_trim_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_trim_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Bool_val (rv));
 }
 
@@ -510,17 +443,14 @@ can_zero_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_zero_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Bool_val (rv));
 }
 
@@ -529,17 +459,14 @@ can_fua_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_fua_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Int_val (rv));
 }
 
@@ -548,17 +475,14 @@ can_fast_zero_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_fast_zero_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Bool_val (rv));
 }
 
@@ -567,17 +491,14 @@ can_cache_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_cache_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Int_val (rv));
 }
 
@@ -586,17 +507,14 @@ can_extents_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_extents_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Bool_val (rv));
 }
 
@@ -605,17 +523,14 @@ can_multi_conn_wrapper (void *h)
 {
   CAMLparam0 ();
   CAMLlocal1 (rv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   rv = caml_callback_exn (can_multi_conn_fn, *(value *) h);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, Bool_val (rv));
 }
 
@@ -655,8 +570,7 @@ pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset,
   CAMLparam0 ();
   CAMLlocal4 (rv, countv, offsetv, flagsv);
   mlsize_t len;
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
   offsetv = caml_copy_int64 (offset);
@@ -666,20 +580,16 @@ pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset,
   rv = caml_callbackN_exn (pread_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
   len = caml_string_length (rv);
   if (len < count) {
     nbdkit_error ("buffer returned from pread is too small");
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
   memcpy (buf, String_val (rv), count);
-
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -689,8 +599,7 @@ pwrite_wrapper (void *h, const void *buf, uint32_t count, uint64_t offset,
 {
   CAMLparam0 ();
   CAMLlocal4 (rv, strv, offsetv, flagsv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   strv = caml_alloc_initialized_string (count, buf);
   offsetv = caml_copy_int64 (offset);
@@ -700,11 +609,9 @@ pwrite_wrapper (void *h, const void *buf, uint32_t count, uint64_t offset,
   rv = caml_callbackN_exn (pwrite_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -713,8 +620,7 @@ flush_wrapper (void *h, uint32_t flags)
 {
   CAMLparam0 ();
   CAMLlocal2 (rv, flagsv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   flagsv = Val_flags (flags);
 
@@ -724,7 +630,6 @@ flush_wrapper (void *h, uint32_t flags)
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -733,8 +638,7 @@ trim_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
 {
   CAMLparam0 ();
   CAMLlocal4 (rv, countv, offsetv, flagsv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
   offsetv = caml_copy_int32 (offset);
@@ -747,7 +651,6 @@ trim_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -756,8 +659,7 @@ zero_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
 {
   CAMLparam0 ();
   CAMLlocal4 (rv, countv, offsetv, flagsv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
   offsetv = caml_copy_int32 (offset);
@@ -770,7 +672,6 @@ zero_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -780,8 +681,7 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
 {
   CAMLparam0 ();
   CAMLlocal5 (rv, countv, offsetv, flagsv, v);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
   offsetv = caml_copy_int32 (offset);
@@ -791,7 +691,6 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
   rv = caml_callbackN_exn (extents_fn, sizeof args / sizeof args[0], args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
-    caml_enter_blocking_section ();
     CAMLreturnT (int, -1);
   }
 
@@ -808,14 +707,12 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
     if (Bool_val (Field (v, 3)))
       type |= NBDKIT_EXTENT_ZERO;
     if (nbdkit_add_extent (extents, offset, length, type) == -1) {
-      caml_enter_blocking_section ();
       CAMLreturnT (int, -1);
     }
 
     rv = Field (rv, 1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
@@ -824,8 +721,7 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
 {
   CAMLparam0 ();
   CAMLlocal4 (rv, countv, offsetv, flagsv);
-
-  caml_leave_blocking_section ();
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
   offsetv = caml_copy_int32 (offset);
@@ -838,7 +734,6 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
     CAMLreturnT (int, -1);
   }
 
-  caml_enter_blocking_section ();
   CAMLreturnT (int, 0);
 }
 
