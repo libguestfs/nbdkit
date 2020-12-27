@@ -39,6 +39,10 @@ set -x
 requires nbdsh --version
 requires_filter checkwrite
 
+# The filter should probably work on Windows, but we cannot test it
+# because of use of nbdsh + nbdkit -s.
+requires_single_mode
+
 nbdsh -c '
 import sys
 

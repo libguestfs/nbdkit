@@ -36,6 +36,11 @@ set -x
 requires_filter exitwhen
 requires nbdsh --version
 
+if is_windows; then
+    echo "$0: exit-when-process-exits parameter not supported by Windows port"
+    exit 77
+fi
+
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 pidfile=exitwhen-process-exits.pid
 files="$pidfile $sock"

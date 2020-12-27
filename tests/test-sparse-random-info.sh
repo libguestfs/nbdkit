@@ -35,6 +35,8 @@
 source ./functions.sh
 set -e
 
+requires_run
+
 requires nbdinfo --version
 if ! nbdinfo --help | grep -- --map ; then
     echo "$0: nbdinfo --map option required to run this test"
