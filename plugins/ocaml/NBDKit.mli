@@ -106,7 +106,7 @@ type 'a plugin = {
 
 val default_callbacks : 'a plugin
 (** The plugin with all fields set to [None], so you can write
-    [{ defaults_callbacks with field1 = Some foo1; field2 = Some foo2 }] *)
+    [{ default_callbacks with field1 = Some foo1; field2 = Some foo2 }] *)
 
 val register_plugin : 'a plugin -> unit
 (** Register the plugin with nbdkit. *)
