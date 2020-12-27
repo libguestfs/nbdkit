@@ -168,7 +168,9 @@ val debug : ('a, unit, string, unit) format4 -> 'a
 
 (** Binding for [nbdkit_peer_pid]. *)
 val peer_pid : unit -> int64
+
 (** Binding for [nbdkit_peer_uid]. *)
 val peer_uid : unit -> int64
+
 (** Binding for [nbdkit_peer_gid]. *)
 val peer_gid : unit -> int64
