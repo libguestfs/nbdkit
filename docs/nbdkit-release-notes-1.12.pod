@@ -33,7 +33,7 @@ allocated.
 Plugins can now be written in the Rust programming language, see
 L<nbdkit-rust-plugin(3)>.
 
-The old L<nbdkit-xz-plugin(1)> has been removed.  Use
+The old nbdkit-xz-plugin has been removed.  Use
 
  nbdkit --filter=xz file file.xz
 

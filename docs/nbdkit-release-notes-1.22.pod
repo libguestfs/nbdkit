@@ -70,7 +70,7 @@ L<nbdkit-vddk-plugin(1)> now has support for VDDK 7.0.  A new and
 useless "error" message printed by VDDK 7 has been suppressed
 (thanks Ming Xie, Pino Toscano).
 
-L<nbdkit-ext2-plugin(1)> has been removed.  It was deprecated in
+nbdkit-ext2-plugin has been removed.  It was deprecated in
 S<nbdkit 1.17.8>.  All existing uses can be replaced with
 L<nbdkit-ext2-filter(1)>.
 

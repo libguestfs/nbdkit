@@ -21,7 +21,7 @@ L<nbdkit-tcl-plugin(3)>.
 =item *
 
 Other new plugins:
-L<nbdkit-ext2-plugin(1)>,
+nbdkit-ext2-plugin,
 L<nbdkit-random-plugin(1)>,
 L<nbdkit-zero-plugin(1)>.
 

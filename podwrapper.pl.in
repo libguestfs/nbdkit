@@ -351,6 +351,38 @@ foreach (@lines) {
         ! m/https?:/;
 }
 
+# Check cross-references to other nbdkit man pages exist.
+my @xrefs = $content =~ /L<(nbdkit-.*?\([1-9]\))>/g;
+foreach (@xrefs) {
+    # Plugins can be in section 1 or 3.  Here we only check the plugin
+    # name exists, but we should check the section (XXX).
+    if (m/^nbdkit-(.*?)-plugin\(([13])\)$/) {
+        my $name = $1;
+        my $section = $2;
+        die "$progname: $input: cannot find cross reference for $_\n"
+            if ! -d "$abs_top_srcdir/plugins/$name"
+    }
+    # All filters should be in section 1, so we only need to check
+    # they exist.
+    elsif (m/^nbdkit-(.*?)-filter\(1\)$/) {
+        my $name = $1;
+        die "$progname: $input: cannot find cross reference for $_\n"
+            if ! -d "$abs_top_srcdir/filters/$name"
+    }
+    # Other documentation in section 1.
+    elsif (m/^nbdkit-(.*)\(1\)$/) {
+        my $name = $1;
+        die "$progname: $input: cannot find cross reference for $_\n"
+            if ! -f "$abs_top_srcdir/docs/nbdkit-$name.pod"
+    }
+    elsif (m/^nbdkit-plugin\(3\)$/ || m/^nbdkit-filter\(3\)$/) {
+        # nothing
+    }
+    else {
+        die "$progname: $input: cannot find cross-reference for $_\n"
+    }
+}
+
 # Output man page.
 SUBMAN: {
     package Podwrapper::Man;

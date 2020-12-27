@@ -20,7 +20,7 @@ L<nbdkit-security(1)>.
 New L<nbdkit-eval-plugin(1)> lets you write a plugin entirely on a
 single command line.  It is similar to L<nbdkit-sh-plugin(3)>.
 
-L<nbdkit-ext2-plugin(1)> is deprecated and will be removed in the next
+nbdkit-ext2-plugin is deprecated and will be removed in the next
 release after this one (S<nbdkit 1.20>).  As a replacement use
 L<nbdkit-ext2-filter(1)> like this:
 
