@@ -92,6 +92,9 @@ handle struct in your plugin:
    printf "handle ID = %d\n" handle.h_id;
    (* ... *)
 
+If you don't need to store per-connection data, C<open_connection> can
+return C<()>.
+
 =head2 Errors
 
 Plugins can return errors from methods by raising an exception.

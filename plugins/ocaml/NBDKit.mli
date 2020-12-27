@@ -64,7 +64,10 @@ type thread_model =
 | THREAD_MODEL_SERIALIZE_REQUESTS
 | THREAD_MODEL_PARALLEL
 
-(** The plugin fields and callbacks.  ['a] is the handle type. *)
+(** The plugin fields and callbacks.
+
+    The ['a] parameter is the handle type returned by your
+    [open_connection] method and passed back to all connected calls. *)
 type 'a plugin = {
   name : string;                                  (* required *)
   longname : string;
