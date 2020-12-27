@@ -396,7 +396,7 @@ a glibc extension it may not be available in all builds of the plugin.
 The VDDK plugin can only answer read/write requests on whole 512 byte
 sector boundaries.  This is because the VDDK Read and Write APIs only
 take sector numbers.  If your client needs finer granularity, you can
-use L<nbdkit-blocksize-filter(3)> with the setting C<minblock=512>.
+use L<nbdkit-blocksize-filter(1)> with the setting C<minblock=512>.
 
 =head2 Threads
 
