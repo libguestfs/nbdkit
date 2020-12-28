@@ -166,6 +166,9 @@ val shutdown : unit -> unit
 (** Print a debug message when nbdkit is in verbose mode. *)
 val debug : ('a, unit, string, unit) format4 -> 'a
 
+(** Return the version of nbdkit that the plugin was compiled with. *)
+val version : unit -> string
+
 (** Binding for [nbdkit_peer_pid]. *)
 val peer_pid : unit -> int64
 

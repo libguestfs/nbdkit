@@ -81,7 +81,7 @@ let plugin = {
      * everything else is optional.
      *)
     NBDKit.name        = "ocamlexample";
-    version            = "1.0";
+    version            = NBDKit.version ();
 
     load               = Some load;
     unload             = Some unload;

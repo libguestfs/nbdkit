@@ -193,6 +193,16 @@ ocaml_nbdkit_debug (value strv)
 }
 
 value
+ocaml_nbdkit_version (value unitv)
+{
+  CAMLparam1 (unitv);
+  CAMLlocal1 (rv);
+
+  rv = caml_copy_string (PACKAGE_VERSION);
+  CAMLreturn (rv);
+}
+
+value
 ocaml_nbdkit_peer_pid (value unitv)
 {
   CAMLparam1 (unitv);

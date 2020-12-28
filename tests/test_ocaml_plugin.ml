@@ -96,7 +96,7 @@ let thread_model () =
 let plugin = {
   NBDKit.default_callbacks with
     NBDKit.name     = "testocaml";
-    version         = "1.0";
+    version         = NBDKit.version ();
 
     load            = Some load;
     unload          = Some unload;
