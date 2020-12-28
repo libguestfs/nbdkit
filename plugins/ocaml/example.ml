@@ -24,16 +24,16 @@
 (* Disk image with default size. *)
 let disk = ref (Bytes.make (1024*1024) '\000')
 
-let ocamlexample_load () =
+let load () =
   (* Debugging output is only printed when the server is in
    * verbose mode (nbdkit -v option).
    *)
   NBDKit.debug "example OCaml plugin loaded"
 
-let ocamlexample_unload () =
+let unload () =
   NBDKit.debug "example OCaml plugin unloaded"
 
-let ocamlexample_config key value =
+let config key value =
   match key with
   | "size" ->
      let size = Int64.to_int (NBDKit.parse_size value) in
@@ -51,28 +51,28 @@ type handle = {
 }
 
 let id = ref 0
-let ocamlexample_open readonly =
+let open_connection readonly =
   let export_name = NBDKit.export_name () in
   NBDKit.debug "example OCaml plugin handle opened readonly=%b export=%S"
     readonly export_name;
   incr id;
   { h_id = !id }
 
-let ocamlexample_get_size h =
+let get_size h =
   Int64.of_int (Bytes.length !disk)
 
-let ocamlexample_pread h count offset _ =
+let pread h count offset _ =
   let count = Int32.to_int count in
   let buf = Bytes.create count in
   Bytes.blit !disk (Int64.to_int offset) buf 0 count;
   Bytes.unsafe_to_string buf
 
-let ocamlexample_pwrite h buf offset _ =
+let pwrite h buf offset _ =
   let len = String.length buf in
   let offset = Int64.to_int offset in
   String.blit buf 0 !disk offset len
 
-let ocamlexample_thread_model () =
+let thread_model () =
   NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS
 
 let plugin = {
@@ -83,17 +83,17 @@ let plugin = {
     NBDKit.name        = "ocamlexample";
     version            = "1.0";
 
-    load               = Some ocamlexample_load;
-    unload             = Some ocamlexample_unload;
+    load               = Some load;
+    unload             = Some unload;
 
-    config             = Some ocamlexample_config;
+    config             = Some config;
 
-    open_connection    = Some ocamlexample_open;
-    get_size           = Some ocamlexample_get_size;
-    pread              = Some ocamlexample_pread;
-    pwrite             = Some ocamlexample_pwrite;
+    open_connection    = Some open_connection;
+    get_size           = Some get_size;
+    pread              = Some pread;
+    pwrite             = Some pwrite;
 
-    thread_model       = Some ocamlexample_thread_model;
+    thread_model       = Some thread_model;
 }
 
 let () = NBDKit.register_plugin plugin

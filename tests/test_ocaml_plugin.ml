@@ -20,48 +20,48 @@ let () =
      *)
     assert (isdir (NBDKit.realpath test_dir))
 
-let test_load () =
+let load () =
   NBDKit.debug "test ocaml plugin loaded"
 
-let test_unload () =
+let unload () =
   (* A good way to find memory bugs: *)
   Gc.compact ();
   NBDKit.debug "test ocaml plugin unloaded"
 
 let params = ref []
 
-let test_config k v =
+let config k v =
   params := (k, v) :: !params
 
-let test_config_complete () =
+let config_complete () =
   let params = List.rev !params in
   assert (params = [ "a", "1"; "b", "2"; "c", "3" ])
 
-let test_get_ready () =
+let get_ready () =
   (* We could allocate the disk here, but it's easier to allocate
    * it statically above.
    *)
   NBDKit.debug "test ocaml plugin getting ready"
 
-let test_open readonly =
+let open_connection readonly =
   let export_name = NBDKit.export_name () in
   NBDKit.debug "test ocaml plugin handle opened readonly=%b export=%S"
     readonly export_name;
   ()
 
-let test_close () =
+let close () =
   ()
 
-let test_list_exports _ _ =
+let list_exports _ _ =
   [ { NBDKit.name = "name1"; description = Some "desc1" };
     { name = "name2"; description = None } ]
 
-let test_default_export _ _ = "name1"
+let default_export _ _ = "name1"
 
-let test_get_size () =
+let get_size () =
   Int64.of_int (Bytes.length disk)
 
-let test_pread () count offset _ =
+let pread () count offset _ =
   let count = Int32.to_int count in
   let buf = Bytes.create count in
   Bytes.blit disk (Int64.to_int offset) buf 0 count;
@@ -70,13 +70,13 @@ let test_pread () count offset _ =
 let set_non_sparse offset len =
   Bytes.fill sparse (offset/sector_size) ((len-1)/sector_size) '\001'
 
-let test_pwrite () buf offset _ =
+let pwrite () buf offset _ =
   let len = String.length buf in
   let offset = Int64.to_int offset in
   String.blit buf 0 disk offset len;
   set_non_sparse offset len
 
-let test_extents () count offset _ =
+let extents () count offset _ =
   let extents = Array.init nr_sectors (
     fun sector ->
       { NBDKit.offset = Int64.of_int (sector*sector_size);
@@ -90,26 +90,29 @@ let test_extents () count offset _ =
   ) sparse;
   Array.to_list extents
 
+let thread_model () =
+  NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS
+
 let plugin = {
   NBDKit.default_callbacks with
     NBDKit.name     = "testocaml";
     version         = "1.0";
 
-    load            = Some test_load;
-    unload          = Some test_unload;
-    config          = Some test_config;
-    config_complete = Some test_config_complete;
+    load            = Some load;
+    unload          = Some unload;
+    config          = Some config;
+    config_complete = Some config_complete;
 
-    open_connection = Some test_open;
-    close           = Some test_close;
-    list_exports    = Some test_list_exports;
-    default_export  = Some test_default_export;
-    get_size        = Some test_get_size;
-    pread           = Some test_pread;
-    pwrite          = Some test_pwrite;
+    open_connection = Some open_connection;
+    close           = Some close;
+    list_exports    = Some list_exports;
+    default_export  = Some default_export;
+    get_size        = Some get_size;
+    pread           = Some pread;
+    pwrite          = Some pwrite;
 
-    extents         = Some test_extents;
-    thread_model    = Some (fun () -> NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS);
+    extents         = Some extents;
+    thread_model    = Some thread_model;
 }
 
 let () = NBDKit.register_plugin plugin
