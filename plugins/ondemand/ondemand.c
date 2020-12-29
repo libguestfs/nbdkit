@@ -354,7 +354,9 @@ ondemand_open (int readonly)
   CLEANUP_FREE char *disk = NULL;
   int flags, err;
   struct stat statbuf;
+#ifdef F_OFD_SETLK
   struct flock lock;
+#endif
 
   h = malloc (sizeof *h);
   if (h == NULL) {
