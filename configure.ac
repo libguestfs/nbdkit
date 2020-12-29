@@ -35,11 +35,11 @@ m4_define([NBDKIT_VERSION_MICRO], [12])
 AC_INIT([nbdkit],
         NBDKIT_VERSION_MAJOR.NBDKIT_VERSION_MINOR.NBDKIT_VERSION_MICRO)
 AC_CONFIG_MACRO_DIR([m4])
-m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],[],
-         [m4_define([AC_USE_SYSTEM_EXTENSIONS],[])])
 
 dnl This must be used very early else you will get
 dnl "warning: AC_RUN_IFELSE was called before AC_USE_SYSTEM_EXTENSIONS"
+m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],[],
+         [m4_define([AC_USE_SYSTEM_EXTENSIONS],[])])
 AC_USE_SYSTEM_EXTENSIONS
 
 dnl NB: Do not [quote] this parameter.
