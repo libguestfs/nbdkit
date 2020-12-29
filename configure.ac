@@ -568,7 +568,11 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
     AC_CHECK_FUNCS([\
 	gnutls_base64_decode2 \
 	gnutls_certificate_set_known_dh_params \
-	gnutls_session_set_verify_cert])
+	gnutls_group_get \
+	gnutls_group_get_name \
+	gnutls_session_set_verify_cert \
+	gnutls_srp_server_get_username \
+    ])
     LIBS="$old_LIBS"
 ])
 

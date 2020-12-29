@@ -543,7 +543,11 @@ debug_session (gnutls_session_t session)
   switch (cred) {
   case GNUTLS_CRD_SRP:
     nbdkit_debug ("TLS: authentication: SRP (Secure Remote Password)");
+#ifdef HAVE_GNUTLS_SRP_SERVER_GET_USERNAME
     username = gnutls_srp_server_get_username (session);
+#else
+    username = NULL;
+#endif
     if (username)
       nbdkit_debug ("TLS: SRP session username: %s", username);
     break;
@@ -580,10 +584,19 @@ debug_session (gnutls_session_t session)
     nbdkit_debug ("TLS: authentication: unknown (%d)", (int) cred);
   }
 
+#ifdef HAVE_GNUTLS_GROUP_GET
   grp = gnutls_group_get (session);
-  if (grp)
-    nbdkit_debug ("TLS: negotiated group: %s",
-                  gnutls_group_get_name (grp));
+#else
+  grp = 0;
+#endif
+  if (grp) {
+    nbdkit_debug ("TLS: negotiated group: "
+#ifdef HAVE_GNUTLS_GROUP_GET_NAME
+                  "%s", gnutls_group_get_name (grp));
+#else
+                  "%d", grp);
+#endif
+  }
   else {
     if (ecdh)
       nbdkit_debug ("TLS: ephemeral ECDH using curve %s",
