@@ -267,6 +267,17 @@ DOWNLOAD TARBALLS
 Tarballs are available from:
 http://libguestfs.org/download/nbdkit
 
+DOWNSTREAM PACKAGERS
+====================
+
+If you are packaging nbdkit, use:
+
+    ./configure --with-extra='...'
+
+providing extra information about the distribution, and/or
+distro-specific versions.  It helps us with troubleshooting bug
+reports.  (Also, talk to us!)
+
 DEVELOPERS
 ==========
 

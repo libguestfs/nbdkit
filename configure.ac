@@ -47,6 +47,20 @@ AM_INIT_AUTOMAKE(foreign)
 AC_PROG_LIBTOOL
 LT_INIT([win32-dll])
 
+dnl Extra string, a freeform string defined by downstream packagers.
+dnl eg. If you are packaging nbdkit for Linux distro X 1.1, you could
+dnl   ./configure --with-extra="X release 1.1"
+AC_ARG_WITH([extra],
+    [AS_HELP_STRING([--with-extra],
+                    [extra version information (for use by packagers)])],
+    [NBDKIT_VERSION_EXTRA="$withval"],
+    [NBDKIT_VERSION_EXTRA=]
+)
+AC_DEFINE_UNQUOTED([NBDKIT_VERSION_EXTRA], ["$NBDKIT_VERSION_EXTRA"],
+                   [Extra version information (for use by packagers)])
+
+AC_MSG_NOTICE([nbdkit version NBDKIT_VERSION_MAJOR.NBDKIT_VERSION_MINOR.NBDKIT_VERSION_MICRO ($NBDKIT_VERSION_EXTRA)])
+
 dnl List of plugins and filters.
 lang_plugins="\
         cc \
