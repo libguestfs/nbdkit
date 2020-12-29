@@ -494,6 +494,9 @@ main (int argc, char *argv[])
   if (log_to == LOG_TO_SYSLOG || log_to == LOG_TO_DEFAULT)
     openlog (program_name, LOG_PID, 0);
 
+  /* Print the version in debug output, right after syslog initialization. */
+  debug ("%s %s", PACKAGE_NAME, PACKAGE_VERSION);
+
   /* Initialize TLS. */
   crypto_init (tls_set_on_cli);
   assert (tls != -1);
