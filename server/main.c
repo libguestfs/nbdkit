@@ -129,7 +129,11 @@ usage (void)
 static void
 display_version (void)
 {
-  printf ("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+  if (strcmp (NBDKIT_VERSION_EXTRA, "") == 0)
+    printf ("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+  else
+    printf ("%s %s (%s)\n",
+            PACKAGE_NAME, PACKAGE_VERSION, NBDKIT_VERSION_EXTRA);
 }
 
 static void
@@ -161,6 +165,8 @@ dump_config (void)
   printf ("tls=no\n");
 #endif
   printf ("%s=%s\n", "version", PACKAGE_VERSION);
+  if (strcmp (NBDKIT_VERSION_EXTRA, "") != 0)
+    printf ("%s=%s\n", "version_extra", NBDKIT_VERSION_EXTRA);
   printf ("%s=%d\n", "version_major", NBDKIT_VERSION_MAJOR);
   printf ("%s=%d\n", "version_minor", NBDKIT_VERSION_MINOR);
 #ifdef HAVE_LIBZSTD
@@ -495,7 +501,10 @@ main (int argc, char *argv[])
     openlog (program_name, LOG_PID, 0);
 
   /* Print the version in debug output, right after syslog initialization. */
-  debug ("%s %s", PACKAGE_NAME, PACKAGE_VERSION);
+  if (strcmp (NBDKIT_VERSION_EXTRA, "") == 0)
+    debug ("%s %s", PACKAGE_NAME, PACKAGE_VERSION);
+  else
+    debug ("%s %s (%s)", PACKAGE_NAME, PACKAGE_VERSION, NBDKIT_VERSION_EXTRA);
 
   /* Initialize TLS. */
   crypto_init (tls_set_on_cli);
