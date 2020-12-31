@@ -5,6 +5,7 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
 =head1 SYNOPSIS
 
  nbdkit vddk [file=]FILENAME
+             [compression=none|zlib|fastlz|skipz]
              [config=FILENAME] [cookie=COOKIE] [libdir=LIBRARY]
              [nfchostport=PORT] [single-link=true]
              [password=PASSWORD | password=- | password=+FILENAME |
@@ -96,6 +97,20 @@ C<user>, C<password> and C<vm> are required.
 All other parameters are optional.
 
 =over 4
+
+=item B<compression=none>
+
+=item B<compression=zlib>
+
+=item B<compression=fastlz>
+
+=item B<compression=skipz>
+
+(vSphere E<ge> 6.5)
+
+Select the compression type used over the network between VDDK and the
+VMware server.  The default is C<none>.  See VMware document “Best
+Practices for NBD Transport”.
 
 =item B<config=>FILENAME
 

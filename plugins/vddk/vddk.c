@@ -78,6 +78,7 @@ static void *dl;                           /* dlopen handle */
 static bool init_called;                   /* was InitEx called */
 static __thread int error_suppression;     /* threadlocal error suppression */
 
+static enum { NONE = 0, ZLIB, FASTLZ, SKIPZ } compression; /* compression */
 static char *config;                       /* config */
 static const char *cookie;                 /* cookie */
 static const char *filename;               /* file */
@@ -185,7 +186,21 @@ vddk_config (const char *key, const char *value)
 {
   int r;
 
-  if (strcmp (key, "config") == 0) {
+  if (strcmp (key, "compression") == 0) {
+    if (strcmp (value, "zlib") == 0)
+      compression = ZLIB;
+    else if (strcmp (value, "fastlz") == 0)
+      compression = FASTLZ;
+    else if (strcmp (value, "skipz") == 0)
+      compression = SKIPZ;
+    else if (strcmp (value, "none") == 0)
+      compression = NONE;
+    else {
+      nbdkit_error ("unknown compression type: %s", value);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "config") == 0) {
     /* See FILENAMES AND PATHS in nbdkit-plugin(3). */
     free (config);
     config = nbdkit_realpath (value);
@@ -596,6 +611,12 @@ vddk_open (int readonly)
     flags |= VIXDISKLIB_FLAG_OPEN_SINGLE_LINK;
   if (unbuffered)
     flags |= VIXDISKLIB_FLAG_OPEN_UNBUFFERED;
+  switch (compression) {
+  case ZLIB:   flags |= VIXDISKLIB_FLAG_OPEN_COMPRESSION_ZLIB;   break;
+  case FASTLZ: flags |= VIXDISKLIB_FLAG_OPEN_COMPRESSION_FASTLZ; break;
+  case SKIPZ:  flags |= VIXDISKLIB_FLAG_OPEN_COMPRESSION_SKIPZ;  break;
+  case NONE:   break;
+  }
 
   DEBUG_CALL ("VixDiskLib_Open",
               "connection, %s, %d, &handle", filename, flags);
