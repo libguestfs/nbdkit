@@ -19,23 +19,24 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
 
 C<nbdkit-vddk-plugin> is an L<nbdkit(1)> plugin that serves disks from
 local VMware VMDK files, VMware ESXi servers, VMware VCenter servers,
-and other sources.  It requires VMware's proprietary VDDK library that
-you must download yourself separately.
+and other sources.
 
-The plugin can serve read-only (if the I<-r> option is used) or
-read/write.
+It requires VMware's proprietary VDDK library that you must download
+yourself (see L</LIBRARY LOCATION> below).
 
 =head1 EXAMPLES
 
 =head2 Open a local VMDK file
 
- nbdkit vddk file=/absolute/path/to/file.vmdk
+ nbdkit vddk /absolute/path/to/file.vmdk
 
-Note that when opening local files the C<file=> parameter B<must> be
-an absolute path.
+When opening local files the filename B<must> be an absolute path.
 
-Because VDDK needs to take a lock on this file, the file must be on a
-writable filesystem (unless you use the I<-r> option).
+Because VDDK needs to lock the file, the file must be on a writable
+filesystem.  You can avoid this by opening the file read-only (the
+I<-r> option):
+
+ nbdkit -r vddk /absolute/path/to/file.vmdk
 
 =head2 Open a file on a remote VMware ESXi hypervisor
 
@@ -45,7 +46,7 @@ file:
  nbdkit vddk user=root password=+/tmp/rootpw \
              server=esxi.example.com thumbprint=xx:xx:xx:... \
              vm=moref=2 \
-             file="[datastore1] Fedora/Fedora.vmdk"
+             "[datastore1] Fedora/Fedora.vmdk"
 
 C<user> and C<password> must be specified.  Use C<password=+FILENAME>
 to provide the password securely in a file.
@@ -59,7 +60,7 @@ L</THUMBPRINTS> below.
 C<vm> is the Managed Object Reference ("moref") of the virtual
 machine.  See L</MANAGED OBJECT REFERENCE> below.
 
-C<file> is the file you want to open, usually in the form
+The file parameter is the file you want to open, usually in the form
 S<C<"[datastore] vmname/vmname.vmdk">>.  See L</FILE PARAMETER> below.
 
 =head2 Open a file on a remote VMware vCenter server
@@ -69,7 +70,7 @@ Connect via VMware vCenter and export a particular file:
  nbdkit vddk user=root password=vmware \
              server=vcenter.example.com thumbprint=xx:xx:xx:... \
              vm=moref=vm-16 \
-             file="[datastore1] Fedora/Fedora.vmdk"
+             "[datastore1] Fedora/Fedora.vmdk"
 
 C<user> and C<password> must be specified.  Use C<password=+FILENAME>
 to provide the password securely in a file.
@@ -83,7 +84,7 @@ L</THUMBPRINTS> below.
 C<vm> is the Managed Object Reference ("moref") of the virtual
 machine.  See L</MANAGED OBJECT REFERENCE> below.
 
-C<file> is the file you want to open, usually in the form
+The file parameter is the file you want to open, usually in the form
 S<C<"[datastore] vmname/vmname.vmdk">>.  See L</FILE PARAMETER> below.
 
 =head1 PARAMETERS
@@ -120,6 +121,10 @@ The config file controls rarely adjusted VDDK settings like log level,
 caching and timeouts.  See the VDDK documentation for a full list of
 settings.
 
+VDDK itself looks in a few default locations for the configuration
+file, usually including F</etc/vmware/config> and
+F<$HOME/.vmware/config>.  Using C<config> overrides these defaults.
+
 =item B<cookie=>COOKIE
 
 (vSphere E<ge> 6.7)
@@ -131,9 +136,9 @@ C<VIXDISKLIB_CRED_SESSIONID> which can improve performance.  The
 cookie can be found by connecting to a VCenter Server over HTTPS and
 retrieving the C<vmware_soap_session> cookie.
 
-=item B<file=>FILENAME
+=item [B<file=>]FILENAME
 
-=item B<file=[>datastoreB<] >vmname/vmnameB<.vmdk>
+=item [B<file=>]B<[>datastoreB<] >vmname/vmnameB<.vmdk>
 
 Set the name of the VMDK file to serve.
 
@@ -152,10 +157,8 @@ See L<nbdkit(1)/Magic parameters>.
 This sets the path of the VMware VDDK distribution.
 
 VDDK uses this to load its own plugins, if this path is unspecified or
-wrong then VDDK will work with reduced functionality.
-
-If the parameter is not given, then a hard-coded path determined at
-compile time is used, see L</DUMP-PLUGIN OUTPUT> below.
+wrong then VDDK will work with reduced functionality.  See
+L</LIBRARY LOCATION> below.
 
 =item B<nfchostport=>PORT
 
@@ -242,12 +245,12 @@ This parameter is ignored for backwards compatibility.
 
 =back
 
-=head1 LIBRARY AND CONFIG FILE LOCATIONS
+=head1 LIBRARY LOCATION
 
-The VDDK library should not be placed on a system library path such as
-F</usr/lib>.  The reason for this is that the VDDK library is shipped
-with recompiled libraries like F<libcrypto.so> and F<libstdc++.so>
-that can conflict with system libraries.
+The VDDK library should B<not> be placed on a system library path such
+as F</usr/lib>.  The reason is that the VDDK library ships with
+recompiled libraries like F<libcrypto.so> and F<libstdc++.so> that
+conflict with system libraries.
 
 You have two choices:
 
@@ -263,21 +266,15 @@ for example:
 
 =item *
 
-But the most common way is to set the C<libdir> parameter to point to
-F<vmware-vix-disklib-distrib/> (which you can unpack anywhere you
-like), and this plugin will find the VDDK library from there.  For
+But the best advice is to unpack the VDDK tarball anywhere you like
+and set the C<libdir=/path/to/vmware-vix-disklib-distrib>.  For
 example:
 
  nbdkit vddk \
-     libdir=/path/to/vmware-vix-disklib-distrib \
-     file=file.vmdk
+        libdir=/opt/vmware-vix-disklib-distrib \
+        /path/to/file.vmdk
 
 =back
-
-VDDK itself looks in a few default locations for the optional
-configuration file, usually including F</etc/vmware/config> and
-F<$HOME/.vmware/config>, but you can override this using the C<config>
-parameter.
 
 =head2 No need to set C<LD_LIBRARY_PATH>
 
@@ -291,14 +288,29 @@ The C<file> parameter can either be a local file, in which case it
 must be the absolute path.  Or it can refer to a remote file on the
 VMware server in the format S<C<"[datastore] vmname/vmname.vmdk">>.
 
+=head2 Finding the remote filename
+
 For remote files you can find the path using L<virsh(1)>.  For ESXi:
 
- virsh -c 'esx://esxi.example.com?no_verify=1' dumpxml guestname
+ $ virsh -c 'esx://esxi.example.com?no_verify=1' dumpxml guestname
+ ...
+  <disk type='file' device='disk'>
+    <source file='[datastore] vmname/vmname.vmdk'/>
+ ...
 
-For vCenter:
+For vCenter the command is the same but the URI starts with C<vpx://>:
 
- virsh -c 'vpx://vcenter.example.com/Datacenter/esxi.example.com?no_verify=1' \
-       dumpxml guestname
+ $ virsh -c 'vpx://vcenter.example.com/Datacenter/esxi.example.com?no_verify=1' \
+         dumpxml guestname
+
+See also: L<https://libvirt.org/drvesx.html>
+
+=head2 Optional file= prefix
+
+The C<file=> part is optional, so these commands are equivalent:
+
+ nbdkit vddk file=/path/to/file.vmdk
+ nbdkit vddk /path/to/file.vmdk
 
 =head1 THUMBPRINTS
 
@@ -520,6 +532,7 @@ L<nbdkit-blocksize-filter(1)>,
 L<nbdkit-readahead-filter(1)>,
 L<nbdkit-retry-filter(1)>,
 L<virsh(1)>,
+L<https://libvirt.org/drvesx.html>,
 L<https://www.vmware.com/support/developer/vddk/>,
 VMware document “Best Practices for NBD Transport”.
 

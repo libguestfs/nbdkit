@@ -355,7 +355,7 @@ load_library (bool load_error_is_fatal)
     nbdkit_error ("%s\n\n"
                   "If '%s' is located on a non-standard path you may need to\n"
                   "set libdir=/path/to/vmware-vix-disklib-distrib.\n\n"
-                  "See the nbdkit-vddk-plugin(1) man page for details.",
+                  "See nbdkit-vddk-plugin(1) man page section \"LIBRARY LOCATION\" for details.",
                   orig_error ? : "(unknown error)", sonames[0]);
     exit (EXIT_FAILURE);
   }
