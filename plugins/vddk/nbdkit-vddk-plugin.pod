@@ -7,8 +7,8 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
  nbdkit vddk [file=]FILENAME
              [config=FILENAME] [cookie=COOKIE] [libdir=LIBRARY]
              [nfchostport=PORT] [single-link=true]
-             [password=PASSWORD | password=- | password=+FILENAME
-             | password=-FD]
+             [password=PASSWORD | password=- | password=+FILENAME |
+              password=-FD]
              [port=PORT] [server=HOSTNAME] [snapshot=MOREF]
              [thumbprint=THUMBPRINT] [transports=MODE:MODE:...]
              [unbuffered=true] [user=USERNAME] [vm=moref=ID]
@@ -16,7 +16,7 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
 
 =head1 DESCRIPTION
 
-C<nbdkit-vddk-plugin> is an L<nbdkit(1)> plugin that serves files from
+C<nbdkit-vddk-plugin> is an L<nbdkit(1)> plugin that serves disks from
 local VMware VMDK files, VMware ESXi servers, VMware VCenter servers,
 and other sources.  It requires VMware's proprietary VDDK library that
 you must download yourself separately.
@@ -87,30 +87,13 @@ S<C<"[datastore] vmname/vmname.vmdk">>.  See L</FILE PARAMETER> below.
 
 =head1 PARAMETERS
 
-All parameters are optional except:
+For opening a local VMDK file, the C<file> parameter is required and
+must be an absolute path.
 
-=over 4
+For opening a remote connection, C<file>, C<server>, C<thumbprint>,
+C<user>, C<password> and C<vm> are required.
 
-=item C<file>
-
-is required for opening a local VMDK file.
-
-=item C<file>
-
-=item C<server>
-
-=item C<thumbprint>
-
-=item C<user>
-
-=item C<password>
-
-=item C<vm>
-
-When making a remote connection you must supply all of these
-parameters.
-
-=back
+All other parameters are optional.
 
 =over 4
 
@@ -118,9 +101,20 @@ parameters.
 
 The name of the VDDK configuration file.
 
+The config file controls rarely adjusted VDDK settings like log level,
+caching and timeouts.  See the VDDK documentation for a full list of
+settings.
+
 =item B<cookie=>COOKIE
 
+(vSphere E<ge> 6.7)
+
 Cookie from existing authenticated session on the host.
+
+This changes the authentication type from C<VIXDISKLIB_CRED_UID> to
+C<VIXDISKLIB_CRED_SESSIONID> which can improve performance.  The
+cookie can be found by connecting to a VCenter Server over HTTPS and
+retrieving the C<vmware_soap_session> cookie.
 
 =item B<file=>FILENAME
 
@@ -295,12 +289,26 @@ For vCenter:
 
 The thumbprint is a 20 byte string containing the SSL (SHA1)
 fingerprint of the remote VMware server and it is required when making
-a remote connection.  There are two ways to obtain this.
+a remote connection.  There are several ways to obtain this.
 
-=head2 Extracting thumbprint from ESXi or vCenter server
+=head2 Using a web browser
 
-To extract the thumbprint, log in to the ESXi hypervisor shell and run
-this command:
+Visit C<https://SERVER-NAME/folder> and log in.  Click the lock icon
+next to the URL bar and navigate to the SHA-1 fingerprint of the
+site’s certificate.  This 20 hex digit pair string can be directly
+copied to the C<thumbprint=> parameter.
+
+=head2 Using openssl remotely
+
+The following command will print the thumbprint of a VMware server
+called C<SERVER-NAME>:
+
+ $ openssl s_client -connect SERVER-NAME:443 </dev/null |
+   openssl x509 -in /dev/stdin -fingerprint -sha1 -noout
+
+=head2 By logging in to the ESXi or vCenter server
+
+Log in to the ESXi hypervisor shell and run this command:
 
  # openssl x509 -in /etc/vmware/ssl/rui.crt -fingerprint -sha1 -noout
 
@@ -312,11 +320,11 @@ using this command:
 
 =head2 Trick: Get VDDK to tell you the thumbprint
 
-Another (easier) way to get the thumbprint of a server is to connect
-to the server using a bogus thumbprint with debugging enabled:
+Another way to get the thumbprint of a server is to connect to the
+server using a bogus thumbprint with debugging enabled:
 
- nbdkit -f -v vddk server=esxi.example.com [...] thumbprint=12
- qemu-img info nbd:localhost:10809
+ nbdkit -U - -fv vddk server=esxi.example.com [...] thumbprint=12 \
+        --run 'qemu-img info "$uri"'
 
 The nbdkit process will try to connect (and fail because the
 thumbprint is wrong).  However in the debug output will be a message
@@ -329,7 +337,7 @@ not secure since it allows a Man-in-the-Middle (MITM) attack.
 
 =head1 MANAGED OBJECT REFERENCE
 
-Some parameters require you to pass in the Managed Object Reference
+Some use cases require you to pass in the Managed Object Reference
 ("moref") of an object on the VMware server.
 
 For VMware ESXi hypervisors, the C<vm> moref is a number
@@ -497,7 +505,8 @@ L<nbdkit-blocksize-filter(1)>,
 L<nbdkit-readahead-filter(1)>,
 L<nbdkit-retry-filter(1)>,
 L<virsh(1)>,
-L<https://www.vmware.com/support/developer/vddk/>
+L<https://www.vmware.com/support/developer/vddk/>,
+VMware document “Best Practices for NBD Transport”.
 
 =head1 AUTHORS
 
