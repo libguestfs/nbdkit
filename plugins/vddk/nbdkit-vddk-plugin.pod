@@ -107,7 +107,7 @@ All other parameters are optional.
 
 =item B<compression=skipz>
 
-(vSphere E<ge> 6.5)
+(nbdkit E<ge> 1.24, vSphere E<ge> 6.5)
 
 Select the compression type used over the network between VDDK and the
 VMware server.  The default is C<none>.  See VMware document “Best
