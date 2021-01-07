@@ -7,7 +7,7 @@ nbdkit-release-notes-1.24 - release notes for nbdkit 1.24
 These are the release notes for nbdkit stable release 1.24.
 This describes the major changes since 1.22.
 
-nbdkit 1.24.0 was released on B<XX XXXX 20XX>.
+nbdkit 1.24.0 was released on B<XX XXXX 2021>.
 
 =head2 Security
 
@@ -15,25 +15,125 @@ There were no security issues found.  All past security issues and
 information about how to report new ones can be found in
 L<nbdkit-security(1)>.
 
+=head2 Server
+
+The server and a subset of the plugins and filters have been ported to
+Windows using the Win32 API.  Only the mingw-w64 toolchain is
+supported for building nbdkit (not MSVC).  You can also cross-compile
+from Linux and test under Wine.  Some features are missing although it
+is very usable.
+
+New I<-D nbdkit.tls.log> and I<-D nbdkit.tls.session> debug flags
+which enable additional debugging for TLS sessions.
+
+The server now responds to C<NBD_INFO_NAME> (Eric Blake).
+
+Options I<--run> and I<--vsock> may now be used together.
+
+In I<--run>, C<$nbd> is now a synonym for C<$uri> instead of having
+confusing magical properties.
+
 =head2 Plugins
+
+New L<nbdkit-S3-plugin(1)> to access disks stored on AWS S3 and Ceph.
+
+New L<nbdkit-sparse-random-plugin(1)> which generates large disks
+sparsely filled with random blocks of data.  These look like virtual
+disk images and can be used to benchmark copying tools.
+
+L<nbdkit-data-plugin(1)> has been greatly enhanced.  New features
+include: C<(...)[N:M]> (slice syntax), assignments, comments,
+variables, C<E<lt>(SCRIPT)> (inlined shell script).  In addition a
+parse tree is built, allowing optimizations and other enhancements.
+The plugin is now 64 bit clean allowing patterns larger than 2^32
+bytes to work correctly.
+
+L<nbdkit-random-plugin(1)> can now be used to test copying tools.
+
+L<nbdkit-vddk-plugin(1)> supports enabling compression between VDDK
+and the VMware server which in some situations can improve
+performance.
 
 =head2 Filters
 
+New L<nbdkit-exportname-filter(1)> can be used to extend, mask and
+modify the exports exposed by a plugin (Eric Blake).
+
+New L<nbdkit-exitwhen-filter(1)> allowing the server to gracefully
+exit on various events including external scripts.
+
+New L<nbdkit-checkwrite-filter(1)> can be used to benchmark copying
+tools.
+
+L<nbdkit-ip-filter(1)> now supports filtering clients by PID, user ID
+or group ID, for clients connected over a Unix domain socket.  Also
+you can filter clients using C<AF_VSOCK> and vsock port number.
+
+L<nbdkit-log-filter(1)> now logs C<get_ready>, C<after_fork> and
+C<preconnect> methods, and there is a new C<logscript> feature
+allowing scripts to be run on logging events.
+
+L<nbdkit-ext2-filter(1)> new option C<ext2file=exportname> can be used
+to allow the client to select which file to see from the filesystem
+using the NBD export name (Eric Blake).
+
 =head2 Language bindings
 
-=head2 Server
+Python style cleanups (Eric Blake).
+
+The OCaml plugin now correctly acquires and releases the GC lock on
+all paths in and out.
+
+There is a new OCaml C<NBDKit.version> function returning the version
+of nbdkit that the plugin was compiled against.
+
+Multiple enhancements to the Rust plugin (Alan Somers).
 
 =head2 API
+
+New C<.list_exports>, C<.default_export> and C<.export_description>
+plugin methods allowing plugins to be queried about what export names
+they support, and give additional descriptions of exports.  New
+C<nbdkit_use_default_export> helper function (Eric Blake).
+
+New C<nbdkit_strdup_intern>, C<nbdkit_strndup_intern>
+C<nbdkit_printf_intern> and C<nbdkit_vprintf_intern> functions which
+allow you to allocate a string in a plugin without worrying about
+freeing it (Eric Blake).
+
+New C<nbdkit_peer_pid>, C<nbdkit_peer_uid> and C<nbdkit_peer_gid>
+allows plugins and filters to read the client’s credentials, for
+clients connected over a Unix domain socket.
+
+=begin comment
 
 =head2 Bug fixes
 
 =head2 Documentation
 
+=end comment
+
 =head2 Tests
+
+Many tests now use L<libnbd(3)>, L<nbdsh(1)>, L<nbdinfo(1)> and
+L<nbdcopy(1)> as lighter weight replacements for qemu tools.
+
+Fix compatibility with qemu E<gt> 5.2.0.
 
 =head2 Build
 
+Downstream packagers can now use this to add extra downstream
+information which is printed in version strings etc:
+ ./configure --with-extra=...
+
+If L<ocamldoc(1)> is installed at build time, then it will be used to
+build the L<NBDKit(3)> manual page for OCaml documentation.
+
+=begin comment
+
 =head2 Internals
+
+=end comment
 
 =head1 SEE ALSO
 
@@ -45,8 +145,20 @@ Authors of nbdkit 1.24:
 
 =over 4
 
+=item *
+
+Alan Somers
+
+=item *
+
+Eric Blake
+
+=item *
+
+Richard W.M. Jones
+
 =back
 
 =head1 COPYRIGHT
 
-Copyright (C) 2020 Red Hat Inc.
+Copyright (C) 2020-2021 Red Hat Inc.
