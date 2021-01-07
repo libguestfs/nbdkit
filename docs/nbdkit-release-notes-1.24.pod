@@ -7,7 +7,7 @@ nbdkit-release-notes-1.24 - release notes for nbdkit 1.24
 These are the release notes for nbdkit stable release 1.24.
 This describes the major changes since 1.22.
 
-nbdkit 1.24.0 was released on B<XX XXXX 2021>.
+nbdkit 1.24.0 was released on B<7 January 2021>.
 
 =head2 Security
 
