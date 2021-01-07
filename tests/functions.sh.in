@@ -37,6 +37,20 @@ CXX="@CXX@"
 OCAMLOPT="@OCAMLOPT@"
 PYTHON="@PYTHON@"
 
+# Largest size of disk that qemu supports.
+#
+# Up to qemu 5.2.0 that was 2^63 - 512 (because of the requirement for
+# a whole number of sectors).  qemu > 5.2.0 reduced this to 2^63 - 2^30
+# https://git.qemu.org/?p=qemu.git;a=commitdiff;h=8b1170012b1de6649c66ac1887f4df7e312abf3b
+#
+# qemu-io has further bugs which limit what we can test.  See this
+# thread:
+# https://www.mail-archive.com/qemu-devel@nongnu.org/msg770572.html
+#
+# Because we might be using a 32 bit shell, express this as a constant
+# rather than using $(()) calculations.
+largest_qemu_disk=9223372035781033984
+
 # cleanup_fn f [args]
 #
 # A generic trap handling function.  This runs the function or command

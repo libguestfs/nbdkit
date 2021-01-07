@@ -52,10 +52,8 @@ static enum { UNKNOWN_MODE, READ_MODE, WRITE_MODE } mode = UNKNOWN_MODE;
 static char *filename = NULL;
 static int fd = -1;
 
-/* This is (2^63-1) & ~511.  We have to round it down to the nearest
- * sector size for qemu.
- */
-static int64_t size = INT64_C(9223372036854775296);
+/* This is 2^63 - 2^30.  This is the largest disk that qemu supports. */
+static int64_t size = INT64_C(9223372035781033984);
 
 /* Flag if we have entered the unrecoverable error state because of
  * a seek backwards.
