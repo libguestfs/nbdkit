@@ -34,6 +34,7 @@ import nbdkit
 import boto3
 from contextlib import closing
 
+
 API_VERSION = 2
 
 access_key = None
@@ -43,11 +44,14 @@ endpoint_url = None
 bucket_name = None
 key_name = None
 
+
 def thread_model():
     return nbdkit.THREAD_MODEL_PARALLEL
 
+
 def config(key, value):
-    global access_key, secret_key, session_token, endpoint_url, bucket_name, key_name
+    global access_key, secret_key, session_token, endpoint_url, \
+           bucket_name, key_name
 
     if key == "access-key" or key == "access_key":
         access_key = value
@@ -64,37 +68,41 @@ def config(key, value):
     else:
         raise Exception("unknown parameter %s" % key)
 
+
 def config_complete():
     if bucket_name is None:
         raise Exception("bucket parameter missing")
     if key_name is None:
         raise Exception("key parameter missing")
 
+
 def open(readonly):
     global access_key, secret_key, session_token, endpoint_url
 
     s3 = boto3.client("s3",
-                      aws_access_key_id = access_key,
-                      aws_secret_access_key = secret_key,
-                      aws_session_token = session_token,
-                      endpoint_url = endpoint_url)
+                      aws_access_key_id=access_key,
+                      aws_secret_access_key=secret_key,
+                      aws_session_token=session_token,
+                      endpoint_url=endpoint_url)
     if s3 is None:
         raise Exception("could not connect to S3")
     return s3
 
+
 def get_size(s3):
     global bucket_name, key_name
 
-    resp = s3.get_object(Bucket = bucket_name, Key = key_name)
+    resp = s3.get_object(Bucket=bucket_name, Key=key_name)
     size = resp['ResponseMetadata']['HTTPHeaders']['content-length']
     return int(size)
+
 
 def pread(s3, buf, offset, flags):
     global bucket_name, key_name
 
     size = len(buf)
     rnge = 'bytes=%d-%d' % (offset, offset+size-1)
-    resp = s3.get_object(Bucket = bucket_name, Key = key_name, Range = rnge)
+    resp = s3.get_object(Bucket=bucket_name, Key=key_name, Range=rnge)
     body = resp['Body']
     with closing(body):
         buf[:] = body.read(size)
