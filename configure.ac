@@ -261,6 +261,7 @@ void
 test (void)
 {
   __attribute__((cleanup(freep))) char *ptr = malloc (100);
+  (void)ptr;
 }
 
 int
