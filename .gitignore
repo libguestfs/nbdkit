@@ -155,6 +155,7 @@ plugins/*/*.3
 /tests/test-random
 /tests/test-readahead
 /tests/test-ruby
+/tests/test-S3/boto3/__pycache__/
 /tests/test-shell
 /tests/test-shell.img
 /tests/test-socket-activation

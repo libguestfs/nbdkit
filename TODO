@@ -175,6 +175,10 @@ nbdkit-S3-plugin:
 
 * Write support (using PUT).
 
+* Mock testing, see these links for some ideas:
+  https://danwilson.co/2018-11-01/mocking-aws-api-in-python-unittests
+  https://pypi.org/project/moto/
+
 nbdkit-cdi-plugin:
 
 * Look at using skopeo instead of podman pull
