@@ -1782,7 +1782,7 @@ endif HAVE_PLUGINS
 
 TESTS += \
 	test-old-plugins-i686-Linux-v1.0.0.sh \
-	test-old-plugins-i686-Linux-v1.2.8-2-gd2d934df.sh \
+	test-old-plugins-i686-Linux-v1.2.8-3-g0560f8f.sh \
 	test-old-plugins-i686-Linux-v1.8.4-3-g11f5a90d.sh \
 	test-old-plugins-i686-Linux-v1.12.8-2-g1e2ccc27.sh \
 	test-old-plugins-i686-Linux-v1.18.4.sh \
