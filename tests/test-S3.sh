@@ -37,6 +37,7 @@ set -x
 requires hexdump --version
 requires $PYTHON --version
 requires nbdcopy --version
+requires_plugin python
 
 # Python has proven very difficult to valgrind, therefore it is disabled.
 if [ "$NBDKIT_VALGRIND" = "1" ]; then
