@@ -252,6 +252,14 @@ set_error (PyObject *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
+/* nbdkit.shutdown */
+static PyObject *
+do_shutdown (PyObject *self, PyObject *args)
+{
+  nbdkit_shutdown ();
+  Py_RETURN_NONE;
+}
+
 static PyMethodDef NbdkitMethods[] = {
   { "debug", debug, METH_VARARGS,
     "Print a debug message" },
@@ -259,6 +267,8 @@ static PyMethodDef NbdkitMethods[] = {
     "Return the optional export name negotiated with the client" },
   { "set_error", set_error, METH_VARARGS,
     "Store an errno value prior to throwing an exception" },
+  { "shutdown", do_shutdown, METH_VARARGS,
+    "Request asynchronous shutdown" },
   { NULL }
 };
 

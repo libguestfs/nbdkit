@@ -129,6 +129,10 @@ Record C<err> as the reason you are about to throw an exception. C<err>
 should correspond to usual errno values, where it may help to
 C<import errno>.
 
+=head3 C<nbdkit.shutdown()>
+
+Request asynchronous server shutdown.
+
 =head2 Module constants
 
 After C<import nbdkit> the following constants are available.  These
