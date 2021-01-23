@@ -107,7 +107,7 @@ See also L<nbdkit(1)/Shebang scripts>.
 These scripts can also be installed in the C<$plugindir>.  See
 L<nbdkit-plugin(3)/WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES>.
 
-=head2 Methods
+=head2 Module functions
 
 Your script may use C<import nbdkit> to have access to the following
 methods in the C<nbdkit> module:
@@ -128,6 +128,59 @@ it wants.
 Record C<err> as the reason you are about to throw an exception. C<err>
 should correspond to usual errno values, where it may help to
 C<import errno>.
+
+=head2 Module constants
+
+After C<import nbdkit> the following constants are available.  These
+are used in the callbacks below.
+
+=over 4
+
+=item C<nbdkit.THREAD_MODEL_SERIALIZE_CONNECTIONS>
+
+=item C<nbdkit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS>
+
+=item C<nbdkit.THREAD_MODEL_SERIALIZE_REQUESTS>
+
+=item C<nbdkit.THREAD_MODEL_PARALLEL>
+
+Possible return values from C<thread_model()>.
+
+=item C<nbdkit.FLAG_MAY_TRIM>
+
+=item C<nbdkit.FLAG_FUA>
+
+=item C<nbdkit.FLAG_REQ_ONE>
+
+=item C<nbdkit.FLAG_FAST_ZERO>
+
+Flags bitmap passed to certain plugin callbacks.  Not all callbacks
+with a flags parameter use all of these flags, consult the
+documentation below and L<nbdkit-plugin(3)>.
+
+=item C<nbdkit.FUA_NONE>
+
+=item C<nbdkit.FUA_EMULATE>
+
+=item C<nbdkit.FUA_NATIVE>
+
+Possible return values from C<can_fua()>.
+
+=item C<nbdkit.CACHE_NONE>
+
+=item C<nbdkit.CACHE_EMULATE>
+
+=item C<nbdkit.CACHE_NATIVE>
+
+Possible return values from C<can_cache()>.
+
+=item C<nbdkit.EXTENT_HOLE>
+
+=item C<nbdkit.EXTENT_ZERO>
+
+Used in the C<type> field returned by C<extents()>.
+
+=back
 
 =head2 Exceptions
 
