@@ -182,6 +182,22 @@ Used in the C<type> field returned by C<extents()>.
 
 =back
 
+=head2 Threads
+
+The thread model for Python callbacks defaults to
+C<nbdkit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS>.
+
+Since S<nbdkit 1.22> it has been possible to set this by implementing
+a C<thread_model()> function which returns one of the constants
+C<nbdkit.THREAD_MODEL_*>.
+
+The Python Global Interpreter Lock (GIL) is still used, so Python code
+does not run in parallel.  However if a plugin callback calls a
+library which blocks (eg. to make an HTTP request), then another
+callback might be executed in parallel.  Plugins which use
+C<nbdkit.THREAD_MODEL_SERIALIZE_REQUESTS> or
+C<nbdkit.THREAD_MODEL_PARALLEL> may need to use locks on shared data.
+
 =head2 Exceptions
 
 Python callbacks should throw exceptions to indicate errors.  Remember
@@ -223,7 +239,7 @@ There are no arguments or return value.
  def thread_model():
    return nbdkit.THEAD_MODEL_SERIALIZE_ALL_REQUESTS
 
-See L</Threads> below.
+See L</Threads> above.
 
 =item C<get_ready>
 
@@ -481,18 +497,6 @@ C<magic_config_key>.
 These are not yet supported.
 
 =back
-
-=head2 Threads
-
-The thread model for Python callbacks defaults to
-C<NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS>.  Since S<nbdkit 1.22>
-it is possible to set this by implementing a C<thread_model> function
-which returns one of the constants C<nbdkit.THREAD_MODEL_*>.
-
-The Python Global Interpreter Lock (GIL) usually means that you cannot
-execute Python code in parallel, but Python code which calls into
-libraries which block (eg. to make HTTP requests) might be executed in
-parallel.
 
 =head1 FILES
 
