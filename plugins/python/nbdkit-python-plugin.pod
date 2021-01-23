@@ -247,6 +247,12 @@ See L</Threads> above.
 
 There are no arguments or return value.
 
+=item C<after_fork>
+
+(Optional, nbdkit E<ge> 1.26)
+
+There are no arguments or return value.
+
 =item C<list_exports>
 
 (Optional)
@@ -263,6 +269,13 @@ There are no arguments or return value.
  def default_export(readonly, is_tls):
    # return a string
    return "name"
+
+=item C<preconnect>
+
+(Optional, nbdkit E<ge> 1.26)
+
+ def preconnect(readonly):
+   # no return value
 
 =item C<open>
 
@@ -530,4 +543,4 @@ Nir Soffer
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2020 Red Hat Inc.
+Copyright (C) 2013-2021 Red Hat Inc.
