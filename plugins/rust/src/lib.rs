@@ -217,9 +217,9 @@ pub enum CacheFlags {
     Native = 2,
 }
 
-impl Into<i32> for CacheFlags {
-    fn into(self) -> i32 {
-        self as i32
+impl From<CacheFlags> for i32 {
+    fn from(cf: CacheFlags) -> Self {
+        cf as Self
     }
 }
 
@@ -238,9 +238,9 @@ pub enum FuaFlags {
     Native = 2,
 }
 
-impl Into<i32> for FuaFlags {
-    fn into(self) -> i32 {
-        self as i32
+impl From<FuaFlags> for i32 {
+    fn from(cf: FuaFlags) -> Self {
+        cf as Self
     }
 }
 
