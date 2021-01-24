@@ -29,7 +29,7 @@
 //!
 //! NBDKit is a toolkit for building Network Block Device servers.
 //!
-//! [https://github.com/libguestfs/nbdkit](https://github.com/libguestfs/nbdkit)
+//! <https://github.com/libguestfs/nbdkit>
 //!
 //! To use nbdkit, build your project as a cdylib.  Define your plugin by
 //! implementing [`Server`], and then register it with [`plugin!`].  See 
@@ -812,9 +812,11 @@ pub trait Server {
     /// For security reasons (to avoid denial of service attacks) this callback
     /// should be written to be as fast and take as few resources as possible.
     /// If you use this callback, only use it to do basic access control, such
-    /// as checking [`peername`] against a whitelist.  It may be better to do
-    /// access control outside the server, for example using TCP wrappers or a
-    /// firewall.
+    /// as checking
+    #[cfg_attr(feature = "nix", doc = "[`peername`]")]
+    #[cfg_attr(not(feature = "nix"), doc = "the peer name")]
+    /// against a whitelist.  It may be better to do access control outside the
+    /// server, for example using TCP wrappers or a firewall.
     ///
     /// The `readonly` flag informs the plugin that the server was started with
     /// the `-r` flag on the command line.
