@@ -150,67 +150,47 @@ checkwrite_trim_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   /* If the plugin supports extents, speed this up by using them. */
   if (next_ops->can_extents (nxdata)) {
-    while (count > 0) {
-      struct nbdkit_extents *exts;
-      size_t i, n;
+    size_t i, n;
+    CLEANUP_EXTENTS_FREE struct nbdkit_extents *exts =
+      nbdkit_extents_full (next_ops, nxdata, count, offset, 0, err);
+    if (exts == NULL)
+      return -1;
 
-      exts = nbdkit_extents_new (offset, offset + count);
-      if (exts == NULL)
-        return -1;
-      if (next_ops->extents (nxdata, count, offset, 0, exts, err) == -1)
-        return -1;
+    n = nbdkit_extents_count (exts);
+    for (i = 0; i < n && count > 0; ++i) {
+      const struct nbdkit_extent e = nbdkit_get_extent (exts, i);
+      const uint64_t next_extent_offset = e.offset + e.length;
 
-      /* Ignore any extents or partial extents which are outside the
-       * offset/count that we are looking at.  The plugin is required
-       * to return at least one relevant extent so we can assume this
-       * loop will make forward progress.
-       */
-      n = nbdkit_extents_count (exts);
-      for (i = 0; i < n && count > 0; ++i) {
-        uint64_t next_extent_offset;
-        struct nbdkit_extent e;
+      /* Anything that reads back as zero is good. */
+      if ((e.type & NBDKIT_EXTENT_ZERO) != 0) {
+        const uint64_t zerolen = MIN (count, next_extent_offset - offset);
 
-        e = nbdkit_get_extent (exts, i);
+        offset += zerolen;
+        count -= zerolen;
+        continue;
+      }
 
-        if (e.offset + e.length <= offset)
-          continue;
-        if (e.offset > offset)
-          break;
+      /* Otherwise we have to read the underlying data and check. */
+      while (count > 0) {
+        size_t buflen = MIN (MAX_REQUEST_SIZE, count);
+        buflen = MIN (buflen, next_extent_offset - offset);
 
-        next_extent_offset = e.offset + e.length;
-
-        /* Anything that reads back as zero is good. */
-        if ((e.type & NBDKIT_EXTENT_ZERO) != 0) {
-          const uint64_t zerolen = MIN (count, next_extent_offset - offset);
-
-          offset += zerolen;
-          count -= zerolen;
-          continue;
+        CLEANUP_FREE char *buf = malloc (buflen);
+        if (buf == NULL) {
+          *err = errno;
+          nbdkit_error ("malloc: %m");
+          return -1;
         }
 
-        /* Otherwise we have to read the underlying data and check. */
-        while (count > 0) {
-          const size_t buflen =
-            MIN3 (MAX_REQUEST_SIZE, count, next_extent_offset - offset);
-          CLEANUP_FREE char *buf = malloc (buflen);
-          if (buf == NULL) {
-            *err = errno;
-            nbdkit_error ("malloc: %m");
-            return -1;
-          }
+        if (next_ops->pread (nxdata, buf, buflen, offset, 0, err) == -1)
+          return -1;
+        if (! is_zero (buf, buflen))
+          return data_does_not_match (err);
 
-          if (next_ops->pread (nxdata, buf, buflen, offset, 0, err) == -1)
-            return -1;
-          if (! is_zero (buf, buflen))
-            return data_does_not_match (err);
-
-          count -= buflen;
-          offset += buflen;
-        }
-      } /* for extent */
-
-      nbdkit_extents_free (exts);
-    } /* while (count > 0) */
+        count -= buflen;
+        offset += buflen;
+      }
+    } /* for extent */
   }
 
   /* Otherwise the plugin does not support extents, so do this the
