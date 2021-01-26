@@ -183,7 +183,7 @@ cow_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   int r = next_ops->can_cache (nxdata);
   if (r == -1)
     return -1;
-  return NBDKIT_FUA_NATIVE;
+  return NBDKIT_CACHE_NATIVE;
 }
 
 /* Override the plugin's .can_fast_zero, because our .zero is not fast */
