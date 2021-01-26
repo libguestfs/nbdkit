@@ -1376,11 +1376,17 @@ EXTRA_DIST += \
 
 # cow filter test.
 if HAVE_MKE2FS_WITH_D
-TESTS += test-cow.sh
+TESTS += \
+	test-cow.sh \
+	test-cow-extents1.sh \
+	test-cow-extents2.sh \
+	$(NULL)
 endif
 TESTS += test-cow-null.sh
 EXTRA_DIST += \
 	test-cow.sh \
+	test-cow-extents1.sh \
+	test-cow-extents2.sh \
 	test-cow-null.sh \
 	$(NULL)
 
