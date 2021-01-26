@@ -34,7 +34,7 @@
 #define NBDKIT_BLK_H
 
 /* Size of a block in the overlay.  A 4K block size means that we need
- * 32 MB of memory to store the bitmap for a 1 TB underlying image.
+ * 64 MB of memory to store the bitmap for a 1 TB underlying image.
  */
 #define BLKSIZE 4096
 
@@ -79,5 +79,9 @@ extern int blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 /* Write a single block. */
 extern int blk_write (uint64_t blknum, const uint8_t *block, int *err)
   __attribute__((__nonnull__ (2, 3)));
+
+/* Trim a single block. */
+extern int blk_trim (uint64_t blknum, int *err)
+  __attribute__((__nonnull__ (2)));
 
 #endif /* NBDKIT_BLK_H */

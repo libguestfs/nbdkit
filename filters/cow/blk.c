@@ -43,16 +43,27 @@
  * plugin returns the same immutable data for each pread call we make,
  * and optimize on this basis.
  *
- * A block bitmap is maintained in memory recording if each block in
- * the temporary file is "allocated" (1) or "hole" (0).
+ * A 2-bit per block bitmap is maintained in memory recording if each
+ * block in the temporary file is:
+ *
+ *   00 = not allocated in the overlay (read through to the plugin)
+ *   01 = allocated in the overlay
+ *   10 = <unused>
+ *   11 = trimmed in the overlay
  *
  * When reading a block we first check the bitmap to see if that file
- * block is allocated or a hole.  If allocated, we return it from the
- * temporary file.  If a hole, we issue a pread to the underlying
- * plugin.
+ * block is allocated, trimmed or not.  If allocated, we return it
+ * from the temporary file.  Trimmed returns zeroes.  If not allocated
+ * we issue a pread to the underlying plugin.
  *
  * When writing a block we unconditionally write the data to the
- * temporary file, setting the bit in the bitmap.
+ * temporary file, setting the bit in the bitmap.  (Writing zeroes is
+ * handled the same way.)
+ *
+ * When trimming we set the trimmed flag in the bitmap for whole
+ * blocks, and handle the unaligned portions like writing zeroes
+ * above.  We could punch holes in the overlay as an optimization, but
+ * for simplicity we do not do that yet.
  *
  * Since the overlay is a deleted temporary file, we can ignore FUA
  * and flush commands.
@@ -92,8 +103,25 @@
 /* The temporary overlay. */
 static int fd = -1;
 
-/* Bitmap.  Bit = 1 => allocated, 0 => hole. */
+/* Bitmap. */
 static struct bitmap bm;
+
+enum bm_entry {
+  BLOCK_NOT_ALLOCATED = 0,
+  BLOCK_ALLOCATED = 1,
+  BLOCK_TRIMMED = 3,
+};
+
+static const char *
+state_to_string (enum bm_entry state)
+{
+  switch (state) {
+  case BLOCK_NOT_ALLOCATED: return "not allocated";
+  case BLOCK_ALLOCATED: return "allocated";
+  case BLOCK_TRIMMED: return "trimmed";
+  default: abort ();
+  }
+}
 
 int
 blk_init (void)
@@ -102,7 +130,7 @@ blk_init (void)
   size_t len;
   char *template;
 
-  bitmap_init (&bm, BLKSIZE, 1 /* bits per block */);
+  bitmap_init (&bm, BLKSIZE, 2 /* bits per block */);
 
   tmpdir = getenv ("TMPDIR");
   if (!tmpdir)
@@ -163,28 +191,16 @@ blk_set_size (uint64_t new_size)
   return 0;
 }
 
-/* Return true if the block is allocated.  Consults the bitmap. */
-static bool
-blk_is_allocated (uint64_t blknum)
-{
-  return bitmap_get_blk (&bm, blknum, false);
-}
-
-/* Mark a block as allocated. */
-static void
-blk_set_allocated (uint64_t blknum)
-{
-  bitmap_set_blk (&bm, blknum, true);
-}
-
 /* This is a bit of a hack since usually this information is hidden in
  * the blk module.  However it is needed when calculating extents.
  */
 void
 blk_status (uint64_t blknum, bool *present, bool *trimmed)
 {
-  *present = blk_is_allocated (blknum);
-  *trimmed = false; /* XXX */
+  enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
+
+  *present = state != BLOCK_NOT_ALLOCATED;
+  *trimmed = state == BLOCK_TRIMMED;
 }
 
 /* These are the block operations.  They always read or write a single
@@ -195,20 +211,23 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
           uint64_t blknum, uint8_t *block, int *err)
 {
   off_t offset = blknum * BLKSIZE;
-  bool allocated = blk_is_allocated (blknum);
+  enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
 
   nbdkit_debug ("cow: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
-                blknum, (uint64_t) offset,
-                !allocated ? "a hole" : "allocated");
+                blknum, (uint64_t) offset, state_to_string (state));
 
-  if (!allocated)               /* Read underlying plugin. */
+  if (state == BLOCK_NOT_ALLOCATED) /* Read underlying plugin. */
     return next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err);
-  else {                        /* Read overlay. */
+  else if (state == BLOCK_ALLOCATED) { /* Read overlay. */
     if (pread (fd, block, BLKSIZE, offset) == -1) {
       *err = errno;
       nbdkit_error ("pread: %m");
       return -1;
     }
+    return 0;
+  }
+  else /* state == BLOCK_TRIMMED */ {
+    memset (block, 0, BLKSIZE);
     return 0;
   }
 }
@@ -218,13 +237,12 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
            uint64_t blknum, uint8_t *block, enum cache_mode mode, int *err)
 {
   off_t offset = blknum * BLKSIZE;
-  bool allocated = blk_is_allocated (blknum);
+  enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
 
   nbdkit_debug ("cow: blk_cache block %" PRIu64 " (offset %" PRIu64 ") is %s",
-                blknum, (uint64_t) offset,
-                !allocated ? "a hole" : "allocated");
+                blknum, (uint64_t) offset, state_to_string (state));
 
-  if (allocated) {
+  if (state == BLOCK_ALLOCATED) {
 #if HAVE_POSIX_FADVISE
     int r = posix_fadvise (fd, offset, BLKSIZE, POSIX_FADV_WILLNEED);
     if (r) {
@@ -235,6 +253,8 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 #endif
     return 0;
   }
+  if (state == BLOCK_TRIMMED)
+    return 0;
   if (mode == BLK_CACHE_IGNORE)
     return 0;
   if (mode == BLK_CACHE_PASSTHROUGH)
@@ -247,7 +267,7 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
       nbdkit_error ("pwrite: %m");
       return -1;
     }
-    blk_set_allocated (blknum);
+    bitmap_set_blk (&bm, blknum, BLOCK_ALLOCATED);
   }
   return 0;
 }
@@ -265,7 +285,23 @@ blk_write (uint64_t blknum, const uint8_t *block, int *err)
     nbdkit_error ("pwrite: %m");
     return -1;
   }
-  blk_set_allocated (blknum);
+  bitmap_set_blk (&bm, blknum, BLOCK_ALLOCATED);
 
+  return 0;
+}
+
+int
+blk_trim (uint64_t blknum, int *err)
+{
+  off_t offset = blknum * BLKSIZE;
+
+  nbdkit_debug ("cow: blk_trim block %" PRIu64 " (offset %" PRIu64 ")",
+                blknum, (uint64_t) offset);
+
+  /* XXX As an optimization we could punch a whole in the overlay
+   * here.  However it's not trivial since BLKSIZE is unrelated to the
+   * overlay filesystem block size.
+   */
+  bitmap_set_blk (&bm, blknum, BLOCK_TRIMMED);
   return 0;
 }

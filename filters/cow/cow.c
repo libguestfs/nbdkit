@@ -150,7 +150,7 @@ cow_can_write (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 static int
 cow_can_trim (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
-  return 0;
+  return 1;
 }
 
 static int
@@ -428,6 +428,78 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Trim data. */
+static int
+cow_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+          void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+          int *err)
+{
+  CLEANUP_FREE uint8_t *block = NULL;
+  uint64_t blknum, blkoffs;
+  int r;
+
+  if (!IS_ALIGNED (count | offset, BLKSIZE)) {
+    block = malloc (BLKSIZE);
+    if (block == NULL) {
+      *err = errno;
+      nbdkit_error ("malloc: %m");
+      return -1;
+    }
+  }
+
+  blknum = offset / BLKSIZE;  /* block number */
+  blkoffs = offset % BLKSIZE; /* offset within the block */
+
+  /* Unaligned head */
+  if (blkoffs) {
+    uint64_t n = MIN (BLKSIZE - blkoffs, count);
+
+    /* Do a read-modify-write operation on the current block.
+     * Hold the lock over the whole operation.
+     */
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r != -1) {
+      memset (&block[blkoffs], 0, n);
+      r = blk_write (blknum, block, err);
+    }
+    if (r == -1)
+      return -1;
+
+    count -= n;
+    offset += n;
+    blknum++;
+  }
+
+  /* Aligned body */
+  while (count >= BLKSIZE) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_trim (blknum, err);
+    if (r == -1)
+      return -1;
+
+    count -= BLKSIZE;
+    offset += BLKSIZE;
+    blknum++;
+  }
+
+  /* Unaligned tail */
+  if (count) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    r = blk_read (next_ops, nxdata, blknum, block, err);
+    if (r != -1) {
+      memset (&block[count], 0, BLKSIZE - count);
+      r = blk_write (blknum, block, err);
+    }
+    if (r == -1)
+      return -1;
+  }
+
+  /* flags & NBDKIT_FLAG_FUA is deliberately ignored. */
+
+  return 0;
+}
+
 static int
 cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
            uint32_t flags, int *err)
@@ -634,6 +706,7 @@ static struct nbdkit_filter filter = {
   .pread             = cow_pread,
   .pwrite            = cow_pwrite,
   .zero              = cow_zero,
+  .trim              = cow_trim,
   .flush             = cow_flush,
   .cache             = cow_cache,
   .extents           = cow_extents,
