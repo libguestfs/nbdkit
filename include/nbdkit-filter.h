@@ -124,6 +124,11 @@ NBDKIT_EXTERN_DECL (size_t, nbdkit_extents_count,
                     (const struct nbdkit_extents *));
 NBDKIT_EXTERN_DECL (struct nbdkit_extent, nbdkit_get_extent,
                     (const struct nbdkit_extents *, size_t));
+NBDKIT_EXTERN_DECL (struct nbdkit_extents *, nbdkit_extents_full,
+                    (struct nbdkit_next_ops *next_ops,
+                     nbdkit_backend *nxdata,
+                     uint32_t count, uint64_t offset,
+                     uint32_t flags, int *err));
 NBDKIT_EXTERN_DECL (int, nbdkit_extents_aligned,
                     (struct nbdkit_next_ops *next_ops,
                      nbdkit_backend *nxdata,

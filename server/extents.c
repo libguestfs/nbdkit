@@ -292,3 +292,57 @@ nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
   /* Once we get here, all extents are aligned. */
   return 0;
 }
+
+/* This is a convenient wrapper around next_ops->extents which can be
+ * used from filters where you want to get a complete set of extents
+ * covering the region [offset..offset+count-1].
+ */
+struct nbdkit_extents *
+nbdkit_extents_full (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+                     uint32_t count, uint64_t offset, uint32_t flags,
+                     int *err)
+{
+  struct nbdkit_extents *ret;
+
+  /* Clear REQ_ONE to ask the plugin for as much information as it is
+   * willing to return (the plugin may still truncate if it is too
+   * costly to provide everything).
+   */
+  flags &= ~NBDKIT_FLAG_REQ_ONE;
+
+  ret = nbdkit_extents_new (offset, offset+count);
+  if (ret == NULL) goto error0;
+
+  while (count > 0) {
+    const uint64_t old_offset = offset;
+    size_t i;
+
+    CLEANUP_EXTENTS_FREE struct nbdkit_extents *t
+      = nbdkit_extents_new (offset, offset+count);
+    if (t == NULL) goto error1;
+
+    if (next_ops->extents (nxdata, count, offset, flags, t, err) == -1)
+      goto error0;
+
+    for (i = 0; i < nbdkit_extents_count (t); ++i) {
+      const struct nbdkit_extent e = nbdkit_get_extent (t, i);
+      if (nbdkit_add_extent (ret, e.offset, e.length, e.type) == -1)
+        goto error1;
+
+      assert (e.length <= count);
+      offset += e.length;
+      count -= e.length;
+    }
+
+    /* If the plugin is behaving we must make forward progress. */
+    assert (offset > old_offset);
+  }
+
+  return ret;
+
+ error1:
+  *err = errno;
+ error0:
+  if (ret) nbdkit_extents_free (ret);
+  return NULL;
+}

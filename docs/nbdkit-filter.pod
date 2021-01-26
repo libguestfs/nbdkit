@@ -857,6 +857,28 @@ Returns the number of extents in the list.
 
 Returns a copy of the C<i>'th extent.
 
+=head3 Reading the full extents from the plugin
+
+A convenience function is provided to filters only which makes one or
+more requests to the underlying plugin until we have a full set of
+extents covering the region C<[offset..offset+count-1]>.
+
+ struct nbdkit_extents *nbdkit_extents_full (
+                             struct nbdkit_next_ops *next_ops,
+                             nbdkit_backend *nxdata,
+                             uint32_t count, uint64_t offset,
+                             uint32_t flags, int *err);
+
+Note this allocates a new C<struct nbdkit_extents> which the caller
+must free.  C<flags> is passed through to the underlying plugin, but
+C<NBDKIT_FLAG_REQ_ONE> is removed from the set of flags so that the
+plugin returns as much information as possible (this is usually what
+you want).
+
+On error this function can return C<NULL>.  In this case it calls
+C<nbdkit_error> and/or C<nbdkit_set_error> as required.  C<*err> will
+be set to a suitable value.
+
 =head3 Enforcing alignment of an nbdkit_extents list
 
 A convenience function is provided to filters only which makes it

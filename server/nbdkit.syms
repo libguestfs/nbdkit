@@ -51,6 +51,7 @@
     nbdkit_extents_aligned;
     nbdkit_extents_count;
     nbdkit_extents_free;
+    nbdkit_extents_full;
     nbdkit_extents_new;
     nbdkit_get_extent;
     nbdkit_is_tls;
