@@ -54,9 +54,8 @@
  * When writing a block we unconditionally write the data to the
  * temporary file, setting the bit in the bitmap.
  *
- * We allow the client to request FUA, and emulate it with a flush
- * (arguably, since the write overlay is temporary, we could ignore
- * FUA altogether).
+ * Since the overlay is a deleted temporary file, we can ignore FUA
+ * and flush commands.
  */
 
 #include <config.h>
@@ -257,20 +256,6 @@ blk_write (uint64_t blknum, const uint8_t *block, int *err)
     return -1;
   }
   blk_set_allocated (blknum);
-
-  return 0;
-}
-
-int
-blk_flush (void)
-{
-  /* I think we don't care about file metadata for this temporary
-   * file, so only flush the data.
-   */
-  if (fdatasync (fd) == -1) {
-    nbdkit_error ("fdatasync: %m");
-    return -1;
-  }
 
   return 0;
 }

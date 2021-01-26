@@ -77,7 +77,4 @@ extern int blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 extern int blk_write (uint64_t blknum, const uint8_t *block, int *err)
   __attribute__((__nonnull__ (2, 3)));
 
-/* Flush the overlay to disk. */
-extern int blk_flush (void);
-
 #endif /* NBDKIT_BLK_H */
