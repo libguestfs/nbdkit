@@ -171,7 +171,7 @@ cow_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 static int
 cow_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
-  return NBDKIT_FUA_EMULATE;
+  return NBDKIT_FUA_NATIVE;
 }
 
 static int
@@ -343,8 +343,8 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
       return -1;
   }
 
-  if (flags & NBDKIT_FLAG_FUA)
-    return cow_flush (next_ops, nxdata, handle, 0, err);
+  /* flags & NBDKIT_FLAG_FUA is deliberately ignored. */
+
   return 0;
 }
 
@@ -426,8 +426,8 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
       return -1;
   }
 
-  if (flags & NBDKIT_FLAG_FUA)
-    return cow_flush (next_ops, nxdata, handle, 0, err);
+  /* flags & NBDKIT_FLAG_FUA is deliberately ignored. */
+
   return 0;
 }
 
@@ -435,13 +435,8 @@ static int
 cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
            uint32_t flags, int *err)
 {
-  int r;
-
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  r = blk_flush ();
-  if (r == -1)
-    *err = errno;
-  return r;
+  /* Deliberately ignored. */
+  return 0;
 }
 
 static int
