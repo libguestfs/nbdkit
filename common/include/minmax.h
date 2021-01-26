@@ -76,18 +76,4 @@
 
 #endif
 
-/* Helpful to have MIN3, MAX3 and maybe more in future. */
-#ifdef HAVE_AUTO_TYPE
-#define MIN3(x0, x1, x2) (MIN (MIN ((x0), (x1)), (x2)))
-#define MAX3(x0, x1, x2) (MAX (MAX ((x0), (x1)), (x2)))
-#else
-/* Unfortunately without __auto_type nesting the macros is not
- * possible so we must use this unclean macro instead.
- */
-#define MIN_UNCLEAN(x,y) ((x) < (y) ? (x) : (y))
-#define MAX_UNCLEAN(x,y) ((x) > (y) ? (x) : (y))
-#define MIN3(x0, x1, x2) (MIN_UNCLEAN (MIN_UNCLEAN ((x0), (x1)), (x2)))
-#define MAX3(x0, x1, x2) (MAX_UNCLEAN (MAX_UNCLEAN ((x0), (x1)), (x2)))
-#endif
-
 #endif /* NBDKIT_MINMAX_H */
