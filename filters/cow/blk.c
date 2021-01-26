@@ -177,6 +177,16 @@ blk_set_allocated (uint64_t blknum)
   bitmap_set_blk (&bm, blknum, true);
 }
 
+/* This is a bit of a hack since usually this information is hidden in
+ * the blk module.  However it is needed when calculating extents.
+ */
+void
+blk_status (uint64_t blknum, bool *present, bool *trimmed)
+{
+  *present = blk_is_allocated (blknum);
+  *trimmed = false; /* XXX */
+}
+
 /* These are the block operations.  They always read or write a single
  * whole block of size ‘blksize’.
  */

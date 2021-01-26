@@ -54,6 +54,9 @@ extern void blk_free (void);
 /* Allocate or resize the overlay and bitmap. */
 extern int blk_set_size (uint64_t new_size);
 
+/* Returns the status of the block in the overlay. */
+extern void blk_status (uint64_t blknum, bool *present, bool *trimmed);
+
 /* Read a single block from the overlay or plugin. */
 extern int blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
                      uint64_t blknum, uint8_t *block, int *err)

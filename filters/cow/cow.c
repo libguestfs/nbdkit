@@ -141,9 +141,6 @@ cow_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   return r >= 0 ? 0 : -1;
 }
 
-/* Whatever the underlying plugin can or can't do, we can write, we
- * cannot trim or detect extents, and we can flush.
- */
 static int
 cow_can_write (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
@@ -159,7 +156,7 @@ cow_can_trim (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 static int
 cow_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 {
-  return 0;
+  return 1;
 }
 
 static int
@@ -499,6 +496,124 @@ cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Extents. */
+static int
+cow_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+             struct nbdkit_extents *extents, int *err)
+{
+  const bool can_extents = next_ops->can_extents (nxdata);
+  const bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
+  uint64_t end;
+  uint64_t blknum;
+
+  /* To make this easier, align the requested extents to whole blocks. */
+  end = offset + count;
+  offset = ROUND_DOWN (offset, BLKSIZE);
+  end = ROUND_UP (end, BLKSIZE);
+  count  = end - offset;
+  blknum = offset / BLKSIZE;
+
+  assert (IS_ALIGNED (offset, BLKSIZE));
+  assert (IS_ALIGNED (count, BLKSIZE));
+  assert (count > 0);           /* We must make forward progress. */
+
+  /* We hold the lock for the whole time, even when requesting extents
+   * from the plugin, because we want to present an atomic picture of
+   * the current state.
+   */
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+
+  while (count > 0) {
+    bool present, trimmed;
+    struct nbdkit_extent e;
+
+    blk_status (blknum, &present, &trimmed);
+
+    /* Present in the overlay. */
+    if (present) {
+      e.offset = offset;
+      e.length = BLKSIZE;
+
+      if (trimmed)
+        e.type = NBDKIT_EXTENT_HOLE|NBDKIT_EXTENT_ZERO;
+      else
+        e.type = 0;
+
+      if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
+        *err = errno;
+        return -1;
+      }
+
+      blknum++;
+      offset += BLKSIZE;
+      count -= BLKSIZE;
+    }
+
+    /* Not present in the overlay, but we can ask the plugin. */
+    else if (can_extents) {
+      uint64_t range_offset = offset;
+      uint32_t range_count = 0;
+      size_t i;
+
+      /* Asking the plugin for a single block of extents is not
+       * efficient for some plugins (eg. VDDK) so ask for as much data
+       * as we can.
+       */
+      for (;;) {
+        blknum++;
+        offset += BLKSIZE;
+        count -= BLKSIZE;
+        range_count += BLKSIZE;
+
+        if (count == 0) break;
+        blk_status (blknum, &present, &trimmed);
+        if (present) break;
+      }
+
+      CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 =
+        nbdkit_extents_full (next_ops, nxdata,
+                             range_count, range_offset, flags, err);
+      if (extents2 == NULL)
+        return -1;
+
+      for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
+        e = nbdkit_get_extent (extents2, i);
+        if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
+          *err = errno;
+          return -1;
+        }
+      }
+    }
+
+    /* Otherwise assume the block is non-sparse. */
+    else {
+      e.offset = offset;
+      e.length = BLKSIZE;
+      e.type = 0;
+
+      if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
+        *err = errno;
+        return -1;
+      }
+
+      blknum++;
+      offset += BLKSIZE;
+      count -= BLKSIZE;
+    }
+
+    /* If the caller only wanted the first extent, and we've managed
+     * to add at least one extent to the list, then we can drop out
+     * now.  (Note calling nbdkit_add_extent above does not mean the
+     * extent got added since it might be before the first offset.)
+     */
+    if (req_one && nbdkit_extents_count (extents) > 0)
+      break;
+  }
+
+  return 0;
+}
+
 static struct nbdkit_filter filter = {
   .name              = "cow",
   .longname          = "nbdkit copy-on-write (COW) filter",
@@ -521,6 +636,7 @@ static struct nbdkit_filter filter = {
   .zero              = cow_zero,
   .flush             = cow_flush,
   .cache             = cow_cache,
+  .extents           = cow_extents,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
