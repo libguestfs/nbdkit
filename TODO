@@ -209,6 +209,13 @@ Suggestions for filters
 * "bandwidth quota" filter which would close a connection after it
   exceeded a certain amount of bandwidth up or down.
 
+* "forward-only" filter.  This would turn random access requests from
+  the client into serial requests in the plugin, meaning that the
+  plugin could be written to assume that requests only happen from
+  beginning to end.  This is would be useful for plugins that have to
+  deal with non-seekable compressed data.  Note the filter would have
+  to work by caching already-read data in a temporary file.
+
 * nbdkit-cache-filter should handle ENOSPC errors automatically by
   reclaiming blocks from the cache
 
