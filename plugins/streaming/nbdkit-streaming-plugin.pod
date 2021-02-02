@@ -8,6 +8,19 @@ nbdkit-streaming-plugin - nbdkit streaming plugin
 
  nbdkit streaming read=PIPE [size=SIZE]
 
+=head1 DEPRECATED
+
+B<The streaming plugin is deprecated in S<nbdkit E<ge> 1.26> and will
+be removed in S<nbdkit 1.30>>.
+
+A suggested replacement is the libnbd program L<nbdcopy(1)> which is
+able to stream to and from pipes, sockets and stdio.  For example to
+stream from a qcow2 file to another program over a pipe, use:
+
+ nbdcopy -- [ qemu-nbd -f qcow2 file.qcow2 ] - | hexdump -C
+
+There are further examples in the L<nbdcopy(1)> manual.
+
 =head1 DESCRIPTION
 
 C<nbdkit-streaming-plugin> is a plugin for L<nbdkit(1)> that can
