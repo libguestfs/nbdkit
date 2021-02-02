@@ -85,7 +85,7 @@ if plugins returned anything other than 1 for true (Eric Blake).
 
 =head2 Bug fixes
 
-L<nbdkit-tar-plugin(1)> now works and there is a regression test for
+nbdkit-tar-plugin now works and there is a regression test for
 it.
 
 L<nbdkit-curl-plugin(1)> C<-D curl.version=1> option now works.

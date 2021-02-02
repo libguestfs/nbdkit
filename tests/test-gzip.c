@@ -43,39 +43,23 @@
 
 #include "test.h"
 
-static void do_test (void);
-
 int
 main (int argc, char *argv[])
 {
   static const char disk[] = "disk.gz";
+  guestfs_h *g;
+  int r;
+  char *data;
 
   if (access (disk, F_OK) == -1) {
     fprintf (stderr, "%s: %s not found, test skipped\n", argv[0], disk);
     exit (77);
   }
 
-  /* Test the deprecated plugin - remove this when we remove the plugin. */
-  if (test_start_nbdkit ("gzip", disk, NULL) == -1)
-    exit (EXIT_FAILURE);
-  do_test ();
-
-  /* Test the new filter. */
   if (test_start_nbdkit ("file", "--filter=gzip", disk,
                          "fadvise=sequential", "cache=none",
                          NULL) == -1)
     exit (EXIT_FAILURE);
-  do_test ();
-
-  exit (EXIT_SUCCESS);
-}
-
-static void
-do_test (void)
-{
-  guestfs_h *g;
-  int r;
-  char *data;
 
   g = guestfs_create ();
   if (g == NULL) {
@@ -112,4 +96,6 @@ do_test (void)
   }
 
   guestfs_close (g);
+
+  exit (EXIT_SUCCESS);
 }

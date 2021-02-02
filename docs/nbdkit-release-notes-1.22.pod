@@ -83,7 +83,7 @@ New L<nbdkit-ddrescue-filter(1)> lets you test disk images recovered
 by L<ddrescue(1)> (François Revol).
 
 New L<nbdkit-gzip-filter(1)> can decompress a plugin that contains
-gzip-compressed data.  It replaces L<nbdkit-gzip-plugin(1)> which is
+gzip-compressed data.  It replaces nbdkit-gzip-plugin which is
 deprecated and will be removed in S<nbdkit 1.26>.
 
 New L<nbdkit-pause-filter(1)> can temporarily stop and later resume
@@ -94,7 +94,7 @@ which can be used to adjust images that have an incorrect byte order
 (François Revol).
 
 New L<nbdkit-tar-filter(1)> reads and writes files inside a tar file
-in the underlying plugin.  It replaces L<nbdkit-tar-plugin(1)> which
+in the underlying plugin.  It replaces nbdkit-tar-plugin which
 is deprecated and will be removed in S<nbdkit 1.26>.
 
 New L<nbdkit-tls-fallback-filter(1)> provides alternate content when a

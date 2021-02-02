@@ -87,7 +87,6 @@ non_lang_plugins="\
         floppy \
         full \
         guestfs \
-        gzip \
         info \
         iso \
         libvirt \
@@ -104,7 +103,6 @@ non_lang_plugins="\
         split \
         ssh \
         streaming \
-        tar \
         tmpdisk \
         torrent \
         vddk \
@@ -1214,7 +1212,6 @@ AC_CONFIG_FILES([Makefile
                  plugins/full/Makefile
                  plugins/golang/Makefile
                  plugins/guestfs/Makefile
-                 plugins/gzip/Makefile
                  plugins/info/Makefile
                  plugins/iso/Makefile
                  plugins/libvirt/Makefile
@@ -1238,7 +1235,6 @@ AC_CONFIG_FILES([Makefile
                  plugins/sparse-random/Makefile
                  plugins/split/Makefile
                  plugins/streaming/Makefile
-                 plugins/tar/Makefile
                  plugins/tcl/Makefile
                  plugins/tmpdisk/Makefile
                  plugins/torrent/Makefile
@@ -1328,8 +1324,6 @@ feature "floppy ................................. " \
         test "x$HAVE_ICONV_TRUE" = "x"
 feature "guestfs ................................ " \
         test "x$HAVE_LIBGUESTFS_TRUE" = "x"
-feature "gzip ................................... " \
-        test "x$HAVE_ZLIB_TRUE" = "x"
 feature "iso .................................... " \
         test "x$HAVE_ISO_TRUE" = "x"
 feature "libvirt ................................ " \
