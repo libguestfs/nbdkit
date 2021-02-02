@@ -34,6 +34,15 @@ source ./functions.sh
 set -e
 set -x
 
+# Test does not run on Windows because we must mark the test file
+# specially so that Windows recognizes it as sparse.  We do not have
+# the tools available usually to do this (plus I also suspect that
+# Wine does not emulate this properly).
+if is_windows; then
+    echo "$0: this test needs to be revised to work on Windows"
+    exit 77
+fi
+
 requires_filter cow
 requires_plugin file
 
