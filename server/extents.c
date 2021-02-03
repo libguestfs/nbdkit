@@ -343,6 +343,6 @@ nbdkit_extents_full (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
  error1:
   *err = errno;
  error0:
-  if (ret) nbdkit_extents_free (ret);
+  nbdkit_extents_free (ret);
   return NULL;
 }
