@@ -94,6 +94,7 @@
 
 #include "bitmap.h"
 #include "fdatasync.h"
+#include "rounding.h"
 #include "pread.h"
 #include "pwrite.h"
 #include "utils.h"
@@ -176,14 +177,21 @@ blk_free (void)
   bitmap_free (&bm);
 }
 
+/* Because blk_set_size is called before the other blk_* functions
+ * this should be set to the true size before we need it.
+ */
+static uint64_t size = 0;
+
 /* Allocate or resize the overlay file and bitmap. */
 int
 blk_set_size (uint64_t new_size)
 {
-  if (bitmap_resize (&bm, new_size) == -1)
+  size = new_size;
+
+  if (bitmap_resize (&bm, size) == -1)
     return -1;
 
-  if (ftruncate (fd, new_size) == -1) {
+  if (ftruncate (fd, ROUND_UP (size, BLKSIZE)) == -1) {
     nbdkit_error ("ftruncate: %m");
     return -1;
   }
@@ -216,8 +224,24 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
   nbdkit_debug ("cow: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
                 blknum, (uint64_t) offset, state_to_string (state));
 
-  if (state == BLOCK_NOT_ALLOCATED) /* Read underlying plugin. */
-    return next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err);
+  if (state == BLOCK_NOT_ALLOCATED) { /* Read underlying plugin. */
+    unsigned n = BLKSIZE, tail = 0;
+
+    if (offset + n > size) {
+      tail = offset + n - size;
+      n -= tail;
+    }
+
+    if (next_ops->pread (nxdata, block, n, offset, 0, err) == -1)
+      return -1;
+
+    /* Normally we're reading whole blocks, but at the very end of the
+     * file we might read a partial block.  Deal with that case by
+     * zeroing the tail.
+     */
+    memset (block + n, 0, tail);
+    return 0;
+  }
   else if (state == BLOCK_ALLOCATED) { /* Read overlay. */
     if (pread (fd, block, BLKSIZE, offset) == -1) {
       *err = errno;
@@ -238,6 +262,12 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 {
   off_t offset = blknum * BLKSIZE;
   enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
+  unsigned n = BLKSIZE, tail = 0;
+
+  if (offset + n > size) {
+    tail = offset + n - size;
+    n -= tail;
+  }
 
   nbdkit_debug ("cow: blk_cache block %" PRIu64 " (offset %" PRIu64 ") is %s",
                 blknum, (uint64_t) offset, state_to_string (state));
@@ -258,9 +288,16 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (mode == BLK_CACHE_IGNORE)
     return 0;
   if (mode == BLK_CACHE_PASSTHROUGH)
-    return next_ops->cache (nxdata, BLKSIZE, offset, 0, err);
-  if (next_ops->pread (nxdata, block, BLKSIZE, offset, 0, err) == -1)
+    return next_ops->cache (nxdata, n, offset, 0, err);
+
+  if (next_ops->pread (nxdata, block, n, offset, 0, err) == -1)
     return -1;
+  /* Normally we're reading whole blocks, but at the very end of the
+   * file we might read a partial block.  Deal with that case by
+   * zeroing the tail.
+   */
+  memset (block + n, 0, tail);
+
   if (mode == BLK_CACHE_COW) {
     if (pwrite (fd, block, BLKSIZE, offset) == -1) {
       *err = errno;

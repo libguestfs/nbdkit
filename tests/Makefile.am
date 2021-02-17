@@ -1353,11 +1353,13 @@ TESTS += \
 	test-cache.sh \
 	test-cache-on-read.sh \
 	test-cache-max-size.sh \
+	test-cache-unaligned.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-cache.sh \
 	test-cache-on-read.sh \
 	test-cache-max-size.sh \
+	test-cache-unaligned.sh \
 	$(NULL)
 
 # cacheextents filter test.
@@ -1380,6 +1382,7 @@ TESTS += \
 	test-cow.sh \
 	test-cow-extents1.sh \
 	test-cow-extents2.sh \
+	test-cow-unaligned.sh \
 	$(NULL)
 endif
 TESTS += test-cow-null.sh
@@ -1388,6 +1391,7 @@ EXTRA_DIST += \
 	test-cow-extents1.sh \
 	test-cow-extents2.sh \
 	test-cow-null.sh \
+	test-cow-unaligned.sh \
 	$(NULL)
 
 # delay filter tests.

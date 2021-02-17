@@ -60,10 +60,9 @@ the underlying plugin is already a multiple of C<N> bytes, this has no
 effect.
 
 This option is useful when combined with other filters (such as
-L<nbdkit-blocksize-filter(1)>, L<nbdkit-cache-filter(1)>, or
-L<nbdkit-cow-filter(1)>) that normally round down due to a larger
-granularity, in order to access the last few bytes of a file that
-would otherwise be rendered inaccessible.
+L<nbdkit-blocksize-filter(1)>) that normally round down due to a
+larger granularity, in order to access the last few bytes of a file
+that would otherwise be rendered inaccessible.
 
 This parameter is optional.
 

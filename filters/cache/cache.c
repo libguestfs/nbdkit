@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -201,9 +201,7 @@ cache_config_complete (nbdkit_next_config_complete *next, void *nxdata)
   return next (nxdata);
 }
 
-/* Get the file size; round it down to cache granularity before
- * setting cache size.
- */
+/* Get the file size, set the cache size. */
 static int64_t
 cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
                 void *handle)
@@ -216,7 +214,6 @@ cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
 
   nbdkit_debug ("cache: underlying file size: %" PRIi64, size);
-  size = ROUND_DOWN (size, blksize);
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   r = blk_set_size (size);
@@ -226,8 +223,9 @@ cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   return size;
 }
 
-/* Force an early call to cache_get_size, consequently truncating the
- * cache to the correct size.
+/* Force an early call to cache_get_size because we have to set the
+ * backing file size and bitmap size before any other read or write
+ * calls.
  */
 static int
 cache_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,

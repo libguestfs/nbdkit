@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -103,9 +103,7 @@ cow_open (nbdkit_next_open *next, void *nxdata,
   return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
-/* Get the file size; round it down to overlay granularity before
- * setting overlay size.
- */
+/* Get the file size, set the cache size. */
 static int64_t
 cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
               void *handle)
@@ -118,7 +116,6 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
 
   nbdkit_debug ("cow: underlying file size: %" PRIi64, size);
-  size = ROUND_DOWN (size, BLKSIZE);
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   r = blk_set_size (size);
@@ -128,8 +125,9 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   return size;
 }
 
-/* Force an early call to cow_get_size, consequently truncating the
- * overlay to the correct size.
+/* Force an early call to cow_get_size because we have to set the
+ * backing file size and bitmap size before any other read or write
+ * calls.
  */
 static int
 cow_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -627,6 +625,7 @@ cow_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
       uint64_t range_offset = offset;
       uint32_t range_count = 0;
       size_t i;
+      int64_t size;
 
       /* Asking the plugin for a single block of extents is not
        * efficient for some plugins (eg. VDDK) so ask for as much data
@@ -641,6 +640,16 @@ cow_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
         if (count == 0) break;
         blk_status (blknum, &present, &trimmed);
         if (present) break;
+      }
+
+      /* Don't ask for extent data beyond the end of the plugin. */
+      size = next_ops->get_size (nxdata);
+      if (size == -1)
+        return -1;
+
+      if (range_offset + range_count > size) {
+        unsigned tail = range_offset + range_count - size;
+        range_count -= tail;
       }
 
       CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 =
