@@ -638,6 +638,19 @@ ssh_can_flush (void *handle)
 }
 
 static int
+ssh_can_multi_conn (void *handle)
+{
+  struct ssh_handle *h = handle;
+
+  /* After examining the OpenSSH implementation of sftp-server we
+   * concluded that its write/flush behaviour is safe for advertising
+   * multi-conn.  Other servers may not be safe.  Use the
+   * fsync@openssh.com feature as a proxy.
+   */
+  return sftp_extension_supported (h->sftp, "fsync@openssh.com", "1");
+}
+
+static int
 ssh_flush (void *handle)
 {
   struct ssh_handle *h = handle;
@@ -670,6 +683,7 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = ssh_pwrite,
   .can_flush         = ssh_can_flush,
   .flush             = ssh_flush,
+  .can_multi_conn    = ssh_can_multi_conn,
 };
 
 NBDKIT_REGISTER_PLUGIN(plugin)
