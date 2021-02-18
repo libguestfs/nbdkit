@@ -257,6 +257,53 @@ cache_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 1;
 }
 
+/* Override the plugin's .can_flush, if we are cache=unsafe */
+static int
+cache_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+                 void *handle)
+{
+  if (cache_mode == CACHE_MODE_UNSAFE)
+    return 1;
+  return next_ops->can_flush (nxdata);
+}
+
+
+/* Override the plugin's .can_fua, if we are cache=unsafe */
+static int
+cache_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata,
+               void *handle)
+{
+  if (cache_mode == CACHE_MODE_UNSAFE)
+    return NBDKIT_FUA_NATIVE;
+  return next_ops->can_fua (nxdata);
+}
+
+/* Override the plugin's .can_multi_conn, if we are not cache=writethrough */
+static int
+cache_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+                      void *handle)
+{
+  /* For CACHE_MODE_UNSAFE, we always advertise a no-op flush because
+   * our local cache access is consistent between connections, and we
+   * don't care about persisting the data to the underlying plugin.
+   *
+   * For CACHE_MODE_WRITEBACK, things are more subtle: we only write
+   * to the plugin during NBD_CMD_FLUSH, at which point that one
+   * connection writes back ALL cached blocks regardless of which
+   * connection originally wrote them, so a client can be assured that
+   * blocks from all connections have reached the plugin's permanent
+   * storage with only one connection having to send a flush.
+   *
+   * But for CACHE_MODE_WRITETHROUGH, we are at the mercy of the
+   * plugin; data written by connection A is not guaranteed to be made
+   * persistent by a flush from connection B unless the plugin itself
+   * supports multi-conn.
+   */
+  if (cache_mode != CACHE_MODE_WRITETHROUGH)
+    return 1;
+  return next_ops->can_multi_conn (nxdata);
+}
+
 /* Read data. */
 static int
 cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -352,7 +399,8 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
 
   if ((flags & NBDKIT_FLAG_FUA) &&
-      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+      (cache_mode == CACHE_MODE_UNSAFE ||
+       next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE)) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -442,7 +490,8 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   flags &= ~NBDKIT_FLAG_MAY_TRIM;
   if ((flags & NBDKIT_FLAG_FUA) &&
-      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+      (cache_mode == CACHE_MODE_UNSAFE ||
+       next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE)) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -639,6 +688,9 @@ static struct nbdkit_filter filter = {
   .get_size          = cache_get_size,
   .can_cache         = cache_can_cache,
   .can_fast_zero     = cache_can_fast_zero,
+  .can_flush         = cache_can_flush,
+  .can_fua           = cache_can_fua,
+  .can_multi_conn    = cache_can_multi_conn,
   .pread             = cache_pread,
   .pwrite            = cache_pwrite,
   .zero              = cache_zero,
