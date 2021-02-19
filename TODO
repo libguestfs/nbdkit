@@ -206,6 +206,13 @@ Suggestions for filters
 * masking plugin features for testing clients (see 'nozero' and 'fua'
   filters for examples)
 
+* multi-conn filter to adjust advertisement of multi-conn bit. In
+  particular, if the plugin lacks .can_multi_conn, then .open/.close
+  track all open connections, and .flush and FUA flag will call
+  next_ops->flush() on all of them.  Conversely, if plugin supports
+  multi-conn, we can cache whether the image is dirty, and avoid
+  expense of next_ops->flush when it is clean.
+
 * "bandwidth quota" filter which would close a connection after it
   exceeded a certain amount of bandwidth up or down.
 
