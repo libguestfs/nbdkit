@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -266,6 +266,14 @@ gzip_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Whatever the plugin says, this filter is consistent across connections. */
+static int
+gzip_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+                     void *handle)
+{
+  return 1;
+}
+
 /* Similar to above, whatever the plugin says, extents are not
  * supported.
  */
@@ -360,6 +368,7 @@ static struct nbdkit_filter filter = {
   .can_write          = gzip_can_write,
   .can_extents        = gzip_can_extents,
   .can_cache          = gzip_can_cache,
+  .can_multi_conn     = gzip_can_multi_conn,
   .prepare            = gzip_prepare,
   .export_description = gzip_export_description,
   .get_size           = gzip_get_size,

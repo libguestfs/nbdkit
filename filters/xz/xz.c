@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -190,6 +190,14 @@ xz_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
+/* Whatever the plugin says, this filter is consistent across connections. */
+static int
+xz_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+                   void *handle)
+{
+  return 1;
+}
+
 /* Similar to above.  However xz files themselves do support
  * sparseness so in future we should generate extents information. XXX
  */
@@ -271,6 +279,7 @@ static struct nbdkit_filter filter = {
   .can_write          = xz_can_write,
   .can_extents        = xz_can_extents,
   .can_cache          = xz_can_cache,
+  .can_multi_conn     = xz_can_multi_conn,
   .pread              = xz_pread,
 };
 
