@@ -181,6 +181,14 @@ cow_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   return NBDKIT_CACHE_NATIVE;
 }
 
+static int
+cow_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+                    void *handle)
+{
+  /* Our cache is consistent between connections.  */
+  return 1;
+}
+
 /* Override the plugin's .can_fast_zero, because our .zero is not fast */
 static int
 cow_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
@@ -699,6 +707,7 @@ static struct nbdkit_filter filter = {
   .can_fua           = cow_can_fua,
   .can_cache         = cow_can_cache,
   .can_fast_zero     = cow_can_fast_zero,
+  .can_multi_conn    = cow_can_multi_conn,
   .pread             = cow_pread,
   .pwrite            = cow_pwrite,
   .zero              = cow_zero,
