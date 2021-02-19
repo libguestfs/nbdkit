@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2020 Red Hat Inc.
+ * Copyright (C) 2017-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -305,6 +305,20 @@ ext2_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   return NBDKIT_CACHE_EMULATE;
 }
 
+static int
+ext2_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+                     void *handle)
+{
+  /* Since we do not permit parallel connections, it does not matter
+   * what we advertise here, and we could just as easily inherit the
+   * plugin's .can_multi_conn.  But realistically, if we adjust
+   * .thread_model, we cannot advertise support unless .flush is
+   * consistent, and that would require inspecting the ext2 source
+   * code, so for now, we hard-code a safe answer.
+   */
+  return 0;
+}
+
 /* It might be possible to relax this, but it's complicated.
  *
  * It's desirable for ‘nbdkit -r’ to behave the same way as
@@ -470,6 +484,7 @@ static struct nbdkit_filter filter = {
   .close              = ext2_close,
   .can_fua            = ext2_can_fua,
   .can_cache          = ext2_can_cache,
+  .can_multi_conn     = ext2_can_multi_conn,
   .export_description = ext2_export_description,
   .get_size           = ext2_get_size,
   .pread              = ext2_pread,
