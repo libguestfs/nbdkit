@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019 Red Hat Inc.
+ * Copyright (C) 2019-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -244,6 +244,14 @@ readahead_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return next_ops->zero (nxdata, count, offset, flags, err);
 }
 
+static int
+readahead_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+                 void *handle, uint32_t flags, int *err)
+{
+  kill_readahead ();
+  return next_ops->flush (nxdata, flags, err);
+}
+
 static struct nbdkit_filter filter = {
   .name              = "readahead",
   .longname          = "nbdkit readahead filter",
@@ -255,6 +263,7 @@ static struct nbdkit_filter filter = {
   .pwrite            = readahead_pwrite,
   .trim              = readahead_trim,
   .zero              = readahead_zero,
+  .flush             = readahead_flush,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
