@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019-2020 Red Hat Inc.
+ * Copyright (C) 2019-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -91,6 +91,23 @@ checkwrite_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return NBDKIT_ZERO_NATIVE;
 }
 
+static int
+checkwrite_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+                          void *handle)
+{
+  /* It is better to advertise support, even if we always reject fast
+   * zero attempts when the plugin lacks .can_extents.
+   */
+  return 1;
+}
+
+static int
+checkwrite_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+                           void *handle)
+{
+  return 1;
+}
+
 static inline int
 data_does_not_match (int *err)
 {
@@ -171,6 +188,10 @@ checkwrite_trim_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
       }
 
       /* Otherwise we have to read the underlying data and check. */
+      if (flags & NBDKIT_FLAG_FAST_ZERO) {
+        *err = ENOTSUP;
+        return -1;
+      }
       while (count > 0) {
         size_t buflen = MIN (MAX_REQUEST_SIZE, count);
         buflen = MIN (buflen, next_extent_offset - offset);
@@ -199,6 +220,10 @@ checkwrite_trim_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   else {
     CLEANUP_FREE char *buf;
 
+    if (flags & NBDKIT_FLAG_FAST_ZERO) {
+      *err = ENOTSUP;
+      return -1;
+    }
     buf = malloc (MIN (MAX_REQUEST_SIZE, count));
     if (buf == NULL) {
       *err = errno;
@@ -231,6 +256,8 @@ static struct nbdkit_filter filter = {
   .can_fua           = checkwrite_can_fua,
   .can_trim          = checkwrite_can_trim,
   .can_zero          = checkwrite_can_zero,
+  .can_fast_zero     = checkwrite_can_fast_zero,
+  .can_multi_conn    = checkwrite_can_multi_conn,
 
   .pwrite            = checkwrite_pwrite,
   .flush             = checkwrite_flush,
