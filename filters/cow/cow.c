@@ -45,16 +45,17 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
-
-#include "blk.h"
 #include "isaligned.h"
 #include "minmax.h"
 #include "rounding.h"
 
-/* In order to handle parallel requests safely, this lock must be held
- * when calling any blk_* functions.
+#include "blk.h"
+
+/* Read-modify-write requests are serialized through this global lock.
+ * This is only used for unaligned requests which should be
+ * infrequent.
  */
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t rmw_lock = PTHREAD_MUTEX_INITIALIZER;
 
 bool cow_on_cache;
 
@@ -117,7 +118,6 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   nbdkit_debug ("cow: underlying file size: %" PRIi64, size);
 
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   r = blk_set_size (size);
   if (r == -1)
     return -1;
@@ -221,7 +221,6 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     uint64_t n = MIN (BLKSIZE - blkoffs, count);
 
     assert (block);
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r == -1)
       return -1;
@@ -242,7 +241,6 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
    * smarter here.
    */
   while (count >= BLKSIZE) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, buf, err);
     if (r == -1)
       return -1;
@@ -256,7 +254,6 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     assert (block);
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r == -1)
       return -1;
@@ -294,10 +291,10 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     uint64_t n = MIN (BLKSIZE - blkoffs, count);
 
     /* Do a read-modify-write operation on the current block.
-     * Hold the lock over the whole operation.
+     * Hold the rmw_lock over the whole operation.
      */
     assert (block);
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memcpy (&block[blkoffs], buf, n);
@@ -314,7 +311,6 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Aligned body */
   while (count >= BLKSIZE) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_write (blknum, buf, err);
     if (r == -1)
       return -1;
@@ -328,7 +324,7 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     assert (block);
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memcpy (block, buf, count);
@@ -376,9 +372,9 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     uint64_t n = MIN (BLKSIZE - blkoffs, count);
 
     /* Do a read-modify-write operation on the current block.
-     * Hold the lock over the whole operation.
+     * Hold the rmw_lock over the whole operation.
      */
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
@@ -399,7 +395,6 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     /* XXX There is the possibility of optimizing this: since this loop is
      * writing a whole, aligned block, we should use FALLOC_FL_ZERO_RANGE.
      */
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_write (blknum, block, err);
     if (r == -1)
       return -1;
@@ -411,7 +406,7 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Unaligned tail */
   if (count) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memset (&block[count], 0, BLKSIZE - count);
@@ -455,7 +450,7 @@ cow_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
     /* Do a read-modify-write operation on the current block.
      * Hold the lock over the whole operation.
      */
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
@@ -471,7 +466,6 @@ cow_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Aligned body */
   while (count >= BLKSIZE) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_trim (blknum, err);
     if (r == -1)
       return -1;
@@ -483,7 +477,7 @@ cow_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Unaligned tail */
   if (count) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
       memset (&block[count], 0, BLKSIZE - count);
@@ -553,7 +547,6 @@ cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Aligned body */
   while (remaining) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_cache (next_ops, nxdata, blknum, block, mode, err);
     if (r == -1)
       return -1;
@@ -587,12 +580,6 @@ cow_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   assert (IS_ALIGNED (offset, BLKSIZE));
   assert (IS_ALIGNED (count, BLKSIZE));
   assert (count > 0);           /* We must make forward progress. */
-
-  /* We hold the lock for the whole time, even when requesting extents
-   * from the plugin, because we want to present an atomic picture of
-   * the current state.
-   */
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
 
   while (count > 0) {
     bool present, trimmed;

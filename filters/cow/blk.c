@@ -90,9 +90,12 @@
 #include <alloca.h>
 #endif
 
+#include <pthread.h>
+
 #include <nbdkit-filter.h>
 
 #include "bitmap.h"
+#include "cleanup.h"
 #include "fdatasync.h"
 #include "rounding.h"
 #include "pread.h"
@@ -103,6 +106,9 @@
 
 /* The temporary overlay. */
 static int fd = -1;
+
+/* This lock protects the bitmap from parallel access. */
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Bitmap. */
 static struct bitmap bm;
@@ -186,6 +192,8 @@ static uint64_t size = 0;
 int
 blk_set_size (uint64_t new_size)
 {
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+
   size = new_size;
 
   if (bitmap_resize (&bm, size) == -1)
@@ -205,6 +213,7 @@ blk_set_size (uint64_t new_size)
 void
 blk_status (uint64_t blknum, bool *present, bool *trimmed)
 {
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
 
   *present = state != BLOCK_NOT_ALLOCATED;
@@ -219,7 +228,18 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
           uint64_t blknum, uint8_t *block, int *err)
 {
   off_t offset = blknum * BLKSIZE;
-  enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
+  enum bm_entry state;
+
+  /* The state might be modified from another thread - for example
+   * another thread might write (BLOCK_NOT_ALLOCATED ->
+   * BLOCK_ALLOCATED) while we are reading from the plugin, returning
+   * the old data.  However a read issued after the write returns
+   * should always return the correct data.
+   */
+  {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
+  }
 
   nbdkit_debug ("cow: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
                 blknum, (uint64_t) offset, state_to_string (state));
@@ -260,6 +280,8 @@ int
 blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
            uint64_t blknum, uint8_t *block, enum cache_mode mode, int *err)
 {
+  /* XXX Could make this lock more fine-grained with some thought. */
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   off_t offset = blknum * BLKSIZE;
   enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
   unsigned n = BLKSIZE, tail = 0;
@@ -322,6 +344,8 @@ blk_write (uint64_t blknum, const uint8_t *block, int *err)
     nbdkit_error ("pwrite: %m");
     return -1;
   }
+
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   bitmap_set_blk (&bm, blknum, BLOCK_ALLOCATED);
 
   return 0;
@@ -339,6 +363,7 @@ blk_trim (uint64_t blknum, int *err)
    * here.  However it's not trivial since BLKSIZE is unrelated to the
    * overlay filesystem block size.
    */
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   bitmap_set_blk (&bm, blknum, BLOCK_TRIMMED);
   return 0;
 }
