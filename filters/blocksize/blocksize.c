@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -49,22 +49,19 @@
 
 #define BLOCKSIZE_MIN_LIMIT (64U * 1024)
 
-/* As long as we don't have parallel requests, we can reuse a common
- * buffer for alignment purposes; size it to the maximum we allow for
- * minblock. */
+/* In order to handle parallel requests safely, this lock must be held
+ * when using the bounce buffer.
+ */
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* A single bounce buffer for alignment purposes, guarded by the lock.
+ * Size it to the maximum we allow for minblock.
+ */
 static char bounce[BLOCKSIZE_MIN_LIMIT];
+
 static unsigned int minblock;
 static unsigned int maxdata;
 static unsigned int maxlen;
-
-/* We are using a common bounce buffer (see above) so we must
- * serialize all requests.
- */
-static int
-blocksize_thread_model (void)
-{
-  return NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
-}
 
 static int
 blocksize_parse (const char *name, const char *s, unsigned int *v)
@@ -158,17 +155,6 @@ blocksize_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-blocksize_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
-                          void *handle)
-{
-  /* Although we are serializing all requests anyway so this likely
-   * doesn't make a difference, return false because the bounce buffer
-   * is not consistent for flush.
-   */
-  return 0;
-}
-
-static int
 blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
                  void *handle, void *b, uint32_t count, uint64_t offs,
                  uint32_t flags, int *err)
@@ -179,6 +165,7 @@ blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Unaligned head */
   if (offs & (minblock - 1)) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (minblock - 1);
     keep = MIN (minblock - drop, count);
     if (next_ops->pread (nxdata, bounce, minblock, offs - drop, flags,
@@ -202,6 +189,7 @@ blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Unaligned tail */
   if (count) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     if (next_ops->pread (nxdata, bounce, minblock, offs, flags, err) == -1)
       return -1;
     memcpy (buf, bounce, count);
@@ -228,6 +216,7 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Unaligned head */
   if (offs & (minblock - 1)) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (minblock - 1);
     keep = MIN (minblock - drop, count);
     if (next_ops->pread (nxdata, bounce, minblock, offs - drop, 0, err) == -1)
@@ -253,6 +242,7 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Unaligned tail */
   if (count) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     if (next_ops->pread (nxdata, bounce, minblock, offs, 0, err) == -1)
       return -1;
     memcpy (bounce, buf, count);
@@ -332,6 +322,7 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Unaligned head */
   if (offs & (minblock - 1)) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (minblock - 1);
     keep = MIN (minblock - drop, count);
     if (next_ops->pread (nxdata, bounce, minblock, offs - drop, 0, err) == -1)
@@ -355,6 +346,7 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Unaligned tail */
   if (count) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     if (next_ops->pread (nxdata, bounce, minblock, offs, 0, err) == -1)
       return -1;
     memset (bounce, 0, count);
@@ -437,12 +429,10 @@ blocksize_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 static struct nbdkit_filter filter = {
   .name              = "blocksize",
   .longname          = "nbdkit blocksize filter",
-  .thread_model      = blocksize_thread_model,
   .config            = blocksize_config,
   .config_complete   = blocksize_config_complete,
   .config_help       = blocksize_config_help,
   .get_size          = blocksize_get_size,
-  .can_multi_conn    = blocksize_can_multi_conn,
   .pread             = blocksize_pread,
   .pwrite            = blocksize_pwrite,
   .trim              = blocksize_trim,
