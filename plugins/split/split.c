@@ -43,6 +43,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #include <nbdkit-plugin.h>
 

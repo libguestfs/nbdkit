@@ -40,6 +40,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include <nbdkit-filter.h>
 
