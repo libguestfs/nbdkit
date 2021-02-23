@@ -16,6 +16,12 @@ This filter can be used to disable FUA and flush requests for speed
 server fallbacks, and for evaluating timing differences between proper
 use of FUA compared to a full flush.
 
+Note that by default, the NBD protocol does not guarantee that the use
+of FUA from one connection will be visible from another connection
+unless the server advertised NBD_FLAG_MULTI_CONN.  You may wish to
+combine this filter with L<nbdkit-multi-conn-filter(1)> if you plan on
+making multiple connections to the plugin.
+
 =head1 PARAMETERS
 
 The C<fuamode> parameter is optional and controls which mode the
@@ -137,6 +143,7 @@ L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-blocksize-filter(1)>,
 L<nbdkit-log-filter(1)>,
+L<nbdkit-multi-conn-filter(1)>,
 L<nbdkit-nocache-filter(1)>,
 L<nbdkit-noextents-filter(1)>,
 L<nbdkit-noparallel-filter(1)>,

@@ -1544,6 +1544,15 @@ EXTRA_DIST += \
 	test-log-script-info.sh \
 	$(NULL)
 
+# multi-conn filter test.
+TESTS += \
+	test-multi-conn.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-multi-conn-plugin.sh \
+	test-multi-conn.sh \
+	$(NULL)
+
 # nofilter test.
 TESTS += test-nofilter.sh
 EXTRA_DIST += test-nofilter.sh

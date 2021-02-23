@@ -77,6 +77,7 @@ L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-cache-filter(1)>,
 L<nbdkit-fua-filter(1)>,
+L<nbdkit-multi-conn-filter(1)>,
 L<nbdkit-noextents-filter(1)>,
 L<nbdkit-noparallel-filter(1)>,
 L<nbdkit-nozero-filter(1)>.

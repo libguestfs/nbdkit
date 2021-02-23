@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2020 Red Hat Inc.
+# Copyright (C) 2013-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -128,6 +128,7 @@ filters="\
         ip \
         limit \
         log \
+	multi-conn \
         nocache \
         noextents \
         nofilter \
@@ -1259,6 +1260,7 @@ AC_CONFIG_FILES([Makefile
                  filters/ip/Makefile
                  filters/limit/Makefile
                  filters/log/Makefile
+		 filters/multi-conn/Makefile
                  filters/nocache/Makefile
                  filters/noextents/Makefile
                  filters/nofilter/Makefile
