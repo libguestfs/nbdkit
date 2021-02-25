@@ -36,6 +36,15 @@ or server to communicate in plaintext, you can also specify
 I<--tls=require>, where the server enables TLS B<and> rejects all
 non-TLS connection attempts.
 
+If certificates have been set up correctly then you should be able to
+start a TLS server by doing:
+
+ nbdkit --tls=require memory 1G
+
+and connect to it by doing:
+
+ nbdinfo nbds://localhost
+
 =head2 TLS with X.509 certificates
 
 When nbdkit starts up, it loads TLS certificates from some built-in
@@ -193,23 +202,28 @@ Create a PSK file containing one or more C<username:key> pairs.  It is
 easiest to use L<psktool(1)> for this:
 
  mkdir -m 0700 /tmp/keys
- psktool -u rich -p /tmp/keys/keys.psk
+ psktool -u alice -p /tmp/keys/keys.psk
 
 The PSK file contains the hex-encoded random keys in plaintext.  Any
 client which can read this file will be able to connect to the server.
 
 Use the nbdkit I<--tls-psk> option to start the server:
 
- nbdkit --tls=require --tls-psk=/tmp/keys/keys.psk -e / file disk.img
+ nbdkit --tls=require --tls-psk=/tmp/keys/keys.psk file disk.img
 
 This option overrides X.509 certificate authentication.
 
 Clients must supply one of the usernames in the PSK file and the
-corresponding key in order to connect.  An example of connecting using
-L<qemu-img(1)> is:
+corresponding key in order to connect.
+
+An example of connecting using L<nbdinfo(1)> using an NBD URI is:
+
+ nbdinfo 'nbds://alice@localhost?tls-psk-file=/tmp/keys/keys.psk'
+
+An example of connecting using L<qemu-img(1)> is:
 
  qemu-img info \
-   --object tls-creds-psk,id=tls0,dir=/tmp/keys,username=rich,endpoint=client \
+   --object tls-creds-psk,id=tls0,dir=/tmp/keys,username=alice,endpoint=client \
    --image-opts \
    file.driver=nbd,file.host=localhost,file.port=10809,file.tls-creds=tls0,file.export=/
 
@@ -275,13 +289,51 @@ F</etc/crypto-policies/config> if the first file does not exist.
 
 More information can be found in L<gnutls_priority_init(3)>.
 
+=head2 NBD URIs for TLS
+
+Tools such L<nbdcopy(1)>, L<nbdinfo(1)> and L<nbdsh(1)> (from
+L<libnbd(3)>) allow you to use C<nbds://> or C<nbds+unix://> URIs to
+connect to nbdkit servers using TLS.
+
+The syntax is fully documented in the NBD URI specification:
+L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/uri.md>.
+This section contains an outline.  You can also find further examples
+in L<nbd_connect_uri(3)>.
+
+=over 4
+
+=item B<nbds://>example.com
+
+Connect over TCP with TLS, to C<example.com> port 10809.  If the
+server does not support TLS then this will fail.
+
+=item B<nbds+unix:///?socket=>SOCKET
+
+As above, but connect over a Unix domain socket called F<SOCKET>.
+
+=item B<nbds+unix:///?socket=>SOCKETB<&tls-psk-file=>FILENAME
+
+As above, but use TLS with Pre-Shared Keys (PSK), stored in the
+secrets file F<FILENAME>.
+
+=item B<nbds+unix://>aliceB<@/?socket=>SOCKETB<&tls-psk-file=>FILENAME
+
+As above, but use C<alice> as the username.
+
+=back
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
 L<nbdkit-tls-fallback-filter(1)>,
+L<nbdcopy(1)>,
+L<nbdinfo(1)>,
+L<nbdsh(1)>,
+L<nbd_connect_uri(1)>,
 L<gnutls_priority_init(3)>,
 L<psktool(1)>,
 L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md>,
+L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/uri.md>,
 L<https://nbd.sourceforge.io/>.
 
 =head1 AUTHORS
