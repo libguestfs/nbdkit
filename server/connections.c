@@ -254,20 +254,19 @@ new_connection (int sockin, int sockout, int nworkers)
   pthread_mutex_init (&conn->write_lock, NULL);
   pthread_mutex_init (&conn->status_lock, NULL);
 
-  conn->handles = calloc (top->i + 1, sizeof *conn->handles);
-  if (conn->handles == NULL) {
+  conn->contexts = calloc (top->i + 1, sizeof *conn->contexts);
+  if (conn->contexts == NULL) {
     perror ("malloc");
     goto error1;
   }
-  conn->nr_handles = top->i + 1;
   for_each_backend (b)
-    reset_handle (get_handle (conn, b->i));
+    reset_context (get_context (conn, b->i));
 
   conn->default_exportname = calloc (top->i + 1,
                                      sizeof *conn->default_exportname);
   if (conn->default_exportname == NULL) {
     perror ("malloc");
-    free (conn->handles);
+    free (conn->contexts);
     goto error1;
   }
 
@@ -337,7 +336,7 @@ new_connection (int sockin, int sockout, int nworkers)
     close (conn->status_pipe[0]);
   if (conn->status_pipe[1] >= 0)
     close (conn->status_pipe[1]);
-  free (conn->handles);
+  free (conn->contexts);
   free (conn->default_exportname);
 
  error1:
@@ -385,7 +384,7 @@ free_connection (struct connection *conn)
   for_each_backend (b)
     free (conn->default_exportname[b->i]);
   free (conn->default_exportname);
-  free (conn->handles);
+  free (conn->contexts);
 
   free (conn);
   threadlocal_set_conn (NULL);

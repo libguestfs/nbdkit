@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -192,12 +192,12 @@ typedef int (*connection_send_function) (const void *buf, size_t len,
   __attribute__((__nonnull__ (1)));
 typedef void (*connection_close_function) (void);
 
-/* struct handle stores data per connection and backend.  Primarily
+/* struct context stores data per connection and backend.  Primarily
  * this is the filter or plugin handle, but other state is also stored
  * here.
  *
- * Use get_handle (conn, 0) to return the struct handle for the
- * plugin, and get_handle (conn, b->i) to return the struct handle for
+ * Use get_context (conn, 0) to return the struct context for the
+ * plugin, and get_context (conn, b->i) to return the struct context for
  * the i'th backend (if b->i >= 1 then for a filter).
  */
 enum {
@@ -206,7 +206,7 @@ enum {
   HANDLE_FAILED = 4,    /* Set if .finalize failed */
 };
 
-struct handle {
+struct context {
   void *handle;         /* Plugin or filter handle. */
 
   unsigned char state;  /* Bitmask of HANDLE_* values */
@@ -225,21 +225,21 @@ struct handle {
 };
 
 static inline void
-reset_handle (struct handle *h)
+reset_context (struct context *c)
 {
-  h->handle = NULL;
-  h->state = 0;
-  h->exportsize = -1;
-  h->can_write = -1;
-  h->can_flush = -1;
-  h->is_rotational = -1;
-  h->can_trim = -1;
-  h->can_zero = -1;
-  h->can_fast_zero = -1;
-  h->can_fua = -1;
-  h->can_multi_conn = -1;
-  h->can_extents = -1;
-  h->can_cache = -1;
+  c->handle = NULL;
+  c->state = 0;
+  c->exportsize = -1;
+  c->can_write = -1;
+  c->can_flush = -1;
+  c->is_rotational = -1;
+  c->can_trim = -1;
+  c->can_zero = -1;
+  c->can_fast_zero = -1;
+  c->can_fua = -1;
+  c->can_multi_conn = -1;
+  c->can_extents = -1;
+  c->can_cache = -1;
 }
 
 DEFINE_VECTOR_TYPE(string_vector, char *);
@@ -254,9 +254,7 @@ struct connection {
   void *crypto_session;
   int nworkers;
 
-  struct handle *handles;       /* One per plugin and filter. */
-  size_t nr_handles;
-
+  struct context *contexts;     /* One per plugin and filter. */
   char **default_exportname;    /* One per plugin and filter. */
 
   uint32_t cflags;
@@ -276,10 +274,10 @@ struct connection {
   connection_close_function close;
 };
 
-static inline struct handle *
-get_handle (struct connection *conn, int i)
+static inline struct context *
+get_context (struct connection *conn, int i)
 {
-  return &conn->handles[i];
+  return &conn->contexts[i];
 }
 
 extern void handle_single_connection (int sockin, int sockout);
