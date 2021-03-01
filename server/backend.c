@@ -193,7 +193,7 @@ backend_default_export (struct backend *b, int readonly)
   controlpath_debug ("%s: default_export readonly=%d tls=%d",
                      b->name, readonly, conn->using_tls);
 
-  if (h->default_exportname == NULL) {
+  if (conn->default_exportname[b->i] == NULL) {
     assert (h->handle == NULL);
     assert ((h->state & HANDLE_OPEN) == 0);
     s = b->default_export (b, readonly, conn->using_tls);
@@ -205,12 +205,12 @@ backend_default_export (struct backend *b, int readonly)
     }
     if (s) {
       /* Best effort caching */
-      h->default_exportname = strdup (s);
-      if (h->default_exportname == NULL)
+      conn->default_exportname[b->i] = strdup (s);
+      if (conn->default_exportname[b->i] == NULL)
         return s;
     }
   }
-  return h->default_exportname;
+  return conn->default_exportname[b->i];
 }
 
 int

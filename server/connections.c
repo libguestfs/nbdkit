@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -263,6 +263,14 @@ new_connection (int sockin, int sockout, int nworkers)
   for_each_backend (b)
     reset_handle (get_handle (conn, b->i));
 
+  conn->default_exportname = calloc (top->i + 1,
+                                     sizeof *conn->default_exportname);
+  if (conn->default_exportname == NULL) {
+    perror ("malloc");
+    free (conn->handles);
+    goto error1;
+  }
+
   conn->status = 1;
   conn->nworkers = nworkers;
   if (nworkers) {
@@ -330,6 +338,7 @@ new_connection (int sockin, int sockout, int nworkers)
   if (conn->status_pipe[1] >= 0)
     close (conn->status_pipe[1]);
   free (conn->handles);
+  free (conn->default_exportname);
 
  error1:
   pthread_mutex_destroy (&conn->request_lock);
@@ -373,9 +382,9 @@ free_connection (struct connection *conn)
   free (conn->exportname_from_set_meta_context);
   free_interns ();
 
-  /* This is needed in order to free a field in struct handle. */
   for_each_backend (b)
-    reset_handle (get_handle (conn, b->i));
+    free (conn->default_exportname[b->i]);
+  free (conn->default_exportname);
   free (conn->handles);
 
   free (conn);

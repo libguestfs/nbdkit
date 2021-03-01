@@ -211,8 +211,6 @@ struct handle {
 
   unsigned char state;  /* Bitmask of HANDLE_* values */
 
-  char *default_exportname;
-
   uint64_t exportsize;
   int can_write;
   int can_flush;
@@ -231,8 +229,6 @@ reset_handle (struct handle *h)
 {
   h->handle = NULL;
   h->state = 0;
-  free (h->default_exportname);
-  h->default_exportname = NULL;
   h->exportsize = -1;
   h->can_write = -1;
   h->can_flush = -1;
@@ -260,6 +256,8 @@ struct connection {
 
   struct handle *handles;       /* One per plugin and filter. */
   size_t nr_handles;
+
+  char **default_exportname;    /* One per plugin and filter. */
 
   uint32_t cflags;
   uint16_t eflags;

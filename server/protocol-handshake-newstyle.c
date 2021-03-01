@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -497,9 +497,8 @@ negotiate_handshake_newstyle_options (void)
         debug ("using TLS on this connection");
         /* Wipe out any cached default export name. */
         for_each_backend (b) {
-          struct handle *h = get_handle (conn, b->i);
-          free (h->default_exportname);
-          h->default_exportname = NULL;
+          free (conn->default_exportname[b->i]);
+          conn->default_exportname[b->i] = NULL;
         }
       }
       break;
