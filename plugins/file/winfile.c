@@ -128,6 +128,8 @@ winfile_open (int readonly)
   fh = CreateFile (filename, flags, FILE_SHARE_READ|FILE_SHARE_WRITE,
                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (fh == INVALID_HANDLE_VALUE && !readonly) {
+    nbdkit_debug ("open for writing failed, falling back to read-only: %s: %lu",
+                  file, GetLastError ());
     flags &= ~GENERIC_WRITE;
     readonly = true;
     fh = CreateFile (filename, flags, FILE_SHARE_READ|FILE_SHARE_WRITE,

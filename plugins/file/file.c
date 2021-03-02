@@ -355,13 +355,11 @@ file_open (int readonly)
 
   h->fd = openat (dfd, file, flags);
   if (h->fd == -1 && !readonly) {
-    int saved_errno = errno;
+    nbdkit_debug ("open O_RDWR failed, falling back to read-only: %s: %m",
+                  file);
     flags = (flags & ~O_ACCMODE) | O_RDONLY;
     h->fd = openat (dfd, file, flags);
-    if (h->fd == -1)
-      errno = saved_errno;
-    else
-      h->can_write = false;
+    h->can_write = false;
   }
   if (h->fd == -1) {
     nbdkit_error ("open: %s: %m", file);
