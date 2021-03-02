@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -132,14 +132,12 @@ static void *
 test_layers_filter_open (nbdkit_next_open *next, void *nxdata,
                          int readonly, const char *exportname, int is_tls)
 {
-  struct handle *h = malloc (sizeof *h);
+  struct handle *h = calloc (1, sizeof *h);
 
   if (!h) {
     perror ("malloc");
     exit (1);
   }
-  h->nxdata = nxdata;
-  h->next_ops = NULL;
 
   if (next (nxdata, readonly, exportname) == -1)
     return NULL;
@@ -164,8 +162,8 @@ test_layers_filter_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   struct handle *h = handle;
 
   assert (h->next_ops == NULL);
-  assert (h->nxdata == nxdata);
   h->next_ops = next_ops;
+  h->nxdata = nxdata;
   DEBUG_FUNCTION;
   return 0;
 }

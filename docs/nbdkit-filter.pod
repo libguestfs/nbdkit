@@ -133,15 +133,15 @@ C<nbdkit_next_list_exports>, C<nbdkit_next_default_export>,
 C<nbdkit_next_open>) and a structure called C<struct nbdkit_next_ops>.
 These abstract the next plugin or filter in the chain.  There is also
 an opaque pointer C<nxdata> which must be passed along when calling
-these functions.  The value of C<nxdata> passed to C<.open> has a
-stable lifetime that lasts to the corresponding C<.close>, with all
+these functions.  The value of C<nxdata> passed to C<.prepare> has a
+stable lifetime that lasts to the corresponding C<.finalize>, with all
 intermediate functions (such as C<.pread>) receiving the same value
 for convenience.  Functions where C<nxdata> is not reused are
 C<.config>, C<.config_complete>, C<.get_ready>, and C<.after_fork>,
 which are called during initialization outside any connections, and
-C<.preconnect>, C<.list_exports>, and C<.default_export>, which are
-called based on client connections but prior to the stable lifetime of
-C<.open>.
+C<.preconnect>, C<.list_exports>, C<.default_export>, and C<.open>
+which are called based on client connections but prior to the stable
+lifetime of C<.prepare>.
 
 =head2 Next config, open and close
 
@@ -865,7 +865,7 @@ extents covering the region C<[offset..offset+count-1]>.
 
  struct nbdkit_extents *nbdkit_extents_full (
                              struct nbdkit_next_ops *next_ops,
-                             nbdkit_backend *nxdata,
+                             void *nxdata,
                              uint32_t count, uint64_t offset,
                              uint32_t flags, int *err);
 
@@ -885,7 +885,7 @@ A convenience function is provided to filters only which makes it
 easier to ensure that the client only encounters aligned extents.
 
  int nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
-                             nbdkit_backend *nxdata,
+                             void *nxdata,
                              uint32_t count, uint64_t offset,
                              uint32_t flags, uint32_t align,
                              struct nbdkit_extents *extents, int *err);
