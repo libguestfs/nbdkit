@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2020 Red Hat Inc.
+# Copyright (C) 2013-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -673,8 +673,14 @@ EXTRA_DIST += \
 	$(NULL)
 
 # file plugin test.
-TESTS += test-file.sh
-EXTRA_DIST += test-file.sh
+TESTS += \
+	test-file.sh \
+	test-file-readonly.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-file.sh \
+	test-file-readonly.sh \
+	$(NULL)
 LIBGUESTFS_TESTS += test-file-block
 
 test_file_block_SOURCES = test-file-block.c test.h
