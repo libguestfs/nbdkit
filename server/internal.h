@@ -366,38 +366,38 @@ struct backend {
   const char *(*default_export) (struct backend *, int readonly, int is_tls);
   void *(*open) (struct backend *, int readonly, const char *exportname,
                  int is_tls);
-  int (*prepare) (struct backend *, void *handle, int readonly);
-  int (*finalize) (struct backend *, void *handle);
-  void (*close) (struct backend *, void *handle);
+  int (*prepare) (struct context *, int readonly);
+  int (*finalize) (struct context *);
+  void (*close) (struct context *);
 
-  const char *(*export_description) (struct backend *, void *handle);
-  int64_t (*get_size) (struct backend *, void *handle);
-  int (*can_write) (struct backend *, void *handle);
-  int (*can_flush) (struct backend *, void *handle);
-  int (*is_rotational) (struct backend *, void *handle);
-  int (*can_trim) (struct backend *, void *handle);
-  int (*can_zero) (struct backend *, void *handle);
-  int (*can_fast_zero) (struct backend *, void *handle);
-  int (*can_extents) (struct backend *, void *handle);
-  int (*can_fua) (struct backend *, void *handle);
-  int (*can_multi_conn) (struct backend *, void *handle);
-  int (*can_cache) (struct backend *, void *handle);
+  const char *(*export_description) (struct context *);
+  int64_t (*get_size) (struct context *);
+  int (*can_write) (struct context *);
+  int (*can_flush) (struct context *);
+  int (*is_rotational) (struct context *);
+  int (*can_trim) (struct context *);
+  int (*can_zero) (struct context *);
+  int (*can_fast_zero) (struct context *);
+  int (*can_extents) (struct context *);
+  int (*can_fua) (struct context *);
+  int (*can_multi_conn) (struct context *);
+  int (*can_cache) (struct context *);
 
-  int (*pread) (struct backend *, void *handle,
+  int (*pread) (struct context *,
                 void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err);
-  int (*pwrite) (struct backend *, void *handle,
+  int (*pwrite) (struct context *,
                  const void *buf, uint32_t count, uint64_t offset,
                  uint32_t flags, int *err);
-  int (*flush) (struct backend *, void *handle, uint32_t flags, int *err);
-  int (*trim) (struct backend *, void *handle,
+  int (*flush) (struct context *, uint32_t flags, int *err);
+  int (*trim) (struct context *,
                uint32_t count, uint64_t offset, uint32_t flags, int *err);
-  int (*zero) (struct backend *, void *handle,
+  int (*zero) (struct context *,
                uint32_t count, uint64_t offset, uint32_t flags, int *err);
-  int (*extents) (struct backend *, void *handle,
+  int (*extents) (struct context *,
                   uint32_t count, uint64_t offset, uint32_t flags,
                   struct nbdkit_extents *extents, int *err);
-  int (*cache) (struct backend *, void *handle,
+  int (*cache) (struct context *,
                 uint32_t count, uint64_t offset, uint32_t flags, int *err);
 };
 

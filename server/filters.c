@@ -293,12 +293,14 @@ filter_open (struct backend *b, int readonly, const char *exportname,
 }
 
 static void
-filter_close (struct backend *b, void *handle)
+filter_close (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
-  if (handle && f->filter.close)
-    f->filter.close (handle);
+  assert (c->handle);
+  if (f->filter.close)
+    f->filter.close (c->handle);
 }
 
 static struct nbdkit_next_ops next_ops = {
@@ -324,236 +326,256 @@ static struct nbdkit_next_ops next_ops = {
 };
 
 static int
-filter_prepare (struct backend *b, void *handle, int readonly)
+filter_prepare (struct context *c, int readonly)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.prepare &&
-      f->filter.prepare (&next_ops, b->next, handle, readonly) == -1)
+      f->filter.prepare (&next_ops, b->next, c->handle, readonly) == -1)
     return -1;
 
   return 0;
 }
 
 static int
-filter_finalize (struct backend *b, void *handle)
+filter_finalize (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.finalize &&
-      f->filter.finalize (&next_ops, b->next, handle) == -1)
+      f->filter.finalize (&next_ops, b->next, c->handle) == -1)
     return -1;
   return 0;
 }
 
 static const char *
-filter_export_description (struct backend *b, void *handle)
+filter_export_description (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.export_description)
-    return f->filter.export_description (&next_ops, b->next, handle);
+    return f->filter.export_description (&next_ops, b->next, c->handle);
   else
     return backend_export_description (b->next);
 }
 
 static int64_t
-filter_get_size (struct backend *b, void *handle)
+filter_get_size (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.get_size)
-    return f->filter.get_size (&next_ops, b->next, handle);
+    return f->filter.get_size (&next_ops, b->next, c->handle);
   else
     return backend_get_size (b->next);
 }
 
 static int
-filter_can_write (struct backend *b, void *handle)
+filter_can_write (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_write)
-    return f->filter.can_write (&next_ops, b->next, handle);
+    return f->filter.can_write (&next_ops, b->next, c->handle);
   else
     return backend_can_write (b->next);
 }
 
 static int
-filter_can_flush (struct backend *b, void *handle)
+filter_can_flush (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_flush)
-    return f->filter.can_flush (&next_ops, b->next, handle);
+    return f->filter.can_flush (&next_ops, b->next, c->handle);
   else
     return backend_can_flush (b->next);
 }
 
 static int
-filter_is_rotational (struct backend *b, void *handle)
+filter_is_rotational (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.is_rotational)
-    return f->filter.is_rotational (&next_ops, b->next, handle);
+    return f->filter.is_rotational (&next_ops, b->next, c->handle);
   else
     return backend_is_rotational (b->next);
 }
 
 static int
-filter_can_trim (struct backend *b, void *handle)
+filter_can_trim (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_trim)
-    return f->filter.can_trim (&next_ops, b->next, handle);
+    return f->filter.can_trim (&next_ops, b->next, c->handle);
   else
     return backend_can_trim (b->next);
 }
 
 static int
-filter_can_zero (struct backend *b, void *handle)
+filter_can_zero (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_zero)
-    return f->filter.can_zero (&next_ops, b->next, handle);
+    return f->filter.can_zero (&next_ops, b->next, c->handle);
   else
     return backend_can_zero (b->next);
 }
 
 static int
-filter_can_fast_zero (struct backend *b, void *handle)
+filter_can_fast_zero (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_fast_zero)
-    return f->filter.can_fast_zero (&next_ops, b->next, handle);
+    return f->filter.can_fast_zero (&next_ops, b->next, c->handle);
   else
     return backend_can_fast_zero (b->next);
 }
 
 static int
-filter_can_extents (struct backend *b, void *handle)
+filter_can_extents (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_extents)
-    return f->filter.can_extents (&next_ops, b->next, handle);
+    return f->filter.can_extents (&next_ops, b->next, c->handle);
   else
     return backend_can_extents (b->next);
 }
 
 static int
-filter_can_fua (struct backend *b, void *handle)
+filter_can_fua (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_fua)
-    return f->filter.can_fua (&next_ops, b->next, handle);
+    return f->filter.can_fua (&next_ops, b->next, c->handle);
   else
     return backend_can_fua (b->next);
 }
 
 static int
-filter_can_multi_conn (struct backend *b, void *handle)
+filter_can_multi_conn (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_multi_conn)
-    return f->filter.can_multi_conn (&next_ops, b->next, handle);
+    return f->filter.can_multi_conn (&next_ops, b->next, c->handle);
   else
     return backend_can_multi_conn (b->next);
 }
 
 static int
-filter_can_cache (struct backend *b, void *handle)
+filter_can_cache (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.can_cache)
-    return f->filter.can_cache (&next_ops, b->next, handle);
+    return f->filter.can_cache (&next_ops, b->next, c->handle);
   else
     return backend_can_cache (b->next);
 }
 
 static int
-filter_pread (struct backend *b, void *handle,
+filter_pread (struct context *c,
               void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.pread)
-    return f->filter.pread (&next_ops, b->next, handle,
+    return f->filter.pread (&next_ops, b->next, c->handle,
                             buf, count, offset, flags, err);
   else
     return backend_pread (b->next, buf, count, offset, flags, err);
 }
 
 static int
-filter_pwrite (struct backend *b, void *handle,
+filter_pwrite (struct context *c,
                const void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.pwrite)
-    return f->filter.pwrite (&next_ops, b->next, handle,
+    return f->filter.pwrite (&next_ops, b->next, c->handle,
                              buf, count, offset, flags, err);
   else
     return backend_pwrite (b->next, buf, count, offset, flags, err);
 }
 
 static int
-filter_flush (struct backend *b, void *handle,
+filter_flush (struct context *c,
               uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.flush)
-    return f->filter.flush (&next_ops, b->next, handle, flags, err);
+    return f->filter.flush (&next_ops, b->next, c->handle, flags, err);
   else
     return backend_flush (b->next, flags, err);
 }
 
 static int
-filter_trim (struct backend *b, void *handle,
+filter_trim (struct context *c,
              uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.trim)
-    return f->filter.trim (&next_ops, b->next, handle, count, offset,
+    return f->filter.trim (&next_ops, b->next, c->handle, count, offset,
                            flags, err);
   else
     return backend_trim (b->next, count, offset, flags, err);
 }
 
 static int
-filter_zero (struct backend *b, void *handle,
+filter_zero (struct context *c,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.zero)
-    return f->filter.zero (&next_ops, b->next, handle,
+    return f->filter.zero (&next_ops, b->next, c->handle,
                            count, offset, flags, err);
   else
     return backend_zero (b->next, count, offset, flags, err);
 }
 
 static int
-filter_extents (struct backend *b, void *handle,
+filter_extents (struct context *c,
                 uint32_t count, uint64_t offset, uint32_t flags,
                 struct nbdkit_extents *extents, int *err)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.extents)
-    return f->filter.extents (&next_ops, b->next, handle,
+    return f->filter.extents (&next_ops, b->next, c->handle,
                               count, offset, flags,
                               extents, err);
   else
@@ -562,14 +584,15 @@ filter_extents (struct backend *b, void *handle,
 }
 
 static int
-filter_cache (struct backend *b, void *handle,
+filter_cache (struct context *c,
               uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
   if (f->filter.cache)
-    return f->filter.cache (&next_ops, b->next, handle,
+    return f->filter.cache (&next_ops, b->next, c->handle,
                             count, offset, flags, err);
   else
     return backend_cache (b->next, count, offset, flags, err);

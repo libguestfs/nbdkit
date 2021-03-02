@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -347,48 +347,51 @@ plugin_open (struct backend *b, int readonly, const char *exportname,
  * .close.
  */
 static int
-plugin_prepare (struct backend *b, void *handle,
-                int readonly)
+plugin_prepare (struct context *c, int readonly)
 {
   return 0;
 }
 
 static int
-plugin_finalize (struct backend *b, void *handle)
+plugin_finalize (struct context *c)
 {
   return 0;
 }
 
 static void
-plugin_close (struct backend *b, void *handle)
+plugin_close (struct context *c)
 {
   GET_CONN;
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
-  if (handle && p->plugin.close)
-    p->plugin.close (handle);
+  assert (c->handle);
+  if (p->plugin.close)
+    p->plugin.close (c->handle);
   conn->exportname = NULL;
 }
 
 static const char *
-plugin_export_description (struct backend *b, void *handle)
+plugin_export_description (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.export_description)
-    return p->plugin.export_description (handle);
+    return p->plugin.export_description (c->handle);
   else
     return NULL;
 }
 
 static int64_t
-plugin_get_size (struct backend *b, void *handle)
+plugin_get_size (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (p->plugin.get_size != NULL);
 
-  return p->plugin.get_size (handle);
+  return p->plugin.get_size (c->handle);
 }
 
 static int
@@ -401,52 +404,57 @@ normalize_bool (int value)
 }
 
 static int
-plugin_can_write (struct backend *b, void *handle)
+plugin_can_write (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_write)
-    return normalize_bool (p->plugin.can_write (handle));
+    return normalize_bool (p->plugin.can_write (c->handle));
   else
     return p->plugin.pwrite || p->plugin._pwrite_v1;
 }
 
 static int
-plugin_can_flush (struct backend *b, void *handle)
+plugin_can_flush (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_flush)
-    return normalize_bool (p->plugin.can_flush (handle));
+    return normalize_bool (p->plugin.can_flush (c->handle));
   else
     return p->plugin.flush || p->plugin._flush_v1;
 }
 
 static int
-plugin_is_rotational (struct backend *b, void *handle)
+plugin_is_rotational (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.is_rotational)
-    return normalize_bool (p->plugin.is_rotational (handle));
+    return normalize_bool (p->plugin.is_rotational (c->handle));
   else
     return 0; /* assume false */
 }
 
 static int
-plugin_can_trim (struct backend *b, void *handle)
+plugin_can_trim (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_trim)
-    return normalize_bool (p->plugin.can_trim (handle));
+    return normalize_bool (p->plugin.can_trim (c->handle));
   else
     return p->plugin.trim || p->plugin._trim_v1;
 }
 
 static int
-plugin_can_zero (struct backend *b, void *handle)
+plugin_can_zero (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
@@ -455,7 +463,7 @@ plugin_can_zero (struct backend *b, void *handle)
    * expects .can_zero to return a tri-state on level of support.
    */
   if (p->plugin.can_zero) {
-    r = p->plugin.can_zero (handle);
+    r = p->plugin.can_zero (c->handle);
     if (r == -1)
       return -1;
     return r ? NBDKIT_ZERO_NATIVE : NBDKIT_ZERO_EMULATE;
@@ -466,13 +474,14 @@ plugin_can_zero (struct backend *b, void *handle)
 }
 
 static int
-plugin_can_fast_zero (struct backend *b, void *handle)
+plugin_can_fast_zero (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
   if (p->plugin.can_fast_zero)
-    return normalize_bool (p->plugin.can_fast_zero (handle));
+    return normalize_bool (p->plugin.can_fast_zero (c->handle));
   /* Advertise support for fast zeroes if no .zero or .can_zero is
    * false: in those cases, we fail fast instead of using .pwrite.
    * This also works when v1 plugin has only ._zero_v1.
@@ -486,26 +495,28 @@ plugin_can_fast_zero (struct backend *b, void *handle)
 }
 
 static int
-plugin_can_extents (struct backend *b, void *handle)
+plugin_can_extents (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_extents)
-    return normalize_bool (p->plugin.can_extents (handle));
+    return normalize_bool (p->plugin.can_extents (c->handle));
   else
     return p->plugin.extents != NULL;
 }
 
 static int
-plugin_can_fua (struct backend *b, void *handle)
+plugin_can_fua (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
   /* The plugin must use API version 2 and have .can_fua return
      NBDKIT_FUA_NATIVE before we will pass the FUA flag on. */
   if (p->plugin.can_fua) {
-    r = p->plugin.can_fua (handle);
+    r = p->plugin.can_fua (c->handle);
     if (r > NBDKIT_FUA_EMULATE && p->plugin._api_version == 1)
       r = NBDKIT_FUA_EMULATE;
     return r;
@@ -517,23 +528,25 @@ plugin_can_fua (struct backend *b, void *handle)
 }
 
 static int
-plugin_can_multi_conn (struct backend *b, void *handle)
+plugin_can_multi_conn (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_multi_conn)
-    return normalize_bool (p->plugin.can_multi_conn (handle));
+    return normalize_bool (p->plugin.can_multi_conn (c->handle));
   else
     return 0; /* assume false */
 }
 
 static int
-plugin_can_cache (struct backend *b, void *handle)
+plugin_can_cache (struct context *c)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   if (p->plugin.can_cache)
-    return p->plugin.can_cache (handle);
+    return p->plugin.can_cache (c->handle);
   if (p->plugin.cache)
     return NBDKIT_CACHE_NATIVE;
   return NBDKIT_CACHE_NONE;
@@ -561,35 +574,37 @@ get_error (struct backend_plugin *p)
 }
 
 static int
-plugin_pread (struct backend *b, void *handle,
+plugin_pread (struct context *c,
               void *buf, uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
   assert (p->plugin.pread || p->plugin._pread_v1);
 
   if (p->plugin.pread)
-    r = p->plugin.pread (handle, buf, count, offset, 0);
+    r = p->plugin.pread (c->handle, buf, count, offset, 0);
   else
-    r = p->plugin._pread_v1 (handle, buf, count, offset);
+    r = p->plugin._pread_v1 (c->handle, buf, count, offset);
   if (r == -1)
     *err = get_error (p);
   return r;
 }
 
 static int
-plugin_flush (struct backend *b, void *handle,
+plugin_flush (struct context *c,
               uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
   if (p->plugin.flush)
-    r = p->plugin.flush (handle, 0);
+    r = p->plugin.flush (c->handle, 0);
   else if (p->plugin._flush_v1)
-    r = p->plugin._flush_v1 (handle);
+    r = p->plugin._flush_v1 (c->handle);
   else {
     *err = EINVAL;
     return -1;
@@ -600,10 +615,11 @@ plugin_flush (struct backend *b, void *handle,
 }
 
 static int
-plugin_pwrite (struct backend *b, void *handle,
+plugin_pwrite (struct context *c,
                const void *buf, uint32_t count, uint64_t offset, uint32_t flags,
                int *err)
 {
+  struct backend *b = c->b;
   int r;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   bool fua = flags & NBDKIT_FLAG_FUA;
@@ -614,24 +630,25 @@ plugin_pwrite (struct backend *b, void *handle,
     need_flush = true;
   }
   if (p->plugin.pwrite)
-    r = p->plugin.pwrite (handle, buf, count, offset, flags);
+    r = p->plugin.pwrite (c->handle, buf, count, offset, flags);
   else if (p->plugin._pwrite_v1)
-    r = p->plugin._pwrite_v1 (handle, buf, count, offset);
+    r = p->plugin._pwrite_v1 (c->handle, buf, count, offset);
   else {
     *err = EROFS;
     return -1;
   }
   if (r != -1 && need_flush)
-    r = plugin_flush (b, handle, 0, err);
+    r = plugin_flush (c, 0, err);
   if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
 
 static int
-plugin_trim (struct backend *b, void *handle,
+plugin_trim (struct context *c,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   int r;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   bool fua = flags & NBDKIT_FLAG_FUA;
@@ -642,24 +659,25 @@ plugin_trim (struct backend *b, void *handle,
     need_flush = true;
   }
   if (p->plugin.trim)
-    r = p->plugin.trim (handle, count, offset, flags);
+    r = p->plugin.trim (c->handle, count, offset, flags);
   else if (p->plugin._trim_v1)
-    r = p->plugin._trim_v1 (handle, count, offset);
+    r = p->plugin._trim_v1 (c->handle, count, offset);
   else {
     *err = EINVAL;
     return -1;
   }
   if (r != -1 && need_flush)
-    r = plugin_flush (b, handle, 0, err);
+    r = plugin_flush (c, 0, err);
   if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
 
 static int
-plugin_zero (struct backend *b, void *handle,
+plugin_zero (struct context *c,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r = -1;
   bool may_trim = flags & NBDKIT_FLAG_MAY_TRIM;
@@ -678,13 +696,13 @@ plugin_zero (struct backend *b, void *handle,
   if (backend_can_zero (b) == NBDKIT_ZERO_NATIVE) {
     errno = 0;
     if (p->plugin.zero)
-      r = p->plugin.zero (handle, count, offset, flags);
+      r = p->plugin.zero (c->handle, count, offset, flags);
     else if (p->plugin._zero_v1) {
       if (fast_zero) {
         *err = EOPNOTSUPP;
         return -1;
       }
-      r = p->plugin._zero_v1 (handle, count, offset, may_trim);
+      r = p->plugin._zero_v1 (c->handle, count, offset, may_trim);
     }
     else
       emulate = true;
@@ -711,7 +729,7 @@ plugin_zero (struct backend *b, void *handle,
     static /* const */ char buf[MAX_REQUEST_SIZE];
     uint32_t limit = MIN (count, sizeof buf);
 
-    r = plugin_pwrite (b, handle, buf, limit, offset, flags, err);
+    r = plugin_pwrite (c, buf, limit, offset, flags, err);
     if (r == -1)
       break;
     count -= limit;
@@ -719,17 +737,18 @@ plugin_zero (struct backend *b, void *handle,
 
  done:
   if (r != -1 && need_flush)
-    r = plugin_flush (b, handle, 0, err);
+    r = plugin_flush (c, 0, err);
   if (r == -1 && !*err)
     *err = get_error (p);
   return r;
 }
 
 static int
-plugin_extents (struct backend *b, void *handle,
+plugin_extents (struct context *c,
                 uint32_t count, uint64_t offset, uint32_t flags,
                 struct nbdkit_extents *extents, int *err)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
@@ -738,7 +757,7 @@ plugin_extents (struct backend *b, void *handle,
     return -1;
   }
 
-  r = p->plugin.extents (handle, count, offset, flags, extents);
+  r = p->plugin.extents (c->handle, count, offset, flags, extents);
   if (r >= 0 && nbdkit_extents_count (extents) < 1) {
     nbdkit_error ("extents: plugin must return at least one extent");
     nbdkit_set_error (EINVAL);
@@ -750,10 +769,11 @@ plugin_extents (struct backend *b, void *handle,
 }
 
 static int
-plugin_cache (struct backend *b, void *handle,
+plugin_cache (struct context *c,
               uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   int r;
 
@@ -762,7 +782,7 @@ plugin_cache (struct backend *b, void *handle,
   if (!p->plugin.cache)
     return 0;
 
-  r = p->plugin.cache (handle, count, offset, flags);
+  r = p->plugin.cache (c->handle, count, offset, flags);
   if (r == -1)
     *err = get_error (p);
   return r;
