@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -106,6 +106,7 @@ winfile_dump_plugin (void)
 struct handle {
   HANDLE fh;
   int64_t size;
+  bool is_readonly;
   bool is_volume;
   bool is_sparse;
 };
@@ -126,6 +127,12 @@ winfile_open (int readonly)
 
   fh = CreateFile (filename, flags, FILE_SHARE_READ|FILE_SHARE_WRITE,
                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (fh == INVALID_HANDLE_VALUE && !readonly) {
+    flags &= ~GENERIC_WRITE;
+    readonly = true;
+    fh = CreateFile (filename, flags, FILE_SHARE_READ|FILE_SHARE_WRITE,
+                     NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  }
   if (fh == INVALID_HANDLE_VALUE) {
     nbdkit_error ("%s: error %lu", filename, GetLastError ());
     return NULL;
@@ -179,13 +186,33 @@ winfile_open (int readonly)
   }
   h->fh = fh;
   h->size = size.QuadPart;
+  h->is_readonly = readonly;
   h->is_volume = is_volume;
   h->is_sparse = is_sparse;
-  nbdkit_debug ("%s: size=%" PRIi64 " is_volume=%s is_sparse=%s",
+  nbdkit_debug ("%s: size=%" PRIi64 " readonly=%s is_volume=%s is_sparse=%s",
                 filename, h->size,
+                readonly ? "true" : "false",
                 is_volume ? "true" : "false",
                 is_sparse ? "true" : "false");
   return h;
+}
+
+static int
+winfile_can_write (void *handle)
+{
+  struct handle *h = handle;
+  return !h->is_readonly;
+}
+
+/* Windows cannot flush on a read-only file.  It returns
+ * ERROR_ACCESS_DENIED.  Therefore don't advertise flush if the handle
+ * is r/o.
+ */
+static int
+winfile_can_flush (void *handle)
+{
+  struct handle *h = handle;
+  return !h->is_readonly;
 }
 
 static int
@@ -425,6 +452,8 @@ static struct nbdkit_plugin plugin = {
   .dump_plugin       = winfile_dump_plugin,
 
   .open              = winfile_open,
+  .can_write         = winfile_can_write,
+  .can_flush         = winfile_can_flush,
   .can_trim          = winfile_can_trim,
   .can_zero          = winfile_can_zero,
   .can_extents       = winfile_can_extents,

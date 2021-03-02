@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -304,6 +304,7 @@ struct handle {
   int fd;
   bool is_block_device;
   int sector_size;
+  bool can_write;
   bool can_punch_hole;
   bool can_zero_range;
   bool can_fallocate;
@@ -343,12 +344,25 @@ file_open (int readonly)
   }
 
   flags = O_CLOEXEC|O_NOCTTY;
-  if (readonly)
+  if (readonly) {
     flags |= O_RDONLY;
-  else
+    h->can_write = false;
+  }
+  else {
     flags |= O_RDWR;
+    h->can_write = true;
+  }
 
   h->fd = openat (dfd, file, flags);
+  if (h->fd == -1 && !readonly) {
+    int saved_errno = errno;
+    flags = (flags & ~O_ACCMODE) | O_RDONLY;
+    h->fd = openat (dfd, file, flags);
+    if (h->fd == -1)
+      errno = saved_errno;
+    else
+      h->can_write = false;
+  }
   if (h->fd == -1) {
     nbdkit_error ("open: %s: %m", file);
     if (dfd != -1)
@@ -462,6 +476,15 @@ file_get_size (void *handle)
 
     return statbuf.st_size;
   }
+}
+
+/* Check if file is read-only. */
+static int
+file_can_write (void *handle)
+{
+  struct handle *h = handle;
+
+  return h->can_write;
 }
 
 /* Allow multiple parallel connections from a single client. */
@@ -880,6 +903,7 @@ static struct nbdkit_plugin plugin = {
   .open              = file_open,
   .close             = file_close,
   .get_size          = file_get_size,
+  .can_write         = file_can_write,
   .can_multi_conn    = file_can_multi_conn,
   .can_trim          = file_can_trim,
   .can_fua           = file_can_fua,
