@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019 Red Hat Inc.
+ * Copyright (C) 2019-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -437,7 +437,7 @@ retry_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
  again:
-  if (! h->open && (valid_range (next_ops, nxdata, count, offset, false, err)))
+  if (! (h->open && valid_range (next_ops, nxdata, count, offset, false, err)))
     r = -1;
   else if (next_ops->can_cache (nxdata) <= NBDKIT_CACHE_NONE) {
     *err = EIO;
