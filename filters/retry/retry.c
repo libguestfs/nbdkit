@@ -146,6 +146,7 @@ retry_close (void *handle)
   struct retry_handle *h = handle;
 
   nbdkit_debug ("reopens needed: %u", h->reopens);
+  free (h->exportname);
   free (h);
 }
 
