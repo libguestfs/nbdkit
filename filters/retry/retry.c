@@ -107,7 +107,7 @@ retry_config (nbdkit_next_config *next, void *nxdata,
 
 struct retry_handle {
   int readonly;                 /* Save original readonly setting. */
-  const char *exportname;       /* Client exportname. */
+  char *exportname;             /* Client exportname. */
   unsigned reopens;
   bool open;
 };
