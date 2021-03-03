@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@ set -x
 fail=0
 
 requires_plugin sh
-requires qemu-io --version
+requires_nbdsh_uri
 requires dd iflag=count_bytes </dev/null
 
 files="retry-size-open-count retry-size-fail"
@@ -52,8 +52,8 @@ st=0
 nbdkit -v -U - \
        sh - \
        --filter=retry retry-delay=1 \
-       --run 'qemu-io -f raw -r $nbd \
-    -c "r 0 512" -c "r 512 512"' <<'EOF' || st=$?
+       --run 'nbdsh -u "$uri" \
+           -c "h.pread(512, 0)" -c "h.cache(512, 512)"' <<'EOF' || st=$?
 #!/usr/bin/env bash
 case "$1" in
     open)
@@ -70,9 +70,12 @@ case "$1" in
             echo 1024
         fi
         ;;
-    pread)
+    can_cache)
+        echo native
+        ;;
+    pread | cache)
         # Fail first open unconditionally
-        # On second open, ensure nbdkit obyes smaller bound
+        # On second open, ensure nbdkit obeys smaller bound
         # On third open, allow read to succeed
         read i < retry-size-open-count
         case $i in
@@ -82,7 +85,9 @@ case "$1" in
                    touch retry-size-fail
                fi ;;
         esac
-        dd if=/dev/zero count=$3 iflag=count_bytes
+        if [ $1 = pread ]; then
+            dd if=/dev/zero count=$3 iflag=count_bytes
+        fi
         ;;
     *) exit 2 ;;
 esac
