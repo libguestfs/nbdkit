@@ -133,25 +133,32 @@ C<nbdkit_next_list_exports>, C<nbdkit_next_default_export>,
 C<nbdkit_next_open>) and a structure called C<struct nbdkit_next_ops>.
 These abstract the next plugin or filter in the chain.  There is also
 an opaque pointer C<backend>, C<context> or C<nxdata> which must be
-passed along when calling these functions.  The value of C<nxdata>
-passed to C<.prepare> has a stable lifetime that lasts to the
-corresponding C<.finalize>, with all intermediate functions (such as
-C<.pread>) receiving the same value for convenience.  Functions where
-C<nxdata> is not reused are C<.config>, C<.config_complete>,
-C<.get_ready>, and C<.after_fork>, which are called during
-initialization outside any connections, and C<.preconnect>,
-C<.list_exports>, C<.default_export>, and C<.open> which are called
-based on client connections but prior to the stable lifetime of
-C<.prepare>.  The value of C<context> passed to C<.open> has a
-lifetime that lasts until the matching C<.close> for use by
-C<nbdkit_backend_reopen>.
+passed along when calling these functions.  The value of C<backend> is
+stable between C<.after_fork>, C<.preconnect>, C<.list_exports>, and
+C<.default_export>, and can also be obtained by using
+C<nbdkit_context_get_backend> on the C<context> parameter to C<.open>.
+
+Meanwhile, if the filter does not use C<nbdkit_context_set_next>, the
+value of C<nxdata> passed to C<.prepare> has a stable lifetime that
+lasts to the corresponding C<.finalize>, with all intermediate
+functions (such as C<.pread>) receiving the same value for
+convenience.  Functions where C<nxdata> is not reused are C<.config>,
+C<.config_complete>, C<.get_ready>, and C<.after_fork>, which are
+called during initialization outside any connections, and
+C<.preconnect>, C<.list_exports>, C<.default_export>, and C<.open>
+which are called based on client connections but prior to the stable
+lifetime of C<.prepare>.  The value of C<context> passed to C<.open>
+has a lifetime that lasts until the matching C<.close> for use by
+C<nbdkit_context_get_backend> and C<nbdkit_context_set_next>.
 
 =head2 Next config, open and close
 
 The filter’s C<.config>, C<.config_complete>, C<.get_ready>,
-C<.after_fork> and C<.open> methods may only call the next C<.config>,
-C<.config_complete>, C<.get_ready>, C<.after_fork> and C<.open> method
-in the chain (optionally for C<.config>).
+C<.after_fork>, C<.preconnect>, C<.list_exports>, C<.default_export>
+and C<.open> methods may only call the next C<.config>,
+C<.config_complete>, C<.get_ready>, C<.after_fork>, C<.preconnect>,
+C<.list_exports>, C<.default_export> and C<.open> method in the chain
+(optionally for C<.config> and C<.open>).
 
 The filter’s C<.close> method is called when an old connection closed,
 and this has no C<next> parameter because it cannot be
@@ -159,15 +166,98 @@ short-circuited.
 
 =head2 C<next_ops>
 
-The filter’s other methods like C<.prepare>, C<.get_size>, C<.pread>
-etc ― always called in the context of a connection ― are passed a
-pointer to C<struct nbdkit_next_ops> which contains a comparable set
-of accessors to plugin methods that can be called during a connection.
-The C<next_ops> parameter is stable between C<.prepare> and
-C<.finalize>; intermediate functions (such as C<.pread>) receive the
-same value for convenience.
+The filter generally needs to call into the underlying plugin, which
+is done via a pointer to C<struct nbdkit_next_ops>.  The most common
+behavior is to create a next context per connection by calling the
+C<next_open> parameter during C<.open>, at which point the next
+context will be automatically provided to the filter’s other methods
+like C<.prepare>, C<.get_size>, C<.pread> etc.  The C<next_ops> struct
+contains a comparable set of accessors to plugin methods that can be
+called during a connection.  When using automatic registration, the
+C<next_ops> parameter is stable between C<.prepare> and C<.finalize>,
+and nbdkit automatically prepares, finalizes, and closes the next
+context at the right point in the filter connection lifecycle.
 
-It is possible for a filter to issue (for example) extra
+Alternatively, the filter can manage plugin contexts manually, whether
+to multiplex multiple client connections through a single context into
+the plugin, or to open multiple plugin contexts to perform retries or
+otherwise service a single client connection more efficiently.  In
+this mode of operation, the filter uses C<nbdkit_next_context_open> to
+open a plugin context using the C<backend> parameter passed to
+C<.after_fork>, C<.preconnect>, C<.list_exports>, C<.default_export>,
+or obtained from using C<nbdkit_context_get_backend> on the C<context>
+parameter to C<.open>.  The resulting next context has a lifecycle
+under manual control, where the filter must use C<next-E<gt>prepare
+(next)> before using any other function pointers within the next
+context, and must reclaim the memory using C<next-E<gt>finalize
+(next)> and C<nbdkit_next_context_close> when done.  A filter using
+manual lifecycle management may use C<nbdkit_context_set_next> to
+associate the next context into the current connection, which lets
+nbdkit then pass that context as the C<next_ops> parameter to future
+connection-related functions like C<.pread> and take over lifecycle
+responsibility.
+
+=head3 C<nbdkit_context_get_backend>
+
+=head3 C<nbdkit_next_context_open>
+
+=head3 C<nbdkit_next_context_close>
+
+=head3 C<nbdkit_context_set_next>
+
+ nbdkit_backend *nbdkit_context_get_backend (nbdkit_context *context);
+
+Obtains the backend pointer from the C<context> parameter to C<.open>,
+matching the backend pointer available to C<.after_fork>,
+C<.preconnect>, C<.list_exports>, and C<.default_export>.  This
+backend pointer has a stable lifetime from the time of C<.after_fork>
+until C<.unload>.
+
+ nbdkit_next *nbdkit_next_context_open (nbdkit_backend *backend,
+                                        int readonly, const char *exportname);
+
+This function attempts to open a new context into the plugin in
+relation to the filter's current C<backend>.  The C<readonly> and
+C<exportname> parameters behave the same as documented in C<.open>.
+The resulting context will be under the filter's manual lifecycle
+control unless the filter associates it into the connection with
+C<nbdkit_context_set_next>.  The filter should be careful to not
+violate any threading model restrictions of the plugin if it opens
+more than one context.
+
+ void nbdkit_next_context_close (nbdkit_next *next);
+
+This function closes a context into the plugin.  If the context has
+previously been prepared, it should first be finalized before using
+this function.  This function does not need to be called for a plugin
+context that has been associated with the filter connection via
+C<nbdkit_context_set_next> prior to the C<.close> callback.
+
+ nbdkit_next *nbdkit_context_set_next (nbdkit_context *context,
+                                       nbdkit_next *next);
+
+This function associates a plugin context with the filter's current
+connection context, given by the C<context> parameter to C<.open>.
+Once associated, this plugin context will be given as the C<next_ops>
+parameter to all other connection-specific callbacks.  If associated
+during C<.open>, nbdkit will take care of preparing the context prior
+to C<.prepare>; if still associated before C<.finalize>, nbdkit will
+take care of finalizing the context, and also for closing it.  A
+filter may also pass C<NULL> for C<next>, to remove any association;
+if no plugin context is associated with the connection, then filter
+callbacks such as C<.pread> will receive C<NULL> for their C<next_ops>
+parameter.
+
+This function returns the previous context that had been associated
+with the connection prior to switching the association to C<next>;
+this result will be C<NULL> if there was no previous association.  The
+filter assumes manual responsibility for any remaining lifecycle
+functions that must be called on the returned context.
+
+=head2 Using C<next_ops>
+
+Regardless of whether the plugin context is managed automatically or
+manually, it is possible for a filter to issue (for example) extra
 C<next_ops-E<gt>pread> calls in response to a single C<.pwrite> call.
 
 Note that the semantics of the functions in C<struct nbdkit_next_ops>
@@ -177,6 +267,9 @@ advertise to the client is implicit (via the plugin calling
 C<nbdkit_set_error> or setting C<errno>), whereas
 C<next_ops-E<gt>pread> exposes this via an explicit parameter,
 allowing a filter to learn or modify this error if desired.
+
+Use of C<next_ops-E<gt>prepare> and C<next_ops-E<gt>finalize> is only
+needed when manually managing the plugin context lifetime.
 
 =head2 Other considerations
 
@@ -190,7 +283,8 @@ for avoiding a memory leak while still obeying lifecycle constraints.
 Note that if your filter registers a callback but in that callback it
 doesn't call the C<next> function then the corresponding method in the
 plugin will never be called.  In particular, your C<.open> method, if
-you have one, B<must> call the C<.next> method.
+you have one, B<must> call the C<next> method if you want the
+underlying plugin to be available to all further C<next_ops> use.
 
 =head1 CALLBACKS
 
@@ -469,31 +563,21 @@ C<nbdkit_is_tls>.
 The filter should generally call C<next> as its first step, to
 allocate from the plugin outwards, so that C<.close> running from the
 outer filter to the plugin will be in reverse.  Skipping a call to
-C<next> is acceptable if the filter will not access C<next_ops>
-during any of the remaining callbacks reached on the same connection.
+C<next> is acceptable if the filter will not access C<next_ops> during
+any of the remaining callbacks reached on the same connection.  The
+C<next> function is provided for convenience; the same functionality
+can be obtained manually (other than error checking) by using the
+following:
+
+ nbdkit_context_set_next (context, nbdkit_next_context_open
+    (nbdkit_context_get_backend (context), readonly, exportname));
 
 The value of C<context> in this call has a lifetime that lasts until
-the counterpart C<.close>, and it is this value (and not the distinct
-C<nxdata> of C<.pread> and friends) that must be passed as the first
-parameter to C<nbdkit_backend_reopen> by a filter attempting to retry
-a connection into the backend.
-
-=head3 Reopening the backend
-
-Filters have access to a function for reopening the backend:
-
-  int nbdkit_backend_reopen (nbdkit_context *context, int readonly,
-                             const char *exportname, void **nxdata);
-
-This function is used by L<nbdkit-retry-filter(1)> to close and reopen
-the underlying plugin, with possible changes to the C<readonly> and
-C<exportname> parameters in relation to the original opening.  It
-should be used with caution because it is difficult to use safely.
-The C<context> parameter to this function should be the C<context>
-parameter originally passed in to C<.open>; while the C<nxdata>
-pointer should be the address of C<nxdata> from any function with a
-C<next_ops> parameter (such as C<.pread>) that wants to call into the
-plugin after the reopen.
+the counterpart C<.close>, and it is this value that may be passed to
+C<nbdkit_context_get_backend> to obtain the C<backend> parameter used
+to open a plugin context with C<nbdkit_next_context_open>, as well as
+the C<context> parameter used to associate a plugin context into the
+current connection with C<nbdkit_context_set_next>.
 
 =head2 C<.close>
 
@@ -525,7 +609,8 @@ the plugin's C<.get_size> and C<.pread> methods via C<next_ops>).  Or
 if you need to cleanly update superblock data in the image on close
 you can do it in your C<.finalize> method (calling the plugin's
 C<.pwrite> method).  Doing these things in the filter's C<.open> or
-C<.close> method is not possible.
+C<.close> method is not possible without using manual context
+lifecycle management.
 
 For C<.prepare>, the value of C<readonly> is the same as was passed to
 C<.open>, declaring how this filter will be used.
@@ -542,17 +627,18 @@ overrides query functions or makes I/O calls into the plugin before
 handshaking is complete, where the filter needs to make those
 prerequisite calls manually during C<.prepare>.
 
-There is no C<next_ops-E<gt>prepare> or C<next_ops-E<gt>finalize>.
-Unlike other filter methods, prepare and finalize are not chained
-through the C<next_ops> structure.  Instead the core nbdkit server
-calls the prepare and finalize methods of all filters.  Prepare
-methods are called starting with the filter closest to the plugin and
-proceeding outwards (matching the order of C<.open> if all filters
-call C<next> before doing anything locally), and only when an outer
-filter did not skip the C<next> call during C<.open>.  Finalize
-methods are called in the reverse order of prepare methods, with the
-outermost filter first (and matching the order of C<.close>), and only
-if the prepare method succeeded.
+While there are C<next_ops-E<gt>prepare> and C<next_ops-E<gt>finalize>
+functions, these are different from other filter methods, in that any
+plugin context associated with the current connection (via the C<next>
+parameter to C<.open>, or via C<nbdkit_context_set_next>, is prepared
+and finalized automatically by nbdkit, so they are only used during
+manual lifecycle management.  Prepare methods are called starting with
+the filter closest to the plugin and proceeding outwards (matching the
+order of C<.open> if all filters call C<next> before doing anything
+locally), and only when an outer filter did not skip the C<next> call
+during C<.open>.  Finalize methods are called in the reverse order of
+prepare methods, with the outermost filter first (and matching the
+order of C<.close>), and only if the prepare method succeeded.
 
 If there is an error, both callbacks should call C<nbdkit_error> with
 an error message and return C<-1>.  An error in C<.prepare> is

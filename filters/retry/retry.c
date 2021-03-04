@@ -40,7 +40,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#define NBDKIT_RETRY_FILTER /* Hack to expose reopen */
+#define NBDKIT_TYPESAFE /* Hack to expose context APIs */
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
@@ -178,6 +178,8 @@ static bool
 do_retry (struct retry_handle *h, struct retry_data *data,
           nbdkit_next **next, const char *method, int *err)
 {
+  nbdkit_next *new_next, *old_next;
+
   /* If it's the first retry, initialize the other fields in *data. */
   if (data->retry == 0)
     data->delay = initial_delay;
@@ -207,17 +209,39 @@ do_retry (struct retry_handle *h, struct retry_data *data,
   if (exponential_backoff)
     data->delay *= 2;
 
-  /* Reopen the connection. */
+  /* Close the old connection. */
   h->reopens++;
-  if (nbdkit_backend_reopen (h->context, h->readonly || force_readonly,
-                             h->exportname, next) == -1) {
-    /* If the reopen fails we treat it the same way as a command
-     * failing.
+  h->open = false;
+  if (*next != NULL) {
+    /* Failure to finalize a connection indicates permanent data loss,
+     * which we treat the same as the original command failing.
      */
-    h->open = false;
+    if ((*next)->finalize (*next) == -1) {
+      *err = ESHUTDOWN;
+      goto again;
+    }
+    nbdkit_next_context_close (*next);
+    old_next = nbdkit_context_set_next (h->context, NULL);
+    assert (old_next == *next);
+    *next = NULL;
+  }
+  /* Open a new connection. */
+  new_next = nbdkit_next_context_open (nbdkit_context_get_backend (h->context),
+                                       h->readonly || force_readonly,
+                                       h->exportname);
+  if (new_next == NULL) {
     *err = ESHUTDOWN;
     goto again;
   }
+  if (new_next->prepare (new_next) == -1) {
+    new_next->finalize (new_next);
+    nbdkit_next_context_close (new_next);
+    *err = ESHUTDOWN;
+    goto again;
+  }
+  old_next = nbdkit_context_set_next (h->context, new_next);
+  assert (old_next == NULL);
+  *next = new_next;
   h->open = true;
 
   /* Retry the data command. */

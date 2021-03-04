@@ -263,12 +263,14 @@ filter_default_export (struct backend *b, int readonly, int is_tls)
 static int
 next_open (struct context *c, int readonly, const char *exportname)
 {
-  struct backend *b = c->b;
-  struct context *c_next = backend_open (b->next, readonly, exportname);
+  struct backend *b = nbdkit_context_get_backend (c);
+  struct context *c_next = nbdkit_next_context_open (b, readonly, exportname);
+  struct context *old;
 
   if (c_next == NULL)
     return -1;
-  c->c_next = c_next;
+  old = nbdkit_context_set_next (c, c_next);
+  assert (old == NULL);
   return 0;
 }
 
@@ -694,12 +696,35 @@ filter_register (struct backend *next, size_t index, const char *filename,
   return (struct backend *) f;
 }
 
-int
-nbdkit_backend_reopen (struct context *c, int readonly,
-                       const char *exportname, struct context **nxdata)
+struct backend *
+nbdkit_context_get_backend (struct context *c)
 {
-  int r = backend_reopen (c, readonly, exportname);
+  assert (c);
+  return c->b;
+}
 
-  *nxdata = c->c_next;
-  return r;
+struct context *
+nbdkit_next_context_open (struct backend *b,
+                          int readonly, const char *exportname)
+{
+  assert (b);
+  return backend_open (b->next, readonly, exportname);
+}
+
+void
+nbdkit_next_context_close (struct context *c)
+{
+  if (c)
+    backend_close (c);
+}
+
+struct context *
+nbdkit_context_set_next (struct context *c, struct context *next)
+{
+  struct context *old;
+
+  assert (c);
+  old = c->c_next;
+  c->c_next = next;
+  return old;
 }

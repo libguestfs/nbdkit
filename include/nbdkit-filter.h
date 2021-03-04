@@ -56,7 +56,7 @@ extern "C" {
 typedef struct backend nbdkit_backend;
 typedef struct context nbdkit_context;
 typedef struct context nbdkit_next;
-#elif defined NBDKIT_RETRY_FILTER /* Hack to expose reopen to retry filter */
+#elif defined NBDKIT_TYPESAFE /* Temporary define while converting filters */
 typedef struct nbdkit_backend nbdkit_backend;
 typedef struct nbdkit_context nbdkit_context;
 typedef struct nbdkit_next_ops nbdkit_next;
@@ -81,6 +81,12 @@ typedef int nbdkit_next_open (nbdkit_context *context,
                               int readonly, const char *exportname);
 
 struct nbdkit_next_ops {
+  /* These callbacks are only needed when managing the backend manually
+   * rather than via nbdkit_next_open.
+   */
+  int (*prepare) (nbdkit_next *nxdata);
+  int (*finalize) (nbdkit_next *nxdata);
+
   /* These callbacks are the same as normal plugin operations. */
   int64_t (*get_size) (nbdkit_next *nxdata);
   const char * (*export_description) (nbdkit_next *nxdata);
@@ -120,7 +126,7 @@ struct nbdkit_extent {
   uint32_t type;
 };
 
-NBDKIT_EXTERN_DECL (struct nbdkit_extents *,nbdkit_extents_new,
+NBDKIT_EXTERN_DECL (struct nbdkit_extents *, nbdkit_extents_new,
                     (uint64_t start, uint64_t end));
 NBDKIT_EXTERN_DECL (void, nbdkit_extents_free, (struct nbdkit_extents *));
 NBDKIT_EXTERN_DECL (size_t, nbdkit_extents_count,
@@ -153,14 +159,15 @@ NBDKIT_EXTERN_DECL (size_t, nbdkit_exports_count,
 NBDKIT_EXTERN_DECL (const struct nbdkit_export, nbdkit_get_export,
                     (const struct nbdkit_exports *, size_t));
 
-#ifdef NBDKIT_RETRY_FILTER
-/* Performs close + open on the underlying chain.
- * Used by the retry filter.
- */
-NBDKIT_EXTERN_DECL (int, nbdkit_backend_reopen,
-                    (nbdkit_context *context, int readonly,
-                     const char *exportname, nbdkit_next **nxdata));
-#endif
+/* Manual management of backend access. */
+NBDKIT_EXTERN_DECL (nbdkit_backend *, nbdkit_context_get_backend,
+                    (nbdkit_context *context));
+NBDKIT_EXTERN_DECL (nbdkit_next *, nbdkit_next_context_open,
+                    (nbdkit_backend *backend, int readonly,
+                     const char *exportname));
+NBDKIT_EXTERN_DECL (void, nbdkit_next_context_close, (nbdkit_next *next));
+NBDKIT_EXTERN_DECL (nbdkit_next *, nbdkit_context_set_next,
+                    (nbdkit_context *context, nbdkit_next *next));
 
 /* Filter struct. */
 struct nbdkit_filter {

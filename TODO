@@ -73,22 +73,13 @@ General ideas for improvements
 
 * Background thread for filters.  Some filters (readahead, cache and
   proposed scan filter - see below) could be more effective if they
-  were able to defer work to a background thread.  However it's not as
-  simple as just creating a background thread, because you only have
-  access to the connection / next_ops from the context of a filter
-  callback.  (Also you can't "save" next_ops because it becomes
-  invalid outside the callback).  The background thread would need to
-  have its own connection to the plugin, which would be independent of
-  any client connection, and this requires some care because it breaks
-  an existing assumption.
-
-* Add scan filter.  This would be placed on top of cache filters and
-  would scan (read) the whole disk in the background, ensuring it is
-  copied into the cache.  Useful if you have a slow plugin, limited
-  size device, and lots of local disk space, especially if you know
-  that the NBD clients will eventually read all of the device.  RWMJ
-  wrote an implementation of this but it doesn't work well without a
-  background thread.
+  were able to defer work to a background thread.  We finally have
+  nbdkit_next_context_open and friends for allowing a background
+  thread to have access into the plugin, but still need to worry about
+  thread-safety (how much must the filter do vs. nbdkit, to avoid
+  calling into the plugin too many times at once) and cleanup
+  (spawning the thread during .after_fork is viable, but cleaning it
+  up during .unload is too late).
 
 * "nbdkit.so": nbdkit as a loadable shared library.  The aim of nbdkit
   is to make it reusable from other programs (see nbdkit-captive(1)).
@@ -195,6 +186,19 @@ Python:
 
 Suggestions for filters
 -----------------------
+
+* Add scan filter.  This would be placed on top of cache filters and
+  would scan (read) the whole disk in the background, ensuring it is
+  copied into the cache.  Useful if you have a slow plugin, limited
+  size device, and lots of local disk space, especially if you know
+  that the NBD clients will eventually read all of the device.  RWMJ
+  wrote an implementation of this but it doesn't work well without a
+  background thread.
+
+* Add shared filter.  Take advantage of filter context APIs to open a
+  single context into the backend shared among multiple client
+  connections.  This may even allow a filter to offer a more parallel
+  threading model than the underlying plugin.
 
 * LUKS encrypt/decrypt filter, bonus points if compatible with qemu
   LUKS-encrypted disk images

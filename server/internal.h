@@ -430,9 +430,6 @@ extern bool backend_valid_range (struct context *c,
                                  uint64_t offset, uint32_t count)
   __attribute__((__nonnull__ (1)));
 
-extern int backend_reopen (struct context *c,
-                           int readonly, const char *exportname)
-  __attribute__((__nonnull__ (1, 3)));
 extern const char *backend_export_description (struct context *c)
   __attribute__((__nonnull__ (1)));
 extern int64_t backend_get_size (struct context *c)

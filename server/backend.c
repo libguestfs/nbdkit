@@ -210,6 +210,8 @@ backend_default_export (struct backend *b, int readonly)
 }
 
 static struct nbdkit_next_ops next_ops = {
+  .prepare = backend_prepare,
+  .finalize = backend_finalize,
   .export_description = backend_export_description,
   .get_size = backend_get_size,
   .can_write = backend_can_write,
@@ -361,34 +363,6 @@ backend_valid_range (struct context *c, uint64_t offset, uint32_t count)
   assert (c->exportsize <= INT64_MAX); /* Guaranteed by negotiation phase */
   return count > 0 && offset <= c->exportsize &&
     offset + count <= c->exportsize;
-}
-
-/* Core functionality of nbdkit_backend_reopen for retry filter */
-
-int
-backend_reopen (struct context *c, int readonly, const char *exportname)
-{
-  struct backend *b = c->b;
-
-  controlpath_debug ("%s: reopen readonly=%d exportname=\"%s\"",
-                     b->next->name, readonly, exportname);
-
-  if (c->c_next) {
-    if (backend_finalize (c->c_next) == -1)
-      return -1;
-    backend_close (c->c_next);
-    c->c_next = NULL;
-  }
-  c->c_next = backend_open (b->next, readonly, exportname);
-  if (c->c_next == NULL)
-    return -1;
-  if (backend_prepare (c->c_next) == -1) {
-    backend_finalize (c->c_next);
-    backend_close (c->c_next);
-    c->c_next = NULL;
-    return -1;
-  }
-  return 0;
 }
 
 /* Wrappers for all callbacks in a filter's struct nbdkit_next_ops. */
