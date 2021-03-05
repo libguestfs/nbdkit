@@ -279,12 +279,7 @@ nbdkit-extentlist-filter:
 * make non-read-only access safe by updating the extent list when the
   filter sees writes and trims
 
-nbdkit-tls-fallback-filter:
-
-* Adjust handling of .list_exports to mask what the plugin advertises
-  when tls is not yet active.
-
-nbdkit-exportname-fitler:
+nbdkit-exportname-filter:
 
 * find a way to call the plugin's .list_exports during .open, so that
   we can enforce exportname-strict=true without command line redundancy
