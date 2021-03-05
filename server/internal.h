@@ -415,8 +415,6 @@ extern int backend_list_exports (struct backend *b, int readonly,
   __attribute__((__nonnull__ (1, 3)));
 extern const char *backend_default_export (struct backend *b, int readonly)
   __attribute__((__nonnull__ (1)));
-extern const char *backend_export_description (struct backend *b)
-  __attribute__((__nonnull__ (1)));
 /* exportname is only valid for this call and almost certainly will be
  * freed on return of this function, so backends must save the
  * exportname if they need to refer to it later.
@@ -424,66 +422,68 @@ extern const char *backend_export_description (struct backend *b)
 extern struct context *backend_open (struct backend *b,
                                      int readonly, const char *exportname)
   __attribute__((__nonnull__ (1, 3)));
-extern int backend_prepare (struct backend *b)
+extern int backend_prepare (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_finalize (struct backend *b)
+extern int backend_finalize (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern void backend_close (struct backend *b)
+extern void backend_close (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern bool backend_valid_range (struct backend *b,
+extern bool backend_valid_range (struct context *c,
                                  uint64_t offset, uint32_t count)
   __attribute__((__nonnull__ (1)));
 
 extern int backend_reopen (struct backend *b,
                            int readonly, const char *exportname)
   __attribute__((__nonnull__ (1, 3)));
-extern int64_t backend_get_size (struct backend *b)
+extern const char *backend_export_description (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_write (struct backend *b)
+extern int64_t backend_get_size (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_flush (struct backend *b)
+extern int backend_can_write (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_is_rotational (struct backend *b)
+extern int backend_can_flush (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_trim (struct backend *b)
+extern int backend_is_rotational (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_zero (struct backend *b)
+extern int backend_can_trim (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_fast_zero (struct backend *b)
+extern int backend_can_zero (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_extents (struct backend *b)
+extern int backend_can_fast_zero (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_fua (struct backend *b)
+extern int backend_can_extents (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_multi_conn (struct backend *b)
+extern int backend_can_fua (struct context *c)
   __attribute__((__nonnull__ (1)));
-extern int backend_can_cache (struct backend *b)
+extern int backend_can_multi_conn (struct context *c)
+  __attribute__((__nonnull__ (1)));
+extern int backend_can_cache (struct context *c)
   __attribute__((__nonnull__ (1)));
 
-extern int backend_pread (struct backend *b,
+extern int backend_pread (struct context *c,
                           void *buf, uint32_t count, uint64_t offset,
                           uint32_t flags, int *err)
   __attribute__((__nonnull__ (1, 2, 6)));
-extern int backend_pwrite (struct backend *b,
+extern int backend_pwrite (struct context *c,
                            const void *buf, uint32_t count, uint64_t offset,
                            uint32_t flags, int *err)
   __attribute__((__nonnull__ (1, 2, 6)));
-extern int backend_flush (struct backend *b,
+extern int backend_flush (struct context *c,
                           uint32_t flags, int *err)
   __attribute__((__nonnull__ (1, 3)));
-extern int backend_trim (struct backend *b,
+extern int backend_trim (struct context *c,
                          uint32_t count, uint64_t offset, uint32_t flags,
                          int *err)
   __attribute__((__nonnull__ (1, 5)));
-extern int backend_zero (struct backend *b,
+extern int backend_zero (struct context *c,
                          uint32_t count, uint64_t offset, uint32_t flags,
                          int *err)
   __attribute__((__nonnull__ (1, 5)));
-extern int backend_extents (struct backend *b,
+extern int backend_extents (struct context *c,
                             uint32_t count, uint64_t offset, uint32_t flags,
                             struct nbdkit_extents *extents, int *err)
   __attribute__((__nonnull__ (1, 5, 6)));
-extern int backend_cache (struct backend *b,
+extern int backend_cache (struct context *c,
                           uint32_t count, uint64_t offset,
                           uint32_t flags, int *err)
   __attribute__((__nonnull__ (1, 5)));

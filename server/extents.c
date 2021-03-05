@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019-2020 Red Hat Inc.
+ * Copyright (C) 2019-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -213,7 +213,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
 /* Compute aligned extents on behalf of a filter. */
 int
 nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
-                        nbdkit_backend *nxdata,
+                        nbdkit_next *nxdata,
                         uint32_t count, uint64_t offset,
                         uint32_t flags, uint32_t align,
                         struct nbdkit_extents *exts, int *err)
@@ -298,7 +298,7 @@ nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
  * covering the region [offset..offset+count-1].
  */
 struct nbdkit_extents *
-nbdkit_extents_full (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+nbdkit_extents_full (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                      uint32_t count, uint64_t offset, uint32_t flags,
                      int *err)
 {

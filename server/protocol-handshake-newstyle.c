@@ -341,6 +341,7 @@ negotiate_handshake_newstyle_options (void)
   const char *optname;
   uint64_t exportsize;
   struct backend *b;
+  struct context *c;
 
   for (nr_options = MAX_NR_OPTIONS; nr_options > 0; --nr_options) {
     CLEANUP_FREE char *data = NULL;
@@ -567,10 +568,11 @@ negotiate_handshake_newstyle_options (void)
          */
         if (finish_newstyle_options (&exportsize,
                                      &data[4], exportnamelen) == -1) {
-          if (get_context (conn, top)) {
-            if (backend_finalize (top) == -1)
+          c = get_context (conn, top);
+          if (c) {
+            if (backend_finalize (c) == -1)
               return -1;
-            backend_close (top);
+            backend_close (c);
           }
           if (send_newstyle_option_reply (option, NBD_REP_ERR_UNKNOWN) == -1)
             return -1;
@@ -588,6 +590,7 @@ negotiate_handshake_newstyle_options (void)
          * NBD_INFO_EXPORT if it was requested, because we replied
          * already above).
          */
+        c = get_context (conn, top);
         for (i = 0; i < nrinfos; ++i) {
           memcpy (&info, &data[4 + exportnamelen + 2 + i*2], 2);
           info = be16toh (info);
@@ -616,7 +619,7 @@ negotiate_handshake_newstyle_options (void)
             break;
           case NBD_INFO_DESCRIPTION:
             {
-              const char *desc = backend_export_description (top);
+              const char *desc = backend_export_description (c);
 
               if (!desc) {
                 debug ("newstyle negotiation: %s: "
@@ -647,9 +650,9 @@ negotiate_handshake_newstyle_options (void)
         return -1;
 
       if (option == NBD_OPT_INFO) {
-        if (backend_finalize (top) == -1)
+        if (backend_finalize (c) == -1)
           return -1;
-        backend_close (top);
+        backend_close (c);
       }
 
       break;

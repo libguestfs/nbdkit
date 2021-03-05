@@ -488,7 +488,7 @@ plugin_can_fast_zero (struct context *c)
    */
   if (p->plugin.zero == NULL)
     return 1;
-  r = backend_can_zero (b);
+  r = backend_can_zero (c);
   if (r == -1)
     return -1;
   return !r;
@@ -625,7 +625,7 @@ plugin_pwrite (struct context *c,
   bool fua = flags & NBDKIT_FLAG_FUA;
   bool need_flush = false;
 
-  if (fua && backend_can_fua (b) != NBDKIT_FUA_NATIVE) {
+  if (fua && backend_can_fua (c) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -654,7 +654,7 @@ plugin_trim (struct context *c,
   bool fua = flags & NBDKIT_FLAG_FUA;
   bool need_flush = false;
 
-  if (fua && backend_can_fua (b) != NBDKIT_FUA_NATIVE) {
+  if (fua && backend_can_fua (c) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -686,14 +686,14 @@ plugin_zero (struct context *c,
   bool emulate = false;
   bool need_flush = false;
 
-  if (fua && backend_can_fua (b) != NBDKIT_FUA_NATIVE) {
+  if (fua && backend_can_fua (c) != NBDKIT_FUA_NATIVE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
   if (!count)
     return 0;
 
-  if (backend_can_zero (b) == NBDKIT_ZERO_NATIVE) {
+  if (backend_can_zero (c) == NBDKIT_ZERO_NATIVE) {
     errno = 0;
     if (p->plugin.zero)
       r = p->plugin.zero (c->handle, count, offset, flags);

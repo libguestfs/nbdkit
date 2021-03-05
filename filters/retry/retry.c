@@ -176,7 +176,7 @@ valid_range (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 static bool
 do_retry (struct retry_handle *h, struct retry_data *data,
-          nbdkit_backend **nxdata, const char *method, int *err)
+          nbdkit_next **nxdata, const char *method, int *err)
 {
   /* If it's the first retry, initialize the other fields in *data. */
   if (data->retry == 0)
@@ -225,7 +225,7 @@ do_retry (struct retry_handle *h, struct retry_data *data,
 }
 
 static int
-retry_pread (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+retry_pread (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
@@ -246,7 +246,7 @@ retry_pread (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
 
 /* Write. */
 static int
-retry_pwrite (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+retry_pwrite (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
               void *handle,
               const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
@@ -281,7 +281,7 @@ retry_pwrite (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
 
 /* Trim. */
 static int
-retry_trim (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+retry_trim (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
             void *handle,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
@@ -316,7 +316,7 @@ retry_trim (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
 
 /* Flush. */
 static int
-retry_flush (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+retry_flush (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
              void *handle, uint32_t flags,
              int *err)
 {
@@ -341,7 +341,7 @@ retry_flush (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
 
 /* Zero. */
 static int
-retry_zero (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+retry_zero (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
             void *handle,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
@@ -381,7 +381,7 @@ retry_zero (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
 
 /* Extents. */
 static int
-retry_extents (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+retry_extents (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                void *handle,
                uint32_t count, uint64_t offset, uint32_t flags,
                struct nbdkit_extents *extents, int *err)
@@ -429,7 +429,7 @@ retry_extents (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
 
 /* Cache. */
 static int
-retry_cache (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+retry_cache (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
              void *handle,
              uint32_t count, uint64_t offset, uint32_t flags,
              int *err)

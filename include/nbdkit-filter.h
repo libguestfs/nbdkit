@@ -50,14 +50,17 @@ extern "C" {
 #define NBDKIT_ZERO_NATIVE   2
 
 #ifdef NBDKIT_INTERNAL
-/* Opaque type encapsulating all information needed for calling into
+/* Opaque types encapsulating all information needed for calling into
  * the next filter or plugin.
  */
 typedef struct backend nbdkit_backend;
+typedef struct context nbdkit_next;
 #elif defined NBDKIT_RETRY_FILTER /* Hack to expose reopen to retry filter */
 typedef struct nbdkit_backend nbdkit_backend;
+typedef struct nbdkit_next nbdkit_next;
 #else
 typedef void nbdkit_backend;
+typedef void nbdkit_next;
 #endif
 
 /* Next ops. */
@@ -76,34 +79,34 @@ typedef int nbdkit_next_open (nbdkit_backend *backend,
 
 struct nbdkit_next_ops {
   /* These callbacks are the same as normal plugin operations. */
-  int64_t (*get_size) (nbdkit_backend *nxdata);
-  const char * (*export_description) (nbdkit_backend *nxdata);
+  int64_t (*get_size) (nbdkit_next *nxdata);
+  const char * (*export_description) (nbdkit_next *nxdata);
 
-  int (*can_write) (nbdkit_backend *nxdata);
-  int (*can_flush) (nbdkit_backend *nxdata);
-  int (*is_rotational) (nbdkit_backend *nxdata);
-  int (*can_trim) (nbdkit_backend *nxdata);
-  int (*can_zero) (nbdkit_backend *nxdata);
-  int (*can_fast_zero) (nbdkit_backend *nxdata);
-  int (*can_extents) (nbdkit_backend *nxdata);
-  int (*can_fua) (nbdkit_backend *nxdata);
-  int (*can_multi_conn) (nbdkit_backend *nxdata);
-  int (*can_cache) (nbdkit_backend *nxdata);
+  int (*can_write) (nbdkit_next *nxdata);
+  int (*can_flush) (nbdkit_next *nxdata);
+  int (*is_rotational) (nbdkit_next *nxdata);
+  int (*can_trim) (nbdkit_next *nxdata);
+  int (*can_zero) (nbdkit_next *nxdata);
+  int (*can_fast_zero) (nbdkit_next *nxdata);
+  int (*can_extents) (nbdkit_next *nxdata);
+  int (*can_fua) (nbdkit_next *nxdata);
+  int (*can_multi_conn) (nbdkit_next *nxdata);
+  int (*can_cache) (nbdkit_next *nxdata);
 
-  int (*pread) (nbdkit_backend *nxdata,
+  int (*pread) (nbdkit_next *nxdata,
                 void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err);
-  int (*pwrite) (nbdkit_backend *nxdata,
+  int (*pwrite) (nbdkit_next *nxdata,
                  const void *buf, uint32_t count, uint64_t offset,
                  uint32_t flags, int *err);
-  int (*flush) (nbdkit_backend *nxdata, uint32_t flags, int *err);
-  int (*trim) (nbdkit_backend *nxdata, uint32_t count, uint64_t offset,
+  int (*flush) (nbdkit_next *nxdata, uint32_t flags, int *err);
+  int (*trim) (nbdkit_next *nxdata, uint32_t count, uint64_t offset,
                uint32_t flags, int *err);
-  int (*zero) (nbdkit_backend *nxdata, uint32_t count, uint64_t offset,
+  int (*zero) (nbdkit_next *nxdata, uint32_t count, uint64_t offset,
                uint32_t flags, int *err);
-  int (*extents) (nbdkit_backend *nxdata, uint32_t count, uint64_t offset,
+  int (*extents) (nbdkit_next *nxdata, uint32_t count, uint64_t offset,
                   uint32_t flags, struct nbdkit_extents *extents, int *err);
-  int (*cache) (nbdkit_backend *nxdata, uint32_t count, uint64_t offset,
+  int (*cache) (nbdkit_next *nxdata, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err);
 };
 
@@ -123,12 +126,12 @@ NBDKIT_EXTERN_DECL (struct nbdkit_extent, nbdkit_get_extent,
                     (const struct nbdkit_extents *, size_t));
 NBDKIT_EXTERN_DECL (struct nbdkit_extents *, nbdkit_extents_full,
                     (struct nbdkit_next_ops *next_ops,
-                     nbdkit_backend *nxdata,
+                     nbdkit_next *nxdata,
                      uint32_t count, uint64_t offset,
                      uint32_t flags, int *err));
 NBDKIT_EXTERN_DECL (int, nbdkit_extents_aligned,
                     (struct nbdkit_next_ops *next_ops,
-                     nbdkit_backend *nxdata,
+                     nbdkit_next *nxdata,
                      uint32_t count, uint64_t offset,
                      uint32_t flags, uint32_t align,
                      struct nbdkit_extents *extents, int *err));
@@ -153,7 +156,7 @@ NBDKIT_EXTERN_DECL (const struct nbdkit_export, nbdkit_get_export,
  */
 NBDKIT_EXTERN_DECL (int, nbdkit_backend_reopen,
                     (nbdkit_backend *backend, int readonly,
-                     const char *exportname, nbdkit_backend **nxdata));
+                     const char *exportname, nbdkit_next **nxdata));
 #endif
 
 /* Filter struct. */
@@ -200,56 +203,56 @@ struct nbdkit_filter {
                   int readonly, const char *exportname, int is_tls);
   void (*close) (void *handle);
 
-  int (*prepare) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*prepare) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                   void *handle, int readonly);
-  int (*finalize) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*finalize) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                    void *handle);
 
-  int64_t (*get_size) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int64_t (*get_size) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                        void *handle);
   const char * (*export_description) (struct nbdkit_next_ops *next_ops,
-                                      nbdkit_backend *nxdata, void *handle);
+                                      nbdkit_next *nxdata, void *handle);
 
-  int (*can_write) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*can_write) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                     void *handle);
-  int (*can_flush) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*can_flush) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                     void *handle);
   int (*is_rotational) (struct nbdkit_next_ops *next_ops,
-                        nbdkit_backend *nxdata, void *handle);
-  int (*can_trim) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+                        nbdkit_next *nxdata, void *handle);
+  int (*can_trim) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                    void *handle);
-  int (*can_zero) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*can_zero) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                    void *handle);
   int (*can_fast_zero) (struct nbdkit_next_ops *next_ops,
-                        nbdkit_backend *nxdata, void *handle);
-  int (*can_extents) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+                        nbdkit_next *nxdata, void *handle);
+  int (*can_extents) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                       void *handle);
-  int (*can_fua) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*can_fua) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                   void *handle);
   int (*can_multi_conn) (struct nbdkit_next_ops *next_ops,
-                         nbdkit_backend *nxdata, void *handle);
-  int (*can_cache) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+                         nbdkit_next *nxdata, void *handle);
+  int (*can_cache) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                     void *handle);
 
-  int (*pread) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*pread) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                 void *handle, void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err);
-  int (*pwrite) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*pwrite) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                  void *handle,
                  const void *buf, uint32_t count, uint64_t offset,
                  uint32_t flags, int *err);
-  int (*flush) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*flush) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                 void *handle, uint32_t flags, int *err);
-  int (*trim) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*trim) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                int *err);
-  int (*zero) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*zero) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                int *err);
-  int (*extents) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*extents) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                   void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                   struct nbdkit_extents *extents, int *err);
-  int (*cache) (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
+  int (*cache) (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
                 void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                 int *err);
 };

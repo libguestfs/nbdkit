@@ -328,11 +328,13 @@ static struct nbdkit_next_ops next_ops = {
 static int
 filter_prepare (struct context *c, int readonly)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.prepare &&
-      f->filter.prepare (&next_ops, b->next, c->handle, readonly) == -1)
+      f->filter.prepare (&next_ops, c_next, c->handle, readonly) == -1)
     return -1;
 
   return 0;
@@ -341,11 +343,13 @@ filter_prepare (struct context *c, int readonly)
 static int
 filter_finalize (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.finalize &&
-      f->filter.finalize (&next_ops, b->next, c->handle) == -1)
+      f->filter.finalize (&next_ops, c_next, c->handle) == -1)
     return -1;
   return 0;
 }
@@ -353,145 +357,169 @@ filter_finalize (struct context *c)
 static const char *
 filter_export_description (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.export_description)
-    return f->filter.export_description (&next_ops, b->next, c->handle);
+    return f->filter.export_description (&next_ops, c_next, c->handle);
   else
-    return backend_export_description (b->next);
+    return backend_export_description (c_next);
 }
 
 static int64_t
 filter_get_size (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.get_size)
-    return f->filter.get_size (&next_ops, b->next, c->handle);
+    return f->filter.get_size (&next_ops, c_next, c->handle);
   else
-    return backend_get_size (b->next);
+    return backend_get_size (c_next);
 }
 
 static int
 filter_can_write (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_write)
-    return f->filter.can_write (&next_ops, b->next, c->handle);
+    return f->filter.can_write (&next_ops, c_next, c->handle);
   else
-    return backend_can_write (b->next);
+    return backend_can_write (c_next);
 }
 
 static int
 filter_can_flush (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_flush)
-    return f->filter.can_flush (&next_ops, b->next, c->handle);
+    return f->filter.can_flush (&next_ops, c_next, c->handle);
   else
-    return backend_can_flush (b->next);
+    return backend_can_flush (c_next);
 }
 
 static int
 filter_is_rotational (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.is_rotational)
-    return f->filter.is_rotational (&next_ops, b->next, c->handle);
+    return f->filter.is_rotational (&next_ops, c_next, c->handle);
   else
-    return backend_is_rotational (b->next);
+    return backend_is_rotational (c_next);
 }
 
 static int
 filter_can_trim (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_trim)
-    return f->filter.can_trim (&next_ops, b->next, c->handle);
+    return f->filter.can_trim (&next_ops, c_next, c->handle);
   else
-    return backend_can_trim (b->next);
+    return backend_can_trim (c_next);
 }
 
 static int
 filter_can_zero (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_zero)
-    return f->filter.can_zero (&next_ops, b->next, c->handle);
+    return f->filter.can_zero (&next_ops, c_next, c->handle);
   else
-    return backend_can_zero (b->next);
+    return backend_can_zero (c_next);
 }
 
 static int
 filter_can_fast_zero (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_fast_zero)
-    return f->filter.can_fast_zero (&next_ops, b->next, c->handle);
+    return f->filter.can_fast_zero (&next_ops, c_next, c->handle);
   else
-    return backend_can_fast_zero (b->next);
+    return backend_can_fast_zero (c_next);
 }
 
 static int
 filter_can_extents (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_extents)
-    return f->filter.can_extents (&next_ops, b->next, c->handle);
+    return f->filter.can_extents (&next_ops, c_next, c->handle);
   else
-    return backend_can_extents (b->next);
+    return backend_can_extents (c_next);
 }
 
 static int
 filter_can_fua (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_fua)
-    return f->filter.can_fua (&next_ops, b->next, c->handle);
+    return f->filter.can_fua (&next_ops, c_next, c->handle);
   else
-    return backend_can_fua (b->next);
+    return backend_can_fua (c_next);
 }
 
 static int
 filter_can_multi_conn (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_multi_conn)
-    return f->filter.can_multi_conn (&next_ops, b->next, c->handle);
+    return f->filter.can_multi_conn (&next_ops, c_next, c->handle);
   else
-    return backend_can_multi_conn (b->next);
+    return backend_can_multi_conn (c_next);
 }
 
 static int
 filter_can_cache (struct context *c)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.can_cache)
-    return f->filter.can_cache (&next_ops, b->next, c->handle);
+    return f->filter.can_cache (&next_ops, c_next, c->handle);
   else
-    return backend_can_cache (b->next);
+    return backend_can_cache (c_next);
 }
 
 static int
@@ -499,14 +527,16 @@ filter_pread (struct context *c,
               void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.pread)
-    return f->filter.pread (&next_ops, b->next, c->handle,
+    return f->filter.pread (&next_ops, c_next, c->handle,
                             buf, count, offset, flags, err);
   else
-    return backend_pread (b->next, buf, count, offset, flags, err);
+    return backend_pread (c_next, buf, count, offset, flags, err);
 }
 
 static int
@@ -514,27 +544,31 @@ filter_pwrite (struct context *c,
                const void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.pwrite)
-    return f->filter.pwrite (&next_ops, b->next, c->handle,
+    return f->filter.pwrite (&next_ops, c_next, c->handle,
                              buf, count, offset, flags, err);
   else
-    return backend_pwrite (b->next, buf, count, offset, flags, err);
+    return backend_pwrite (c_next, buf, count, offset, flags, err);
 }
 
 static int
 filter_flush (struct context *c,
               uint32_t flags, int *err)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.flush)
-    return f->filter.flush (&next_ops, b->next, c->handle, flags, err);
+    return f->filter.flush (&next_ops, c_next, c->handle, flags, err);
   else
-    return backend_flush (b->next, flags, err);
+    return backend_flush (c_next, flags, err);
 }
 
 static int
@@ -542,28 +576,32 @@ filter_trim (struct context *c,
              uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.trim)
-    return f->filter.trim (&next_ops, b->next, c->handle, count, offset,
+    return f->filter.trim (&next_ops, c_next, c->handle, count, offset,
                            flags, err);
   else
-    return backend_trim (b->next, count, offset, flags, err);
+    return backend_trim (c_next, count, offset, flags, err);
 }
 
 static int
 filter_zero (struct context *c,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.zero)
-    return f->filter.zero (&next_ops, b->next, c->handle,
+    return f->filter.zero (&next_ops, c_next, c->handle,
                            count, offset, flags, err);
   else
-    return backend_zero (b->next, count, offset, flags, err);
+    return backend_zero (c_next, count, offset, flags, err);
 }
 
 static int
@@ -571,15 +609,17 @@ filter_extents (struct context *c,
                 uint32_t count, uint64_t offset, uint32_t flags,
                 struct nbdkit_extents *extents, int *err)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.extents)
-    return f->filter.extents (&next_ops, b->next, c->handle,
+    return f->filter.extents (&next_ops, c_next, c->handle,
                               count, offset, flags,
                               extents, err);
   else
-    return backend_extents (b->next, count, offset, flags,
+    return backend_extents (c_next, count, offset, flags,
                             extents, err);
 }
 
@@ -588,14 +628,16 @@ filter_cache (struct context *c,
               uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
+  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = get_context (conn, b->next);
 
   if (f->filter.cache)
-    return f->filter.cache (&next_ops, b->next, c->handle,
+    return f->filter.cache (&next_ops, c_next, c->handle,
                             count, offset, flags, err);
   else
-    return backend_cache (b->next, count, offset, flags, err);
+    return backend_cache (c_next, count, offset, flags, err);
 }
 
 static struct backend filter_functions = {
@@ -696,9 +738,11 @@ filter_register (struct backend *next, size_t index, const char *filename,
 
 int
 nbdkit_backend_reopen (struct backend *b, int readonly,
-                       const char *exportname, struct backend **nxdata)
+                       const char *exportname, struct context **nxdata)
 {
-  /* For now, we don't need to update nxdata. */
-  assert (b == *nxdata);
-  return backend_reopen (b, readonly, exportname);
+  GET_CONN;
+  int r = backend_reopen (b, readonly, exportname);
+
+  *nxdata = get_context (conn, b);
+  return r;
 }

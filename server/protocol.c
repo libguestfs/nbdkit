@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -53,6 +53,7 @@ validate_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                   uint32_t *error)
 {
   GET_CONN;
+  struct context *c = get_context (conn, top);
 
   /* Readonly connection? */
   if (conn->eflags & NBD_FLAG_READ_ONLY &&
@@ -72,7 +73,7 @@ validate_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
   case NBD_CMD_TRIM:
   case NBD_CMD_WRITE_ZEROES:
   case NBD_CMD_BLOCK_STATUS:
-    if (!backend_valid_range (top, offset, count)) {
+    if (!backend_valid_range (c, offset, count)) {
       /* XXX Allow writes to extend the disk? */
       nbdkit_error ("invalid request: %s: offset and count are out of range: "
                     "offset=%" PRIu64 " count=%" PRIu32,
@@ -229,6 +230,8 @@ static uint32_t
 handle_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                 void *buf, struct nbdkit_extents *extents)
 {
+  GET_CONN;
+  struct context *c = get_context (conn, top);
   uint32_t f = 0;
   int err = 0;
 
@@ -238,31 +241,31 @@ handle_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
 
   switch (cmd) {
   case NBD_CMD_READ:
-    if (backend_pread (top, buf, count, offset, 0, &err) == -1)
+    if (backend_pread (c, buf, count, offset, 0, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_WRITE:
     if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
-    if (backend_pwrite (top, buf, count, offset, f, &err) == -1)
+    if (backend_pwrite (c, buf, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_FLUSH:
-    if (backend_flush (top, 0, &err) == -1)
+    if (backend_flush (c, 0, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_TRIM:
     if (flags & NBD_CMD_FLAG_FUA)
       f |= NBDKIT_FLAG_FUA;
-    if (backend_trim (top, count, offset, f, &err) == -1)
+    if (backend_trim (c, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_CACHE:
-    if (backend_cache (top, count, offset, 0, &err) == -1)
+    if (backend_cache (c, count, offset, 0, &err) == -1)
       return err;
     break;
 
@@ -273,14 +276,14 @@ handle_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
       f |= NBDKIT_FLAG_FUA;
     if (flags & NBD_CMD_FLAG_FAST_ZERO)
       f |= NBDKIT_FLAG_FAST_ZERO;
-    if (backend_zero (top, count, offset, f, &err) == -1)
+    if (backend_zero (c, count, offset, f, &err) == -1)
       return err;
     break;
 
   case NBD_CMD_BLOCK_STATUS:
     if (flags & NBD_CMD_FLAG_REQ_ONE)
       f |= NBDKIT_FLAG_REQ_ONE;
-    if (backend_extents (top, count, offset, f,
+    if (backend_extents (c, count, offset, f,
                          extents, &err) == -1)
       return err;
     break;
@@ -683,7 +686,8 @@ protocol_recv_request_send_reply (void)
 
     /* Allocate the extents list for block status only. */
     if (cmd == NBD_CMD_BLOCK_STATUS) {
-      extents = nbdkit_extents_new (offset, backend_get_size (top));
+      struct context *c = get_context (conn, top);
+      extents = nbdkit_extents_new (offset, backend_get_size (c));
       if (extents == NULL) {
         error = ENOMEM;
         goto send_reply;

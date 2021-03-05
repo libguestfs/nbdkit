@@ -87,10 +87,10 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
   set_context (conn, top, c);
 
   /* Prepare (for filters), called just after open. */
-  if (backend_prepare (top) == -1)
+  if (backend_prepare (c) == -1)
     return -1;
 
-  size = backend_get_size (top);
+  size = backend_get_size (c);
   if (size == -1)
     return -1;
   if (size < 0) {
@@ -102,56 +102,56 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
   /* Check all flags even if they won't be advertised, to prime the
    * cache and make later request validation easier.
    */
-  fl = backend_can_write (top);
+  fl = backend_can_write (c);
   if (fl == -1)
     return -1;
   if (!fl)
     eflags |= NBD_FLAG_READ_ONLY;
 
-  fl = backend_can_zero (top);
+  fl = backend_can_zero (c);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
 
-  fl = backend_can_fast_zero (top);
+  fl = backend_can_fast_zero (c);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FAST_ZERO;
 
-  fl = backend_can_trim (top);
+  fl = backend_can_trim (c);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_TRIM;
 
-  fl = backend_can_fua (top);
+  fl = backend_can_fua (c);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FUA;
 
-  fl = backend_can_flush (top);
+  fl = backend_can_flush (c);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FLUSH;
 
-  fl = backend_is_rotational (top);
+  fl = backend_is_rotational (c);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_ROTATIONAL;
 
   /* multi-conn is useless if parallel connections are not allowed. */
-  fl = backend_can_multi_conn (top);
+  fl = backend_can_multi_conn (c);
   if (fl == -1)
     return -1;
   if (fl && (thread_model > NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS))
     eflags |= NBD_FLAG_CAN_MULTI_CONN;
 
-  fl = backend_can_cache (top);
+  fl = backend_can_cache (c);
   if (fl == -1)
     return -1;
   if (fl)
@@ -162,7 +162,7 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
    * not have to worry about errors, and makes test-layers easier to
    * write.
    */
-  fl = backend_can_extents (top);
+  fl = backend_can_extents (c);
   if (fl == -1)
     return -1;
 

@@ -258,8 +258,11 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   controlpath_debug ("%s: open returned handle %p", b->name, c->handle);
 
   if (c->handle == NULL) {
-    if (b->i) /* Do not strand backend if this layer failed */
-      backend_close (b->next);
+    if (b->i) { /* Do not strand backend if this layer failed */
+      struct context *c2 = get_context (conn, b->next);
+      if (c2 != NULL)
+        backend_close (c2);
+    }
     free (c);
     return NULL;
   }
@@ -269,10 +272,10 @@ backend_open (struct backend *b, int readonly, const char *exportname)
 }
 
 int
-backend_prepare (struct backend *b)
+backend_prepare (struct context *c)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   assert (c->handle);
   assert ((c->state & (HANDLE_OPEN | HANDLE_CONNECTED)) == HANDLE_OPEN);
@@ -281,9 +284,11 @@ backend_prepare (struct backend *b)
    * plugin, similar to typical .open order.  But remember that
    * a filter may skip opening its backend.
    */
-  if (b->i && get_context (conn, b->next) != NULL &&
-      backend_prepare (b->next) == -1)
-    return -1;
+  if (b->i) {
+    struct context *c2 = get_context (conn, b->next);
+    if (c2 != NULL && backend_prepare (c2) == -1)
+      return -1;
+  }
 
   controlpath_debug ("%s: prepare readonly=%d", b->name, c->can_write == 0);
 
@@ -294,10 +299,10 @@ backend_prepare (struct backend *b)
 }
 
 int
-backend_finalize (struct backend *b)
+backend_finalize (struct context *c)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   /* Call these in reverse order to .prepare above, starting from the
    * filter furthest away from the plugin, and matching .close order.
@@ -316,16 +321,19 @@ backend_finalize (struct backend *b)
     }
   }
 
-  if (b->i && get_context (conn, b->next))
-    return backend_finalize (b->next);
+  if (b->i) {
+    struct context *c2 = get_context (conn, b->next);
+    if (c2 != NULL)
+      return backend_finalize (c2);
+  }
   return 0;
 }
 
 void
-backend_close (struct backend *b)
+backend_close (struct context *c)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   /* outer-to-inner order, opposite .open */
   assert (c->handle);
@@ -334,16 +342,16 @@ backend_close (struct backend *b)
   b->close (c);
   free (c);
   set_context (conn, b, NULL);
-  if (b->i && get_context (conn, b->next))
-    backend_close (b->next);
+  if (b->i) {
+    struct context *c2 = get_context (conn, b->next);
+    if (c2 != NULL)
+      backend_close (c2);
+  }
 }
 
 bool
-backend_valid_range (struct backend *b, uint64_t offset, uint32_t count)
+backend_valid_range (struct context *c, uint64_t offset, uint32_t count)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
-
   assert (c->exportsize <= INT64_MAX); /* Guaranteed by negotiation phase */
   return count > 0 && offset <= c->exportsize &&
     offset + count <= c->exportsize;
@@ -355,23 +363,24 @@ int
 backend_reopen (struct backend *b, int readonly, const char *exportname)
 {
   GET_CONN;
-  struct context *h;
+  struct context *c;
 
   controlpath_debug ("%s: reopen readonly=%d exportname=\"%s\"",
                      b->name, readonly, exportname);
 
-  if (get_context (conn, b)) {
-    if (backend_finalize (b) == -1)
+  c = get_context (conn, b);
+  if (c) {
+    if (backend_finalize (c) == -1)
       return -1;
-    backend_close (b);
+    backend_close (c);
   }
-  h = backend_open (b, readonly, exportname);
-  if (h == NULL)
+  c = backend_open (b, readonly, exportname);
+  if (c == NULL)
     return -1;
-  set_context (conn, b, h);
-  if (backend_prepare (b) == -1) {
-    backend_finalize (b);
-    backend_close (b);
+  set_context (conn, b, c);
+  if (backend_prepare (c) == -1) {
+    backend_finalize (c);
+    backend_close (c);
     return -1;
   }
   return 0;
@@ -380,10 +389,9 @@ backend_reopen (struct backend *b, int readonly, const char *exportname)
 /* Wrappers for all callbacks in a filter's struct nbdkit_next_ops. */
 
 const char *
-backend_export_description (struct backend *b)
+backend_export_description (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   const char *s;
 
   controlpath_debug ("%s: export_description", b->name);
@@ -402,10 +410,9 @@ backend_export_description (struct backend *b)
 }
 
 int64_t
-backend_get_size (struct backend *b)
+backend_get_size (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->exportsize == -1) {
@@ -416,10 +423,9 @@ backend_get_size (struct backend *b)
 }
 
 int
-backend_can_write (struct backend *b)
+backend_can_write (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_write == -1) {
@@ -430,10 +436,9 @@ backend_can_write (struct backend *b)
 }
 
 int
-backend_can_flush (struct backend *b)
+backend_can_flush (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_flush == -1) {
@@ -444,10 +449,9 @@ backend_can_flush (struct backend *b)
 }
 
 int
-backend_is_rotational (struct backend *b)
+backend_is_rotational (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->is_rotational == -1) {
@@ -458,16 +462,15 @@ backend_is_rotational (struct backend *b)
 }
 
 int
-backend_can_trim (struct backend *b)
+backend_can_trim (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_trim == -1) {
     controlpath_debug ("%s: can_trim", b->name);
-    r = backend_can_write (b);
+    r = backend_can_write (c);
     if (r != 1) {
       c->can_trim = 0;
       return r;
@@ -478,16 +481,15 @@ backend_can_trim (struct backend *b)
 }
 
 int
-backend_can_zero (struct backend *b)
+backend_can_zero (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_zero == -1) {
     controlpath_debug ("%s: can_zero", b->name);
-    r = backend_can_write (b);
+    r = backend_can_write (c);
     if (r != 1) {
       c->can_zero = NBDKIT_ZERO_NONE;
       return r; /* Relies on 0 == NBDKIT_ZERO_NONE */
@@ -498,16 +500,15 @@ backend_can_zero (struct backend *b)
 }
 
 int
-backend_can_fast_zero (struct backend *b)
+backend_can_fast_zero (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_fast_zero == -1) {
     controlpath_debug ("%s: can_fast_zero", b->name);
-    r = backend_can_zero (b);
+    r = backend_can_zero (c);
     if (r < NBDKIT_ZERO_EMULATE) {
       c->can_fast_zero = 0;
       return r; /* Relies on 0 == NBDKIT_ZERO_NONE */
@@ -518,10 +519,9 @@ backend_can_fast_zero (struct backend *b)
 }
 
 int
-backend_can_extents (struct backend *b)
+backend_can_extents (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_extents == -1) {
@@ -532,16 +532,15 @@ backend_can_extents (struct backend *b)
 }
 
 int
-backend_can_fua (struct backend *b)
+backend_can_fua (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_fua == -1) {
     controlpath_debug ("%s: can_fua", b->name);
-    r = backend_can_write (b);
+    r = backend_can_write (c);
     if (r != 1) {
       c->can_fua = NBDKIT_FUA_NONE;
       return r; /* Relies on 0 == NBDKIT_FUA_NONE */
@@ -552,10 +551,9 @@ backend_can_fua (struct backend *b)
 }
 
 int
-backend_can_multi_conn (struct backend *b)
+backend_can_multi_conn (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_multi_conn == -1) {
@@ -566,10 +564,9 @@ backend_can_multi_conn (struct backend *b)
 }
 
 int
-backend_can_cache (struct backend *b)
+backend_can_cache (struct context *c)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_cache == -1) {
@@ -580,16 +577,15 @@ backend_can_cache (struct backend *b)
 }
 
 int
-backend_pread (struct backend *b,
+backend_pread (struct context *c,
                void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
-  assert (backend_valid_range (b, offset, count));
+  assert (backend_valid_range (c, offset, count));
   assert (flags == 0);
   datapath_debug ("%s: pread count=%" PRIu32 " offset=%" PRIu64,
                   b->name, count, offset);
@@ -601,18 +597,17 @@ backend_pread (struct backend *b,
 }
 
 int
-backend_pwrite (struct backend *b,
+backend_pwrite (struct context *c,
                 const void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   assert (c->can_write == 1);
-  assert (backend_valid_range (b, offset, count));
+  assert (backend_valid_range (c, offset, count));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   if (fua)
     assert (c->can_fua > NBDKIT_FUA_NONE);
@@ -626,11 +621,10 @@ backend_pwrite (struct backend *b,
 }
 
 int
-backend_flush (struct backend *b,
+backend_flush (struct context *c,
                uint32_t flags, int *err)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -645,19 +639,18 @@ backend_flush (struct backend *b,
 }
 
 int
-backend_trim (struct backend *b,
+backend_trim (struct context *c,
               uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   assert (c->can_write == 1);
   assert (c->can_trim == 1);
-  assert (backend_valid_range (b, offset, count));
+  assert (backend_valid_range (c, offset, count));
   assert (!(flags & ~NBDKIT_FLAG_FUA));
   if (fua)
     assert (c->can_fua > NBDKIT_FUA_NONE);
@@ -671,12 +664,11 @@ backend_trim (struct backend *b,
 }
 
 int
-backend_zero (struct backend *b,
+backend_zero (struct context *c,
               uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   bool fast = !!(flags & NBDKIT_FLAG_FAST_ZERO);
   int r;
@@ -684,7 +676,7 @@ backend_zero (struct backend *b,
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   assert (c->can_write == 1);
   assert (c->can_zero > NBDKIT_ZERO_NONE);
-  assert (backend_valid_range (b, offset, count));
+  assert (backend_valid_range (c, offset, count));
   assert (!(flags & ~(NBDKIT_FLAG_MAY_TRIM | NBDKIT_FLAG_FUA |
                       NBDKIT_FLAG_FAST_ZERO)));
   if (fua)
@@ -706,17 +698,16 @@ backend_zero (struct backend *b,
 }
 
 int
-backend_extents (struct backend *b,
+backend_extents (struct context *c,
                  uint32_t count, uint64_t offset, uint32_t flags,
                  struct nbdkit_extents *extents, int *err)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   assert (c->can_extents >= 0);
-  assert (backend_valid_range (b, offset, count));
+  assert (backend_valid_range (c, offset, count));
   assert (!(flags & ~NBDKIT_FLAG_REQ_ONE));
   datapath_debug ("%s: extents count=%" PRIu32 " offset=%" PRIu64 " req_one=%d",
                   b->name, count, offset, !!(flags & NBDKIT_FLAG_REQ_ONE));
@@ -737,17 +728,16 @@ backend_extents (struct backend *b,
 }
 
 int
-backend_cache (struct backend *b,
+backend_cache (struct context *c,
                uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
-  GET_CONN;
-  struct context *c = get_context (conn, b);
+  struct backend *b = c->b;
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   assert (c->can_cache > NBDKIT_CACHE_NONE);
-  assert (backend_valid_range (b, offset, count));
+  assert (backend_valid_range (c, offset, count));
   assert (flags == 0);
   datapath_debug ("%s: cache count=%" PRIu32 " offset=%" PRIu64,
                   b->name, count, offset);
@@ -758,7 +748,7 @@ backend_cache (struct backend *b,
 
     while (count) {
       limit = MIN (count, sizeof buf);
-      if (backend_pread (b, buf, limit, offset, flags, err) == -1)
+      if (backend_pread (c, buf, limit, offset, flags, err) == -1)
         return -1;
       count -= limit;
     }

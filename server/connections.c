@@ -224,7 +224,7 @@ handle_single_connection (int sockin, int sockout)
 
   /* Finalize (for filters), called just before close. */
   lock_request ();
-  r = backend_finalize (top);
+  r = backend_finalize (get_context (conn, top));
   unlock_request ();
   if (r == -1)
     goto done;
@@ -348,6 +348,7 @@ static void
 free_connection (struct connection *conn)
 {
   struct backend *b;
+  struct context *c;
 
   if (!conn)
     return;
@@ -360,8 +361,9 @@ free_connection (struct connection *conn)
    */
   if (!quit) {
     lock_request ();
-    if (get_context (conn, top))
-      backend_close (top);
+    c = get_context (conn, top);
+    if (c)
+      backend_close (c);
     unlock_request ();
   }
 
