@@ -211,6 +211,28 @@ backend_default_export (struct backend *b, int readonly)
   return conn->default_exportname[b->i];
 }
 
+static struct nbdkit_next_ops next_ops = {
+  .export_description = backend_export_description,
+  .get_size = backend_get_size,
+  .can_write = backend_can_write,
+  .can_flush = backend_can_flush,
+  .is_rotational = backend_is_rotational,
+  .can_trim = backend_can_trim,
+  .can_zero = backend_can_zero,
+  .can_fast_zero = backend_can_fast_zero,
+  .can_extents = backend_can_extents,
+  .can_fua = backend_can_fua,
+  .can_multi_conn = backend_can_multi_conn,
+  .can_cache = backend_can_cache,
+  .pread = backend_pread,
+  .pwrite = backend_pwrite,
+  .flush = backend_flush,
+  .trim = backend_trim,
+  .zero = backend_zero,
+  .extents = backend_extents,
+  .cache = backend_cache,
+};
+
 struct context *
 backend_open (struct backend *b, int readonly, const char *exportname)
 {
@@ -226,6 +248,7 @@ backend_open (struct backend *b, int readonly, const char *exportname)
                      b->name, readonly, exportname, conn->using_tls);
 
   assert (conn->contexts[b->i] == NULL);
+  c->next = next_ops;
   c->handle = NULL;
   c->b = b;
   c->state = 0;

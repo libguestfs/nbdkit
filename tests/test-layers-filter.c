@@ -164,6 +164,7 @@ test_layers_filter_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   assert (h->next_ops == NULL);
   h->next_ops = next_ops;
   h->nxdata = nxdata;
+  assert (next_ops == nxdata);
   DEBUG_FUNCTION;
   return 0;
 }

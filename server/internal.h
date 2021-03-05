@@ -203,6 +203,8 @@ enum {
 };
 
 struct context {
+  struct nbdkit_next_ops next;  /* Must be first member, for ABI reasons */
+
   void *handle;         /* Plugin or filter handle. */
   struct backend *b;    /* Backend that provided handle. */
 

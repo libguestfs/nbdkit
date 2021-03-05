@@ -57,7 +57,7 @@ typedef struct backend nbdkit_backend;
 typedef struct context nbdkit_next;
 #elif defined NBDKIT_RETRY_FILTER /* Hack to expose reopen to retry filter */
 typedef struct nbdkit_backend nbdkit_backend;
-typedef struct nbdkit_next nbdkit_next;
+typedef struct nbdkit_next_ops nbdkit_next;
 #else
 typedef void nbdkit_backend;
 typedef void nbdkit_next;
