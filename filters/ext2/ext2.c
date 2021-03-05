@@ -305,6 +305,45 @@ ext2_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   return NBDKIT_CACHE_EMULATE;
 }
 
+static int
+ext2_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+{
+  /* Regardless of the underlying plugin, we handle flush at the level
+   * of the filesystem.  However, we also need to cache the underlying
+   * plugin ability, since ext2 wants to flush the filesystem into
+   * permanent storage when possible.
+   */
+  if (next_ops->can_flush (nxdata) == -1)
+    return -1;
+  return 1;
+}
+
+/* XXX It seems as if we should be able to support trim and zero, if
+ * we could work out how those are implemented in the ext2fs API which
+ * is very obscure.
+ */
+static int
+ext2_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+{
+  /* For now, tell nbdkit to call .pwrite instead of any optimization.
+   * However, we also want to cache the underlying plugin support.
+   */
+  if (next_ops->can_zero (nxdata) == -1)
+    return -1;
+  return NBDKIT_ZERO_EMULATE;
+}
+
+static int
+ext2_can_trim (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+{
+  /* For now, tell nbdkit to never call .trim.  However, we also want
+   * to cache the underlying plugin support.
+   */
+  if (next_ops->can_trim (nxdata) == -1)
+    return -1;
+  return 0;
+}
+
 /* It might be possible to relax this, but it's complicated.
  *
  * It's desirable for ‘nbdkit -r’ to behave the same way as
@@ -450,11 +489,6 @@ ext2_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 0;
 }
 
-/* XXX It seems as if we should be able to support trim and zero, if
- * we could work out how those are implemented in the ext2fs API which
- * is very obscure.
- */
-
 static struct nbdkit_filter filter = {
   .name               = "ext2",
   .longname           = "nbdkit ext2 filter",
@@ -470,6 +504,9 @@ static struct nbdkit_filter filter = {
   .close              = ext2_close,
   .can_fua            = ext2_can_fua,
   .can_cache          = ext2_can_cache,
+  .can_zero           = ext2_can_zero,
+  .can_trim           = ext2_can_trim,
+  .can_flush          = ext2_can_flush,
   .export_description = ext2_export_description,
   .get_size           = ext2_get_size,
   .pread              = ext2_pread,

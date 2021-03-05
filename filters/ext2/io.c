@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2020 Red Hat Inc.
+ * Copyright (C) 2020-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -310,7 +310,7 @@ io_cache_readahead (io_channel channel,
   data = (struct io_private_data *)channel->private_data;
   EXT2_CHECK_MAGIC (data, EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL);
 
-  if (data->next_ops->can_cache (data->nxdata) == 1) {
+  if (data->next_ops->can_cache (data->nxdata) == NBDKIT_CACHE_NATIVE) {
     /* TODO is 32-bit overflow ever likely to be a problem? */
     if (data->next_ops->cache (data->nxdata,
                                (ext2_loff_t)count * channel->block_size,
@@ -362,8 +362,9 @@ io_flush (io_channel channel)
   data = (struct io_private_data *) channel->private_data;
   EXT2_CHECK_MAGIC (data, EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL);
 
-  if (data->next_ops->flush (data->nxdata, 0, &errno) == -1)
-    return errno;
+  if (data->next_ops->can_flush (data->nxdata) == 1)
+    if (data->next_ops->flush (data->nxdata, 0, &errno) == -1)
+      return errno;
   return retval;
 }
 
@@ -432,7 +433,7 @@ io_zeroout (io_channel channel, unsigned long long block,
   data = (struct io_private_data *) channel->private_data;
   EXT2_CHECK_MAGIC (data, EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL);
 
-  if (data->next_ops->can_zero (data->nxdata) == 1) {
+  if (data->next_ops->can_zero (data->nxdata) > NBDKIT_ZERO_NONE) {
     /* TODO is 32-bit overflow ever likely to be a problem? */
     if (data->next_ops->zero (data->nxdata,
                               (off_t)(count) * channel->block_size,
