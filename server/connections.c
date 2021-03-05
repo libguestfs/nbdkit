@@ -360,7 +360,7 @@ free_connection (struct connection *conn)
    */
   if (!quit) {
     lock_request ();
-    if (get_context (conn, top->i))
+    if (get_context (conn, top))
       backend_close (top);
     unlock_request ();
   }
@@ -498,4 +498,19 @@ raw_close (void)
     closesocket (conn->sockin);
   if (conn->sockout >= 0 && conn->sockin != conn->sockout)
     closesocket (conn->sockout);
+}
+
+struct context *
+get_context (struct connection *conn, struct backend *b)
+{
+  struct context *c = conn->contexts[b->i];
+  assert (!c || c->b == b);
+  return c;
+}
+
+void
+set_context (struct connection *conn, struct backend *b, struct context *c)
+{
+  assert (!c || c->b == b);
+  conn->contexts[b->i] = c;
 }

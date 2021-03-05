@@ -195,10 +195,6 @@ typedef void (*connection_close_function) (void);
 /* struct context stores data per connection and backend.  Primarily
  * this is the filter or plugin handle, but other state is also stored
  * here.
- *
- * Use get_context (conn, 0) to return the struct context for the
- * plugin, and get_context (conn, b->i) to return the struct context for
- * the i'th backend (if b->i >= 1 then for a filter).
  */
 enum {
   HANDLE_OPEN = 1,      /* Set if .open passed, so .close is needed */
@@ -257,18 +253,11 @@ struct connection {
   connection_close_function close;
 };
 
-static inline struct context *
-get_context (struct connection *conn, int i)
-{
-  return conn->contexts[i];
-}
-
-static inline void
-set_context (struct connection *conn, int i, struct context *context)
-{
-  conn->contexts[i] = context;
-}
-
+extern struct context *get_context (struct connection *conn, struct backend *b)
+  __attribute__((__nonnull__(1)));
+extern void set_context (struct connection *conn, struct backend *b,
+                         struct context *c)
+  __attribute__((__nonnull__(1)));
 extern void handle_single_connection (int sockin, int sockout);
 extern int connection_get_status (void);
 extern int connection_set_status (int value);

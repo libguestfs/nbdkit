@@ -268,7 +268,7 @@ next_open (struct backend *b, int readonly, const char *exportname)
 
   if (c == NULL)
     return -1;
-  set_context (conn, b->i, c);
+  set_context (conn, b, c);
   return 0;
 }
 

@@ -163,7 +163,7 @@ backend_list_exports (struct backend *b, int readonly,
                       struct nbdkit_exports *exports)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   size_t count;
 
   controlpath_debug ("%s: list_exports readonly=%d tls=%d",
@@ -186,7 +186,7 @@ const char *
 backend_default_export (struct backend *b, int readonly)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   const char *s;
 
   controlpath_debug ("%s: default_export readonly=%d tls=%d",
@@ -272,7 +272,7 @@ int
 backend_prepare (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->handle);
   assert ((c->state & (HANDLE_OPEN | HANDLE_CONNECTED)) == HANDLE_OPEN);
@@ -281,7 +281,7 @@ backend_prepare (struct backend *b)
    * plugin, similar to typical .open order.  But remember that
    * a filter may skip opening its backend.
    */
-  if (b->i && get_context (conn, b->i-1) != NULL &&
+  if (b->i && get_context (conn, b->next) != NULL &&
       backend_prepare (b->next) == -1)
     return -1;
 
@@ -297,7 +297,7 @@ int
 backend_finalize (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   /* Call these in reverse order to .prepare above, starting from the
    * filter furthest away from the plugin, and matching .close order.
@@ -316,7 +316,7 @@ backend_finalize (struct backend *b)
     }
   }
 
-  if (b->i && get_context (conn, b->i-1))
+  if (b->i && get_context (conn, b->next))
     return backend_finalize (b->next);
   return 0;
 }
@@ -325,7 +325,7 @@ void
 backend_close (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   /* outer-to-inner order, opposite .open */
   assert (c->handle);
@@ -333,8 +333,8 @@ backend_close (struct backend *b)
   controlpath_debug ("%s: close", b->name);
   b->close (b, c->handle);
   free (c);
-  set_context (conn, b->i, NULL);
-  if (b->i && get_context (conn, b->i-1))
+  set_context (conn, b, NULL);
+  if (b->i && get_context (conn, b->next))
     backend_close (b->next);
 }
 
@@ -342,7 +342,7 @@ bool
 backend_valid_range (struct backend *b, uint64_t offset, uint32_t count)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->exportsize <= INT64_MAX); /* Guaranteed by negotiation phase */
   return count > 0 && offset <= c->exportsize &&
@@ -360,7 +360,7 @@ backend_reopen (struct backend *b, int readonly, const char *exportname)
   controlpath_debug ("%s: reopen readonly=%d exportname=\"%s\"",
                      b->name, readonly, exportname);
 
-  if (get_context (conn, b->i)) {
+  if (get_context (conn, b)) {
     if (backend_finalize (b) == -1)
       return -1;
     backend_close (b);
@@ -368,7 +368,7 @@ backend_reopen (struct backend *b, int readonly, const char *exportname)
   h = backend_open (b, readonly, exportname);
   if (h == NULL)
     return -1;
-  set_context (conn, b->i, h);
+  set_context (conn, b, h);
   if (backend_prepare (b) == -1) {
     backend_finalize (b);
     backend_close (b);
@@ -383,7 +383,7 @@ const char *
 backend_export_description (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   const char *s;
 
   controlpath_debug ("%s: export_description", b->name);
@@ -405,7 +405,7 @@ int64_t
 backend_get_size (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->exportsize == -1) {
@@ -419,7 +419,7 @@ int
 backend_can_write (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_write == -1) {
@@ -433,7 +433,7 @@ int
 backend_can_flush (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_flush == -1) {
@@ -447,7 +447,7 @@ int
 backend_is_rotational (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->is_rotational == -1) {
@@ -461,7 +461,7 @@ int
 backend_can_trim (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -481,7 +481,7 @@ int
 backend_can_zero (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -501,7 +501,7 @@ int
 backend_can_fast_zero (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -521,7 +521,7 @@ int
 backend_can_extents (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_extents == -1) {
@@ -535,7 +535,7 @@ int
 backend_can_fua (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -555,7 +555,7 @@ int
 backend_can_multi_conn (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_multi_conn == -1) {
@@ -569,7 +569,7 @@ int
 backend_can_cache (struct backend *b)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
   if (c->can_cache == -1) {
@@ -585,7 +585,7 @@ backend_pread (struct backend *b,
                uint32_t flags, int *err)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -606,7 +606,7 @@ backend_pwrite (struct backend *b,
                 uint32_t flags, int *err)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
@@ -630,7 +630,7 @@ backend_flush (struct backend *b,
                uint32_t flags, int *err)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -650,7 +650,7 @@ backend_trim (struct backend *b,
               int *err)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
 
@@ -676,7 +676,7 @@ backend_zero (struct backend *b,
               int *err)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   bool fast = !!(flags & NBDKIT_FLAG_FAST_ZERO);
   int r;
@@ -711,7 +711,7 @@ backend_extents (struct backend *b,
                  struct nbdkit_extents *extents, int *err)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -742,7 +742,7 @@ backend_cache (struct backend *b,
                uint32_t flags, int *err)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = get_context (conn, b);
   int r;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));

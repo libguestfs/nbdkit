@@ -567,7 +567,7 @@ negotiate_handshake_newstyle_options (void)
          */
         if (finish_newstyle_options (&exportsize,
                                      &data[4], exportnamelen) == -1) {
-          if (get_context (conn, top->i)) {
+          if (get_context (conn, top)) {
             if (backend_finalize (top) == -1)
               return -1;
             backend_close (top);

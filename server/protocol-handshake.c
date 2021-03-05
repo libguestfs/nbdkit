@@ -84,7 +84,7 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
   c = backend_open (top, read_only, exportname);
   if (c == NULL)
     return -1;
-  set_context (conn, top->i, c);
+  set_context (conn, top, c);
 
   /* Prepare (for filters), called just after open. */
   if (backend_prepare (top) == -1)
