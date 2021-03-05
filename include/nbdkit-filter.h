@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -54,6 +54,8 @@ extern "C" {
  * the next filter or plugin.
  */
 typedef struct backend nbdkit_backend;
+#elif defined NBDKIT_RETRY_FILTER /* Hack to expose reopen to retry filter */
+typedef struct nbdkit_backend nbdkit_backend;
 #else
 typedef void nbdkit_backend;
 #endif
@@ -69,16 +71,11 @@ typedef int nbdkit_next_list_exports (nbdkit_backend *nxdata, int readonly,
                                       struct nbdkit_exports *exports);
 typedef const char *nbdkit_next_default_export (nbdkit_backend *nxdata,
                                                 int readonly);
-typedef int nbdkit_next_open (nbdkit_backend *nxdata,
+typedef int nbdkit_next_open (nbdkit_backend *backend,
                               int readonly, const char *exportname);
 
 struct nbdkit_next_ops {
-  /* Performs close + open on the underlying chain.
-   * Used by the retry filter.
-   */
-  int (*reopen) (nbdkit_backend *nxdata, int readonly, const char *exportname);
-
-  /* The rest of the next ops are the same as normal plugin operations. */
+  /* These callbacks are the same as normal plugin operations. */
   int64_t (*get_size) (nbdkit_backend *nxdata);
   const char * (*export_description) (nbdkit_backend *nxdata);
 
@@ -150,6 +147,15 @@ NBDKIT_EXTERN_DECL (size_t, nbdkit_exports_count,
 NBDKIT_EXTERN_DECL (const struct nbdkit_export, nbdkit_get_export,
                     (const struct nbdkit_exports *, size_t));
 
+#ifdef NBDKIT_RETRY_FILTER
+/* Performs close + open on the underlying chain.
+ * Used by the retry filter.
+ */
+NBDKIT_EXTERN_DECL (int, nbdkit_backend_reopen,
+                    (nbdkit_backend *backend, int readonly,
+                     const char *exportname, nbdkit_backend **nxdata));
+#endif
+
 /* Filter struct. */
 struct nbdkit_filter {
   /* Do not set these fields directly; use NBDKIT_REGISTER_FILTER.
@@ -190,7 +196,7 @@ struct nbdkit_filter {
                                   nbdkit_backend *nxdata,
                                   int readonly, int is_tls);
 
-  void * (*open) (nbdkit_next_open *next, nbdkit_backend *nxdata,
+  void * (*open) (nbdkit_next_open *next, nbdkit_backend *backend,
                   int readonly, const char *exportname, int is_tls);
   void (*close) (void *handle);
 

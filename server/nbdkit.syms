@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -41,6 +41,7 @@
     nbdkit_absolute_path;
     nbdkit_add_export;
     nbdkit_add_extent;
+    nbdkit_backend_reopen;
     nbdkit_debug;
     nbdkit_error;
     nbdkit_export_name;

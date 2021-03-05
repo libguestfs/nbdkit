@@ -40,6 +40,7 @@
 #include <string.h>
 #include <sys/time.h>
 
+#define NBDKIT_RETRY_FILTER /* Hack to expose reopen */
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
@@ -50,7 +51,7 @@ static unsigned initial_delay = 2;
 static bool exponential_backoff = true;
 static bool force_readonly = false;
 
-/* Currently next_ops->reopen is not safe if another thread makes a
+/* Currently nbdkit_backend_reopen is not safe if another thread makes a
  * request on the same connection (but on other connections it's OK).
  * To work around this for now we limit the thread model here, but
  * this is something we could improve in server/backend.c in future.
@@ -62,7 +63,7 @@ retry_thread_model (void)
 }
 
 static int
-retry_config (nbdkit_next_config *next, void *nxdata,
+retry_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
               const char *key, const char *value)
 {
   int r;
@@ -108,12 +109,13 @@ retry_config (nbdkit_next_config *next, void *nxdata,
 struct retry_handle {
   int readonly;                 /* Save original readonly setting. */
   char *exportname;             /* Client exportname. */
+  nbdkit_backend *backend;      /* Backend learned during .open. */
   unsigned reopens;
   bool open;
 };
 
 static void *
-retry_open (nbdkit_next_open *next, void *nxdata,
+retry_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
             int readonly, const char *exportname, int is_tls)
 {
   struct retry_handle *h;
@@ -129,6 +131,7 @@ retry_open (nbdkit_next_open *next, void *nxdata,
 
   h->readonly = readonly;
   h->exportname = strdup (exportname);
+  h->backend = nxdata;
   if (h->exportname == NULL) {
     nbdkit_error ("strdup: %m");
     free (h);
@@ -172,10 +175,8 @@ valid_range (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static bool
-do_retry (struct retry_handle *h,
-          struct retry_data *data,
-          struct nbdkit_next_ops *next_ops, void *nxdata,
-          const char *method, int *err)
+do_retry (struct retry_handle *h, struct retry_data *data,
+          nbdkit_backend **nxdata, const char *method, int *err)
 {
   /* If it's the first retry, initialize the other fields in *data. */
   if (data->retry == 0)
@@ -208,8 +209,8 @@ do_retry (struct retry_handle *h,
 
   /* Reopen the connection. */
   h->reopens++;
-  if (next_ops->reopen (nxdata,
-                        h->readonly || force_readonly, h->exportname) == -1) {
+  if (nbdkit_backend_reopen (h->backend, h->readonly || force_readonly,
+                             h->exportname, nxdata) == -1) {
     /* If the reopen fails we treat it the same way as a command
      * failing.
      */
@@ -224,7 +225,7 @@ do_retry (struct retry_handle *h,
 }
 
 static int
-retry_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+retry_pread (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
@@ -237,7 +238,7 @@ retry_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     r = -1;
   else
     r = next_ops->pread (nxdata, buf, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "pread", err))
+  if (r == -1 && do_retry (h, &data, &nxdata, "pread", err))
     goto again;
 
   return r;
@@ -245,7 +246,7 @@ retry_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Write. */
 static int
-retry_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+retry_pwrite (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
               void *handle,
               const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
@@ -272,7 +273,7 @@ retry_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "pwrite", err))
+  if (r == -1 && do_retry (h, &data, &nxdata, "pwrite", err))
     goto again;
 
   return r;
@@ -280,7 +281,7 @@ retry_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Trim. */
 static int
-retry_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+retry_trim (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
             void *handle,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
@@ -307,7 +308,7 @@ retry_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->trim (nxdata, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "trim", err))
+  if (r == -1 && do_retry (h, &data, &nxdata, "trim", err))
     goto again;
 
   return r;
@@ -315,7 +316,7 @@ retry_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Flush. */
 static int
-retry_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+retry_flush (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
              void *handle, uint32_t flags,
              int *err)
 {
@@ -332,7 +333,7 @@ retry_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->flush (nxdata, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "flush", err))
+  if (r == -1 && do_retry (h, &data, &nxdata, "flush", err))
     goto again;
 
   return r;
@@ -340,7 +341,7 @@ retry_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Zero. */
 static int
-retry_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+retry_zero (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
             void *handle,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
@@ -372,7 +373,7 @@ retry_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->zero (nxdata, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "zero", err))
+  if (r == -1 && do_retry (h, &data, &nxdata, "zero", err))
     goto again;
 
   return r;
@@ -380,7 +381,7 @@ retry_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Extents. */
 static int
-retry_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+retry_extents (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
                void *handle,
                uint32_t count, uint64_t offset, uint32_t flags,
                struct nbdkit_extents *extents, int *err)
@@ -408,7 +409,7 @@ retry_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     }
     r = next_ops->extents (nxdata, count, offset, flags, extents2, err);
   }
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "extents", err))
+  if (r == -1 && do_retry (h, &data, &nxdata, "extents", err))
     goto again;
 
   if (r == 0) {
@@ -428,7 +429,7 @@ retry_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache. */
 static int
-retry_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+retry_cache (struct nbdkit_next_ops *next_ops, nbdkit_backend *nxdata,
              void *handle,
              uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
@@ -446,7 +447,7 @@ retry_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   else
     r = next_ops->cache (nxdata, count, offset, flags, err);
-  if (r == -1 && do_retry (h, &data, next_ops, nxdata, "cache", err))
+  if (r == -1 && do_retry (h, &data, &nxdata, "cache", err))
     goto again;
 
   return r;

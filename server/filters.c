@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -290,7 +290,6 @@ filter_close (struct backend *b, void *handle)
 }
 
 static struct nbdkit_next_ops next_ops = {
-  .reopen = backend_reopen,
   .export_description = backend_export_description,
   .get_size = backend_get_size,
   .can_write = backend_can_write,
@@ -658,4 +657,13 @@ filter_register (struct backend *next, size_t index, const char *filename,
   backend_load (&f->backend, f->filter.name, f->filter.load);
 
   return (struct backend *) f;
+}
+
+int
+nbdkit_backend_reopen (struct backend *b, int readonly,
+                       const char *exportname, struct backend **nxdata)
+{
+  /* For now, we don't need to update nxdata. */
+  assert (b == *nxdata);
+  return backend_reopen (b, readonly, exportname);
 }

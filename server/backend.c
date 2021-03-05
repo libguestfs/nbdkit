@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -337,7 +337,7 @@ backend_valid_range (struct backend *b, uint64_t offset, uint32_t count)
     offset + count <= c->exportsize;
 }
 
-/* Wrappers for all callbacks in a filter's struct nbdkit_next_ops. */
+/* Core functionality of nbdkit_backend_reopen for retry filter */
 
 int
 backend_reopen (struct backend *b, int readonly, const char *exportname)
@@ -359,6 +359,8 @@ backend_reopen (struct backend *b, int readonly, const char *exportname)
   }
   return 0;
 }
+
+/* Wrappers for all callbacks in a filter's struct nbdkit_next_ops. */
 
 const char *
 backend_export_description (struct backend *b)
