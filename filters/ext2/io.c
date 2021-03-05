@@ -60,8 +60,7 @@
 
 struct io_private_data {
   int magic;
-  struct nbdkit_next_ops *next_ops;
-  void *nxdata;
+  nbdkit_next *next;
   ext2_loff_t offset;
   struct struct_io_stats io_stats;
 };
@@ -103,7 +102,7 @@ raw_read_blk (io_channel channel,
   location = ((ext2_loff_t) block * channel->block_size) + data->offset;
 
   /* TODO is 32-bit overflow ever likely to be a problem? */
-  if (data->next_ops->pread (data->nxdata, buf, size, location, 0, &errno) == 0)
+  if (data->next->pread (data->next, buf, size, location, 0, &errno) == 0)
     return 0;
 
   retval = errno;
@@ -138,8 +137,8 @@ raw_write_blk (io_channel channel,
   location = ((ext2_loff_t) block * channel->block_size) + data->offset;
 
   /* TODO is 32-bit overflow ever likely to be a problem? */
-  if (data->next_ops->pwrite (data->nxdata, buf, size, location, 0,
-                              &errno) == 0)
+  if (data->next->pwrite (data->next, buf, size, location, 0,
+                          &errno) == 0)
     return 0;
 
   retval = errno;
@@ -150,22 +149,21 @@ raw_write_blk (io_channel channel,
 }
 
 char *
-nbdkit_io_encode (const struct nbdkit_next *next)
+nbdkit_io_encode (const nbdkit_next *next)
 {
   char *ret;
 
-  if (asprintf (&ret, "nbdkit:%p:%p", next->next_ops, next->nxdata) < 0)
+  if (asprintf (&ret, "nbdkit:%p", next) < 0)
     return NULL;
   return ret;
 }
 
 int
-nbdkit_io_decode (const char *name, struct nbdkit_next *next)
+nbdkit_io_decode (const char *name, nbdkit_next **next)
 {
   int n;
 
-  if (sscanf (name, "nbdkit:%p:%p%n", &next->next_ops, &next->nxdata,
-              &n) != 2 || n != strlen (name))
+  if (sscanf (name, "nbdkit:%p%n", next, &n) != 1 || n != strlen (name))
     return -1;
   return 0;
 }
@@ -174,7 +172,7 @@ static errcode_t
 io_open (const char *name, int flags,
          io_channel *channel)
 {
-  struct nbdkit_next next;
+  nbdkit_next *next;
   io_channel io = NULL;
   struct io_private_data *data = NULL;
   errcode_t retval;
@@ -206,14 +204,13 @@ io_open (const char *name, int flags,
   memset (data, 0, sizeof (struct io_private_data));
   data->magic = EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL;
   data->io_stats.num_fields = 2;
-  data->next_ops = next.next_ops;
-  data->nxdata = next.nxdata;
+  data->next = next;
 
-  /* Too bad NBD doesn't tell us if next_ops->trim guarantees read as zero. */
-  /* if (next_ops-> XXX (...)
+  /* Too bad NBD doesn't tell us if next->trim guarantees read as zero. */
+  /* if (next-> XXX (...)
      io->flags |= CHANNEL_FLAGS_DISCARD_ZEROES; */
 
-  if (flags & IO_FLAG_RW && next.next_ops->can_write (next.nxdata) != 1) {
+  if (flags & IO_FLAG_RW && next->can_write (next) != 1) {
     retval = EPERM;
     goto cleanup;
   }
@@ -310,13 +307,13 @@ io_cache_readahead (io_channel channel,
   data = (struct io_private_data *)channel->private_data;
   EXT2_CHECK_MAGIC (data, EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL);
 
-  if (data->next_ops->can_cache (data->nxdata) == NBDKIT_CACHE_NATIVE) {
+  if (data->next->can_cache (data->next) == NBDKIT_CACHE_NATIVE) {
     /* TODO is 32-bit overflow ever likely to be a problem? */
-    if (data->next_ops->cache (data->nxdata,
-                               (ext2_loff_t)count * channel->block_size,
-                               ((ext2_loff_t)block * channel->block_size +
-                                data->offset),
-                               0, &errno) == -1)
+    if (data->next->cache (data->next,
+                           (ext2_loff_t)count * channel->block_size,
+                           ((ext2_loff_t)block * channel->block_size +
+                            data->offset),
+                           0, &errno) == -1)
       return errno;
     return 0;
   }
@@ -342,8 +339,8 @@ io_write_byte (io_channel channel, unsigned long offset,
   data = (struct io_private_data *) channel->private_data;
   EXT2_CHECK_MAGIC (data, EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL);
 
-  if (data->next_ops->pwrite (data->nxdata, buf, size,
-                              offset + data->offset, 0, &errno) == -1)
+  if (data->next->pwrite (data->next, buf, size,
+                          offset + data->offset, 0, &errno) == -1)
     return errno;
 
   return 0;
@@ -362,8 +359,8 @@ io_flush (io_channel channel)
   data = (struct io_private_data *) channel->private_data;
   EXT2_CHECK_MAGIC (data, EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL);
 
-  if (data->next_ops->can_flush (data->nxdata) == 1)
-    if (data->next_ops->flush (data->nxdata, 0, &errno) == -1)
+  if (data->next->can_flush (data->next) == 1)
+    if (data->next->flush (data->next, 0, &errno) == -1)
       return errno;
   return retval;
 }
@@ -405,13 +402,13 @@ io_discard (io_channel channel, unsigned long long block,
   data = (struct io_private_data *) channel->private_data;
   EXT2_CHECK_MAGIC (data, EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL);
 
-  if (data->next_ops->can_trim (data->nxdata) == 1) {
+  if (data->next->can_trim (data->next) == 1) {
     /* TODO is 32-bit overflow ever likely to be a problem? */
-    if (data->next_ops->trim (data->nxdata,
-                              (off_t)(count) * channel->block_size,
-                              ((off_t)(block) * channel->block_size +
-                               data->offset),
-                              0, &errno) == 0)
+    if (data->next->trim (data->next,
+                          (off_t)(count) * channel->block_size,
+                          ((off_t)(block) * channel->block_size +
+                           data->offset),
+                          0, &errno) == 0)
       return 0;
     if (errno == EOPNOTSUPP)
       goto unimplemented;
@@ -433,13 +430,13 @@ io_zeroout (io_channel channel, unsigned long long block,
   data = (struct io_private_data *) channel->private_data;
   EXT2_CHECK_MAGIC (data, EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL);
 
-  if (data->next_ops->can_zero (data->nxdata) > NBDKIT_ZERO_NONE) {
+  if (data->next->can_zero (data->next) > NBDKIT_ZERO_NONE) {
     /* TODO is 32-bit overflow ever likely to be a problem? */
-    if (data->next_ops->zero (data->nxdata,
-                              (off_t)(count) * channel->block_size,
-                              ((off_t)(block) * channel->block_size +
-                               data->offset),
-                              NBDKIT_FLAG_MAY_TRIM, &errno) == 0)
+    if (data->next->zero (data->next,
+                          (off_t)(count) * channel->block_size,
+                          ((off_t)(block) * channel->block_size +
+                           data->offset),
+                          NBDKIT_FLAG_MAY_TRIM, &errno) == 0)
       return 0;
     if (errno == EOPNOTSUPP)
       goto unimplemented;

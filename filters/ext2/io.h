@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2020 Red Hat Inc.
+ * Copyright (C) 2020-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,19 +35,15 @@
 
 #include <ext2_io.h>
 
+#define NBDKIT_TYPESAFE /* HACK to get type-safe parameters. */
 #include <nbdkit-filter.h>
 
 #define EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL EXT2_ET_MAGIC_RESERVED_19
 
-struct nbdkit_next {
-  struct nbdkit_next_ops *next_ops;
-  void *nxdata;
-};
-
 /* Utility functions for encoding nbdkit_next as a name usable by ext2fs */
-extern char *nbdkit_io_encode(const struct nbdkit_next *next)
+extern char *nbdkit_io_encode(const nbdkit_next *next)
   __attribute__ ((__nonnull__ (1)));
-extern int nbdkit_io_decode(const char *name, struct nbdkit_next *out)
+extern int nbdkit_io_decode(const char *name, nbdkit_next **out)
   __attribute__ ((__nonnull__ (1, 2)));
 
 /* Custom io manager that performs all ext2fs I/O on the next nbdkit layer */

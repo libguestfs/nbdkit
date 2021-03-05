@@ -45,6 +45,7 @@
 
 #define NBDKIT_API_VERSION 2
 
+#define NBDKIT_TYPESAFE /* HACK to get type-safe parameters. */
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
@@ -62,7 +63,7 @@ ext2_load (void)
 }
 
 static int
-ext2_config (nbdkit_next_config *next, void *nxdata,
+ext2_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
              const char *key, const char *value)
 {
   if (strcmp (key, "ext2file") == 0) {
@@ -78,7 +79,7 @@ ext2_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-ext2_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+ext2_config_complete (nbdkit_next_config_complete *next, nbdkit_backend *nxdata)
 {
   if (file == NULL) {
     nbdkit_error ("you must supply ext2file=<FILE> parameter "
@@ -106,12 +107,12 @@ struct handle {
   ext2_filsys fs;               /* Filesystem handle. */
   ext2_ino_t ino;               /* Inode of open file. */
   ext2_file_t file;             /* File handle. */
-  struct nbdkit_next next;      /* "name" parameter to ext2fs_open. */
+  nbdkit_next *next;            /* "name" parameter to ext2fs_open. */
 };
 
 /* Export list. */
 static int
-ext2_list_exports (nbdkit_next_list_exports *next, void *nxdata,
+ext2_list_exports (nbdkit_next_list_exports *next, nbdkit_backend *nxdata,
                    int readonly, int is_tls, struct nbdkit_exports *exports)
 {
   /* If we are honoring export names, the default export "" won't
@@ -133,7 +134,7 @@ ext2_list_exports (nbdkit_next_list_exports *next, void *nxdata,
 
 /* Default export. */
 static const char *
-ext2_default_export (nbdkit_next_default_export *next, void *nxdata,
+ext2_default_export (nbdkit_next_default_export *next, nbdkit_backend *nxdata,
                      int readonly, int is_tls)
 {
   /* If we are honoring exports, "" will fail (even if we resolve to
@@ -152,7 +153,7 @@ ext2_default_export (nbdkit_next_default_export *next, void *nxdata,
 
 /* Create the per-connection handle. */
 static void *
-ext2_open (nbdkit_next_open *next, void *nxdata,
+ext2_open (nbdkit_next_open *next, nbdkit_context *nxdata,
            int readonly, const char *exportname, int is_tls)
 {
   struct handle *h;
@@ -185,7 +186,7 @@ ext2_open (nbdkit_next_open *next, void *nxdata,
 }
 
 static int
-ext2_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+ext2_prepare (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle,
               int readonly)
 {
   struct handle *h = handle;
@@ -214,9 +215,8 @@ ext2_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   if (!readonly)
     fs_flags |= EXT2_FLAG_RW;
 
-  h->next.next_ops = next_ops;
-  h->next.nxdata = nxdata;
-  name = nbdkit_io_encode (&h->next);
+  h->next = next_ops;
+  name = nbdkit_io_encode (next_ops);
   if (!name) {
     nbdkit_error ("nbdkit_io_encode: %m");
     return -1;
@@ -293,20 +293,20 @@ ext2_close (void *handle)
 }
 
 static int
-ext2_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+ext2_can_fua (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
 {
   return NBDKIT_FUA_NATIVE;
 }
 
 static int
-ext2_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+ext2_can_cache (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
 {
   /* Let nbdkit call pread to populate the file system cache. */
   return NBDKIT_CACHE_EMULATE;
 }
 
 static int
-ext2_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+ext2_can_multi_conn (nbdkit_next *next_ops, nbdkit_next *nxdata,
                      void *handle)
 {
   /* Since we do not permit parallel connections, it does not matter
@@ -320,7 +320,8 @@ ext2_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-ext2_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+ext2_can_flush (nbdkit_next *next_ops, nbdkit_next *nxdata,
+                void *handle)
 {
   /* Regardless of the underlying plugin, we handle flush at the level
    * of the filesystem.  However, we also need to cache the underlying
@@ -337,7 +338,7 @@ ext2_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
  * is very obscure.
  */
 static int
-ext2_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+ext2_can_zero (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
 {
   /* For now, tell nbdkit to call .pwrite instead of any optimization.
    * However, we also want to cache the underlying plugin support.
@@ -348,7 +349,7 @@ ext2_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 }
 
 static int
-ext2_can_trim (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+ext2_can_trim (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
 {
   /* For now, tell nbdkit to never call .trim.  However, we also want
    * to cache the underlying plugin support.
@@ -377,7 +378,7 @@ static int ext2_thread_model (void)
 
 /* Description. */
 static const char *
-ext2_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+ext2_export_description (nbdkit_next *next_ops, nbdkit_next *nxdata,
                          void *handle)
 {
   struct handle *h = handle;
@@ -393,7 +394,7 @@ ext2_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Get the disk size. */
 static int64_t
-ext2_get_size (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+ext2_get_size (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
 {
   struct handle *h = handle;
   errcode_t err;
@@ -409,7 +410,7 @@ ext2_get_size (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 
 /* Read data. */
 static int
-ext2_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+ext2_pread (nbdkit_next *next_ops, nbdkit_next *nxdata,
             void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *errp)
 {
@@ -446,7 +447,7 @@ ext2_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Write data to the file. */
 static int
-ext2_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+ext2_pwrite (nbdkit_next *next_ops, nbdkit_next *nxdata,
              void *handle, const void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *errp)
 {
@@ -487,7 +488,7 @@ ext2_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-ext2_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+ext2_flush (nbdkit_next *next_ops, nbdkit_next *nxdata,
             void *handle, uint32_t flags, int *errp)
 {
   struct handle *h = handle;
