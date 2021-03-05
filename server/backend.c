@@ -169,8 +169,7 @@ backend_list_exports (struct backend *b, int readonly,
   controlpath_debug ("%s: list_exports readonly=%d tls=%d",
                      b->name, readonly, conn->using_tls);
 
-  assert (c->handle == NULL);
-  assert ((c->state & HANDLE_OPEN) == 0);
+  assert (c == NULL);
 
   if (b->list_exports (b, readonly, conn->using_tls, exports) == -1 ||
       exports_resolve_default (exports, b, readonly) == -1) {
@@ -194,8 +193,7 @@ backend_default_export (struct backend *b, int readonly)
                      b->name, readonly, conn->using_tls);
 
   if (conn->default_exportname[b->i] == NULL) {
-    assert (c->handle == NULL);
-    assert ((c->state & HANDLE_OPEN) == 0);
+    assert (c == NULL);
     s = b->default_export (b, readonly, conn->using_tls);
     /* Ignore over-length strings. XXX Also ignore non-UTF8? */
     if (s && strnlen (s, NBD_MAX_STRING + 1) > NBD_MAX_STRING) {
@@ -213,18 +211,22 @@ backend_default_export (struct backend *b, int readonly)
   return conn->default_exportname[b->i];
 }
 
-int
+struct context *
 backend_open (struct backend *b, int readonly, const char *exportname)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b->i);
+  struct context *c = malloc (sizeof *c);
+
+  if (c == NULL) {
+    nbdkit_error ("malloc: %m");
+    return NULL;
+  }
 
   controlpath_debug ("%s: open readonly=%d exportname=\"%s\" tls=%d",
                      b->name, readonly, exportname, conn->using_tls);
 
-  assert (c->handle == NULL);
-  assert ((c->state & HANDLE_OPEN) == 0);
-  assert (c->can_write == -1);
+  assert (conn->contexts[b->i] == NULL);
+  reset_context (c);
   if (readonly)
     c->can_write = 0;
 
@@ -233,7 +235,8 @@ backend_open (struct backend *b, int readonly, const char *exportname)
     exportname = backend_default_export (b, readonly);
     if (exportname == NULL) {
       nbdkit_error ("default export (\"\") not permitted");
-      return -1;
+      free (c);
+      return NULL;
     }
   }
 
@@ -246,11 +249,13 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   if (c->handle == NULL) {
     if (b->i) /* Do not strand backend if this layer failed */
       backend_close (b->next);
-    return -1;
+    free (c);
+    return NULL;
   }
 
   c->state |= HANDLE_OPEN;
-  return 0;
+  c->b = b;
+  return c;
 }
 
 int
@@ -266,7 +271,7 @@ backend_prepare (struct backend *b)
    * plugin, similar to typical .open order.  But remember that
    * a filter may skip opening its backend.
    */
-  if (b->i && get_context (conn, b->i-1)->handle != NULL &&
+  if (b->i && get_context (conn, b->i-1) != NULL &&
       backend_prepare (b->next) == -1)
     return -1;
 
@@ -301,7 +306,7 @@ backend_finalize (struct backend *b)
     }
   }
 
-  if (b->i)
+  if (b->i && get_context (conn, b->i-1))
     return backend_finalize (b->next);
   return 0;
 }
@@ -313,16 +318,13 @@ backend_close (struct backend *b)
   struct context *c = get_context (conn, b->i);
 
   /* outer-to-inner order, opposite .open */
-
-  if (c->handle) {
-    assert (c->state & HANDLE_OPEN);
-    controlpath_debug ("%s: close", b->name);
-    b->close (b, c->handle);
-  }
-  else
-    assert (! (c->state & HANDLE_OPEN));
-  reset_context (c);
-  if (b->i)
+  assert (c->handle);
+  assert (c->state & HANDLE_OPEN);
+  controlpath_debug ("%s: close", b->name);
+  b->close (b, c->handle);
+  free (c);
+  set_context (conn, b->i, NULL);
+  if (b->i && get_context (conn, b->i-1))
     backend_close (b->next);
 }
 
@@ -342,16 +344,21 @@ backend_valid_range (struct backend *b, uint64_t offset, uint32_t count)
 int
 backend_reopen (struct backend *b, int readonly, const char *exportname)
 {
+  GET_CONN;
+  struct context *h;
+
   controlpath_debug ("%s: reopen readonly=%d exportname=\"%s\"",
                      b->name, readonly, exportname);
 
-  if (backend_finalize (b) == -1)
-    return -1;
-  backend_close (b);
-  if (backend_open (b, readonly, exportname) == -1) {
+  if (get_context (conn, b->i)) {
+    if (backend_finalize (b) == -1)
+      return -1;
     backend_close (b);
-    return -1;
   }
+  h = backend_open (b, readonly, exportname);
+  if (h == NULL)
+    return -1;
+  set_context (conn, b->i, h);
   if (backend_prepare (b) == -1) {
     backend_finalize (b);
     backend_close (b);

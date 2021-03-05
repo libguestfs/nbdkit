@@ -567,9 +567,11 @@ negotiate_handshake_newstyle_options (void)
          */
         if (finish_newstyle_options (&exportsize,
                                      &data[4], exportnamelen) == -1) {
-          if (backend_finalize (top) == -1)
-            return -1;
-          backend_close (top);
+          if (get_context (conn, top->i)) {
+            if (backend_finalize (top) == -1)
+              return -1;
+            backend_close (top);
+          }
           if (send_newstyle_option_reply (option, NBD_REP_ERR_UNKNOWN) == -1)
             return -1;
           continue;

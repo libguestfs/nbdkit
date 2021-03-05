@@ -208,6 +208,7 @@ enum {
 
 struct context {
   void *handle;         /* Plugin or filter handle. */
+  struct backend *b;    /* Backend that provided handle. */
 
   unsigned char state;  /* Bitmask of HANDLE_* values */
 
@@ -254,7 +255,7 @@ struct connection {
   void *crypto_session;
   int nworkers;
 
-  struct context *contexts;     /* One per plugin and filter. */
+  struct context **contexts;    /* One per plugin and filter. */
   char **default_exportname;    /* One per plugin and filter. */
 
   uint32_t cflags;
@@ -277,7 +278,13 @@ struct connection {
 static inline struct context *
 get_context (struct connection *conn, int i)
 {
-  return &conn->contexts[i];
+  return conn->contexts[i];
+}
+
+static inline void
+set_context (struct connection *conn, int i, struct context *context)
+{
+  conn->contexts[i] = context;
 }
 
 extern void handle_single_connection (int sockin, int sockout);
@@ -443,8 +450,8 @@ extern const char *backend_export_description (struct backend *b)
  * freed on return of this function, so backends must save the
  * exportname if they need to refer to it later.
  */
-extern int backend_open (struct backend *b,
-                         int readonly, const char *exportname)
+extern struct context *backend_open (struct backend *b,
+                                     int readonly, const char *exportname)
   __attribute__((__nonnull__ (1, 3)));
 extern int backend_prepare (struct backend *b)
   __attribute__((__nonnull__ (1)));

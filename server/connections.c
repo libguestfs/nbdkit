@@ -240,7 +240,6 @@ new_connection (int sockin, int sockout, int nworkers)
   struct connection *conn;
   int opt;
   socklen_t optlen = sizeof opt;
-  struct backend *b;
 
   conn = calloc (1, sizeof *conn);
   if (conn == NULL) {
@@ -259,9 +258,6 @@ new_connection (int sockin, int sockout, int nworkers)
     perror ("malloc");
     goto error1;
   }
-  for_each_backend (b)
-    reset_context (get_context (conn, b->i));
-
   conn->default_exportname = calloc (top->i + 1,
                                      sizeof *conn->default_exportname);
   if (conn->default_exportname == NULL) {
@@ -364,7 +360,8 @@ free_connection (struct connection *conn)
    */
   if (!quit) {
     lock_request ();
-    backend_close (top);
+    if (get_context (conn, top->i))
+      backend_close (top);
     unlock_request ();
   }
 

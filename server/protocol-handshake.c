@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -79,9 +79,12 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
   int64_t size;
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
+  struct context *c;
 
-  if (backend_open (top, read_only, exportname) == -1)
+  c = backend_open (top, read_only, exportname);
+  if (c == NULL)
     return -1;
+  set_context (conn, top->i, c);
 
   /* Prepare (for filters), called just after open. */
   if (backend_prepare (top) == -1)

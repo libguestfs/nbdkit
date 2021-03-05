@@ -260,6 +260,18 @@ filter_default_export (struct backend *b, int readonly, int is_tls)
   return backend_default_export (b->next, readonly);
 }
 
+static int
+next_open (struct backend *b, int readonly, const char *exportname)
+{
+  GET_CONN;
+  struct context *c = backend_open (b, readonly, exportname);
+
+  if (c == NULL)
+    return -1;
+  set_context (conn, b->i, c);
+  return 0;
+}
+
 static void *
 filter_open (struct backend *b, int readonly, const char *exportname,
              int is_tls)
@@ -271,9 +283,9 @@ filter_open (struct backend *b, int readonly, const char *exportname,
    * inner-to-outer ordering.
    */
   if (f->filter.open)
-    handle = f->filter.open (backend_open, b->next, readonly, exportname,
+    handle = f->filter.open (next_open, b->next, readonly, exportname,
                              is_tls);
-  else if (backend_open (b->next, readonly, exportname) == -1)
+  else if (next_open (b->next, readonly, exportname) == -1)
     handle = NULL;
   else
     handle = NBDKIT_HANDLE_NOT_NEEDED;
