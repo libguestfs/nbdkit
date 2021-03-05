@@ -69,7 +69,7 @@ extentlist_unload (void)
 
 /* Called for each key=value passed on the command line. */
 static int
-extentlist_config (nbdkit_next_config *next, void *nxdata,
+extentlist_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                    const char *key, const char *value)
 {
   if (strcmp (key, "extentlist") == 0) {
@@ -85,7 +85,8 @@ extentlist_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-extentlist_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+extentlist_config_complete (nbdkit_next_config_complete *next,
+                            nbdkit_backend *nxdata)
 {
   if (extentlist == NULL) {
     nbdkit_error ("you must supply the extentlist parameter "
@@ -261,7 +262,7 @@ parse_extentlist (void)
 }
 
 static int
-extentlist_get_ready (nbdkit_next_get_ready *next, void *nxdata,
+extentlist_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
                       int thread_model)
 {
   parse_extentlist ();
@@ -270,7 +271,7 @@ extentlist_get_ready (nbdkit_next_get_ready *next, void *nxdata,
 }
 
 static int
-extentlist_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+extentlist_can_extents (nbdkit_next *next,
                         void *handle)
 {
   return 1;
@@ -281,7 +282,7 @@ int extentlist_debug_lookup = 0;
 
 /* Read extents. */
 static int
-extentlist_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+extentlist_extents (nbdkit_next *next,
                     void *handle, uint32_t count, uint64_t offset,
                     uint32_t flags,
                     struct nbdkit_extents *ret_extents,

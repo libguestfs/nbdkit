@@ -49,7 +49,7 @@ static char message[512] NONSTRING = "This NBD server requires TLS "
 
 /* Called for each key=value passed on the command line. */
 static int
-tls_fallback_config (nbdkit_next_config *next, void *nxdata,
+tls_fallback_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                      const char *key, const char *value)
 {
   if (strcmp (key, "tlsreadme") == 0) {
@@ -63,7 +63,7 @@ tls_fallback_config (nbdkit_next_config *next, void *nxdata,
   "tlsreadme=<MESSAGE>  Alternative contents for the plaintext dummy export.\n"
 
 int
-tls_fallback_get_ready (nbdkit_next_get_ready *next, void *nxdata,
+tls_fallback_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
                         int thread_model)
 {
   if (thread_model == NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
@@ -75,7 +75,8 @@ tls_fallback_get_ready (nbdkit_next_get_ready *next, void *nxdata,
 }
 
 static int
-tls_fallback_list_exports (nbdkit_next_list_exports *next, void *nxdata,
+tls_fallback_list_exports (nbdkit_next_list_exports *next,
+                           nbdkit_backend *nxdata,
                            int readonly, int is_tls,
                            struct nbdkit_exports *exports)
 {
@@ -85,7 +86,8 @@ tls_fallback_list_exports (nbdkit_next_list_exports *next, void *nxdata,
 }
 
 static const char *
-tls_fallback_default_export (nbdkit_next_default_export *next, void *nxdata,
+tls_fallback_default_export (nbdkit_next_default_export *next,
+                             nbdkit_backend *nxdata,
                              int readonly, int is_tls)
 {
   if (!is_tls)
@@ -101,7 +103,8 @@ tls_fallback_default_export (nbdkit_next_default_export *next, void *nxdata,
 #define NOT_TLS (handle == &message)
 
 static void *
-tls_fallback_open (nbdkit_next_open *next, void *nxdata, int readonly,
+tls_fallback_open (nbdkit_next_open *next, nbdkit_context *nxdata,
+                   int readonly,
                    const char *exportname, int is_tls)
 {
   /* We do NOT want to call next() when insecure, because we don't
@@ -120,79 +123,78 @@ tls_fallback_open (nbdkit_next_open *next, void *nxdata, int readonly,
  */
 
 static const char *
-tls_fallback_export_description (struct nbdkit_next_ops *next_ops,
-                                 void *nxdata, void *handle)
+tls_fallback_export_description (nbdkit_next *next, void *handle)
 {
   if (NOT_TLS)
     return NULL;
-  return next_ops->export_description (nxdata);
+  return next->export_description (next);
 }
 
 static int64_t
-tls_fallback_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+tls_fallback_get_size (nbdkit_next *next,
                        void *handle)
 {
   if (NOT_TLS)
     return sizeof message;
-  return next_ops->get_size (nxdata);
+  return next->get_size (next);
 }
 
 static int
-tls_fallback_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+tls_fallback_can_write (nbdkit_next *next,
                         void *handle)
 {
   if (NOT_TLS)
     return 0;
-  return next_ops->can_write (nxdata);
+  return next->can_write (next);
 }
 
 static int
-tls_fallback_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+tls_fallback_can_flush (nbdkit_next *next,
                         void *handle)
 {
   if (NOT_TLS)
     return 0;
-  return next_ops->can_flush (nxdata);
+  return next->can_flush (next);
 }
 
 static int
-tls_fallback_is_rotational (struct nbdkit_next_ops *next_ops, void *nxdata,
+tls_fallback_is_rotational (nbdkit_next *next,
                             void *handle)
 {
   if (NOT_TLS)
     return 0;
-  return next_ops->is_rotational (nxdata);
+  return next->is_rotational (next);
 }
 
 static int
-tls_fallback_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+tls_fallback_can_extents (nbdkit_next *next,
                           void *handle)
 {
   if (NOT_TLS)
     return 0;
-  return next_ops->can_extents (nxdata);
+  return next->can_extents (next);
 }
 
 static int
-tls_fallback_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+tls_fallback_can_multi_conn (nbdkit_next *next,
                              void *handle)
 {
   if (NOT_TLS)
     return 0;
-  return next_ops->can_multi_conn (nxdata);
+  return next->can_multi_conn (next);
 }
 
 static int
-tls_fallback_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+tls_fallback_can_cache (nbdkit_next *next,
                         void *handle)
 {
   if (NOT_TLS)
     return NBDKIT_CACHE_NONE;
-  return next_ops->can_cache (nxdata);
+  return next->can_cache (next);
 }
 
 static int
-tls_fallback_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+tls_fallback_pread (nbdkit_next *next,
                     void *handle, void *b, uint32_t count, uint64_t offs,
                     uint32_t flags, int *err)
 {
@@ -200,7 +202,7 @@ tls_fallback_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     memcpy (b, message + offs, count);
     return 0;
   }
-  return next_ops->pread (nxdata, b, count, offs, flags, err);
+  return next->pread (next, b, count, offs, flags, err);
 }
 
 static struct nbdkit_filter filter = {

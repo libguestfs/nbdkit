@@ -39,10 +39,10 @@
 
 extern unsigned partnum;
 
-extern int find_mbr_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
+extern int find_mbr_partition (nbdkit_next *next,
                                int64_t size, uint8_t *mbr,
                                int64_t *offset_r, int64_t *range_r);
-extern int find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
+extern int find_gpt_partition (nbdkit_next *next,
                                int64_t size, uint8_t *header_bytes,
                                int64_t *offset_r, int64_t *range_r);
 

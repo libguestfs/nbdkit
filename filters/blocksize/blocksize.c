@@ -85,7 +85,7 @@ blocksize_parse (const char *name, const char *s, unsigned int *v)
 
 /* Called for each key=value passed on the command line. */
 static int
-blocksize_config (nbdkit_next_config *next, void *nxdata,
+blocksize_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                   const char *key, const char *value)
 {
 
@@ -100,7 +100,8 @@ blocksize_config (nbdkit_next_config *next, void *nxdata,
 
 /* Check that limits are sane. */
 static int
-blocksize_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+blocksize_config_complete (nbdkit_next_config_complete *next,
+                           nbdkit_backend *nxdata)
 {
   if (minblock) {
     if (minblock & (minblock - 1)) {
@@ -145,10 +146,10 @@ blocksize_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 
 /* Round size down to avoid issues at end of file. */
 static int64_t
-blocksize_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+blocksize_get_size (nbdkit_next *next,
                     void *handle)
 {
-  int64_t size = next_ops->get_size (nxdata);
+  int64_t size = next->get_size (next);
 
   if (size == -1)
     return -1;
@@ -156,7 +157,7 @@ blocksize_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+blocksize_pread (nbdkit_next *next,
                  void *handle, void *b, uint32_t count, uint64_t offs,
                  uint32_t flags, int *err)
 {
@@ -169,8 +170,7 @@ blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (minblock - 1);
     keep = MIN (minblock - drop, count);
-    if (next_ops->pread (nxdata, bounce, minblock, offs - drop, flags,
-                         err) == -1)
+    if (next->pread (next, bounce, minblock, offs - drop, flags, err) == -1)
       return -1;
     memcpy (buf, bounce + drop, keep);
     buf += keep;
@@ -181,7 +181,7 @@ blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Aligned body */
   while (count >= minblock) {
     keep = MIN (maxdata, ROUND_DOWN (count, minblock));
-    if (next_ops->pread (nxdata, buf, keep, offs, flags, err) == -1)
+    if (next->pread (next, buf, keep, offs, flags, err) == -1)
       return -1;
     buf += keep;
     offs += keep;
@@ -191,7 +191,7 @@ blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    if (next_ops->pread (nxdata, bounce, minblock, offs, flags, err) == -1)
+    if (next->pread (next, bounce, minblock, offs, flags, err) == -1)
       return -1;
     memcpy (buf, bounce, count);
   }
@@ -200,7 +200,7 @@ blocksize_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+blocksize_pwrite (nbdkit_next *next,
                   void *handle, const void *b, uint32_t count, uint64_t offs,
                   uint32_t flags, int *err)
 {
@@ -210,7 +210,7 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   bool need_flush = false;
 
   if ((flags & NBDKIT_FLAG_FUA) &&
-      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+      next->can_fua (next) == NBDKIT_FUA_EMULATE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -220,11 +220,10 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (minblock - 1);
     keep = MIN (minblock - drop, count);
-    if (next_ops->pread (nxdata, bounce, minblock, offs - drop, 0, err) == -1)
+    if (next->pread (next, bounce, minblock, offs - drop, 0, err) == -1)
       return -1;
     memcpy (bounce + drop, buf, keep);
-    if (next_ops->pwrite (nxdata, bounce, minblock, offs - drop, flags,
-                          err) == -1)
+    if (next->pwrite (next, bounce, minblock, offs - drop, flags, err) == -1)
       return -1;
     buf += keep;
     offs += keep;
@@ -234,7 +233,7 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Aligned body */
   while (count >= minblock) {
     keep = MIN (maxdata, ROUND_DOWN (count, minblock));
-    if (next_ops->pwrite (nxdata, buf, keep, offs, flags, err) == -1)
+    if (next->pwrite (next, buf, keep, offs, flags, err) == -1)
       return -1;
     buf += keep;
     offs += keep;
@@ -244,20 +243,20 @@ blocksize_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    if (next_ops->pread (nxdata, bounce, minblock, offs, 0, err) == -1)
+    if (next->pread (next, bounce, minblock, offs, 0, err) == -1)
       return -1;
     memcpy (bounce, buf, count);
-    if (next_ops->pwrite (nxdata, bounce, minblock, offs, flags, err) == -1)
+    if (next->pwrite (next, bounce, minblock, offs, flags, err) == -1)
       return -1;
   }
 
   if (need_flush)
-    return next_ops->flush (nxdata, 0, err);
+    return next->flush (next, 0, err);
   return 0;
 }
 
 static int
-blocksize_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+blocksize_trim (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                 int *err)
 {
@@ -265,7 +264,7 @@ blocksize_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   bool need_flush = false;
 
   if ((flags & NBDKIT_FLAG_FUA) &&
-      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+      next->can_fua (next) == NBDKIT_FUA_EMULATE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -283,19 +282,19 @@ blocksize_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Aligned body */
   while (count) {
     keep = MIN (maxlen, count);
-    if (next_ops->trim (nxdata, keep, offs, flags, err) == -1)
+    if (next->trim (next, keep, offs, flags, err) == -1)
       return -1;
     offs += keep;
     count -= keep;
   }
 
   if (need_flush)
-    return next_ops->flush (nxdata, 0, err);
+    return next->flush (next, 0, err);
   return 0;
 }
 
 static int
-blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+blocksize_zero (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                 int *err)
 {
@@ -316,7 +315,7 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
 
   if ((flags & NBDKIT_FLAG_FUA) &&
-      next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE) {
+      next->can_fua (next) == NBDKIT_FUA_EMULATE) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -326,11 +325,11 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (minblock - 1);
     keep = MIN (minblock - drop, count);
-    if (next_ops->pread (nxdata, bounce, minblock, offs - drop, 0, err) == -1)
+    if (next->pread (next, bounce, minblock, offs - drop, 0, err) == -1)
       return -1;
     memset (bounce + drop, 0, keep);
-    if (next_ops->pwrite (nxdata, bounce, minblock, offs - drop,
-                          flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
+    if (next->pwrite (next, bounce, minblock, offs - drop,
+                      flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
       return -1;
     offs += keep;
     count -= keep;
@@ -339,7 +338,7 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Aligned body */
   while (count >= minblock) {
     keep = MIN (maxlen, ROUND_DOWN (count, minblock));
-    if (next_ops->zero (nxdata, keep, offs, flags, err) == -1)
+    if (next->zero (next, keep, offs, flags, err) == -1)
       return -1;
     offs += keep;
     count -= keep;
@@ -348,21 +347,21 @@ blocksize_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    if (next_ops->pread (nxdata, bounce, minblock, offs, 0, err) == -1)
+    if (next->pread (next, bounce, minblock, offs, 0, err) == -1)
       return -1;
     memset (bounce, 0, count);
-    if (next_ops->pwrite (nxdata, bounce, minblock, offs,
-                          flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
+    if (next->pwrite (next, bounce, minblock, offs,
+                      flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
       return -1;
   }
 
   if (need_flush)
-    return next_ops->flush (nxdata, 0, err);
+    return next->flush (next, 0, err);
   return 0;
 }
 
 static int
-blocksize_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+blocksize_extents (nbdkit_next *next,
                    void *handle, uint32_t count, uint64_t offset,
                    uint32_t flags, struct nbdkit_extents *extents, int *err)
 {
@@ -383,10 +382,9 @@ blocksize_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
   }
 
-  if (nbdkit_extents_aligned (next_ops, nxdata,
-                              MIN (ROUND_UP (count, minblock), maxlen),
-                              ROUND_DOWN (offset, minblock),
-                              flags, minblock, extents2, err) == -1)
+  if (nbdkit_extents_aligned (next, MIN (ROUND_UP (count, minblock), maxlen),
+                              ROUND_DOWN (offset, minblock), flags, minblock,
+                              extents2, err) == -1)
     return -1;
 
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
@@ -400,7 +398,7 @@ blocksize_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-blocksize_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+blocksize_cache (nbdkit_next *next,
                  void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                  int *err)
 {
@@ -418,7 +416,7 @@ blocksize_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Aligned body */
   while (remaining) {
     limit = MIN (maxdata, remaining);
-    if (next_ops->cache (nxdata, limit, offs, flags, err) == -1)
+    if (next->cache (next, limit, offs, flags, err) == -1)
       return -1;
     offs += limit;
     remaining -= limit;

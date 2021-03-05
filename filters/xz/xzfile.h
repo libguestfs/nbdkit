@@ -40,7 +40,7 @@
 typedef struct xzfile xzfile;
 
 /* Open (and verify) the named xz file. */
-extern xzfile *xzfile_open (struct nbdkit_next_ops *next_ops, void *nxdata);
+extern xzfile *xzfile_open (nbdkit_next *next);
 
 /* Close the file and free up all resources. */
 extern void xzfile_close (xzfile *);
@@ -62,8 +62,8 @@ extern uint64_t xzfile_get_size (xzfile *);
  * file are returned in *start and *size.
  */
 extern char *xzfile_read_block (xzfile *xz,
-                                struct nbdkit_next_ops *next_ops,
-                                void *nxdata, uint32_t flags, int *err,
+                                nbdkit_next *next,
+                                uint32_t flags, int *err,
                                 uint64_t offset,
                                 uint64_t *start, uint64_t *size);
 

@@ -119,7 +119,7 @@ fill (struct nbdkit_extents *extents, int *err)
 }
 
 static int
-cacheextents_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+cacheextents_extents (nbdkit_next *next,
                       void *handle, uint32_t count, uint64_t offset,
                       uint32_t flags,
                       struct nbdkit_extents *extents,
@@ -149,7 +149,7 @@ cacheextents_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
    * costly to provide everything).
    */
   flags &= ~(NBDKIT_FLAG_REQ_ONE);
-  if (next_ops->extents (nxdata, count, offset, flags, extents, err) == -1)
+  if (next->extents (next, count, offset, flags, extents, err) == -1)
     return -1;
 
   return fill (extents, err);
@@ -170,33 +170,33 @@ kill_cacheextents (void)
 }
 
 static int
-cacheextents_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+cacheextents_pwrite (nbdkit_next *next,
                      void *handle,
                      const void *buf, uint32_t count, uint64_t offset,
                      uint32_t flags, int *err)
 {
   kill_cacheextents ();
-  return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  return next->pwrite (next, buf, count, offset, flags, err);
 }
 
 static int
-cacheextents_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+cacheextents_trim (nbdkit_next *next,
                    void *handle,
                    uint32_t count, uint64_t offset, uint32_t flags,
                    int *err)
 {
   kill_cacheextents ();
-  return next_ops->trim (nxdata, count, offset, flags, err);
+  return next->trim (next, count, offset, flags, err);
 }
 
 static int
-cacheextents_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+cacheextents_zero (nbdkit_next *next,
                    void *handle,
                    uint32_t count, uint64_t offset, uint32_t flags,
                    int *err)
 {
   kill_cacheextents ();
-  return next_ops->zero (nxdata, count, offset, flags, err);
+  return next->zero (next, count, offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

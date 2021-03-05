@@ -85,7 +85,7 @@ parse_round_param (const char *key, const char *value, unsigned *ret)
 
 /* Called for each key=value passed on the command line. */
 static int
-truncate_config (nbdkit_next_config *next, void *nxdata,
+truncate_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                  const char *key, const char *value)
 {
   if (strcmp (key, "truncate") == 0) {
@@ -124,7 +124,7 @@ struct handle {
 
 /* Open a connection. */
 static void *
-truncate_open (nbdkit_next_open *next, void *nxdata,
+truncate_open (nbdkit_next_open *next, nbdkit_context *nxdata,
                int readonly, const char *exportname, int is_tls)
 {
   struct handle *h;
@@ -149,18 +149,18 @@ truncate_close (void *handle)
   free (h);
 }
 
-/* In prepare, force a call to next_ops->get_size in order to set
+/* In prepare, force a call to next->get_size in order to set
  * per-connection real_size & size; these values are not changed
  * during the life of the connection.
  */
 static int
-truncate_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_prepare (nbdkit_next *next,
                   void *handle, int readonly)
 {
   int64_t r;
   struct handle *h = handle;
 
-  r = next_ops->get_size (nxdata);
+  r = next->get_size (next);
   if (r == -1)
     return -1;
 
@@ -188,7 +188,7 @@ truncate_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Get the size. */
 static int64_t
-truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_get_size (nbdkit_next *next,
                    void *handle)
 {
   struct handle *h = handle;
@@ -204,13 +204,13 @@ truncate_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Advertise extents support. */
 static int
-truncate_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_can_extents (nbdkit_next *next,
                       void *handle)
 {
   /* Advertise unconditional support for the image tail, but also call
-   * into next_ops to ensure next_ops->extents doesn't fail later.
+   * into next to ensure next->extents doesn't fail later.
    */
-  int r = next_ops->can_extents (nxdata);
+  int r = next->can_extents (next);
   if (r == -1)
     return -1;
   return 1;
@@ -218,13 +218,13 @@ truncate_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Override the plugin's .can_fast_zero, because zeroing a tail is fast. */
 static int
-truncate_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_can_fast_zero (nbdkit_next *next,
                         void *handle)
 {
-  /* Cache next_ops->can_fast_zero now, so later calls don't fail,
+  /* Cache next->can_fast_zero now, so later calls don't fail,
    * even though we override the answer here.
    */
-  int r = next_ops->can_fast_zero (nxdata);
+  int r = next->can_fast_zero (next);
   if (r == -1)
     return -1;
   return 1;
@@ -232,7 +232,7 @@ truncate_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Read data. */
 static int
-truncate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_pread (nbdkit_next *next,
                 void *handle, void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err)
 {
@@ -245,7 +245,7 @@ truncate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
       n = count;
     else
       n = h->real_size - offset;
-    r = next_ops->pread (nxdata, buf, n, offset, flags, err);
+    r = next->pread (next, buf, n, offset, flags, err);
     if (r == -1)
       return -1;
     count -= n;
@@ -260,7 +260,7 @@ truncate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Write data. */
 static int
-truncate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_pwrite (nbdkit_next *next,
                  void *handle,
                  const void *buf, uint32_t count, uint64_t offset,
                  uint32_t flags, int *err)
@@ -274,7 +274,7 @@ truncate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
       n = count;
     else
       n = h->real_size - offset;
-    r = next_ops->pwrite (nxdata, buf, n, offset, flags, err);
+    r = next->pwrite (next, buf, n, offset, flags, err);
     if (r == -1)
       return -1;
     count -= n;
@@ -295,7 +295,7 @@ truncate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Trim data. */
 static int
-truncate_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_trim (nbdkit_next *next,
                void *handle, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
@@ -307,14 +307,14 @@ truncate_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
       n = count;
     else
       n = h->real_size - offset;
-    return next_ops->trim (nxdata, n, offset, flags, err);
+    return next->trim (next, n, offset, flags, err);
   }
   return 0;
 }
 
 /* Zero data. */
 static int
-truncate_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_zero (nbdkit_next *next,
                void *handle, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
@@ -327,18 +327,18 @@ truncate_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     else
       n = h->real_size - offset;
     if (flags & NBDKIT_FLAG_FAST_ZERO &&
-        next_ops->can_fast_zero (nxdata) == 0) {
+        next->can_fast_zero (next) == 0) {
       *err = ENOTSUP;
       return -1;
     }
-    return next_ops->zero (nxdata, n, offset, flags, err);
+    return next->zero (next, n, offset, flags, err);
   }
   return 0;
 }
 
 /* Extents. */
 static int
-truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_extents (nbdkit_next *next,
                   void *handle, uint32_t count, uint64_t offset,
                   uint32_t flags, struct nbdkit_extents *extents, int *err)
 {
@@ -378,7 +378,7 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     n = count;
   else
     n = h->real_size - offset;
-  if (next_ops->extents (nxdata, n, offset, flags, extents2, err) == -1)
+  if (next->extents (next, n, offset, flags, extents2, err) == -1)
     return -1;
 
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
@@ -395,7 +395,7 @@ truncate_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache. */
 static int
-truncate_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+truncate_cache (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err)
 {
@@ -408,7 +408,7 @@ truncate_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
       n = count;
     else
       n = h->real_size - offset;
-    r = next_ops->cache (nxdata, n, offset, flags, err);
+    r = next->cache (next, n, offset, flags, err);
     if (r == -1)
       return -1;
   }

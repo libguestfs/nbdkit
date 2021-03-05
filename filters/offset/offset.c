@@ -46,7 +46,7 @@ static int64_t offset = 0, range = -1;
 
 /* Called for each key=value passed on the command line. */
 static int
-offset_config (nbdkit_next_config *next, void *nxdata,
+offset_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                const char *key, const char *value)
 {
   if (strcmp (key, "offset") == 0) {
@@ -71,10 +71,10 @@ offset_config (nbdkit_next_config *next, void *nxdata,
 
 /* Get the file size. */
 static int64_t
-offset_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+offset_get_size (nbdkit_next *next,
                  void *handle)
 {
-  int64_t real_size = next_ops->get_size (nxdata);
+  int64_t real_size = next->get_size (next);
 
   if (real_size == -1)
     return -1;
@@ -102,59 +102,58 @@ offset_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Read data. */
 static int
-offset_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+offset_pread (nbdkit_next *next,
               void *handle, void *buf, uint32_t count, uint64_t offs,
               uint32_t flags, int *err)
 {
-  return next_ops->pread (nxdata, buf, count, offs + offset, flags, err);
+  return next->pread (next, buf, count, offs + offset, flags, err);
 }
 
 /* Write data. */
 static int
-offset_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+offset_pwrite (nbdkit_next *next,
                void *handle,
                const void *buf, uint32_t count, uint64_t offs, uint32_t flags,
                int *err)
 {
-  return next_ops->pwrite (nxdata, buf, count, offs + offset, flags, err);
+  return next->pwrite (next, buf, count, offs + offset, flags, err);
 }
 
 /* Trim data. */
 static int
-offset_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+offset_trim (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
              int *err)
 {
-  return next_ops->trim (nxdata, count, offs + offset, flags, err);
+  return next->trim (next, count, offs + offset, flags, err);
 }
 
 /* Zero data. */
 static int
-offset_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+offset_zero (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
              int *err)
 {
-  return next_ops->zero (nxdata, count, offs + offset, flags, err);
+  return next->zero (next, count, offs + offset, flags, err);
 }
 
 /* Extents. */
 static int
-offset_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+offset_extents (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                 struct nbdkit_extents *extents, int *err)
 {
   size_t i;
   CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 = NULL;
   struct nbdkit_extent e;
-  int64_t end = range >= 0 ? offset + range : next_ops->get_size (nxdata);
+  int64_t end = range >= 0 ? offset + range : next->get_size (next);
 
   extents2 = nbdkit_extents_new (offs + offset, end);
   if (extents2 == NULL) {
     *err = errno;
     return -1;
   }
-  if (next_ops->extents (nxdata, count, offs + offset,
-                         flags, extents2, err) == -1)
+  if (next->extents (next, count, offs + offset, flags, extents2, err) == -1)
     return -1;
 
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
@@ -170,11 +169,11 @@ offset_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache data. */
 static int
-offset_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+offset_cache (nbdkit_next *next,
               void *handle, uint32_t count, uint64_t offs, uint32_t flags,
               int *err)
 {
-  return next_ops->cache (nxdata, count, offs + offset, flags, err);
+  return next->cache (next, count, offs + offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

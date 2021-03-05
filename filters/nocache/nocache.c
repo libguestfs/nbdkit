@@ -50,7 +50,7 @@ static enum CacheMode {
 } cachemode;
 
 static int
-nocache_config (nbdkit_next_config *next, void *nxdata,
+nocache_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                 const char *key, const char *value)
 {
   if (strcmp (key, "cachemode") == 0) {
@@ -73,7 +73,7 @@ nocache_config (nbdkit_next_config *next, void *nxdata,
 
 /* Advertise desired FLAG_SEND_CACHE mode. */
 static int
-nocache_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+nocache_can_cache (nbdkit_next *next,
                    void *handle)
 {
   switch (cachemode) {
@@ -88,7 +88,7 @@ nocache_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-nocache_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+nocache_cache (nbdkit_next *next,
                void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                int *err)
 {

@@ -139,17 +139,19 @@ C<.default_export>, and can also be obtained by using
 C<nbdkit_context_get_backend> on the C<context> parameter to C<.open>.
 
 Meanwhile, if the filter does not use C<nbdkit_context_set_next>, the
-value of C<nxdata> passed to C<.prepare> has a stable lifetime that
+value of C<next> passed to C<.prepare> has a stable lifetime that
 lasts to the corresponding C<.finalize>, with all intermediate
 functions (such as C<.pread>) receiving the same value for
 convenience.  Functions where C<nxdata> is not reused are C<.config>,
-C<.config_complete>, C<.get_ready>, and C<.after_fork>, which are
-called during initialization outside any connections, and
-C<.preconnect>, C<.list_exports>, C<.default_export>, and C<.open>
-which are called based on client connections but prior to the stable
-lifetime of C<.prepare>.  The value of C<context> passed to C<.open>
-has a lifetime that lasts until the matching C<.close> for use by
-C<nbdkit_context_get_backend> and C<nbdkit_context_set_next>.
+C<.config_complete>, and C<.get_ready>, which are all called during
+initialization outside any connections.  The value of C<backend>
+passed to C<.after_fork> also occurs without connections, but is
+shared with C<.preconnect>, C<.list_exports>, and C<.default_export>,
+and can also be obtained from the C<context> passed to C<.open>, and
+has a lifetime that lasts to C<.unload> for use by
+C<nbdkit_context_next_open>.  In turn, the value of C<context> passed
+to C<.open> has a lifetime that lasts until the matching C<.close> for
+use by C<nbdkit_context_get_backend> and C<nbdkit_context_set_next>.
 
 =head2 Next config, open and close
 
@@ -164,19 +166,20 @@ The filter’s C<.close> method is called when an old connection closed,
 and this has no C<next> parameter because it cannot be
 short-circuited.
 
-=head2 C<next_ops>
+=head2 C<nbdkit_next>
 
 The filter generally needs to call into the underlying plugin, which
-is done via a pointer to C<struct nbdkit_next_ops>.  The most common
-behavior is to create a next context per connection by calling the
-C<next_open> parameter during C<.open>, at which point the next
-context will be automatically provided to the filter’s other methods
-like C<.prepare>, C<.get_size>, C<.pread> etc.  The C<next_ops> struct
-contains a comparable set of accessors to plugin methods that can be
-called during a connection.  When using automatic registration, the
-C<next_ops> parameter is stable between C<.prepare> and C<.finalize>,
-and nbdkit automatically prepares, finalizes, and closes the next
-context at the right point in the filter connection lifecycle.
+is done via a pointer to C<struct nbdkit_next_ops>, also available as
+the typedef C<nbdkit_next>.  The most common behavior is to create a
+next context per connection by calling the C<next_open> parameter
+during C<.open>, at which point the next context will be automatically
+provided to the filter’s other methods like C<.prepare>, C<.get_size>,
+C<.pread> etc.  The C<nbdkit_next> struct contains a comparable set of
+accessors to plugin methods that can be called during a connection.
+When using automatic registration, the C<next> parameter is stable
+between C<.prepare> and C<.finalize>, and nbdkit automatically
+prepares, finalizes, and closes the next context at the right point in
+the filter connection lifecycle.
 
 Alternatively, the filter can manage plugin contexts manually, whether
 to multiplex multiple client connections through a single context into
@@ -193,7 +196,7 @@ context, and must reclaim the memory using C<next-E<gt>finalize
 (next)> and C<nbdkit_next_context_close> when done.  A filter using
 manual lifecycle management may use C<nbdkit_context_set_next> to
 associate the next context into the current connection, which lets
-nbdkit then pass that context as the C<next_ops> parameter to future
+nbdkit then pass that context as the C<next> parameter to future
 connection-related functions like C<.pread> and take over lifecycle
 responsibility.
 
@@ -238,14 +241,14 @@ C<nbdkit_context_set_next> prior to the C<.close> callback.
 
 This function associates a plugin context with the filter's current
 connection context, given by the C<context> parameter to C<.open>.
-Once associated, this plugin context will be given as the C<next_ops>
+Once associated, this plugin context will be given as the C<next>
 parameter to all other connection-specific callbacks.  If associated
 during C<.open>, nbdkit will take care of preparing the context prior
 to C<.prepare>; if still associated before C<.finalize>, nbdkit will
 take care of finalizing the context, and also for closing it.  A
 filter may also pass C<NULL> for C<next>, to remove any association;
 if no plugin context is associated with the connection, then filter
-callbacks such as C<.pread> will receive C<NULL> for their C<next_ops>
+callbacks such as C<.pread> will receive C<NULL> for their C<next>
 parameter.
 
 This function returns the previous context that had been associated
@@ -254,21 +257,29 @@ this result will be C<NULL> if there was no previous association.  The
 filter assumes manual responsibility for any remaining lifecycle
 functions that must be called on the returned context.
 
-=head2 Using C<next_ops>
+=head2 Using C<nbdkit_next>
 
 Regardless of whether the plugin context is managed automatically or
 manually, it is possible for a filter to issue (for example) extra
-C<next_ops-E<gt>pread> calls in response to a single C<.pwrite> call.
+C<next-E<gt>pread> calls in response to a single C<.pwrite> call.
+
+The C<next> parameter serves two purposes: it serves as the struct
+to access the pointers to all the plugin connection functions, and it
+serves as the opaque data that must be passed as the first parameter
+to those functions.  For example, calling the plugin's can_flush
+functionality would be done via
+
+ next-E<gt>can_flush (next)
 
 Note that the semantics of the functions in C<struct nbdkit_next_ops>
 are slightly different from what a plugin implements: for example,
 when a plugin's C<.pread> returns -1 on error, the error value to
 advertise to the client is implicit (via the plugin calling
 C<nbdkit_set_error> or setting C<errno>), whereas
-C<next_ops-E<gt>pread> exposes this via an explicit parameter,
+C<next-E<gt>pread> exposes this via an explicit parameter,
 allowing a filter to learn or modify this error if desired.
 
-Use of C<next_ops-E<gt>prepare> and C<next_ops-E<gt>finalize> is only
+Use of C<next-E<gt>prepare> and C<next-E<gt>finalize> is only
 needed when manually managing the plugin context lifetime.
 
 =head2 Other considerations
@@ -284,7 +295,7 @@ Note that if your filter registers a callback but in that callback it
 doesn't call the C<next> function then the corresponding method in the
 plugin will never be called.  In particular, your C<.open> method, if
 you have one, B<must> call the C<next> method if you want the
-underlying plugin to be available to all further C<next_ops> use.
+underlying plugin to be available to all further C<nbdkit_next> use.
 
 =head1 CALLBACKS
 
@@ -412,7 +423,7 @@ an error message and return C<-1>.
 
 =head2 C<.after_fork>
 
- int (*after_fork) (nbdkit_next_after_fork *next, void *nxdata);
+ int (*after_fork) (nbdkit_next_after_fork *next, nbdkit_backend *nxdata);
 
 This intercepts the plugin C<.after_fork> method and can be used by
 the filter to start background threads (although these have limited
@@ -423,7 +434,7 @@ an error message and return C<-1>.
 
 =head2 C<.preconnect>
 
- int (*preconnect) (nbdkit_next_preconnect *next, void *nxdata,
+ int (*preconnect) (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
                     int readonly);
 
 This intercepts the plugin C<.preconnect> method and can be used to
@@ -434,7 +445,7 @@ an error message and return C<-1>.
 
 =head2 C<.list_exports>
 
- int (*list_exports) (nbdkit_next_list_exports *next, void *nxdata,
+ int (*list_exports) (nbdkit_next_list_exports *next, nbdkit_backend *nxdata,
                       int readonly, int is_tls,
                       struct nbdkit_exports *exports);
 
@@ -510,7 +521,8 @@ Returns a copy of the C<i>'th export.
 
 =head2 C<.default_export>
 
- const char *default_export (nbdkit_next_default_export *next, void *nxdata,
+ const char *default_export (nbdkit_next_default_export *next,
+                             nbdkit_backend *nxdata,
                              int readonly, int is_tls)
 
 This intercepts the plugin C<.default_export> method and can be used to
@@ -563,11 +575,11 @@ C<nbdkit_is_tls>.
 The filter should generally call C<next> as its first step, to
 allocate from the plugin outwards, so that C<.close> running from the
 outer filter to the plugin will be in reverse.  Skipping a call to
-C<next> is acceptable if the filter will not access C<next_ops> during
-any of the remaining callbacks reached on the same connection.  The
-C<next> function is provided for convenience; the same functionality
-can be obtained manually (other than error checking) by using the
-following:
+C<next> is acceptable if the filter will not access C<nbdkit_next>
+during any of the remaining callbacks reached on the same connection.
+The C<next> function is provided for convenience; the same
+functionality can be obtained manually (other than error checking) by
+using the following:
 
  nbdkit_context_set_next (context, nbdkit_next_context_open
     (nbdkit_context_get_backend (context), readonly, exportname));
@@ -594,10 +606,8 @@ cannot report failures or access the underlying plugin.
 
 =head2 C<.finalize>
 
-  int (*prepare) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                  void *handle, int readonly);
-  int (*finalize) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                   void *handle);
+  int (*prepare) (nbdkit_next *next, void *handle, int readonly);
+  int (*finalize) (nbdkit_next *next, void *handle);
 
 These two methods can be used to perform any necessary operations just
 after opening the connection (C<.prepare>) or just before closing the
@@ -605,7 +615,7 @@ connection (C<.finalize>).
 
 For example if you need to scan the underlying disk to check for a
 partition table, you could do it in your C<.prepare> method (calling
-the plugin's C<.get_size> and C<.pread> methods via C<next_ops>).  Or
+the plugin's C<.get_size> and C<.pread> methods via C<next>).  Or
 if you need to cleanly update superblock data in the image on close
 you can do it in your C<.finalize> method (calling the plugin's
 C<.pwrite> method).  Doing these things in the filter's C<.open> or
@@ -616,18 +626,18 @@ For C<.prepare>, the value of C<readonly> is the same as was passed to
 C<.open>, declaring how this filter will be used.
 
 Note that nbdkit performs sanity checking on requests made to the
-underlying plugin; for example, C<next_ops-E<gt>pread> cannot be
-called on a given connection unless C<next_ops-E<gt>get_size> has
+underlying plugin; for example, C<next-E<gt>pread> cannot be
+called on a given connection unless C<next-E<gt>get_size> has
 first been called at least once in the same connection (to ensure the
-read requests are in bounds), and C<next_ops-E<gt>pwrite> further
-requires an earlier successful call to C<next_ops-E<gt>can_write>.  In
+read requests are in bounds), and C<next-E<gt>pwrite> further
+requires an earlier successful call to C<next-E<gt>can_write>.  In
 many filters, these prerequisites will be automatically called during
 the client negotiation phase, but there are cases where a filter
 overrides query functions or makes I/O calls into the plugin before
 handshaking is complete, where the filter needs to make those
 prerequisite calls manually during C<.prepare>.
 
-While there are C<next_ops-E<gt>prepare> and C<next_ops-E<gt>finalize>
+While there are C<next-E<gt>prepare> and C<next-E<gt>finalize>
 functions, these are different from other filter methods, in that any
 plugin context associated with the current connection (via the C<next>
 parameter to C<.open>, or via C<nbdkit_context_set_next>, is prepared
@@ -648,8 +658,7 @@ in C<.finalize> forces the client to disconnect.
 
 =head2 C<.get_size>
 
- int64_t (*get_size) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                      void *handle);
+ int64_t (*get_size) (nbdkit_next *next, void *handle);
 
 This intercepts the plugin C<.get_size> method and can be used to read
 or modify the apparent size of the block device that the NBD client
@@ -658,13 +667,12 @@ will see.
 The returned size must be E<ge> 0.  If there is an error, C<.get_size>
 should call C<nbdkit_error> with an error message and return C<-1>.
 This function is only called once per connection and cached by nbdkit.
-Similarly, repeated calls to C<next_ops-E<gt>get_size> will return a
+Similarly, repeated calls to C<next-E<gt>get_size> will return a
 cached value.
 
 =head2 C<.export_description>
 
- const char *export_description (struct nbdkit_next_ops *next_ops,
-                                 void *nxdata, void *handle);
+ const char *export_description (nbdkit_next *next, void *handle);
 
 This intercepts the plugin C<.export_description> method and can be
 used to read or modify the export description that the NBD client
@@ -690,27 +698,16 @@ will see.
 
 =head2 C<.can_cache>
 
- int (*can_write) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                   void *handle);
- int (*can_flush) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                   void *handle);
- int (*is_rotational) (struct nbdkit_next_ops *next_ops,
-                       void *nxdata,
-                       void *handle);
- int (*can_trim) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                  void *handle);
- int (*can_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                  void *handle);
- int (*can_fast_zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                       void *handle);
- int (*can_extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                     void *handle);
- int (*can_fua) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                 void *handle);
- int (*can_multi_conn) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                        void *handle);
- int (*can_cache) (struct nbdkit_next_ops *next_ops, void *nxdata,
-                   void *handle);
+ int (*can_write) (nbdkit_next *next, void *handle);
+ int (*can_flush) (nbdkit_next *next, void *handle);
+ int (*is_rotational) (nbdkit_next *next, void *handle);
+ int (*can_trim) (nbdkit_next *next, void *handle);
+ int (*can_zero) (nbdkit_next *next, void *handle);
+ int (*can_fast_zero) (nbdkit_next *next, void *handle);
+ int (*can_extents) (nbdkit_next *next, void *handle);
+ int (*can_fua) (nbdkit_next *next, void *handle);
+ int (*can_multi_conn) (nbdkit_next *next, void *handle);
+ int (*can_cache) (nbdkit_next *next, void *handle);
 
 These intercept the corresponding plugin methods, and control feature
 bits advertised to the client.
@@ -730,7 +727,7 @@ be done from filters, not plugins).
 
 Inform nbdkit that write zeroes should immediately fall back to
 C<.pwrite> emulation without trying C<.zero> (this value is returned
-by C<next_ops-E<gt>can_zero> if the plugin returned false in its
+by C<next-E<gt>can_zero> if the plugin returned false in its
 C<.can_zero>).
 
 =item C<NBDKIT_ZERO_NATIVE>
@@ -738,7 +735,7 @@ C<.can_zero>).
 Inform nbdkit that write zeroes should attempt to use C<.zero>,
 although it may still fall back to C<.pwrite> emulation for C<ENOTSUP>
 or C<EOPNOTSUPP> failures (this value is returned by
-C<next_ops-E<gt>can_zero> if the plugin returned true in its
+C<next-E<gt>can_zero> if the plugin returned true in its
 C<.can_zero>).
 
 =back
@@ -749,25 +746,25 @@ C<.can_cache> have three success values.
 
 The difference between C<.can_fua> values may affect choices made in
 the filter: when splitting a write request that requested FUA from the
-client, if C<next_ops-E<gt>can_fua> returns C<NBDKIT_FUA_NATIVE>, then
+client, if C<next-E<gt>can_fua> returns C<NBDKIT_FUA_NATIVE>, then
 the filter should pass the FUA flag on to each sub-request; while if
 it is known that FUA is emulated by a flush because of a return of
 C<NBDKIT_FUA_EMULATE>, it is more efficient to only flush once after
 all sub-requests have completed (often by passing C<NBDKIT_FLAG_FUA>
 on to only the final sub-request, or by dropping the flag and ending
-with a direct call to C<next_ops-E<gt>flush>).
+with a direct call to C<next-E<gt>flush>).
 
 If there is an error, the callback should call C<nbdkit_error> with an
 error message and return C<-1>.  These functions are called at most
 once per connection and cached by nbdkit. Similarly, repeated calls to
-any of the C<next_ops> counterparts will return a cached value; by
+any of the C<nbdkit_next> counterparts will return a cached value; by
 calling into the plugin during C<.prepare>, you can ensure that later
 use of the cached values during data commands like <.pwrite> will not
 fail.
 
 =head2 C<.pread>
 
- int (*pread) (struct nbdkit_next_ops *next_ops, void *nxdata,
+ int (*pread) (nbdkit_next *next,
                void *handle, void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err);
 
@@ -776,7 +773,7 @@ modify data read by the plugin.
 
 The parameter C<flags> exists in case of future NBD protocol
 extensions; at this time, it will be 0 on input, and the filter should
-not pass any flags to C<next_ops-E<gt>pread>.
+not pass any flags to C<next-E<gt>pread>.
 
 If there is an error (including a short read which couldn't be
 recovered from), C<.pread> should call C<nbdkit_error> with an error
@@ -785,7 +782,7 @@ to return to the client.
 
 =head2 C<.pwrite>
 
- int (*pwrite) (struct nbdkit_next_ops *next_ops, void *nxdata,
+ int (*pwrite) (nbdkit_next *next,
                 void *handle,
                 const void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err);
@@ -794,13 +791,13 @@ This intercepts the plugin C<.pwrite> method and can be used to modify
 data written by the plugin.
 
 This function will not be called if C<.can_write> returned false; in
-turn, the filter should not call C<next_ops-E<gt>pwrite> if
-C<next_ops-E<gt>can_write> did not return true.
+turn, the filter should not call C<next-E<gt>pwrite> if
+C<next-E<gt>can_write> did not return true.
 
 The parameter C<flags> may include C<NBDKIT_FLAG_FUA> on input based
 on the result of C<.can_fua>.  In turn, the filter should only pass
-C<NBDKIT_FLAG_FUA> on to C<next_ops-E<gt>pwrite> if
-C<next_ops-E<gt>can_fua> returned a positive value.
+C<NBDKIT_FLAG_FUA> on to C<next-E<gt>pwrite> if
+C<next-E<gt>can_fua> returned a positive value.
 
 If there is an error (including a short write which couldn't be
 recovered from), C<.pwrite> should call C<nbdkit_error> with an error
@@ -809,19 +806,19 @@ to return to the client.
 
 =head2 C<.flush>
 
- int (*flush) (struct nbdkit_next_ops *next_ops, void *nxdata,
+ int (*flush) (nbdkit_next *next,
                void *handle, uint32_t flags, int *err);
 
 This intercepts the plugin C<.flush> method and can be used to modify
 flush requests.
 
 This function will not be called if C<.can_flush> returned false; in
-turn, the filter should not call C<next_ops-E<gt>flush> if
-C<next_ops-E<gt>can_flush> did not return true.
+turn, the filter should not call C<next-E<gt>flush> if
+C<next-E<gt>can_flush> did not return true.
 
 The parameter C<flags> exists in case of future NBD protocol
 extensions; at this time, it will be 0 on input, and the filter should
-not pass any flags to C<next_ops-E<gt>flush>.
+not pass any flags to C<next-E<gt>flush>.
 
 If there is an error, C<.flush> should call C<nbdkit_error> with an
 error message B<and> return -1 with C<err> set to the positive errno
@@ -829,7 +826,7 @@ value to return to the client.
 
 =head2 C<.trim>
 
- int (*trim) (struct nbdkit_next_ops *next_ops, void *nxdata,
+ int (*trim) (nbdkit_next *next,
               void *handle, uint32_t count, uint64_t offset,
               uint32_t flags, int *err);
 
@@ -837,13 +834,13 @@ This intercepts the plugin C<.trim> method and can be used to modify
 trim requests.
 
 This function will not be called if C<.can_trim> returned false; in
-turn, the filter should not call C<next_ops-E<gt>trim> if
-C<next_ops-E<gt>can_trim> did not return true.
+turn, the filter should not call C<next-E<gt>trim> if
+C<next-E<gt>can_trim> did not return true.
 
 The parameter C<flags> may include C<NBDKIT_FLAG_FUA> on input based
 on the result of C<.can_fua>.  In turn, the filter should only pass
-C<NBDKIT_FLAG_FUA> on to C<next_ops-E<gt>trim> if
-C<next_ops-E<gt>can_fua> returned a positive value.
+C<NBDKIT_FLAG_FUA> on to C<next-E<gt>trim> if
+C<next-E<gt>can_fua> returned a positive value.
 
 If there is an error, C<.trim> should call C<nbdkit_error> with an
 error message B<and> return -1 with C<err> set to the positive errno
@@ -851,7 +848,7 @@ value to return to the client.
 
 =head2 C<.zero>
 
- int (*zero) (struct nbdkit_next_ops *next_ops, void *nxdata,
+ int (*zero) (nbdkit_next *next,
               void *handle, uint32_t count, uint64_t offset, uint32_t flags,
               int *err);
 
@@ -860,7 +857,7 @@ zero requests.
 
 This function will not be called if C<.can_zero> returned
 C<NBDKIT_ZERO_NONE>; in turn, the filter should not call
-C<next_ops-E<gt>zero> if C<next_ops-E<gt>can_zero> returned
+C<next-E<gt>zero> if C<next-E<gt>can_zero> returned
 C<NBDKIT_ZERO_NONE>.
 
 On input, the parameter C<flags> may include C<NBDKIT_FLAG_MAY_TRIM>
@@ -869,12 +866,12 @@ C<.can_fua>, and C<NBDKIT_FLAG_FAST_ZERO> based on the result of
 C<.can_fast_zero>.  In turn, the filter may pass
 C<NBDKIT_FLAG_MAY_TRIM> unconditionally, but should only pass
 C<NBDKIT_FLAG_FUA> or C<NBDKIT_FLAG_FAST_ZERO> on to
-C<next_ops-E<gt>zero> if the corresponding C<next_ops-E<gt>can_fua> or
-C<next_ops-E<gt>can_fast_zero> returned a positive value.
+C<next-E<gt>zero> if the corresponding C<next-E<gt>can_fua> or
+C<next-E<gt>can_fast_zero> returned a positive value.
 
 Note that unlike the plugin C<.zero> which is permitted to fail with
 C<ENOTSUP> or C<EOPNOTSUPP> to force a fallback to C<.pwrite>, the
-function C<next_ops-E<gt>zero> will not fail with C<err> set to
+function C<next-E<gt>zero> will not fail with C<err> set to
 C<ENOTSUP> or C<EOPNOTSUPP> unless C<NBDKIT_FLAG_FAST_ZERO> was used,
 because otherwise the fallback has already taken place.
 
@@ -887,7 +884,7 @@ C<.pwrite>, filters do not).
 
 =head2 C<.extents>
 
- int (*extents) (struct nbdkit_next_ops *next_ops, void *nxdata,
+ int (*extents) (nbdkit_next *next,
                  void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                  struct nbdkit_extents *extents,
                  int *err);
@@ -896,8 +893,8 @@ This intercepts the plugin C<.extents> method and can be used to
 modify extent requests.
 
 This function will not be called if C<.can_extents> returned false; in
-turn, the filter should not call C<next_ops-E<gt>extents> if
-C<next_ops-E<gt>can_extents> did not return true.
+turn, the filter should not call C<next-E<gt>extents> if
+C<next-E<gt>can_extents> did not return true.
 
 It is possible for filters to transform the extents list received back
 from the layer below.  Without error checking it would look like this:
@@ -909,9 +906,9 @@ from the layer below.  Without error checking it would look like this:
    struct nbdkit_extent e;
    int64_t size;
 
-   size = next_ops->get_size (nxdata);
+   size = next->get_size (next);
    extents2 = nbdkit_extents_new (offset + shift, size);
-   next_ops->extents (nxdata, count, offset + shift, flags, extents2, err);
+   next->extents (next, count, offset + shift, flags, extents2, err);
    for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
      e = nbdkit_get_extent (extents2, i);
      e.offset -= shift;
@@ -972,8 +969,7 @@ more requests to the underlying plugin until we have a full set of
 extents covering the region C<[offset..offset+count-1]>.
 
  struct nbdkit_extents *nbdkit_extents_full (
-                             struct nbdkit_next_ops *next_ops,
-                             void *nxdata,
+                             nbdkit_next *next,
                              uint32_t count, uint64_t offset,
                              uint32_t flags, int *err);
 
@@ -992,13 +988,12 @@ be set to a suitable value.
 A convenience function is provided to filters only which makes it
 easier to ensure that the client only encounters aligned extents.
 
- int nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
-                             void *nxdata,
+ int nbdkit_extents_aligned (nbdkit_next *next,
                              uint32_t count, uint64_t offset,
                              uint32_t flags, uint32_t align,
                              struct nbdkit_extents *extents, int *err);
 
-Calls next_ops->extents as needed until at least C<align> bytes are
+Calls C<next-E<gt>extents> as needed until at least C<align> bytes are
 obtained, where C<align> is a power of 2.  Anywhere the underlying
 plugin returns differing extents within C<align> bytes, this function
 treats that portion of the disk as a single extent with zero and
@@ -1008,7 +1003,7 @@ C<offset> that is not already aligned.
 
 =head2 C<.cache>
 
- int (*cache) (struct nbdkit_next_ops *next_ops, void *nxdata,
+ int (*cache) (nbdkit_next *next,
                void *handle, uint32_t count, uint64_t offset,
                uint32_t flags, int *err);
 
@@ -1017,12 +1012,12 @@ cache requests.
 
 This function will not be called if C<.can_cache> returned
 C<NBDKIT_CACHE_NONE> or C<NBDKIT_CACHE_EMULATE>; in turn, the filter
-should not call C<next_ops-E<gt>cache> unless
-C<next_ops-E<gt>can_cache> returned C<NBDKIT_CACHE_NATIVE>.
+should not call C<next-E<gt>cache> unless
+C<next-E<gt>can_cache> returned C<NBDKIT_CACHE_NATIVE>.
 
 The parameter C<flags> exists in case of future NBD protocol
 extensions; at this time, it will be 0 on input, and the filter should
-not pass any flags to C<next_ops-E<gt>cache>.
+not pass any flags to C<next-E<gt>cache>.
 
 If there is an error, C<.cache> should call C<nbdkit_error> with an
 error message B<and> return -1 with C<err> set to the positive errno

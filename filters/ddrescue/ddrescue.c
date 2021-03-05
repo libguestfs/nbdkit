@@ -137,7 +137,7 @@ ddrescue_unload (void)
 }
 
 static int
-ddrescue_config (nbdkit_next_config *next, void *nxdata,
+ddrescue_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                  const char *key, const char *value)
 {
   if (strcmp (key, "ddrescue-mapfile") == 0) {
@@ -159,14 +159,14 @@ ddrescue_config (nbdkit_next_config *next, void *nxdata,
  * below.
  */
 static int
-ddrescue_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+ddrescue_can_write (nbdkit_next *next,
                     void *handle)
 {
   return 0;
 }
 
 static int
-ddrescue_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+ddrescue_can_cache (nbdkit_next *next,
                     void *handle)
 {
   return 0;
@@ -174,7 +174,7 @@ ddrescue_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Read data. */
 static int
-ddrescue_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+ddrescue_pread (nbdkit_next *next,
                 void *handle, void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err)
 {
@@ -186,7 +186,7 @@ ddrescue_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (offset >= map.ranges.ptr[i].start && offset <= map.ranges.ptr[i].end) {
       if (offset + count - 1 <= map.ranges.ptr[i].end) {
         /* entirely contained within this range */
-        return next_ops->pread (nxdata, buf, count, offset, flags, err);
+        return next->pread (next, buf, count, offset, flags, err);
       }
     }
   }

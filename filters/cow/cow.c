@@ -73,7 +73,7 @@ cow_unload (void)
 }
 
 static int
-cow_config (nbdkit_next_config *next, void *nxdata,
+cow_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
             const char *key, const char *value)
 {
   if (strcmp (key, "cow-on-cache") == 0) {
@@ -94,7 +94,7 @@ cow_config (nbdkit_next_config *next, void *nxdata,
   "cow-on-cache=<BOOL>  Set to true to treat client cache requests as writes.\n"
 
 static void *
-cow_open (nbdkit_next_open *next, void *nxdata,
+cow_open (nbdkit_next_open *next, nbdkit_context *nxdata,
           int readonly, const char *exportname, int is_tls)
 {
   /* Always pass readonly=1 to the underlying plugin. */
@@ -106,13 +106,13 @@ cow_open (nbdkit_next_open *next, void *nxdata,
 
 /* Get the file size, set the cache size. */
 static int64_t
-cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_get_size (nbdkit_next *next,
               void *handle)
 {
   int64_t size;
   int r;
 
-  size = next_ops->get_size (nxdata);
+  size = next->get_size (next);
   if (size == -1)
     return -1;
 
@@ -130,59 +130,59 @@ cow_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
  * calls.
  */
 static int
-cow_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_prepare (nbdkit_next *next,
              void *handle, int readonly)
 {
   int64_t r;
 
-  r = cow_get_size (next_ops, nxdata, handle);
+  r = cow_get_size (next, handle);
   return r >= 0 ? 0 : -1;
 }
 
 static int
-cow_can_write (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+cow_can_write (nbdkit_next *next, void *handle)
 {
   return 1;
 }
 
 static int
-cow_can_trim (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+cow_can_trim (nbdkit_next *next, void *handle)
 {
   return 1;
 }
 
 static int
-cow_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+cow_can_extents (nbdkit_next *next, void *handle)
 {
   return 1;
 }
 
 static int
-cow_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+cow_can_flush (nbdkit_next *next, void *handle)
 {
   return 1;
 }
 
 static int
-cow_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+cow_can_fua (nbdkit_next *next, void *handle)
 {
   return NBDKIT_FUA_NATIVE;
 }
 
 static int
-cow_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+cow_can_cache (nbdkit_next *next, void *handle)
 {
-  /* Cache next_ops->can_cache now, so later calls to next_ops->cache
+  /* Cache next->can_cache now, so later calls to next->cache
    * don't fail, even though we override the answer here.
    */
-  int r = next_ops->can_cache (nxdata);
+  int r = next->can_cache (next);
   if (r == -1)
     return -1;
   return NBDKIT_CACHE_NATIVE;
 }
 
 static int
-cow_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_can_multi_conn (nbdkit_next *next,
                     void *handle)
 {
   /* Our cache is consistent between connections.  */
@@ -191,7 +191,7 @@ cow_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Override the plugin's .can_fast_zero, because our .zero is not fast */
 static int
-cow_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_can_fast_zero (nbdkit_next *next,
                    void *handle)
 {
   /* It is better to advertise support even when we always reject fast
@@ -200,11 +200,12 @@ cow_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   return 1;
 }
 
-static int cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
+static int cow_flush (nbdkit_next *next, void *handle, uint32_t flags,
+                      int *err);
 
 /* Read data. */
 static int
-cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_pread (nbdkit_next *next,
            void *handle, void *buf, uint32_t count, uint64_t offset,
            uint32_t flags, int *err)
 {
@@ -229,7 +230,7 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
     uint64_t n = MIN (BLKSIZE - blkoffs, count);
 
     assert (block);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r == -1)
       return -1;
 
@@ -249,7 +250,7 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
    * smarter here.
    */
   while (count >= BLKSIZE) {
-    r = blk_read (next_ops, nxdata, blknum, buf, err);
+    r = blk_read (next, blknum, buf, err);
     if (r == -1)
       return -1;
 
@@ -262,7 +263,7 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     assert (block);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r == -1)
       return -1;
 
@@ -274,7 +275,7 @@ cow_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Write data. */
 static int
-cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_pwrite (nbdkit_next *next,
             void *handle, const void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
@@ -303,7 +304,7 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
      */
     assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memcpy (&block[blkoffs], buf, n);
       r = blk_write (blknum, block, err);
@@ -333,7 +334,7 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (count) {
     assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memcpy (block, buf, count);
       r = blk_write (blknum, block, err);
@@ -349,7 +350,7 @@ cow_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Zero data. */
 static int
-cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_zero (nbdkit_next *next,
           void *handle, uint32_t count, uint64_t offset, uint32_t flags,
           int *err)
 {
@@ -357,7 +358,7 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint64_t blknum, blkoffs;
   int r;
 
-  /* We are purposefully avoiding next_ops->zero, so a zero request is
+  /* We are purposefully avoiding next->zero, so a zero request is
    * never faster than plain writes.
    */
   if (flags & NBDKIT_FLAG_FAST_ZERO) {
@@ -383,7 +384,7 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
      * Hold the rmw_lock over the whole operation.
      */
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
       r = blk_write (blknum, block, err);
@@ -415,7 +416,7 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memset (&block[count], 0, BLKSIZE - count);
       r = blk_write (blknum, block, err);
@@ -431,7 +432,7 @@ cow_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Trim data. */
 static int
-cow_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_trim (nbdkit_next *next,
           void *handle, uint32_t count, uint64_t offset, uint32_t flags,
           int *err)
 {
@@ -459,7 +460,7 @@ cow_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
      * Hold the lock over the whole operation.
      */
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
       r = blk_write (blknum, block, err);
@@ -486,7 +487,7 @@ cow_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memset (&block[count], 0, BLKSIZE - count);
       r = blk_write (blknum, block, err);
@@ -501,7 +502,7 @@ cow_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+cow_flush (nbdkit_next *next, void *handle,
            uint32_t flags, int *err)
 {
   /* Deliberately ignored. */
@@ -509,7 +510,7 @@ cow_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 }
 
 static int
-cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_cache (nbdkit_next *next,
            void *handle, uint32_t count, uint64_t offset,
            uint32_t flags, int *err)
 {
@@ -519,7 +520,7 @@ cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   uint64_t remaining = count; /* Rounding out could exceed 32 bits */
   enum cache_mode mode;
 
-  switch (next_ops->can_cache (nxdata)) {
+  switch (next->can_cache (next)) {
   case NBDKIT_CACHE_NONE:
     mode = BLK_CACHE_IGNORE;
     break;
@@ -555,7 +556,7 @@ cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   /* Aligned body */
   while (remaining) {
-    r = blk_cache (next_ops, nxdata, blknum, block, mode, err);
+    r = blk_cache (next, blknum, block, mode, err);
     if (r == -1)
       return -1;
 
@@ -569,11 +570,11 @@ cow_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Extents. */
 static int
-cow_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+cow_extents (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offset, uint32_t flags,
              struct nbdkit_extents *extents, int *err)
 {
-  const bool can_extents = next_ops->can_extents (nxdata);
+  const bool can_extents = next->can_extents (next);
   const bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
   uint64_t end;
   uint64_t blknum;
@@ -638,7 +639,7 @@ cow_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
       }
 
       /* Don't ask for extent data beyond the end of the plugin. */
-      size = next_ops->get_size (nxdata);
+      size = next->get_size (next);
       if (size == -1)
         return -1;
 
@@ -648,8 +649,7 @@ cow_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
       }
 
       CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 =
-        nbdkit_extents_full (next_ops, nxdata,
-                             range_count, range_offset, flags, err);
+        nbdkit_extents_full (next, range_count, range_offset, flags, err);
       if (extents2 == NULL)
         return -1;
 

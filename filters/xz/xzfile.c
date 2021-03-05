@@ -64,12 +64,12 @@ struct xzfile {
   uint64_t max_uncompressed_block_size;
 };
 
-static bool check_header_magic (struct nbdkit_next_ops *next_ops, void *nxdata);
-static lzma_index *parse_indexes (struct nbdkit_next_ops *next_ops, void *nxdata, size_t *);
+static bool check_header_magic (nbdkit_next *next);
+static lzma_index *parse_indexes (nbdkit_next *next, size_t *);
 static int iter_indexes (lzma_index *idx, size_t *, uint64_t *);
 
 xzfile *
-xzfile_open (struct nbdkit_next_ops *next_ops, void *nxdata)
+xzfile_open (nbdkit_next *next)
 {
   xzfile *xz;
   uint64_t size;
@@ -81,13 +81,13 @@ xzfile_open (struct nbdkit_next_ops *next_ops, void *nxdata)
   }
 
   /* Check file magic. */
-  if (!check_header_magic (next_ops, nxdata)) {
+  if (!check_header_magic (next)) {
     nbdkit_error ("xz: not an xz file");
     goto err1;
   }
 
   /* Read and parse the indexes. */
-  xz->idx = parse_indexes (next_ops, nxdata, &xz->nr_streams);
+  xz->idx = parse_indexes (next, &xz->nr_streams);
   if (xz->idx == NULL)
     goto err1;
 
@@ -112,16 +112,16 @@ xzfile_open (struct nbdkit_next_ops *next_ops, void *nxdata)
 }
 
 static bool
-check_header_magic (struct nbdkit_next_ops *next_ops, void *nxdata)
+check_header_magic (nbdkit_next *next)
 {
   char buf[XZ_HEADER_MAGIC_LEN];
   int err;
 
-  if (next_ops->get_size (nxdata) < XZ_HEADER_MAGIC_LEN) {
+  if (next->get_size (next) < XZ_HEADER_MAGIC_LEN) {
     nbdkit_error ("xz: file too short");
     return false;
   }
-  if (next_ops->pread (nxdata, buf, XZ_HEADER_MAGIC_LEN, 0, 0, &err) == -1) {
+  if (next->pread (next, buf, XZ_HEADER_MAGIC_LEN, 0, 0, &err) == -1) {
     nbdkit_error ("xz: could not read header magic: error %d", err);
     return false;
   }
@@ -134,7 +134,7 @@ check_header_magic (struct nbdkit_next_ops *next_ops, void *nxdata)
  * in the xz sources.
  */
 static lzma_index *
-parse_indexes (struct nbdkit_next_ops *next_ops, void *nxdata,
+parse_indexes (nbdkit_next *next,
                size_t *nr_streams)
 {
   lzma_ret r;
@@ -152,7 +152,7 @@ parse_indexes (struct nbdkit_next_ops *next_ops, void *nxdata,
   *nr_streams = 0;
 
   /* Check file size is a multiple of 4 bytes. */
-  pos = size = next_ops->get_size (nxdata);
+  pos = size = next->get_size (next);
   if (pos == -1) {
     nbdkit_error ("xz: get_size: %m");
     goto err;
@@ -171,9 +171,8 @@ parse_indexes (struct nbdkit_next_ops *next_ops, void *nxdata,
       goto err;
     }
 
-    if (next_ops->pread (nxdata, footer, LZMA_STREAM_HEADER_SIZE,
-                         pos - LZMA_STREAM_HEADER_SIZE,
-                         0, &err) == -1) {
+    if (next->pread (next, footer, LZMA_STREAM_HEADER_SIZE,
+                     pos - LZMA_STREAM_HEADER_SIZE, 0, &err) == -1) {
       nbdkit_error ("xz: read stream footer: error %d", err);
       goto err;
     }
@@ -224,7 +223,7 @@ parse_indexes (struct nbdkit_next_ops *next_ops, void *nxdata,
       if (pos + strm.avail_in > size)
         strm.avail_in = size - pos;
 
-      if (next_ops->pread (nxdata, buf, strm.avail_in, offs, 0, &err) == -1) {
+      if (next->pread (next, buf, strm.avail_in, offs, 0, &err) == -1) {
         nbdkit_error ("xz: read index: error %d", err);
         goto err;
       }
@@ -245,8 +244,8 @@ parse_indexes (struct nbdkit_next_ops *next_ops, void *nxdata,
     nbdkit_debug ("decode stream header at pos = %" PRIi64, pos);
 
     /* Read and decode the stream header. */
-    if (next_ops->pread (nxdata, header, LZMA_STREAM_HEADER_SIZE, pos, 0,
-                         &err) == -1) {
+    if (next->pread (next, header, LZMA_STREAM_HEADER_SIZE, pos, 0,
+                     &err) == -1) {
       nbdkit_error ("xz: read stream header: error %d", err);
       goto err;
     }
@@ -349,8 +348,8 @@ xzfile_get_size (xzfile *xz)
 
 char *
 xzfile_read_block (xzfile *xz,
-                   struct nbdkit_next_ops *next_ops,
-                   void *nxdata, uint32_t flags, int *err,
+                   nbdkit_next *next,
+                   uint32_t flags, int *err,
                    uint64_t offset,
                    uint64_t *start_rtn, uint64_t *size_rtn)
 {
@@ -369,7 +368,7 @@ xzfile_read_block (xzfile *xz,
   /* Read the total size of the underlying disk, so we don't
    * read over the end.
    */
-  size = next_ops->get_size (nxdata);
+  size = next->get_size (next);
   if (size == -1) {
     nbdkit_error ("xz: get_size: %m");
     return NULL;
@@ -393,7 +392,7 @@ xzfile_read_block (xzfile *xz,
    * tell us how big the block header is.
    */
   offs = iter.block.compressed_file_offset;
-  if (next_ops->pread (nxdata, header, 1, offs, 0, err) == -1) {
+  if (next->pread (next, header, 1, offs, 0, err) == -1) {
     nbdkit_error ("xz: read: could not read block header byte: error %d", *err);
     return NULL;
   }
@@ -410,8 +409,8 @@ xzfile_read_block (xzfile *xz,
   block.header_size = lzma_block_header_size_decode (header[0]);
 
   /* Now read and decode the block header. */
-  if (next_ops->pread (nxdata, &header[1], block.header_size-1, offs,
-                       0, err) == -1) {
+  if (next->pread (next, &header[1], block.header_size-1, offs,
+                   0, err) == -1) {
     nbdkit_error ("xz: read: could not read block of compressed data: "
                   "error %d", *err);
     return NULL;
@@ -467,7 +466,7 @@ xzfile_read_block (xzfile *xz,
         strm.avail_in = size - offs;
       if (strm.avail_in > 0) {
         strm.next_in = buf;
-        if (next_ops->pread (nxdata, buf, strm.avail_in, offs, 0, err) == -1) {
+        if (next->pread (next, buf, strm.avail_in, offs, 0, err) == -1) {
           nbdkit_error ("xz: read: error %d", *err);
           goto err2;
         }

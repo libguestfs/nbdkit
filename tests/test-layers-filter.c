@@ -43,10 +43,9 @@
 #define str(s) #s
 #define DEBUG_FUNCTION nbdkit_debug ("%s: %s", layer, __func__)
 
-/* Perform sanity checking on next_ops(nxdata) stability */
+/* Perform sanity checking on nbdkit_next stability */
 struct handle {
-  void *nxdata;
-  struct nbdkit_next_ops *next_ops;
+  nbdkit_next *next;
 };
 
 static void
@@ -62,7 +61,7 @@ test_layers_filter_unload (void)
 }
 
 static int
-test_layers_filter_config (nbdkit_next_config *next, void *nxdata,
+test_layers_filter_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                            const char *key, const char *value)
 {
   DEBUG_FUNCTION;
@@ -71,7 +70,7 @@ test_layers_filter_config (nbdkit_next_config *next, void *nxdata,
 
 static int
 test_layers_filter_config_complete (nbdkit_next_config_complete *next,
-                                    void *nxdata)
+                                    nbdkit_backend *nxdata)
 {
   DEBUG_FUNCTION;
   return next (nxdata);
@@ -89,7 +88,7 @@ test_layers_filter_thread_model (void)
 
 static int
 test_layers_filter_get_ready (nbdkit_next_get_ready *next,
-                              void *nxdata, int thread_model)
+                              nbdkit_backend *nxdata, int thread_model)
 {
   DEBUG_FUNCTION;
   return next (nxdata);
@@ -97,7 +96,7 @@ test_layers_filter_get_ready (nbdkit_next_get_ready *next,
 
 static int
 test_layers_filter_after_fork (nbdkit_next_after_fork *next,
-                               void *nxdata)
+                               nbdkit_backend *nxdata)
 {
   DEBUG_FUNCTION;
   return next (nxdata);
@@ -105,14 +104,15 @@ test_layers_filter_after_fork (nbdkit_next_after_fork *next,
 
 static int
 test_layers_filter_preconnect (nbdkit_next_preconnect *next,
-                               void *nxdata, int readonly)
+                               nbdkit_backend *nxdata, int readonly)
 {
   DEBUG_FUNCTION;
   return next (nxdata, readonly);
 }
 
 static int
-test_layers_filter_list_exports (nbdkit_next_list_exports *next, void *nxdata,
+test_layers_filter_list_exports (nbdkit_next_list_exports *next,
+                                 nbdkit_backend *nxdata,
                                  int readonly, int is_tls,
                                  struct nbdkit_exports *exports)
 {
@@ -122,14 +122,15 @@ test_layers_filter_list_exports (nbdkit_next_list_exports *next, void *nxdata,
 
 static const char *
 test_layers_filter_default_export (nbdkit_next_default_export *next,
-                                   void *nxdata, int readonly, int is_tls)
+                                   nbdkit_backend *nxdata, int readonly,
+                                   int is_tls)
 {
   DEBUG_FUNCTION;
   return next (nxdata, readonly);
 }
 
 static void *
-test_layers_filter_open (nbdkit_next_open *next, void *nxdata,
+test_layers_filter_open (nbdkit_next_open *next, nbdkit_context *nxdata,
                          int readonly, const char *exportname, int is_tls)
 {
   struct handle *h = calloc (1, sizeof *h);
@@ -156,240 +157,233 @@ test_layers_filter_close (void *handle)
 }
 
 static int
-test_layers_filter_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_prepare (nbdkit_next *next,
                             void *handle, int readonly)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == NULL);
-  h->next_ops = next_ops;
-  h->nxdata = nxdata;
-  assert (next_ops == nxdata);
+  assert (h->next == NULL);
+  h->next = next;
   DEBUG_FUNCTION;
   return 0;
 }
 
 static int
-test_layers_filter_finalize (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_finalize (nbdkit_next *next,
                              void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
   return 0;
 }
 
 static int64_t
-test_layers_filter_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_get_size (nbdkit_next *next,
                              void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->get_size (nxdata);
+  return next->get_size (next);
 }
 
 static int
-test_layers_filter_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_can_write (nbdkit_next *next,
                               void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_write (nxdata);
+  return next->can_write (next);
 }
 
 static int
-test_layers_filter_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_can_flush (nbdkit_next *next,
                               void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_flush (nxdata);
+  return next->can_flush (next);
 }
 
 static int
-test_layers_filter_is_rotational (struct nbdkit_next_ops *next_ops,
-                                  void *nxdata,
+test_layers_filter_is_rotational (nbdkit_next *next,
                                   void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->is_rotational (nxdata);
+  return next->is_rotational (next);
 }
 
 static int
-test_layers_filter_can_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_can_trim (nbdkit_next *next,
                              void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_trim (nxdata);
+  return next->can_trim (next);
 }
 
 static int
-test_layers_filter_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_can_zero (nbdkit_next *next,
                              void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_zero (nxdata);
+  return next->can_zero (next);
 }
 
 static int
-test_layers_filter_can_fast_zero (struct nbdkit_next_ops *next_ops,
-                                  void *nxdata, void *handle)
+test_layers_filter_can_fast_zero (nbdkit_next *next, void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_fast_zero (nxdata);
+  return next->can_fast_zero (next);
 }
 
 static int
-test_layers_filter_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_can_fua (nbdkit_next *next,
                             void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_fua (nxdata);
+  return next->can_fua (next);
 }
 
 static int
-test_layers_filter_can_multi_conn (struct nbdkit_next_ops *next_ops,
-                                   void *nxdata,
+test_layers_filter_can_multi_conn (nbdkit_next *next,
                                    void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_multi_conn (nxdata);
+  return next->can_multi_conn (next);
 }
 
 static int
-test_layers_filter_can_extents (struct nbdkit_next_ops *next_ops,
-                                void *nxdata,
+test_layers_filter_can_extents (nbdkit_next *next,
                                 void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_extents (nxdata);
+  return next->can_extents (next);
 }
 
 static int
-test_layers_filter_can_cache (struct nbdkit_next_ops *next_ops,
-                              void *nxdata,
+test_layers_filter_can_cache (nbdkit_next *next,
                               void *handle)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->can_cache (nxdata);
+  return next->can_cache (next);
 }
 
 static int
-test_layers_filter_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_pread (nbdkit_next *next,
                           void *handle, void *buf,
                           uint32_t count, uint64_t offset,
                           uint32_t flags, int *err)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->pread (nxdata, buf, count, offset, flags, err);
+  return next->pread (next, buf, count, offset, flags, err);
 }
 
 static int
-test_layers_filter_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_pwrite (nbdkit_next *next,
                            void *handle,
                            const void *buf, uint32_t count, uint64_t offset,
                            uint32_t flags, int *err)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  return next->pwrite (next, buf, count, offset, flags, err);
 }
 
 static int
-test_layers_filter_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_flush (nbdkit_next *next,
                           void *handle,
                           uint32_t flags, int *err)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->flush (nxdata, flags, err);
+  return next->flush (next, flags, err);
 }
 
 static int
-test_layers_filter_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_trim (nbdkit_next *next,
                          void *handle, uint32_t count, uint64_t offset,
                          uint32_t flags, int *err)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->trim (nxdata, count, offset, flags, err);
+  return next->trim (next, count, offset, flags, err);
 }
 
 static int
-test_layers_filter_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_zero (nbdkit_next *next,
                          void *handle, uint32_t count, uint64_t offset,
                          uint32_t flags, int *err)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->zero (nxdata, count, offset, flags, err);
+  return next->zero (next, count, offset, flags, err);
 }
 
 static int
-test_layers_filter_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_extents (nbdkit_next *next,
                             void *handle, uint32_t count, uint64_t offset,
                             uint32_t flags, struct nbdkit_extents *extents,
                             int *err)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->extents (nxdata, count, offset, flags, extents, err);
+  return next->extents (next, count, offset, flags, extents, err);
 }
 
 static int
-test_layers_filter_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+test_layers_filter_cache (nbdkit_next *next,
                           void *handle, uint32_t count, uint64_t offset,
                           uint32_t flags, int *err)
 {
   struct handle *h = handle;
 
-  assert (h->next_ops == next_ops && h->nxdata == nxdata);
+  assert (h->next == next);
   DEBUG_FUNCTION;
-  return next_ops->cache (nxdata, count, offset, flags, err);
+  return next->cache (next, count, offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

@@ -77,7 +77,7 @@ exportname_unload (void)
 
 /* Called for each key=value passed on the command line. */
 static int
-exportname_config (nbdkit_next_config *next, void *nxdata,
+exportname_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                    const char *key, const char *value)
 {
   int r;
@@ -204,7 +204,8 @@ get_desc (const char *name, const char *def)
 }
 
 static int
-exportname_list_exports (nbdkit_next_list_exports *next, void *nxdata,
+exportname_list_exports (nbdkit_next_list_exports *next,
+                         nbdkit_backend *nxdata,
                          int readonly, int is_tls,
                          struct nbdkit_exports *exps)
 {
@@ -245,7 +246,8 @@ exportname_list_exports (nbdkit_next_list_exports *next, void *nxdata,
 }
 
 static const char *
-exportname_default_export (nbdkit_next_default_export *next, void *nxdata,
+exportname_default_export (nbdkit_next_default_export *next,
+                           nbdkit_backend *nxdata,
                            int readonly, int is_tls)
 {
   size_t i;
@@ -269,7 +271,7 @@ struct handle {
 };
 
 static void *
-exportname_open (nbdkit_next_open *next, void *nxdata,
+exportname_open (nbdkit_next_open *next, nbdkit_context *nxdata,
                  int readonly, const char *exportname, int is_tls)
 {
   size_t i;
@@ -313,14 +315,14 @@ exportname_close (void *handle)
 }
 
 static const char *
-exportname_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+exportname_export_description (nbdkit_next *next,
                                void *handle)
 {
   struct handle *h = handle;
   const char *def = NULL;
 
   if (desc_mode == DESC_KEEP)
-    def = next_ops->export_description (nxdata);
+    def = next->export_description (next);
 
   return get_desc (h->name, def);
 }

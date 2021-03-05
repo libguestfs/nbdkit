@@ -155,7 +155,7 @@ parse_error_rate (const char *key, const char *value, double *retp)
 
 /* Called for each key=value passed on the command line. */
 static int
-error_config (nbdkit_next_config *next, void *nxdata,
+error_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
               const char *key, const char *value)
 {
   int i;
@@ -302,19 +302,19 @@ random_error (const struct error_settings *error_settings,
 
 /* Read data. */
 static int
-error_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+error_pread (nbdkit_next *next,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
   if (random_error (&pread_settings, "pread", err))
     return -1;
 
-  return next_ops->pread (nxdata, buf, count, offset, flags, err);
+  return next->pread (next, buf, count, offset, flags, err);
 }
 
 /* Write data. */
 static int
-error_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+error_pwrite (nbdkit_next *next,
               void *handle,
               const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
@@ -322,55 +322,55 @@ error_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (random_error (&pwrite_settings, "pwrite", err))
     return -1;
 
-  return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  return next->pwrite (next, buf, count, offset, flags, err);
 }
 
 /* Trim data. */
 static int
-error_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+error_trim (nbdkit_next *next,
             void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
   if (random_error (&trim_settings, "trim", err))
     return -1;
 
-  return next_ops->trim (nxdata, count, offset, flags, err);
+  return next->trim (next, count, offset, flags, err);
 }
 
 /* Zero data. */
 static int
-error_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+error_zero (nbdkit_next *next,
             void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
   if (random_error (&zero_settings, "zero", err))
     return -1;
 
-  return next_ops->zero (nxdata, count, offset, flags, err);
+  return next->zero (next, count, offset, flags, err);
 }
 
 /* Extents. */
 static int
-error_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+error_extents (nbdkit_next *next,
                void *handle, uint32_t count, uint64_t offset,
                uint32_t flags, struct nbdkit_extents *extents, int *err)
 {
   if (random_error (&extents_settings, "extents", err))
     return -1;
 
-  return next_ops->extents (nxdata, count, offset, flags, extents, err);
+  return next->extents (next, count, offset, flags, extents, err);
 }
 
 /* Extents. */
 static int
-error_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+error_cache (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
   if (random_error (&cache_settings, "cache", err))
     return -1;
 
-  return next_ops->cache (nxdata, count, offset, flags, err);
+  return next->cache (next, count, offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

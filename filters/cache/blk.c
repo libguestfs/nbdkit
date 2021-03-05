@@ -191,7 +191,7 @@ blk_set_size (uint64_t new_size)
 }
 
 int
-blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
+blk_read (nbdkit_next *next,
           uint64_t blknum, uint8_t *block, int *err)
 {
   off_t offset = blknum * blksize;
@@ -214,7 +214,7 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
       n -= tail;
     }
 
-    if (next_ops->pread (nxdata, block, n, offset, 0, err) == -1)
+    if (next->pread (next, block, n, offset, 0, err) == -1)
       return -1;
 
     /* Normally we're reading whole blocks, but at the very end of the
@@ -251,7 +251,7 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 int
-blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+blk_cache (nbdkit_next *next,
            uint64_t blknum, uint8_t *block, int *err)
 {
   off_t offset = blknum * blksize;
@@ -275,7 +275,7 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
       n -= tail;
     }
 
-    if (next_ops->pread (nxdata, block, n, offset, 0, err) == -1)
+    if (next->pread (next, block, n, offset, 0, err) == -1)
       return -1;
 
     /* Normally we're reading whole blocks, but at the very end of the
@@ -310,7 +310,7 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 int
-blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
+blk_writethrough (nbdkit_next *next,
                   uint64_t blknum, const uint8_t *block, uint32_t flags,
                   int *err)
 {
@@ -333,7 +333,7 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
     return -1;
   }
 
-  if (next_ops->pwrite (nxdata, block, n, offset, flags, err) == -1)
+  if (next->pwrite (next, block, n, offset, flags, err) == -1)
     return -1;
 
   bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
@@ -343,7 +343,7 @@ blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 int
-blk_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+blk_write (nbdkit_next *next,
            uint64_t blknum, const uint8_t *block, uint32_t flags,
            int *err)
 {
@@ -351,7 +351,7 @@ blk_write (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   if (cache_mode == CACHE_MODE_WRITETHROUGH ||
       (cache_mode == CACHE_MODE_WRITEBACK && (flags & NBDKIT_FLAG_FUA)))
-    return blk_writethrough (next_ops, nxdata, blknum, block, flags, err);
+    return blk_writethrough (next, blknum, block, flags, err);
 
   offset = blknum * blksize;
 

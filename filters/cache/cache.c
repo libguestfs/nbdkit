@@ -76,7 +76,8 @@ int64_t max_size = -1;
 unsigned hi_thresh = 95, lo_thresh = 80;
 bool cache_on_read = false;
 
-static int cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle, uint32_t flags, int *err);
+static int cache_flush (nbdkit_next *next, void *handle, uint32_t flags,
+                        int *err);
 
 static void
 cache_load (void)
@@ -92,7 +93,7 @@ cache_unload (void)
 }
 
 static int
-cache_config (nbdkit_next_config *next, void *nxdata,
+cache_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
               const char *key, const char *value)
 {
   if (strcmp (key, "cache") == 0) {
@@ -187,7 +188,8 @@ cache_config (nbdkit_next_config *next, void *nxdata,
 #endif
 
 static int
-cache_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+cache_config_complete (nbdkit_next_config_complete *next,
+                       nbdkit_backend *nxdata)
 {
   /* If cache-max-size was set then check the thresholds. */
   if (max_size != -1) {
@@ -203,13 +205,13 @@ cache_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 
 /* Get the file size, set the cache size. */
 static int64_t
-cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_get_size (nbdkit_next *next,
                 void *handle)
 {
   int64_t size;
   int r;
 
-  size = next_ops->get_size (nxdata);
+  size = next->get_size (next);
   if (size == -1)
     return -1;
 
@@ -228,12 +230,12 @@ cache_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
  * calls.
  */
 static int
-cache_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_prepare (nbdkit_next *next,
                void *handle, int readonly)
 {
   int64_t r;
 
-  r = cache_get_size (next_ops, nxdata, handle);
+  r = cache_get_size (next, handle);
   if (r < 0)
     return -1;
   return 0;
@@ -241,14 +243,14 @@ cache_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Override the plugin's .can_cache, because we are caching here instead */
 static int
-cache_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+cache_can_cache (nbdkit_next *next, void *handle)
 {
   return NBDKIT_CACHE_NATIVE;
 }
 
 /* Override the plugin's .can_fast_zero, because our .zero is not fast */
 static int
-cache_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_can_fast_zero (nbdkit_next *next,
                      void *handle)
 {
   /* It is better to advertise support even when we always reject fast
@@ -259,28 +261,28 @@ cache_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Override the plugin's .can_flush, if we are cache=unsafe */
 static int
-cache_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_can_flush (nbdkit_next *next,
                  void *handle)
 {
   if (cache_mode == CACHE_MODE_UNSAFE)
     return 1;
-  return next_ops->can_flush (nxdata);
+  return next->can_flush (next);
 }
 
 
 /* Override the plugin's .can_fua, if we are cache=unsafe */
 static int
-cache_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_can_fua (nbdkit_next *next,
                void *handle)
 {
   if (cache_mode == CACHE_MODE_UNSAFE)
     return NBDKIT_FUA_NATIVE;
-  return next_ops->can_fua (nxdata);
+  return next->can_fua (next);
 }
 
 /* Override the plugin's .can_multi_conn, if we are not cache=writethrough */
 static int
-cache_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_can_multi_conn (nbdkit_next *next,
                       void *handle)
 {
   /* For CACHE_MODE_UNSAFE, we always advertise a no-op flush because
@@ -301,12 +303,12 @@ cache_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
    */
   if (cache_mode != CACHE_MODE_WRITETHROUGH)
     return 1;
-  return next_ops->can_multi_conn (nxdata);
+  return next->can_multi_conn (next);
 }
 
 /* Read data. */
 static int
-cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_pread (nbdkit_next *next,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
@@ -333,7 +335,7 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
     assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r == -1)
       return -1;
 
@@ -354,7 +356,7 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
    */
   while (count >= blksize) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_read (next_ops, nxdata, blknum, buf, err);
+    r = blk_read (next, blknum, buf, err);
     if (r == -1)
       return -1;
 
@@ -368,7 +370,7 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (count) {
     assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r == -1)
       return -1;
 
@@ -380,7 +382,7 @@ cache_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Write data. */
 static int
-cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_pwrite (nbdkit_next *next,
               void *handle, const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
@@ -400,7 +402,7 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   if ((flags & NBDKIT_FLAG_FUA) &&
       (cache_mode == CACHE_MODE_UNSAFE ||
-       next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE)) {
+       next->can_fua (next) == NBDKIT_FUA_EMULATE)) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -417,10 +419,10 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
      */
     assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memcpy (&block[blkoffs], buf, n);
-      r = blk_write (next_ops, nxdata, blknum, block, flags, err);
+      r = blk_write (next, blknum, block, flags, err);
     }
     if (r == -1)
       return -1;
@@ -434,7 +436,7 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Aligned body */
   while (count >= blksize) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_write (next_ops, nxdata, blknum, buf, flags, err);
+    r = blk_write (next, blknum, buf, flags, err);
     if (r == -1)
       return -1;
 
@@ -448,23 +450,23 @@ cache_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (count) {
     assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memcpy (block, buf, count);
-      r = blk_write (next_ops, nxdata, blknum, block, flags, err);
+      r = blk_write (next, blknum, block, flags, err);
     }
     if (r == -1)
       return -1;
   }
 
   if (need_flush)
-    return cache_flush (next_ops, nxdata, handle, 0, err);
+    return cache_flush (next, handle, 0, err);
   return 0;
 }
 
 /* Zero data. */
 static int
-cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_zero (nbdkit_next *next,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
@@ -473,7 +475,7 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
   bool need_flush = false;
 
-  /* We are purposefully avoiding next_ops->zero, so a zero request is
+  /* We are purposefully avoiding next->zero, so a zero request is
    * never faster than plain writes.
    */
   if (flags & NBDKIT_FLAG_FAST_ZERO) {
@@ -491,7 +493,7 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   flags &= ~NBDKIT_FLAG_MAY_TRIM;
   if ((flags & NBDKIT_FLAG_FUA) &&
       (cache_mode == CACHE_MODE_UNSAFE ||
-       next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE)) {
+       next->can_fua (next) == NBDKIT_FUA_EMULATE)) {
     flags &= ~NBDKIT_FLAG_FUA;
     need_flush = true;
   }
@@ -507,10 +509,10 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
      * Hold the lock over the whole operation.
      */
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
-      r = blk_write (next_ops, nxdata, blknum, block, flags, err);
+      r = blk_write (next, blknum, block, flags, err);
     }
     if (r == -1)
       return -1;
@@ -524,9 +526,9 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (count >= blksize)
     memset (block, 0, blksize);
   while (count >=blksize) {
-    /* Intentional that we do not use next_ops->zero */
+    /* Intentional that we do not use next->zero */
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_write (next_ops, nxdata, blknum, block, flags, err);
+    r = blk_write (next, blknum, block, flags, err);
     if (r == -1)
       return -1;
 
@@ -538,17 +540,17 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_read (next_ops, nxdata, blknum, block, err);
+    r = blk_read (next, blknum, block, err);
     if (r != -1) {
       memset (&block[count], 0, blksize - count);
-      r = blk_write (next_ops, nxdata, blknum, block, flags, err);
+      r = blk_write (next, blknum, block, flags, err);
     }
     if (r == -1)
       return -1;
   }
 
   if (need_flush)
-    return cache_flush (next_ops, nxdata, handle, 0, err);
+    return cache_flush (next, handle, 0, err);
   return 0;
 }
 
@@ -557,19 +559,18 @@ struct flush_data {
   uint8_t *block;               /* bounce buffer */
   unsigned errors;              /* count of errors seen */
   int first_errno;              /* first errno seen */
-  struct nbdkit_next_ops *next_ops;
-  void *nxdata;
+  nbdkit_next *next;
 };
 
 static int flush_dirty_block (uint64_t blknum, void *);
 
 static int
-cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+cache_flush (nbdkit_next *next, void *handle,
              uint32_t flags, int *err)
 {
   CLEANUP_FREE uint8_t *block = NULL;
   struct flush_data data =
-    { .errors = 0, .first_errno = 0, .next_ops = next_ops, .nxdata = nxdata };
+    { .errors = 0, .first_errno = 0, .next = next };
   int tmp;
 
   if (cache_mode == CACHE_MODE_UNSAFE)
@@ -597,8 +598,7 @@ cache_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   }
 
   /* Now issue a flush request to the underlying storage. */
-  if (next_ops->flush (nxdata, 0,
-                       data.errors ? &tmp : &data.first_errno) == -1)
+  if (next->flush (next, 0, data.errors ? &tmp : &data.first_errno) == -1)
     data.errors++;
 
   if (data.errors > 0) {
@@ -617,10 +617,10 @@ flush_dirty_block (uint64_t blknum, void *datav)
   /* Perform a read + writethrough which will read from the
    * cache and write it through to the underlying storage.
    */
-  if (blk_read (data->next_ops, data->nxdata, blknum, data->block,
+  if (blk_read (data->next, blknum, data->block,
                 data->errors ? &tmp : &data->first_errno) == -1)
     goto err;
-  if (blk_writethrough (data->next_ops, data->nxdata, blknum, data->block, 0,
+  if (blk_writethrough (data->next, blknum, data->block, 0,
                         data->errors ? &tmp : &data->first_errno) == -1)
     goto err;
 
@@ -634,7 +634,7 @@ flush_dirty_block (uint64_t blknum, void *datav)
 
 /* Cache data. */
 static int
-cache_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+cache_cache (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
@@ -664,7 +664,7 @@ cache_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* Aligned body */
   while (remaining) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_cache (next_ops, nxdata, blknum, block, err);
+    r = blk_cache (next, blknum, block, err);
     if (r == -1)
       return -1;
 

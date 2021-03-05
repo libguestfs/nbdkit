@@ -50,7 +50,7 @@ unsigned partnum = 0;
 
 /* Called for each key=value passed on the command line. */
 static int
-partition_config (nbdkit_next_config *next, void *nxdata,
+partition_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                   const char *key, const char *value)
 {
   if (strcmp (key, "partition") == 0) {
@@ -68,7 +68,8 @@ partition_config (nbdkit_next_config *next, void *nxdata,
 
 /* Check the user did pass partition number. */
 static int
-partition_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+partition_config_complete (nbdkit_next_config_complete *next,
+                           nbdkit_backend *nxdata)
 {
   if (partnum == 0) {
     nbdkit_error ("you must supply the partition parameter on the command line");
@@ -89,7 +90,7 @@ struct handle {
 
 /* Open a connection. */
 static void *
-partition_open (nbdkit_next_open *next, void *nxdata,
+partition_open (nbdkit_next_open *next, nbdkit_context *nxdata,
                 int readonly, const char *exportname, int is_tls)
 {
   struct handle *h;
@@ -117,7 +118,7 @@ partition_close (void *handle)
 }
 
 static int
-partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_prepare (nbdkit_next *next,
                    void *handle, int readonly)
 {
   struct handle *h = handle;
@@ -126,7 +127,7 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
   int err;
 
-  size = next_ops->get_size (nxdata);
+  size = next->get_size (next);
   if (size == -1)
     return -1;
   if (size < 2 * SECTOR_SIZE) {
@@ -136,20 +137,19 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   nbdkit_debug ("disk size=%" PRIi64, size);
 
-  if (next_ops->pread (nxdata, lba01, sizeof lba01, 0, 0, &err) == -1)
+  if (next->pread (next, lba01, sizeof lba01, 0, 0, &err) == -1)
     return -1;
 
   /* Is it GPT? */
   if (size >= 2 * 34 * SECTOR_SIZE &&
       memcmp (&lba01[SECTOR_SIZE], "EFI PART", 8) == 0) {
-    r = find_gpt_partition (next_ops, nxdata, size, &lba01[SECTOR_SIZE],
-                            &h->offset, &h->range);
+    r = find_gpt_partition (next, size, &lba01[SECTOR_SIZE], &h->offset,
+                            &h->range);
     h->type = "GPT";
   }
   /* Is it MBR? */
   else if (lba01[0x1fe] == 0x55 && lba01[0x1ff] == 0xAA) {
-    r = find_mbr_partition (next_ops, nxdata, size, lba01,
-                            &h->offset, &h->range);
+    r = find_mbr_partition (next, size, lba01, &h->offset, &h->range);
     h->type = "MBR";
   }
   else {
@@ -176,11 +176,11 @@ partition_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Description. */
 static const char *
-partition_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_export_description (nbdkit_next *next,
                               void *handle)
 {
   struct handle *h = handle;
-  const char *base = next_ops->export_description (nxdata);
+  const char *base = next->export_description (next);
 
   assert (h->type);
   if (!base)
@@ -191,7 +191,7 @@ partition_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Get the file size. */
 static int64_t
-partition_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_get_size (nbdkit_next *next,
                     void *handle)
 {
   struct handle *h = handle;
@@ -201,52 +201,52 @@ partition_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Read data. */
 static int
-partition_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_pread (nbdkit_next *next,
                  void *handle, void *buf, uint32_t count, uint64_t offs,
                  uint32_t flags, int *err)
 {
   struct handle *h = handle;
 
-  return next_ops->pread (nxdata, buf, count, offs + h->offset, flags, err);
+  return next->pread (next, buf, count, offs + h->offset, flags, err);
 }
 
 /* Write data. */
 static int
-partition_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_pwrite (nbdkit_next *next,
                   void *handle,
                   const void *buf, uint32_t count, uint64_t offs,
                   uint32_t flags, int *err)
 {
   struct handle *h = handle;
 
-  return next_ops->pwrite (nxdata, buf, count, offs + h->offset, flags, err);
+  return next->pwrite (next, buf, count, offs + h->offset, flags, err);
 }
 
 /* Trim data. */
 static int
-partition_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_trim (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                 int *err)
 {
   struct handle *h = handle;
 
-  return next_ops->trim (nxdata, count, offs + h->offset, flags, err);
+  return next->trim (next, count, offs + h->offset, flags, err);
 }
 
 /* Zero data. */
 static int
-partition_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_zero (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                 int *err)
 {
   struct handle *h = handle;
 
-  return next_ops->zero (nxdata, count, offs + h->offset, flags, err);
+  return next->zero (next, count, offs + h->offset, flags, err);
 }
 
 /* Extents. */
 static int
-partition_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_extents (nbdkit_next *next,
                    void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                    struct nbdkit_extents *extents, int *err)
 {
@@ -260,8 +260,8 @@ partition_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     *err = errno;
     return -1;
   }
-  if (next_ops->extents (nxdata, count, offs + h->offset,
-                         flags, extents2, err) == -1)
+  if (next->extents (next, count, offs + h->offset, flags, extents2,
+                     err) == -1)
     return -1;
 
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
@@ -277,13 +277,13 @@ partition_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache data. */
 static int
-partition_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+partition_cache (nbdkit_next *next,
                  void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                  int *err)
 {
   struct handle *h = handle;
 
-  return next_ops->cache (nxdata, count, offs + h->offset, flags, err);
+  return next->cache (next, count, offs + h->offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

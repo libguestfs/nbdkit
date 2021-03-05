@@ -68,7 +68,7 @@ get_mbr_partition (uint8_t *sector, int i, struct mbr_partition *part)
 }
 
 int
-find_mbr_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
+find_mbr_partition (nbdkit_next *next,
                     int64_t size, uint8_t *mbr,
                     int64_t *offset_r, int64_t *range_r)
 {
@@ -132,8 +132,7 @@ find_mbr_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
 
       /* Read the EBR sector. */
       nbdkit_debug ("partition: reading EBR at %" PRIi64, ebr);
-      if (next_ops->pread (nxdata, sector, sizeof sector, ebr, 0,
-                           &errno) == -1)
+      if (next->pread (next, sector, sizeof sector, ebr, 0, &errno) == -1)
         return -1;
 
       if (partnum == i) {

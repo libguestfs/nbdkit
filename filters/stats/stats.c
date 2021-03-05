@@ -176,7 +176,7 @@ stats_unload (void)
 }
 
 static int
-stats_config (nbdkit_next_config *next, void *nxdata,
+stats_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
               const char *key, const char *value)
 {
   int r;
@@ -200,7 +200,8 @@ stats_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-stats_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+stats_config_complete (nbdkit_next_config_complete *next,
+                       nbdkit_backend *nxdata)
 {
   if (filename == NULL) {
     nbdkit_error ("stats filter requires statsfile parameter");
@@ -211,7 +212,8 @@ stats_config_complete (nbdkit_next_config_complete *next, void *nxdata)
 }
 
 static int
-stats_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
+stats_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
+                 int thread_model)
 {
   int fd;
 
@@ -260,7 +262,7 @@ record_stat (nbdstat *st, uint32_t count, const struct timeval *start)
 
 /* Read. */
 static int
-stats_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+stats_pread (nbdkit_next *next,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
@@ -268,14 +270,14 @@ stats_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   gettimeofday (&start, NULL);
-  r = next_ops->pread (nxdata, buf, count, offset, flags, err);
+  r = next->pread (next, buf, count, offset, flags, err);
   if (r == 0) record_stat (&pread_st, count, &start);
   return r;
 }
 
 /* Write. */
 static int
-stats_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+stats_pwrite (nbdkit_next *next,
               void *handle,
               const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
@@ -284,14 +286,14 @@ stats_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   gettimeofday (&start, NULL);
-  r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  r = next->pwrite (next, buf, count, offset, flags, err);
   if (r == 0) record_stat (&pwrite_st, count, &start);
   return r;
 }
 
 /* Trim. */
 static int
-stats_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+stats_trim (nbdkit_next *next,
             void *handle,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
@@ -300,14 +302,14 @@ stats_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   gettimeofday (&start, NULL);
-  r = next_ops->trim (nxdata, count, offset, flags, err);
+  r = next->trim (next, count, offset, flags, err);
   if (r == 0) record_stat (&trim_st, count, &start);
   return r;
 }
 
 /* Flush. */
 static int
-stats_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+stats_flush (nbdkit_next *next,
              void *handle, uint32_t flags,
              int *err)
 {
@@ -315,14 +317,14 @@ stats_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   gettimeofday (&start, NULL);
-  r = next_ops->flush (nxdata, flags, err);
+  r = next->flush (next, flags, err);
   if (r == 0) record_stat (&flush_st, 0, &start);
   return r;
 }
 
 /* Zero. */
 static int
-stats_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+stats_zero (nbdkit_next *next,
             void *handle,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
@@ -331,14 +333,14 @@ stats_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   gettimeofday (&start, NULL);
-  r = next_ops->zero (nxdata, count, offset, flags, err);
+  r = next->zero (next, count, offset, flags, err);
   if (r == 0) record_stat (&zero_st, count, &start);
   return r;
 }
 
 /* Extents. */
 static int
-stats_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+stats_extents (nbdkit_next *next,
                void *handle,
                uint32_t count, uint64_t offset, uint32_t flags,
                struct nbdkit_extents *extents, int *err)
@@ -347,7 +349,7 @@ stats_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   gettimeofday (&start, NULL);
-  r = next_ops->extents (nxdata, count, offset, flags, extents, err);
+  r = next->extents (next, count, offset, flags, extents, err);
   /* XXX There's a case for trying to determine how long the extents
    * will be that are returned to the client (instead of simply using
    * count), given the flags and the complex rules in the protocol.
@@ -358,7 +360,7 @@ stats_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache. */
 static int
-stats_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+stats_cache (nbdkit_next *next,
              void *handle,
              uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
@@ -367,7 +369,7 @@ stats_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   gettimeofday (&start, NULL);
-  r = next_ops->cache (nxdata, count, offset, flags, err);
+  r = next->cache (next, count, offset, flags, err);
   if (r == 0) record_stat (&cache_st, count, &start);
   return r;
 }

@@ -224,7 +224,7 @@ blk_status (uint64_t blknum, bool *present, bool *trimmed)
  * whole block of size ‘blksize’.
  */
 int
-blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
+blk_read (nbdkit_next *next,
           uint64_t blknum, uint8_t *block, int *err)
 {
   off_t offset = blknum * BLKSIZE;
@@ -252,7 +252,7 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
       n -= tail;
     }
 
-    if (next_ops->pread (nxdata, block, n, offset, 0, err) == -1)
+    if (next->pread (next, block, n, offset, 0, err) == -1)
       return -1;
 
     /* Normally we're reading whole blocks, but at the very end of the
@@ -277,7 +277,7 @@ blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 int
-blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+blk_cache (nbdkit_next *next,
            uint64_t blknum, uint8_t *block, enum cache_mode mode, int *err)
 {
   /* XXX Could make this lock more fine-grained with some thought. */
@@ -310,9 +310,9 @@ blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (mode == BLK_CACHE_IGNORE)
     return 0;
   if (mode == BLK_CACHE_PASSTHROUGH)
-    return next_ops->cache (nxdata, n, offset, 0, err);
+    return next->cache (next, n, offset, 0, err);
 
-  if (next_ops->pread (nxdata, block, n, offset, 0, err) == -1)
+  if (next->pread (next, block, n, offset, 0, err) == -1)
     return -1;
   /* Normally we're reading whole blocks, but at the very end of the
    * file we might read a partial block.  Deal with that case by

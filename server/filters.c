@@ -314,7 +314,7 @@ filter_prepare (struct context *c, int readonly)
   struct context *c_next = c->c_next;
 
   if (f->filter.prepare &&
-      f->filter.prepare (&c_next->next, c_next, c->handle, readonly) == -1)
+      f->filter.prepare (c_next, c->handle, readonly) == -1)
     return -1;
 
   return 0;
@@ -328,7 +328,7 @@ filter_finalize (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.finalize &&
-      f->filter.finalize (&c_next->next, c_next, c->handle) == -1)
+      f->filter.finalize (c_next, c->handle) == -1)
     return -1;
   return 0;
 }
@@ -341,7 +341,7 @@ filter_export_description (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.export_description)
-    return f->filter.export_description (&c_next->next, c_next, c->handle);
+    return f->filter.export_description (c_next, c->handle);
   else
     return backend_export_description (c_next);
 }
@@ -354,7 +354,7 @@ filter_get_size (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.get_size)
-    return f->filter.get_size (&c_next->next, c_next, c->handle);
+    return f->filter.get_size (c_next, c->handle);
   else
     return backend_get_size (c_next);
 }
@@ -367,7 +367,7 @@ filter_can_write (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_write)
-    return f->filter.can_write (&c_next->next, c_next, c->handle);
+    return f->filter.can_write (c_next, c->handle);
   else
     return backend_can_write (c_next);
 }
@@ -380,7 +380,7 @@ filter_can_flush (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_flush)
-    return f->filter.can_flush (&c_next->next, c_next, c->handle);
+    return f->filter.can_flush (c_next, c->handle);
   else
     return backend_can_flush (c_next);
 }
@@ -393,7 +393,7 @@ filter_is_rotational (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.is_rotational)
-    return f->filter.is_rotational (&c_next->next, c_next, c->handle);
+    return f->filter.is_rotational (c_next, c->handle);
   else
     return backend_is_rotational (c_next);
 }
@@ -406,7 +406,7 @@ filter_can_trim (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_trim)
-    return f->filter.can_trim (&c_next->next, c_next, c->handle);
+    return f->filter.can_trim (c_next, c->handle);
   else
     return backend_can_trim (c_next);
 }
@@ -419,7 +419,7 @@ filter_can_zero (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_zero)
-    return f->filter.can_zero (&c_next->next, c_next, c->handle);
+    return f->filter.can_zero (c_next, c->handle);
   else
     return backend_can_zero (c_next);
 }
@@ -432,7 +432,7 @@ filter_can_fast_zero (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_fast_zero)
-    return f->filter.can_fast_zero (&c_next->next, c_next, c->handle);
+    return f->filter.can_fast_zero (c_next, c->handle);
   else
     return backend_can_fast_zero (c_next);
 }
@@ -445,7 +445,7 @@ filter_can_extents (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_extents)
-    return f->filter.can_extents (&c_next->next, c_next, c->handle);
+    return f->filter.can_extents (c_next, c->handle);
   else
     return backend_can_extents (c_next);
 }
@@ -458,7 +458,7 @@ filter_can_fua (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_fua)
-    return f->filter.can_fua (&c_next->next, c_next, c->handle);
+    return f->filter.can_fua (c_next, c->handle);
   else
     return backend_can_fua (c_next);
 }
@@ -471,7 +471,7 @@ filter_can_multi_conn (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_multi_conn)
-    return f->filter.can_multi_conn (&c_next->next, c_next, c->handle);
+    return f->filter.can_multi_conn (c_next, c->handle);
   else
     return backend_can_multi_conn (c_next);
 }
@@ -484,7 +484,7 @@ filter_can_cache (struct context *c)
   struct context *c_next = c->c_next;
 
   if (f->filter.can_cache)
-    return f->filter.can_cache (&c_next->next, c_next, c->handle);
+    return f->filter.can_cache (c_next, c->handle);
   else
     return backend_can_cache (c_next);
 }
@@ -499,7 +499,7 @@ filter_pread (struct context *c,
   struct context *c_next = c->c_next;
 
   if (f->filter.pread)
-    return f->filter.pread (&c_next->next, c_next, c->handle,
+    return f->filter.pread (c_next, c->handle,
                             buf, count, offset, flags, err);
   else
     return backend_pread (c_next, buf, count, offset, flags, err);
@@ -515,7 +515,7 @@ filter_pwrite (struct context *c,
   struct context *c_next = c->c_next;
 
   if (f->filter.pwrite)
-    return f->filter.pwrite (&c_next->next, c_next, c->handle,
+    return f->filter.pwrite (c_next, c->handle,
                              buf, count, offset, flags, err);
   else
     return backend_pwrite (c_next, buf, count, offset, flags, err);
@@ -530,7 +530,7 @@ filter_flush (struct context *c,
   struct context *c_next = c->c_next;
 
   if (f->filter.flush)
-    return f->filter.flush (&c_next->next, c_next, c->handle, flags, err);
+    return f->filter.flush (c_next, c->handle, flags, err);
   else
     return backend_flush (c_next, flags, err);
 }
@@ -545,7 +545,7 @@ filter_trim (struct context *c,
   struct context *c_next = c->c_next;
 
   if (f->filter.trim)
-    return f->filter.trim (&c_next->next, c_next, c->handle, count, offset,
+    return f->filter.trim (c_next, c->handle, count, offset,
                            flags, err);
   else
     return backend_trim (c_next, count, offset, flags, err);
@@ -560,7 +560,7 @@ filter_zero (struct context *c,
   struct context *c_next = c->c_next;
 
   if (f->filter.zero)
-    return f->filter.zero (&c_next->next, c_next, c->handle,
+    return f->filter.zero (c_next, c->handle,
                            count, offset, flags, err);
   else
     return backend_zero (c_next, count, offset, flags, err);
@@ -576,7 +576,7 @@ filter_extents (struct context *c,
   struct context *c_next = c->c_next;
 
   if (f->filter.extents)
-    return f->filter.extents (&c_next->next, c_next, c->handle,
+    return f->filter.extents (c_next, c->handle,
                               count, offset, flags,
                               extents, err);
   else
@@ -594,7 +594,7 @@ filter_cache (struct context *c,
   struct context *c_next = c->c_next;
 
   if (f->filter.cache)
-    return f->filter.cache (&c_next->next, c_next, c->handle,
+    return f->filter.cache (c_next, c->handle,
                             count, offset, flags, err);
   else
     return backend_cache (c_next, count, offset, flags, err);

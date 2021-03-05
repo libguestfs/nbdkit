@@ -35,7 +35,6 @@
 
 #include <ext2_io.h>
 
-#define NBDKIT_TYPESAFE /* HACK to get type-safe parameters. */
 #include <nbdkit-filter.h>
 
 #define EXT2_ET_MAGIC_NBDKIT_IO_CHANNEL EXT2_ET_MAGIC_RESERVED_19

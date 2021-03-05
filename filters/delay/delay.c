@@ -130,7 +130,7 @@ cache_delay (int *err)
 
 /* Called for each key=value passed on the command line. */
 static int
-delay_config (nbdkit_next_config *next, void *nxdata,
+delay_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
               const char *key, const char *value)
 {
   if (strcmp (key, "rdelay") == 0 ||
@@ -208,41 +208,41 @@ delay_config (nbdkit_next_config *next, void *nxdata,
 
 /* Override the plugin's .can_fast_zero if needed */
 static int
-delay_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+delay_can_fast_zero (nbdkit_next *next,
                      void *handle)
 {
   /* Advertise if we are handling fast zero requests locally */
   if (delay_zero_ms && !delay_fast_zero)
     return 1;
-  return next_ops->can_fast_zero (nxdata);
+  return next->can_fast_zero (next);
 }
 
 /* Read data. */
 static int
-delay_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+delay_pread (nbdkit_next *next,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
   if (read_delay (err) == -1)
     return -1;
-  return next_ops->pread (nxdata, buf, count, offset, flags, err);
+  return next->pread (next, buf, count, offset, flags, err);
 }
 
 /* Write data. */
 static int
-delay_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+delay_pwrite (nbdkit_next *next,
               void *handle,
               const void *buf, uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
   if (write_delay (err) == -1)
     return -1;
-  return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  return next->pwrite (next, buf, count, offset, flags, err);
 }
 
 /* Zero data. */
 static int
-delay_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+delay_zero (nbdkit_next *next,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
@@ -252,40 +252,40 @@ delay_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
   if (zero_delay (err) == -1)
     return -1;
-  return next_ops->zero (nxdata, count, offset, flags, err);
+  return next->zero (next, count, offset, flags, err);
 }
 
 /* Trim data. */
 static int
-delay_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+delay_trim (nbdkit_next *next,
             void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
   if (trim_delay (err) == -1)
     return -1;
-  return next_ops->trim (nxdata, count, offset, flags, err);
+  return next->trim (next, count, offset, flags, err);
 }
 
 /* Extents. */
 static int
-delay_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+delay_extents (nbdkit_next *next,
                void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                struct nbdkit_extents *extents, int *err)
 {
   if (extents_delay (err) == -1)
     return -1;
-  return next_ops->extents (nxdata, count, offset, flags, extents, err);
+  return next->extents (next, count, offset, flags, extents, err);
 }
 
 /* Cache. */
 static int
-delay_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+delay_cache (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
 {
   if (cache_delay (err) == -1)
     return -1;
-  return next_ops->cache (nxdata, count, offset, flags, err);
+  return next->cache (next, count, offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

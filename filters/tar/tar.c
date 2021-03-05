@@ -65,7 +65,7 @@ static bool initialized = false;
 static uint64_t tar_offset, tar_size;
 
 static int
-tar_config (nbdkit_next_config *next, void *nxdata,
+tar_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
             const char *key, const char *value)
 {
   if (strcmp (key, "tar-entry") == 0) {
@@ -85,7 +85,8 @@ tar_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-tar_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+tar_config_complete (nbdkit_next_config_complete *next,
+                     nbdkit_backend *nxdata)
 {
   if (entry == NULL) {
     nbdkit_error ("you must supply the tar-entry=<FILENAME> parameter");
@@ -139,7 +140,7 @@ tar_close (void *handle)
  * https://www.redhat.com/archives/libguestfs/2020-July/msg00017.html
  */
 static int
-calculate_offset_of_entry (struct nbdkit_next_ops *next_ops, void *nxdata)
+calculate_offset_of_entry (nbdkit_next *next)
 {
   const size_t bufsize = 65536;
   char output[] = "/tmp/tarXXXXXX";
@@ -191,7 +192,7 @@ calculate_offset_of_entry (struct nbdkit_next_ops *next_ops, void *nxdata)
     nbdkit_error ("malloc: %m");
     return -1;
   }
-  copysize = next_ops->get_size (nxdata);
+  copysize = next->get_size (next);
   if (copysize == -1)
     return -1;
 
@@ -215,7 +216,7 @@ calculate_offset_of_entry (struct nbdkit_next_ops *next_ops, void *nxdata)
     int64_t j;
     struct stat statbuf;
 
-    r = next_ops->pread (nxdata, buf, count, i, 0, &err);
+    r = next->pread (next, buf, count, i, 0, &err);
     if (r == -1) {
       errno = err;
       nbdkit_error ("pread: %m");
@@ -277,14 +278,14 @@ calculate_offset_of_entry (struct nbdkit_next_ops *next_ops, void *nxdata)
 }
 
 static int
-tar_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_prepare (nbdkit_next *next,
              void *handle, int readonly)
 {
   struct handle *h = handle;
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
 
   if (!initialized) {
-    if (calculate_offset_of_entry (next_ops, nxdata) == -1)
+    if (calculate_offset_of_entry (next) == -1)
       return -1;
   }
 
@@ -297,10 +298,10 @@ tar_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Description. */
 static const char *
-tar_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_export_description (nbdkit_next *next,
                         void *handle)
 {
-  const char *base = next_ops->export_description (nxdata);
+  const char *base = next->export_description (next);
 
   if (!base)
     return NULL;
@@ -310,7 +311,7 @@ tar_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Get the file size. */
 static int64_t
-tar_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_get_size (nbdkit_next *next,
               void *handle)
 {
   struct handle *h = handle;
@@ -319,7 +320,7 @@ tar_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   /* We must call underlying get_size even though we don't use the
    * result, because it caches the plugin size in server/backend.c.
    */
-  size = next_ops->get_size (nxdata);
+  size = next->get_size (next);
   if (size == -1)
     return -1;
 
@@ -328,47 +329,47 @@ tar_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Read data from the file. */
 static int
-tar_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_pread (nbdkit_next *next,
            void *handle, void *buf, uint32_t count, uint64_t offs,
            uint32_t flags, int *err)
 {
   struct handle *h = handle;
-  return next_ops->pread (nxdata, buf, count, offs + h->offset, flags, err);
+  return next->pread (next, buf, count, offs + h->offset, flags, err);
 }
 
 /* Write data to the file. */
 static int
-tar_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_pwrite (nbdkit_next *next,
             void *handle, const void *buf, uint32_t count, uint64_t offs,
             uint32_t flags, int *err)
 {
   struct handle *h = handle;
-  return next_ops->pwrite (nxdata, buf, count, offs + h->offset, flags, err);
+  return next->pwrite (next, buf, count, offs + h->offset, flags, err);
 }
 
 /* Trim data. */
 static int
-tar_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_trim (nbdkit_next *next,
           void *handle, uint32_t count, uint64_t offs, uint32_t flags,
           int *err)
 {
   struct handle *h = handle;
-  return next_ops->trim (nxdata, count, offs + h->offset, flags, err);
+  return next->trim (next, count, offs + h->offset, flags, err);
 }
 
 /* Zero data. */
 static int
-tar_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_zero (nbdkit_next *next,
           void *handle, uint32_t count, uint64_t offs, uint32_t flags,
           int *err)
 {
   struct handle *h = handle;
-  return next_ops->zero (nxdata, count, offs + h->offset, flags, err);
+  return next->zero (next, count, offs + h->offset, flags, err);
 }
 
 /* Extents. */
 static int
-tar_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_extents (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
              struct nbdkit_extents *extents, int *err)
 {
@@ -382,8 +383,8 @@ tar_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
     *err = errno;
     return -1;
   }
-  if (next_ops->extents (nxdata, count, offs + h->offset,
-                         flags, extents2, err) == -1)
+  if (next->extents (next, count, offs + h->offset, flags, extents2,
+                     err) == -1)
     return -1;
 
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
@@ -399,12 +400,12 @@ tar_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache data. */
 static int
-tar_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+tar_cache (nbdkit_next *next,
            void *handle, uint32_t count, uint64_t offs, uint32_t flags,
            int *err)
 {
   struct handle *h = handle;
-  return next_ops->cache (nxdata, count, offs + h->offset, flags, err);
+  return next->cache (next, count, offs + h->offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

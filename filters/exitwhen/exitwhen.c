@@ -352,7 +352,7 @@ resume_polling_thread (void)
 
 /* Read command line parameters are build events list. */
 static int
-exitwhen_config (nbdkit_next_config *next, void *nxdata,
+exitwhen_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                  const char *key, const char *value)
 {
   struct event event;
@@ -436,7 +436,7 @@ exitwhen_config (nbdkit_next_config *next, void *nxdata,
  * then we exit immediately.
  */
 static int
-exitwhen_get_ready (nbdkit_next_get_ready *next, void *nxdata,
+exitwhen_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
                     int thread_model)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
@@ -451,7 +451,7 @@ exitwhen_get_ready (nbdkit_next_get_ready *next, void *nxdata,
  * polling.
  */
 static int
-exitwhen_after_fork (nbdkit_next_after_fork *next, void *nxdata)
+exitwhen_after_fork (nbdkit_next_after_fork *next, nbdkit_backend *nxdata)
 {
   int err;
   pthread_t thread;
@@ -466,7 +466,8 @@ exitwhen_after_fork (nbdkit_next_after_fork *next, void *nxdata)
 }
 
 static int
-exitwhen_preconnect (nbdkit_next_preconnect *next, void *nxdata, int readonly)
+exitwhen_preconnect (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
+                     int readonly)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
 

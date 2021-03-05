@@ -30,7 +30,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Regression test when next_ops->get_size changes between connections.
+# Regression test when next->get_size changes between connections.
 #
 # For now, NBD does not support dynamic resize; but the file plugin
 # reads size from the file system for each new connection, at which

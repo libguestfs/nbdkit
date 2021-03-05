@@ -97,7 +97,7 @@ rate_unload (void)
 
 /* Called for each key=value passed on the command line. */
 static int
-rate_config (nbdkit_next_config *next, void *nxdata,
+rate_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
              const char *key, const char *value)
 {
   if (strcmp (key, "rate") == 0) {
@@ -147,7 +147,8 @@ rate_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-rate_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
+rate_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
+                int thread_model)
 {
   /* Initialize the global buckets. */
   bucket_init (&read_bucket, rate, BUCKET_CAPACITY);
@@ -164,7 +165,7 @@ rate_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
 
 /* Create the per-connection handle. */
 static void *
-rate_open (nbdkit_next_open *next, void *nxdata,
+rate_open (nbdkit_next_open *next, nbdkit_context *nxdata,
            int readonly, const char *exportname, int is_tls)
 {
   struct rate_handle *h;
@@ -275,7 +276,7 @@ maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count,
 
 /* Read data. */
 static int
-rate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+rate_pread (nbdkit_next *next,
             void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
@@ -288,12 +289,12 @@ rate_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (maybe_sleep (&h->read_bucket, &h->read_bucket_lock, count, err))
     return -1;
 
-  return next_ops->pread (nxdata, buf, count, offset, flags, err);
+  return next->pread (next, buf, count, offset, flags, err);
 }
 
 /* Write data. */
 static int
-rate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+rate_pwrite (nbdkit_next *next,
              void *handle,
              const void *buf, uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
@@ -307,7 +308,7 @@ rate_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   if (maybe_sleep (&h->write_bucket, &h->write_bucket_lock, count, err))
     return -1;
 
-  return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  return next->pwrite (next, buf, count, offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {

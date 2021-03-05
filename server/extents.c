@@ -212,19 +212,19 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
 
 /* Compute aligned extents on behalf of a filter. */
 int
-nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
-                        nbdkit_next *nxdata,
+nbdkit_extents_aligned (struct context *next_c,
                         uint32_t count, uint64_t offset,
                         uint32_t flags, uint32_t align,
                         struct nbdkit_extents *exts, int *err)
 {
+  struct nbdkit_next_ops *next = &next_c->next;
   size_t i;
   struct nbdkit_extent *e, *e2;
 
   assert (IS_ALIGNED(count | offset, align));
 
   /* Perform an initial query, then scan for the first unaligned extent. */
-  if (next_ops->extents (nxdata, count, offset, flags, exts, err) == -1)
+  if (next->extents (next_c, count, offset, flags, exts, err) == -1)
     return -1;
   for (i = 0; i < exts->extents.size; ++i) {
     e = &exts->extents.ptr[i];
@@ -267,10 +267,10 @@ nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
             *err = errno;
             return -1;
           }
-          if (next_ops->extents (nxdata, align - e->length,
-                                 offset + e->length,
-                                 flags & ~NBDKIT_FLAG_REQ_ONE,
-                                 extents2, err) == -1)
+          if (next->extents (next_c, align - e->length,
+                             offset + e->length,
+                             flags & ~NBDKIT_FLAG_REQ_ONE,
+                             extents2, err) == -1)
             return -1;
           e2 = &extents2->extents.ptr[0];
           assert (e2->offset == e->offset + e->length);
@@ -298,10 +298,11 @@ nbdkit_extents_aligned (struct nbdkit_next_ops *next_ops,
  * covering the region [offset..offset+count-1].
  */
 struct nbdkit_extents *
-nbdkit_extents_full (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
+nbdkit_extents_full (struct context *next_c,
                      uint32_t count, uint64_t offset, uint32_t flags,
                      int *err)
 {
+  struct nbdkit_next_ops *next = &next_c->next;
   struct nbdkit_extents *ret;
 
   /* Clear REQ_ONE to ask the plugin for as much information as it is
@@ -321,7 +322,7 @@ nbdkit_extents_full (struct nbdkit_next_ops *next_ops, nbdkit_next *nxdata,
       = nbdkit_extents_new (offset, offset+count);
     if (t == NULL) goto error1;
 
-    if (next_ops->extents (nxdata, count, offset, flags, t, err) == -1)
+    if (next->extents (next_c, count, offset, flags, t, err) == -1)
       goto error0;
 
     for (i = 0; i < nbdkit_extents_count (t); ++i) {

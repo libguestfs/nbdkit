@@ -45,7 +45,6 @@
 
 #define NBDKIT_API_VERSION 2
 
-#define NBDKIT_TYPESAFE /* HACK to get type-safe parameters. */
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
@@ -186,8 +185,7 @@ ext2_open (nbdkit_next_open *next, nbdkit_context *nxdata,
 }
 
 static int
-ext2_prepare (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle,
-              int readonly)
+ext2_prepare (nbdkit_next *next, void *handle, int readonly)
 {
   struct handle *h = handle;
   errcode_t err;
@@ -203,10 +201,10 @@ ext2_prepare (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle,
 #ifdef EXT2_FLAG_64BITS
   fs_flags |= EXT2_FLAG_64BITS;
 #endif
-  r = next_ops->get_size (nxdata);
+  r = next->get_size (next);
   if (r == -1)
     return -1;
-  r = next_ops->can_write (nxdata);
+  r = next->can_write (next);
   if (r == -1)
     return -1;
   if (r == 0)
@@ -215,8 +213,8 @@ ext2_prepare (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle,
   if (!readonly)
     fs_flags |= EXT2_FLAG_RW;
 
-  h->next = next_ops;
-  name = nbdkit_io_encode (next_ops);
+  h->next = next;
+  name = nbdkit_io_encode (next);
   if (!name) {
     nbdkit_error ("nbdkit_io_encode: %m");
     return -1;
@@ -293,21 +291,20 @@ ext2_close (void *handle)
 }
 
 static int
-ext2_can_fua (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
+ext2_can_fua (nbdkit_next *next, void *handle)
 {
   return NBDKIT_FUA_NATIVE;
 }
 
 static int
-ext2_can_cache (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
+ext2_can_cache (nbdkit_next *next, void *handle)
 {
   /* Let nbdkit call pread to populate the file system cache. */
   return NBDKIT_CACHE_EMULATE;
 }
 
 static int
-ext2_can_multi_conn (nbdkit_next *next_ops, nbdkit_next *nxdata,
-                     void *handle)
+ext2_can_multi_conn (nbdkit_next *next, void *handle)
 {
   /* Since we do not permit parallel connections, it does not matter
    * what we advertise here, and we could just as easily inherit the
@@ -320,15 +317,14 @@ ext2_can_multi_conn (nbdkit_next *next_ops, nbdkit_next *nxdata,
 }
 
 static int
-ext2_can_flush (nbdkit_next *next_ops, nbdkit_next *nxdata,
-                void *handle)
+ext2_can_flush (nbdkit_next *next, void *handle)
 {
   /* Regardless of the underlying plugin, we handle flush at the level
    * of the filesystem.  However, we also need to cache the underlying
    * plugin ability, since ext2 wants to flush the filesystem into
    * permanent storage when possible.
    */
-  if (next_ops->can_flush (nxdata) == -1)
+  if (next->can_flush (next) == -1)
     return -1;
   return 1;
 }
@@ -338,23 +334,23 @@ ext2_can_flush (nbdkit_next *next_ops, nbdkit_next *nxdata,
  * is very obscure.
  */
 static int
-ext2_can_zero (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
+ext2_can_zero (nbdkit_next *next, void *handle)
 {
   /* For now, tell nbdkit to call .pwrite instead of any optimization.
    * However, we also want to cache the underlying plugin support.
    */
-  if (next_ops->can_zero (nxdata) == -1)
+  if (next->can_zero (next) == -1)
     return -1;
   return NBDKIT_ZERO_EMULATE;
 }
 
 static int
-ext2_can_trim (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
+ext2_can_trim (nbdkit_next *next, void *handle)
 {
   /* For now, tell nbdkit to never call .trim.  However, we also want
    * to cache the underlying plugin support.
    */
-  if (next_ops->can_trim (nxdata) == -1)
+  if (next->can_trim (next) == -1)
     return -1;
   return 0;
 }
@@ -378,13 +374,12 @@ static int ext2_thread_model (void)
 
 /* Description. */
 static const char *
-ext2_export_description (nbdkit_next *next_ops, nbdkit_next *nxdata,
-                         void *handle)
+ext2_export_description (nbdkit_next *next, void *handle)
 {
   struct handle *h = handle;
   const char *fname = file ?: h->exportname;
   const char *slash = fname[0] == '/' ? "" : "/";
-  const char *base = next_ops->export_description (nxdata);
+  const char *base = next->export_description (next);
 
   if (!base)
     return NULL;
@@ -394,7 +389,7 @@ ext2_export_description (nbdkit_next *next_ops, nbdkit_next *nxdata,
 
 /* Get the disk size. */
 static int64_t
-ext2_get_size (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
+ext2_get_size (nbdkit_next *next, void *handle)
 {
   struct handle *h = handle;
   errcode_t err;
@@ -410,7 +405,7 @@ ext2_get_size (nbdkit_next *next_ops, nbdkit_next *nxdata, void *handle)
 
 /* Read data. */
 static int
-ext2_pread (nbdkit_next *next_ops, nbdkit_next *nxdata,
+ext2_pread (nbdkit_next *next,
             void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *errp)
 {
@@ -447,7 +442,7 @@ ext2_pread (nbdkit_next *next_ops, nbdkit_next *nxdata,
 
 /* Write data to the file. */
 static int
-ext2_pwrite (nbdkit_next *next_ops, nbdkit_next *nxdata,
+ext2_pwrite (nbdkit_next *next,
              void *handle, const void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *errp)
 {
@@ -488,7 +483,7 @@ ext2_pwrite (nbdkit_next *next_ops, nbdkit_next *nxdata,
 }
 
 static int
-ext2_flush (nbdkit_next *next_ops, nbdkit_next *nxdata,
+ext2_flush (nbdkit_next *next,
             void *handle, uint32_t flags, int *errp)
 {
   struct handle *h = handle;

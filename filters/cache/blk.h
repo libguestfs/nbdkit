@@ -51,20 +51,20 @@ extern int blk_set_size (uint64_t new_size);
 
 /* Read a single block from the cache or plugin. If cache_on_read is set,
  * also ensure it is cached. */
-extern int blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
+extern int blk_read (nbdkit_next *next,
                      uint64_t blknum, uint8_t *block, int *err)
-  __attribute__((__nonnull__ (1, 4, 5)));
+  __attribute__((__nonnull__ (1, 3, 4)));
 
 /* If a single block is not cached, copy it from the plugin. */
-extern int blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+extern int blk_cache (nbdkit_next *next,
                       uint64_t blknum, uint8_t *block, int *err)
-  __attribute__((__nonnull__ (1, 4, 5)));
+  __attribute__((__nonnull__ (1, 3, 4)));
 
 /* Write to the cache and the plugin. */
-extern int blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
+extern int blk_writethrough (nbdkit_next *next,
                              uint64_t blknum, const uint8_t *block,
                              uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 4, 6)));
+  __attribute__((__nonnull__ (1, 3, 5)));
 
 /* Write a whole block.
  *
@@ -74,10 +74,10 @@ extern int blk_writethrough (struct nbdkit_next_ops *next_ops, void *nxdata,
  *
  * Otherwise it will only write to the cache.
  */
-extern int blk_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+extern int blk_write (nbdkit_next *next,
                       uint64_t blknum, const uint8_t *block,
                       uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 4, 6)));
+  __attribute__((__nonnull__ (1, 3, 5)));
 
 /* Iterates over each dirty block in the cache. */
 typedef int (*block_callback) (uint64_t blknum, void *vp);

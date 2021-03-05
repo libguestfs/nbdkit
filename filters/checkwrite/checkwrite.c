@@ -57,42 +57,42 @@ checkwrite_open (nbdkit_next_open *next, nbdkit_context *nxdata,
  * write-like operations.
  */
 static int
-checkwrite_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_can_write (nbdkit_next *next,
                       void *handle)
 {
   return 1;
 }
 
 static int
-checkwrite_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_can_flush (nbdkit_next *next,
                       void *handle)
 {
   return 1;
 }
 
 static int
-checkwrite_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_can_fua (nbdkit_next *next,
                     void *handle)
 {
   return NBDKIT_FUA_NATIVE;
 }
 
 static int
-checkwrite_can_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_can_trim (nbdkit_next *next,
                      void *handle)
 {
   return 1;
 }
 
 static int
-checkwrite_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_can_zero (nbdkit_next *next,
                      void *handle)
 {
   return NBDKIT_ZERO_NATIVE;
 }
 
 static int
-checkwrite_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_can_fast_zero (nbdkit_next *next,
                           void *handle)
 {
   /* It is better to advertise support, even if we always reject fast
@@ -102,7 +102,7 @@ checkwrite_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-checkwrite_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_can_multi_conn (nbdkit_next *next,
                            void *handle)
 {
   return 1;
@@ -118,7 +118,7 @@ data_does_not_match (int *err)
 
 /* Provide write-like operations which perform the additional checks. */
 static int
-checkwrite_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_pwrite (nbdkit_next *next,
                    void *handle,
                    const void *buf, uint32_t count, uint64_t offset,
                    uint32_t flags, int *err)
@@ -133,7 +133,7 @@ checkwrite_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   }
 
   /* Read underlying plugin data into the buffer. */
-  if (next_ops->pread (nxdata, expected, count, offset, 0, err) == -1)
+  if (next->pread (next, expected, count, offset, 0, err) == -1)
     return -1;
 
   /* If data written doesn't match data expected, inject EIO. */
@@ -144,7 +144,7 @@ checkwrite_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-checkwrite_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_flush (nbdkit_next *next,
                   void *handle, uint32_t flags, int *err)
 {
   /* Does nothing, we just have to support it. */
@@ -161,15 +161,15 @@ checkwrite_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
  * or create a fully allocated target (nbdcopy --allocated).
  */
 static int
-checkwrite_trim_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+checkwrite_trim_zero (nbdkit_next *next,
                       void *handle, uint32_t count, uint64_t offset,
                       uint32_t flags, int *err)
 {
   /* If the plugin supports extents, speed this up by using them. */
-  if (next_ops->can_extents (nxdata)) {
+  if (next->can_extents (next)) {
     size_t i, n;
     CLEANUP_EXTENTS_FREE struct nbdkit_extents *exts =
-      nbdkit_extents_full (next_ops, nxdata, count, offset, 0, err);
+      nbdkit_extents_full (next, count, offset, 0, err);
     if (exts == NULL)
       return -1;
 
@@ -203,7 +203,7 @@ checkwrite_trim_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
           return -1;
         }
 
-        if (next_ops->pread (nxdata, buf, buflen, offset, 0, err) == -1)
+        if (next->pread (next, buf, buflen, offset, 0, err) == -1)
           return -1;
         if (! is_zero (buf, buflen))
           return data_does_not_match (err);
@@ -234,7 +234,7 @@ checkwrite_trim_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     while (count > 0) {
       uint32_t n = MIN (MAX_REQUEST_SIZE, count);
 
-      if (next_ops->pread (nxdata, buf, n, offset, 0, err) == -1)
+      if (next->pread (next, buf, n, offset, 0, err) == -1)
         return -1;
       if (! is_zero (buf, n))
         return data_does_not_match (err);

@@ -40,7 +40,6 @@
 #include <string.h>
 #include <sys/time.h>
 
-#define NBDKIT_TYPESAFE /* Hack to expose context APIs */
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
@@ -249,7 +248,7 @@ do_retry (struct retry_handle *h, struct retry_data *data,
 }
 
 static int
-retry_pread (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
+retry_pread (nbdkit_next *next,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
@@ -270,7 +269,7 @@ retry_pread (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
 
 /* Write. */
 static int
-retry_pwrite (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
+retry_pwrite (nbdkit_next *next,
               void *handle,
               const void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
@@ -305,7 +304,7 @@ retry_pwrite (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
 
 /* Trim. */
 static int
-retry_trim (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
+retry_trim (nbdkit_next *next,
             void *handle,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
@@ -340,7 +339,7 @@ retry_trim (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
 
 /* Flush. */
 static int
-retry_flush (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
+retry_flush (nbdkit_next *next,
              void *handle, uint32_t flags,
              int *err)
 {
@@ -365,7 +364,7 @@ retry_flush (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
 
 /* Zero. */
 static int
-retry_zero (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
+retry_zero (nbdkit_next *next,
             void *handle,
             uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
@@ -405,7 +404,7 @@ retry_zero (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
 
 /* Extents. */
 static int
-retry_extents (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
+retry_extents (nbdkit_next *next,
                void *handle,
                uint32_t count, uint64_t offset, uint32_t flags,
                struct nbdkit_extents *extents, int *err)
@@ -453,7 +452,7 @@ retry_extents (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
 
 /* Cache. */
 static int
-retry_cache (struct nbdkit_next_ops *next_ops, nbdkit_next *next,
+retry_cache (nbdkit_next *next,
              void *handle,
              uint32_t count, uint64_t offset, uint32_t flags,
              int *err)

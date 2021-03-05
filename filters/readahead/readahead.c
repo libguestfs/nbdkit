@@ -76,28 +76,27 @@ readahead_unload (void)
   free (buffer);
 }
 
-static int64_t readahead_get_size (struct nbdkit_next_ops *next_ops,
-                                   void *nxdata, void *handle);
+static int64_t readahead_get_size (nbdkit_next *next, void *handle);
 
 /* In prepare, force a call to get_size which sets the size global. */
 static int
-readahead_prepare (struct nbdkit_next_ops *next_ops, void *nxdata,
+readahead_prepare (nbdkit_next *next,
                    void *handle, int readonly)
 {
   int64_t r;
 
-  r = readahead_get_size (next_ops, nxdata, handle);
+  r = readahead_get_size (next, handle);
   return r >= 0 ? 0 : -1;
 }
 
 /* Get the size. */
 static int64_t
-readahead_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+readahead_get_size (nbdkit_next *next,
                     void *handle)
 {
   int64_t r;
 
-  r = next_ops->get_size (nxdata);
+  r = next->get_size (next);
   if (r == -1)
     return -1;
 
@@ -109,7 +108,7 @@ readahead_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache */
 static int
-readahead_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+readahead_can_cache (nbdkit_next *next,
                      void *handle)
 {
   /* We are already operating as a cache regardless of the plugin's
@@ -122,7 +121,7 @@ readahead_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 /* Read data. */
 
 static int
-fill_readahead (struct nbdkit_next_ops *next_ops, void *nxdata,
+fill_readahead (nbdkit_next *next,
                 uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
   position = offset;
@@ -147,7 +146,7 @@ fill_readahead (struct nbdkit_next_ops *next_ops, void *nxdata,
     bufsize = length;
   }
 
-  if (next_ops->pread (nxdata, buffer, length, offset, flags, err) == -1) {
+  if (next->pread (next, buffer, length, offset, flags, err) == -1) {
     length = 0;           /* failed to fill the prefetch buffer */
     return -1;
   }
@@ -156,7 +155,7 @@ fill_readahead (struct nbdkit_next_ops *next_ops, void *nxdata,
 }
 
 static int
-readahead_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+readahead_pread (nbdkit_next *next,
                  void *handle, void *buf, uint32_t count, uint64_t offset,
                  uint32_t flags, int *err)
 {
@@ -168,7 +167,7 @@ readahead_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
        * first request or reset after a miss.
        */
       window = READAHEAD_MIN;
-      if (fill_readahead (next_ops, nxdata, count, offset, flags, err) == -1)
+      if (fill_readahead (next, count, offset, flags, err) == -1)
         return -1;
     }
 
@@ -188,7 +187,7 @@ readahead_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
      */
     else if (offset == position + length) {
       window = MIN (window * 2, READAHEAD_MAX);
-      if (fill_readahead (next_ops, nxdata, count, offset, flags, err) == -1)
+      if (fill_readahead (next, count, offset, flags, err) == -1)
         return -1;
     }
 
@@ -215,41 +214,41 @@ kill_readahead (void)
 }
 
 static int
-readahead_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+readahead_pwrite (nbdkit_next *next,
                   void *handle,
                   const void *buf, uint32_t count, uint64_t offset,
                   uint32_t flags, int *err)
 {
   kill_readahead ();
-  return next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  return next->pwrite (next, buf, count, offset, flags, err);
 }
 
 static int
-readahead_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+readahead_trim (nbdkit_next *next,
                 void *handle,
                 uint32_t count, uint64_t offset, uint32_t flags,
                 int *err)
 {
   kill_readahead ();
-  return next_ops->trim (nxdata, count, offset, flags, err);
+  return next->trim (next, count, offset, flags, err);
 }
 
 static int
-readahead_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+readahead_zero (nbdkit_next *next,
                 void *handle,
                 uint32_t count, uint64_t offset, uint32_t flags,
                 int *err)
 {
   kill_readahead ();
-  return next_ops->zero (nxdata, count, offset, flags, err);
+  return next->zero (next, count, offset, flags, err);
 }
 
 static int
-readahead_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+readahead_flush (nbdkit_next *next,
                  void *handle, uint32_t flags, int *err)
 {
   kill_readahead ();
-  return next_ops->flush (nxdata, flags, err);
+  return next->flush (next, flags, err);
 }
 
 static struct nbdkit_filter filter = {

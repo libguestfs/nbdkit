@@ -66,7 +66,7 @@ get_gpt_partition (uint8_t *bytes,
 }
 
 int
-find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
+find_gpt_partition (nbdkit_next *next,
                     int64_t size, uint8_t *header_bytes,
                     int64_t *offset_r, int64_t *range_r)
 {
@@ -100,9 +100,8 @@ find_gpt_partition (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   for (i = 0; i < nr_partition_entries; ++i) {
     /* We already checked these are within bounds above. */
-    if (next_ops->pread (nxdata, partition_bytes, sizeof partition_bytes,
-                         2*SECTOR_SIZE + i*size_partition_entry, 0,
-                         &err) == -1)
+    if (next->pread (next, partition_bytes, sizeof partition_bytes,
+                     2 * SECTOR_SIZE + i * size_partition_entry, 0, &err) == -1)
       return -1;
     get_gpt_partition (partition_bytes,
                        partition_type_guid, &first_lba, &last_lba);

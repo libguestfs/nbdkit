@@ -399,7 +399,7 @@ parse_rules (const char *paramname,
 }
 
 static int
-ip_config (nbdkit_next_config *next, void *nxdata,
+ip_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
            const char *key, const char *value)
 {
   /* For convenience we permit multiple allow and deny parameters,
@@ -420,7 +420,7 @@ ip_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-ip_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+ip_config_complete (nbdkit_next_config_complete *next, nbdkit_backend *nxdata)
 {
   if (ip_debug_rules) {
     print_rules ("ip: parsed allow", allow_rules);
@@ -586,7 +586,8 @@ check_if_allowed (const struct sockaddr *addr)
 }
 
 static int
-ip_preconnect (nbdkit_next_preconnect *next, void *nxdata, int readonly)
+ip_preconnect (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
+               int readonly)
 {
   struct sockaddr_storage addr;
   socklen_t addrlen = sizeof addr;

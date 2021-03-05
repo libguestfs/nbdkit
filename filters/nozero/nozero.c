@@ -66,7 +66,7 @@ static enum FastZeroMode {
 } fastzeromode;
 
 static int
-nozero_config (nbdkit_next_config *next, void *nxdata,
+nozero_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                const char *key, const char *value)
 {
   if (strcmp (key, "zeromode") == 0) {
@@ -106,7 +106,7 @@ nozero_config (nbdkit_next_config *next, void *nxdata,
 
 /* Check that desired mode is supported by plugin. */
 static int
-nozero_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+nozero_prepare (nbdkit_next *next, void *handle,
                 int readonly)
 {
   int r;
@@ -116,7 +116,7 @@ nozero_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
     return 0;
 
   if (zeromode == NOTRIM || zeromode == PLUGIN) {
-    r = next_ops->can_zero (nxdata);
+    r = next->can_zero (next);
     if (r == -1)
       return -1;
     if (!r) {
@@ -130,7 +130,7 @@ nozero_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 
 /* Advertise desired WRITE_ZEROES mode. */
 static int
-nozero_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+nozero_can_zero (nbdkit_next *next, void *handle)
 {
   switch (zeromode) {
   case NONE:
@@ -138,24 +138,24 @@ nozero_can_zero (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   case EMULATE:
     return NBDKIT_ZERO_EMULATE;
   default:
-    return next_ops->can_zero (nxdata);
+    return next->can_zero (next);
   }
 }
 
 /* Advertise desired FAST_ZERO mode. */
 static int
-nozero_can_fast_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+nozero_can_fast_zero (nbdkit_next *next,
                       void *handle)
 {
   if (zeromode == NONE)
     return 0;
   if (zeromode != EMULATE && fastzeromode == DEFAULT)
-    return next_ops->can_fast_zero (nxdata);
+    return next->can_fast_zero (next);
   return fastzeromode != NOFAST;
 }
 
 static int
-nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+nozero_zero (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
              int *err)
 {
@@ -178,10 +178,10 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     flags &= ~NBDKIT_FLAG_MAY_TRIM;
 
   if (zeromode != EMULATE)
-    return next_ops->zero (nxdata, count, offs, flags, err);
+    return next->zero (next, count, offs, flags, err);
 
   if (flags & NBDKIT_FLAG_FUA) {
-    if (next_ops->can_fua (nxdata) == NBDKIT_FUA_EMULATE)
+    if (next->can_fua (next) == NBDKIT_FUA_EMULATE)
       need_flush = true;
     else
       writeflags = NBDKIT_FLAG_FUA;
@@ -197,7 +197,7 @@ nozero_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     if (size == count && need_flush)
       writeflags = NBDKIT_FLAG_FUA;
 
-    if (next_ops->pwrite (nxdata, buffer, size, offs, writeflags, err) == -1)
+    if (next->pwrite (next, buffer, size, offs, writeflags, err) == -1)
       return -1;
     offs += size;
     count -= size;

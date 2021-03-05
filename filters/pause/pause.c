@@ -64,7 +64,7 @@ pause_unload (void)
 }
 
 static int
-pause_config (nbdkit_next_config *next, void *nxdata,
+pause_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
               const char *key, const char *value)
 {
   if (strcmp (key, "pause-control") == 0) {
@@ -79,7 +79,8 @@ pause_config (nbdkit_next_config *next, void *nxdata,
 }
 
 static int
-pause_config_complete (nbdkit_next_config_complete *next, void *nxdata)
+pause_config_complete (nbdkit_next_config_complete *next,
+                       nbdkit_backend *nxdata)
 {
   size_t len;
   struct sockaddr_un addr;
@@ -230,7 +231,7 @@ control_socket_thread (void *arg)
 
 /* Start the background thread after fork. */
 static int
-pause_after_fork (nbdkit_next_after_fork *next, void *nxdata)
+pause_after_fork (nbdkit_next_after_fork *next, nbdkit_backend *nxdata)
 {
   int err;
   pthread_t thread;
@@ -267,21 +268,21 @@ end_request (void)
 
 /* Read data. */
 static int
-pause_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+pause_pread (nbdkit_next *next,
              void *handle, void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
   int r;
 
   begin_request ();
-  r = next_ops->pread (nxdata, buf, count, offset, flags, err);
+  r = next->pread (next, buf, count, offset, flags, err);
   end_request ();
   return r;
 }
 
 /* Write data. */
 static int
-pause_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+pause_pwrite (nbdkit_next *next,
               void *handle,
               const void *buf, uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
@@ -289,63 +290,63 @@ pause_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
   int r;
 
   begin_request ();
-  r = next_ops->pwrite (nxdata, buf, count, offset, flags, err);
+  r = next->pwrite (next, buf, count, offset, flags, err);
   end_request ();
   return r;
 }
 
 /* Zero data. */
 static int
-pause_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+pause_zero (nbdkit_next *next,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
   int r;
 
   begin_request ();
-  r = next_ops->zero (nxdata, count, offset, flags, err);
+  r = next->zero (next, count, offset, flags, err);
   end_request ();
   return r;
 }
 
 /* Trim data. */
 static int
-pause_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+pause_trim (nbdkit_next *next,
             void *handle, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
   int r;
 
   begin_request ();
-  r = next_ops->trim (nxdata, count, offset, flags, err);
+  r = next->trim (next, count, offset, flags, err);
   end_request ();
   return r;
 }
 
 /* Extents. */
 static int
-pause_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+pause_extents (nbdkit_next *next,
                void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                struct nbdkit_extents *extents, int *err)
 {
   int r;
 
   begin_request ();
-  r = next_ops->extents (nxdata, count, offset, flags, extents, err);
+  r = next->extents (next, count, offset, flags, extents, err);
   end_request ();
   return r;
 }
 
 /* Cache. */
 static int
-pause_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+pause_cache (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
 {
   int r;
 
   begin_request ();
-  r = next_ops->cache (nxdata, count, offset, flags, err);
+  r = next->cache (next, count, offset, flags, err);
   end_request ();
   return r;
 }

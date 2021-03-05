@@ -51,9 +51,9 @@ extern int blk_set_size (uint64_t new_size);
 extern void blk_status (uint64_t blknum, bool *present, bool *trimmed);
 
 /* Read a single block from the overlay or plugin. */
-extern int blk_read (struct nbdkit_next_ops *next_ops, void *nxdata,
+extern int blk_read (nbdkit_next *next,
                      uint64_t blknum, uint8_t *block, int *err)
-  __attribute__((__nonnull__ (1, 4, 5)));
+  __attribute__((__nonnull__ (1, 3, 4)));
 
 /* Cache mode for blocks not already in overlay */
 enum cache_mode {
@@ -64,10 +64,10 @@ enum cache_mode {
 };
 
 /* Cache a single block from the plugin. */
-extern int blk_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+extern int blk_cache (nbdkit_next *next,
                       uint64_t blknum, uint8_t *block, enum cache_mode,
                       int *err)
-  __attribute__((__nonnull__ (1, 4, 6)));
+  __attribute__((__nonnull__ (1, 3, 5)));
 
 /* Write a single block. */
 extern int blk_write (uint64_t blknum, const uint8_t *block, int *err)

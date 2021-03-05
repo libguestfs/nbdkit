@@ -35,7 +35,7 @@
 #include <nbdkit-filter.h>
 
 static int
-noextents_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+noextents_can_extents (nbdkit_next *next,
                        void *handle)
 {
   return 0;

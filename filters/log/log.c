@@ -76,7 +76,7 @@ log_unload (void)
 
 /* Called for each key=value passed on the command line. */
 static int
-log_config (nbdkit_next_config *next, void *nxdata,
+log_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
             const char *key, const char *value)
 {
   if (strcmp (key, "logfile") == 0) {
@@ -103,7 +103,8 @@ log_config (nbdkit_next_config *next, void *nxdata,
 
 /* Open the logfile. */
 static int
-log_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
+log_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
+               int thread_model)
 {
   int fd;
 
@@ -136,7 +137,7 @@ log_get_ready (nbdkit_next_get_ready *next, void *nxdata, int thread_model)
 }
 
 static int
-log_after_fork (nbdkit_next_after_fork *next, void *nxdata)
+log_after_fork (nbdkit_next_after_fork *next, nbdkit_backend *nxdata)
 {
   /* Only issue this message if we actually fork. */
   if (getpid () != saved_pid)
@@ -147,7 +148,7 @@ log_after_fork (nbdkit_next_after_fork *next, void *nxdata)
 
 /* List exports. */
 static int
-log_list_exports (nbdkit_next_list_exports *next, void *nxdata,
+log_list_exports (nbdkit_next_list_exports *next, nbdkit_backend *nxdata,
                   int readonly, int is_tls,
                   struct nbdkit_exports *exports)
 {
@@ -204,7 +205,7 @@ log_preconnect (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
 
 /* Open a connection. */
 static void *
-log_open (nbdkit_next_open *next, void *nxdata,
+log_open (nbdkit_next_open *next, nbdkit_context *nxdata,
           int readonly, const char *exportname, int is_tls)
 {
   struct handle *h;
@@ -242,7 +243,7 @@ log_close (void *handle)
 }
 
 static int
-log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+log_prepare (nbdkit_next *next, void *handle,
              int readonly)
 {
   FILE *fp;
@@ -250,16 +251,16 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   size_t len = 0;
   struct handle *h = handle;
   const char *exportname = h->exportname;
-  int64_t size = next_ops->get_size (nxdata);
-  int w = next_ops->can_write (nxdata);
-  int f = next_ops->can_flush (nxdata);
-  int r = next_ops->is_rotational (nxdata);
-  int t = next_ops->can_trim (nxdata);
-  int z = next_ops->can_zero (nxdata);
-  int F = next_ops->can_fua (nxdata);
-  int e = next_ops->can_extents (nxdata);
-  int c = next_ops->can_cache (nxdata);
-  int Z = next_ops->can_fast_zero (nxdata);
+  int64_t size = next->get_size (next);
+  int w = next->can_write (next);
+  int f = next->can_flush (next);
+  int r = next->is_rotational (next);
+  int t = next->can_trim (next);
+  int z = next->can_zero (next);
+  int F = next->can_fua (next);
+  int e = next->can_extents (next);
+  int c = next->can_cache (next);
+  int Z = next->can_fast_zero (next);
 
   if (size < 0 || w < 0 || f < 0 || r < 0 || t < 0 || z < 0 || F < 0 ||
       e < 0 || c < 0 || Z < 0)
@@ -284,7 +285,7 @@ log_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 }
 
 static int
-log_finalize (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+log_finalize (nbdkit_next *next, void *handle)
 {
   struct handle *h = handle;
 
@@ -294,7 +295,7 @@ log_finalize (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
 
 /* Read data. */
 static int
-log_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+log_pread (nbdkit_next *next,
            void *handle, void *buf, uint32_t count, uint64_t offs,
            uint32_t flags, int *err)
 {
@@ -304,12 +305,12 @@ log_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   LOG (h, "Read", r, err, "offset=0x%" PRIx64 " count=0x%x", offs, count);
 
   assert (!flags);
-  return r = next_ops->pread (nxdata, buf, count, offs, flags, err);
+  return r = next->pread (next, buf, count, offs, flags, err);
 }
 
 /* Write data. */
 static int
-log_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+log_pwrite (nbdkit_next *next,
             void *handle, const void *buf, uint32_t count, uint64_t offs,
             uint32_t flags, int *err)
 {
@@ -321,12 +322,12 @@ log_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
        offs, count, !!(flags & NBDKIT_FLAG_FUA));
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
-  return r = next_ops->pwrite (nxdata, buf, count, offs, flags, err);
+  return r = next->pwrite (next, buf, count, offs, flags, err);
 }
 
 /* Flush. */
 static int
-log_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+log_flush (nbdkit_next *next, void *handle,
            uint32_t flags, int *err)
 {
   struct handle *h = handle;
@@ -335,12 +336,12 @@ log_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   LOG (h, "Flush", r, err, "");
 
   assert (!flags);
-  return r = next_ops->flush (nxdata, flags, err);
+  return r = next->flush (next, flags, err);
 }
 
 /* Trim data. */
 static int
-log_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+log_trim (nbdkit_next *next,
           void *handle, uint32_t count, uint64_t offs, uint32_t flags,
           int *err)
 {
@@ -352,12 +353,12 @@ log_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
        offs, count, !!(flags & NBDKIT_FLAG_FUA));
 
   assert (!(flags & ~NBDKIT_FLAG_FUA));
-  return r = next_ops->trim (nxdata, count, offs, flags, err);
+  return r = next->trim (next, count, offs, flags, err);
 }
 
 /* Zero data. */
 static int
-log_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+log_zero (nbdkit_next *next,
           void *handle, uint32_t count, uint64_t offs, uint32_t flags,
           int *err)
 {
@@ -372,12 +373,12 @@ log_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   assert (!(flags & ~(NBDKIT_FLAG_FUA | NBDKIT_FLAG_MAY_TRIM |
                       NBDKIT_FLAG_FAST_ZERO)));
-  return r = next_ops->zero (nxdata, count, offs, flags, err);
+  return r = next->zero (next, count, offs, flags, err);
 }
 
 /* Extents. */
 static int
-log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+log_extents (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
              struct nbdkit_extents *extents, int *err)
 {
@@ -389,7 +390,7 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
   enter (h, id, "Extents",
          "offset=0x%" PRIx64 " count=0x%x req_one=%d",
          offs, count, !!(flags & NBDKIT_FLAG_REQ_ONE));
-  r = next_ops->extents (nxdata, count, offs, flags, extents, err);
+  r = next->extents (next, count, offs, flags, extents, err);
   if (r == -1)
     leave_simple (h, id, "Extents", r, err);
   else {
@@ -430,7 +431,7 @@ log_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache data. */
 static int
-log_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+log_cache (nbdkit_next *next,
            void *handle, uint32_t count, uint64_t offs, uint32_t flags,
            int *err)
 {
@@ -440,7 +441,7 @@ log_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
   LOG (h, "Cache", r, err, "offset=0x%" PRIx64 " count=0x%x", offs, count);
 
   assert (!flags);
-  return r = next_ops->cache (nxdata, count, offs, flags, err);
+  return r = next->cache (next, count, offs, flags, err);
 }
 
 static struct nbdkit_filter filter = {

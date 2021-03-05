@@ -44,7 +44,7 @@
 static int thread_model = NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS;
 
 static int
-noparallel_config (nbdkit_next_config *next, void *nxdata,
+noparallel_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                    const char *key, const char *value)
 {
   if (strcmp (key, "serialize") == 0 ||

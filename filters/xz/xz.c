@@ -53,7 +53,7 @@ static uint64_t maxblock = 512 * 1024 * 1024;
 static uint32_t maxdepth = 8;
 
 static int
-xz_config (nbdkit_next_config *next, void *nxdata,
+xz_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
            const char *key, const char *value)
 {
   if (strcmp (key, "xz-max-block") == 0) {
@@ -90,7 +90,7 @@ struct xz_handle {
 
 /* Create the per-connection handle. */
 static void *
-xz_open (nbdkit_next_open *next, void *nxdata,
+xz_open (nbdkit_next_open *next, nbdkit_context *nxdata,
          int readonly, const char *exportname, int is_tls)
 {
   struct xz_handle *h;
@@ -133,12 +133,12 @@ xz_close (void *handle)
 }
 
 static int
-xz_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+xz_prepare (nbdkit_next *next, void *handle,
             int readonly)
 {
   struct xz_handle *h = handle;
 
-  h->xz = xzfile_open (next_ops, nxdata);
+  h->xz = xzfile_open (next);
   if (!h->xz)
     return -1;
 
@@ -159,10 +159,10 @@ xz_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 
 /* Description. */
 static const char *
-xz_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+xz_export_description (nbdkit_next *next,
                        void *handle)
 {
-  const char *base = next_ops->export_description (nxdata);
+  const char *base = next->export_description (next);
 
   if (!base)
     return NULL;
@@ -171,7 +171,7 @@ xz_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Get the file size. */
 static int64_t
-xz_get_size (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+xz_get_size (nbdkit_next *next, void *handle)
 {
   struct xz_handle *h = handle;
 
@@ -184,7 +184,7 @@ xz_get_size (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
  * below.  This is possibly a bug in nbdkit.
  */
 static int
-xz_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+xz_can_write (nbdkit_next *next,
               void *handle)
 {
   return 0;
@@ -192,7 +192,7 @@ xz_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Whatever the plugin says, this filter is consistent across connections. */
 static int
-xz_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+xz_can_multi_conn (nbdkit_next *next,
                    void *handle)
 {
   return 1;
@@ -202,7 +202,7 @@ xz_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
  * sparseness so in future we should generate extents information. XXX
  */
 static int
-xz_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+xz_can_extents (nbdkit_next *next,
                 void *handle)
 {
   return 0;
@@ -210,7 +210,7 @@ xz_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Cache */
 static int
-xz_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+xz_can_cache (nbdkit_next *next,
               void *handle)
 {
   /* We are already operating as a cache regardless of the plugin's
@@ -222,7 +222,7 @@ xz_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Read data from the file. */
 static int
-xz_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+xz_pread (nbdkit_next *next,
           void *handle, void *buf, uint32_t count, uint64_t offset,
           uint32_t flags, int *err)
 {
@@ -235,7 +235,7 @@ xz_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   data = get_block (h->c, offset, &start, &size);
   if (!data) {
     /* Not in the cache.  We need to read the block from the xz file. */
-    data = xzfile_read_block (h->xz, next_ops, nxdata, flags, err,
+    data = xzfile_read_block (h->xz, next, flags, err,
                               offset, &start, &size);
     if (data == NULL)
       return -1;
@@ -255,7 +255,7 @@ xz_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
   count -= n;
   offset += n;
   if (count > 0)
-    return xz_pread (next_ops, nxdata, h, buf, count, offset, flags, err);
+    return xz_pread (next, h, buf, count, offset, flags, err);
 
   return 0;
 }

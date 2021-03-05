@@ -51,7 +51,7 @@ static int bits = 16;
 
 /* Called for each key=value passed on the command line. */
 static int
-swab_config (nbdkit_next_config *next, void *nxdata,
+swab_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
              const char *key, const char *value)
 {
   int r;
@@ -75,10 +75,10 @@ swab_config (nbdkit_next_config *next, void *nxdata,
 
 /* Round size down to avoid issues at end of file. */
 static int64_t
-swab_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+swab_get_size (nbdkit_next *next,
                void *handle)
 {
-  int64_t size = next_ops->get_size (nxdata);
+  int64_t size = next->get_size (next);
 
   if (size == -1)
     return -1;
@@ -133,7 +133,7 @@ buf_bswap (void *dest, const void *src, uint32_t count)
 
 /* Read data. */
 static int
-swab_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+swab_pread (nbdkit_next *next,
             void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
@@ -141,7 +141,7 @@ swab_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   if (!is_aligned (count, offset, err)) return -1;
 
-  r = next_ops->pread (nxdata, buf, count, offset, flags, err);
+  r = next->pread (next, buf, count, offset, flags, err);
   if (r == -1)
     return -1;
 
@@ -152,7 +152,7 @@ swab_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Write data. */
 static int
-swab_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+swab_pwrite (nbdkit_next *next,
              void *handle, const void *buf, uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
@@ -169,48 +169,48 @@ swab_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
 
   buf_bswap (block, buf, count);
 
-  return next_ops->pwrite (nxdata, block, count, offset, flags, err);
+  return next->pwrite (next, block, count, offset, flags, err);
 }
 
 /* Trim data. */
 static int
-swab_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+swab_trim (nbdkit_next *next,
            void *handle, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
   if (!is_aligned (count, offset, err)) return -1;
-  return next_ops->trim (nxdata, count, offset, flags, err);
+  return next->trim (next, count, offset, flags, err);
 }
 
 /* Zero data. */
 static int
-swab_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+swab_zero (nbdkit_next *next,
            void *handle, uint32_t count, uint64_t offset, uint32_t flags,
            int *err)
 {
   if (!is_aligned (count, offset, err)) return -1;
-  return next_ops->zero (nxdata, count, offset, flags, err);
+  return next->zero (next, count, offset, flags, err);
 }
 
 /* Extents. */
 static int
-swab_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+swab_extents (nbdkit_next *next,
               void *handle, uint32_t count, uint64_t offset, uint32_t flags,
               struct nbdkit_extents *extents, int *err)
 {
   if (!is_aligned (count, offset, err)) return -1;
-  return nbdkit_extents_aligned (next_ops, nxdata, count, offset, flags,
-                                 bits/8, extents, err);
+  return nbdkit_extents_aligned (next, count, offset, flags, bits / 8, extents,
+                                 err);
 }
 
 /* Cache. */
 static int
-swab_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+swab_cache (nbdkit_next *next,
             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
             int *err)
 {
   if (!is_aligned (count, offset, err)) return -1;
-  return next_ops->cache (nxdata, count, offset, flags, err);
+  return next->cache (next, count, offset, flags, err);
 }
 
 

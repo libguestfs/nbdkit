@@ -51,7 +51,7 @@ static enum FuaMode {
 } fuamode;
 
 static int
-fua_config (nbdkit_next_config *next, void *nxdata,
+fua_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
             const char *key, const char *value)
 {
   if (strcmp (key, "fuamode") == 0) {
@@ -82,7 +82,7 @@ fua_config (nbdkit_next_config *next, void *nxdata,
 
 /* Check that desired mode is supported by plugin. */
 static int
-fua_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+fua_prepare (nbdkit_next *next, void *handle,
              int readonly)
 {
   int r;
@@ -97,7 +97,7 @@ fua_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
   case DISCARD:
     break;
   case EMULATE:
-    r = next_ops->can_flush (nxdata);
+    r = next->can_flush (next);
     if (r == -1)
       return -1;
     if (r == 0) {
@@ -107,7 +107,7 @@ fua_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
     break;
   case NATIVE:
   case FORCE:
-    r = next_ops->can_fua (nxdata);
+    r = next->can_fua (next);
     if (r == -1)
       return -1;
     if (r == NBDKIT_FUA_NONE) {
@@ -122,7 +122,7 @@ fua_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
 
 /* Advertise proper flush support. */
 static int
-fua_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+fua_can_flush (nbdkit_next *next, void *handle)
 {
   switch (fuamode) {
   case FORCE:
@@ -132,14 +132,14 @@ fua_can_flush (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   case EMULATE:
   case NATIVE:
   case PASS:
-    return next_ops->can_flush (nxdata);
+    return next->can_flush (next);
   }
   abort ();
 }
 
 /* Advertise desired fua mode. */
 static int
-fua_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
+fua_can_fua (nbdkit_next *next, void *handle)
 {
   switch (fuamode) {
   case NONE:
@@ -151,13 +151,13 @@ fua_can_fua (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle)
   case DISCARD:
     return NBDKIT_FUA_NATIVE;
   case PASS:
-    return next_ops->can_fua (nxdata);
+    return next->can_fua (next);
   }
   abort ();
 }
 
 static int
-fua_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
+fua_pwrite (nbdkit_next *next,
             void *handle, const void *buf, uint32_t count, uint64_t offs,
             uint32_t flags, int *err)
 {
@@ -184,14 +184,14 @@ fua_pwrite (struct nbdkit_next_ops *next_ops, void *nxdata,
     flags &= ~NBDKIT_FLAG_FUA;
     break;
   }
-  r = next_ops->pwrite (nxdata, buf, count, offs, flags, err);
+  r = next->pwrite (next, buf, count, offs, flags, err);
   if (r != -1 && need_flush)
-    r = next_ops->flush (nxdata, 0, err);
+    r = next->flush (next, 0, err);
   return r;
 }
 
 static int
-fua_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
+fua_flush (nbdkit_next *next,
            void *handle, uint32_t flags, int *err)
 {
   switch (fuamode) {
@@ -203,13 +203,13 @@ fua_flush (struct nbdkit_next_ops *next_ops, void *nxdata,
   case EMULATE:
   case NATIVE:
   case PASS:
-    return next_ops->flush (nxdata, flags, err);
+    return next->flush (next, flags, err);
   }
   abort ();
 }
 
 static int
-fua_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
+fua_trim (nbdkit_next *next,
           void *handle, uint32_t count, uint64_t offs, uint32_t flags,
           int *err)
 {
@@ -236,14 +236,14 @@ fua_trim (struct nbdkit_next_ops *next_ops, void *nxdata,
     flags &= ~NBDKIT_FLAG_FUA;
     break;
   }
-  r = next_ops->trim (nxdata, count, offs, flags, err);
+  r = next->trim (next, count, offs, flags, err);
   if (r != -1 && need_flush)
-    r = next_ops->flush (nxdata, 0, err);
+    r = next->flush (next, 0, err);
   return r;
 }
 
 static int
-fua_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
+fua_zero (nbdkit_next *next,
           void *handle, uint32_t count, uint64_t offs, uint32_t flags,
           int *err)
 {
@@ -270,9 +270,9 @@ fua_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     flags &= ~NBDKIT_FLAG_FUA;
     break;
   }
-  r = next_ops->zero (nxdata, count, offs, flags, err);
+  r = next->zero (next, count, offs, flags, err);
   if (r != -1 && need_flush)
-    r = next_ops->flush (nxdata, 0, err);
+    r = next->flush (next, 0, err);
   return r;
 }
 

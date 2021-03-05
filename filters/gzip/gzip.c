@@ -125,7 +125,7 @@ xwrite (const void *buf, size_t count)
 
 /* The first thread to call gzip_prepare uncompresses the whole plugin. */
 static int
-do_uncompress (struct nbdkit_next_ops *next_ops, void *nxdata)
+do_uncompress (nbdkit_next *next)
 {
   z_stream strm;
   int zerr;
@@ -143,7 +143,7 @@ do_uncompress (struct nbdkit_next_ops *next_ops, void *nxdata)
   assert (size == -1);
 
   /* Get the size of the underlying plugin. */
-  compressed_size = next_ops->get_size (nxdata);
+  compressed_size = next->get_size (next);
   if (compressed_size == -1)
     return -1;
 
@@ -207,8 +207,8 @@ do_uncompress (struct nbdkit_next_ops *next_ops, void *nxdata)
       size_t n = MIN (block_size, compressed_size - strm.total_in);
       int err = 0;
 
-      if (next_ops->pread (nxdata, in_block, (uint32_t) n, strm.total_in,
-                           0, &err) == -1) {
+      if (next->pread (next, in_block, (uint32_t)n, strm.total_in, 0,
+                       &err) == -1) {
         errno = err;
         return -1;
       }
@@ -248,19 +248,19 @@ do_uncompress (struct nbdkit_next_ops *next_ops, void *nxdata)
 }
 
 static int
-gzip_prepare (struct nbdkit_next_ops *next_ops, void *nxdata, void *handle,
+gzip_prepare (nbdkit_next *next, void *handle,
               int readonly)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
 
   if (size >= 0)
     return 0;
-  return do_uncompress (next_ops, nxdata);
+  return do_uncompress (next);
 }
 
 /* Whatever the plugin says, this filter makes it read-only. */
 static int
-gzip_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
+gzip_can_write (nbdkit_next *next,
                 void *handle)
 {
   return 0;
@@ -268,7 +268,7 @@ gzip_can_write (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Whatever the plugin says, this filter is consistent across connections. */
 static int
-gzip_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
+gzip_can_multi_conn (nbdkit_next *next,
                      void *handle)
 {
   return 1;
@@ -278,7 +278,7 @@ gzip_can_multi_conn (struct nbdkit_next_ops *next_ops, void *nxdata,
  * supported.
  */
 static int
-gzip_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
+gzip_can_extents (nbdkit_next *next,
                   void *handle)
 {
   return 0;
@@ -289,7 +289,7 @@ gzip_can_extents (struct nbdkit_next_ops *next_ops, void *nxdata,
  * behavior of calling .pread for caching.
  */
 static int
-gzip_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
+gzip_can_cache (nbdkit_next *next,
                 void *handle)
 {
   return NBDKIT_CACHE_EMULATE;
@@ -297,10 +297,10 @@ gzip_can_cache (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Description. */
 static const char *
-gzip_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
+gzip_export_description (nbdkit_next *next,
                          void *handle)
 {
-  const char *base = next_ops->export_description (nxdata);
+  const char *base = next->export_description (next);
 
   if (!base)
     return NULL;
@@ -309,7 +309,7 @@ gzip_export_description (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Get the file size. */
 static int64_t
-gzip_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
+gzip_get_size (nbdkit_next *next,
                void *handle)
 {
   int64_t t;
@@ -318,7 +318,7 @@ gzip_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
   assert (size >= 0);
 
   /* Check the plugin size didn't change underneath us. */
-  t = next_ops->get_size (nxdata);
+  t = next->get_size (next);
   if (t == -1)
     return -1;
   if (t != compressed_size) {
@@ -333,7 +333,7 @@ gzip_get_size (struct nbdkit_next_ops *next_ops, void *nxdata,
 
 /* Read data from the temporary file. */
 static int
-gzip_pread (struct nbdkit_next_ops *next_ops, void *nxdata,
+gzip_pread (nbdkit_next *next,
             void *handle, void *buf, uint32_t count, uint64_t offset,
             uint32_t flags, int *err)
 {
