@@ -34,7 +34,7 @@ line.  Read the Ruby script to see if it requires any.
 =head1 WRITING A RUBY NBDKIT PLUGIN
 
 For an example plugin written in Ruby, see:
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/ruby/example.rb>
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/ruby/example.rb>
 
 Broadly speaking, Ruby nbdkit plugins work like C ones, so you should
 read L<nbdkit-plugin(3)> first.

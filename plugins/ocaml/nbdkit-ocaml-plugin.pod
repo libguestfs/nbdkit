@@ -19,7 +19,7 @@ libraries.  See L<http://caml.inria.fr/mantis/view.php?id=6693>
 =head1 WRITING AN OCAML NBDKIT PLUGIN
 
 For an example plugin written in OCaml, see:
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/ocaml/example.ml>
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/ocaml/example.ml>
 
 Broadly speaking, OCaml nbdkit plugins work like C ones, so you should
 read L<nbdkit-plugin(3)> first.

@@ -295,7 +295,7 @@ When testing use:
 For development ideas, see the TODO file.
 
 The upstream git repository is:
-https://github.com/libguestfs/nbdkit
+https://gitlab.com/nbdkit/nbdkit
 
 Please send patches to the libguestfs mailing list:
 https://www.redhat.com/mailman/listinfo/libguestfs

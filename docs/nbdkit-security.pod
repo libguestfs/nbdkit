@@ -8,7 +8,7 @@ This page details past security issues found in nbdkit.
 
 For how to report new security issues, see the C<SECURITY> file in the
 top level source directory, also available online here:
-L<https://github.com/libguestfs/nbdkit/blob/master/SECURITY>
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/SECURITY>
 
 =head2 CVE-2019-14850 
 denial of service due to premature opening of back-end connection
