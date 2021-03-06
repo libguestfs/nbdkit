@@ -64,7 +64,7 @@ This example was created by running:
  $ ./disk2data.pl disk
 
 The C<disk2data.pl> script is provided in the nbdkit sources
-(L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>).
+(L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/data/disk2data.pl>).
 
 See also L<nbdkit-partitioning-plugin(1)>.
 
@@ -339,7 +339,7 @@ This script can convert from small disk images into the data format
 described above.
 
 It is provided in the nbdkit sources.  See
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/data/disk2data.pl>
 
 =head1 FILES
 
@@ -371,7 +371,7 @@ L<nbdkit-random-plugin(1)>,
 L<nbdkit-sparse-random-plugin(1)>,
 L<nbdkit-tmpdisk-plugin(1)>,
 L<nbdkit-zero-plugin(1)>,
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/data/disk2data.pl>,
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/data/disk2data.pl>,
 L<https://en.wikipedia.org/wiki/Base64>.
 
 =head1 AUTHORS

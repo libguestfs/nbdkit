@@ -43,7 +43,7 @@ C<nbdkit-example3-plugin> first appeared in nbdkit 1.0.
 
 =head1 SEE ALSO
 
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example3/example3.c>,
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/example3/example3.c>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>
 

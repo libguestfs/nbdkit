@@ -45,7 +45,7 @@ Network Block Device (NBD) protocol.  This manual page describes how
 to create an nbdkit plugin in C.
 
 To see example plugins:
-L<https://github.com/libguestfs/nbdkit/tree/master/plugins>
+L<https://gitlab.com/nbdkit/nbdkit/tree/master/plugins>
 
 To write plugins in other languages, see:
 __LANG_PLUGIN_LINKS__.

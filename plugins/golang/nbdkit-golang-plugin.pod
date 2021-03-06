@@ -15,7 +15,7 @@ plugins written in C) and are used in the same way.
 =head1 WRITING A GOLANG NBDKIT PLUGIN
 
 For examples of plugins written in Go, see:
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/golang/examples>
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/golang/examples>
 
 The F<minimal/minimal.go> example is the smallest possible plugin,
 implementing only the required callbacks (C<Open>, C<GetSize> and

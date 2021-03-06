@@ -24,7 +24,7 @@ line.  Read the Python script to see if it requires any.
 =head1 WRITING A PYTHON NBDKIT PLUGIN
 
 For example plugins written in Python, see:
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/python/examples>
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/python/examples>
 
 Broadly speaking, Python nbdkit plugins work like C ones, so you should
 read L<nbdkit-plugin(3)> first.

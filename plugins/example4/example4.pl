@@ -37,7 +37,7 @@ C<nbdkit-example4-plugin> first appeared in nbdkit 1.2.
 
 =head1 SEE ALSO
 
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/example4/example4.pl>,
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/example4/example4.pl>,
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
 L<nbdkit-perl-plugin(3)>.
