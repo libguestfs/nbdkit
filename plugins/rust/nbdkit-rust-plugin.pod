@@ -18,9 +18,9 @@ Broadly speaking, Rust nbdkit plugins work like C ones, so you should
 read L<nbdkit-plugin(3)> first.
 
 You should also look at
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/rust/src/lib.rs>
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/rust/src/lib.rs>
 and
-L<https://github.com/libguestfs/nbdkit/blob/master/plugins/rust/examples/ramdisk.rs>
+L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/rust/examples/ramdisk.rs>
 in the nbdkit source tree.  The first describes the plugin interface
 for Rust plugins and the second provides a simple example.
 

@@ -29,7 +29,7 @@
 //!
 //! NBDKit is a toolkit for building Network Block Device servers.
 //!
-//! <https://github.com/libguestfs/nbdkit>
+//! <https://gitlab.com/nbdkit/nbdkit>
 //!
 //! To use nbdkit, build your project as a cdylib.  Define your plugin by
 //! implementing [`Server`], and then register it with [`plugin!`].  See 
