@@ -60,6 +60,8 @@ static enum TrackDirtyMode {
   OFF,
 } track;
 
+static bool byname = false;
+
 enum dirty {
   WRITE = 1, /* A write may have populated a cache */
   READ = 2, /* A read may have populated a cache */
@@ -73,12 +75,21 @@ struct handle {
   nbdkit_next *next;
   enum MultiConnMode mode; /* Runtime resolution of mode==AUTO */
   enum dirty dirty; /* What aspects of this connection are dirty */
+  char *name; /* Used when byname==true to assign group */
+  struct group *group; /* All connections grouped with this one */
 };
 DEFINE_VECTOR_TYPE(conns_vector, struct handle *);
-static conns_vector conns = empty_vector;
-static bool dirty; /* True if any connection is dirty */
+struct group {
+  conns_vector conns;
+  char *name;
+  bool dirty; /* True if any connection in group is dirty */
+};
+DEFINE_VECTOR_TYPE(group_vector, struct group *);
+static group_vector groups = empty_vector;
 
-/* Accept 'multi-conn-mode=mode' and 'multi-conn-track-dirty=level' */
+/* Accept 'multi-conn-mode=mode', 'multi-conn-track-dirty=level', and
+ * 'multi-conn-exportname=bool'.
+ */
 static int
 multi_conn_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                    const char *key, const char *value)
@@ -114,13 +125,24 @@ multi_conn_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
     }
     return 0;
   }
+  else if (strcmp (key, "multi-conn-exportname") == 0 ||
+           strcmp (key, "multi-conn-export-name") == 0) {
+    int r;
+
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    byname = r;
+    return 0;
+  }
   return next (nxdata, key, value);
 }
 
 #define multi_conn_config_help \
   "multi-conn-mode=<MODE>          'auto' (default), 'emulate', 'plugin',\n" \
   "                                'disable', or 'unsafe'.\n" \
-  "multi-conn-track-dirty=<LEVEL>  'conn' (default), 'fast', or 'off'.\n"
+  "multi-conn-track-dirty=<LEVEL>  'conn' (default), 'fast', or 'off'.\n" \
+  "multi-conn-exportname=<BOOL>    true to limit emulation by export name.\n"
 
 static int
 multi_conn_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
@@ -147,6 +169,13 @@ multi_conn_open (nbdkit_next_open *next, nbdkit_context *nxdata,
     nbdkit_error ("calloc: %m");
     return NULL;
   }
+  if (byname) {
+    h->name = strdup (exportname);
+    if (h->name == NULL) {
+      nbdkit_error ("strdup: %m");
+      return NULL;
+    }
+  }
   return h;
 }
 
@@ -154,6 +183,8 @@ static int
 multi_conn_prepare (nbdkit_next *next, void *handle, int readonly)
 {
   struct handle *h = handle;
+  struct group *g;
+  bool new_group = false;
   int r;
 
   h->next = next;
@@ -174,7 +205,39 @@ multi_conn_prepare (nbdkit_next *next, void *handle, int readonly)
   }
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  return conns_vector_append (&conns, h);
+  if (byname) {
+    g = NULL;
+    for (size_t i = 0; i < groups.size; i++)
+      if (strcmp (groups.ptr[i]->name, h->name) == 0) {
+        g = groups.ptr[i];
+        break;
+      }
+  }
+  else
+    g = groups.size ? groups.ptr[0] : NULL;
+
+  if (!g) {
+    g = calloc (1, sizeof *g);
+    if (g == NULL) {
+      nbdkit_error ("calloc: %m");
+      return -1;
+    }
+    if (group_vector_append (&groups, g) == -1)
+      return -1;
+    g->name = h->name;
+    h->name = NULL;
+    new_group = true;
+  }
+  if (conns_vector_append (&g->conns, h) == -1) {
+    if (new_group) {
+      group_vector_remove (&groups, groups.size - 1);
+      free (g->name);
+      free (g);
+    }
+    return -1;
+  }
+  h->group = g;
+  return 0;
 }
 
 static int
@@ -184,21 +247,36 @@ multi_conn_finalize (nbdkit_next *next, void *handle)
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   assert (h->next == next);
+  assert (h->group);
 
   /* XXX should we add a config param to flush if the client forgot? */
-  for (size_t i = 0; i < conns.size; i++) {
-    if (conns.ptr[i] == h) {
-      conns_vector_remove (&conns, i);
+  for (size_t i = 0; i < h->group->conns.size; i++) {
+    if (h->group->conns.ptr[i] == h) {
+      conns_vector_remove (&h->group->conns, i);
       break;
     }
   }
+  if (h->group->conns.size == 0) {
+    for (size_t i = 0; i < groups.size; i++)
+      if (groups.ptr[i] == h->group) {
+        group_vector_remove (&groups, i);
+        free (h->group->name);
+        free (h->group);
+        break;
+      }
+  }
+  h->group = NULL;
   return 0;
 }
 
 static void
 multi_conn_close (void *handle)
 {
-  free (handle);
+  struct handle *h = handle;
+
+  assert (h->group == NULL);
+  free (h->name);
+  free (h);
 }
 
 static int
@@ -252,7 +330,7 @@ mark_dirty (struct handle *h, bool is_write)
     /* fallthrough */
   case FAST:
     if (is_write)
-      dirty = true;
+      h->group->dirty = true;
     break;
   case OFF:
     break;
@@ -369,22 +447,24 @@ multi_conn_flush (nbdkit_next *next,
   struct handle *h = handle, *h2;
   size_t i;
 
+  assert (h->group);
   if (h->mode == EMULATE) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    for (i = 0; i < conns.size; i++) {
-      h2 = conns.ptr[i];
-      if (track == OFF || (dirty && (track == FAST || h2->dirty & READ)) ||
+    for (i = 0; i < h->group->conns.size; i++) {
+      h2 = h->group->conns.ptr[i];
+      if (track == OFF || (h->group->dirty &&
+                           (track == FAST || h2->dirty & READ)) ||
           h2->dirty & WRITE) {
         if (h2->next->flush (h2->next, flags, err) == -1)
           return -1;
         h2->dirty = 0;
       }
     }
-    dirty = 0;
+    h->group->dirty = 0;
   }
   else {
     /* !EMULATE: Check if the image is clean, allowing us to skip a flush. */
-    if (track != OFF && !dirty)
+    if (track != OFF && !h->group->dirty)
       return 0;
     /* Perform the flush, then update dirty tracking. */
     if (next->flush (next, flags, err) == -1)
@@ -393,15 +473,15 @@ multi_conn_flush (nbdkit_next *next,
     case CONN:
       if (next->can_multi_conn (next) == 1) {
         ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-        for (i = 0; i < conns.size; i++)
-          conns.ptr[i]->dirty = 0;
-        dirty = 0;
+        for (i = 0; i < h->group->conns.size; i++)
+          h->group->conns.ptr[i]->dirty = 0;
+        h->group->dirty = 0;
       }
       else
         h->dirty = 0;
       break;
     case FAST:
-      dirty = false;
+      h->group->dirty = false;
       break;
     case OFF:
       break;

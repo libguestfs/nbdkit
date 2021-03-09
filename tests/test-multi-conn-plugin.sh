@@ -39,30 +39,36 @@
 # it ever sends overlapping writes without coordinating flushes and still
 # expects any particular write to occur last).
 
+get_export() {
+    case $1 in
+        */*) export="$tmpdir/$(dirname $1)" conn=$(basename $1) ;;
+        *) export="$tmpdir" conn=$1 ;;
+    esac
+}
 fill_cache() {
-    if test ! -f "$tmpdir/$1"; then
-        cp "$tmpdir/0" "$tmpdir/$1"
+    if test ! -f "$export/$conn"; then
+        cp "$export/0" "$export/$conn"
     fi
 }
 do_fua() {
-    case ,$4, in
+    case ,$3, in
         *,fua,*)
             if test -f "$tmpdir/strictfua"; then
-                dd of="$tmpdir/0" if="$tmpdir/$1" skip=$3 seek=$3 count=$2 \
+                dd of="$export/0" if="$export/$conn" skip=$2 seek=$2 count=$1 \
                   conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes
             else
-                do_flush $1
+                do_flush
             fi ;;
     esac
 }
 do_flush() {
-    if test -f "$tmpdir/$1-replay"; then
+    if test -f "$export/$conn-replay"; then
         while read cnt off; do
-            dd of="$tmpdir/0" if="$tmpdir/$1" skip=$off seek=$off count=$cnt \
+            dd of="$export/0" if="$export/$conn" skip=$off seek=$off count=$cnt \
                conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes
-        done < "$tmpdir/$1-replay"
+        done < "$export/$conn-replay"
     fi
-    rm -f "$tmpdir/$1" "$tmpdir/$1-replay"
+    rm -f "$export/$conn" "$export/$conn-replay"
 }
 case "$1" in
     config)
@@ -91,30 +97,43 @@ case "$1" in
         ;;
     open)
         read i < "$tmpdir/counter"
-        echo $((i+1)) | tee "$tmpdir/counter"
+        i=$((i+1))
+        echo $i > "$tmpdir/counter"
+        if test -z "$3"; then
+            echo $i
+        else
+            mkdir -p "$tmpdir/$3" || exit 1
+            cp "$tmpdir/0" "$tmpdir/$3/0"
+            echo "$3/$i"
+        fi
         ;;
     pread)
-        fill_cache $2
-        dd if="$tmpdir/$2" skip=$4 count=$3 iflag=count_bytes,skip_bytes
+        get_export $2
+        fill_cache
+        dd if="$export/$conn" skip=$4 count=$3 iflag=count_bytes,skip_bytes
         ;;
     cache)
-        fill_cache $2
+        get_export $2
+        fill_cache
         ;;
     pwrite)
-        fill_cache $2
-        dd of="$tmpdir/$2" seek=$4 conv=notrunc oflag=seek_bytes
-        echo $3 $4 >> "$tmpdir/$2-replay"
-        do_fua $2 $3 $4 $5
+        get_export $2
+        fill_cache
+        dd of="$export/$conn" seek=$4 conv=notrunc oflag=seek_bytes
+        echo $3 $4 >> "$export/$conn-replay"
+        do_fua $3 $4 $5
         ;;
     zero | trim)
-        fill_cache $2
-        dd of="$tmpdir/$2" if="/dev/zero" count=$3 seek=$4 conv=notrunc\
+        get_export $2
+        fill_cache
+        dd of="$export/$conn" if="/dev/zero" count=$3 seek=$4 conv=notrunc\
            oflag=seek_bytes iflag=count_bytes
-        echo $3 $4 >> "$tmpdir/$2-replay"
-        do_fua $2 $3 $4 $5
+        echo $3 $4 >> "$export/$conn-replay"
+        do_fua $3 $4 $5
         ;;
     flush)
-        do_flush $2
+        get_export $2
+        do_flush
         ;;
     *)
         exit 2

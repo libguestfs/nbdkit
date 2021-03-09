@@ -5,7 +5,7 @@ nbdkit-multi-conn-filter - nbdkit multi-conn filter
 =head1 SYNOPSIS
 
  nbdkit --filter=multi-conn plugin [multi-conn-mode=MODE] \
-   [multi-conn-track-dirty=LEVEL] [plugin-args...]
+   [multi-conn-track-dirty=LEVEL] [multi-conn-exportname=BOOL] [plugin-args...]
 
 =head1 DESCRIPTION
 
@@ -28,7 +28,7 @@ performance and correctness of client and plugin multi-conn behaviors.
 This filter assumes that multiple connections to a plugin will
 eventually share data, other than any caching effects; it is not
 suitable for use with a plugin that produces completely independent
-data per connection.
+data per connection from the same export name.
 
 Additional control over the behavior of client flush commands is
 possible by combining this filter with L<nbdkit-fua-filter(1)>.  Note
@@ -127,6 +127,27 @@ combined with B<multi-conn-mode=emulate>, a client which disregards
 NBD_FLAG_MULTI_CONN by flushing on each connection itself results in a
 quadratic number of flush operations on the plugin.
 
+=item B<multi-conn-exportname=false>
+
+The exportname switch defaults to false for safety, and causes the
+filter to flush across all active connections regardless of the export
+name in use by that connection when doing emulation.  However, when a
+plugin supports distinct data according to export name, this behavior
+will penalize the performance of clients visiting an unrelated export
+by spending time on replicated flush operations not actually relevant
+to that export.
+
+=item B<multi-conn-exportname=true>
+
+Setting the exportname switch to true causes the filter to only
+synchronize flushes to connections visiting the same export name.
+This avoids penalizing clients visiting an unrelated export name (such
+as L<nbdkit-file-plugin(1)> in B<dir=> mode), but is unsafe when used
+with a plugin that serves shared content across all connections
+regardless of the export name requested by the client, if that plugin
+is not already multi-conn consistent (such as
+L<nbdkit-vddk-plugin(1)>).
+
 =back
 
 =head1 EXAMPLES
@@ -163,6 +184,7 @@ C<nbdkit-multi-conn-filter> first appeared in nbdkit 1.26.
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-vddk-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-cache-filter(1)>,
 L<nbdkit-fua-filter(1)>,
