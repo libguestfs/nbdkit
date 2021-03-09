@@ -163,13 +163,12 @@ backend_list_exports (struct backend *b, int readonly,
                       struct nbdkit_exports *exports)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b);
   size_t count;
 
   controlpath_debug ("%s: list_exports readonly=%d tls=%d",
                      b->name, readonly, conn->using_tls);
 
-  assert (c == NULL);
+  assert (conn->top_context == NULL);
 
   if (b->list_exports (b, readonly, conn->using_tls, exports) == -1 ||
       exports_resolve_default (exports, b, readonly) == -1) {
@@ -186,14 +185,13 @@ const char *
 backend_default_export (struct backend *b, int readonly)
 {
   GET_CONN;
-  struct context *c = get_context (conn, b);
   const char *s;
 
   controlpath_debug ("%s: default_export readonly=%d tls=%d",
                      b->name, readonly, conn->using_tls);
 
   if (conn->default_exportname[b->i] == NULL) {
-    assert (c == NULL);
+    assert (conn->top_context == NULL);
     s = b->default_export (b, readonly, conn->using_tls);
     /* Ignore over-length strings. XXX Also ignore non-UTF8? */
     if (s && strnlen (s, NBD_MAX_STRING + 1) > NBD_MAX_STRING) {
@@ -247,10 +245,10 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   controlpath_debug ("%s: open readonly=%d exportname=\"%s\" tls=%d",
                      b->name, readonly, exportname, conn->using_tls);
 
-  assert (conn->contexts[b->i] == NULL);
   c->next = next_ops;
   c->handle = NULL;
   c->b = b;
+  c->c_next = NULL;
   c->state = 0;
   c->exportsize = -1;
   c->can_write = readonly ? 0 : -1;
@@ -277,15 +275,12 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   /* Most filters will call next_open first, resulting in
    * inner-to-outer ordering.
    */
-  c->handle = b->open (b, readonly, exportname, conn->using_tls);
+  c->handle = b->open (c, readonly, exportname, conn->using_tls);
   controlpath_debug ("%s: open returned handle %p", b->name, c->handle);
 
   if (c->handle == NULL) {
-    if (b->i) { /* Do not strand backend if this layer failed */
-      struct context *c2 = get_context (conn, b->next);
-      if (c2 != NULL)
-        backend_close (c2);
-    }
+    if (b->i && c->c_next != NULL)
+      backend_close (c->c_next);
     free (c);
     return NULL;
   }
@@ -297,7 +292,6 @@ backend_open (struct backend *b, int readonly, const char *exportname)
 int
 backend_prepare (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
 
   assert (c->handle);
@@ -307,11 +301,8 @@ backend_prepare (struct context *c)
    * plugin, similar to typical .open order.  But remember that
    * a filter may skip opening its backend.
    */
-  if (b->i) {
-    struct context *c2 = get_context (conn, b->next);
-    if (c2 != NULL && backend_prepare (c2) == -1)
-      return -1;
-  }
+  if (b->i && c->c_next != NULL && backend_prepare (c->c_next) == -1)
+    return -1;
 
   controlpath_debug ("%s: prepare readonly=%d", b->name, c->can_write == 0);
 
@@ -324,7 +315,6 @@ backend_prepare (struct context *c)
 int
 backend_finalize (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
 
   /* Call these in reverse order to .prepare above, starting from the
@@ -344,19 +334,16 @@ backend_finalize (struct context *c)
     }
   }
 
-  if (b->i) {
-    struct context *c2 = get_context (conn, b->next);
-    if (c2 != NULL)
-      return backend_finalize (c2);
-  }
+  if (b->i && c->c_next != NULL)
+    return backend_finalize (c->c_next);
   return 0;
 }
 
 void
 backend_close (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
+  struct context *c_next = c->c_next;
 
   /* outer-to-inner order, opposite .open */
   assert (c->handle);
@@ -364,12 +351,8 @@ backend_close (struct context *c)
   controlpath_debug ("%s: close", b->name);
   b->close (c);
   free (c);
-  set_context (conn, b, NULL);
-  if (b->i) {
-    struct context *c2 = get_context (conn, b->next);
-    if (c2 != NULL)
-      backend_close (c2);
-  }
+  if (c_next != NULL)
+    backend_close (c_next);
 }
 
 bool
@@ -383,27 +366,26 @@ backend_valid_range (struct context *c, uint64_t offset, uint32_t count)
 /* Core functionality of nbdkit_backend_reopen for retry filter */
 
 int
-backend_reopen (struct backend *b, int readonly, const char *exportname)
+backend_reopen (struct context *c, int readonly, const char *exportname)
 {
-  GET_CONN;
-  struct context *c;
+  struct backend *b = c->b;
 
   controlpath_debug ("%s: reopen readonly=%d exportname=\"%s\"",
-                     b->name, readonly, exportname);
+                     b->next->name, readonly, exportname);
 
-  c = get_context (conn, b);
-  if (c) {
-    if (backend_finalize (c) == -1)
+  if (c->c_next) {
+    if (backend_finalize (c->c_next) == -1)
       return -1;
-    backend_close (c);
+    backend_close (c->c_next);
+    c->c_next = NULL;
   }
-  c = backend_open (b, readonly, exportname);
-  if (c == NULL)
+  c->c_next = backend_open (b->next, readonly, exportname);
+  if (c->c_next == NULL)
     return -1;
-  set_context (conn, b, c);
-  if (backend_prepare (c) == -1) {
-    backend_finalize (c);
-    backend_close (c);
+  if (backend_prepare (c->c_next) == -1) {
+    backend_finalize (c->c_next);
+    backend_close (c->c_next);
+    c->c_next = NULL;
     return -1;
   }
   return 0;

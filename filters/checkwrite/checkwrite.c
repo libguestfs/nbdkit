@@ -44,7 +44,7 @@
 #include "minmax.h"
 
 static void *
-checkwrite_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
+checkwrite_open (nbdkit_next_open *next, nbdkit_context *nxdata,
                  int readonly, const char *exportname, int is_tls)
 {
   /* Ignore readonly flag passed in, open the plugin readonly. */

@@ -53,7 +53,6 @@ validate_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                   uint32_t *error)
 {
   GET_CONN;
-  struct context *c = get_context (conn, top);
 
   /* Readonly connection? */
   if (conn->eflags & NBD_FLAG_READ_ONLY &&
@@ -73,7 +72,7 @@ validate_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
   case NBD_CMD_TRIM:
   case NBD_CMD_WRITE_ZEROES:
   case NBD_CMD_BLOCK_STATUS:
-    if (!backend_valid_range (c, offset, count)) {
+    if (!backend_valid_range (conn->top_context, offset, count)) {
       /* XXX Allow writes to extend the disk? */
       nbdkit_error ("invalid request: %s: offset and count are out of range: "
                     "offset=%" PRIu64 " count=%" PRIu32,
@@ -231,7 +230,7 @@ handle_request (uint16_t cmd, uint16_t flags, uint64_t offset, uint32_t count,
                 void *buf, struct nbdkit_extents *extents)
 {
   GET_CONN;
-  struct context *c = get_context (conn, top);
+  struct context *c = conn->top_context;
   uint32_t f = 0;
   int err = 0;
 
@@ -686,8 +685,8 @@ protocol_recv_request_send_reply (void)
 
     /* Allocate the extents list for block status only. */
     if (cmd == NBD_CMD_BLOCK_STATUS) {
-      struct context *c = get_context (conn, top);
-      extents = nbdkit_extents_new (offset, backend_get_size (c));
+      extents = nbdkit_extents_new (offset,
+                                    backend_get_size (conn->top_context));
       if (extents == NULL) {
         error = ENOMEM;
         goto send_reply;

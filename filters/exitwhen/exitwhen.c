@@ -482,7 +482,7 @@ exitwhen_preconnect (nbdkit_next_preconnect *next, void *nxdata, int readonly)
 }
 
 static void *
-exitwhen_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
+exitwhen_open (nbdkit_next_open *next, nbdkit_context *nxdata,
                int readonly, const char *exportname, int is_tls)
 {
   if (next (nxdata, readonly, exportname) == -1)

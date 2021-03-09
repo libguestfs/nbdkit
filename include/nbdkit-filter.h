@@ -54,12 +54,15 @@ extern "C" {
  * the next filter or plugin.
  */
 typedef struct backend nbdkit_backend;
+typedef struct context nbdkit_context;
 typedef struct context nbdkit_next;
 #elif defined NBDKIT_RETRY_FILTER /* Hack to expose reopen to retry filter */
 typedef struct nbdkit_backend nbdkit_backend;
+typedef struct nbdkit_context nbdkit_context;
 typedef struct nbdkit_next_ops nbdkit_next;
 #else
 typedef void nbdkit_backend;
+typedef void nbdkit_context;
 typedef void nbdkit_next;
 #endif
 
@@ -74,7 +77,7 @@ typedef int nbdkit_next_list_exports (nbdkit_backend *nxdata, int readonly,
                                       struct nbdkit_exports *exports);
 typedef const char *nbdkit_next_default_export (nbdkit_backend *nxdata,
                                                 int readonly);
-typedef int nbdkit_next_open (nbdkit_backend *backend,
+typedef int nbdkit_next_open (nbdkit_context *context,
                               int readonly, const char *exportname);
 
 struct nbdkit_next_ops {
@@ -155,7 +158,7 @@ NBDKIT_EXTERN_DECL (const struct nbdkit_export, nbdkit_get_export,
  * Used by the retry filter.
  */
 NBDKIT_EXTERN_DECL (int, nbdkit_backend_reopen,
-                    (nbdkit_backend *backend, int readonly,
+                    (nbdkit_context *context, int readonly,
                      const char *exportname, nbdkit_next **nxdata));
 #endif
 
@@ -199,7 +202,7 @@ struct nbdkit_filter {
                                   nbdkit_backend *nxdata,
                                   int readonly, int is_tls);
 
-  void * (*open) (nbdkit_next_open *next, nbdkit_backend *backend,
+  void * (*open) (nbdkit_next_open *next, nbdkit_context *context,
                   int readonly, const char *exportname, int is_tls);
   void (*close) (void *handle);
 

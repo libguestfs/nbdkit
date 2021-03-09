@@ -75,7 +75,7 @@ gzip_thread_model (void)
 }
 
 static void *
-gzip_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
+gzip_open (nbdkit_next_open *next, nbdkit_context *nxdata,
            int readonly, const char *exportname, int is_tls)
 {
   /* Always pass readonly=1 to the underlying plugin. */

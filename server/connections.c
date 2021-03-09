@@ -224,7 +224,7 @@ handle_single_connection (int sockin, int sockout)
 
   /* Finalize (for filters), called just before close. */
   lock_request ();
-  r = backend_finalize (get_context (conn, top));
+  r = backend_finalize (conn->top_context);
   unlock_request ();
   if (r == -1)
     goto done;
@@ -253,16 +253,10 @@ new_connection (int sockin, int sockout, int nworkers)
   pthread_mutex_init (&conn->write_lock, NULL);
   pthread_mutex_init (&conn->status_lock, NULL);
 
-  conn->contexts = calloc (top->i + 1, sizeof *conn->contexts);
-  if (conn->contexts == NULL) {
-    perror ("malloc");
-    goto error1;
-  }
   conn->default_exportname = calloc (top->i + 1,
                                      sizeof *conn->default_exportname);
   if (conn->default_exportname == NULL) {
     perror ("malloc");
-    free (conn->contexts);
     goto error1;
   }
 
@@ -332,7 +326,6 @@ new_connection (int sockin, int sockout, int nworkers)
     close (conn->status_pipe[0]);
   if (conn->status_pipe[1] >= 0)
     close (conn->status_pipe[1]);
-  free (conn->contexts);
   free (conn->default_exportname);
 
  error1:
@@ -348,7 +341,6 @@ static void
 free_connection (struct connection *conn)
 {
   struct backend *b;
-  struct context *c;
 
   if (!conn)
     return;
@@ -361,9 +353,10 @@ free_connection (struct connection *conn)
    */
   if (!quit) {
     lock_request ();
-    c = get_context (conn, top);
-    if (c)
-      backend_close (c);
+    if (conn->top_context) {
+      backend_close (conn->top_context);
+      conn->top_context = NULL;
+    }
     unlock_request ();
   }
 
@@ -383,7 +376,6 @@ free_connection (struct connection *conn)
   for_each_backend (b)
     free (conn->default_exportname[b->i]);
   free (conn->default_exportname);
-  free (conn->contexts);
 
   free (conn);
   threadlocal_set_conn (NULL);
@@ -500,19 +492,4 @@ raw_close (void)
     closesocket (conn->sockin);
   if (conn->sockout >= 0 && conn->sockin != conn->sockout)
     closesocket (conn->sockout);
-}
-
-struct context *
-get_context (struct connection *conn, struct backend *b)
-{
-  struct context *c = conn->contexts[b->i];
-  assert (!c || c->b == b);
-  return c;
-}
-
-void
-set_context (struct connection *conn, struct backend *b, struct context *c)
-{
-  assert (!c || c->b == b);
-  conn->contexts[b->i] = c;
 }

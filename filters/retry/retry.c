@@ -109,13 +109,13 @@ retry_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
 struct retry_handle {
   int readonly;                 /* Save original readonly setting. */
   char *exportname;             /* Client exportname. */
-  nbdkit_backend *backend;      /* Backend learned during .open. */
+  nbdkit_context *context;      /* Context learned during .open. */
   unsigned reopens;
   bool open;
 };
 
 static void *
-retry_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
+retry_open (nbdkit_next_open *next, nbdkit_context *nxdata,
             int readonly, const char *exportname, int is_tls)
 {
   struct retry_handle *h;
@@ -131,7 +131,7 @@ retry_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
 
   h->readonly = readonly;
   h->exportname = strdup (exportname);
-  h->backend = nxdata;
+  h->context = nxdata;
   if (h->exportname == NULL) {
     nbdkit_error ("strdup: %m");
     free (h);
@@ -209,7 +209,7 @@ do_retry (struct retry_handle *h, struct retry_data *data,
 
   /* Reopen the connection. */
   h->reopens++;
-  if (nbdkit_backend_reopen (h->backend, h->readonly || force_readonly,
+  if (nbdkit_backend_reopen (h->context, h->readonly || force_readonly,
                              h->exportname, next) == -1) {
     /* If the reopen fails we treat it the same way as a command
      * failing.

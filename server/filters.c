@@ -261,21 +261,22 @@ filter_default_export (struct backend *b, int readonly, int is_tls)
 }
 
 static int
-next_open (struct backend *b, int readonly, const char *exportname)
+next_open (struct context *c, int readonly, const char *exportname)
 {
-  GET_CONN;
-  struct context *c = backend_open (b, readonly, exportname);
+  struct backend *b = c->b;
+  struct context *c_next = backend_open (b->next, readonly, exportname);
 
-  if (c == NULL)
+  if (c_next == NULL)
     return -1;
-  set_context (conn, b, c);
+  c->c_next = c_next;
   return 0;
 }
 
 static void *
-filter_open (struct backend *b, int readonly, const char *exportname,
+filter_open (struct context *c, int readonly, const char *exportname,
              int is_tls)
 {
+  struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
   void *handle;
 
@@ -283,9 +284,9 @@ filter_open (struct backend *b, int readonly, const char *exportname,
    * inner-to-outer ordering.
    */
   if (f->filter.open)
-    handle = f->filter.open (next_open, b->next, readonly, exportname,
+    handle = f->filter.open (next_open, c, readonly, exportname,
                              is_tls);
-  else if (next_open (b->next, readonly, exportname) == -1)
+  else if (next_open (c, readonly, exportname) == -1)
     handle = NULL;
   else
     handle = NBDKIT_HANDLE_NOT_NEEDED;
@@ -306,10 +307,9 @@ filter_close (struct context *c)
 static int
 filter_prepare (struct context *c, int readonly)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.prepare &&
       f->filter.prepare (&c_next->next, c_next, c->handle, readonly) == -1)
@@ -321,10 +321,9 @@ filter_prepare (struct context *c, int readonly)
 static int
 filter_finalize (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.finalize &&
       f->filter.finalize (&c_next->next, c_next, c->handle) == -1)
@@ -335,10 +334,9 @@ filter_finalize (struct context *c)
 static const char *
 filter_export_description (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.export_description)
     return f->filter.export_description (&c_next->next, c_next, c->handle);
@@ -349,10 +347,9 @@ filter_export_description (struct context *c)
 static int64_t
 filter_get_size (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.get_size)
     return f->filter.get_size (&c_next->next, c_next, c->handle);
@@ -363,10 +360,9 @@ filter_get_size (struct context *c)
 static int
 filter_can_write (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_write)
     return f->filter.can_write (&c_next->next, c_next, c->handle);
@@ -377,10 +373,9 @@ filter_can_write (struct context *c)
 static int
 filter_can_flush (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_flush)
     return f->filter.can_flush (&c_next->next, c_next, c->handle);
@@ -391,10 +386,9 @@ filter_can_flush (struct context *c)
 static int
 filter_is_rotational (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.is_rotational)
     return f->filter.is_rotational (&c_next->next, c_next, c->handle);
@@ -405,10 +399,9 @@ filter_is_rotational (struct context *c)
 static int
 filter_can_trim (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_trim)
     return f->filter.can_trim (&c_next->next, c_next, c->handle);
@@ -419,10 +412,9 @@ filter_can_trim (struct context *c)
 static int
 filter_can_zero (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_zero)
     return f->filter.can_zero (&c_next->next, c_next, c->handle);
@@ -433,10 +425,9 @@ filter_can_zero (struct context *c)
 static int
 filter_can_fast_zero (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_fast_zero)
     return f->filter.can_fast_zero (&c_next->next, c_next, c->handle);
@@ -447,10 +438,9 @@ filter_can_fast_zero (struct context *c)
 static int
 filter_can_extents (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_extents)
     return f->filter.can_extents (&c_next->next, c_next, c->handle);
@@ -461,10 +451,9 @@ filter_can_extents (struct context *c)
 static int
 filter_can_fua (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_fua)
     return f->filter.can_fua (&c_next->next, c_next, c->handle);
@@ -475,10 +464,9 @@ filter_can_fua (struct context *c)
 static int
 filter_can_multi_conn (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_multi_conn)
     return f->filter.can_multi_conn (&c_next->next, c_next, c->handle);
@@ -489,10 +477,9 @@ filter_can_multi_conn (struct context *c)
 static int
 filter_can_cache (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.can_cache)
     return f->filter.can_cache (&c_next->next, c_next, c->handle);
@@ -505,10 +492,9 @@ filter_pread (struct context *c,
               void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.pread)
     return f->filter.pread (&c_next->next, c_next, c->handle,
@@ -522,10 +508,9 @@ filter_pwrite (struct context *c,
                const void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.pwrite)
     return f->filter.pwrite (&c_next->next, c_next, c->handle,
@@ -538,10 +523,9 @@ static int
 filter_flush (struct context *c,
               uint32_t flags, int *err)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.flush)
     return f->filter.flush (&c_next->next, c_next, c->handle, flags, err);
@@ -554,10 +538,9 @@ filter_trim (struct context *c,
              uint32_t count, uint64_t offset,
              uint32_t flags, int *err)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.trim)
     return f->filter.trim (&c_next->next, c_next, c->handle, count, offset,
@@ -570,10 +553,9 @@ static int
 filter_zero (struct context *c,
              uint32_t count, uint64_t offset, uint32_t flags, int *err)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.zero)
     return f->filter.zero (&c_next->next, c_next, c->handle,
@@ -587,10 +569,9 @@ filter_extents (struct context *c,
                 uint32_t count, uint64_t offset, uint32_t flags,
                 struct nbdkit_extents *extents, int *err)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.extents)
     return f->filter.extents (&c_next->next, c_next, c->handle,
@@ -606,10 +587,9 @@ filter_cache (struct context *c,
               uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
-  struct context *c_next = get_context (conn, b->next);
+  struct context *c_next = c->c_next;
 
   if (f->filter.cache)
     return f->filter.cache (&c_next->next, c_next, c->handle,
@@ -715,12 +695,11 @@ filter_register (struct backend *next, size_t index, const char *filename,
 }
 
 int
-nbdkit_backend_reopen (struct backend *b, int readonly,
+nbdkit_backend_reopen (struct context *c, int readonly,
                        const char *exportname, struct context **nxdata)
 {
-  GET_CONN;
-  int r = backend_reopen (b, readonly, exportname);
+  int r = backend_reopen (c, readonly, exportname);
 
-  *nxdata = get_context (conn, b);
+  *nxdata = c->c_next;
   return r;
 }

@@ -79,18 +79,16 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
   int64_t size;
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
-  struct context *c;
 
-  c = backend_open (top, read_only, exportname);
-  if (c == NULL)
+  conn->top_context = backend_open (top, read_only, exportname);
+  if (conn->top_context == NULL)
     return -1;
-  set_context (conn, top, c);
 
   /* Prepare (for filters), called just after open. */
-  if (backend_prepare (c) == -1)
+  if (backend_prepare (conn->top_context) == -1)
     return -1;
 
-  size = backend_get_size (c);
+  size = backend_get_size (conn->top_context);
   if (size == -1)
     return -1;
   if (size < 0) {
@@ -102,56 +100,56 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
   /* Check all flags even if they won't be advertised, to prime the
    * cache and make later request validation easier.
    */
-  fl = backend_can_write (c);
+  fl = backend_can_write (conn->top_context);
   if (fl == -1)
     return -1;
   if (!fl)
     eflags |= NBD_FLAG_READ_ONLY;
 
-  fl = backend_can_zero (c);
+  fl = backend_can_zero (conn->top_context);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_WRITE_ZEROES;
 
-  fl = backend_can_fast_zero (c);
+  fl = backend_can_fast_zero (conn->top_context);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FAST_ZERO;
 
-  fl = backend_can_trim (c);
+  fl = backend_can_trim (conn->top_context);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_TRIM;
 
-  fl = backend_can_fua (c);
+  fl = backend_can_fua (conn->top_context);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FUA;
 
-  fl = backend_can_flush (c);
+  fl = backend_can_flush (conn->top_context);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_SEND_FLUSH;
 
-  fl = backend_is_rotational (c);
+  fl = backend_is_rotational (conn->top_context);
   if (fl == -1)
     return -1;
   if (fl)
     eflags |= NBD_FLAG_ROTATIONAL;
 
   /* multi-conn is useless if parallel connections are not allowed. */
-  fl = backend_can_multi_conn (c);
+  fl = backend_can_multi_conn (conn->top_context);
   if (fl == -1)
     return -1;
   if (fl && (thread_model > NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS))
     eflags |= NBD_FLAG_CAN_MULTI_CONN;
 
-  fl = backend_can_cache (c);
+  fl = backend_can_cache (conn->top_context);
   if (fl == -1)
     return -1;
   if (fl)
@@ -162,7 +160,7 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
    * not have to worry about errors, and makes test-layers easier to
    * write.
    */
-  fl = backend_can_extents (c);
+  fl = backend_can_extents (conn->top_context);
   if (fl == -1)
     return -1;
 

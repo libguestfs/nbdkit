@@ -90,7 +90,7 @@ limit_preconnect (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
 }
 
 static void *
-limit_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
+limit_open (nbdkit_next_open *next, nbdkit_context *nxdata,
             int readonly, const char *exportname, int is_tls)
 {
   if (next (nxdata, readonly, exportname) == -1)

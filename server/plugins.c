@@ -310,10 +310,11 @@ plugin_default_export (struct backend *b, int readonly, int is_tls)
 }
 
 static void *
-plugin_open (struct backend *b, int readonly, const char *exportname,
+plugin_open (struct context *c, int readonly, const char *exportname,
              int is_tls)
 {
   GET_CONN;
+  struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   void *r;
 

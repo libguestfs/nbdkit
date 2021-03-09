@@ -112,7 +112,7 @@ struct handle {
 };
 
 static void *
-tar_open (nbdkit_next_open *next, nbdkit_backend *nxdata,
+tar_open (nbdkit_next_open *next, nbdkit_context *nxdata,
           int readonly, const char *exportname, int is_tls)
 {
   struct handle *h;

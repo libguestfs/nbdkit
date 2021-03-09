@@ -207,6 +207,7 @@ struct context {
 
   void *handle;         /* Plugin or filter handle. */
   struct backend *b;    /* Backend that provided handle. */
+  struct context *c_next; /* Underlying context, only when b->next != NULL. */
 
   unsigned char state;  /* Bitmask of HANDLE_* values */
 
@@ -235,7 +236,7 @@ struct connection {
   void *crypto_session;
   int nworkers;
 
-  struct context **contexts;    /* One per plugin and filter. */
+  struct context *top_context;  /* The context tied to 'top'. */
   char **default_exportname;    /* One per plugin and filter. */
 
   uint32_t cflags;
@@ -255,11 +256,6 @@ struct connection {
   connection_close_function close;
 };
 
-extern struct context *get_context (struct connection *conn, struct backend *b)
-  __attribute__((__nonnull__(1)));
-extern void set_context (struct connection *conn, struct backend *b,
-                         struct context *c)
-  __attribute__((__nonnull__(1)));
 extern void handle_single_connection (int sockin, int sockout);
 extern int connection_get_status (void);
 extern int connection_set_status (int value);
@@ -366,7 +362,7 @@ struct backend {
   int (*list_exports) (struct backend *, int readonly, int is_tls,
                        struct nbdkit_exports *exports);
   const char *(*default_export) (struct backend *, int readonly, int is_tls);
-  void *(*open) (struct backend *, int readonly, const char *exportname,
+  void *(*open) (struct context *, int readonly, const char *exportname,
                  int is_tls);
   int (*prepare) (struct context *, int readonly);
   int (*finalize) (struct context *);
@@ -434,7 +430,7 @@ extern bool backend_valid_range (struct context *c,
                                  uint64_t offset, uint32_t count)
   __attribute__((__nonnull__ (1)));
 
-extern int backend_reopen (struct backend *b,
+extern int backend_reopen (struct context *c,
                            int readonly, const char *exportname)
   __attribute__((__nonnull__ (1, 3)));
 extern const char *backend_export_description (struct context *c)
