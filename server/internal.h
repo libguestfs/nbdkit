@@ -225,24 +225,6 @@ struct context {
   int can_cache;
 };
 
-static inline void
-reset_context (struct context *c)
-{
-  c->handle = NULL;
-  c->state = 0;
-  c->exportsize = -1;
-  c->can_write = -1;
-  c->can_flush = -1;
-  c->is_rotational = -1;
-  c->can_trim = -1;
-  c->can_zero = -1;
-  c->can_fast_zero = -1;
-  c->can_fua = -1;
-  c->can_multi_conn = -1;
-  c->can_extents = -1;
-  c->can_cache = -1;
-}
-
 DEFINE_VECTOR_TYPE(string_vector, char *);
 struct connection {
   pthread_mutex_t request_lock;

@@ -226,9 +226,20 @@ backend_open (struct backend *b, int readonly, const char *exportname)
                      b->name, readonly, exportname, conn->using_tls);
 
   assert (conn->contexts[b->i] == NULL);
-  reset_context (c);
-  if (readonly)
-    c->can_write = 0;
+  c->handle = NULL;
+  c->b = b;
+  c->state = 0;
+  c->exportsize = -1;
+  c->can_write = readonly ? 0 : -1;
+  c->can_flush = -1;
+  c->is_rotational = -1;
+  c->can_trim = -1;
+  c->can_zero = -1;
+  c->can_fast_zero = -1;
+  c->can_fua = -1;
+  c->can_multi_conn = -1;
+  c->can_extents = -1;
+  c->can_cache = -1;
 
   /* Determine the canonical name for default export */
   if (!*exportname) {
@@ -254,7 +265,6 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   }
 
   c->state |= HANDLE_OPEN;
-  c->b = b;
   return c;
 }
 
