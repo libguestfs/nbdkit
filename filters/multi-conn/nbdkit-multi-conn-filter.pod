@@ -1,34 +1,47 @@
 =head1 NAME
 
-nbdkit-multi-conn-filter - nbdkit multi-conn filter
+nbdkit-multi-conn-filter - enable, emulate or disable multi-conn
 
 =head1 SYNOPSIS
 
- nbdkit --filter=multi-conn plugin [multi-conn-mode=MODE] \
-   [multi-conn-track-dirty=LEVEL] [multi-conn-exportname=BOOL] [plugin-args...]
+ nbdkit --filter=multi-conn plugin
+        [multi-conn-mode=MODE] [multi-conn-track-dirty=LEVEL]
+        [multi-conn-exportname=BOOL]
+        [plugin-args...]
 
 =head1 DESCRIPTION
 
-C<nbdkit-multi-conn-filter> is a filter that enables alterations to
-the server's advertisement of NBD_FLAG_MULTI_CONN.  When a server
-permits multiple simultaneous clients, and sets this flag, a client
-may assume that flush operations ensure consistent data across all
-connections (a sequence of getting a write response, sending and
-waiting for a flush response, then sending a read request will behave
-the same whether all three commands shared a single connection or were
-split among three connections).  If the flag is not advertised, a
-client must presume that separate connections may have utilized
-independent caches (even after waiting for a flush on one connection,
-a read on another connection may still see stale data from a cache).
+C<NBD_FLAG_CAN_MULTI_CONN> ("multi-conn") is an L<NBD protocol|
+https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md>
+feature that permits multiple clients to connect to the same export
+simultaneously, guaranteeing that flush operations are consistent
+across connections.  Specifically a sequence of getting a write
+response, sending and waiting for a flush response, then sending a
+read request will behave the same whether all three commands shared a
+single connection or were split among three connections.  When an NBD
+client and server are able to negotiate this feature it can provide
+significant performance benefits.  Conversely if the feature is not
+advertised, clients must presume that separate connections can cache
+writes independently (so even after waiting for a flush on one
+connection, a read on another connection may see stale data from a
+cache).  The NBD standard advises clients not to multiplex commands
+across connections if the server does not support multi-conn.
 
-The main use of this filter is to emulate flush-consistent semantics
-across multiple connections when not already provided by a plugin,
-although it also has additional modes useful for evaluating
+L<nbdkit(1)> plugins must normally opt in to multi-conn, after
+carefully ensuring the implementation meets the consistency
+requirements.  This filter can emulate flush-consistent semantics
+across multiple connections for plugins that do not advertise this
+feature.
+
+This filter also has additional modes useful for evaluating
 performance and correctness of client and plugin multi-conn behaviors.
+
 This filter assumes that multiple connections to a plugin will
-eventually share data, other than any caching effects; it is not
+eventually share data, other than any caching effects.  It is not
 suitable for use with a plugin that produces completely independent
-data per connection from the same export name.
+data per connection from the same export name.  An example of a plugin
+that must I<not> be used with this filter is
+L<nbdkit-tmpdisk-plugin(1)>.
 
 Additional control over the behavior of client flush commands is
 possible by combining this filter with L<nbdkit-fua-filter(1)>.  Note
@@ -42,13 +55,29 @@ layer of caching not needed with this filter.
 
 =item B<multi-conn-mode=auto>
 
-This filter defaults to B<auto> mode.  If the selected thread model is
-SERIALIZE_CONNECTIONS, then this filter behaves the same as B<disable>
-mode; if the plugin advertises multi-conn, then this filter behaves
-the same as B<plugin> mode; otherwise, this filter behaves the same as
-B<emulate> mode.  As a result, this mode advertises
-NBD_FLAG_MULTI_CONN to the client exactly when the server supports
-multiple simultaneous connections.
+This is the default mode.  The behaviour of B<auto> is as follows:
+
+=over 4
+
+=item *
+
+If the selected thread model is C<SERIALIZE_CONNECTIONS>, then this
+filter behaves the same as B<disable> mode.
+
+=item *
+
+If the plugin advertises multi-conn, then this filter behaves the same
+as B<plugin> mode.
+
+=item *
+
+Otherwise, this filter behaves the same as B<emulate> mode.
+
+=back
+
+In other words, this mode advertises multi-conn to the client exactly
+when the plugin supports or can be made to support multiple
+simultaneous connections.
 
 =item B<multi-conn-mode=emulate>
 
@@ -56,12 +85,13 @@ When B<emulate> mode is chosen, then this filter tracks all parallel
 connections.  When a client issues a flush command over any one
 connection (including an implied flush by a write command with the FUA
 (force unit access) flag set), the filter then replicates that flush
-across each connection to the plugin (although the amount of plugin
-calls can be tuned by adjusting B<multi-conn-track-dirty>).  This
-assumes that flushing each connection is enough to clear any
+across each connection to the plugin.  The number of plugin calls made
+by the filter can be tuned by adjusting B<multi-conn-track-dirty>.
+
+This mode assumes that flushing each connection is enough to clear any
 per-connection cached data, in order to give each connection a
 consistent view of the image; therefore, this mode advertises
-NBD_FLAG_MULTI_CONN to the client.
+multi-conn to the client.
 
 Note that in this mode, a client will be unable to connect if the
 plugin lacks support for flush, as there would be no way to emulate
@@ -70,25 +100,25 @@ cross-connection flush consistency.
 =item B<multi-conn-mode=disable>
 
 When B<disable> mode is chosen, this filter disables advertisement of
-NBD_FLAG_MULTI_CONN to the client, even if the plugin supports it, and
-does not replicate flush commands across connections.  This is useful
-for testing whether a client with multiple connections properly sends
+multi-conn to the client, even if the plugin supports it, and does not
+replicate flush commands across connections.  This is useful for
+testing whether a client with multiple connections properly sends
 multiple flushes in order to overcome per-connection caching.
 
 =item B<multi-conn-mode=plugin>
 
 When B<plugin> mode is chosen, the filter does not change whether
-NBD_FLAG_MULTI_CONN is advertised by the plugin, and does not
-replicate flush commands across connections; but still honors
+multi-conn is advertised by the plugin, and does not replicate flush
+commands across connections; but still honors
 B<multi-conn-track-dirty> for minimizing the number of flush commands
 passed on to the plugin.
 
 =item B<multi-conn-mode=unsafe>
 
 When B<unsafe> mode is chosen, this filter blindly advertises
-NBD_FLAG_MULTI_CONN to the client even if the plugin lacks support.
-This is dangerous, and risks data corruption if the client makes
-assumptions about flush consistency that were not actually met.
+multi-conn to the client even if the plugin lacks support.  This is
+dangerous, and risks data corruption if the client makes assumptions
+about flush consistency that were not actually met.
 
 =item B<multi-conn-track-dirty=fast>
 
@@ -98,25 +128,25 @@ commands since the last flush, regardless of connection); if all
 connections are clean, a client flush command is ignored rather than
 sent on to the plugin.  In this mode, a flush action on one connection
 marks all other connections as clean, regardless of whether the filter
-actually advertised NBD_FLAG_MULTI_CONN, which can result in less
-activity when a client sends multiple flushes rather than taking
-advantage of multi-conn semantics.  This is safe with
-B<multi-conn-mode=emulate>, but potentially unsafe with
-B<multi-conn-mode=plugin> when the plugin did not advertise
-multi-conn, as it does not track whether a read may have cached stale
-data prior to a flush.
+actually advertised multi-conn, which can result in less activity when
+a client sends multiple flushes rather than taking advantage of
+multi-conn semantics.  This is safe with B<multi-conn-mode=emulate>,
+but potentially unsafe with B<multi-conn-mode=plugin> when the plugin
+did not advertise multi-conn, as it does not track whether a read may
+have cached stale data prior to a flush.
 
 =item B<multi-conn-track-dirty=connection>
 
-Dirty tracking is set to B<connection> by default, where the filter
-tracks whether a given connection is dirty (any write, zero, or trim
-commands since the last flush on the given connection, and any read
-since the last flush on any other connection); if the connection is
-clean, a flush command to that connection (whether directly from the
-client, or replicated by B<multi-conn-mode=emulate> is ignored rather
-than sent on to the plugin.  This mode may result in more flush calls
-than B<multi-conn-track-dirty=fast>, but in turn is safe to use with
-B<multi-conn-mode=plugin>.
+This is the default setting for B<multi-conn-track-dirty>.
+
+The filter tracks whether a given connection is dirty (any write,
+zero, or trim commands since the last flush on the given connection,
+and any read since the last flush on any other connection); if the
+connection is clean, a flush command to that connection (whether
+directly from the client, or replicated by B<multi-conn-mode=emulate>
+is ignored rather than sent on to the plugin.  This mode may result in
+more flush calls than B<multi-conn-track-dirty=fast>, but in turn is
+safe to use with B<multi-conn-mode=plugin>.
 
 =item B<multi-conn-track-dirty=off>
 
@@ -124,7 +154,7 @@ When dirty tracking is set to B<off>, all flush commands from the
 client are passed on to the plugin, regardless of whether the flush
 would be needed for cross-connection consistency.  Note that when
 combined with B<multi-conn-mode=emulate>, a client which disregards
-NBD_FLAG_MULTI_CONN by flushing on each connection itself results in a
+multi-conn by flushing on each connection itself results in a
 quadratic number of flush operations on the plugin.
 
 =item B<multi-conn-exportname=false>
@@ -191,7 +221,8 @@ L<nbdkit-fua-filter(1)>,
 L<nbdkit-nocache-filter(1)>,
 L<nbdkit-noextents-filter(1)>,
 L<nbdkit-noparallel-filter(1)>,
-L<nbdkit-nozero-filter(1)>.
+L<nbdkit-nozero-filter(1)>,
+L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md>
 
 =head1 AUTHORS
 
