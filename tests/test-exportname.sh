@@ -169,15 +169,23 @@ nbdkit -U - -e c --filter=exportname sh exportname.sh \
 cat exportname.out
 test "$(jq -c "$query" exportname.out)" = '[["c","cc",3]]'
 
-# Test strict mode
+# Test strict mode. Tolerate nbdinfo 1.6.2 which gave invalid JSON but 0 status
+st=0
 nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
-       --run 'nbdinfo --no-content --json "$uri"' > exportname.out && fail=1
+       --run 'nbdinfo --no-content --json "$uri"' > exportname.out || st=$?
 cat exportname.out
+if test $? = 0; then
+    jq -c "$query" exportname.out && fail=1
+fi
 
+st=0
 nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
        exportname=a exportname=b exportname=c \
-       --run 'nbdinfo --no-content --json "$uri"' > exportname.out && fail=1
+       --run 'nbdinfo --no-content --json "$uri"' > exportname.out || st=$?
 cat exportname.out
+if test $? = 0; then
+    jq -c "$query" exportname.out && fail=1
+fi
 
 nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
        exportname=a exportname=b exportname= default-export=a\
