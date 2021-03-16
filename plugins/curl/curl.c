@@ -441,10 +441,14 @@ curl_open (int readonly)
     goto err;
   }
 
-  /* Various options we always set. */
-  curl_easy_setopt (h->c, CURLOPT_AUTOREFERER, 1);
-  curl_easy_setopt (h->c, CURLOPT_FOLLOWLOCATION, 1);
-  curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1);
+  /* Various options we always set.
+   *
+   * NB: Both here and below constants must be explicitly long because
+   * the parameter is varargs.
+   */
+  curl_easy_setopt (h->c, CURLOPT_AUTOREFERER, 1L);
+  curl_easy_setopt (h->c, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1L);
 
   /* Options. */
   if (cainfo)
@@ -468,9 +472,6 @@ curl_open (int readonly)
   if (proxy_user)
     curl_easy_setopt (h->c, CURLOPT_PROXYUSERNAME, proxy_user);
   if (!sslverify) {
-    /* NB: Constants must be explicitly long because the parameter is
-     * varargs.
-     */
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYHOST, 0L);
   }
@@ -496,7 +497,7 @@ curl_open (int readonly)
    */
   if (do_scripts (h) == -1) goto err;
   h->accept_range = false;
-  curl_easy_setopt (h->c, CURLOPT_NOBODY, 1); /* No Body, not nobody! */
+  curl_easy_setopt (h->c, CURLOPT_NOBODY, 1L); /* No Body, not nobody! */
   curl_easy_setopt (h->c, CURLOPT_HEADERFUNCTION, header_cb);
   curl_easy_setopt (h->c, CURLOPT_HEADERDATA, h);
   r = curl_easy_perform (h->c);
@@ -693,7 +694,7 @@ curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   h->write_buf = buf;
   h->write_count = count;
 
-  curl_easy_setopt (h->c, CURLOPT_HTTPGET, 1);
+  curl_easy_setopt (h->c, CURLOPT_HTTPGET, 1L);
 
   /* Make an HTTP range request. */
   snprintf (range, sizeof range, "%" PRIu64 "-%" PRIu64,
@@ -757,7 +758,7 @@ curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   h->read_buf = buf;
   h->read_count = count;
 
-  curl_easy_setopt (h->c, CURLOPT_UPLOAD, 1);
+  curl_easy_setopt (h->c, CURLOPT_UPLOAD, 1L);
 
   /* Make an HTTP range request. */
   snprintf (range, sizeof range, "%" PRIu64 "-%" PRIu64,
