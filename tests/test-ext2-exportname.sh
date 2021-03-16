@@ -40,7 +40,7 @@ requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
-files="$sock ext2-exportname.pid ext2-exportname.out"
+files="$sock ext2-exportname.pid ext2-exportname.out ext2-exportname.err"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -61,7 +61,12 @@ cat ext2-exportname.out
 grep disk.img ext2-exportname.out
 grep 'content.*MBR' ext2-exportname.out
 
-if nbdinfo nbd+unix://?socket=$sock > ext2-exportname.out; then
+# nbdinfo 1.6.2 accidentally reported an error but had status 0
+st=0
+nbdinfo nbd+unix://?socket=$sock > ext2-exportname.out \
+	2> ext2-exportname.err || st=$?
+cat ext2-exportname.out ext2-exportname.err
+if test $? = 0 && ! grep "server replied with error" ext2-exportname.err; then
     echo "unexpected success"
     exit 1
 fi

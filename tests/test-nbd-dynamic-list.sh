@@ -51,7 +51,7 @@ sock1=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 pid1="$base.pid1"
 pid2="$base.pid2"
-files="$sock1 $sock2 $pid1 $pid2 $base.list $base.out1 $base.out2"
+files="$sock1 $sock2 $pid1 $pid2 $base.list $base.out1 $base.out2 $base.err"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -99,10 +99,13 @@ check_success()
 # - nbdinfo of EXPORT on both servers should fail
 check_fail_one ()
 {
-    if nbdinfo --no-content "nbd+unix:///$1?socket=$sock1" > $base.out1; then
+    # Work around nbdinfo 1.6.2 bug that had error message but 0 status
+    if nbdinfo --no-content "nbd+unix:///$1?socket=$sock1" > $base.out1 \
+       2> $base.err && ! grep "server replied with error" $base.err; then
         fail=1
     fi
-    if nbdinfo --no-content "nbd+unix:///$1?socket=$sock2" > $base.out2; then
+    if nbdinfo --no-content "nbd+unix:///$1?socket=$sock2" > $base.out2 \
+       2> $base.err && ! grep "server replied with error" $base.err; then
         fail=1
     fi
 }
