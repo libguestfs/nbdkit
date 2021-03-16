@@ -45,6 +45,7 @@ for opt in \
     cainfo=/dev/null \
     capath=/dev/null \
     cookie=foo=bar \
+    followlocation=false \
     header="X-My-Name: John Doe" \
     header="User-Agent:" \
     header="X-Empty;" \

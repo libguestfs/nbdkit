@@ -91,6 +91,13 @@ Run C<SCRIPT> (a command or shell script fragment) to generate the
 HTTP/HTTPS cookies.  C<cookie-script> cannot be used with C<cookie>.
 See L</HEADER AND COOKIE SCRIPTS> below.
 
+=item B<followlocation=false>
+
+(nbdkit E<ge> 1.26)
+
+Follow redirects from the server.  The default is true (to follow
+redirects), but you can set this to false to prevent this.
+
 =item B<header=>HEADER
 
 (nbdkit E<ge> 1.22)
@@ -161,6 +168,11 @@ introduced by allowing unrestricted protocols).
 
 For example if you only intend HTTP and HTTPS URLs to be used, then
 add this parameter: C<protocols=http,https>
+
+This restriction also applies if the plugin follows a redirect to
+another protocol (eg. you start with an C<https://> URL which the
+server redirects to C<ftp://>).  To prevent redirects altogether see
+the C<followlocation> parameter.
 
 The value of this parameter is a comma-separated list of protocols.
 The following protocols are known: B<dict>, B<file>, B<ftp>, B<ftps>,
@@ -413,6 +425,7 @@ L<libcurl(3)>,
 L<CURLOPT_CAINFO(3)>,
 L<CURLOPT_CAPATH(3)>,
 L<CURLOPT_COOKIE(3)>,
+L<CURLOPT_FOLLOWLOCATION(3)>,
 L<CURLOPT_HTTPHEADER(3)>,
 L<CURLOPT_PROXY(3)>,
 L<CURLOPT_TCP_KEEPALIVE(3)>,

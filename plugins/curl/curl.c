@@ -71,6 +71,7 @@ const char *capath = NULL;
 char *cookie = NULL;
 const char *cookie_script = NULL;
 unsigned cookie_script_renew = 0;
+bool followlocation = true;
 struct curl_slist *headers = NULL;
 const char *header_script = NULL;
 unsigned header_script_renew = 0;
@@ -220,6 +221,13 @@ curl_config (const char *key, const char *value)
       return -1;
   }
 
+  else if (strcmp (key, "followlocation") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    followlocation = r;
+  }
+
   else if (strcmp (key, "header") == 0) {
     headers = curl_slist_append (headers, value);
     if (headers == NULL) {
@@ -357,6 +365,7 @@ curl_config_complete (void)
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
   "cookie-script=<SCRIPT>     Script to set HTTP/HTTPS cookies.\n" \
   "cookie-script-renew=<SECS> Time to renew HTTP/HTTPS cookies.\n" \
+  "followlocation=false       Do not follow redirects.\n" \
   "header=<HEADER>            Set HTTP/HTTPS header.\n" \
   "header-script=<SCRIPT>     Script to set HTTP/HTTPS headers.\n" \
   "header-script-renew=<SECS> Time to renew HTTP/HTTPS headers.\n" \
@@ -447,7 +456,8 @@ curl_open (int readonly)
    * the parameter is varargs.
    */
   curl_easy_setopt (h->c, CURLOPT_AUTOREFERER, 1L);
-  curl_easy_setopt (h->c, CURLOPT_FOLLOWLOCATION, 1L);
+  if (followlocation)
+    curl_easy_setopt (h->c, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1L);
 
   /* Options. */

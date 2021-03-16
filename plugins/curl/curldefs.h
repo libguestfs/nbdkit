@@ -42,6 +42,7 @@ extern const char *capath;
 extern char *cookie;
 extern const char *cookie_script;
 extern unsigned cookie_script_renew;
+extern bool followlocation;
 extern struct curl_slist *headers;
 extern const char *header_script;
 extern unsigned header_script_renew;
