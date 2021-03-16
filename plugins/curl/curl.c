@@ -69,6 +69,8 @@ const char *url = NULL;         /* required */
 const char *cainfo = NULL;
 const char *capath = NULL;
 char *cookie = NULL;
+const char *cookiefile = NULL;
+const char *cookiejar = NULL;
 const char *cookie_script = NULL;
 unsigned cookie_script_renew = 0;
 bool followlocation = true;
@@ -209,6 +211,28 @@ curl_config (const char *key, const char *value)
     free (cookie);
     if (nbdkit_read_password (value, &cookie) == -1)
       return -1;
+  }
+
+  else if (strcmp (key, "cookiefile") == 0) {
+    /* Reject cookiefile=- because it will cause libcurl to try to
+     * read from stdin when we connect.
+     */
+    if (strcmp (value, "-") == 0) {
+      nbdkit_error ("cookiefile parameter cannot be \"-\"");
+      return -1;
+    }
+    cookiefile = value;
+  }
+
+  else if (strcmp (key, "cookiejar") == 0) {
+    /* Reject cookiejar=- because it will cause libcurl to try to
+     * write to stdout.
+     */
+    if (strcmp (value, "-") == 0) {
+      nbdkit_error ("cookiejar parameter cannot be \"-\"");
+      return -1;
+    }
+    cookiejar = value;
   }
 
   else if (strcmp (key, "cookie-script") == 0) {
@@ -363,6 +387,9 @@ curl_config_complete (void)
   "cainfo=<CAINFO>            Path to Certificate Authority file.\n" \
   "capath=<CAPATH>            Path to directory with CA certificates.\n" \
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
+  "cookiefile=                Enable cookie processing.\n" \
+  "cookiefile=<FILENAME>      Read cookies from file.\n" \
+  "cookiejar=<FILENAME>       Read and write cookies to jar.\n" \
   "cookie-script=<SCRIPT>     Script to set HTTP/HTTPS cookies.\n" \
   "cookie-script-renew=<SECS> Time to renew HTTP/HTTPS cookies.\n" \
   "followlocation=false       Do not follow redirects.\n" \
@@ -467,6 +494,10 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_CAPATH, capath);
   if (cookie)
     curl_easy_setopt (h->c, CURLOPT_COOKIE, cookie);
+  if (cookiefile)
+    curl_easy_setopt (h->c, CURLOPT_COOKIEFILE, cookiefile);
+  if (cookiejar)
+    curl_easy_setopt (h->c, CURLOPT_COOKIEJAR, cookiejar);
   if (headers)
     curl_easy_setopt (h->c, CURLOPT_HTTPHEADER, headers);
   if (password)

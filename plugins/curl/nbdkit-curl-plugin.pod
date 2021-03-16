@@ -81,6 +81,32 @@ command line is not secure on shared machines.  Use the alternate
 C<+FILENAME> syntax to pass it in a file, C<-> to read the cookie
 interactively, or C<-FD> to read it from a file descriptor.
 
+=item B<cookiefile=>
+
+Enable cookie processing (eg. when following redirects), starting with
+an empty list of cookies.  This is equivalent to calling
+L<CURLOPT_COOKIEFILE(3)> with an empty string.
+
+=item B<cookiefile=>FILENAME
+
+Enable cookie processing (eg. when following redirects), prepopulating
+cookies from the given file.  The file can contain cookies in any
+format supported by curl, see L<CURLOPT_COOKIEFILE(3)>.  Cookies sent
+by the server are not saved when nbdkit exits.
+
+=item B<cookiejar=>FILENAME
+
+Enable cookie processing (eg. when following redirects), prepopulating
+cookies from the given file, and writing server cookies back to the
+file when the NBD handle is closed.  The file can contain cookies in
+any format supported by curl, see L<CURLOPT_COOKIEJAR(3)>.
+
+There is some advice on the internet telling you to set this to
+F</dev/null>, but you B<should not> do this because it can corrupt
+F</dev/null>.  If you don't want a cookiejar, omit this option.  If
+you want to enable cookie processing without updating a permanent
+cookiejar, use the C<cookiefile=> option instead.
+
 =item B<cookie-script=>SCRIPT
 
 =item B<cookie-script-renew=>SECS
@@ -425,6 +451,8 @@ L<libcurl(3)>,
 L<CURLOPT_CAINFO(3)>,
 L<CURLOPT_CAPATH(3)>,
 L<CURLOPT_COOKIE(3)>,
+L<CURLOPT_COOKIEFILE(3)>,
+L<CURLOPT_COOKIEJAR(3)>,
 L<CURLOPT_FOLLOWLOCATION(3)>,
 L<CURLOPT_HTTPHEADER(3)>,
 L<CURLOPT_PROXY(3)>,

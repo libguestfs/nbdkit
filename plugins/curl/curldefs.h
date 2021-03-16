@@ -40,6 +40,8 @@ extern const char *url;
 extern const char *cainfo;
 extern const char *capath;
 extern char *cookie;
+extern const char *cookiefile;
+extern const char *cookiejar;
 extern const char *cookie_script;
 extern unsigned cookie_script_renew;
 extern bool followlocation;
