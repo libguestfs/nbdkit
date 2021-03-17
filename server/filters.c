@@ -700,7 +700,7 @@ struct backend *
 nbdkit_context_get_backend (struct context *c)
 {
   assert (c);
-  return c->b;
+  return c->b->next;
 }
 
 struct context *
@@ -708,7 +708,7 @@ nbdkit_next_context_open (struct backend *b,
                           int readonly, const char *exportname)
 {
   assert (b);
-  return backend_open (b->next, readonly, exportname);
+  return backend_open (b, readonly, exportname);
 }
 
 void
@@ -724,6 +724,8 @@ nbdkit_context_set_next (struct context *c, struct context *next)
   struct context *old;
 
   assert (c);
+  if (next)
+    assert (next->b == c->b->next);
   old = c->c_next;
   c->c_next = next;
   return old;

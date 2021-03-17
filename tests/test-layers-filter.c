@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 
@@ -44,6 +45,7 @@
 #define DEBUG_FUNCTION nbdkit_debug ("%s: %s", layer, __func__)
 
 /* Perform sanity checking on nbdkit_next stability */
+static nbdkit_backend *saved_backend;
 struct handle {
   nbdkit_next *next;
 };
@@ -99,6 +101,7 @@ test_layers_filter_after_fork (nbdkit_next_after_fork *next,
                                nbdkit_backend *nxdata)
 {
   DEBUG_FUNCTION;
+  saved_backend = nxdata;
   return next (nxdata);
 }
 
@@ -106,6 +109,7 @@ static int
 test_layers_filter_preconnect (nbdkit_next_preconnect *next,
                                nbdkit_backend *nxdata, int readonly)
 {
+  assert (nxdata == saved_backend);
   DEBUG_FUNCTION;
   return next (nxdata, readonly);
 }
@@ -116,6 +120,7 @@ test_layers_filter_list_exports (nbdkit_next_list_exports *next,
                                  int readonly, int is_tls,
                                  struct nbdkit_exports *exports)
 {
+  assert (nxdata == saved_backend);
   DEBUG_FUNCTION;
   return next (nxdata, readonly, exports);
 }
@@ -125,6 +130,7 @@ test_layers_filter_default_export (nbdkit_next_default_export *next,
                                    nbdkit_backend *nxdata, int readonly,
                                    int is_tls)
 {
+  assert (nxdata == saved_backend);
   DEBUG_FUNCTION;
   return next (nxdata, readonly);
 }
@@ -135,13 +141,32 @@ test_layers_filter_open (nbdkit_next_open *next, nbdkit_context *nxdata,
 {
   struct handle *h = calloc (1, sizeof *h);
 
+  assert (nbdkit_context_get_backend (nxdata) == saved_backend);
   if (!h) {
     perror ("malloc");
     exit (1);
   }
 
-  if (next (nxdata, readonly, exportname) == -1)
+  /* Demonstrate our claim that next() is sugar for open-coding. */
+  if (strcmp (layer, "filter2") == 0) {
+    nbdkit_backend *backend;
+    nbdkit_next *n, *old;
+
+    backend = nbdkit_context_get_backend (nxdata);
+    assert (backend != NULL);
+    n = nbdkit_next_context_open (backend, readonly, exportname);
+    if (n == NULL) {
+      free (h);
+      return NULL;
+    }
+    old = nbdkit_context_set_next (nxdata, n);
+    assert (old == NULL);
+    h->next = n;
+  }
+  else if (next (nxdata, readonly, exportname) == -1) {
+    free (h);
     return NULL;
+  }
 
   /* Debug after recursing, to show opposite order from .close */
   DEBUG_FUNCTION;
@@ -162,8 +187,12 @@ test_layers_filter_prepare (nbdkit_next *next,
 {
   struct handle *h = handle;
 
-  assert (h->next == NULL);
-  h->next = next;
+  if (strcmp (layer, "filter2") == 0)
+    assert (h->next == next);
+  else {
+    assert (h->next == NULL);
+    h->next = next;
+  }
   DEBUG_FUNCTION;
   return 0;
 }
