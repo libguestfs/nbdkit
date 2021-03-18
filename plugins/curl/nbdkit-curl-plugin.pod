@@ -83,11 +83,15 @@ interactively, or C<-FD> to read it from a file descriptor.
 
 =item B<cookiefile=>
 
+(nbdkit E<ge> 1.26)
+
 Enable cookie processing (eg. when following redirects), starting with
 an empty list of cookies.  This is equivalent to calling
 L<CURLOPT_COOKIEFILE(3)> with an empty string.
 
 =item B<cookiefile=>FILENAME
+
+(nbdkit E<ge> 1.26)
 
 Enable cookie processing (eg. when following redirects), prepopulating
 cookies from the given file.  The file can contain cookies in any
@@ -95,6 +99,8 @@ format supported by curl, see L<CURLOPT_COOKIEFILE(3)>.  Cookies sent
 by the server are not saved when nbdkit exits.
 
 =item B<cookiejar=>FILENAME
+
+(nbdkit E<ge> 1.26)
 
 Enable cookie processing (eg. when following redirects), prepopulating
 cookies from the given file, and writing server cookies back to the
