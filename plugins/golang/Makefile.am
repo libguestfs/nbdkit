@@ -32,6 +32,7 @@
 include $(top_srcdir)/common-rules.mk
 
 plugin_sources = \
+	src/libguestfs.org/nbdkit/go.mod \
 	src/libguestfs.org/nbdkit/nbdkit.go \
 	src/libguestfs.org/nbdkit/utils.go \
 	src/libguestfs.org/nbdkit/wrappers.go \
@@ -43,9 +44,13 @@ EXTRA_DIST = \
 	config-test.go \
 	dump-plugin-examples.sh \
 	examples/disk/disk.go \
+	examples/disk/go.mod \
 	examples/dump-plugin/dumpplugin.go \
+	examples/dump-plugin/go.mod \
 	examples/minimal/minimal.go \
+	examples/minimal/go.mod \
 	examples/ramdisk/ramdisk.go \
+	examples/ramdisk/go.mod \
 	nbdkit-golang-plugin.pod \
 	$(NULL)
 
@@ -67,28 +72,24 @@ examples/disk/nbdkit-godisk-plugin.so: \
 	    $(plugin_sources) examples/disk/disk.go
 	cd examples/disk && \
 	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	GOPATH="$(abs_builddir)" \
 	$(GOLANG) build -o nbdkit-godisk-plugin.so -buildmode=c-shared
 
 examples/dump-plugin/nbdkit-godump-plugin.so: \
 	    $(plugin_sources) examples/dump-plugin/dumpplugin.go
 	cd examples/dump-plugin && \
 	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	GOPATH="$(abs_builddir)" \
 	$(GOLANG) build -o nbdkit-godump-plugin.so -buildmode=c-shared
 
 examples/minimal/nbdkit-gominimal-plugin.so: \
 	    $(plugin_sources) examples/minimal/minimal.go
 	cd examples/minimal && \
 	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	GOPATH="$(abs_builddir)" \
 	$(GOLANG) build -o nbdkit-gominimal-plugin.so -buildmode=c-shared
 
 examples/ramdisk/nbdkit-goramdisk-plugin.so: \
 	    $(plugin_sources) examples/ramdisk/ramdisk.go
 	cd examples/ramdisk && \
 	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	GOPATH="$(abs_builddir)" \
 	$(GOLANG) build -o nbdkit-goramdisk-plugin.so -buildmode=c-shared
 
 # Tests.
