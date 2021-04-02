@@ -475,7 +475,7 @@ For more information see L<https://bugzilla.redhat.com/1614276>.
 This plugin requires VDDK E<ge> 5.5.5, which in turn means that it
 is only supported on x64-64 platforms.
 
-It has been tested with all versions up to 7.0.0 (but should work with
+It has been tested with all versions up to 7.0.2 (but should work with
 future versions).
 
 VDDK E<ge> 6.0 should be used if possible.  This is the first version
