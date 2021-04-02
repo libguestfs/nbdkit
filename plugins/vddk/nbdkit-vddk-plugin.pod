@@ -482,6 +482,10 @@ VDDK E<ge> 6.0 should be used if possible.  This is the first version
 which added Flush support which is crucial for data integrity when
 writing.
 
+VDDK 6.7 was the first version that supported the
+C<VixDiskLib_QueryAllocatedBlocks> API, required to provide extent
+information over NBD.
+
 =head1 DEBUG FLAGS
 
 Debugging messages can be very helpful if you have problems connecting
