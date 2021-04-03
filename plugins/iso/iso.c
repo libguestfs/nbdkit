@@ -49,8 +49,8 @@
 DEFINE_VECTOR_TYPE(string_vector, char *);
 static string_vector dirs = empty_vector;
 
-/* genisoimage or mkisofs program, picked at compile time, but can be
- * overridden at run time.
+/* xorriso or genisoimage or mkisofs program, picked at compile time,
+ * but can be overridden at run time.
  */
 static const char *isoprog = ISOPROG;
 
@@ -96,6 +96,12 @@ make_iso (void)
   }
 
   shell_quote (isoprog, fp);
+#if ISOPROG_IS_XORRISO
+  /* This is necessary to make xorriso command line parsing behave
+   * like mkisofs.
+   */
+  fprintf (fp, " -as mkisofs");
+#endif
   fprintf (fp, " -quiet");
   if (params)
     fprintf (fp, " %s", params);

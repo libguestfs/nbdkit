@@ -91,7 +91,7 @@ For the ssh plugin:
 
 For the iso plugin:
 
- - genisoimage or mkisofs
+ - xorriso or genisoimage or mkisofs
 
 For the floppy plugin:
 

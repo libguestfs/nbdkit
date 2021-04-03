@@ -14,8 +14,8 @@ virtual ISO (CD-ROM) image from a directory on the fly.  The files
 from F<DIRECTORY> are added to a virtual ISO image which is served
 read-only over the NBD protocol.
 
-This plugin uses L<genisoimage(1)> or L<mkisofs(1)> to create the ISO
-content.
+This plugin uses L<xorriso(1)>, L<genisoimage(1)> or L<mkisofs(1)> to
+create the ISO content.
 
 To create a FAT-formatted virtual floppy disk instead of a CD, see
 L<nbdkit-floppy-plugin(1)>.  To create a Linux compatible virtual
@@ -28,11 +28,11 @@ extensions, from files in a directory:
 
  nbdkit iso /path/to/directory params='-JrT'
 
-C<params> adds I<-JrT> to the L<genisoimage(1)> or L<mkisofs(1)>
-command line, specifying the required extensions.  Note that unless
-you use at least one of these extensions, filenames inside the ISO
-will be truncated because of limitations of the basic S<ISO 9660>
-format.
+C<params> adds I<-JrT> to the L<xorriso(1)>, L<genisoimage(1)> or
+L<mkisofs(1)> command line, specifying the required extensions.  Note
+that unless you use at least one of these extensions, filenames inside
+the ISO will be truncated because of limitations of the basic S<ISO
+9660> format.
 
 =head1 PARAMETERS
 
@@ -52,8 +52,8 @@ See L<nbdkit(1)/Magic parameters>.
 
 =item B<params=>'parameters ...'
 
-Any other parameters may be passed through to L<genisoimage(1)> or
-L<mkisofs(1)> by specifying this option.
+Any other parameters may be passed through to L<xorriso(1)>,
+L<genisoimage(1)> or L<mkisofs(1)> by specifying this option.
 
 For example:
 
@@ -69,9 +69,9 @@ sanity checks for unquoted shell metacharacters.
 =item B<prog=>mkisofs
 
 Choose which program to use to create the ISO content.  The default is
-either L<genisoimage(1)> or L<mkisofs(1)> and is picked when nbdkit is
-compiled.  You only need to use this parameter if you want to override
-it at run time.
+L<xorriso(1)>, L<genisoimage(1)> or L<mkisofs(1)> and is picked when
+nbdkit is compiled.  You only need to use this parameter if you want
+to override it at run time.
 
 =back
 
@@ -81,8 +81,8 @@ it at run time.
 
 =item C<PATH>
 
-L<genisoimage(1)>, L<mkisofs(1)> or whatever you supply to the
-optional C<prog> parameter must be available on the C<$PATH>.
+L<xorriso(1)>, L<genisoimage(1)>, L<mkisofs(1)> or whatever you supply
+to the optional C<prog> parameter must be available on the C<$PATH>.
 
 =item C<TMPDIR>
 
@@ -118,7 +118,8 @@ L<nbdkit-floppy-plugin(1)>,
 L<nbdkit-linuxdisk-plugin(1)>,
 L<nbdkit-torrent-plugin(1)>,
 L<genisoimage(1)>,
-L<mkisofs(1)>.
+L<mkisofs(1)>,
+L<xorriso(1)>.
 
 =head1 AUTHORS
 

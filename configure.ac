@@ -962,27 +962,39 @@ AS_IF([test "$with_ssh" != "no"],[
 ])
 AM_CONDITIONAL([HAVE_SSH],[test "x$SSH_LIBS" != "x"])
 
-dnl Check for genisoimage or mkisofs
+dnl Check for xorriso or genisoimage or mkisofs
 dnl (only if you want to compile the iso plugin).
 ISOPROG="no"
+is_xorriso=0
 AC_ARG_WITH([iso],
     [AS_HELP_STRING([--without-iso],
                     [disable iso plugin @<:@default=check@:>@])],
     [],
     [with_iso=check])
 AS_IF([test "$with_iso" != "no"],[
+    AC_CHECK_PROG([XORRISO],[xorriso],[xorriso],[no])
     AC_CHECK_PROG([GENISOIMAGE],[genisoimage],[genisoimage],[no])
     AC_CHECK_PROG([MKISOFS],[mkisofs],[mkisofs],[no])
-    AS_IF([test "x$GENISOIMAGE" != "xno"],[
-        ISOPROG="$GENISOIMAGE"
+    AS_IF([test "x$XORRISO" != "xno"],[
+        ISOPROG="$XORRISO"
+        is_xorriso=1
     ],[
-        AS_IF([test "x$MKISOFS" != "xno"],[
-            ISOPROG="$MKISOFS"
+        AS_IF([test "x$GENISOIMAGE" != "xno"],[
+            ISOPROG="$GENISOIMAGE"
+        ],[
+            AS_IF([test "x$MKISOFS" != "xno"],[
+                ISOPROG="$MKISOFS"
+            ])
         ])
     ])
     AS_IF([test "x$ISOPROG" != "xno"],[
+        AC_MSG_RESULT([Picked $ISOPROG for nbdkit-iso-plugin])
         AC_DEFINE_UNQUOTED([ISOPROG],["$ISOPROG"],
                            [Program used by iso plugin to make ISOs.])
+        AS_IF([test "x$is_xorriso" = "x1"], [
+            AC_DEFINE([ISOPROG_IS_XORRISO],[1],
+                      [ISO program behaves like xorriso.])
+        ])
     ])
 ])
 AC_SUBST([ISOPROG])
