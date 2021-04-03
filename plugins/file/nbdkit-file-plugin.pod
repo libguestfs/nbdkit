@@ -7,21 +7,23 @@ nbdkit-file-plugin - nbdkit file plugin
  nbdkit file [file=]FILENAME
              [cache=default|none] [fadvise=normal|random|sequential]
 
- nbdkit file dir=DIRNAME
+ nbdkit file dir=DIRECTORY
 
 =head1 DESCRIPTION
 
 C<nbdkit-file-plugin> is a file serving plugin for L<nbdkit(1)>.
 
 It serves the named C<FILENAME> over NBD.  Local block devices
-(eg. F</dev/sda>) may also be served.  It may also be used to serve
-any file within a given C<DIRECTORY>, according to which export name
-the guest requests.
+(eg. F</dev/sda>) may also be served.
+
+If you use the C<dir> parameter the plugin works in a different mode
+where it serves files from the given C<DIRECTORY>, chosen by the
+client using the NBD export name.
 
 =head1 PARAMETERS
 
-One of B<file> or B<dir> must be given to determine which mode
-the server will use.
+Either B<file> or B<dir> must be given which controls the mode of the
+plugin, either serving a single file or the files in a directory.
 
 =over 4
 
@@ -33,6 +35,23 @@ the server will use.
 
 Using C<cache=none> tries to prevent the kernel from keeping parts of
 the file that have already been read or written in the page cache.
+
+=item B<dir=>DIRECTORY
+
+(nbdkit E<ge> 1.22, not Windows)
+
+Serve all regular files and block devices located directly inside the
+directory named C<DIRECTORY>, including those found by following
+symbolic links.  Other special files in the directory (such as
+subdirectories, pipes, or Unix sockets) are ignored.
+
+When this mode is used, the file to be served is chosen by the export
+name passed by the client, where the client can request a list of
+available exports using NBD_OPT_LIST.  A client that requests the
+default export (C<"">) will be rejected.  However, you can use
+L<nbdkit-exportname-filter(1)> to adjust what export names the client
+sees or uses as a default.  For security, when using directory mode,
+this plugin will not accept export names containing slash (C</>).
 
 =item B<fadvise=normal>
 
@@ -72,22 +91,6 @@ See L<nbdkit(1)/Magic parameters>.
 
 Serve the Windows volume specified by the device name.  See:
 L<https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#win32-device-namespaces>.
-
-=item B<dir=>DIRNAME
-
-(nbdkit E<ge> 1.22, not Windows)
-
-Serve all regular files and block devices located directly within the
-directory named C<DIRNAME>, including those found by following
-symbolic links.  Other special files in the directory (such as
-subdirectories, fifos, or Unix sockets) are ignored.  When this mode
-is used, the file to be served is chosen by the export name passed by
-the client, where the client can request a list of available exports
-using NBD_OPT_LIST.  A client that requests the default export (C<"">)
-will be rejected.  However, you can use L<nbdkit-exportname-filter(1)>
-to adjust what export names the client sees or uses as a default.  For
-security, when using directory mode, this plugin will not accept
-export names containing slash (C</>).
 
 =back
 
@@ -154,8 +157,9 @@ block devices.
 
 =item C<winfile=yes>
 
-If present, this is the Windows version of the file plugin which lacks
-certain features as noted in this manual.
+If present, this is the Windows version of the file plugin with
+reduced functionality and some special Windows-only features, as noted
+in this manual.
 
 =back
 
