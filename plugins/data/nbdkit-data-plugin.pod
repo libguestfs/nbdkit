@@ -189,6 +189,13 @@ Fields in the string can be:
 
 =over 4
 
+=item BYTE
+
+Write a byte at the current offset and advance the offset by 1.  The
+byte may be specified as either decimal, octal (prefixed by C<0>) or
+hexadecimal (prefixed by C<0x>).  To add repeated bytes use the C<*>
+operator (eg. C<0xFF*16>).
+
 =item B<@>OFFSET
 
 Moves the current offset to C<OFFSET>.  The offset may be specified as
@@ -210,12 +217,6 @@ Add or subtract C<N> from the current offset.
 If the current offset is not a multiple of C<ALIGNMENT> then the
 offset is moved forward to the next multiple.  The next byte written
 will be aligned to C<ALIGNMENT>.
-
-=item BYTE
-
-Write C<BYTE> at the current offset and advance the offset by 1 byte.
-The byte may be specified as either decimal, octal (prefixed by C<0>)
-or hexadecimal (prefixed by C<0x>).  To add repeated bytes use C<BYTE*N>
 
 =item B<E<lt>>FILE
 
