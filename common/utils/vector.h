@@ -44,6 +44,9 @@
 #include <assert.h>
 #include <string.h>
 
+#pragma clang diagnostic ignored "-Wunused-function"
+#pragma clang diagnostic ignored "-Wduplicate-decl-specifier"
+
 /* Use of this macro defines a new type called ‘name’ containing an
  * extensible vector of ‘type’ elements.  For example:
  *
