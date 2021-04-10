@@ -70,8 +70,10 @@ start_nbdkit -P $pid2 -U $sock2 nbd socket=$sock1 dynamic-export=true
 # - nbdinfo of EXPORT on both servers should succeed, with matching output
 check_success_one ()
 {
-    nbdinfo --no-content "nbd+unix:///$1?socket=$sock1" > $base.out1
-    nbdinfo --no-content "nbd+unix:///$1?socket=$sock2" > $base.out2
+    nbdinfo --no-content "nbd+unix:///$1?socket=$sock1" |
+        grep -v uri: > $base.out1
+    nbdinfo --no-content "nbd+unix:///$1?socket=$sock2" |
+        grep -v uri: > $base.out2
     cat $base.out2
     diff -u $base.out1 $base.out2
 }
@@ -80,8 +82,10 @@ check_success_one ()
 # - nbdinfo --list on both servers should succeed, with matching output
 check_success_list ()
 {
-    nbdinfo --list --json nbd+unix://\?socket=$sock1 > $base.out1
-    nbdinfo --list --json nbd+unix://\?socket=$sock2 > $base.out2
+    nbdinfo --list --json nbd+unix://\?socket=$sock1 |
+        grep -v '"uri"' > $base.out1
+    nbdinfo --list --json nbd+unix://\?socket=$sock2 |
+        grep -v '"uri"' > $base.out2
     cat $base.out2
     diff -u $base.out1 $base.out2
 }
