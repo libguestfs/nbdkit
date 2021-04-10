@@ -136,6 +136,7 @@ requires_ipv6_loopback ()
 requires_linux_kernel_version ()
 {
     local kver
+    local min="$1"
 
     # Check that nbdkit was built for Linux.  This can appear to be a
     # peculiar test, but if we cross-compiled nbdkit for Windows and
@@ -151,10 +152,11 @@ requires_linux_kernel_version ()
     requires test "$(uname -s)" = "Linux"
 
     # Test that it's the minimum version.
+    # https://stackoverflow.com/a/24067243
     requires cut --version
-    requires bc --version
+    requires sort -V /dev/null
     kver=$(uname -r | cut -d. -f1-2)
-    requires test "$(echo "$kver >= $1" | bc -l)" = "1"
+    requires test "$(printf "$kver\n$min" | sort -V | head -n 1)" = "$min"
 }
 
 # Test if nbdsh was compiled with support for URIs.
