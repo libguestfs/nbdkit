@@ -169,7 +169,7 @@ For the Rust plugin:
 
 To be able to write plugins in golang:
 
- - go >= 1.5
+ - go >= 1.13
 
 For bash tab completion:
 
