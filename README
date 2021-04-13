@@ -68,7 +68,7 @@ For SELinux socket labelling support:
 
  - libselinux
 
-For the gzip plugin:
+For the gzip filter:
 
  - zlib
 
