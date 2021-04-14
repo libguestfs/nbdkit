@@ -44,7 +44,11 @@ if HAVE_PYTHON
 plugin_LTLIBRARIES = nbdkit-python-plugin.la
 
 nbdkit_python_plugin_la_SOURCES = \
-	python.c \
+	errors.c \
+	helpers.c \
+	modfunctions.c \
+	plugin.c \
+	plugin.h \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
 

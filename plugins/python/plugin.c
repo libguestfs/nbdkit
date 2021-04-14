@@ -32,37 +32,20 @@
 
 #include <config.h>
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
 
-#define PY_SSIZE_T_CLEAN 1
-#include <Python.h>
-
-#define NBDKIT_API_VERSION 2
-#include <nbdkit-plugin.h>
-
 #include "cleanup.h"
 
-/* All callbacks that want to call any Py* function should use this
- * macro.  See
- * https://docs.python.org/3/c-api/init.html#non-python-created-threads
- */
-#define ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE            \
-  __attribute__((cleanup (cleanup_release)))            \
-  PyGILState_STATE gstate = PyGILState_Ensure()
-static inline void
-cleanup_release (PyGILState_STATE *gstateptr)
-{
-  PyGILState_Release (*gstateptr);
-}
+#include "plugin.h"
 
 /* XXX Apparently global state is technically wrong in Python 3, see:
  *
@@ -72,260 +55,9 @@ cleanup_release (PyGILState_STATE *gstateptr)
  * have multiple Python interpreters or multiple instances of the
  * plugin in a single process.
  */
-static const char *script;
-static PyObject *module;
-static int py_api_version = 1;
-
-static __thread int last_error;
-
-/* Is a callback defined? */
-static int
-callback_defined (const char *name, PyObject **obj_rtn)
-{
-  PyObject *obj;
-
-  assert (script != NULL);
-  assert (module != NULL);
-
-  obj = PyObject_GetAttrString (module, name);
-  if (!obj) {
-    PyErr_Clear (); /* Clear the AttributeError from testing attr. */
-    return 0;
-  }
-  if (!PyCallable_Check (obj)) {
-    nbdkit_debug ("object %s isn't callable", name);
-    Py_DECREF (obj);
-    return 0;
-  }
-
-  if (obj_rtn != NULL)
-    *obj_rtn = obj;
-  else
-    Py_DECREF (obj);
-
-  return 1;
-}
-
-/* Convert bytes/str/unicode into a string.  Caller must free. */
-static char *
-python_to_string (PyObject *str)
-{
-  if (str) {
-    if (PyUnicode_Check (str))
-      return strdup (PyUnicode_AsUTF8 (str));
-    else if (PyBytes_Check (str))
-      return strdup (PyBytes_AS_STRING (str));
-  }
-  return NULL;
-}
-
-/* This is the fallback in case we cannot get the full traceback. */
-static void
-print_python_error (const char *callback, PyObject *error)
-{
-  PyObject *error_str;
-  CLEANUP_FREE char *error_cstr = NULL;
-
-  error_str = PyObject_Str (error);
-  error_cstr = python_to_string (error_str);
-  nbdkit_error ("%s: %s: error: %s",
-                script, callback,
-                error_cstr ? error_cstr : "<unknown>");
-  Py_DECREF (error_str);
-}
-
-/* Convert the Python traceback to a string and call nbdkit_error.
- * https://stackoverflow.com/a/15907460/7126113
- */
-static int
-print_python_traceback (const char *callback,
-                        PyObject *type, PyObject *error, PyObject *traceback)
-{
-  PyObject *module_name, *traceback_module, *format_exception_fn, *rv,
-    *traceback_str;
-  CLEANUP_FREE char *traceback_cstr = NULL;
-
-  module_name = PyUnicode_FromString ("traceback");
-  traceback_module = PyImport_Import (module_name);
-  Py_DECREF (module_name);
-
-  /* couldn't 'import traceback' */
-  if (traceback_module == NULL)
-    return -1;
-
-  format_exception_fn = PyObject_GetAttrString (traceback_module,
-                                                "format_exception");
-  if (format_exception_fn == NULL)
-    return -1;
-  if (!PyCallable_Check (format_exception_fn))
-    return -1;
-
-  rv = PyObject_CallFunctionObjArgs (format_exception_fn,
-                                     type, error, traceback, NULL);
-  if (rv == NULL)
-    return -1;
-  traceback_str = PyUnicode_Join (NULL, rv);
-  Py_DECREF (rv);
-  traceback_cstr = python_to_string (traceback_str);
-  if (traceback_cstr == NULL) {
-    Py_DECREF (traceback_str);
-    return -1;
-  }
-
-  nbdkit_error ("%s: %s: error: %s",
-                script, callback,
-                traceback_cstr);
-  Py_DECREF (traceback_str);
-
-  /* This means we succeeded in calling nbdkit_error. */
-  return 0;
-}
-
-static int
-check_python_failure (const char *callback)
-{
-  if (PyErr_Occurred ()) {
-    PyObject *type, *error, *traceback;
-
-    PyErr_Fetch (&type, &error, &traceback);
-    PyErr_NormalizeException (&type, &error, &traceback);
-
-    /* Try to print the full traceback. */
-    if (print_python_traceback (callback, type, error, traceback) == -1) {
-      /* Couldn't do that, so fall back to converting the Python error
-       * to a string.
-       */
-      print_python_error (callback, error);
-    }
-
-    /* In all cases this returns -1 to indicate that a Python error
-     * occurred.
-     */
-    return -1;
-  }
-  return 0;
-}
-
-/* Functions in the virtual nbdkit.* module. */
-
-/* nbdkit.debug */
-static PyObject *
-debug (PyObject *self, PyObject *args)
-{
-  const char *msg;
-
-  if (!PyArg_ParseTuple (args, "s", &msg))
-    return NULL;
-  nbdkit_debug ("%s", msg);
-  Py_RETURN_NONE;
-}
-
-/* nbdkit.export_name */
-static PyObject *
-export_name (PyObject *self, PyObject *args)
-{
-  const char *s = nbdkit_export_name ();
-
-  if (!s) {
-    /* Unfortunately we lose the actual error. XXX */
-    PyErr_SetString (PyExc_RuntimeError, "nbdkit.export_name failed");
-    return NULL;
-  }
-
-  /* NBD spec says that the export name should be UTF-8, so this
-   * ought to work, and if it fails the client gave us a bad export
-   * name which should turn into an exception.
-   */
-  return PyUnicode_FromString (s);
-}
-
-/* nbdkit.set_error */
-static PyObject *
-set_error (PyObject *self, PyObject *args)
-{
-  int err;
-
-  if (!PyArg_ParseTuple (args, "i", &err))
-    return NULL;
-  nbdkit_set_error (err);
-  last_error = err;
-  Py_RETURN_NONE;
-}
-
-/* nbdkit.shutdown */
-static PyObject *
-do_shutdown (PyObject *self, PyObject *args)
-{
-  nbdkit_shutdown ();
-  Py_RETURN_NONE;
-}
-
-static PyMethodDef NbdkitMethods[] = {
-  { "debug", debug, METH_VARARGS,
-    "Print a debug message" },
-  { "export_name", export_name, METH_VARARGS,
-    "Return the optional export name negotiated with the client" },
-  { "set_error", set_error, METH_VARARGS,
-    "Store an errno value prior to throwing an exception" },
-  { "shutdown", do_shutdown, METH_VARARGS,
-    "Request asynchronous shutdown" },
-  { NULL }
-};
-
-static struct PyModuleDef moduledef = {
-  PyModuleDef_HEAD_INIT,
-  "nbdkit",
-  "Module used to access nbdkit server API",
-  -1,
-  NbdkitMethods,
-  NULL,
-  NULL,
-  NULL,
-  NULL
-};
-
-PyMODINIT_FUNC
-create_nbdkit_module (void)
-{
-  PyObject *m;
-
-  m = PyModule_Create (&moduledef);
-  if (m == NULL) {
-    nbdkit_error ("could not create the nbdkit API module");
-    exit (EXIT_FAILURE);
-  }
-
-  /* Constants corresponding to various flags. */
-#define ADD_INT_CONSTANT(name)                                      \
-  if (PyModule_AddIntConstant (m, #name, NBDKIT_##name) == -1) {    \
-    nbdkit_error ("could not add constant %s to nbdkit API module", \
-                  #name);                                           \
-    exit (EXIT_FAILURE);                                            \
-  }
-  ADD_INT_CONSTANT (THREAD_MODEL_SERIALIZE_CONNECTIONS);
-  ADD_INT_CONSTANT (THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
-  ADD_INT_CONSTANT (THREAD_MODEL_SERIALIZE_REQUESTS);
-  ADD_INT_CONSTANT (THREAD_MODEL_PARALLEL);
-
-  ADD_INT_CONSTANT (FLAG_MAY_TRIM);
-  ADD_INT_CONSTANT (FLAG_FUA);
-  ADD_INT_CONSTANT (FLAG_REQ_ONE);
-  ADD_INT_CONSTANT (FLAG_FAST_ZERO);
-
-  ADD_INT_CONSTANT (FUA_NONE);
-  ADD_INT_CONSTANT (FUA_EMULATE);
-  ADD_INT_CONSTANT (FUA_NATIVE);
-
-  ADD_INT_CONSTANT (CACHE_NONE);
-  ADD_INT_CONSTANT (CACHE_EMULATE);
-  ADD_INT_CONSTANT (CACHE_NATIVE);
-
-  ADD_INT_CONSTANT (EXTENT_HOLE);
-  ADD_INT_CONSTANT (EXTENT_ZERO);
-#undef ADD_INT_CONSTANT
-
-  return m;
-}
+const char *script;             /* The Python script name. */
+PyObject *module;               /* The imported __main__ module from script. */
+int py_api_version = 1;         /* The declared Python API version. */
 
 static PyThreadState *tstate;
 
