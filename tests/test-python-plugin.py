@@ -29,7 +29,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-"""See test-python.py."""
+"""See tests/test-python.sh."""
 
 import nbdkit
 import pickle
