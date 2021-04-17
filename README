@@ -1,9 +1,8 @@
-NBD — Network Block Device — is a protocol for accessing Block Devices
-(hard disks and disk-like things) over a Network.
+nbdkit is an NBD server.  NBD — Network Block Device — is a protocol
+for accessing Block Devices (hard disks and disk-like things) over a
+Network.
 
-nbdkit is a toolkit for creating NBD servers.
-
-The key features are:
+The key features of nbdkit are:
 
  * Multithreaded NBD server written in C with good performance.
 
@@ -22,8 +21,13 @@ The key features are:
 
 For documentation, see the ‘docs/’ directory.
 
-For plugins, examples and filters, see the ‘plugins/’ and ‘filters/’
-directories.
+For plugins and filters, see the ‘plugins/’ and ‘filters/’
+directories.  Example plugins can be found in ‘plugins/example*’.
+
+There are many NBD clients, but the nbdkit project has a companion
+client library called https://gitlab.com/nbdkit/libnbd
+
+https://gitlab.com/nbdkit/nbdkit
 
 LICENSE
 =======
@@ -37,8 +41,7 @@ BUILDING FROM SOURCE
 Requirements
 ------------
 
-To build the basic server and some plugins nbdkit needs nothing except
-Linux, FreeBSD, OpenBSD or Haiku and:
+ - Linux, FreeBSD, OpenBSD or Haiku
 
  - GCC or Clang
 
@@ -46,14 +49,13 @@ Linux, FreeBSD, OpenBSD or Haiku and:
 
  - GNU make
 
-(For Windows support, see the separate section at the end of this
-document.)
-
-Although it is possible to build without it, it’s recommended to
-enable TLS (authentication and encryption) support for which you will
-need:
+Recommended for TLS (authentication and encryption) support, but it is
+possible to build without it:
 
  - gnutls >= 3.3.0
+
+nbdkit also works on Windows, but dependencies are more complicated.
+See the separate section at the end of this document.
 
 Optional dependencies
 ---------------------
@@ -301,7 +303,7 @@ Please send patches to the libguestfs mailing list:
 https://www.redhat.com/mailman/listinfo/libguestfs
 
 For further information, see:
-http://libguestfs.org/
+https://libguestfs.org/
 https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md
 
 Test coverage
