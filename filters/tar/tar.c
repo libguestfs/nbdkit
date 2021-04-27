@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -168,6 +168,7 @@ calculate_offset_of_entry (nbdkit_next *next)
     nbdkit_error ("open_memstream: %m");
     return -1;
   }
+  /* https://listman.redhat.com/archives/libguestfs/2021-April/msg00072.html */
   fprintf (fp, "LANG=C ");
   shell_quote (tar_program, fp);
   fprintf (fp, " --no-auto-compress -t --block-number -v -f - ");
