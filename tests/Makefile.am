@@ -1131,6 +1131,12 @@ EXTRA_DIST += \
 endif HAVE_PYTHON
 
 # Ruby plugin test.
+EXTRA_DIST += \
+	shebang.rb \
+	test.rb \
+	test-shebang-ruby.sh \
+	$(NULL)
+
 if HAVE_RUBY
 
 # Ruby tests are disabled.  See "WARNING" section in
@@ -1141,11 +1147,6 @@ if HAVE_RUBY
 #	$(NULL)
 #TESTS += test-shebang-ruby.sh
 EXTRA_PROGRAMS += test-ruby
-EXTRA_DIST += \
-	shebang.rb \
-	test.rb \
-	test-shebang-ruby.sh \
-	$(NULL)
 
 test_ruby_SOURCES = test-lang-plugins.c test.h
 test_ruby_CFLAGS = \
