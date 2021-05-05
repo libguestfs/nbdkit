@@ -171,33 +171,19 @@ filter_config_complete (struct backend *b)
     b->next->config_complete (b->next);
 }
 
-static int
-next_get_ready (struct backend *b)
-{
-  b->get_ready (b);
-  return 0;
-}
-
 static void
 filter_get_ready (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
+  b->next->get_ready (b->next); /* exits on failure */
+
   debug ("%s: get_ready thread_model=%d", b->name, thread_model);
 
   if (f->filter.get_ready) {
-    if (f->filter.get_ready (next_get_ready, b->next, thread_model) == -1)
+    if (f->filter.get_ready (thread_model) == -1)
       exit (EXIT_FAILURE);
   }
-  else
-    b->next->get_ready (b->next);
-}
-
-static int
-next_after_fork (struct backend *b)
-{
-  b->after_fork (b);
-  return 0;
 }
 
 static void
@@ -205,14 +191,14 @@ filter_after_fork (struct backend *b)
 {
   struct backend_filter *f = container_of (b, struct backend_filter, backend);
 
+  b->next->after_fork (b->next); /* exits on failure */
+
   debug ("%s: after_fork", b->name);
 
   if (f->filter.after_fork) {
-    if (f->filter.after_fork (next_after_fork, b->next) == -1)
+    if (f->filter.after_fork (b->next) == -1)
       exit (EXIT_FAILURE);
   }
-  else
-    b->next->after_fork (b->next);
 }
 
 static int

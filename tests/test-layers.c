@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -234,28 +234,28 @@ main (int argc, char *argv[])
      "filter3: test_layers_filter_thread_model",
      NULL);
 
-  /* get_ready methods called in order. */
+  /* get_ready methods called in inner-to-outer order. */
   log_verify_seen_in_order
-    ("testlayersfilter3: get_ready",
-     "filter3: test_layers_filter_get_ready",
-     "testlayersfilter2: get_ready",
-     "filter2: test_layers_filter_get_ready",
+    ("testlayersplugin: get_ready",
+     "test_layers_plugin_get_ready",
      "testlayersfilter1: get_ready",
      "filter1: test_layers_filter_get_ready",
-     "testlayersplugin: get_ready",
-     "test_layers_plugin_get_ready",
+     "testlayersfilter2: get_ready",
+     "filter2: test_layers_filter_get_ready",
+     "testlayersfilter3: get_ready",
+     "filter3: test_layers_filter_get_ready",
      NULL);
 
-  /* after_fork methods called in order. */
+  /* after_fork methods called in inner-to-outer order. */
   log_verify_seen_in_order
-    ("testlayersfilter3: after_fork",
-     "filter3: test_layers_filter_after_fork",
-     "testlayersfilter2: after_fork",
-     "filter2: test_layers_filter_after_fork",
+    ("testlayersplugin: after_fork",
+     "test_layers_plugin_after_fork",
      "testlayersfilter1: after_fork",
      "filter1: test_layers_filter_after_fork",
-     "testlayersplugin: after_fork",
-     "test_layers_plugin_after_fork",
+     "testlayersfilter2: after_fork",
+     "filter2: test_layers_filter_after_fork",
+     "testlayersfilter3: after_fork",
+     "filter3: test_layers_filter_after_fork",
      NULL);
 
   /* preconnect methods called in outer-to-inner order, complete

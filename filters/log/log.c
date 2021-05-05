@@ -103,8 +103,7 @@ log_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
 
 /* Open the logfile. */
 static int
-log_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
-               int thread_model)
+log_get_ready (int thread_model)
 {
   int fd;
 
@@ -133,17 +132,17 @@ log_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
   saved_pid = getpid ();
 
   print (NULL, "Ready", "thread_model=%d", thread_model);
-  return next (nxdata);
+  return 0;
 }
 
 static int
-log_after_fork (nbdkit_next_after_fork *next, nbdkit_backend *nxdata)
+log_after_fork (nbdkit_backend *nxdata)
 {
   /* Only issue this message if we actually fork. */
   if (getpid () != saved_pid)
     print (NULL, "Fork", "");
 
-  return next (nxdata);
+  return 0;
 }
 
 /* List exports. */

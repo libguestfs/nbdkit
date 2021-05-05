@@ -89,20 +89,18 @@ test_layers_filter_thread_model (void)
 }
 
 static int
-test_layers_filter_get_ready (nbdkit_next_get_ready *next,
-                              nbdkit_backend *nxdata, int thread_model)
+test_layers_filter_get_ready (int thread_model)
 {
   DEBUG_FUNCTION;
-  return next (nxdata);
+  return 0;
 }
 
 static int
-test_layers_filter_after_fork (nbdkit_next_after_fork *next,
-                               nbdkit_backend *nxdata)
+test_layers_filter_after_fork (nbdkit_backend *backend)
 {
   DEBUG_FUNCTION;
-  saved_backend = nxdata;
-  return next (nxdata);
+  saved_backend = backend;
+  return 0;
 }
 
 static int

@@ -127,8 +127,7 @@ which is required.
 =head1 NEXT PLUGIN
 
 F<nbdkit-filter.h> defines some function types (C<nbdkit_next_config>,
-C<nbdkit_next_config_complete>, C<nbdkit_next_get_ready>,
-C<nbdkit_next_after_fork>, C<nbdkit_next_preconnect>,
+C<nbdkit_next_config_complete>, C<nbdkit_next_preconnect>,
 C<nbdkit_next_list_exports>, C<nbdkit_next_default_export>,
 C<nbdkit_next_open>) and a structure called C<struct nbdkit_next_ops>.
 These abstract the next plugin or filter in the chain.  There is also
@@ -406,28 +405,29 @@ with an error message and return C<-1>.
 
 =head2 C<.get_ready>
 
- int (*get_ready) (nbdkit_next_get_ready *next, void *nxdata,
-                   int thread_model);
+ int (*get_ready) (int thread_model);
 
-This intercepts the plugin C<.get_ready> method and can be used by the
-filter to get ready to serve requests.
+This optional callback is reached if the plugin C<.get_ready> method
+succeeded (if the plugin failed, nbdkit has already exited), and can
+be used by the filter to get ready to serve requests.
 
 The C<thread_model> parameter informs the filter about the final
 thread model chosen by nbdkit after considering the results of
 C<.thread_model> of all filters in the chain after
-C<.config_complete>.  This does not need to be passed on to C<next>,
-as the model can no longer be altered at this point.
+C<.config_complete>.
 
 If there is an error, C<.get_ready> should call C<nbdkit_error> with
 an error message and return C<-1>.
 
 =head2 C<.after_fork>
 
- int (*after_fork) (nbdkit_next_after_fork *next, nbdkit_backend *nxdata);
+ int (*after_fork) (nbdkit_backend *backend);
 
-This intercepts the plugin C<.after_fork> method and can be used by
-the filter to start background threads (although these have limited
-usefulness since they will not be able to access the plugin).
+This optional callback is reached after the plugin C<.after_fork>
+method has succeeded (if the plugin failed, nbdkit has already
+exited), and can be used by the filter to start background threads.
+The C<backend> parameter is valid until C<.unload>, for creating manual
+contexts into the backend with C<nbdkit_next_context_open>.
 
 If there is an error, C<.after_fork> should call C<nbdkit_error> with
 an error message and return C<-1>.

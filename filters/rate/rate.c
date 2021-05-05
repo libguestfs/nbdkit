@@ -147,14 +147,13 @@ rate_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
 }
 
 static int
-rate_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
-                int thread_model)
+rate_get_ready (int thread_model)
 {
   /* Initialize the global buckets. */
   bucket_init (&read_bucket, rate, BUCKET_CAPACITY);
   bucket_init (&write_bucket, rate, BUCKET_CAPACITY);
 
-  return next (nxdata);
+  return 0;
 }
 
 #define rate_config_help \

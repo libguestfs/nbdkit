@@ -262,12 +262,11 @@ parse_extentlist (void)
 }
 
 static int
-extentlist_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
-                      int thread_model)
+extentlist_get_ready (int thread_model)
 {
   parse_extentlist ();
 
-  return next (nxdata);
+  return 0;
 }
 
 static int

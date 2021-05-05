@@ -212,8 +212,7 @@ stats_config_complete (nbdkit_next_config_complete *next,
 }
 
 static int
-stats_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
-                 int thread_model)
+stats_get_ready (int thread_model)
 {
   int fd;
 
@@ -238,7 +237,7 @@ stats_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
 
   gettimeofday (&start_t, NULL);
 
-  return next (nxdata);
+  return 0;
 }
 
 #define stats_config_help \

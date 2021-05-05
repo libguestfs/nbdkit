@@ -231,7 +231,7 @@ control_socket_thread (void *arg)
 
 /* Start the background thread after fork. */
 static int
-pause_after_fork (nbdkit_next_after_fork *next, nbdkit_backend *nxdata)
+pause_after_fork (nbdkit_backend *nxdata)
 {
   int err;
   pthread_t thread;
@@ -242,7 +242,7 @@ pause_after_fork (nbdkit_next_after_fork *next, nbdkit_backend *nxdata)
     nbdkit_error ("pthread_create: %m");
     return -1;
   }
-  return next (nxdata);
+  return 0;
 }
 
 /* This is called before processing each NBD request. */

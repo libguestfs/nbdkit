@@ -66,8 +66,6 @@ typedef struct nbdkit_next_ops nbdkit_next;
 typedef int nbdkit_next_config (nbdkit_backend *nxdata,
                                 const char *key, const char *value);
 typedef int nbdkit_next_config_complete (nbdkit_backend *nxdata);
-typedef int nbdkit_next_get_ready (nbdkit_backend *nxdata);
-typedef int nbdkit_next_after_fork (nbdkit_backend *nxdata);
 typedef int nbdkit_next_preconnect (nbdkit_backend *nxdata, int readonly);
 typedef int nbdkit_next_list_exports (nbdkit_backend *nxdata, int readonly,
                                       struct nbdkit_exports *exports);
@@ -197,9 +195,8 @@ struct nbdkit_filter {
                           nbdkit_backend *nxdata);
   const char *config_help;
   int (*thread_model) (void);
-  int (*get_ready) (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
-                    int thread_model);
-  int (*after_fork) (nbdkit_next_after_fork *next, nbdkit_backend *nxdata);
+  int (*get_ready) (int thread_model);
+  int (*after_fork) (nbdkit_backend *backend);
   int (*preconnect) (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
                      int readonly);
   int (*list_exports) (nbdkit_next_list_exports *next, nbdkit_backend *nxdata,

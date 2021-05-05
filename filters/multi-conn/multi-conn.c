@@ -145,13 +145,12 @@ multi_conn_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   "multi-conn-exportname=<BOOL>    true to limit emulation by export name.\n"
 
 static int
-multi_conn_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
-                      int thread_model)
+multi_conn_get_ready (int thread_model)
 {
   if (thread_model == NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS &&
       mode == AUTO)
     mode = DISABLE;
-  return next (nxdata);
+  return 0;
 }
 
 static void *

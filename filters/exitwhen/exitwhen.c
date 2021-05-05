@@ -436,22 +436,21 @@ exitwhen_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
  * then we exit immediately.
  */
 static int
-exitwhen_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
-                    int thread_model)
+exitwhen_get_ready (int thread_model)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
 
   if (check_for_event ())
     exit (EXIT_SUCCESS);
 
-  return next (nxdata);
+  return 0;
 }
 
 /* After forking, start the background thread.  Initially it is
  * polling.
  */
 static int
-exitwhen_after_fork (nbdkit_next_after_fork *next, nbdkit_backend *nxdata)
+exitwhen_after_fork (nbdkit_backend *nxdata)
 {
   int err;
   pthread_t thread;
@@ -462,7 +461,7 @@ exitwhen_after_fork (nbdkit_next_after_fork *next, nbdkit_backend *nxdata)
     nbdkit_error ("pthread_create: %m");
     return -1;
   }
-  return next (nxdata);
+  return 0;
 }
 
 static int

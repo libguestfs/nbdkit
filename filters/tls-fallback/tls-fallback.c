@@ -63,15 +63,14 @@ tls_fallback_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   "tlsreadme=<MESSAGE>  Alternative contents for the plaintext dummy export.\n"
 
 int
-tls_fallback_get_ready (nbdkit_next_get_ready *next, nbdkit_backend *nxdata,
-                        int thread_model)
+tls_fallback_get_ready (int thread_model)
 {
   if (thread_model == NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS) {
     nbdkit_error ("the tls-fallback filter requires parallel connection "
                   "support");
     return -1;
   }
-  return next (nxdata);
+  return 0;
 }
 
 static int
