@@ -609,6 +609,18 @@ main (int argc, char *argv[])
      "test_layers_plugin_close",
      NULL);
 
+  /* cleanup methods called in outer-to-inner order. */
+  log_verify_seen_in_order
+    ("testlayersfilter3: cleanup",
+     "filter3: test_layers_filter_cleanup",
+     "testlayersfilter2: cleanup",
+     "filter2: test_layers_filter_cleanup",
+     "testlayersfilter1: cleanup",
+     "filter1: test_layers_filter_cleanup",
+     "testlayersplugin: cleanup",
+     "test_layers_plugin_cleanup",
+     NULL);
+
   /* unload methods should be run in any order. */
   log_verify_seen ("test_layers_plugin_unload");
   log_verify_seen ("filter1: test_layers_filter_unload");

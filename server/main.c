@@ -735,6 +735,7 @@ main (int argc, char *argv[])
 
   start_serving ();
 
+  top->cleanup (top);
   top->free (top);
   top = NULL;
 

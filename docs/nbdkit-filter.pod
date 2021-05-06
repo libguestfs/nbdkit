@@ -147,7 +147,7 @@ initialization outside any connections.  The value of C<backend>
 passed to C<.after_fork> also occurs without connections, but is
 shared with C<.preconnect>, C<.list_exports>, and C<.default_export>,
 and can also be obtained from the C<context> passed to C<.open>, and
-has a lifetime that lasts to C<.unload> for use by
+has a lifetime that lasts to C<.cleanup> for use by
 C<nbdkit_next_context_open>.  In turn, the value of C<context> passed
 to C<.open> has a lifetime that lasts until the matching C<.close> for
 use by C<nbdkit_context_get_backend> and C<nbdkit_context_set_next>.
@@ -213,7 +213,7 @@ Obtains the backend pointer from the C<context> parameter to C<.open>,
 matching the backend pointer available to C<.after_fork>,
 C<.preconnect>, C<.list_exports>, and C<.default_export>.  This
 backend pointer has a stable lifetime from the time of C<.after_fork>
-until C<.unload>.
+until C<.cleanup>.
 
  nbdkit_next *nbdkit_next_context_open (nbdkit_backend *backend,
                                         int readonly, const char *exportname,
@@ -443,11 +443,27 @@ an error message and return C<-1>.
 This optional callback is reached after the plugin C<.after_fork>
 method has succeeded (if the plugin failed, nbdkit has already
 exited), and can be used by the filter to start background threads.
-The C<backend> parameter is valid until C<.unload>, for creating manual
+The C<backend> parameter is valid until C<.cleanup>, for creating manual
 contexts into the backend with C<nbdkit_next_context_open>.
 
 If there is an error, C<.after_fork> should call C<nbdkit_error> with
 an error message and return C<-1>.
+
+=head2 C<.cleanup>
+
+ int (cleanup) (nbdkit_backend *backend);
+
+This optional callback is reached once after all client connections
+have been closed, but before the underlying plugin C<.cleanup> or any
+C<.unload> callbacks.  It can be used by the filter to gracefully
+close any background threads created during C<.after_fork>, as well as
+close any manual contexts into C<backend> previously opened with
+C<nbdkit_next_context_open>.
+
+Note that it's not guaranteed that C<.cleanup> will always be called
+(eg. the server might be killed or segfault), so you should try to
+make the filter as robust as possible by not requiring cleanup.  See
+also L<nbdkit-plugin(3)/SHUTDOWN>.
 
 =head2 C<.preconnect>
 

@@ -164,6 +164,7 @@ plugin_dump_fields (struct backend *b)
   HAS (thread_model);
   HAS (get_ready);
   HAS (after_fork);
+  HAS (cleanup);
   HAS (preconnect);
   HAS (list_exports);
   HAS (default_export);
@@ -271,6 +272,17 @@ plugin_after_fork (struct backend *b)
 
   if (p->plugin.after_fork () == -1)
     exit (EXIT_FAILURE);
+}
+
+static void
+plugin_cleanup (struct backend *b)
+{
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+
+  debug ("%s: cleanup", b->name);
+
+  if (p->plugin.cleanup)
+    p->plugin.cleanup ();
 }
 
 static int
@@ -802,6 +814,7 @@ static struct backend plugin_functions = {
   .magic_config_key = plugin_magic_config_key,
   .get_ready = plugin_get_ready,
   .after_fork = plugin_after_fork,
+  .cleanup = plugin_cleanup,
   .preconnect = plugin_preconnect,
   .list_exports = plugin_list_exports,
   .default_export = plugin_default_export,

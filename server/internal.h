@@ -359,6 +359,8 @@ struct backend {
   const char *(*magic_config_key) (struct backend *);
   void (*get_ready) (struct backend *);
   void (*after_fork) (struct backend *);
+  void (*cleanup) (struct backend *);
+
   int (*preconnect) (struct backend *, int readonly);
   int (*list_exports) (struct backend *, int readonly, int is_tls,
                        struct nbdkit_exports *exports);

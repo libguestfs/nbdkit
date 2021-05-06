@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -144,6 +144,8 @@ struct nbdkit_plugin {
                        struct nbdkit_exports *exports);
   const char * (*default_export) (int readonly, int is_tls);
   const char * (*export_description) (void *handle);
+
+  void (*cleanup) (void);
 };
 
 NBDKIT_EXTERN_DECL (void, nbdkit_set_error, (int err));

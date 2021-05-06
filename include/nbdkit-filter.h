@@ -197,6 +197,7 @@ struct nbdkit_filter {
   int (*thread_model) (void);
   int (*get_ready) (int thread_model);
   int (*after_fork) (nbdkit_backend *backend);
+  void (*cleanup) (nbdkit_backend *backend);
   int (*preconnect) (nbdkit_next_preconnect *next, nbdkit_backend *nxdata,
                      int readonly);
   int (*list_exports) (nbdkit_next_list_exports *next, nbdkit_backend *nxdata,

@@ -176,6 +176,9 @@ the plugin:
                    │           before nbdkit exits
                    │
          ┌─────────┴────────┐
+         │ cleanup          │
+         └─────────┬────────┘
+         ┌─────────┴────────┐
          │ unload           │
          └──────────────────┘
 
@@ -281,9 +284,20 @@ The sequence C<.preconnect>, C<.open> ... C<.close> can be called
 repeatedly over the lifetime of the plugin, and can be called in
 parallel (depending on the thread model).
 
+=item C<.cleanup>
+
+is called once after all connections have been closed, prior to
+unloading the plugin from memory.  This is only called if
+C<.after_fork> succeeded earlier (even in cases where nbdkit did not
+fork but is running in the foreground), which makes it a good place to
+gracefully end any background threads.
+
 =item C<.unload>
 
-is called once just before the plugin is unloaded from memory.
+is called once just before the plugin is unloaded from memory.  This
+is called even when nbdkit did not need to use C<.after_fork> (such as
+when using C<--dump-plugin> to display documentation about the
+plugin).
 
 =back
 
@@ -643,6 +657,18 @@ above.
 
 If there is an error, C<.after_fork> should call C<nbdkit_error> with
 an error message and return C<-1>.
+
+=head2 C<.cleanup>
+
+ void cleanup (void);
+
+This optional callback is called after the server has closed all
+connections and is preparing to unload.  It is only reached in the
+same cases that the C<.after_fork> callback was used, making it a good
+place to clean up any background threads.  However, it is not
+guaranteed that this callback will be reached, so you should try to
+make the plugin as robust as possible by not requiring cleanup.  See
+also L</SHUTDOWN> below.
 
 =head2 C<.preconnect>
 
@@ -1290,8 +1316,9 @@ plugin having to call C<nbdkit_set_error>.
 
 When nbdkit receives certain signals it will shut down (see
 L<nbdkit(1)/SIGNALS>).  The server will wait for any currently running
-plugin callbacks to finish and also call the C<.unload> callback
-before unloading the plugin.
+plugin callbacks to finish, call C<.close> on those connections, then
+call the C<.cleanup> and C<.unload> callbacks before unloading the
+plugin.
 
 Note that it's not guaranteed this can always happen (eg. the server
 might be killed by C<SIGKILL> or segfault).

@@ -103,6 +103,13 @@ test_layers_filter_after_fork (nbdkit_backend *backend)
   return 0;
 }
 
+static void
+test_layers_filter_cleanup (nbdkit_backend *backend)
+{
+  assert (backend == saved_backend);
+  DEBUG_FUNCTION;
+}
+
 static int
 test_layers_filter_preconnect (nbdkit_next_preconnect *next,
                                nbdkit_backend *nxdata, int readonly)
@@ -423,6 +430,7 @@ static struct nbdkit_filter filter = {
   .thread_model      = test_layers_filter_thread_model,
   .get_ready         = test_layers_filter_get_ready,
   .after_fork        = test_layers_filter_after_fork,
+  .cleanup           = test_layers_filter_cleanup,
   .preconnect        = test_layers_filter_preconnect,
   .list_exports      = test_layers_filter_list_exports,
   .default_export    = test_layers_filter_default_export,

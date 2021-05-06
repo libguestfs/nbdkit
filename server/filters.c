@@ -201,6 +201,18 @@ filter_after_fork (struct backend *b)
   }
 }
 
+static void
+filter_cleanup (struct backend *b)
+{
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+
+  debug ("%s: cleanup", b->name);
+  if (f->filter.cleanup)
+    f->filter.cleanup (b->next);
+
+  b->next->cleanup (b->next);
+}
+
 static int
 filter_preconnect (struct backend *b, int readonly)
 {
@@ -599,6 +611,7 @@ static struct backend filter_functions = {
   .magic_config_key = plugin_magic_config_key,
   .get_ready = filter_get_ready,
   .after_fork = filter_after_fork,
+  .cleanup = filter_cleanup,
   .preconnect = filter_preconnect,
   .list_exports = filter_list_exports,
   .default_export = filter_default_export,

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -91,6 +91,12 @@ test_layers_plugin_after_fork (void)
 {
   DEBUG_FUNCTION;
   return 0;
+}
+
+static void
+test_layers_plugin_cleanup (void)
+{
+  DEBUG_FUNCTION;
 }
 
 static int
@@ -277,6 +283,7 @@ static struct nbdkit_plugin plugin = {
   .thread_model      = test_layers_plugin_thread_model,
   .get_ready         = test_layers_plugin_get_ready,
   .after_fork        = test_layers_plugin_after_fork,
+  .cleanup           = test_layers_plugin_cleanup,
   .preconnect        = test_layers_plugin_preconnect,
   .list_exports      = test_layers_plugin_list_exports,
   .default_export    = test_layers_plugin_default_export,
