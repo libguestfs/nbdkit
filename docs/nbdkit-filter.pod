@@ -149,7 +149,7 @@ passed to C<.after_fork> also occurs without connections, but is
 shared with C<.preconnect>, C<.list_exports>, and C<.default_export>,
 and can also be obtained from the C<context> passed to C<.open>, and
 has a lifetime that lasts to C<.unload> for use by
-C<nbdkit_context_next_open>.  In turn, the value of C<context> passed
+C<nbdkit_next_context_open>.  In turn, the value of C<context> passed
 to C<.open> has a lifetime that lasts until the matching C<.close> for
 use by C<nbdkit_context_get_backend> and C<nbdkit_context_set_next>.
 
