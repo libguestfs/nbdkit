@@ -527,6 +527,13 @@ extern void *threadlocal_buffer (size_t size);
 extern void threadlocal_set_conn (struct connection *conn);
 extern struct connection *threadlocal_get_conn (void);
 
+extern struct context *threadlocal_push_context (struct context *ctx);
+extern void threadlocal_pop_context (struct context **ctx);
+#define CLEANUP_CONTEXT_POP __attribute__((cleanup (threadlocal_pop_context)))
+#define PUSH_CONTEXT_FOR_SCOPE(ctx)                             \
+  CLEANUP_CONTEXT_POP struct context *UNIQUE_VAR(_ctx) =        \
+    threadlocal_push_context (ctx)
+
 /* Macro which sets local variable struct connection *conn from
  * thread-local storage, asserting that it is non-NULL.  If you want
  * to check if conn could be NULL (eg. outside a connection context)

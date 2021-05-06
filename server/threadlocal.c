@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -56,9 +56,10 @@ struct threadlocal {
   char *name;                   /* Can be NULL. */
   size_t instance_num;          /* Can be 0. */
   int err;
-  void *buffer;
+  void *buffer;                 /* Can be NULL. */
   size_t buffer_size;
-  struct connection *conn;
+  struct connection *conn;      /* Can be NULL. */
+  struct context *ctx;          /* Can be NULL. */
 };
 
 static pthread_key_t threadlocal_key;
@@ -226,4 +227,27 @@ threadlocal_get_conn (void)
   struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
 
   return threadlocal ? threadlocal->conn : NULL;
+}
+
+/* Set (or clear) the context using the current thread.  This function
+ * should generally not be used directly, instead see the macro
+ * PUSH_CONTEXT_FOR_SCOPE.
+ */
+struct context *
+threadlocal_push_context (struct context *ctx)
+{
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
+  struct context *ret = NULL;
+
+  if (threadlocal) {
+    ret = threadlocal->ctx;
+    threadlocal->ctx = ctx;
+  }
+  return ret;
+}
+
+void
+threadlocal_pop_context (struct context **ctx)
+{
+  threadlocal_push_context (*ctx);
 }

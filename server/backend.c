@@ -238,6 +238,7 @@ backend_open (struct backend *b, int readonly, const char *exportname)
 {
   GET_CONN;
   struct context *c = malloc (sizeof *c);
+  PUSH_CONTEXT_FOR_SCOPE (c);
 
   if (c == NULL) {
     nbdkit_error ("malloc: %m");
@@ -294,6 +295,7 @@ backend_open (struct backend *b, int readonly, const char *exportname)
 int
 backend_prepare (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   assert (c->handle);
@@ -317,6 +319,7 @@ backend_prepare (struct context *c)
 int
 backend_finalize (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   /* Call these in reverse order to .prepare above, starting from the
@@ -344,6 +347,7 @@ backend_finalize (struct context *c)
 void
 backend_close (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   struct context *c_next = c->c_next;
 
@@ -370,6 +374,7 @@ backend_valid_range (struct context *c, uint64_t offset, uint32_t count)
 const char *
 backend_export_description (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   const char *s;
 
@@ -391,6 +396,7 @@ backend_export_description (struct context *c)
 int64_t
 backend_get_size (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -404,6 +410,7 @@ backend_get_size (struct context *c)
 int
 backend_can_write (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -417,6 +424,7 @@ backend_can_write (struct context *c)
 int
 backend_can_flush (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -430,6 +438,7 @@ backend_can_flush (struct context *c)
 int
 backend_is_rotational (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -443,6 +452,7 @@ backend_is_rotational (struct context *c)
 int
 backend_can_trim (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   int r;
 
@@ -462,6 +472,7 @@ backend_can_trim (struct context *c)
 int
 backend_can_zero (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   int r;
 
@@ -481,6 +492,7 @@ backend_can_zero (struct context *c)
 int
 backend_can_fast_zero (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   int r;
 
@@ -500,6 +512,7 @@ backend_can_fast_zero (struct context *c)
 int
 backend_can_extents (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -513,6 +526,7 @@ backend_can_extents (struct context *c)
 int
 backend_can_fua (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   int r;
 
@@ -532,6 +546,7 @@ backend_can_fua (struct context *c)
 int
 backend_can_multi_conn (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -545,6 +560,7 @@ backend_can_multi_conn (struct context *c)
 int
 backend_can_cache (struct context *c)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
 
   assert (c->handle && (c->state & HANDLE_CONNECTED));
@@ -560,6 +576,7 @@ backend_pread (struct context *c,
                void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   int r;
 
@@ -580,6 +597,7 @@ backend_pwrite (struct context *c,
                 const void *buf, uint32_t count, uint64_t offset,
                 uint32_t flags, int *err)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
@@ -603,6 +621,7 @@ int
 backend_flush (struct context *c,
                uint32_t flags, int *err)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   int r;
 
@@ -622,6 +641,7 @@ backend_trim (struct context *c,
               uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   int r;
@@ -647,6 +667,7 @@ backend_zero (struct context *c,
               uint32_t count, uint64_t offset, uint32_t flags,
               int *err)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   bool fua = !!(flags & NBDKIT_FLAG_FUA);
   bool fast = !!(flags & NBDKIT_FLAG_FAST_ZERO);
@@ -681,6 +702,7 @@ backend_extents (struct context *c,
                  uint32_t count, uint64_t offset, uint32_t flags,
                  struct nbdkit_extents *extents, int *err)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   int r;
 
@@ -711,6 +733,7 @@ backend_cache (struct context *c,
                uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
+  PUSH_CONTEXT_FOR_SCOPE (c);
   struct backend *b = c->b;
   int r;
 
