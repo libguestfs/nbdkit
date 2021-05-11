@@ -80,7 +80,7 @@ protocol_common_open (uint64_t *exportsize, uint16_t *flags,
   uint16_t eflags = NBD_FLAG_HAS_FLAGS;
   int fl;
 
-  conn->top_context = backend_open (top, read_only, exportname);
+  conn->top_context = backend_open (top, read_only, exportname, false);
   if (conn->top_context == NULL)
     return -1;
 

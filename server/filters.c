@@ -250,7 +250,8 @@ static int
 next_open (struct context *c, int readonly, const char *exportname)
 {
   struct backend *b = nbdkit_context_get_backend (c);
-  struct context *c_next = nbdkit_next_context_open (b, readonly, exportname);
+  struct context *c_next = nbdkit_next_context_open (b, readonly, exportname,
+                                                     false);
   struct context *old;
 
   if (c_next == NULL)
@@ -691,10 +692,13 @@ nbdkit_context_get_backend (struct context *c)
 
 struct context *
 nbdkit_next_context_open (struct backend *b,
-                          int readonly, const char *exportname)
+                          int readonly, const char *exportname, int shared)
 {
+  struct context *c = threadlocal_get_context ();
+
   assert (b);
-  return backend_open (b, readonly, exportname);
+  assert (!c || b == c->b->next);
+  return backend_open (b, readonly, exportname, shared || !c || !c->conn);
 }
 
 void

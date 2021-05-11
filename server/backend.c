@@ -234,24 +234,35 @@ static struct nbdkit_next_ops next_ops = {
 };
 
 struct context *
-backend_open (struct backend *b, int readonly, const char *exportname)
+backend_open (struct backend *b, int readonly, const char *exportname,
+              int shared)
 {
-  GET_CONN;
-  struct context *c = malloc (sizeof *c);
-  PUSH_CONTEXT_FOR_SCOPE (c);
+  struct connection *conn = threadlocal_get_conn ();
+  bool using_tls;
+  struct context *c;
 
+  if (shared)
+    using_tls = tls == 2;
+  else {
+    assert (conn);
+    using_tls = conn->using_tls;
+  }
+
+  c = malloc (sizeof *c);
   if (c == NULL) {
     nbdkit_error ("malloc: %m");
     return NULL;
   }
+  PUSH_CONTEXT_FOR_SCOPE (c);
 
   controlpath_debug ("%s: open readonly=%d exportname=\"%s\" tls=%d",
-                     b->name, readonly, exportname, conn->using_tls);
+                     b->name, readonly, exportname, using_tls);
 
   c->next = next_ops;
   c->handle = NULL;
   c->b = b;
   c->c_next = NULL;
+  c->conn = shared ? NULL : conn;
   c->state = 0;
   c->exportsize = -1;
   c->can_write = readonly ? 0 : -1;
@@ -266,7 +277,7 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   c->can_cache = -1;
 
   /* Determine the canonical name for default export */
-  if (!*exportname) {
+  if (!*exportname && c->conn) {
     exportname = backend_default_export (b, readonly);
     if (exportname == NULL) {
       nbdkit_error ("default export (\"\") not permitted");
@@ -278,7 +289,7 @@ backend_open (struct backend *b, int readonly, const char *exportname)
   /* Most filters will call next_open first, resulting in
    * inner-to-outer ordering.
    */
-  c->handle = b->open (c, readonly, exportname, conn->using_tls);
+  c->handle = b->open (c, readonly, exportname, using_tls);
   controlpath_debug ("%s: open returned handle %p", b->name, c->handle);
 
   if (c->handle == NULL) {

@@ -313,13 +313,11 @@ static void *
 plugin_open (struct context *c, int readonly, const char *exportname,
              int is_tls)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
   void *r;
 
   assert (p->plugin.open != NULL);
-  assert (conn->exportname == NULL);
 
   /* Save the exportname since the lifetime of the string passed in
    * here is likely to be brief.  In addition this provides a place
@@ -333,13 +331,16 @@ plugin_open (struct context *c, int readonly, const char *exportname,
    * will still need to save the export name in the handle because of
    * the lifetime issue.
    */
-  conn->exportname = nbdkit_strdup_intern (exportname);
-  if (conn->exportname == NULL)
-    return NULL;
+  if (c->conn) {
+    assert (c->conn->exportname == NULL);
+    c->conn->exportname = nbdkit_strdup_intern (exportname);
+    if (c->conn->exportname == NULL)
+      return NULL;
+  }
 
   r = p->plugin.open (readonly);
-  if (r == NULL)
-    conn->exportname = NULL;
+  if (r == NULL && c->conn)
+    c->conn->exportname = NULL;
   return r;
 }
 
@@ -362,14 +363,14 @@ plugin_finalize (struct context *c)
 static void
 plugin_close (struct context *c)
 {
-  GET_CONN;
   struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
 
   assert (c->handle);
   if (p->plugin.close)
     p->plugin.close (c->handle);
-  conn->exportname = NULL;
+  if (c->conn)
+    c->conn->exportname = NULL;
 }
 
 static const char *

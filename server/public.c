@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -759,14 +759,14 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
 const char *
 nbdkit_export_name (void)
 {
-  struct connection *conn = threadlocal_get_conn ();
+  struct context *c = threadlocal_get_context ();
 
-  if (!conn) {
+  if (!c || !c->conn) {
     nbdkit_error ("no connection in this thread");
     return NULL;
   }
 
-  return conn->exportname;
+  return c->conn->exportname;
 }
 
 /* This function will be deprecated for API V3 users.  The preferred
@@ -775,14 +775,21 @@ nbdkit_export_name (void)
 int
 nbdkit_is_tls (void)
 {
-  struct connection *conn = threadlocal_get_conn ();
+  struct context *c = threadlocal_get_context ();
 
-  if (!conn) {
+  if (!c) {
     nbdkit_error ("no connection in this thread");
     return -1;
   }
 
-  return conn->using_tls;
+  if (!c->conn) {
+    /* If a filter opened this backend outside of a client connection,
+     * then we can only claim tls when the command line required it.
+     */
+    return tls == 2;
+  }
+
+  return c->conn->using_tls;
 }
 
 int
@@ -980,7 +987,8 @@ free_interns (void)
 static const char *
 add_intern (char *str)
 {
-  struct connection *conn = threadlocal_get_conn ();
+  struct context *c = threadlocal_get_context ();
+  struct connection *conn = c ? c->conn : NULL;
   string_vector *list = conn ? &conn->interns : &global_interns;
 
   if (string_vector_append (list, str) == -1) {

@@ -216,7 +216,8 @@ backend pointer has a stable lifetime from the time of C<.after_fork>
 until C<.unload>.
 
  nbdkit_next *nbdkit_next_context_open (nbdkit_backend *backend,
-                                        int readonly, const char *exportname);
+                                        int readonly, const char *exportname,
+                                        int shared);
 
 This function attempts to open a new context into the plugin in
 relation to the filter's current C<backend>.  The C<readonly> and
@@ -226,6 +227,22 @@ control unless the filter associates it into the connection with
 C<nbdkit_context_set_next>.  The filter should be careful to not
 violate any threading model restrictions of the plugin if it opens
 more than one context.
+
+If C<shared> is false, this function must be called while servicing an
+existing client connection, and the new context will share the same
+connection details (export name, tls status, and shorter interned
+string lifetimes) as the current connection, and thus should not be
+used after the client connection ends.  Conversely, if C<shared> is
+true, this function may be called outside of a current client
+connection (such as during C<.after_fork>), and the resulting context
+may be freely shared among multiple client connections.  In shared
+mode, it will not be possible for the plugin to differentiate content
+based on the client export name, the result of the plugin calling
+nbdkit_is_tls() will depend solely whether C<--tls=require> was on the
+command line, the lifetime of interned strings (via
+C<nbdkit_strdup_intern> and friends) lasts for the life of the filter,
+and the filter must take care to not expose potentially-secure
+information from the backend to an insecure client.
 
  void nbdkit_next_context_close (nbdkit_next *next);
 
@@ -582,7 +599,7 @@ functionality can be obtained manually (other than error checking) by
 using the following:
 
  nbdkit_context_set_next (context, nbdkit_next_context_open
-    (nbdkit_context_get_backend (context), readonly, exportname));
+    (nbdkit_context_get_backend (context), readonly, exportname, false));
 
 The value of C<context> in this call has a lifetime that lasts until
 the counterpart C<.close>, and it is this value that may be passed to

@@ -229,6 +229,15 @@ threadlocal_get_conn (void)
   return threadlocal ? threadlocal->conn : NULL;
 }
 
+/* Get the current context associated with this thread, if available */
+struct context *
+threadlocal_get_context (void)
+{
+  struct threadlocal *threadlocal = pthread_getspecific (threadlocal_key);
+
+  return threadlocal ? threadlocal->ctx : NULL;
+}
+
 /* Set (or clear) the context using the current thread.  This function
  * should generally not be used directly, instead see the macro
  * PUSH_CONTEXT_FOR_SCOPE.

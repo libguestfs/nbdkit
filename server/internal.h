@@ -208,6 +208,7 @@ struct context {
   void *handle;         /* Plugin or filter handle. */
   struct backend *b;    /* Backend that provided handle. */
   struct context *c_next; /* Underlying context, only when b->next != NULL. */
+  struct connection *conn; /* Active connection at context creation, if any. */
 
   unsigned char state;  /* Bitmask of HANDLE_* values */
 
@@ -418,7 +419,8 @@ extern const char *backend_default_export (struct backend *b, int readonly)
  * exportname if they need to refer to it later.
  */
 extern struct context *backend_open (struct backend *b,
-                                     int readonly, const char *exportname)
+                                     int readonly, const char *exportname,
+                                     int shared)
   __attribute__((__nonnull__ (1, 3)));
 extern int backend_prepare (struct context *c)
   __attribute__((__nonnull__ (1)));
@@ -526,6 +528,7 @@ extern int threadlocal_get_error (void);
 extern void *threadlocal_buffer (size_t size);
 extern void threadlocal_set_conn (struct connection *conn);
 extern struct connection *threadlocal_get_conn (void);
+extern struct context *threadlocal_get_context (void);
 
 extern struct context *threadlocal_push_context (struct context *ctx);
 extern void threadlocal_pop_context (struct context **ctx);

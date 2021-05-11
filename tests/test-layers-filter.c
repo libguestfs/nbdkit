@@ -152,7 +152,7 @@ test_layers_filter_open (nbdkit_next_open *next, nbdkit_context *nxdata,
 
     backend = nbdkit_context_get_backend (nxdata);
     assert (backend != NULL);
-    n = nbdkit_next_context_open (backend, readonly, exportname);
+    n = nbdkit_next_context_open (backend, readonly, exportname, 0);
     if (n == NULL) {
       free (h);
       return NULL;

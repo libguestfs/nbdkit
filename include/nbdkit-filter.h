@@ -162,7 +162,7 @@ NBDKIT_EXTERN_DECL (nbdkit_backend *, nbdkit_context_get_backend,
                     (nbdkit_context *context));
 NBDKIT_EXTERN_DECL (nbdkit_next *, nbdkit_next_context_open,
                     (nbdkit_backend *backend, int readonly,
-                     const char *exportname));
+                     const char *exportname, int shared));
 NBDKIT_EXTERN_DECL (void, nbdkit_next_context_close, (nbdkit_next *next));
 NBDKIT_EXTERN_DECL (nbdkit_next *, nbdkit_context_set_next,
                     (nbdkit_context *context, nbdkit_next *next));

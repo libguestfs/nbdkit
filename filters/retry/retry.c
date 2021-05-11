@@ -227,7 +227,7 @@ do_retry (struct retry_handle *h, struct retry_data *data,
   /* Open a new connection. */
   new_next = nbdkit_next_context_open (nbdkit_context_get_backend (h->context),
                                        h->readonly || force_readonly,
-                                       h->exportname);
+                                       h->exportname, false);
   if (new_next == NULL) {
     *err = ESHUTDOWN;
     goto again;

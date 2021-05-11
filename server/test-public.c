@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -75,6 +75,12 @@ threadlocal_get_conn (void)
   abort ();
 }
 
+struct context *
+threadlocal_get_context (void)
+{
+  abort ();
+}
+
 int
 connection_get_status (void)
 {
@@ -86,6 +92,10 @@ backend_default_export (struct backend *b, int readonly)
 {
   abort ();
 }
+
+int tls;
+
+/* Unit tests. */
 
 static bool
 test_nbdkit_parse_size (void)
