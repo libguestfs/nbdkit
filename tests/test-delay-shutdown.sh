@@ -40,7 +40,7 @@ if is_windows; then
 fi
 
 requires qemu-io --version
-requires timeout --version
+requires timeout 60s true
 
 pidfile=delay-shutdown.pid
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)

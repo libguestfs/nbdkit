@@ -35,7 +35,7 @@ source ./functions.sh
 # Check file-data was created by Makefile and qemu-io exists.
 requires test -f file-data
 requires qemu-io --version
-requires timeout --version
+requires timeout 60s true
 requires dd iflag=count_bytes </dev/null
 
 nbdkit --dump-plugin sh | grep -q ^thread_model=parallel ||
