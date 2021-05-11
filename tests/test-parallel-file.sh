@@ -35,7 +35,7 @@ source ./functions.sh
 # Check file-data was created by Makefile and qemu-io exists.
 requires test -f file-data
 requires qemu-io --version
-requires timeout --version
+requires timeout 60s true
 
 nbdkit --dump-plugin file | grep -q ^thread_model=parallel ||
     { echo "nbdkit lacks support for parallel requests"; exit 77; }
