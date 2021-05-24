@@ -43,11 +43,11 @@ API_VERSION = 2
 # This just prints the extra command line parameters, but real plugins
 # should parse them and reject any unknown parameters.
 def config(key, value):
-    print("ignored parameter %s=%s" % (key, value))
+    nbdkit.debug("ignored parameter %s=%s" % (key, value))
 
 
 def open(readonly):
-    print("open: readonly=%d" % readonly)
+    nbdkit.debug("open: readonly=%d" % readonly)
 
     # You can return any non-NULL Python object from open, and the
     # same object will be passed as the first arg to the other
