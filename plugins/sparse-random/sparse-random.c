@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2020 Red Hat Inc.
+ * Copyright (C) 2017-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -55,6 +55,7 @@ static uint32_t seed;           /* Random seed. */
 static double percent = 10;     /* Percentage of data. */
 static uint64_t runlength =     /* Expected average run length of data (bytes)*/
   UINT64_C(16*1024*1024);
+static int random_content;      /* false: Repeat same byte  true: Random bytes*/
 
 /* We need to store 1 bit per block.  Using a 4K block size means we
  * need 32M to map each 1T of virtual disk.
@@ -111,6 +112,11 @@ sparse_random_config (const char *key, const char *value)
       return -1;
     }
   }
+  else if (strcmp (key, "random-content") == 0) {
+    random_content = nbdkit_parse_bool (value);
+    if (random_content == -1)
+      return -1;
+  }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
@@ -123,7 +129,8 @@ sparse_random_config (const char *key, const char *value)
   "size=<SIZE>  (required) Size of the backing disk\n" \
   "seed=<SEED>             Random number generator seed\n" \
   "percent=<PERCENT>       Percentage of data\n" \
-  "runlength=<BYTES>       Expected average run length of data"
+  "runlength=<BYTES>       Expected average run length of data\n" \
+  "random-content=true     Fully random content in each block"
 
 /* Create the random bitmap of data and holes.
  *
@@ -276,19 +283,26 @@ static void
 read_block (uint64_t blknum, uint64_t offset, void *buf)
 {
   unsigned char *b = buf;
+  uint64_t s;
+  uint32_t i;
+  struct random_state state;
 
   if (bitmap_get_blk (&bm, blknum, 0) == 0) /* hole */
     memset (buf, 0, BLOCKSIZE);
-  else {                        /* data */
-    uint32_t i;
-    struct random_state state;
-
+  else if (!random_content) {   /* data when random-content=false */
+    xsrandom (seed + offset, &state);
+    s = xrandom (&state);
+    s &= 255;
+    if (s == 0) s = 1;
+    memset (buf, (int)s, BLOCKSIZE);
+  }
+  else {                        /* data when random-content=true */
     /* This produces repeatable data for the same offset.  Note it
      * works because we are called on whole blocks only.
      */
     xsrandom (seed + offset, &state);
     for (i = 0; i < BLOCKSIZE; ++i) {
-      uint64_t s = xrandom (&state);
+      s = xrandom (&state);
       s &= 255;
       b[i] = s;
     }

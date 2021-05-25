@@ -4,7 +4,9 @@ nbdkit-sparse-random-plugin - make sparse random disks
 
 =head1 SYNOPSIS
 
- nbdkit sparse-random [size=]SIZE [seed=SEED] [percent=N] [runlength=N]
+ nbdkit sparse-random [size=]SIZE [seed=SEED]
+                      [percent=N] [runlength=N]
+                      [random-content=true]
 
 =head1 DESCRIPTION
 
@@ -27,7 +29,12 @@ tries to create runs of data and runs of empty space.  The
 C<runlength> parameter controls the average length of each run of
 random data.
 
-The random data is generated using an I<insecure> method.
+The data in each block normally consists of the same random non-zero
+byte repeated over the whole block.  If you want fully random content
+within each block use C<random-content=true>.  This is not the default
+because earlier testing of this plugin showed that a great deal of
+time was spent generating random content.  The random content is
+generated using a method which is I<not> cryptographically secure.
 
 =head2 Writes and testing copying
 
@@ -50,6 +57,12 @@ Specify the approximate percentage of the disk which contains random
 data versus sparse empty space.  The default is 10 (10%).
 C<percent=0> will create a completely empty disk and C<percent=100>
 will create a completely full disk.
+
+=item B<random-content=true>
+
+By default a single random non-zero byte is repeated over the whole
+block, which is fast to generate and check.  If you want blocks where
+each byte is random, use this setting.
 
 =item B<runlength=>N
 
@@ -109,4 +122,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018 Red Hat Inc.
+Copyright (C) 2018-2021 Red Hat Inc.
