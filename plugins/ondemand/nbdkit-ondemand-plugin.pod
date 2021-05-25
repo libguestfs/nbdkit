@@ -4,7 +4,7 @@ nbdkit-ondemand-plugin - create filesystems on demand
 
 =head1 SYNOPSIS
 
- nbdkit ondemand dir=EXPORTSDIR [size=]SIZE
+ nbdkit ondemand dir=EXPORTSDIR [size=]SIZE [wait=true]
                  { [type=ext4|xfs|vfat|...] [label=LABEL]
                    | command=COMMAND [VAR=VALUE ...] }
 
@@ -150,6 +150,21 @@ See L<nbdkit(1)/Magic parameters>.
 Select the filesystem type.  The default is C<ext4>.  Most
 non-networked, non-cluster filesystem types supported by the
 L<mkfs(8)> command can be used here.
+
+=item B<wait=true>
+
+If set, if two clients try to connect at the same time to the same
+export then the second client will wait for the first to disconnect.
+The default behaviour is to reject the second client with the error
+message:
+
+ filesystem is locked by another client
+
+This setting is sometimes useful if you are making repeated
+connections and at the network level the first connection does not
+fully disconnect before the next connection starts.  This can also
+happen as a side-effect of using C<guestfish --ro> which opens two NBD
+connections in quick succession.
 
 =back
 
