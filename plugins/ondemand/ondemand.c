@@ -63,6 +63,7 @@
 static char *dir;                   /* dir parameter */
 static DIR *exportsdir;             /* opened exports dir */
 static int64_t requested_size = -1; /* size parameter on the command line */
+static int waitlock;                /* wait if locked */
 
 /* Shell variables. */
 static struct var {
@@ -104,6 +105,12 @@ ondemand_config (const char *key, const char *value)
   else if (strcmp (key, "dir") == 0) {
     dir = nbdkit_realpath (value);
     if (dir == NULL)
+      return -1;
+  }
+
+  else if (strcmp (key, "wait") == 0) {
+    waitlock = nbdkit_parse_bool (value);
+    if (waitlock == -1)
       return -1;
   }
 
@@ -356,6 +363,7 @@ ondemand_open (int readonly)
   struct stat statbuf;
 #ifdef F_OFD_SETLK
   struct flock lock;
+  int cmd;
 #endif
 
   h = malloc (sizeof *h);
@@ -415,9 +423,7 @@ ondemand_open (int readonly)
     }
   }
 
-  /* Lock the file to prevent filesystem corruption.  It's safe for
-   * all clients to be reading.  If a client wants to write it must
-   * have exclusive access.
+  /* Lock the file to prevent filesystem corruption.
    *
    * This uses a currently Linux-specific extension.  It requires
    * Linux >= 3.15 (released in 2014, later backported to RHEL 7).
@@ -425,6 +431,11 @@ ondemand_open (int readonly)
    */
 #ifdef F_OFD_SETLK
   memset (&lock, 0, sizeof lock);
+  /* While we do check the readonly flag here, it's not very useful
+   * because NBD clients cannot specify that they want to open a
+   * connection readonly, and using the -r command line flag is not
+   * very useful with this plugin.
+   */
   if (readonly)
     lock.l_type = F_RDLCK;
   else
@@ -432,7 +443,11 @@ ondemand_open (int readonly)
   lock.l_whence = SEEK_SET;
   lock.l_start = 0;
   lock.l_len = 0;
-  if (fcntl (h->fd, F_OFD_SETLK, &lock) == -1) {
+ again:
+  cmd = waitlock ? F_OFD_SETLKW : F_OFD_SETLK;
+  if (fcntl (h->fd, cmd, &lock) == -1) {
+    if (errno == EINTR && cmd == F_OFD_SETLKW)
+      goto again;
     if (errno == EACCES || errno == EAGAIN) {
       nbdkit_error ("%s: filesystem is locked by another client",
                     h->exportname);
