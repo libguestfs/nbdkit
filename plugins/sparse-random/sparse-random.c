@@ -227,7 +227,10 @@ sparse_random_get_ready (void)
     }
   }
   avg_data_run_length += data_run_length;
-  avg_data_run_length /= nr_data_runs;
+  if (nr_data_runs > 0)
+    avg_data_run_length /= nr_data_runs;
+  else
+    avg_data_run_length = 0;
   nbdkit_debug ("percent actual = %g%%, "
                 "average run length = %" PRIu64,
                 100. * BLOCKSIZE * nr_data_blocks / size,
