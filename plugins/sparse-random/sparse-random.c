@@ -431,6 +431,17 @@ sparse_random_pwrite (void *handle, const void *buf,
   return 0;
 }
 
+/* Flush.
+ *
+ * This is required in order to support the nbdcopy --flush option,
+ * but it's a no-op since this plugin does not store data.
+ */
+static int
+sparse_random_flush (void *handle, uint32_t flags)
+{
+  return 0;
+}
+
 /* Trim and zero.
  *
  * These only let you "write" to holes.
@@ -547,6 +558,7 @@ static struct nbdkit_plugin plugin = {
   .can_cache         = sparse_random_can_cache,
   .pread             = sparse_random_pread,
   .pwrite            = sparse_random_pwrite,
+  .flush             = sparse_random_flush,
   .trim              = sparse_random_trim_zero,
   .zero              = sparse_random_trim_zero,
   .extents           = sparse_random_extents,
