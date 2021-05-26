@@ -61,13 +61,20 @@ EXTRA_DIST = README.tests
 EXTRA_PROGRAMS =
 
 # Use the 'direct' backend, and ensure maximum libguestfs debugging.
+#
 # Enable libnbd debugging.
+#
+# Enable malloc-check as a cheap way to find some use-after-free and
+# uninitialized read problems when using glibc, and doesn't affect
+# normal operation or other libc.
 TESTS_ENVIRONMENT = \
 	SRCDIR=$(srcdir) \
 	LIBGUESTFS_ATTACH_METHOD=appliance \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
 	LIBNBD_DEBUG=1 \
+	MALLOC_CHECK_=1 \
+	MALLOC_PERTURB_=$(shell bash -c 'echo $$(( 1 + (RANDOM & 255) ))') \
 	$(NULL)
 
 if !IS_WINDOWS
