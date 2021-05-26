@@ -196,9 +196,6 @@ main (int argc, char *argv[])
 {
   bool verbose = false;
   char *s;
-  time_t t;
-  unsigned tu;
-  char ts[32];
   int r;
 
 #ifndef WIN32
@@ -353,19 +350,6 @@ main (int argc, char *argv[])
   end_passthru ();
   if (verbose)
     print_command ();
-
-  /* This is a cheap way to find some use-after-free and uninitialized
-   * read problems when using glibc, and doesn't affect normal
-   * operation or other libc.  We don't overwrite existing values so
-   * this can be disabled or overridden at runtime.
-   */
-  setenv ("MALLOC_CHECK_", "1", 0);
-  time (&t);
-  tu = t;
-  tu %= 255;
-  tu++;
-  snprintf (ts, sizeof ts, "%u", tu);
-  setenv ("MALLOC_PERTURB_", ts, 0);
 
   /* Run the final command. */
 #ifndef WIN32
