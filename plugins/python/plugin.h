@@ -48,6 +48,7 @@
  */
 #define ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE            \
   __attribute__((cleanup (cleanup_release)))            \
+  CLANG_UNUSED_VARIABLE_WORKAROUND                      \
   PyGILState_STATE gstate = PyGILState_Ensure()
 static inline void
 cleanup_release (PyGILState_STATE *gstateptr)
