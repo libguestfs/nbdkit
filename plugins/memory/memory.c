@@ -51,7 +51,7 @@
 static int64_t size = -1;
 
 /* Debug directory operations (-D memory.dir=1). */
-int memory_debug_dir;
+NBDKIT_DLL_PUBLIC int memory_debug_dir;
 
 /* Allocator. */
 static struct allocator *a;

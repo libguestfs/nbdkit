@@ -63,7 +63,7 @@ static char *filename = NULL;
  * ordinary debugging, just use nbdkit_debug and enable messages with
  * the -v flag on the command line.
  */
-int example2_debug_extra = 0;
+NBDKIT_DLL_PUBLIC int example2_debug_extra = 0;
 
 static void
 example2_unload (void)

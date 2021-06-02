@@ -71,7 +71,7 @@ struct nbdkit_extents {
   int64_t next;
 };
 
-struct nbdkit_extents *
+NBDKIT_DLL_PUBLIC struct nbdkit_extents *
 nbdkit_extents_new (uint64_t start, uint64_t end)
 {
   struct nbdkit_extents *r;
@@ -105,7 +105,7 @@ nbdkit_extents_new (uint64_t start, uint64_t end)
   return r;
 }
 
-void
+NBDKIT_DLL_PUBLIC void
 nbdkit_extents_free (struct nbdkit_extents *exts)
 {
   if (exts) {
@@ -114,13 +114,13 @@ nbdkit_extents_free (struct nbdkit_extents *exts)
   }
 }
 
-size_t
+NBDKIT_DLL_PUBLIC size_t
 nbdkit_extents_count (const struct nbdkit_extents *exts)
 {
   return exts->extents.size;
 }
 
-struct nbdkit_extent
+NBDKIT_DLL_PUBLIC struct nbdkit_extent
 nbdkit_get_extent (const struct nbdkit_extents *exts, size_t i)
 {
   assert (i < exts->extents.size);
@@ -139,7 +139,7 @@ append_extent (struct nbdkit_extents *exts, const struct nbdkit_extent *e)
   return 0;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_add_extent (struct nbdkit_extents *exts,
                    uint64_t offset, uint64_t length, uint32_t type)
 {
@@ -211,7 +211,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
 }
 
 /* Compute aligned extents on behalf of a filter. */
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_extents_aligned (struct context *next_c,
                         uint32_t count, uint64_t offset,
                         uint32_t flags, uint32_t align,
@@ -297,7 +297,7 @@ nbdkit_extents_aligned (struct context *next_c,
  * used from filters where you want to get a complete set of extents
  * covering the region [offset..offset+count-1].
  */
-struct nbdkit_extents *
+NBDKIT_DLL_PUBLIC struct nbdkit_extents *
 nbdkit_extents_full (struct context *next_c,
                      uint32_t count, uint64_t offset, uint32_t flags,
                      int *err)

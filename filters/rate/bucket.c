@@ -74,7 +74,7 @@
 
 #include "bucket.h"
 
-int rate_debug_bucket;          /* -D rate.bucket=1 */
+NBDKIT_DLL_PUBLIC int rate_debug_bucket;          /* -D rate.bucket=1 */
 
 void
 bucket_init (struct bucket *bucket, uint64_t rate, double capacity_secs)

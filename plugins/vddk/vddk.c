@@ -57,9 +57,9 @@
 #include "vddk-structs.h"
 
 /* Debug flags. */
-int vddk_debug_diskinfo;
-int vddk_debug_extents;
-int vddk_debug_datapath = 1;
+NBDKIT_DLL_PUBLIC int vddk_debug_diskinfo;
+NBDKIT_DLL_PUBLIC int vddk_debug_extents;
+NBDKIT_DLL_PUBLIC int vddk_debug_datapath = 1;
 
 /* For each VDDK API define a static global variable.  These globals
  * are initialized when the plugin is loaded (by vddk_get_ready).

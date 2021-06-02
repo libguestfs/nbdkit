@@ -51,7 +51,7 @@
 /* Bindings for miscellaneous nbdkit_* utility functions. */
 
 /* NB: noalloc function. */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_error (value nv)
 {
   int err;
@@ -77,7 +77,7 @@ ocaml_nbdkit_set_error (value nv)
   return Val_unit;
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_parse_size (value strv)
 {
   CAMLparam1 (strv);
@@ -92,7 +92,7 @@ ocaml_nbdkit_parse_size (value strv)
   CAMLreturn (rv);
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_parse_bool (value strv)
 {
   CAMLparam1 (strv);
@@ -107,7 +107,7 @@ ocaml_nbdkit_parse_bool (value strv)
   CAMLreturn (rv);
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_read_password (value strv)
 {
   CAMLparam1 (strv);
@@ -124,7 +124,7 @@ ocaml_nbdkit_read_password (value strv)
   CAMLreturn (rv);
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_realpath (value strv)
 {
   CAMLparam1 (strv);
@@ -140,7 +140,7 @@ ocaml_nbdkit_realpath (value strv)
   CAMLreturn (rv);
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_nanosleep (value secv, value nsecv)
 {
   CAMLparam2 (secv, nsecv);
@@ -155,7 +155,7 @@ ocaml_nbdkit_nanosleep (value secv, value nsecv)
   CAMLreturn (Val_unit);
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_export_name (value unitv)
 {
   CAMLparam1 (unitv);
@@ -174,7 +174,7 @@ ocaml_nbdkit_export_name (value unitv)
 }
 
 /* NB: noalloc function. */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_shutdown (value unitv)
 {
   CAMLparam1 (unitv);
@@ -184,7 +184,7 @@ ocaml_nbdkit_shutdown (value unitv)
 }
 
 /* NB: noalloc function. */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_debug (value strv)
 {
   nbdkit_debug ("%s", String_val (strv));
@@ -192,7 +192,7 @@ ocaml_nbdkit_debug (value strv)
   return Val_unit;
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_version (value unitv)
 {
   CAMLparam1 (unitv);
@@ -202,7 +202,7 @@ ocaml_nbdkit_version (value unitv)
   CAMLreturn (rv);
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_peer_pid (value unitv)
 {
   CAMLparam1 (unitv);
@@ -213,7 +213,7 @@ ocaml_nbdkit_peer_pid (value unitv)
   CAMLreturn (rv);
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_peer_uid (value unitv)
 {
   CAMLparam1 (unitv);
@@ -224,7 +224,7 @@ ocaml_nbdkit_peer_uid (value unitv)
   CAMLreturn (rv);
 }
 
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_peer_gid (value unitv)
 {
   CAMLparam1 (unitv);

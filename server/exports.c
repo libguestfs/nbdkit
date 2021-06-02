@@ -55,7 +55,7 @@ struct nbdkit_exports {
   bool use_default;
 };
 
-struct nbdkit_exports *
+NBDKIT_DLL_PUBLIC struct nbdkit_exports *
 nbdkit_exports_new (void)
 {
   struct nbdkit_exports *r;
@@ -77,7 +77,7 @@ nbdkit_export_clear (struct nbdkit_export exp)
   free (exp.description);
 }
 
-void
+NBDKIT_DLL_PUBLIC void
 nbdkit_exports_free (struct nbdkit_exports *exps)
 {
   if (exps) {
@@ -87,20 +87,20 @@ nbdkit_exports_free (struct nbdkit_exports *exps)
   }
 }
 
-size_t
+NBDKIT_DLL_PUBLIC size_t
 nbdkit_exports_count (const struct nbdkit_exports *exps)
 {
   return exps->exports.size;
 }
 
-const struct nbdkit_export
+NBDKIT_DLL_PUBLIC const struct nbdkit_export
 nbdkit_get_export (const struct nbdkit_exports *exps, size_t i)
 {
   assert (i < exps->exports.size);
   return exps->exports.ptr[i];
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_add_export (struct nbdkit_exports *exps,
                    const char *name, const char *description)
 {
@@ -144,7 +144,7 @@ nbdkit_add_export (struct nbdkit_exports *exps,
   return 0;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_use_default_export (struct nbdkit_exports *exps)
 {
   exps->use_default = true;

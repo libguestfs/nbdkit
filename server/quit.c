@@ -139,7 +139,7 @@ handle_quit (int sig)
   set_quit ();
 }
 
-void
+NBDKIT_DLL_PUBLIC void
 nbdkit_shutdown (void)
 {
   set_quit ();

@@ -696,14 +696,14 @@ filter_register (struct backend *next, size_t index, const char *filename,
   return (struct backend *) f;
 }
 
-struct backend *
+NBDKIT_DLL_PUBLIC struct backend *
 nbdkit_context_get_backend (struct context *c)
 {
   assert (c);
   return c->b->next;
 }
 
-struct context *
+NBDKIT_DLL_PUBLIC struct context *
 nbdkit_next_context_open (struct backend *b,
                           int readonly, const char *exportname, int shared)
 {
@@ -714,14 +714,14 @@ nbdkit_next_context_open (struct backend *b,
   return backend_open (b, readonly, exportname, shared || !c || !c->conn);
 }
 
-void
+NBDKIT_DLL_PUBLIC void
 nbdkit_next_context_close (struct context *c)
 {
   if (c)
     backend_close (c);
 }
 
-struct context *
+NBDKIT_DLL_PUBLIC struct context *
 nbdkit_context_set_next (struct context *c, struct context *next)
 {
   struct context *old;

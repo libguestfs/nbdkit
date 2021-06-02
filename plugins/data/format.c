@@ -57,7 +57,7 @@
 #include "format.h"
 
 /* To print the AST, use -D data.AST=1 */
-int data_debug_AST = 0;
+NBDKIT_DLL_PUBLIC int data_debug_AST = 0;
 
 /* The abstract syntax tree. */
 typedef struct expr expr_t;

@@ -292,14 +292,6 @@ extern void crypto_free (void);
 extern int crypto_negotiate_tls (int sockin, int sockout);
 
 /* debug-flags.c */
-/* This macro only needs to be used for server debug flags
- * (-D nbdkit.*) and it's only needed because of Windows.
- */
-#ifndef WIN32
-#define SERVER_DEBUG_FLAG(flag) int flag
-#else
-#define SERVER_DEBUG_FLAG(flag) extern __declspec(dllexport) int flag; int flag
-#endif
 extern void add_debug_flag (const char *arg);
 extern void apply_debug_flags (void *dl, const char *name);
 extern void free_debug_flags (void);

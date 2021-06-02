@@ -82,7 +82,7 @@
 
 #ifndef WIN32
 
-char *
+NBDKIT_DLL_PUBLIC char *
 nbdkit_absolute_path (const char *path)
 {
   CLEANUP_FREE char *pwd = NULL;
@@ -123,7 +123,7 @@ nbdkit_absolute_path (const char *path)
  * replace nbdkit_absolute_path with nbdkit_realpath and everything
  * should work the same.
  */
-char *
+NBDKIT_DLL_PUBLIC char *
 nbdkit_absolute_path (const char *path)
 {
   return nbdkit_realpath (path);
@@ -131,7 +131,7 @@ nbdkit_absolute_path (const char *path)
 
 #endif /* WIN32 */
 
-char *
+NBDKIT_DLL_PUBLIC char *
 nbdkit_realpath (const char *path)
 {
   char *ret;
@@ -173,7 +173,7 @@ nbdkit_realpath (const char *path)
   return 0
 
 /* Functions for parsing signed integers. */
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_int (const char *what, const char *str, int *rp)
 {
   long r;
@@ -188,7 +188,7 @@ nbdkit_parse_int (const char *what, const char *str, int *rp)
   PARSE_COMMON_TAIL;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_int8_t (const char *what, const char *str, int8_t *rp)
 {
   long r;
@@ -201,7 +201,7 @@ nbdkit_parse_int8_t (const char *what, const char *str, int8_t *rp)
   PARSE_COMMON_TAIL;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_int16_t (const char *what, const char *str, int16_t *rp)
 {
   long r;
@@ -214,7 +214,7 @@ nbdkit_parse_int16_t (const char *what, const char *str, int16_t *rp)
   PARSE_COMMON_TAIL;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_int32_t (const char *what, const char *str, int32_t *rp)
 {
   long r;
@@ -229,7 +229,7 @@ nbdkit_parse_int32_t (const char *what, const char *str, int32_t *rp)
   PARSE_COMMON_TAIL;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_int64_t (const char *what, const char *str, int64_t *rp)
 {
   long long r;
@@ -259,7 +259,7 @@ nbdkit_parse_int64_t (const char *what, const char *str, int64_t *rp)
     }                                                                   \
   } while (0)
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_unsigned (const char *what, const char *str, unsigned *rp)
 {
   unsigned long r;
@@ -275,7 +275,7 @@ nbdkit_parse_unsigned (const char *what, const char *str, unsigned *rp)
   PARSE_COMMON_TAIL;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_uint8_t (const char *what, const char *str, uint8_t *rp)
 {
   unsigned long r;
@@ -289,7 +289,7 @@ nbdkit_parse_uint8_t (const char *what, const char *str, uint8_t *rp)
   PARSE_COMMON_TAIL;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_uint16_t (const char *what, const char *str, uint16_t *rp)
 {
   unsigned long r;
@@ -303,7 +303,7 @@ nbdkit_parse_uint16_t (const char *what, const char *str, uint16_t *rp)
   PARSE_COMMON_TAIL;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_uint32_t (const char *what, const char *str, uint32_t *rp)
 {
   unsigned long r;
@@ -319,7 +319,7 @@ nbdkit_parse_uint32_t (const char *what, const char *str, uint32_t *rp)
   PARSE_COMMON_TAIL;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_uint64_t (const char *what, const char *str, uint64_t *rp)
 {
   unsigned long long r;
@@ -338,7 +338,7 @@ nbdkit_parse_uint64_t (const char *what, const char *str, uint64_t *rp)
 /* Parse a string as a size with possible scaling suffix, or return -1
  * after reporting the error.
  */
-int64_t
+NBDKIT_DLL_PUBLIC int64_t
 nbdkit_parse_size (const char *str)
 {
   int64_t size;
@@ -422,7 +422,7 @@ nbdkit_parse_size (const char *str)
 
 /* Parse a string as a boolean, or return -1 after reporting the error.
  */
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_parse_bool (const char *str)
 {
   if (!strcmp (str, "1") ||
@@ -446,7 +446,7 @@ nbdkit_parse_bool (const char *str)
 }
 
 /* Return true if it is safe to read from stdin during configuration. */
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_stdio_safe (void)
 {
   return !listen_stdin && !configured;
@@ -456,7 +456,7 @@ nbdkit_stdio_safe (void)
 static int read_password_interactive (char **password);
 static int read_password_from_fd (const char *what, int fd, char **password);
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_read_password (const char *value, char **password)
 {
   *password = NULL;
@@ -674,7 +674,7 @@ read_password_from_fd (const char *what, int fd, char **password)
   return 0;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_nanosleep (unsigned sec, unsigned nsec)
 {
   struct timespec ts;
@@ -756,7 +756,7 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
 /* This function will be deprecated for API V3 users.  The preferred
  * approach will be to get the exportname from .open().
  */
-const char *
+NBDKIT_DLL_PUBLIC const char *
 nbdkit_export_name (void)
 {
   struct context *c = threadlocal_get_context ();
@@ -772,7 +772,7 @@ nbdkit_export_name (void)
 /* This function will be deprecated for API V3 users.  The preferred
  * approach will be to get the tls mode from .open().
  */
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_is_tls (void)
 {
   struct context *c = threadlocal_get_context ();
@@ -792,7 +792,7 @@ nbdkit_is_tls (void)
   return c->conn->using_tls;
 }
 
-int
+NBDKIT_DLL_PUBLIC int
 nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen)
 {
   struct connection *conn = threadlocal_get_conn ();
@@ -943,7 +943,7 @@ get_peercred_common (int64_t *pid, int64_t *uid, int64_t *gid)
   return get_peercred (s, pid, uid, gid);
 }
 
-int64_t
+NBDKIT_DLL_PUBLIC int64_t
 nbdkit_peer_pid ()
 {
   int64_t pid;
@@ -954,7 +954,7 @@ nbdkit_peer_pid ()
   return pid;
 }
 
-int64_t
+NBDKIT_DLL_PUBLIC int64_t
 nbdkit_peer_uid ()
 {
   int64_t uid;
@@ -965,7 +965,7 @@ nbdkit_peer_uid ()
   return uid;
 }
 
-int64_t
+NBDKIT_DLL_PUBLIC int64_t
 nbdkit_peer_gid ()
 {
   int64_t gid;
@@ -1006,7 +1006,7 @@ add_intern (char *str)
   return str;
 }
 
-const char *
+NBDKIT_DLL_PUBLIC const char *
 nbdkit_strndup_intern (const char *str, size_t n)
 {
   char *copy;
@@ -1026,7 +1026,7 @@ nbdkit_strndup_intern (const char *str, size_t n)
   return add_intern (copy);
 }
 
-const char *
+NBDKIT_DLL_PUBLIC const char *
 nbdkit_strdup_intern (const char *str)
 {
   char *copy;
@@ -1046,7 +1046,7 @@ nbdkit_strdup_intern (const char *str)
   return add_intern (copy);
 }
 
-const char *
+NBDKIT_DLL_PUBLIC const char *
 nbdkit_vprintf_intern (const char *fmt, va_list ap)
 {
   char *str = NULL;
@@ -1059,7 +1059,7 @@ nbdkit_vprintf_intern (const char *fmt, va_list ap)
   return add_intern (str);
 }
 
-const char *
+NBDKIT_DLL_PUBLIC const char *
 nbdkit_printf_intern (const char *fmt, ...)
 {
   va_list ap;

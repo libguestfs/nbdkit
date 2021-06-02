@@ -42,6 +42,8 @@
 
 #include <pthread.h>
 
+#include "nbdkit-plugin.h" /* only for NBDKIT_DLL_PUBLIC */
+
 #include "vddk-structs.h"
 
 #define STUB(fn,ret,args) extern ret fn args;
@@ -64,7 +66,7 @@ bg_thread (void *datav)
   return NULL;
 }
 
-VixError
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_InitEx (uint32_t major, uint32_t minor,
                    VixDiskLibGenericLogFunc *log_function,
                    VixDiskLibGenericLogFunc *warn_function,
@@ -88,32 +90,32 @@ VixDiskLib_InitEx (uint32_t major, uint32_t minor,
   return VIX_OK;
 }
 
-void
+NBDKIT_DLL_PUBLIC void
 VixDiskLib_Exit (void)
 {
   /* Do nothing. */
 }
 
-char *
+NBDKIT_DLL_PUBLIC char *
 VixDiskLib_GetErrorText (VixError err, const char *unused)
 {
   return strdup ("dummy-vddk: error message");
 }
 
-void
+NBDKIT_DLL_PUBLIC void
 VixDiskLib_FreeErrorText (char *text)
 {
   free (text);
 }
 
-void
+NBDKIT_DLL_PUBLIC void
 VixDiskLib_FreeConnectParams (VixDiskLibConnectParams *params)
 {
   /* never called since we don't define optional AllocateConnectParams */
   abort ();
 }
 
-VixError
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_ConnectEx (const VixDiskLibConnectParams *params,
                       char read_only,
                       const char *snapshot_ref,
@@ -129,7 +131,7 @@ VixDiskLib_ConnectEx (const VixDiskLibConnectParams *params,
   return VIX_OK;
 }
 
-VixError
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_Open (const VixDiskLibConnection connection,
                  const char *path,
                  uint32_t flags,
@@ -142,25 +144,25 @@ VixDiskLib_Open (const VixDiskLibConnection connection,
   return VIX_OK;
 }
 
-const char *
+NBDKIT_DLL_PUBLIC const char *
 VixDiskLib_GetTransportMode (VixDiskLibHandle handle)
 {
   return "file";
 }
 
-VixError
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_Close (VixDiskLibHandle handle)
 {
   return VIX_OK;
 }
 
-VixError
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_Disconnect (VixDiskLibConnection connection)
 {
   return VIX_OK;
 }
 
-VixError
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_GetInfo (VixDiskLibHandle handle,
                     VixDiskLibInfo **info)
 {
@@ -169,13 +171,13 @@ VixDiskLib_GetInfo (VixDiskLibHandle handle,
   return VIX_OK;
 }
 
-void
+NBDKIT_DLL_PUBLIC void
 VixDiskLib_FreeInfo (VixDiskLibInfo *info)
 {
   free (info);
 }
 
-VixError
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_Read (VixDiskLibHandle handle,
                  uint64_t start_sector, uint64_t nr_sectors,
                  unsigned char *buf)
@@ -186,7 +188,7 @@ VixDiskLib_Read (VixDiskLibHandle handle,
   return VIX_OK;
 }
 
-VixError
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_Write (VixDiskLibHandle handle,
                   uint64_t start_sector, uint64_t nr_sectors,
                   const unsigned char *buf)

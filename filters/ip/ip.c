@@ -62,7 +62,7 @@
 #include "cleanup.h"
 
 /* -D ip.rules=1 to enable debugging of rules and rule matching. */
-int ip_debug_rules;
+NBDKIT_DLL_PUBLIC int ip_debug_rules;
 
 struct rule {
   struct rule *next;

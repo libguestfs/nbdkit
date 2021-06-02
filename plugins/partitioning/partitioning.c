@@ -63,7 +63,7 @@
 #include "virtual-disk.h"
 
 /* Debug flag: -D partitioning.regions=1: Print the regions table. */
-int partitioning_debug_regions;
+NBDKIT_DLL_PUBLIC int partitioning_debug_regions;
 
 /* alignment, mbr_id, type_guid set on the command line for
  * following partitions.

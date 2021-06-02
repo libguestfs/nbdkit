@@ -46,7 +46,7 @@
 #include "cleanup.h"
 
 /* -D cacheextents.cache=1: Debug cache operations. */
-int cacheextents_debug_cache = 0;
+NBDKIT_DLL_PUBLIC int cacheextents_debug_cache = 0;
 
 /* This lock protects the global state. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;

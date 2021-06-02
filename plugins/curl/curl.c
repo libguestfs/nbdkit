@@ -91,7 +91,7 @@ const char *user = NULL;
 const char *user_agent = NULL;
 
 /* Use '-D curl.verbose=1' to set. */
-int curl_debug_verbose = 0;
+NBDKIT_DLL_PUBLIC int curl_debug_verbose = 0;
 
 static void
 curl_load (void)

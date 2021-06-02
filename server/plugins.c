@@ -569,7 +569,7 @@ plugin_can_cache (struct context *c)
 /* Plugins and filters can call this to set the true errno, in cases
  * where !errno_is_preserved.
  */
-void
+NBDKIT_DLL_PUBLIC void
 nbdkit_set_error (int err)
 {
   threadlocal_set_error (err);

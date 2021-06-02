@@ -60,7 +60,7 @@ prologue (void)
 }
 
 /* Note: preserves the previous value of errno. */
-void
+NBDKIT_DLL_PUBLIC void
 nbdkit_vdebug (const char *fs, va_list args)
 {
   int err = errno;
@@ -83,7 +83,7 @@ nbdkit_vdebug (const char *fs, va_list args)
 }
 
 /* Note: preserves the previous value of errno. */
-void
+NBDKIT_DLL_PUBLIC void
 nbdkit_debug (const char *fs, ...)
 {
   va_list args;

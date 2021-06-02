@@ -277,7 +277,7 @@ extentlist_can_extents (nbdkit_next *next,
 }
 
 /* Use ‘-D extentlist.lookup=1’ to debug the function below. */
-int extentlist_debug_lookup = 0;
+NBDKIT_DLL_PUBLIC int extentlist_debug_lookup = 0;
 
 /* Read extents. */
 static int

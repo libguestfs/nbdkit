@@ -66,7 +66,7 @@ static struct allocator *a;
 const char *allocator_type = "sparse";
 
 /* Debug directory operations (-D data.dir=1). */
-int data_debug_dir;
+NBDKIT_DLL_PUBLIC int data_debug_dir;
 
 /* Collect extra parameters for data $VARs. */
 struct param { const char *key; const char *value; };

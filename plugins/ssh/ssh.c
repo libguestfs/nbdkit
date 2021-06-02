@@ -74,7 +74,7 @@ static bool compression = false;
 static const char *config = NULL;
 
 /* Use '-D ssh.log=N' to set. */
-int ssh_debug_log = 0;
+NBDKIT_DLL_PUBLIC int ssh_debug_log = 0;
 
 /* If ssh_debug_log > 0 then the library will call this function with
  * log messages.

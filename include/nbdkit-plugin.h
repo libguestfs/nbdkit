@@ -154,6 +154,7 @@ NBDKIT_EXTERN_DECL (int, nbdkit_is_tls, (void));
 
 #define NBDKIT_REGISTER_PLUGIN(plugin)                                  \
   NBDKIT_CXX_LANG_C                                                     \
+  NBDKIT_DLL_PUBLIC                                                     \
   struct nbdkit_plugin *                                                \
   plugin_init (void)                                                    \
   {                                                                     \

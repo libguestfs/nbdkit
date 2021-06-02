@@ -84,9 +84,11 @@ extern "C" {
 
 #ifndef WIN32
 #define NBDKIT_EXTERN_DECL(ret, fn, args) extern ret fn args
+#define NBDKIT_DLL_PUBLIC __attribute__((__visibility__("default")))
 #else
 #define NBDKIT_EXTERN_DECL(ret, fn, args) \
   extern __declspec(dllexport) ret fn args
+#define NBDKIT_DLL_PUBLIC __declspec(dllexport)
 #endif
 
 NBDKIT_EXTERN_DECL (void, nbdkit_error,

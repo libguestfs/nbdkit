@@ -71,7 +71,7 @@ static struct curl_slist *headers_from_script = NULL;
 static char *cookies_from_script = NULL;
 
 /* Debug scripts by setting -D curl.scripts=1 */
-int curl_debug_scripts;
+NBDKIT_DLL_PUBLIC int curl_debug_scripts;
 
 void
 scripts_unload (void)

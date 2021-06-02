@@ -263,6 +263,7 @@ struct nbdkit_filter {
 
 #define NBDKIT_REGISTER_FILTER(filter)                                  \
   NBDKIT_CXX_LANG_C                                                     \
+  NBDKIT_DLL_PUBLIC                                                     \
   struct nbdkit_filter *                                                \
   filter_init (void)                                                    \
   {                                                                     \

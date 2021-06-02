@@ -85,7 +85,7 @@ static struct nbdkit_plugin plugin = {
   .unload = unload_wrapper,
 };
 
-struct nbdkit_plugin *
+NBDKIT_DLL_PUBLIC struct nbdkit_plugin *
 plugin_init (void)
 {
   if (plugin.name == NULL) {
@@ -743,7 +743,7 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
  */
 
 /* NB: noalloc function */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_name (value namev)
 {
   plugin.name = strdup (String_val (namev));
@@ -751,7 +751,7 @@ ocaml_nbdkit_set_name (value namev)
 }
 
 /* NB: noalloc function */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_longname (value longnamev)
 {
   plugin.longname = strdup (String_val (longnamev));
@@ -759,7 +759,7 @@ ocaml_nbdkit_set_longname (value longnamev)
 }
 
 /* NB: noalloc function */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_version (value versionv)
 {
   plugin.version = strdup (String_val (versionv));
@@ -767,7 +767,7 @@ ocaml_nbdkit_set_version (value versionv)
 }
 
 /* NB: noalloc function */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_description (value descriptionv)
 {
   plugin.description = strdup (String_val (descriptionv));
@@ -775,7 +775,7 @@ ocaml_nbdkit_set_description (value descriptionv)
 }
 
 /* NB: noalloc function */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_config_help (value helpv)
 {
   plugin.config_help = strdup (String_val (helpv));
@@ -783,7 +783,7 @@ ocaml_nbdkit_set_config_help (value helpv)
 }
 
 /* NB: noalloc function */
-value
+NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_field (value fieldv, value fv)
 {
   const char *field = String_val (fieldv);

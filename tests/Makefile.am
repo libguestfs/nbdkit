@@ -1027,6 +1027,7 @@ libvixDiskLib_la_SOURCES = \
 	$(NULL)
 libvixDiskLib_la_CPPFLAGS = \
 	-I$(top_srcdir)/plugins/vddk \
+	-I$(top_srcdir)/include \
 	$(NULL)
 libvixDiskLib_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:

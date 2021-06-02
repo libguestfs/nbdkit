@@ -89,7 +89,7 @@ static enum { cache_default, cache_none } cache_mode = cache_default;
 static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* to enable: -D file.zero=1 */
-int file_debug_zero;
+NBDKIT_DLL_PUBLIC int file_debug_zero;
 
 static bool
 is_enotsup (int err)

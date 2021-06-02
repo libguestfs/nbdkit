@@ -464,7 +464,7 @@ pull_timeout (gnutls_transport_ptr_t ptr, unsigned ms)
 /* Turn GnuTLS debug messages into nbdkit debug messages
  * when nbdkit -D nbdkit.tls.log > 0
  */
-SERVER_DEBUG_FLAG(nbdkit_debug_tls_log) = 0;
+NBDKIT_DLL_PUBLIC int nbdkit_debug_tls_log = 0;
 
 static void
 tls_log (int level, const char *msg)
@@ -487,7 +487,7 @@ tls_log (int level, const char *msg)
  *
  * https://gnutls.org/manual/html_node/Obtaining-session-information.html
  */
-SERVER_DEBUG_FLAG(nbdkit_debug_tls_session) = 0;
+NBDKIT_DLL_PUBLIC int nbdkit_debug_tls_session = 0;
 
 static void
 debug_x590_cert (gnutls_session_t session)
