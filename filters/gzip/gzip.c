@@ -369,7 +369,6 @@ static struct nbdkit_filter filter = {
   .can_extents        = gzip_can_extents,
   .can_cache          = gzip_can_cache,
   .can_multi_conn     = gzip_can_multi_conn,
-  .prepare            = gzip_prepare,
   .export_description = gzip_export_description,
   .get_size           = gzip_get_size,
   .pread              = gzip_pread,
