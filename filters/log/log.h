@@ -97,8 +97,9 @@ struct leave_simple_params {
 extern void leave_simple2 (struct leave_simple_params *params);
 
 #define LOG(h, act, r, err, ...)                                        \
-  log_id_t id = get_id (h);                                                 \
+  log_id_t id = get_id (h);                                             \
   __attribute__((cleanup (leave_simple2)))                              \
+  CLANG_UNUSED_VARIABLE_WORKAROUND                                      \
   struct leave_simple_params _params = { h, id, act, &r, err };         \
   enter ((h), id, (act), ##__VA_ARGS__)
 

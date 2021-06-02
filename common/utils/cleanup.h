@@ -36,6 +36,13 @@
 #include <pthread.h>
 #include <assert.h>
 
+/* Work around clang bug: https://bugs.llvm.org/show_bug.cgi?id=43482 */
+#ifdef __clang__
+#define CLANG_UNUSED_VARIABLE_WORKAROUND __attribute__((__unused__))
+#else
+#define CLANG_UNUSED_VARIABLE_WORKAROUND
+#endif
+
 /* https://stackoverflow.com/a/1597129 */
 #define XXUNIQUE_VAR(name, line) name ## line
 #define XUNIQUE_VAR(name, line) XXUNIQUE_VAR (name, line)
