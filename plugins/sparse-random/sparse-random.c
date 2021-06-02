@@ -205,7 +205,7 @@ sparse_random_get_ready (void)
      * (hole->data).
      */
     P = state ? P_dh : P_hd;
-    if (xrandom (&rs) <= P * UINT64_MAX)
+    if (xrandom (&rs) <= P * (double) UINT64_MAX)
       state ^= 1;
   }
 
