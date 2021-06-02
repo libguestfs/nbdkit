@@ -176,6 +176,12 @@ AC_DEFINE_UNQUOTED([host_os],["$host_os"],[Host operating system.])
 dnl Defines WORDS_BIGENDIAN on big endian platforms.
 AC_C_BIGENDIAN
 
+dnl These are defined in <unistd.h> which is included by
+dnl AC_DEFAULT_INCLUDES.
+AC_CHECK_SIZEOF([pid_t])
+AC_CHECK_SIZEOF([uid_t])
+AC_CHECK_SIZEOF([gid_t])
+
 dnl Check for C++ (optional, we just use this to test the header
 dnl can be included from C++ code).
 AC_PROG_CXX
