@@ -824,22 +824,28 @@ get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
   }
 
   if (pid && ucred.pid >= 1) {
-    if (ucred.pid <= INT64_MAX)
-      *pid = ucred.pid;
-    else
+#if SIZEOF_PID_T >= 8
+    if (ucred.pid > INT64_MAX)
       nbdkit_error ("pid out of range: cannot be mapped to int64_t");
+    else
+#endif
+      *pid = ucred.pid;
   }
   if (uid && ucred.uid >= 0) {
-    if (ucred.uid <= INT64_MAX)
-      *uid = ucred.uid;
-    else
+#if SIZEOF_UID_T >= 8
+    if (ucred.uid > INT64_MAX)
       nbdkit_error ("uid out of range: cannot be mapped to int64_t");
+    else
+#endif
+      *uid = ucred.uid;
   }
   if (gid && ucred.gid >= 0) {
-    if (ucred.gid <= INT64_MAX)
-      *gid = ucred.gid;
-    else
+#if SIZEOF_GID_T >= 8
+    if (ucred.gid > INT64_MAX)
       nbdkit_error ("gid out of range: cannot be mapped to int64_t");
+    else
+#endif
+      *gid = ucred.gid;
   }
 
   return 0;
