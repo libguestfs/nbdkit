@@ -230,7 +230,6 @@ eval_unload (void)
 {
   const char *method = "unload";
   const char *script = get_script (method);
-  CLEANUP_FREE char *cmd = NULL;
 
   /* Run the unload method.  Ignore all errors. */
   if (script) {
