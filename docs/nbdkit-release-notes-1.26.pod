@@ -1,0 +1,191 @@
+=head1 NAME
+
+nbdkit-release-notes-1.26 - release notes for nbdkit 1.26
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.26.
+This describes the major changes since 1.24.
+
+nbdkit 1.26.0 was released on B<XX XXXXXX 2021>.
+
+nbdkit is now hosted on gitlab:
+L<https://listman.redhat.com/archives/libguestfs/2021-February/msg00021.html>
+
+=head2 Security
+
+There were no security issues found.  All past security issues and
+information about how to report new ones can be found in
+L<nbdkit-security(1)>.
+
+=begin comment
+
+=head2 Server
+
+=end comment
+
+=head2 Plugins
+
+nbdkit-gzip-plugin and nbdkit-tar-plugin have been removed.  They were
+deprecated in nbdkit 1.22.  The functionality has been replaced by
+L<nbdkit-gzip-filter(1)> and L<nbdkit-tar-filter(1)> respectively.
+
+L<nbdkit-streaming-plugin(1)> has been deprecated and will be removed
+in S<nbdkit 1.30>.  You can use L<nbdcopy(1)> instead.
+
+L<nbdkit-curl-plugin(1)> adds these features: C<followlocation=false>
+to disable following redirects.  C<cookiefile> and C<cookiejar> to
+control saving cookies.
+
+L<nbdkit-ssh-plugin(1)> now advertises multi-conn if the server is
+OpenSSH, improving performance (Eric Blake).
+
+L<nbdkit-ondemand-plugin(1)> has a new C<wait=true> flag allowing you
+to choose that clients wait for an export to become free instead of
+being immediately rejected.
+
+L<nbdkit-sparse-random-plugin(1)> now does not generate fully random
+data within each block.  Using perf we observed that the plugin was
+spending 34% of the total time during benchmarks just doing this.  You
+can enable the old behaviour using C<random-content=true>.
+
+L<nbdkit-file-plugin(1)> now checks if the file is read-only and
+exports a read-only NBD connection in this case (Eric Blake).
+
+L<nbdkit-vddk-plugin(1)> has been tested with VDDK 7.0.2.
+
+=head2 Filters
+
+There is a new API for use by filters to manage "contexts".  Instead
+of the previous 1-1 relationship between filter connections and plugin
+connections, filters can now open more than one context into the
+backend from a single connection, or share contexts between
+connections (Eric Blake).
+
+New L<nbdkit-multi-conn-filter(1)> which allows you to add multi-conn
+support to plugins which don't support it (although the emulation is
+expensive), or change whether multi-conn is advertised to clients
+(Eric Blake).
+
+L<nbdkit-cow-filter(1)> now ignores flush/FUA requests which are
+useful for a temporary overlay.  This filter now implements extents
+and efficient trimming.  Fine-grained locking is used around shared
+structures, greatly improving parallel performance.  Added support for
+multi-conn.
+
+L<nbdkit-cache-filter(1)> advertises multi-conn when possible
+(Eric Blake).
+
+nbdkit-cache-filter and nbdkit-cow-filter can now handle arbitrary
+sized disks, instead of rounding the disk size down.
+
+L<nbdkit-blocksize-filter(1)> supports parallel requests (Eric Blake).
+
+L<nbdkit-checkwrite-filter(1)> supports multi-conn (Eric Blake).
+
+L<nbdkit-ext2-filter(1)> no longer supports multi-conn.  The filter is
+single-threaded so it does not matter, but it was not safe.  Fix trim,
+zero and flush support (Eric Blake).
+
+L<nbdkit-readahead-filter(1)> fixes multi-conn support (Eric Blake).
+
+L<nbdkit-gzip-filter(1)> and L<nbdkit-xz-filter(1)> now both support
+multi-conn (Eric Blake).
+
+=head2 Language bindings
+
+L<nbdkit-python-plugin(3)> supports the following new features:
+C<after_fork> and C<preconnect> methods.  C<nbdkit.shutdown()>
+binding.
+
+L<nbdkit-rust-plugin(3)> updated for newer Rust compiler versions
+(Alan Somers).
+
+L<nbdkit-golang-plugin(3)> now uses and requires golang modules.
+Golang E<ge> 1.13 must be used.
+
+=head2 API
+
+New C<.cleanup> callback for plugins and filters.  This is called
+shortly before C<.unload>, but unlike C<.unload> it is guaranteed that
+no plugin or filter code has been dlclosed (Eric Blake).
+
+New C<nbdkit_extents_full> is a helper function for filters which can
+be used to read all extents from a plugin covering a region.
+
+=begin comment
+
+=head2 Bug fixes
+
+=head2 Documentation
+
+=end comment
+
+=head2 Tests
+
+Old plugins that we use for testing were rebuilt so they no longer
+depend on libselinux (Thomas Weißschuh).
+
+Improve F<tests/test-captive.sh> to avoid crashes during testing.
+
+Test coverage on FreeBSD has been improved, fewer tests should skip
+unnecessarily.
+
+=head2 Build
+
+nbdkit and plugins can now be built with C<-fvisibility=hidden>, which
+allows the compiler to make some optimizations.
+
+Add a dependency so nbdkit is relinked if the linker script
+(F<nbdkit.syms>) changes (Eric Blake).
+
+xorriso is now preferred over genisoimage or mkisofs (see
+L<https://wiki.debian.org/genisoimage>).
+
+It is now possible to compile nbdkit with clang with warnings enabled.
+Several warnings have been suppressed or fixed.
+
+C<MALLOC_CHECK_> and C<MALLOC_PERTURB_> are only enabled when running
+the tests, not when running nbdkit from the build directory.  This
+makes it easier to do benchmarks.
+
+=head2 Internals
+
+When fuzzing nbdkit we now recommend using the C<-t 1> flag (which
+disables threads).  This improves the fuzz-stability of nbdkit.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Authors of nbdkit 1.26:
+
+=over 4
+
+=item *
+
+Alan Somers
+
+=item *
+
+Eric Blake
+
+=item *
+
+Michael Ablassmeier
+
+=item *
+
+Richard W.M. Jones
+
+=item *
+
+Timm Bäder
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright (C) 2021 Red Hat Inc.
