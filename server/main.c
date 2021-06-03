@@ -830,7 +830,7 @@ open_plugin_so (size_t i, const char *name, int short_name)
 
   /* Initialize the plugin.  See dlopen(3) to understand C weirdness. */
   dlerror ();
-  *(void **) (&plugin_init) = dlsym (dl, "plugin_init");
+  plugin_init = dlsym (dl, "plugin_init");
   if ((error = dlerror ()) != NULL) {
     fprintf (stderr, "%s: %s: %s\n", program_name, name, error);
     exit (EXIT_FAILURE);
@@ -879,7 +879,7 @@ open_filter_so (struct backend *next, size_t i,
 
   /* Initialize the filter.  See dlopen(3) to understand C weirdness. */
   dlerror ();
-  *(void **) (&filter_init) = dlsym (dl, "filter_init");
+  filter_init = dlsym (dl, "filter_init");
   if ((error = dlerror ()) != NULL) {
     fprintf (stderr, "%s: %s: %s\n", program_name, name, error);
     exit (EXIT_FAILURE);
