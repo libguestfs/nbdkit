@@ -36,12 +36,25 @@ source ./functions.sh
 set -x
 
 requires_plugin example2
+requires_run
+requires nbdinfo --version
 
 export LANG=C
 
 files=debug-flags.out
 rm -f $files
 cleanup_fn rm -f $files
+
+# This should work and show the "extra debugging" line in debug output.
+nbdkit -f -v -D example2.extra=1 example2 file=disk \
+       --run 'nbdinfo "$uri"' 2>debug-flags.out
+cat debug-flags.out
+if ! grep -sq 'extra debugging:' debug-flags.out ; then
+    echo "$0: expected to see extra debugging output"
+    exit 1
+fi
+
+# Now test various expected failures.
 
 expected_failure ()
 {
