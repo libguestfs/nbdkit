@@ -969,6 +969,10 @@ AS_IF([test "$with_ssh" != "no"],[
 ])
 AM_CONDITIONAL([HAVE_SSH],[test "x$SSH_LIBS" != "x"])
 
+dnl Check for ssh-keygen, only needed if you want to test the SSH plugin.
+AC_CHECK_PROG([SSH_KEYGEN],[ssh-keygen],[ssh-keygen],[no])
+AM_CONDITIONAL([HAVE_SSH_KEYGEN],[test "x$SSH_KEYGEN" != "xno"])
+
 dnl Check for genisoimage or mkisofs
 dnl (only if you want to compile the iso plugin).
 ISOPROG="no"

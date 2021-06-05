@@ -909,18 +909,10 @@ TESTS += test-split-extents.sh
 EXTRA_DIST += test-split-extents.sh
 
 # ssh plugin test.
-if HAVE_SSH
-TESTS += test-ssh.sh
-check_DATA += \
-	ssh/sshd_config \
-	ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub \
-	ssh/authorized_keys \
-	$(NULL)
 EXTRA_DIST += \
 	ssh/sshd_config.in \
 	test-ssh.sh \
 	$(NULL)
-SSH_RANDOM_PORT := $(shell bash -c 'echo $$(( 10000 + $$RANDOM ))')
 CLEANFILES += \
 	ssh/*~ \
 	ssh/sshd_config \
@@ -931,6 +923,16 @@ DISTCLEANFILES += \
 	ssh/id_rsa ssh/id_rsa.pub \
 	stamp-ssh-host-key stamp-ssh-user-key \
 	$(NULL)
+
+if HAVE_SSH
+if HAVE_SSH_KEYGEN
+TESTS += test-ssh.sh
+check_DATA += \
+	ssh/sshd_config \
+	ssh/ssh_host_rsa_key ssh/ssh_host_rsa_key.pub \
+	ssh/authorized_keys \
+	$(NULL)
+SSH_RANDOM_PORT := $(shell bash -c 'echo $$(( 10000 + $$RANDOM ))')
 
 ssh/sshd_config: ssh/sshd_config.in Makefile
 	rm -f $@ $@-t
@@ -945,7 +947,7 @@ stamp-ssh-host-key:
 	rm -f $@
 	rm -f ssh/ssh_host_rsa_key
 	rm -f ssh/ssh_host_rsa_key.pub
-	ssh-keygen -t rsa -f ssh/ssh_host_rsa_key -N ''
+	$(SSH_KEYGEN) -t rsa -f ssh/ssh_host_rsa_key -N ''
 	touch $@
 
 ssh/authorized_keys: ssh/id_rsa.pub
@@ -958,8 +960,9 @@ stamp-ssh-user-key:
 	rm -f $@
 	rm -f ssh/id_rsa
 	rm -f ssh/id_rsa.pub
-	ssh-keygen -t rsa -f ssh/id_rsa -N ''
+	$(SSH_KEYGEN) -t rsa -f ssh/id_rsa -N ''
 	touch $@
+endif HAVE_SSH_KEYGEN
 endif HAVE_SSH
 
 # streaming plugin test.
