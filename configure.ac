@@ -376,7 +376,24 @@ AC_CHECK_FUNCS([\
 	pipe2 \
 	ppoll \
 	posix_fadvise])
+
+dnl Check for structs and members.
 AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [[#include <dirent.h>]])
+AC_CHECK_MEMBERS([struct ucred.uid], [], [],
+		 [[
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_UCRED_H
+#include <sys/ucred.h>
+#endif
+]])
+AC_CHECK_MEMBERS([struct sockpeercred.uid], [], [],
+		 [[
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+]])
 
 dnl Replacement functions that we provide for some platforms.
 AC_CONFIG_LIBOBJ_DIR([common/replacements])

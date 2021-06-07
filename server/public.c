@@ -817,42 +817,50 @@ nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen)
   return 0;
 }
 
-#ifdef SO_PEERCRED
+#if defined(SO_PEERCRED) && \
+  (defined(HAVE_STRUCT_UCRED_UID) || defined(HAVE_STRUCT_SOCKPEERCRED_UID))
+
+#define GET_PEERCRED_DEFINED 1
 
 static int
 get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
 {
-  struct ucred ucred;
-  socklen_t n = sizeof ucred;
+#if HAVE_STRUCT_UCRED_UID
+  struct ucred cred;
+#elif HAVE_STRUCT_SOCKPEERCRED_UID
+  /* The struct has a different name on OpenBSD, but the same members. */
+  struct sockpeercred cred;
+#endif
+  socklen_t n = sizeof cred;
 
-  if (getsockopt (s, SOL_SOCKET, SO_PEERCRED, &ucred, &n) == -1) {
+  if (getsockopt (s, SOL_SOCKET, SO_PEERCRED, &cred, &n) == -1) {
     nbdkit_error ("getsockopt: SO_PEERCRED: %m");
     return -1;
   }
 
-  if (pid && ucred.pid >= 1) {
+  if (pid && cred.pid >= 1) {
 #if SIZEOF_PID_T >= 8
-    if (ucred.pid > INT64_MAX)
+    if (cred.pid > INT64_MAX)
       nbdkit_error ("pid out of range: cannot be mapped to int64_t");
     else
 #endif
-      *pid = ucred.pid;
+      *pid = cred.pid;
   }
-  if (uid && ucred.uid >= 0) {
+  if (uid && cred.uid >= 0) {
 #if SIZEOF_UID_T >= 8
-    if (ucred.uid > INT64_MAX)
+    if (cred.uid > INT64_MAX)
       nbdkit_error ("uid out of range: cannot be mapped to int64_t");
     else
 #endif
-      *uid = ucred.uid;
+      *uid = cred.uid;
   }
-  if (gid && ucred.gid >= 0) {
+  if (gid && cred.gid >= 0) {
 #if SIZEOF_GID_T >= 8
-    if (ucred.gid > INT64_MAX)
+    if (cred.gid > INT64_MAX)
       nbdkit_error ("gid out of range: cannot be mapped to int64_t");
     else
 #endif
-      *gid = ucred.gid;
+      *gid = cred.gid;
   }
 
   return 0;
@@ -861,6 +869,8 @@ get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
 #endif /* SO_PEERCRED */
 
 #ifdef LOCAL_PEERCRED
+
+#define GET_PEERCRED_DEFINED 1
 
 /* FreeBSD supports LOCAL_PEERCRED and struct xucred. */
 static int
@@ -907,7 +917,7 @@ get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
 
 #endif /* LOCAL_PEERCRED */
 
-#if !defined(SO_PEERCRED) && !defined(LOCAL_PEERCRED)
+#ifndef GET_PEERCRED_DEFINED
 
 static int
 get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
