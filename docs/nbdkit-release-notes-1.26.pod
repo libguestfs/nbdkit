@@ -7,7 +7,7 @@ nbdkit-release-notes-1.26 - release notes for nbdkit 1.26
 These are the release notes for nbdkit stable release 1.26.
 This describes the major changes since 1.24.
 
-nbdkit 1.26.0 was released on B<XX XXXXXX 2021>.
+nbdkit 1.26.0 was released on B<7 June 2021>.
 
 nbdkit is now hosted on gitlab:
 L<https://listman.redhat.com/archives/libguestfs/2021-February/msg00021.html>
@@ -41,7 +41,7 @@ L<nbdkit-ssh-plugin(1)> now advertises multi-conn if the server is
 OpenSSH, improving performance (Eric Blake).
 
 L<nbdkit-ondemand-plugin(1)> has a new C<wait=true> flag allowing you
-to choose that clients wait for an export to become free instead of
+to choose between clients waiting for an export to become free or
 being immediately rejected.
 
 L<nbdkit-sparse-random-plugin(1)> now does not generate fully random
@@ -67,8 +67,8 @@ support to plugins which don't support it (although the emulation is
 expensive), or change whether multi-conn is advertised to clients
 (Eric Blake).
 
-L<nbdkit-cow-filter(1)> now ignores flush/FUA requests which are
-useful for a temporary overlay.  This filter now implements extents
+L<nbdkit-cow-filter(1)> now ignores flush/FUA requests (which are not
+useful for a temporary overlay).  The filter now implements extents
 and efficient trimming.  Fine-grained locking is used around shared
 structures, greatly improving parallel performance.  Added support for
 multi-conn.
@@ -124,7 +124,10 @@ be used to read all extents from a plugin covering a region.
 =head2 Tests
 
 Old plugins that we use for testing were rebuilt so they no longer
-depend on libselinux (Thomas Weißschuh).
+depend on libselinux (thanks Thomas Weißschuh).
+
+L<nbdkit-ssh-plugin(1)> can still be built even if ssh-keygen is
+unavailable for testing it (thanks Thomas Weißschuh).
 
 Improve F<tests/test-captive.sh> to avoid crashes during testing.
 
@@ -148,6 +151,8 @@ Several warnings have been suppressed or fixed.
 C<MALLOC_CHECK_> and C<MALLOC_PERTURB_> are only enabled when running
 the tests, not when running nbdkit from the build directory.  This
 makes it easier to do benchmarks.
+
+C<nbdkit_peer_*> implemented on OpenBSD.
 
 =head2 Internals
 
