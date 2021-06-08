@@ -67,6 +67,12 @@ guestfish and expanded differently.  Since NBD URIs are now widely
 supported this magic is no longer necessary.  In nbdkit E<ge> 1.24
 both variables expand to the same URI.
 
+=item C<$tls>
+
+Corresponds to the I<--tls> option passed to nbdkit.  If I<--tls=off>
+this is not set.  If I<--tls=on> this is set to C<"1">.  If
+I<--tls=require> this is set to C<"2">.
+
 =item C<$port>
 
 If E<ne> "", the port number that nbdkit is listening on.

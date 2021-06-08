@@ -118,7 +118,9 @@ run_command (void)
   shell_quote (export_name, fp);
   putc ('\n', fp);
 
-  /* Construct $port and $unixsocket. */
+  /* Construct $tls, $port and $unixsocket. */
+  if (tls > 0)
+    fprintf (fp, "tls=%d\n", tls);
   fprintf (fp, "port=");
   if (port)
     shell_quote (port, fp);
