@@ -216,6 +216,7 @@ TESTS += \
 	test-single-from-file.sh \
 	test-single-sh.sh \
 	test-captive.sh \
+	test-captive-tls.sh \
 	test-random-sock.sh \
 	test-tls.sh \
 	test-tls-psk.sh \
@@ -237,6 +238,7 @@ TESTS += \
 endif
 EXTRA_DIST += \
 	test-captive.sh \
+	test-captive-tls.sh \
 	test-ddrescue-filter.sh \
 	test-debug-flags.sh \
 	test-dump-plugin-and-single.sh \
