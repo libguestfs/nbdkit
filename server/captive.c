@@ -77,9 +77,13 @@ run_command (void)
 
   /* Construct $uri. */
   fprintf (fp, "uri=");
+  if (tls == 2)                 /* --tls=require */
+    fprintf (fp, "nbds");
+  else
+    fprintf (fp, "nbd");
   if (port) {
     if (!vsock) {
-      fprintf (fp, "nbd://localhost:");
+      fprintf (fp, "://localhost:");
       shell_quote (port, fp);
       if (strcmp (export_name, "") != 0) {
         putc ('/', fp);
@@ -87,7 +91,7 @@ run_command (void)
       }
     }
     else {
-      fprintf (fp, "nbd+vsock://1:"); /* 1 = VMADDR_CID_LOCAL */
+      fprintf (fp, "+vsock://1:"); /* 1 = VMADDR_CID_LOCAL */
       shell_quote (port, fp);
       if (strcmp (export_name, "") != 0) {
         putc ('/', fp);
@@ -96,7 +100,7 @@ run_command (void)
     }
   }
   else if (unixsocket) {
-    fprintf (fp, "nbd+unix://");
+    fprintf (fp, "+unix://");
     if (strcmp (export_name, "") != 0) {
       putc ('/', fp);
       uri_quote (export_name, fp);
