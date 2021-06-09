@@ -217,6 +217,11 @@ main (int argc, char *argv[])
     passthru ("--num-callers=100");
     /* This is a temporary workaround until RHBZ#1662656 is fixed: */
     passthru ("--read-inline-info=no");
+
+    /* Temporary workaround for this issue:
+     * https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/57EYTAFQJVVG4APOV6AMM7C26H77IQEC/
+     */
+    unsetenv ("DEBUGINFOD_URLS");
   }
   else {
     s = getenv ("NBDKIT_GDB");
