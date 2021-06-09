@@ -226,6 +226,19 @@ if version.parse(vv) < version.parse(v):
 '; then exit 77; fi
 }
 
+# Tests may fail when the test suite is run as root.  While it's a bad
+# idea to run the whole test suite as root (except for the specific
+# "make check-root" tests), people do it anyway so for tests that we
+# know cannot work if run as root we can use this to skip.
+requires_non_root ()
+{
+    if test $(id -u) -eq 0; then
+        echo "$0: test skipped because running as root"
+        echo "$0: tip: don't run the general test suite as root"
+        exit 77
+    fi
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to

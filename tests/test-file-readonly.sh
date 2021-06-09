@@ -36,6 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_non_root
 requires_plugin file
 requires_nbdsh_uri
 requires truncate --version
