@@ -120,7 +120,7 @@ filters="\
         error \
         exitlast \
         exitwhen \
-	exportname \
+        exportname \
         ext2 \
         extentlist \
         fua \
@@ -128,7 +128,7 @@ filters="\
         ip \
         limit \
         log \
-	multi-conn \
+        multi-conn \
         nocache \
         noextents \
         nofilter \
@@ -143,7 +143,7 @@ filters="\
         stats \
         swab \
         tar \
-	tls-fallback \
+        tls-fallback \
         truncate \
         xz \
         "
@@ -335,52 +335,52 @@ test (void)
 
 dnl Check for other headers, all optional.
 AC_CHECK_HEADERS([\
-	alloca.h \
-	afunix.h \
-	arpa/inet.h \
-	byteswap.h \
-	endian.h \
-	grp.h \
-	netdb.h \
-	netinet/in.h \
-	netinet/tcp.h \
-	pwd.h \
-	termios.h \
-	stdatomic.h \
-	syslog.h \
-	sys/endian.h \
-	sys/ioctl.h \
-	sys/mman.h \
-	sys/prctl.h \
-	sys/procctl.h \
-	sys/socket.h \
-	sys/statvfs.h \
-	sys/ucred.h \
-	sys/un.h \
-	sys/wait.h])
+        alloca.h \
+        afunix.h \
+        arpa/inet.h \
+        byteswap.h \
+        endian.h \
+        grp.h \
+        netdb.h \
+        netinet/in.h \
+        netinet/tcp.h \
+        pwd.h \
+        termios.h \
+        stdatomic.h \
+        syslog.h \
+        sys/endian.h \
+        sys/ioctl.h \
+        sys/mman.h \
+        sys/prctl.h \
+        sys/procctl.h \
+        sys/socket.h \
+        sys/statvfs.h \
+        sys/ucred.h \
+        sys/un.h \
+        sys/wait.h])
 
 AC_CHECK_HEADERS([linux/vm_sockets.h], [], [], [#include <sys/socket.h>])
 
 dnl Check for functions in libc, all optional.
 AC_CHECK_FUNCS([\
-	accept4 \
-	fdatasync \
-	flockfile \
-	funlockfile \
-	mkostemp \
-	mlock \
-	mlockall \
-	munlock \
-	open_memstream \
-	pipe \
-	pipe2 \
-	ppoll \
-	posix_fadvise])
+        accept4 \
+        fdatasync \
+        flockfile \
+        funlockfile \
+        mkostemp \
+        mlock \
+        mlockall \
+        munlock \
+        open_memstream \
+        pipe \
+        pipe2 \
+        ppoll \
+        posix_fadvise])
 
 dnl Check for structs and members.
 AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [[#include <dirent.h>]])
 AC_CHECK_MEMBERS([struct ucred.uid], [], [],
-		 [[
+                 [[
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -389,7 +389,7 @@ AC_CHECK_MEMBERS([struct ucred.uid], [], [],
 #endif
 ]])
 AC_CHECK_MEMBERS([struct sockpeercred.uid], [], [],
-		 [[
+                 [[
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -398,20 +398,20 @@ AC_CHECK_MEMBERS([struct sockpeercred.uid], [], [],
 dnl Replacement functions that we provide for some platforms.
 AC_CONFIG_LIBOBJ_DIR([common/replacements])
 AC_REPLACE_FUNCS([\
-	fdatasync \
-	fsync \
-	get_current_dir_name \
-	getdelim \
-	getline \
-	openlog \
-	open_memstream \
-	poll \
-	pread \
-	pwrite \
-	realpath \
-	strndup \
-	syslog \
-	vsyslog])
+        fdatasync \
+        fsync \
+        get_current_dir_name \
+        getdelim \
+        getline \
+        openlog \
+        open_memstream \
+        poll \
+        pread \
+        pwrite \
+        realpath \
+        strndup \
+        syslog \
+        vsyslog])
 
 dnl Check whether printf("%m") works
 AC_CACHE_CHECK([whether the printf family supports %m],
@@ -442,7 +442,7 @@ AS_IF([test "x$nbdkit_cv_func_printf_percent_m" = xyes],
 old_LIBS="$LIBS"
 AC_SEARCH_LIBS([dlsym], [dl dld], [
         AS_IF([test "x$ac_cv_search_dlsym" != "xnone required"],
-	    [DL_LIBS="$ac_cv_search_dlsym"], [DL_LIBS=])
+            [DL_LIBS="$ac_cv_search_dlsym"], [DL_LIBS=])
         AC_SUBST([DL_LIBS])
     ], [AC_MSG_ERROR([unable to find the dlsym() function])
 ])
@@ -603,12 +603,12 @@ AS_IF([test "$GNUTLS_LIBS" != ""],[
     old_LIBS="$LIBS"
     LIBS="$GNUTLS_LIBS $LIBS"
     AC_CHECK_FUNCS([\
-	gnutls_base64_decode2 \
-	gnutls_certificate_set_known_dh_params \
-	gnutls_group_get \
-	gnutls_group_get_name \
-	gnutls_session_set_verify_cert \
-	gnutls_srp_server_get_username \
+        gnutls_base64_decode2 \
+        gnutls_certificate_set_known_dh_params \
+        gnutls_group_get \
+        gnutls_group_get_name \
+        gnutls_session_set_verify_cert \
+        gnutls_srp_server_get_username \
     ])
     LIBS="$old_LIBS"
 ])
@@ -910,11 +910,11 @@ AS_IF([test "x$enable_lua" != "xno"],[
         AC_SUBST([LUA_CFLAGS])
         AC_SUBST([LUA_LIBS])
 
-	dnl Lua 5.1 used by RHEL 7 does not have lua_isinteger.
-	old_LIBS="$LIBS"
-	LIBS="$LUA_LIBS $LIBS"
-	AC_CHECK_FUNCS([lua_isinteger])
-	LIBS="$old_LIBS"
+        dnl Lua 5.1 used by RHEL 7 does not have lua_isinteger.
+        old_LIBS="$LIBS"
+        LIBS="$LUA_LIBS $LIBS"
+        AC_CHECK_FUNCS([lua_isinteger])
+        LIBS="$old_LIBS"
     ],[
         AC_MSG_WARN([Lua not found])
         enable_lua=no
@@ -1299,7 +1299,7 @@ AC_CONFIG_FILES([Makefile
                  filters/ip/Makefile
                  filters/limit/Makefile
                  filters/log/Makefile
-		 filters/multi-conn/Makefile
+                 filters/multi-conn/Makefile
                  filters/nocache/Makefile
                  filters/noextents/Makefile
                  filters/nofilter/Makefile
