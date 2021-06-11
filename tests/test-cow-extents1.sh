@@ -48,6 +48,7 @@ requires_plugin file
 
 requires test -r /dev/urandom
 
+requires cut --version
 requires dd --version
 requires nbdinfo --version
 requires nbdsh --version
@@ -74,8 +75,8 @@ uri="nbd+unix:///?socket=$sock"
 # The map should reflect the base image.
 nbdinfo --map "$uri" > $out
 cat $out
-if [ "$(tr -s ' ' < $out)" != " 0 131072 0 allocated
- 131072 131072 3 hole,zero" ]; then
+if [ "$(tr -s ' ' < $out | cut -d' ' -f 1-4)" != " 0 131072 0
+ 131072 131072 3" ]; then
     echo "$0: unexpected initial file map"
     exit 1
 fi
@@ -91,14 +92,14 @@ nbdsh -u "$uri" \
 # The extents map should be fully allocated.
 nbdinfo --map "$uri" > $out
 cat $out
-if [ "$(tr -s ' ' < $out)" != " 0 4096 0 allocated
- 4096 4096 3 hole,zero
- 8192 8192 0 allocated
- 16384 4096 3 hole,zero
- 20480 110592 0 allocated
- 131072 65536 3 hole,zero
- 196608 8192 0 allocated
- 204800 57344 3 hole,zero" ]; then
+if [ "$(tr -s ' ' < $out | cut -d' ' -f 1-4)" != " 0 4096 0
+ 4096 4096 3
+ 8192 8192 0
+ 16384 4096 3
+ 20480 110592 0
+ 131072 65536 3
+ 196608 8192 0
+ 204800 57344 3" ]; then
     echo "$0: unexpected trimmed file map"
     exit 1
 fi
