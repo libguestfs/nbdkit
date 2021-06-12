@@ -437,6 +437,14 @@ parser (int level, const char *value, size_t *start, size_t len,
       APPEND_EXPR;
       break;
 
+    case ')':                   /* ) */
+      if (level < 1) {
+        nbdkit_error ("unmatched ')' in data string");
+        return -1;
+      }
+      i++;
+      goto out;
+
     case '*':                   /* expr*N */
       i++;
       if (list.size == 0) {
@@ -625,14 +633,6 @@ parser (int level, const char *value, size_t *start, size_t len,
       e.b = j;
       APPEND_EXPR;
       break;
-
-    case ')':                   /* ) */
-      if (level < 1) {
-        nbdkit_error ("unmatched ')' in data string");
-        return -1;
-      }
-      i++;
-      goto out;
 
     case ' ': case '\t': case '\n': /* Skip whitespace. */
     case '\f': case '\r': case '\v':
