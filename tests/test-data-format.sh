@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -99,6 +99,19 @@ do_test '0 1' 'b"\x00\x01"'
 do_test '1 0' 'b"\x01\x00"'
 do_test '1 2' 'b"\x01\x02"'
 do_test '1 0xcc' 'b"\x01\xcc"'
+
+do_test 'le16:1' 'b"\x01\x00"'
+do_test 'be16:1' 'b"\x00\x01"'
+do_test 'le32:1' 'b"\x01\x00\x00\x00"'
+do_test 'be32:1' 'b"\x00\x00\x00\x01"'
+do_test 'le64:1' 'b"\x01\x00\x00\x00\x00\x00\x00\x00"'
+do_test 'be64:1' 'b"\x00\x00\x00\x00\x00\x00\x00\x01"'
+do_test 'le16:0xffff' 'b"\xff\xff"'
+do_test 'be16:0xffff' 'b"\xff\xff"'
+do_test 'le32:0xffffffff' 'b"\xff\xff\xff\xff"'
+do_test 'be32:0xffffffff' 'b"\xff\xff\xff\xff"'
+do_test 'le64:0xffffffffffffffff' 'b"\xff\xff\xff\xff\xff\xff\xff\xff"'
+do_test 'be64:0xffffffffffffffff' 'b"\xff\xff\xff\xff\xff\xff\xff\xff"'
 
 do_test '""' 'b""'
 do_test '"foo"' 'b"foo"'

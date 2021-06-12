@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -63,6 +63,15 @@ NBDKIT_DLL_PUBLIC int data_debug_AST = 0;
 typedef struct expr expr_t;
 
 DEFINE_VECTOR_TYPE(string, char); /* string + length, \0 allowed */
+
+#define CLEANUP_FREE_STRING \
+  __attribute__((cleanup (cleanup_free_string)))
+
+static void
+cleanup_free_string (string *v)
+{
+  free (v->ptr);
+}
 
 typedef size_t node_id;         /* references a node in expr_table below */
 DEFINE_VECTOR_TYPE(node_ids, node_id);
@@ -212,7 +221,7 @@ debug_expr (node_id id, int level)
     nbdkit_debug ("%s<(%s)", debug_indent (level), e->script);
     break;
   case EXPR_STRING: {
-    string s = empty_vector;
+    CLEANUP_FREE_STRING string s = empty_vector;
     static const char hex[] = "0123456789abcdef";
 
     for (i = 0; i < e->string.size; ++i) {
@@ -228,7 +237,6 @@ debug_expr (node_id id, int level)
     }
     string_append (&s, '\0');
     nbdkit_debug ("%s\"%s\"", debug_indent (level), s.ptr);
-    free (s.ptr);
     break;
   }
   case EXPR_NAME:
@@ -311,6 +319,8 @@ read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
 
 static int parse_string (const char *value, size_t *start, size_t len,
                          string *rtn);
+static int parse_word (const char *value, size_t *start, size_t len,
+                       string *rtn);
 static size_t get_name (const char *value, size_t i, size_t len,
                         size_t *initial);
 static size_t get_var (const char *value, size_t i, size_t len,
@@ -634,6 +644,13 @@ parser (int level, const char *value, size_t *start, size_t len,
       APPEND_EXPR;
       break;
 
+    case 'l': case 'b':         /* le or be + NN: + WORD */
+      e.t = EXPR_STRING;
+      if (parse_word (value, &i, len, &e.string) == -1)
+        return -1;
+      APPEND_EXPR;
+      break;
+
     case ' ': case '\t': case '\n': /* Skip whitespace. */
     case '\f': case '\r': case '\v':
       i++;
@@ -825,6 +842,128 @@ parse_string (const char *value, size_t *start, size_t len, string *rtn)
  unexpected_end_of_string:
   nbdkit_error ("data parameter: unterminated string");
   return -1;
+}
+
+/* Parse le<NN>:WORD be<NN>:WORD expressions.  These are parsed into strings. */
+static int
+parse_word (const char *value, size_t *start, size_t len, string *rtn)
+{
+  size_t i = *start;
+  CLEANUP_FREE_STRING string copy = empty_vector;
+  size_t n;
+  enum { little, big } endian;
+  uint16_t u16;
+  uint32_t u32;
+  uint64_t u64;
+
+  *rtn = (string) empty_vector;
+
+  /* It's convenient to use the nbdkit_parse* functions below because
+   * they deal already with overflow etc.  However these functions
+   * require a \0-terminated string, so we have to copy what we are
+   * parsing to a new string here.
+   */
+  while (i < len) {
+    if (ascii_isspace (value[i]))
+      break;
+    i++;
+  }
+  n = i - *start;
+  assert (n > 0);          /* must be because caller parsed 'l'/'b' */
+  if (string_reserve (&copy, n + 1) == -1) {
+    nbdkit_error ("realloc: %m");
+    return -1;
+  }
+  memcpy (copy.ptr, &value[*start], n);
+  copy.ptr[n] = '\0';
+  copy.size = n + 1;
+  *start = i;
+
+  /* Reserve enough space in the return buffer for the longest
+   * possible bitstring (64 bits / 8 bytes).
+   */
+  if (string_reserve (rtn, 8) == -1) {
+    nbdkit_error ("realloc: %m");
+    return -1;
+  }
+
+  /* Parse the rest of {le|be}{16|32|64}: */
+  if (strncmp (copy.ptr, "le16:", 5) == 0) {
+    endian = little; rtn->size = 2;
+  }
+  else if (strncmp (copy.ptr, "le32:", 5) == 0) {
+    endian = little; rtn->size = 4;
+  }
+  else if (strncmp (copy.ptr, "le64:", 5) == 0) {
+    endian = little; rtn->size = 8;
+  }
+  else if (strncmp (copy.ptr, "be16:", 5) == 0) {
+    endian = big; rtn->size = 2;
+  }
+  else if (strncmp (copy.ptr, "be32:", 5) == 0) {
+    endian = big; rtn->size = 4;
+  }
+  else if (strncmp (copy.ptr, "be64:", 5) == 0) {
+    endian = big; rtn->size = 8;
+  }
+  else {
+    nbdkit_error ("data parameter: expected \"le16/32/64:\" "
+                  "or \"be16/32/64:\" at offset %zu", i);
+    return -1;
+  }
+
+  /* Parse the word field into a host-order unsigned int. */
+  switch (rtn->size) {
+  case 2:
+    if (nbdkit_parse_uint16_t ("data", &copy.ptr[5], &u16) == -1)
+      return -1;
+    break;
+  case 4:
+    if (nbdkit_parse_uint32_t ("data", &copy.ptr[5], &u32) == -1)
+      return -1;
+    break;
+  case 8:
+    if (nbdkit_parse_uint64_t ("data", &copy.ptr[5], &u64) == -1)
+      return -1;
+    break;
+  default: abort ();
+  }
+
+  /* Now depending on the endianness and size, convert to the final
+   * bitstring.
+   */
+  switch (endian) {
+  case little:
+    switch (rtn->size) {
+    case 2:                     /* le16: */
+      *((uint16_t *) rtn->ptr) = htole16 (u16);
+      break;
+    case 4:                     /* le32: */
+      *((uint32_t *) rtn->ptr) = htole32 (u32);
+      break;
+    case 8:                     /* le64: */
+      *((uint64_t *) rtn->ptr) = htole64 (u64);
+      break;
+    default: abort ();
+    }
+    break;
+
+  case big:
+    switch (rtn->size) {
+    case 2:                     /* be16: */
+      *((uint16_t *) rtn->ptr) = htobe16 (u16);
+      break;
+    case 4:                     /* be32: */
+      *((uint32_t *) rtn->ptr) = htobe32 (u32);
+      break;
+    case 8:                     /* be64: */
+      *((uint64_t *) rtn->ptr) = htobe64 (u64);
+      break;
+    default: abort ();
+    }
+  }
+
+  return 0;
 }
 
 /* This simple optimization pass over the AST simplifies some

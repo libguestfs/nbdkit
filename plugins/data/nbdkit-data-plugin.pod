@@ -47,26 +47,25 @@ C<HelloHelloHello...>, truncating the disk to exactly 8192 bytes.
 
 See also L<nbdkit-pattern-plugin(3)>.
 
-=head2 Create a 1 MB disk with one empty MBR-formatted partition
+=head2 Create a 1 MB disk with MBR-format partition table
 
  nbdkit data '
-   @0x1b8 178 190 207 221 0 0 0 0 2 0 131 32 32 0 1 0 0 0 255 7
-   @0x1fe 85 170
+   @0x1be    # MBR first partition entry
+     0           # Partition status
+     0 2 0       # CHS start
+     0x83        # Partition type (Linux)
+     0x20 0x20 0 # CHS last sector
+     le32:1      # LBA first sector
+     le32:0x7ff  # LBA number of sectors
+   @0x1fe    # Boot signature
+     0x55 0xaa
    ' size=1M
 
-This example was created by running:
-
- $ rm -f disk
- $ truncate -s 1M disk
- $ echo start=1 | sfdisk disk
- Device Boot Start   End Sectors    Size Id Type
- disk1           1  2047    2047 1023.5K 83 Linux
- $ ./disk2data.pl disk
-
-The C<disk2data.pl> script is provided in the nbdkit sources
+A more flexible way to create partitions is to use
+L<nbdkit-partitioning-plugin(1)>.  To create a data string from an
+existing disk use the C<disk2data.pl> script provided in the nbdkit
+sources
 (L<https://gitlab.com/nbdkit/nbdkit/blob/master/plugins/data/disk2data.pl>).
-
-See also L<nbdkit-partitioning-plugin(1)>.
 
 =head2 Create a disk image with sector-aligned data
 
@@ -195,6 +194,28 @@ Write a byte at the current offset and advance the offset by 1.  The
 byte may be specified as either decimal, octal (prefixed by C<0>) or
 hexadecimal (prefixed by C<0x>).  To add repeated bytes use the C<*>
 operator (eg. C<0xFF*16>).
+
+=item B<le16:>WORD
+
+=item B<be16:>WORD
+
+=item B<le32:>WORD
+
+=item B<be32:>WORD
+
+=item B<le64:>WORD
+
+=item B<be64:>WORD
+
+(nbdkit E<ge> 1.28)
+
+Write a word expressed in little endian (le) or big endian (be) of
+length 16/32/64 bits and advance the offset by 2/4/8.  The word may be
+specified in decimal, octal or hexadecimal.  For example:
+
+ nbdkit data ' be32:0x1 '
+
+generates the 4 byte sequence C<0 0 0 1>.
 
 =item B<@>OFFSET
 
