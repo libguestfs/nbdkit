@@ -9,7 +9,7 @@ nbdkit-python-plugin - nbdkit python plugin
 =head1 DESCRIPTION
 
 C<nbdkit-python-plugin> is an embedded Python interpreter for
-L<nbdkit(1)>, allowing you to write nbdkit plugins in Python.
+L<nbdkit(1)>, allowing you to write nbdkit plugins in Python 3.
 
 =head2 If you have been given an nbdkit Python plugin
 
@@ -49,34 +49,36 @@ loaded, just like ordinary Python.
 
 =head2 Python versions
 
-In B<nbdkit E<le> 1.14>, either Python 2 or 3 could be used.  It was
-selected at compile time by either:
+Since nbdkit E<ge> 1.16 only Python 3 is supported.  If you wish to
+continue using nbdkit plugins written in Python 2 then you must use
+nbdkit E<le> 1.14, but we advise you to update your plugins.
 
- ./configure
+The version of Python 3 is chosen when nbdkit is built.  This is
+compiled in and can't be changed at runtime.  C<./configure> looks for
+(in order):
 
-which selected the version of Python by looking at the C<python>
-interpreter found on the C<$PATH>.  Or:
+=over 4
 
- ./configure PYTHON=/usr/bin/python3
+=item *
 
-which allowed you to select a different interpreter and hence a
-different version of Python.
+the C<PYTHON> variable
+(eg C<./configure PYTHON=/usr/bin/python3.9>)
 
-B<nbdkit E<ge> 1.16> drops all support for Python 2, since Python 2
-has reached its end of life.
+=item *
 
-The new behaviour is that C<./configure> looks for C<python3> or
-C<python> (in that order) on the C<$PATH>.  It will fail if the first
-interpreter it finds is a Python 2 interpreter.  You may also still
-choose a Python interpreter by setting the C<PYTHON> variable at
-configure time as above.
+F<python3> on C<$PATH>
 
-If you wish to continue using nbdkit plugins written in Python 2 then
-you must use nbdkit E<le> 1.14, but we would advise you to update your
-plugins.
+=item *
 
-To find out which version the Python plugin was compiled for, use the
-I<--dump-plugin> option, eg:
+F<python> on C<$PATH>
+
+=back
+
+C<./configure> will fail if the first interpreter found is a Python 2
+interpreter.
+
+To find out which version of Python C<nbdkit-python-plugin> was
+compiled for, use the I<--dump-plugin> option:
 
  $ nbdkit python --dump-plugin
  ...
