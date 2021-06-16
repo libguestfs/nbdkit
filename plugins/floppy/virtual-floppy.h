@@ -198,6 +198,7 @@ struct virtual_floppy {
   uint64_t fat_clusters;        /* Size of FAT (clusters on disk). */
   uint64_t data_size;           /* Size of data region (bytes). */
   uint64_t data_clusters;       /* Size of data region (clusters). */
+  uint64_t data_used_clusters;  /* Size of the used part of the data region. */
 
   /* The disk layout:
    * sector 0:          MBR
@@ -229,8 +230,9 @@ struct virtual_floppy {
 extern void init_virtual_floppy (struct virtual_floppy *floppy)
   __attribute__((__nonnull__ (1)));
 extern int create_virtual_floppy (const char *dir, const char *label,
+                                  uint64_t size,
                                   struct virtual_floppy *floppy)
-  __attribute__((__nonnull__ (1, 2, 3)));
+  __attribute__((__nonnull__ (1, 2, 4)));
 extern void free_virtual_floppy (struct virtual_floppy *floppy)
   __attribute__((__nonnull__ (1)));
 extern int create_directory (size_t di, const char *label,

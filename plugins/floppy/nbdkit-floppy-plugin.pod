@@ -5,7 +5,7 @@ nbdkit-floppy-plugin - create virtual floppy disk from directory
 =head1 SYNOPSIS
 
  nbdkit floppy [dir=]DIRECTORY
-               [label=LABEL]
+               [label=LABEL] [size=SIZE]
 
 =head1 DESCRIPTION
 
@@ -54,6 +54,12 @@ See L<nbdkit(1)/Magic parameters>.
 
 The optional volume label for the filesystem.  This may be up to 11
 ASCII characters.  If omitted, C<NBDKITFLOPY> is used.
+
+=item B<size=>SIZE
+
+Optional total disk size.  If omitted then the disk will only be large
+enough to store all the files and directories from C<DIRECTORY> with
+no free space.
 
 =back
 

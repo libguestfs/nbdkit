@@ -50,6 +50,9 @@ static char *dir = NULL;
 /* Volume label. */
 static const char *label = "NBDKITFLOPY";
 
+/* Filesystem size. */
+static uint64_t size = 0;
+
 /* Virtual floppy. */
 static struct virtual_floppy floppy;
 
@@ -69,6 +72,8 @@ floppy_unload (void)
 static int
 floppy_config (const char *key, const char *value)
 {
+  int64_t r;
+
   if (strcmp (key, "dir") == 0) {
     if (dir != NULL) {
       /* TODO: Support merging of multiple directories, like iso plugin. */
@@ -81,6 +86,12 @@ floppy_config (const char *key, const char *value)
   }
   else if (strcmp (key, "label") == 0) {
     label = value;
+  }
+  else if (strcmp (key, "size") == 0) {
+    r = nbdkit_parse_size (value);
+    if (r == -1)
+      return -1;
+    size = r;
   }
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -109,7 +120,7 @@ floppy_config_complete (void)
 static int
 floppy_get_ready (void)
 {
-  return create_virtual_floppy (dir, label, &floppy);
+  return create_virtual_floppy (dir, label, size, &floppy);
 }
 
 static void *

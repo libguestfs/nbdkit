@@ -85,11 +85,12 @@ init_virtual_floppy (struct virtual_floppy *floppy)
 }
 
 int
-create_virtual_floppy (const char *dir, const char *label,
+create_virtual_floppy (const char *dir, const char *label, uint64_t size,
                        struct virtual_floppy *floppy)
 {
   size_t i;
   uint64_t nr_bytes, nr_clusters;
+  uint64_t data_used_size;
   uint32_t cluster;
 
   if (visit (dir, floppy) == -1)
@@ -112,14 +113,14 @@ create_virtual_floppy (const char *dir, const char *label,
    * The first cluster number is always 2 (0 and 1 are reserved), and
    * (in this implementation) always contains the root directory.
    */
-  floppy->data_size = 0;
+  data_used_size = 0;
   cluster = 2;
   for (i = 0; i < floppy->dirs.size; ++i) {
     floppy->dirs.ptr[i].first_cluster = cluster;
     nr_bytes =
       ROUND_UP (floppy->dirs.ptr[i].table.size * sizeof (struct dir_entry),
                 CLUSTER_SIZE);
-    floppy->data_size += nr_bytes;
+    data_used_size += nr_bytes;
     nr_clusters = nr_bytes / CLUSTER_SIZE;
     if (cluster + nr_clusters > UINT32_MAX)
       goto too_big;
@@ -129,7 +130,7 @@ create_virtual_floppy (const char *dir, const char *label,
   for (i = 0; i < floppy->files.size; ++i) {
     floppy->files.ptr[i].first_cluster = cluster;
     nr_bytes = ROUND_UP (floppy->files.ptr[i].statbuf.st_size, CLUSTER_SIZE);
-    floppy->data_size += nr_bytes;
+    data_used_size += nr_bytes;
     nr_clusters = nr_bytes / CLUSTER_SIZE;
     if (cluster + nr_clusters > UINT32_MAX)
       goto too_big;
@@ -137,7 +138,21 @@ create_virtual_floppy (const char *dir, const char *label,
     cluster += nr_clusters;
   }
 
+  if (size > 0) {
+    uint64_t data_size = size - (2080 * SECTOR_SIZE);
+    data_size = data_size - 2 * DIV_ROUND_UP((data_size / CLUSTER_SIZE + 2) * 4,
+                                             CLUSTER_SIZE) * CLUSTER_SIZE;
+    if (data_used_size > data_size) {
+      nbdkit_error ("filesystem is larger than \"size\" bytes");
+      return -1;
+    }
+    floppy->data_size = data_size;
+  } else {
+    floppy->data_size = data_used_size;
+  }
+
   floppy->data_clusters = floppy->data_size / CLUSTER_SIZE;
+  floppy->data_used_clusters = data_used_size / CLUSTER_SIZE;
 
   /* Despite its name, FAT32 only allows 28 bit cluster numbers, so
    * give an error if we go beyond this.
@@ -198,6 +213,10 @@ create_virtual_floppy (const char *dir, const char *label,
    */
   if (create_regions (floppy) == -1)
     return -1;
+
+  /* Check that if a size was specified, we ended up with it. */
+  if (size > 0)
+    assert (virtual_size (&floppy->regions) == size);
 
   return 0;
 }
@@ -488,7 +507,7 @@ create_partition_boot_sector (const char *label, struct virtual_floppy *floppy)
   floppy->bootsect.sectors_per_track = htole16 (0);
   floppy->bootsect.nr_heads = htole16 (0);
   floppy->bootsect.nr_hidden_sectors = htole32 (0);
-  floppy->bootsect.nr_sectors = htole32 (floppy->data_last_sector + 1);
+  floppy->bootsect.nr_sectors = htole32 (floppy->data_last_sector - 2048 + 1);
 
   floppy->bootsect.sectors_per_fat =
     htole32 (floppy->fat_clusters * SECTORS_PER_CLUSTER);
@@ -524,8 +543,9 @@ create_fsinfo (struct virtual_floppy *floppy)
   floppy->fsinfo.signature2[1] = 0x72;
   floppy->fsinfo.signature2[2] = 0x41;
   floppy->fsinfo.signature2[3] = 0x61;
-  floppy->fsinfo.free_data_clusters = htole32 (0);
-  floppy->fsinfo.last_free_cluster = htole32 (2 + floppy->data_clusters);
+  floppy->fsinfo.free_data_clusters = htole32 (floppy->data_clusters -
+                                               floppy->data_used_clusters);
+  floppy->fsinfo.last_free_cluster = htole32 (2 + floppy->data_used_clusters);
   floppy->fsinfo.signature3[0] = 0x00;
   floppy->fsinfo.signature3[1] = 0x00;
   floppy->fsinfo.signature3[2] = 0x55;
@@ -684,6 +704,15 @@ create_regions (struct virtual_floppy *floppy)
                            floppy->files.ptr[i].statbuf.st_size,
                            0, CLUSTER_SIZE,
                            region_file, i) == -1)
+      return -1;
+  }
+
+  /* Append region for empty data region if we have extra space. */
+  if (floppy->data_used_clusters != floppy->data_clusters) {
+    uint64_t clusters = floppy->data_clusters - floppy->data_used_clusters;
+    if (append_region_len (&floppy->regions, "data padding",
+                           clusters * CLUSTER_SIZE, 0, CLUSTER_SIZE,
+                           region_zero) == -1)
       return -1;
   }
 
