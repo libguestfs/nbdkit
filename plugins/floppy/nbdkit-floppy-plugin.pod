@@ -69,7 +69,9 @@ The maximum size of the disk is around 2TB.  The maximum size of a
 single file is 4GB.  Non-regular files (such as block special,
 symbolic links, sockets) are not supported and will be ignored.
 
-The plugin does not support writes.
+The plugin does not support writes.  L<nbdkit-cow-filter(1)> can be
+placed on top to enable writes, but they will be thrown away when
+nbdkit exits and not written to the underlying directory.
 
 The virtual floppy will not be bootable.  This could be added in
 future (using SYSLINUX) but requires considerable work.  As a
