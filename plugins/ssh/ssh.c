@@ -218,14 +218,6 @@ static int
 do_verify_remote_host (struct ssh_handle *h)
 {
   enum ssh_known_hosts_e state;
-  ssh_key srv_pubkey = NULL;
-  int rc;
-
-  rc = ssh_get_server_publickey (h->session, &srv_pubkey);
-  if (rc < 0) {
-    nbdkit_error ("could not get server public key");
-    return -1;
-  }
 
   state = ssh_session_is_known_server (h->session);
   switch (state) {
