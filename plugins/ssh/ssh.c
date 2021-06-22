@@ -218,22 +218,12 @@ static int
 do_verify_remote_host (struct ssh_handle *h)
 {
   enum ssh_known_hosts_e state;
-  unsigned char *hash = NULL;
   ssh_key srv_pubkey = NULL;
-  size_t hlen;
   int rc;
 
   rc = ssh_get_server_publickey (h->session, &srv_pubkey);
   if (rc < 0) {
     nbdkit_error ("could not get server public key");
-    return -1;
-  }
-  rc = ssh_get_publickey_hash (srv_pubkey,
-                               SSH_PUBLICKEY_HASH_SHA1,
-                               &hash, &hlen);
-  ssh_key_free (srv_pubkey);
-  if (rc < 0) {
-    nbdkit_error ("could not get server public key SHA1 hash");
     return -1;
   }
 
@@ -245,13 +235,11 @@ do_verify_remote_host (struct ssh_handle *h)
 
   case SSH_KNOWN_HOSTS_CHANGED:
     nbdkit_error ("host key for server changed");
-    ssh_clean_pubkey_hash (&hash);
     return -1;
 
   case SSH_KNOWN_HOSTS_OTHER:
     nbdkit_error ("host key for server was not found "
                   "but another type of key exists");
-    ssh_clean_pubkey_hash (&hash);
     return -1;
 
   case SSH_KNOWN_HOSTS_NOT_FOUND:
@@ -259,22 +247,18 @@ do_verify_remote_host (struct ssh_handle *h)
      * host key is set up before using nbdkit so we error out here.
      */
     nbdkit_error ("could not find known_hosts file");
-    ssh_clean_pubkey_hash (&hash);
     return -1;
 
   case SSH_KNOWN_HOSTS_UNKNOWN:
     nbdkit_error ("host key is unknown, you must use ssh first "
                   "and accept the host key");
-    ssh_clean_pubkey_hash (&hash);
     return -1;
 
   case SSH_KNOWN_HOSTS_ERROR:
     nbdkit_error ("known hosts error: %s", ssh_get_error (h->session));
-    ssh_clean_pubkey_hash (&hash);
     return -1;
   }
 
-  ssh_clean_pubkey_hash (&hash);
   return 0;
 }
 
