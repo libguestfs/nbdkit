@@ -100,7 +100,7 @@ rm -f /tmp/socket
 (4) Loop mount the NBD server:
 
 modprobe nbd
-nbd-client -C 8 -b 512 -unix /tmp/socket /dev/nbd0
+nbd-client -C 8 -unix /tmp/socket /dev/nbd0
 mkfs.xfs -f /dev/nbd0
 mkdir /var/tmp/nbd
 mount /dev/nbd0 /var/tmp/nbd

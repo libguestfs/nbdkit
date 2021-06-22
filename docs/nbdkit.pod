@@ -82,7 +82,7 @@ Create a sparse 1 terabyte RAM disk using L<nbdkit-memory-plugin(1)>
 and use it as a loop device (L<nbdkit-loop(1)>):
 
  nbdkit memory 1T
- nbd-client -b 512 localhost /dev/nbd0
+ nbd-client localhost /dev/nbd0
 
 =item *
 
