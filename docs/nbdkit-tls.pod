@@ -68,7 +68,7 @@ C<root_tls_certificates_dir> setting to get the actual directory built
 into the binary.)
 
 You can override both directories above by using
-I<--tls-certificates /path/to/certificates>.
+I<--tls-certificates=/path/to/certificates>.
 
 In this directory, nbdkit expects to find several files:
 
@@ -263,7 +263,7 @@ I<--tls-verify-peer> option.
 
 TLS has a bewildering choice of algorithms that can be used.  To
 enable you to choose a default set of algorithms, there is a configure
-setting C<--with-tls-priority>.  This defaults to C<NORMAL> which, to
+setting I<--with-tls-priority>.  This defaults to C<NORMAL> which, to
 quote the GnuTLS documentation:
 
 =over 4

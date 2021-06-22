@@ -238,7 +238,7 @@ connection (such as during C<.after_fork>), and the resulting context
 may be freely shared among multiple client connections.  In shared
 mode, it will not be possible for the plugin to differentiate content
 based on the client export name, the result of the plugin calling
-nbdkit_is_tls() will depend solely whether C<--tls=require> was on the
+nbdkit_is_tls() will depend solely whether I<--tls=require> was on the
 command line, the lifetime of interned strings (via
 C<nbdkit_strdup_intern> and friends) lasts for the life of the filter,
 and the filter must take care to not expose potentially-secure

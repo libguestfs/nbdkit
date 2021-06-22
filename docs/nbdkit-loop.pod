@@ -17,8 +17,8 @@ are:
 =item nbd-client -b 512 localhost /dev/nbd0
 
 Attaches a locally running nbdkit instance to the kernel device
-F</dev/nbd0>.  I<-b 512> can be omitted when using S<L<nbd-client(8)>
-E<ge> 3.19>.
+F</dev/nbd0>.  S<I<-b 512>> can be omitted when using
+S<L<nbd-client(8)> E<ge> 3.19>.
 
 =item nbd-client -b 512 -unix /tmp/socket /dev/nbd0
 

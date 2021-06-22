@@ -136,7 +136,7 @@ unnecessarily.
 
 =head2 Build
 
-nbdkit and plugins can now be built with C<-fvisibility=hidden>, which
+nbdkit and plugins can now be built with I<-fvisibility=hidden>, which
 allows the compiler to make some optimizations.
 
 Add a dependency so nbdkit is relinked if the linker script
@@ -156,7 +156,7 @@ C<nbdkit_peer_*> implemented on OpenBSD.
 
 =head2 Internals
 
-When fuzzing nbdkit we now recommend using the C<-t 1> flag (which
+When fuzzing nbdkit we now recommend using the S<I<-t 1>> flag (which
 disables threads).  This improves the fuzz-stability of nbdkit.
 
 =head1 SEE ALSO

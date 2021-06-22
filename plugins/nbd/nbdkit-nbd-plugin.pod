@@ -212,7 +212,7 @@ this requires an encrypted connection to the server.
 The C<tls> parameter is only available when the plugin was compiled
 against libnbd with TLS support; C<nbdkit --dump-plugin nbd> will
 contain C<libnbd_tls=1> if this is the case.  Note the difference
-between C<--tls=...> controlling what nbdkit serves, and C<tls=...>
+between I<--tls=...> controlling what nbdkit serves, and C<tls=...>
 controlling what the nbd plugin connects to as a client.
 
 =item B<tls-certificates=>DIR

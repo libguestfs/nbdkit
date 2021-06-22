@@ -57,7 +57,7 @@ L<nbdkit-data-plugin(1)> Use C<<< <file >>> to inline a file.
 
 =item *
 
-L<nbdkit-vddk-plugin(1)>: Use S<C<-D vddk.diskinfo=1>> to enable extra
+L<nbdkit-vddk-plugin(1)>: Use S<I<-D vddk.diskinfo=1>> to enable extra
 debug information.
 
 =item *

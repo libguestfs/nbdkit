@@ -23,7 +23,7 @@ for Windows using Win32 APIs to access the file.
 =head1 DEBUG FLAGS
 
 For extra debugging (only useful for developers) use
-I<-D example2.extra=1>
+S<I<-D example2.extra=1>>
 
 =head1 FILES
 

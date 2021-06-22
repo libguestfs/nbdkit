@@ -23,8 +23,8 @@ supported for building nbdkit (not MSVC).  You can also cross-compile
 from Linux and test under Wine.  Some features are missing although it
 is very usable.
 
-New I<-D nbdkit.tls.log> and I<-D nbdkit.tls.session> debug flags
-which enable additional debugging for TLS sessions.
+New S<I<-D nbdkit.tls.log>> and S<I<-D nbdkit.tls.session>> debug
+flags which enable additional debugging for TLS sessions.
 
 The server now responds to C<NBD_INFO_NAME> (Eric Blake).
 

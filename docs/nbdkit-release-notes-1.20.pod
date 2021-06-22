@@ -88,7 +88,7 @@ if plugins returned anything other than 1 for true (Eric Blake).
 nbdkit-tar-plugin now works and there is a regression test for
 it.
 
-L<nbdkit-curl-plugin(1)> C<-D curl.version=1> option now works.
+L<nbdkit-curl-plugin(1)> S<I<-D curl.version=1>> option now works.
 
 Fixed a rare hang when closing a connection in L<nbdkit-nbd-plugin(1)>
 (Eric Blake).
