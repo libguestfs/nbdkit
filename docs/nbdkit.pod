@@ -561,8 +561,8 @@ languages.  The file should be executable.  For example:
 
 As well as enabling or disabling debugging in the server using
 I<--verbose> you can control extra debugging in the server using the
-C<-D nbdkit.*> flags listed in this section.  Note these flags are an
-internal implementation detail of the server and may be changed or
+S<I<-D nbdkit.*>> flags listed in this section.  Note these flags are
+an internal implementation detail of the server and may be changed or
 removed at any time in the future.
 
 =over 4
@@ -580,12 +580,12 @@ These flags control the verbosity of nbdkit backend debugging messages
 default for both settings is C<1> (normal debugging) but you can set
 them to C<0> to suppress these messages.
 
-C<-D nbdkit.backend.datapath=0> is the more useful setting which lets you
-suppress messages about pread, pwrite, zero, trim, etc. commands.
-When transferring large amounts of data these messages are numerous
-and not usually very interesting.
+S<I<-D nbdkit.backend.datapath=0>> is the more useful setting which
+lets you suppress messages about pread, pwrite, zero, trim,
+etc. commands.  When transferring large amounts of data these messages
+are numerous and not usually very interesting.
 
-C<-D nbdkit.backend.controlpath=0> suppresses the non-datapath
+S<I<-D nbdkit.backend.controlpath=0>> suppresses the non-datapath
 commands (config, open, close, can_write, etc.)
 
 =item B<-D nbdkit.tls.log=>N

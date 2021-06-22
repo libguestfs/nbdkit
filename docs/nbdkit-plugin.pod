@@ -296,7 +296,7 @@ gracefully end any background threads.
 
 is called once just before the plugin is unloaded from memory.  This
 is called even when nbdkit did not need to use C<.after_fork> (such as
-when using C<--dump-plugin> to display documentation about the
+when using I<--dump-plugin> to display documentation about the
 plugin).
 
 =back

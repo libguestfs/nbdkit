@@ -93,7 +93,8 @@ The reverse is to get qemu-img to read from a pipe:
  nbdkit -U - streaming read=./pipe \
         --run ' qemu-img convert -f raw $nbd -O qcow2 output.qcow2 '
 
-For use of the I<--run> and I<-U -> options, see L<nbdkit-captive(1)>.
+For use of the I<--run> and S<I<-U ->> options, see
+L<nbdkit-captive(1)>.
 
 =head1 PARAMETERS
 
