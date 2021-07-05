@@ -37,8 +37,12 @@ set -x
 requires test "x$vddkdir" != "x"
 requires test -d "$vddkdir"
 requires test -f "$vddkdir/lib64/libvixDiskLib.so"
+requires test -r /dev/urandom
+requires cmp --version
+requires dd --version
 requires qemu-img --version
 requires nbdcopy --version
+requires nbdinfo --version
 requires stat --version
 
 # VDDK > 5.1.1 only supports x86_64.
@@ -47,31 +51,48 @@ if [ `uname -m` != "x86_64" ]; then
     exit 77
 fi
 
-files="test-vddk-real.vmdk test-vddk-real.out test-vddk-real.log"
-rm -f $files
-cleanup_fn rm -f $files
-
-qemu-img create -f vmdk test-vddk-real.vmdk 100M
-
 # Since we are comparing error messages below, let's make sure we're
 # not translating errors.
 export LANG=C
 
-fail=0
-nbdkit -f -v -U - \
-       --filter=readahead \
-       vddk libdir="$vddkdir" test-vddk-real.vmdk \
-       --run 'nbdcopy "$uri" test-vddk-real.out' \
-       > test-vddk-real.log 2>&1 || fail=1
+pid=test-vddk-real.pid
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
+vmdk=$PWD/test-vddk-real.vmdk ;# note must be an absolute path
+raw=test-vddk-real.raw
+raw2=test-vddk-real.raw2
+log=test-vddk-real.log
+files="$pid $sock $vmdk $raw $raw2 $log"
+rm -f $files
+cleanup_fn rm -f $files
+
+qemu-img create -f vmdk $vmdk 10M
+
+# Check first that the VDDK library can be fully loaded.  We have to
+# check the log file for missing modules since they may not show up as
+# errors.
+nbdkit -fv -U - vddk libdir="$vddkdir" $vmdk --run 'nbdinfo "$uri"' >$log 2>&1
 
 # Check the log for missing modules
-cat test-vddk-real.log
+cat $log
 if grep 'cannot open shared object file' test-vddk-real.log; then
    exit 1
 fi
 
-# Check the raw output file has exactly the right size.
-size="$(stat -c '%s' test-vddk-real.out)"
-test "$size" -eq $((100 * 1024 * 1024))
+# Now run nbdkit for the test.
+start_nbdkit -P $pid -U $sock vddk libdir="$vddkdir" $vmdk
+uri="nbd+unix:///?socket=$sock"
 
-exit $fail
+# VDDK < 6.0 did not support flush, so disable flush test there.  Also
+# if nbdinfo doesn't support the --can flush syntax (added in libnbd
+# 1.10) then this is disabled.
+if nbdinfo --can flush "$uri"; then flush="--flush"; else flush=""; fi
+
+# Copy in and out some data.  This should exercise read, write,
+# extents and flushing.
+dd if=/dev/urandom of=$raw count=5 bs=$((1024*1024))
+truncate -s 10M $raw
+
+nbdcopy $flush $raw "$uri"
+nbdcopy "$uri" $raw2
+
+cmp $raw $raw2
