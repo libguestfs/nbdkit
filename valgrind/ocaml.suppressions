@@ -29,11 +29,12 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# OCaml, by design, doesn't bother to free the major heap before
-# calling exit.  Ignore that leak.
+# OCaml caml_stat_* allocations are meant to be "static" so OCaml will
+# never free them by design.  See the OCaml manual, chapter
+# "Interfacing C with OCaml".
 {
-   ocaml_heap_leak
+   ocaml_stat_allocations
    Memcheck:Leak
    ...
-   fun:caml_alloc_for_heap
+   fun:caml_stat_alloc*
 }
