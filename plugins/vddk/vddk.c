@@ -772,10 +772,26 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
     return -1;
   }
 
-  if (fua && vddk_flush (handle, 0) == -1)
-    return -1;
+  if (fua) {
+    if (vddk_flush (handle, 0) == -1)
+      return -1;
+  }
 
   return 0;
+}
+
+static int
+vddk_can_fua (void *handle)
+{
+  /* The Flush call was not available in VDDK < 6.0. */
+  return VixDiskLib_Flush != NULL ? NBDKIT_FUA_NATIVE : NBDKIT_FUA_NONE;
+}
+
+static int
+vddk_can_flush (void *handle)
+{
+  /* The Flush call was not available in VDDK < 6.0. */
+  return VixDiskLib_Flush != NULL;
 }
 
 /* Flush data to the file. */
@@ -784,12 +800,6 @@ vddk_flush (void *handle, uint32_t flags)
 {
   struct vddk_handle *h = handle;
   VixError err;
-
-  /* The Flush call was not available in VDDK < 6.0 so this is simply
-   * ignored on earlier versions.
-   */
-  if (VixDiskLib_Flush == NULL)
-    return 0;
 
   DEBUG_CALL ("VixDiskLib_Flush", "handle");
   err = VixDiskLib_Flush (h->handle);
@@ -985,6 +995,8 @@ static struct nbdkit_plugin plugin = {
   .get_size          = vddk_get_size,
   .pread             = vddk_pread,
   .pwrite            = vddk_pwrite,
+  .can_fua           = vddk_can_fua,
+  .can_flush         = vddk_can_flush,
   .flush             = vddk_flush,
   .can_extents       = vddk_can_extents,
   .extents           = vddk_extents,
