@@ -131,6 +131,10 @@ unload_wrapper (void)
   free ((char *) plugin.config_help);
 
   remove_roots ();
+
+#ifdef HAVE_CAML_SHUTDOWN
+  caml_shutdown ();
+#endif
 }
 
 static void

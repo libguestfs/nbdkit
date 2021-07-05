@@ -857,6 +857,24 @@ EOF
     rm -f conftest.c conftest.o
 ])
 
+dnl Check if OCaml has caml_shutdown (added 2014).
+AS_IF([test "x$OCAMLC" != "xno" && test "x$OCAMLFIND" != "xno" && \
+       test "x$enable_ocaml" = "xyes"],[
+    AC_MSG_CHECKING([for caml_shutdown])
+    cat >conftest.c <<'EOF'
+#include <caml/callback.h>
+int main () { char *p = (void *) caml_shutdown; return 0; }
+EOF
+    AS_IF([$OCAMLC conftest.c >&AS_MESSAGE_LOG_FD 2>&1],[
+        AC_MSG_RESULT([yes])
+        AC_DEFINE([HAVE_CAML_SHUTDOWN],[1],
+                  [caml_shutdown found at compile time.])
+    ],[
+        AC_MSG_RESULT([no])
+    ])
+    rm -f conftest.c conftest.o
+])
+
 dnl For developing plugins in Rust, optional.
 AC_CHECK_PROG([CARGO],[cargo],[cargo],[no])
 AC_ARG_ENABLE([rust],
