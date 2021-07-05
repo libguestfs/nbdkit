@@ -130,6 +130,9 @@ state_to_string (enum bm_entry state)
   }
 }
 
+/* Extra debugging (-D cow.verbose=1). */
+NBDKIT_DLL_PUBLIC int cow_debug_verbose = 0;
+
 int
 blk_init (void)
 {
@@ -241,8 +244,9 @@ blk_read (nbdkit_next *next,
     state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
   }
 
-  nbdkit_debug ("cow: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
-                blknum, (uint64_t) offset, state_to_string (state));
+  if (cow_debug_verbose)
+    nbdkit_debug ("cow: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
+                  blknum, (uint64_t) offset, state_to_string (state));
 
   if (state == BLOCK_NOT_ALLOCATED) { /* Read underlying plugin. */
     unsigned n = BLKSIZE, tail = 0;
@@ -291,8 +295,9 @@ blk_cache (nbdkit_next *next,
     n -= tail;
   }
 
-  nbdkit_debug ("cow: blk_cache block %" PRIu64 " (offset %" PRIu64 ") is %s",
-                blknum, (uint64_t) offset, state_to_string (state));
+  if (cow_debug_verbose)
+    nbdkit_debug ("cow: blk_cache block %" PRIu64 " (offset %" PRIu64 ") is %s",
+                  blknum, (uint64_t) offset, state_to_string (state));
 
   if (state == BLOCK_ALLOCATED) {
 #if HAVE_POSIX_FADVISE
@@ -336,8 +341,9 @@ blk_write (uint64_t blknum, const uint8_t *block, int *err)
 {
   off_t offset = blknum * BLKSIZE;
 
-  nbdkit_debug ("cow: blk_write block %" PRIu64 " (offset %" PRIu64 ")",
-                blknum, (uint64_t) offset);
+  if (cow_debug_verbose)
+    nbdkit_debug ("cow: blk_write block %" PRIu64 " (offset %" PRIu64 ")",
+                  blknum, (uint64_t) offset);
 
   if (pwrite (fd, block, BLKSIZE, offset) == -1) {
     *err = errno;
@@ -356,8 +362,9 @@ blk_trim (uint64_t blknum, int *err)
 {
   off_t offset = blknum * BLKSIZE;
 
-  nbdkit_debug ("cow: blk_trim block %" PRIu64 " (offset %" PRIu64 ")",
-                blknum, (uint64_t) offset);
+  if (cow_debug_verbose)
+    nbdkit_debug ("cow: blk_trim block %" PRIu64 " (offset %" PRIu64 ")",
+                  blknum, (uint64_t) offset);
 
   /* XXX As an optimization we could punch a whole in the overlay
    * here.  However it's not trivial since BLKSIZE is unrelated to the
