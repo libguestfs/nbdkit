@@ -233,6 +233,22 @@ after_fork_wrapper (void)
   CAMLreturnT (int, 0);
 }
 
+static void
+cleanup_wrapper (void)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
+
+  rv = caml_callback_exn (cleanup_fn, Val_unit);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    CAMLreturn0;
+  }
+
+  CAMLreturn0;
+}
+
 static int
 preconnect_wrapper (int readonly)
 {

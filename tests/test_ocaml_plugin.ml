@@ -43,6 +43,9 @@ let get_ready () =
    *)
   NBDKit.debug "test ocaml plugin getting ready"
 
+let cleanup () =
+  NBDKit.debug "test ocaml plugin cleaning up"
+
 let open_connection readonly =
   let export_name = NBDKit.export_name () in
   NBDKit.debug "test ocaml plugin handle opened readonly=%b export=%S"
@@ -100,6 +103,7 @@ let plugin = {
 
     load            = Some load;
     get_ready       = Some get_ready;
+    cleanup         = Some cleanup;
     unload          = Some unload;
 
     config          = Some config;

@@ -79,6 +79,7 @@ type 'a plugin = {
   load : (unit -> unit) option;
   get_ready : (unit -> unit) option;
   after_fork : (unit -> unit) option;
+  cleanup : (unit -> unit) option;
   unload : (unit -> unit) option;
 
   (* Plugin configuration. *)

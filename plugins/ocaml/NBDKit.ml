@@ -67,6 +67,7 @@ type 'a plugin = {
   load : (unit -> unit) option;
   get_ready : (unit -> unit) option;
   after_fork : (unit -> unit) option;
+  cleanup : (unit -> unit) option;
   unload : (unit -> unit) option;
 
   config : (string -> string -> unit) option;
@@ -113,6 +114,7 @@ let default_callbacks = {
   load = None;
   get_ready = None;
   after_fork = None;
+  cleanup = None;
   unload = None;
 
   config = None;
@@ -193,6 +195,7 @@ let register_plugin plugin =
   may (set_field "can_trim") plugin.can_trim;
   may (set_field "can_write") plugin.can_write;
   may (set_field "can_zero") plugin.can_zero;
+  may (set_field "cleanup") plugin.cleanup;
   may (set_field "close") plugin.close;
   may (set_field "config") plugin.config;
   may (set_field "config_complete") plugin.config_complete;
