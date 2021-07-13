@@ -99,6 +99,7 @@ let plugin = {
     version         = NBDKit.version ();
 
     load            = Some load;
+    get_ready       = Some get_ready;
     unload          = Some unload;
     config          = Some config;
     config_complete = Some config_complete;
