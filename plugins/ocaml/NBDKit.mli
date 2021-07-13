@@ -69,33 +69,31 @@ type thread_model =
     The ['a] parameter is the handle type returned by your
     [open_connection] method and passed back to all connected calls. *)
 type 'a plugin = {
-  name : string;                                  (* required *)
+  (* Plugin description. *)
+  name : string;                (** required field *)
   longname : string;
   version : string;
   description : string;
 
+  (* Plugin lifecycle. *)
   load : (unit -> unit) option;
+  get_ready : (unit -> unit) option;
+  after_fork : (unit -> unit) option;
   unload : (unit -> unit) option;
 
-  dump_plugin : (unit -> unit) option;
-
+  (* Plugin configuration. *)
   config : (string -> string -> unit) option;
   config_complete : (unit -> unit) option;
   config_help : string;
   thread_model : (unit -> thread_model) option;
 
-  get_ready : (unit -> unit) option;
-  after_fork : (unit -> unit) option;
-
+  (* Connection lifecycle. *)
   preconnect : (bool -> unit) option;
-  list_exports : (bool -> bool -> export list) option;
-  default_export : (bool -> bool -> string) option;
-  open_connection : (bool -> 'a) option;          (* required *)
+  open_connection : (bool -> 'a) option; (** required field *)
   close : ('a -> unit) option;
 
-  get_size : ('a -> int64) option;                (* required *)
-  export_description : ('a -> string) option;
-
+  (* NBD negotiation. *)
+  get_size : ('a -> int64) option; (** required field *)
   can_cache : ('a -> cache_flag) option;
   can_extents : ('a -> bool) option;
   can_fast_zero : ('a -> bool) option;
@@ -107,13 +105,20 @@ type 'a plugin = {
   can_zero : ('a -> bool) option;
   is_rotational : ('a -> bool) option;
 
-  pread : ('a -> int32 -> int64 -> flags -> string) option;  (* required *)
+  (* Serving data. *)
+  pread : ('a -> int32 -> int64 -> flags -> string) option; (* required field *)
   pwrite : ('a -> string -> int64 -> flags -> unit) option;
   flush : ('a -> flags -> unit) option;
   trim : ('a -> int32 -> int64 -> flags -> unit) option;
   zero : ('a -> int32 -> int64 -> flags -> unit) option;
   extents : ('a -> int32 -> int64 -> flags -> extent list) option;
   cache : ('a -> int32 -> int64 -> flags -> unit) option;
+
+  (* Miscellaneous. *)
+  dump_plugin : (unit -> unit) option;
+  list_exports : (bool -> bool -> export list) option;
+  default_export : (bool -> bool -> string) option;
+  export_description : ('a -> string) option;
 }
 
 (** The plugin with all fields set to [None], so you can write
