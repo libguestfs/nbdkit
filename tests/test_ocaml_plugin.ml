@@ -101,19 +101,20 @@ let plugin = {
     load            = Some load;
     get_ready       = Some get_ready;
     unload          = Some unload;
+
     config          = Some config;
     config_complete = Some config_complete;
+    thread_model    = Some thread_model;
 
     open_connection = Some open_connection;
     close           = Some close;
-    list_exports    = Some list_exports;
-    default_export  = Some default_export;
     get_size        = Some get_size;
     pread           = Some pread;
     pwrite          = Some pwrite;
-
     extents         = Some extents;
-    thread_model    = Some thread_model;
+
+    list_exports    = Some list_exports;
+    default_export  = Some default_export;
 }
 
 let () = NBDKit.register_plugin plugin
