@@ -43,6 +43,9 @@ let get_ready () =
    *)
   NBDKit.debug "test ocaml plugin getting ready"
 
+let after_fork () =
+  NBDKit.debug "test ocaml plugin after fork"
+
 let cleanup () =
   NBDKit.debug "test ocaml plugin cleaning up"
 
@@ -103,6 +106,7 @@ let plugin = {
 
     load            = Some load;
     get_ready       = Some get_ready;
+    after_fork      = Some after_fork;
     cleanup         = Some cleanup;
     unload          = Some unload;
 
