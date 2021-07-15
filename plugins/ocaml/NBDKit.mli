@@ -106,7 +106,7 @@ type 'a plugin = {
   is_rotational : ('a -> bool) option;
 
   (* Serving data. *)
-  pread : ('a -> int32 -> int64 -> flags -> string) option; (* required field *)
+  pread : ('a -> int32 -> int64 -> flags -> string) option;(** required field *)
   pwrite : ('a -> string -> int64 -> flags -> unit) option;
   flush : ('a -> flags -> unit) option;
   trim : ('a -> int32 -> int64 -> flags -> unit) option;
