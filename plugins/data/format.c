@@ -45,6 +45,7 @@
 
 #include "allocator.h"
 #include "ascii-ctype.h"
+#include "byte-swapping.h"
 #include "cleanup.h"
 #include "ispowerof2.h"
 #include "minmax.h"
