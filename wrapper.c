@@ -74,10 +74,7 @@
 #include "options.h"
 #include "windows-compat.h"
 #include "utils.h"
-
-/* Construct an array of parameters passed through to real nbdkit. */
-static const char **cmd;
-static size_t len;
+#include "vector.h"
 
 /* Plugins written in scripting languages need to be rewritten on the
  * command line in a different way from plugins written in C.  So we
@@ -98,14 +95,15 @@ is_script_plugin (const char *name, const char **language)
   return false;
 }
 
+/* Construct an array of parameters passed through to real nbdkit. */
+DEFINE_VECTOR_TYPE(string_vector, const char *)
+static string_vector cmd;
+
 static void
 passthru (const char *s)
 {
-  cmd = realloc (cmd, (len+1) * sizeof (const char *));
-  if (cmd == NULL)
+  if (string_vector_append (&cmd, s) == -1)
     abort ();
-  cmd[len] = s;
-  ++len;
 }
 
 static void __attribute__((format (printf, 1, 2)))
@@ -132,11 +130,11 @@ print_command (void)
 {
   size_t i;
 
-  if (len > 0)
-    shell_quote (cmd[0], stderr);
-  for (i = 1; i < len && cmd[i] != NULL; ++i) {
+  if (cmd.size > 0)
+    shell_quote (cmd.ptr[0], stderr);
+  for (i = 1; i < cmd.size && cmd.ptr[i] != NULL; ++i) {
     fputc (' ', stderr);
-    shell_quote (cmd[i], stderr);
+    shell_quote (cmd.ptr[i], stderr);
   }
   fputc ('\n', stderr);
 }
@@ -358,16 +356,16 @@ main (int argc, char *argv[])
 
   /* Run the final command. */
 #ifndef WIN32
-  execvp (cmd[0], (char **) cmd);
-  perror (cmd[0]);
+  execvp (cmd.ptr[0], (char **) cmd.ptr);
+  perror (cmd.ptr[0]);
   exit (EXIT_FAILURE);
 #else /* WIN32 */
   size_t i;
-  for (i = 1; cmd[i] != NULL; ++i)
-    cmd[i] = quote_string_for_spawn (cmd[i]);
-  r = _spawnvp (_P_WAIT, cmd[0], cmd);
+  for (i = 1; cmd.ptr[i] != NULL; ++i)
+    cmd.ptr[i] = quote_string_for_spawn (cmd.ptr[i]);
+  r = _spawnvp (_P_WAIT, cmd.ptr[0], cmd.ptr);
   if (r == -1) {
-    perror (cmd[0]);
+    perror (cmd.ptr[0]);
     exit (EXIT_FAILURE);
   }
   exit (r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
