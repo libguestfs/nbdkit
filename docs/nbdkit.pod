@@ -377,9 +377,11 @@ socket.
 
 The common — perhaps only — use of this option is to allow libvirt
 guests which are using SELinux and sVirt confinement to access nbdkit
-Unix domain sockets:
+Unix domain sockets.  The example below shows how to do this.  Note
+that the socket and filesystem labels are different.
 
- nbdkit --selinux-label system_u:object_r:svirt_t:s0 ...
+ nbdkit -U /tmp/sock --selinux-label=system_u:object_r:svirt_socket_t:s0 ...
+ chcon system_u:object_r:svirt_image_t:s0 /tmp/sock
 
 =item B<--swap>
 
