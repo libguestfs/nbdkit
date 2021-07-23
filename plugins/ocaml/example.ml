@@ -73,7 +73,7 @@ let pwrite h buf offset _ =
   String.blit buf 0 !disk offset len
 
 let thread_model () =
-  NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS
+  NBDKit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
 let plugin = {
   NBDKit.default_callbacks with

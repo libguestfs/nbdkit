@@ -97,7 +97,7 @@ let extents () count offset _ =
   Array.to_list extents
 
 let thread_model () =
-  NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS
+  NBDKit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
 let plugin = {
   NBDKit.default_callbacks with

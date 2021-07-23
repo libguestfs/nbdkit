@@ -36,7 +36,8 @@ Your OCaml code should call C<NBDKit.register_plugin> like this:
      open_connection = Some myplugin_open;
      get_size        = Some myplugin_get_size;
      pread           = Some myplugin_pread;
-     thread_model    = Some (fun () -> NBDKit.THREAD_MODEL_SERIALIZE_CONNECTIONS);
+     thread_model    =
+         Some (fun () -> NBDKit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
      (* etc *)
  }
  
