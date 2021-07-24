@@ -1404,6 +1404,7 @@ TESTS += \
 	test-cow.sh \
 	test-cow-extents1.sh \
 	test-cow-extents2.sh \
+	test-cow-extents-large.sh \
 	test-cow-unaligned.sh \
 	$(NULL)
 endif
@@ -1412,6 +1413,7 @@ EXTRA_DIST += \
 	test-cow.sh \
 	test-cow-extents1.sh \
 	test-cow-extents2.sh \
+	test-cow-extents-large.sh \
 	test-cow-null.sh \
 	test-cow-unaligned.sh \
 	$(NULL)

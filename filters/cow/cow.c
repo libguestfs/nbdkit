@@ -571,19 +571,23 @@ cow_cache (nbdkit_next *next,
 /* Extents. */
 static int
 cow_extents (nbdkit_next *next,
-             void *handle, uint32_t count, uint64_t offset, uint32_t flags,
+             void *handle, uint32_t count32, uint64_t offset, uint32_t flags,
              struct nbdkit_extents *extents, int *err)
 {
   const bool can_extents = next->can_extents (next);
   const bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
+  uint64_t count = count32;
   uint64_t end;
   uint64_t blknum;
 
-  /* To make this easier, align the requested extents to whole blocks. */
+  /* To make this easier, align the requested extents to whole blocks.
+   * Note that count is a 64 bit variable containing at most a 32 bit
+   * value so rounding up is safe here.
+   */
   end = offset + count;
   offset = ROUND_DOWN (offset, BLKSIZE);
   end = ROUND_UP (end, BLKSIZE);
-  count  = end - offset;
+  count = end - offset;
   blknum = offset / BLKSIZE;
 
   assert (IS_ALIGNED (offset, BLKSIZE));
@@ -628,6 +632,12 @@ cow_extents (nbdkit_next *next,
        * as we can.
        */
       for (;;) {
+        /* nbdkit_extents_full cannot read more than a 32 bit range
+         * (range_count), but count is a 64 bit quantity, so don't
+         * overflow range_count here.
+         */
+        if (range_count >= UINT32_MAX - BLKSIZE + 1) break;
+
         blknum++;
         offset += BLKSIZE;
         count -= BLKSIZE;
