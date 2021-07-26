@@ -210,7 +210,7 @@ cow_pread (nbdkit_next *next,
            uint32_t flags, int *err)
 {
   CLEANUP_FREE uint8_t *block = NULL;
-  uint64_t blknum, blkoffs;
+  uint64_t blknum, blkoffs, nrblocks;
   int r;
 
   if (!IS_ALIGNED (count | offset, BLKSIZE)) {
@@ -243,21 +243,16 @@ cow_pread (nbdkit_next *next,
   }
 
   /* Aligned body */
-  /* XXX This breaks up large read requests into smaller ones, which
-   * is a problem for plugins which have a large, fixed per-request
-   * overhead (hello, curl).  We should try to keep large requests
-   * together as much as possible, but that requires us to be much
-   * smarter here.
-   */
-  while (count >= BLKSIZE) {
-    r = blk_read (next, blknum, buf, err);
+  nrblocks = count / BLKSIZE;
+  if (nrblocks > 0) {
+    r = blk_read_multiple (next, blknum, nrblocks, buf, err);
     if (r == -1)
       return -1;
 
-    buf += BLKSIZE;
-    count -= BLKSIZE;
-    offset += BLKSIZE;
-    blknum++;
+    buf += nrblocks * BLKSIZE;
+    count -= nrblocks * BLKSIZE;
+    offset += nrblocks * BLKSIZE;
+    blknum += nrblocks;
   }
 
   /* Unaligned tail */

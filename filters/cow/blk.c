@@ -79,6 +79,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <errno.h>
 #include <sys/types.h>
 
@@ -219,33 +220,48 @@ blk_status (uint64_t blknum, bool *present, bool *trimmed)
   *trimmed = state == BLOCK_TRIMMED;
 }
 
-/* These are the block operations.  They always read or write a single
- * whole block of size ‘blksize’.
+/* These are the block operations.  They always read or write whole
+ * blocks of size ‘blksize’.
  */
 int
-blk_read (nbdkit_next *next,
-          uint64_t blknum, uint8_t *block, int *err)
+blk_read_multiple (nbdkit_next *next,
+                   uint64_t blknum, uint64_t nrblocks,
+                   uint8_t *block, int *err)
 {
   off_t offset = blknum * BLKSIZE;
   enum bm_entry state;
+  uint64_t b, runblocks;
 
-  /* The state might be modified from another thread - for example
-   * another thread might write (BLOCK_NOT_ALLOCATED ->
-   * BLOCK_ALLOCATED) while we are reading from the plugin, returning
-   * the old data.  However a read issued after the write returns
-   * should always return the correct data.
+  /* Find out how many of the following blocks form a "run" with the
+   * same state.  We can process that many blocks in one go.
+   *
+   * About the locking: The state might be modified from another
+   * thread - for example another thread might write
+   * (BLOCK_NOT_ALLOCATED -> BLOCK_ALLOCATED) while we are reading
+   * from the plugin, returning the old data.  However a read issued
+   * after the write returns should always return the correct data.
    */
   {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
+
+    for (b = 1, runblocks = 1; b < nrblocks; ++b, ++runblocks) {
+      enum bm_entry s = bitmap_get_blk (&bm, blknum + b, BLOCK_NOT_ALLOCATED);
+      if (state != s)
+        break;
+    }
   }
 
   if (cow_debug_verbose)
-    nbdkit_debug ("cow: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
+    nbdkit_debug ("cow: blk_read_multiple block %" PRIu64
+                  " (offset %" PRIu64 ") is %s",
                   blknum, (uint64_t) offset, state_to_string (state));
 
   if (state == BLOCK_NOT_ALLOCATED) { /* Read underlying plugin. */
-    unsigned n = BLKSIZE, tail = 0;
+    unsigned n, tail = 0;
+
+    assert (BLKSIZE * runblocks <= UINT_MAX);
+    n = BLKSIZE * runblocks;
 
     if (offset + n > size) {
       tail = offset + n - size;
@@ -260,20 +276,35 @@ blk_read (nbdkit_next *next,
      * zeroing the tail.
      */
     memset (block + n, 0, tail);
-    return 0;
   }
   else if (state == BLOCK_ALLOCATED) { /* Read overlay. */
-    if (pread (fd, block, BLKSIZE, offset) == -1) {
+    if (pread (fd, block, BLKSIZE * runblocks, offset) == -1) {
       *err = errno;
       nbdkit_error ("pread: %m");
       return -1;
     }
-    return 0;
   }
   else /* state == BLOCK_TRIMMED */ {
-    memset (block, 0, BLKSIZE);
-    return 0;
+    memset (block, 0, BLKSIZE * runblocks);
   }
+
+  /* If all done, return. */
+  if (runblocks == nrblocks)
+    return 0;
+
+  /* Recurse to read remaining blocks. */
+  return blk_read_multiple (next,
+                            blknum + runblocks,
+                            nrblocks - runblocks,
+                            block + BLKSIZE * runblocks,
+                            err);
+}
+
+int
+blk_read (nbdkit_next *next,
+          uint64_t blknum, uint8_t *block, int *err)
+{
+  return blk_read_multiple (next, blknum, 1, block, err);
 }
 
 int
