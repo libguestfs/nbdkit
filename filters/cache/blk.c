@@ -44,6 +44,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <errno.h>
 
 #ifdef HAVE_SYS_STATVFS_H
@@ -193,26 +194,40 @@ blk_set_size (uint64_t new_size)
   return 0;
 }
 
-int
-blk_read (nbdkit_next *next,
-          uint64_t blknum, uint8_t *block, int *err)
+static int
+_blk_read_multiple (nbdkit_next *next,
+                    uint64_t blknum, uint64_t nrblocks,
+                    uint8_t *block, int *err)
 {
   off_t offset = blknum * blksize;
-  enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_CACHED);
+  bool not_cached =
+    bitmap_get_blk (&bm, blknum, BLOCK_NOT_CACHED) == BLOCK_NOT_CACHED;
+  uint64_t b, runblocks;
 
-  reclaim (fd, &bm);
+  assert (nrblocks > 0);
 
   if (cache_debug_verbose)
-    nbdkit_debug ("cache: blk_read block %" PRIu64
+    nbdkit_debug ("cache: blk_read_multiple block %" PRIu64
                   " (offset %" PRIu64 ") is %s",
                   blknum, (uint64_t) offset,
-                  state == BLOCK_NOT_CACHED ? "not cached" :
-                  state == BLOCK_CLEAN ? "clean" :
-                  state == BLOCK_DIRTY ? "dirty" :
-                  "unknown");
+                  not_cached ? "not cached" : "cached");
 
-  if (state == BLOCK_NOT_CACHED) { /* Read underlying plugin. */
-    unsigned n = blksize, tail = 0;
+  /* Find out how many of the following blocks form a "run" with the
+   * same cached/not-cached state.  We can process that many blocks in
+   * one go.
+   */
+  for (b = 1, runblocks = 1; b < nrblocks; ++b, ++runblocks) {
+    bool s =
+      bitmap_get_blk (&bm, blknum + b, BLOCK_NOT_CACHED) == BLOCK_NOT_CACHED;
+    if (not_cached != s)
+      break;
+  }
+
+  if (not_cached) {             /* Read underlying plugin. */
+    unsigned n, tail = 0;
+
+    assert (blksize * runblocks <= UINT_MAX);
+    n = blksize * runblocks;
 
     if (offset + n > size) {
       tail = offset + n - size;
@@ -228,32 +243,60 @@ blk_read (nbdkit_next *next,
      */
     memset (block + n, 0, tail);
 
-    /* If cache-on-read, copy the block to the cache. */
+    /* If cache-on-read, copy the blocks to the cache. */
     if (cache_on_read) {
       if (cache_debug_verbose)
         nbdkit_debug ("cache: cache-on-read block %" PRIu64
                       " (offset %" PRIu64 ")",
                       blknum, (uint64_t) offset);
 
-      if (pwrite (fd, block, blksize, offset) == -1) {
+      if (pwrite (fd, block, blksize * runblocks, offset) == -1) {
         *err = errno;
         nbdkit_error ("pwrite: %m");
         return -1;
       }
-      bitmap_set_blk (&bm, blknum, BLOCK_CLEAN);
-      lru_set_recently_accessed (blknum);
+      for (b = 0; b < runblocks; ++b) {
+        bitmap_set_blk (&bm, blknum + b, BLOCK_CLEAN);
+        lru_set_recently_accessed (blknum + b);
+      }
     }
-    return 0;
   }
   else {                        /* Read cache. */
-    if (pread (fd, block, blksize, offset) == -1) {
+    if (pread (fd, block, blksize * runblocks, offset) == -1) {
       *err = errno;
       nbdkit_error ("pread: %m");
       return -1;
     }
-    lru_set_recently_accessed (blknum);
-    return 0;
+    for (b = 0; b < runblocks; ++b)
+      lru_set_recently_accessed (blknum + b);
   }
+
+  /* If all done, return. */
+  if (runblocks == nrblocks)
+    return 0;
+
+  /* Recurse to read remaining blocks. */
+  return _blk_read_multiple (next,
+                             blknum + runblocks,
+                             nrblocks - runblocks,
+                             block + blksize * runblocks,
+                             err);
+}
+
+int
+blk_read_multiple (nbdkit_next *next,
+                   uint64_t blknum, uint64_t nrblocks,
+                   uint8_t *block, int *err)
+{
+  reclaim (fd, &bm);
+  return _blk_read_multiple (next, blknum, nrblocks, block, err);
+}
+
+int
+blk_read (nbdkit_next *next,
+          uint64_t blknum, uint8_t *block, int *err)
+{
+  return blk_read_multiple (next, blknum, 1, block, err);
 }
 
 int

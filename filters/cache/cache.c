@@ -313,7 +313,7 @@ cache_pread (nbdkit_next *next,
              uint32_t flags, int *err)
 {
   CLEANUP_FREE uint8_t *block = NULL;
-  uint64_t blknum, blkoffs;
+  uint64_t blknum, blkoffs, nrblocks;
   int r;
 
   assert (!flags);
@@ -348,22 +348,17 @@ cache_pread (nbdkit_next *next,
   }
 
   /* Aligned body */
-  /* XXX This breaks up large read requests into smaller ones, which
-   * is a problem for plugins which have a large, fixed per-request
-   * overhead (hello, curl).  We should try to keep large requests
-   * together as much as possible, but that requires us to be much
-   * smarter here.
-   */
-  while (count >= blksize) {
+  nrblocks = count / blksize;
+  if (nrblocks > 0) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    r = blk_read (next, blknum, buf, err);
+    r = blk_read_multiple (next, blknum, nrblocks, buf, err);
     if (r == -1)
       return -1;
 
-    buf += blksize;
-    count -= blksize;
-    offset += blksize;
-    blknum++;
+    buf += nrblocks * blksize;
+    count -= nrblocks * blksize;
+    offset += nrblocks * blksize;
+    blknum += nrblocks;
   }
 
   /* Unaligned tail */
