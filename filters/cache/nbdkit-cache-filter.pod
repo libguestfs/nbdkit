@@ -8,7 +8,7 @@ nbdkit-cache-filter - nbdkit caching filter
                               [cache-max-size=SIZE]
                               [cache-high-threshold=N]
                               [cache-low-threshold=N]
-                              [cache-on-read=true|false]
+                              [cache-on-read=true|false|/PATH]
                               [plugin-args...]
 
 =head1 DESCRIPTION
@@ -86,6 +86,15 @@ the plugin.
 =item B<cache-on-read=false>
 
 Do not cache read requests (this is the default).
+
+=item B<cache-on-read=/PATH>
+
+(nbdkit E<ge> 1.28)
+
+When F</PATH> (which must be an absolute path) exists, this behaves
+like C<cache-on-read=true>, and when it does not exist like
+C<cache-on-read=false>.  This allows you to control the cache-on-read
+behaviour while nbdkit is running.
 
 =back
 

@@ -244,7 +244,7 @@ _blk_read_multiple (nbdkit_next *next,
     memset (block + n, 0, tail);
 
     /* If cache-on-read, copy the blocks to the cache. */
-    if (cache_on_read) {
+    if (cache_on_read ()) {
       if (cache_debug_verbose)
         nbdkit_debug ("cache: cache-on-read block %" PRIu64
                       " (offset %" PRIu64 ")",
