@@ -250,7 +250,7 @@ _blk_read_multiple (nbdkit_next *next,
                       " (offset %" PRIu64 ")",
                       blknum, (uint64_t) offset);
 
-      if (pwrite (fd, block, blksize * runblocks, offset) == -1) {
+      if (full_pwrite (fd, block, blksize * runblocks, offset) == -1) {
         *err = errno;
         nbdkit_error ("pwrite: %m");
         return -1;
@@ -262,7 +262,7 @@ _blk_read_multiple (nbdkit_next *next,
     }
   }
   else {                        /* Read cache. */
-    if (pread (fd, block, blksize * runblocks, offset) == -1) {
+    if (full_pread (fd, block, blksize * runblocks, offset) == -1) {
       *err = errno;
       nbdkit_error ("pread: %m");
       return -1;
@@ -339,7 +339,7 @@ blk_cache (nbdkit_next *next,
       nbdkit_debug ("cache: cache block %" PRIu64 " (offset %" PRIu64 ")",
                     blknum, (uint64_t) offset);
 
-    if (pwrite (fd, block, blksize, offset) == -1) {
+    if (full_pwrite (fd, block, blksize, offset) == -1) {
       *err = errno;
       nbdkit_error ("pwrite: %m");
       return -1;
@@ -380,7 +380,7 @@ blk_writethrough (nbdkit_next *next,
     nbdkit_debug ("cache: writethrough block %" PRIu64 " (offset %" PRIu64 ")",
                   blknum, (uint64_t) offset);
 
-  if (pwrite (fd, block, blksize, offset) == -1) {
+  if (full_pwrite (fd, block, blksize, offset) == -1) {
     *err = errno;
     nbdkit_error ("pwrite: %m");
     return -1;
@@ -414,7 +414,7 @@ blk_write (nbdkit_next *next,
     nbdkit_debug ("cache: writeback block %" PRIu64 " (offset %" PRIu64 ")",
                   blknum, (uint64_t) offset);
 
-  if (pwrite (fd, block, blksize, offset) == -1) {
+  if (full_pwrite (fd, block, blksize, offset) == -1) {
     *err = errno;
     nbdkit_error ("pwrite: %m");
     return -1;

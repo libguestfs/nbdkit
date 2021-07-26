@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -30,17 +30,52 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NBDKIT_UTILS_H
-#define NBDKIT_UTILS_H
+/* These functions are like pread(2)/pwrite(2) but they always read or
+ * write the full amount, or fail.
+ */
 
-extern void shell_quote (const char *str, FILE *fp);
-extern void uri_quote (const char *str, FILE *fp);
-extern int exit_status_to_nbd_error (int status, const char *cmd);
-extern int set_cloexec (int fd);
-extern int set_nonblock (int fd);
-extern char **copy_environ (char **env, ...) __attribute__((__sentinel__));
-extern char *make_temporary_directory (void);
-extern ssize_t full_pread (int fd, void *buf, size_t count, off_t offset);
-extern ssize_t full_pwrite (int fd, const void *buf, size_t count, off_t offset);
+#include <config.h>
 
-#endif /* NBDKIT_UTILS_H */
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+
+ssize_t
+full_pread (int fd, void *buf, size_t count, off_t offset)
+{
+  ssize_t ret = 0, r;
+
+  while (count > 0) {
+    r = pread (fd, buf, count, offset);
+    if (r == -1) return -1;
+    if (r == 0) {
+      /* Presumably the caller wasn't expecting end-of-file here, so
+       * return an error.
+       */
+      errno = EIO;
+      return -1;
+    }
+    ret += r;
+    offset += r;
+    count -= r;
+  }
+
+  return ret;
+}
+
+ssize_t
+full_pwrite (int fd, const void *buf, size_t count, off_t offset)
+{
+  ssize_t ret = 0, r;
+
+  while (count > 0) {
+    r = pwrite (fd, buf, count, offset);
+    if (r == -1) return -1;
+    ret += r;
+    offset += r;
+    count -= r;
+  }
+
+  return ret;
+}

@@ -40,6 +40,7 @@ libutils_la_SOURCES = \
 	cleanup-nbdkit.c \
 	cleanup.h \
 	environ.c \
+	full-rw.c \
 	quote.c \
 	utils.c \
 	utils.h \

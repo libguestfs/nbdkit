@@ -278,7 +278,7 @@ blk_read_multiple (nbdkit_next *next,
     memset (block + n, 0, tail);
   }
   else if (state == BLOCK_ALLOCATED) { /* Read overlay. */
-    if (pread (fd, block, BLKSIZE * runblocks, offset) == -1) {
+    if (full_pread (fd, block, BLKSIZE * runblocks, offset) == -1) {
       *err = errno;
       nbdkit_error ("pread: %m");
       return -1;
@@ -353,7 +353,7 @@ blk_cache (nbdkit_next *next,
   memset (block + n, 0, tail);
 
   if (mode == BLK_CACHE_COW) {
-    if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+    if (full_pwrite (fd, block, BLKSIZE, offset) == -1) {
       *err = errno;
       nbdkit_error ("pwrite: %m");
       return -1;
@@ -372,7 +372,7 @@ blk_write (uint64_t blknum, const uint8_t *block, int *err)
     nbdkit_debug ("cow: blk_write block %" PRIu64 " (offset %" PRIu64 ")",
                   blknum, (uint64_t) offset);
 
-  if (pwrite (fd, block, BLKSIZE, offset) == -1) {
+  if (full_pwrite (fd, block, BLKSIZE, offset) == -1) {
     *err = errno;
     nbdkit_error ("pwrite: %m");
     return -1;
