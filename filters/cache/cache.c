@@ -73,7 +73,7 @@
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 unsigned blksize;            /* actual block size (picked by blk.c) */
-unsigned min_block_size = 4096;
+unsigned min_block_size = 65536;
 enum cache_mode cache_mode = CACHE_MODE_WRITEBACK;
 int64_t max_size = -1;
 unsigned hi_thresh = 95, lo_thresh = 80;

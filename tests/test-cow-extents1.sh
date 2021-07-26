@@ -65,7 +65,7 @@ cleanup_fn rm -f $files
 
 # Create a base file which is half allocated, half sparse.
 dd if=/dev/urandom of=$base count=128 bs=1K
-truncate -s 256K $base
+truncate -s 4M $base
 lastmod="$(stat -c "%y" $base)"
 
 # Run nbdkit with a COW overlay.
@@ -76,30 +76,33 @@ uri="nbd+unix:///?socket=$sock"
 nbdinfo --map "$uri" > $out
 cat $out
 if [ "$(tr -s ' ' < $out | cut -d' ' -f 1-4)" != " 0 131072 0
- 131072 131072 3" ]; then
+ 131072 4063232 3" ]; then
     echo "$0: unexpected initial file map"
     exit 1
 fi
 
 # Punch some holes.
 nbdsh -u "$uri" \
-      -c 'h.trim(4096, 4096)' \
-      -c 'h.trim(4098, 16383)' \
-      -c 'h.pwrite(b"1"*4096, 65536)' \
-      -c 'h.trim(8192, 131072)' \
-      -c 'h.pwrite(b"2"*8192, 196608)'
+      -c 'bs = 65536' \
+      -c 'h.trim(bs, bs)' \
+      -c 'h.trim(bs+2, 4*bs-1)' \
+      -c 'h.pwrite(b"1"*bs, 16*bs)' \
+      -c 'h.trim(2*bs, 32*bs)' \
+      -c 'h.pwrite(b"2"*(2*bs), 48*bs)'
 
 # The extents map should be fully allocated.
 nbdinfo --map "$uri" > $out
 cat $out
-if [ "$(tr -s ' ' < $out | cut -d' ' -f 1-4)" != " 0 4096 0
- 4096 4096 3
- 8192 8192 0
- 16384 4096 3
- 20480 110592 0
- 131072 65536 3
- 196608 8192 0
- 204800 57344 3" ]; then
+if [ "$(tr -s ' ' < $out | cut -d' ' -f 1-4)" != " 0 65536 0
+ 65536 131072 3
+ 196608 65536 0
+ 262144 65536 3
+ 327680 65536 0
+ 393216 655360 3
+ 1048576 65536 0
+ 1114112 2031616 3
+ 3145728 131072 0
+ 3276800 917504 3" ]; then
     echo "$0: unexpected trimmed file map"
     exit 1
 fi

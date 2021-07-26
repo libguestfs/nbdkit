@@ -47,7 +47,7 @@ truncate -s 128K cache-block-size.img
 
 # Run nbdkit with the caching filter.
 start_nbdkit -P cache-block-size.pid -U $sock --filter=cache \
-             file cache-block-size.img cache-min-block-size=64K
+             file cache-block-size.img cache-min-block-size=4K
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '

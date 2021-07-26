@@ -65,8 +65,8 @@ or can cheaply reconstruct.
 Set the minimum block size used by the cache.  This must be a power of
 2 and E<ge> 4096.
 
-The default is 4096, or the block size of the filesystem which
-contains the temporary file storing the cache (whichever is larger).
+The default is 64K, or the block size of the filesystem which contains
+the temporary file storing the cache (whichever is larger).
 
 =item B<cache-max-size=>SIZE
 
