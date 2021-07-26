@@ -45,6 +45,9 @@ extern enum cache_mode {
 /* Size of a block in the cache. */
 extern unsigned blksize;
 
+/* Minimum block size (cache-min-block-size parameter). */
+extern unsigned min_block_size;
+
 /* Maximum size of the cache and high/low thresholds. */
 extern int64_t max_size;
 extern unsigned hi_thresh, lo_thresh;
