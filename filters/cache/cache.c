@@ -74,7 +74,8 @@ unsigned blksize;
 enum cache_mode cache_mode = CACHE_MODE_WRITEBACK;
 int64_t max_size = -1;
 unsigned hi_thresh = 95, lo_thresh = 80;
-bool cache_on_read = false;
+enum cor_mode cor_mode = COR_OFF;
+const char *cor_path;
 
 static int cache_flush (nbdkit_next *next, void *handle, uint32_t flags,
                         int *err);
@@ -161,12 +162,16 @@ cache_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   }
 #endif /* !HAVE_CACHE_RECLAIM */
   else if (strcmp (key, "cache-on-read") == 0) {
-    int r;
-
-    r = nbdkit_parse_bool (value);
-    if (r == -1)
-      return -1;
-    cache_on_read = r;
+    if (value[0] == '/') {
+      cor_path = value;
+      cor_mode = COR_PATH;
+    }
+    else {
+      int r = nbdkit_parse_bool (value);
+      if (r == -1)
+        return -1;
+      cor_mode = r ? COR_ON : COR_OFF;
+    }
     return 0;
   }
   else {
@@ -177,7 +182,7 @@ cache_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
 #define cache_config_help_common \
   "cache=MODE                Set cache MODE, one of writeback (default),\n" \
   "                          writethrough, or unsafe.\n" \
-  "cache-on-read=BOOL        Set to true to cache on reads (default false).\n"
+  "cache-on-read=BOOL|/PATH  Set to true to cache on reads (default false).\n"
 #ifndef HAVE_CACHE_RECLAIM
 #define cache_config_help cache_config_help_common
 #else
@@ -186,6 +191,18 @@ cache_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   "cache-high-threshold=PCT  Percentage of max size where reclaim begins.\n" \
   "cache-low-threshold=PCT   Percentage of max size where reclaim ends.\n"
 #endif
+
+/* Decide if cache-on-read is currently on or off. */
+bool
+cache_on_read (void)
+{
+  switch (cor_mode) {
+  case COR_ON: return true;
+  case COR_OFF: return false;
+  case COR_PATH: return access (cor_path, F_OK) == 0;
+  default: abort ();
+  }
+}
 
 static int
 cache_config_complete (nbdkit_next_config_complete *next,

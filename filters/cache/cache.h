@@ -49,7 +49,13 @@ extern unsigned blksize;
 extern int64_t max_size;
 extern unsigned hi_thresh, lo_thresh;
 
-/* Cache read requests. */
-extern bool cache_on_read;
+/* Cache on read mode. */
+extern enum cor_mode {
+  COR_OFF,
+  COR_ON,
+  COR_PATH,
+} cor_mode;
+extern const char *cor_path;
+extern bool cache_on_read (void);
 
 #endif /* NBDKIT_CACHE_H */
