@@ -40,6 +40,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <errno.h>
 #include <assert.h>
 #include <sys/types.h>
@@ -62,6 +63,7 @@
 #include "blk.h"
 #include "reclaim.h"
 #include "isaligned.h"
+#include "ispowerof2.h"
 #include "minmax.h"
 #include "rounding.h"
 
@@ -70,7 +72,8 @@
  */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-unsigned blksize;
+unsigned blksize;            /* actual block size (picked by blk.c) */
+unsigned min_block_size = 4096;
 enum cache_mode cache_mode = CACHE_MODE_WRITEBACK;
 int64_t max_size = -1;
 unsigned hi_thresh = 95, lo_thresh = 80;
@@ -79,13 +82,6 @@ const char *cor_path;
 
 static int cache_flush (nbdkit_next *next, void *handle, uint32_t flags,
                         int *err);
-
-static void
-cache_load (void)
-{
-  if (blk_init () == -1)
-    exit (EXIT_FAILURE);
-}
 
 static void
 cache_unload (void)
@@ -115,6 +111,19 @@ cache_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
                     "writeback|writethrough|unsafe");
       return -1;
     }
+  }
+  else if (strcmp (key, "cache-min-block-size") == 0) {
+    int64_t r;
+
+    r = nbdkit_parse_size (value);
+    if (r == -1)
+      return -1;
+    if (r < 4096 || !is_power_of_2 (r) || r > UINT_MAX) {
+      nbdkit_error ("cache-min-block-size is not a power of 2, or is too small or too large");
+      return -1;
+    }
+    min_block_size = r;
+    return 0;
   }
 #ifdef HAVE_CACHE_RECLAIM
   else if (strcmp (key, "cache-max-size") == 0) {
@@ -218,6 +227,15 @@ cache_config_complete (nbdkit_next_config_complete *next,
   }
 
   return next (nxdata);
+}
+
+static int
+cache_get_ready (int thread_model)
+{
+  if (blk_init () == -1)
+    return -1;
+
+  return 0;
 }
 
 /* Get the file size, set the cache size. */
@@ -691,11 +709,11 @@ cache_cache (nbdkit_next *next,
 static struct nbdkit_filter filter = {
   .name              = "cache",
   .longname          = "nbdkit caching filter",
-  .load              = cache_load,
   .unload            = cache_unload,
   .config            = cache_config,
   .config_complete   = cache_config_complete,
   .config_help       = cache_config_help,
+  .get_ready         = cache_get_ready,
   .prepare           = cache_prepare,
   .get_size          = cache_get_size,
   .can_cache         = cache_can_cache,

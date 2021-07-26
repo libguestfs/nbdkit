@@ -149,7 +149,7 @@ blk_init (void)
     nbdkit_error ("fstatvfs: %s: %m", tmpdir);
     return -1;
   }
-  blksize = MAX (4096, statvfs.f_bsize);
+  blksize = MAX (min_block_size, statvfs.f_bsize);
   nbdkit_debug ("cache: block size: %u", blksize);
 
   bitmap_init (&bm, blksize, 2 /* bits per block */);

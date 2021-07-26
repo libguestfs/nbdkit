@@ -1373,12 +1373,14 @@ EXTRA_DIST += test-blocksize.sh test-blocksize-extents.sh
 # cache filter test.
 TESTS += \
 	test-cache.sh \
+	test-cache-block-size.sh \
 	test-cache-on-read.sh \
 	test-cache-max-size.sh \
 	test-cache-unaligned.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-cache.sh \
+	test-cache-block-size.sh \
 	test-cache-on-read.sh \
 	test-cache-max-size.sh \
 	test-cache-unaligned.sh \
