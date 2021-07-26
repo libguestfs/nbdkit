@@ -93,6 +93,9 @@ enum bm_entry {
   BLOCK_DIRTY = 3,
 };
 
+/* Extra debugging (-D cache.verbose=1). */
+NBDKIT_DLL_PUBLIC int cache_debug_verbose = 0;
+
 int
 blk_init (void)
 {
@@ -199,12 +202,14 @@ blk_read (nbdkit_next *next,
 
   reclaim (fd, &bm);
 
-  nbdkit_debug ("cache: blk_read block %" PRIu64 " (offset %" PRIu64 ") is %s",
-                blknum, (uint64_t) offset,
-                state == BLOCK_NOT_CACHED ? "not cached" :
-                state == BLOCK_CLEAN ? "clean" :
-                state == BLOCK_DIRTY ? "dirty" :
-                "unknown");
+  if (cache_debug_verbose)
+    nbdkit_debug ("cache: blk_read block %" PRIu64
+                  " (offset %" PRIu64 ") is %s",
+                  blknum, (uint64_t) offset,
+                  state == BLOCK_NOT_CACHED ? "not cached" :
+                  state == BLOCK_CLEAN ? "clean" :
+                  state == BLOCK_DIRTY ? "dirty" :
+                  "unknown");
 
   if (state == BLOCK_NOT_CACHED) { /* Read underlying plugin. */
     unsigned n = blksize, tail = 0;
@@ -225,9 +230,10 @@ blk_read (nbdkit_next *next,
 
     /* If cache-on-read, copy the block to the cache. */
     if (cache_on_read) {
-      nbdkit_debug ("cache: cache-on-read block %" PRIu64
-                    " (offset %" PRIu64 ")",
-                    blknum, (uint64_t) offset);
+      if (cache_debug_verbose)
+        nbdkit_debug ("cache: cache-on-read block %" PRIu64
+                      " (offset %" PRIu64 ")",
+                      blknum, (uint64_t) offset);
 
       if (pwrite (fd, block, blksize, offset) == -1) {
         *err = errno;
@@ -259,12 +265,14 @@ blk_cache (nbdkit_next *next,
 
   reclaim (fd, &bm);
 
-  nbdkit_debug ("cache: blk_cache block %" PRIu64 " (offset %" PRIu64 ") is %s",
-                blknum, (uint64_t) offset,
-                state == BLOCK_NOT_CACHED ? "not cached" :
-                state == BLOCK_CLEAN ? "clean" :
-                state == BLOCK_DIRTY ? "dirty" :
-                "unknown");
+  if (cache_debug_verbose)
+    nbdkit_debug ("cache: blk_cache block %" PRIu64
+                  " (offset %" PRIu64 ") is %s",
+                  blknum, (uint64_t) offset,
+                  state == BLOCK_NOT_CACHED ? "not cached" :
+                  state == BLOCK_CLEAN ? "clean" :
+                  state == BLOCK_DIRTY ? "dirty" :
+                  "unknown");
 
   if (state == BLOCK_NOT_CACHED) {
     /* Read underlying plugin, copy to cache regardless of cache-on-read. */
@@ -284,8 +292,9 @@ blk_cache (nbdkit_next *next,
      */
     memset (block + n, 0, tail);
 
-    nbdkit_debug ("cache: cache block %" PRIu64 " (offset %" PRIu64 ")",
-                  blknum, (uint64_t) offset);
+    if (cache_debug_verbose)
+      nbdkit_debug ("cache: cache block %" PRIu64 " (offset %" PRIu64 ")",
+                    blknum, (uint64_t) offset);
 
     if (pwrite (fd, block, blksize, offset) == -1) {
       *err = errno;
@@ -324,8 +333,9 @@ blk_writethrough (nbdkit_next *next,
 
   reclaim (fd, &bm);
 
-  nbdkit_debug ("cache: writethrough block %" PRIu64 " (offset %" PRIu64 ")",
-                blknum, (uint64_t) offset);
+  if (cache_debug_verbose)
+    nbdkit_debug ("cache: writethrough block %" PRIu64 " (offset %" PRIu64 ")",
+                  blknum, (uint64_t) offset);
 
   if (pwrite (fd, block, blksize, offset) == -1) {
     *err = errno;
@@ -357,8 +367,9 @@ blk_write (nbdkit_next *next,
 
   reclaim (fd, &bm);
 
-  nbdkit_debug ("cache: writeback block %" PRIu64 " (offset %" PRIu64 ")",
-                blknum, (uint64_t) offset);
+  if (cache_debug_verbose)
+    nbdkit_debug ("cache: writeback block %" PRIu64 " (offset %" PRIu64 ")",
+                  blknum, (uint64_t) offset);
 
   if (pwrite (fd, block, blksize, offset) == -1) {
     *err = errno;
