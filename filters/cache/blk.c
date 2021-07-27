@@ -94,6 +94,17 @@ enum bm_entry {
   BLOCK_DIRTY = 3,
 };
 
+static const char *
+state_to_string (enum bm_entry state)
+{
+  switch (state) {
+  case BLOCK_NOT_CACHED: return "not cached";
+  case BLOCK_CLEAN: return "clean";
+  case BLOCK_DIRTY: return "dirty";
+  default: abort ();
+  }
+}
+
 /* Extra debugging (-D cache.verbose=1). */
 NBDKIT_DLL_PUBLIC int cache_debug_verbose = 0;
 
@@ -312,10 +323,7 @@ blk_cache (nbdkit_next *next,
     nbdkit_debug ("cache: blk_cache block %" PRIu64
                   " (offset %" PRIu64 ") is %s",
                   blknum, (uint64_t) offset,
-                  state == BLOCK_NOT_CACHED ? "not cached" :
-                  state == BLOCK_CLEAN ? "clean" :
-                  state == BLOCK_DIRTY ? "dirty" :
-                  "unknown");
+                  state_to_string (state));
 
   if (state == BLOCK_NOT_CACHED) {
     /* Read underlying plugin, copy to cache regardless of cache-on-read. */
