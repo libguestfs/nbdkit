@@ -38,6 +38,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include <pthread.h>
@@ -58,6 +59,15 @@
 static pthread_mutex_t rmw_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool cow_on_cache;
+
+/* Cache on read ("cow-on-read") mode. */
+extern enum cor_mode {
+  COR_OFF,
+  COR_ON,
+  COR_PATH,
+} cor_mode;
+enum cor_mode cor_mode = COR_OFF;
+const char *cor_path;
 
 static void
 cow_load (void)
@@ -85,13 +95,39 @@ cow_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
     cow_on_cache = r;
     return 0;
   }
+  else if (strcmp (key, "cow-on-read") == 0) {
+    if (value[0] == '/') {
+      cor_path = value;
+      cor_mode = COR_PATH;
+    }
+    else {
+      int r = nbdkit_parse_bool (value);
+      if (r == -1)
+        return -1;
+      cor_mode = r ? COR_ON : COR_OFF;
+    }
+    return 0;
+  }
   else {
     return next (nxdata, key, value);
   }
 }
 
 #define cow_config_help \
-  "cow-on-cache=<BOOL>  Set to true to treat client cache requests as writes.\n"
+  "cow-on-cache=<BOOL>      Copy cache (prefetch) requests to the overlay.\n" \
+  "cow-on-read=<BOOL>|/PATH Copy read requests to the overlay."
+
+/* Decide if cow-on-read is currently on or off. */
+bool
+cow_on_read (void)
+{
+  switch (cor_mode) {
+  case COR_ON: return true;
+  case COR_OFF: return false;
+  case COR_PATH: return access (cor_path, F_OK) == 0;
+  default: abort ();
+  }
+}
 
 static void *
 cow_open (nbdkit_next_open *next, nbdkit_context *nxdata,
@@ -230,7 +266,7 @@ cow_pread (nbdkit_next *next,
     uint64_t n = MIN (BLKSIZE - blkoffs, count);
 
     assert (block);
-    r = blk_read (next, blknum, block, err);
+    r = blk_read (next, blknum, block, cow_on_read (), err);
     if (r == -1)
       return -1;
 
@@ -245,7 +281,7 @@ cow_pread (nbdkit_next *next,
   /* Aligned body */
   nrblocks = count / BLKSIZE;
   if (nrblocks > 0) {
-    r = blk_read_multiple (next, blknum, nrblocks, buf, err);
+    r = blk_read_multiple (next, blknum, nrblocks, buf, cow_on_read (), err);
     if (r == -1)
       return -1;
 
@@ -258,7 +294,7 @@ cow_pread (nbdkit_next *next,
   /* Unaligned tail */
   if (count) {
     assert (block);
-    r = blk_read (next, blknum, block, err);
+    r = blk_read (next, blknum, block, cow_on_read (), err);
     if (r == -1)
       return -1;
 
@@ -299,7 +335,7 @@ cow_pwrite (nbdkit_next *next,
      */
     assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next, blknum, block, err);
+    r = blk_read (next, blknum, block, cow_on_read (), err);
     if (r != -1) {
       memcpy (&block[blkoffs], buf, n);
       r = blk_write (blknum, block, err);
@@ -329,7 +365,7 @@ cow_pwrite (nbdkit_next *next,
   if (count) {
     assert (block);
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next, blknum, block, err);
+    r = blk_read (next, blknum, block, cow_on_read (), err);
     if (r != -1) {
       memcpy (block, buf, count);
       r = blk_write (blknum, block, err);
@@ -379,7 +415,7 @@ cow_zero (nbdkit_next *next,
      * Hold the rmw_lock over the whole operation.
      */
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next, blknum, block, err);
+    r = blk_read (next, blknum, block, cow_on_read (), err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
       r = blk_write (blknum, block, err);
@@ -411,7 +447,7 @@ cow_zero (nbdkit_next *next,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next, blknum, block, err);
+    r = blk_read (next, blknum, block, cow_on_read (), err);
     if (r != -1) {
       memset (block, 0, count);
       r = blk_write (blknum, block, err);
@@ -455,7 +491,7 @@ cow_trim (nbdkit_next *next,
      * Hold the lock over the whole operation.
      */
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next, blknum, block, err);
+    r = blk_read (next, blknum, block, cow_on_read (), err);
     if (r != -1) {
       memset (&block[blkoffs], 0, n);
       r = blk_write (blknum, block, err);
@@ -482,7 +518,7 @@ cow_trim (nbdkit_next *next,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
-    r = blk_read (next, blknum, block, err);
+    r = blk_read (next, blknum, block, cow_on_read (), err);
     if (r != -1) {
       memset (block, 0, count);
       r = blk_write (blknum, block, err);

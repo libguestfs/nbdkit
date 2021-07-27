@@ -226,7 +226,7 @@ blk_status (uint64_t blknum, bool *present, bool *trimmed)
 int
 blk_read_multiple (nbdkit_next *next,
                    uint64_t blknum, uint64_t nrblocks,
-                   uint8_t *block, int *err)
+                   uint8_t *block, bool cow_on_read, int *err)
 {
   off_t offset = blknum * BLKSIZE;
   enum bm_entry state;
@@ -276,6 +276,19 @@ blk_read_multiple (nbdkit_next *next,
      * zeroing the tail.
      */
     memset (block + n, 0, tail);
+
+    /* If cow-on-read is true then copy the blocks to the cache and
+     * set them as allocated.
+     */
+    if (cow_on_read) {
+      if (full_pwrite (fd, block, BLKSIZE * runblocks, offset) == -1) {
+        *err = errno;
+        nbdkit_error ("pwrite: %m");
+        return -1;
+      }
+      for (b = 0; b < runblocks; ++b)
+        bitmap_set_blk (&bm, blknum+b, BLOCK_ALLOCATED);
+    }
   }
   else if (state == BLOCK_ALLOCATED) { /* Read overlay. */
     if (full_pread (fd, block, BLKSIZE * runblocks, offset) == -1) {
@@ -297,14 +310,14 @@ blk_read_multiple (nbdkit_next *next,
                             blknum + runblocks,
                             nrblocks - runblocks,
                             block + BLKSIZE * runblocks,
-                            err);
+                            cow_on_read, err);
 }
 
 int
 blk_read (nbdkit_next *next,
-          uint64_t blknum, uint8_t *block, int *err)
+          uint64_t blknum, uint8_t *block, bool cow_on_read, int *err)
 {
-  return blk_read_multiple (next, blknum, 1, block, err);
+  return blk_read_multiple (next, blknum, 1, block, cow_on_read, err);
 }
 
 int

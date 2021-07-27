@@ -62,6 +62,23 @@ the data from the plugin into the overlay.
 Do not save data from cache (prefetch) requests in the overlay.  This
 leaves the overlay as small as possible.  This is the default.
 
+=item B<cow-on-read=true>
+
+When the client issues a read request, copy the data into the overlay
+so that the same data can be served more quickly later.
+
+=item B<cow-on-read=false>
+
+Do not save data from read requests in the overlay.  This leaves the
+overlay as small as possible.  This is the default.
+
+=item B<cow-on-read=/PATH>
+
+When F</PATH> (which must be an absolute path) exists, this behaves
+like C<cow-on-read=true>, and when it does not exist like
+C<cow-on-read=false>.  This allows you to control the C<cow-on-read>
+behaviour while nbdkit is running.
+
 =back
 
 =head1 EXAMPLES
