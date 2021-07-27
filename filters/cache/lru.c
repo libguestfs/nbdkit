@@ -53,12 +53,14 @@
 
 /* LRU bitmaps.  These bitmaps implement a simple, fast LRU structure.
  *
- *    bm[0]         bm[1]         blocks not in either bitmap
- * ┌─────────┬──────────────────┬─────────────────────────────┐
- * │         │                  │                             │
- * └─────────┴──────────────────┴─────────────────────────────┘
- *    ↑          c1 bits set
- *  c0 bits set
+ *    bm[0]
+ * ┌───────────────────────┐
+ * │  X    XX   X   XXX    │ c0 bits set
+ * └───────────────────────┘
+ *    bm[1]
+ * ┌───────────────────────┐
+ * │   X    XX  X   X      │ c1 bits set
+ * └───────────────────────┘
  *
  * The LRU structure keeps track of the [approx] last N distinct
  * blocks which have been most recently accessed.  It can answer in
@@ -69,8 +71,7 @@
  *
  * When a new block is accessed, we set the corresponding bit in bm[0]
  * and increment c0 (c0 counts the number of bits set in bm[0]).  If
- * c0 == N/2 then we swap the two bitmaps, clear bm[0], and reset c0
- * to 0.
+ * c0 == N/2 then we move bm[1] <- bm[0], clear bm[0] and set c0 <- 0.
  *
  * To check if a block has been accessed within the previous N
  * distinct accesses, we simply have to check both bitmaps.  If it is
@@ -78,9 +79,11 @@
  * reclaimed.
  *
  * You'll note that in fact we only keep track of between N/2 and N
- * recently accessed blocks.  We could make the estimate more accurate
- * by having more bitmaps, but as this is only a heuristic we choose
- * to keep the implementation simple and memory usage low instead.
+ * recently accessed blocks because the same block can appear in both
+ * bitmaps.  bm[1] is a last chance to hold on to blocks which are
+ * soon to be reclaimed.  We could make the estimate more accurate by
+ * having more bitmaps, but as this is only a heuristic we choose to
+ * keep the implementation simple and memory usage low instead.
  */
 static struct bitmap bm[2];
 static unsigned c0 = 0, c1 = 0;
@@ -129,7 +132,12 @@ lru_set_recently_accessed (uint64_t blknum)
   bitmap_set_blk (&bm[0], blknum, true);
   c0++;
 
-  /* If we've reached N/2 then we need to swap over the bitmaps. */
+  /* If we've reached N/2 then we need to swap over the bitmaps.  Note
+   * the purpose of swapping here is to ensure that we do not have to
+   * copy the dynamically allocated bm->bitmap field (the pointers are
+   * swapped instead).  The bm[0].bitmap field is immediately zeroed
+   * after the swap.
+   */
   if (c0 >= N/2) {
     struct bitmap tmp;
 
