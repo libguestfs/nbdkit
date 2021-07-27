@@ -52,14 +52,16 @@ extern void blk_status (uint64_t blknum, bool *present, bool *trimmed);
 
 /* Read a single block from the overlay or plugin. */
 extern int blk_read (nbdkit_next *next,
-                     uint64_t blknum, uint8_t *block, int *err)
-  __attribute__((__nonnull__ (1, 3, 4)));
+                     uint64_t blknum, uint8_t *block,
+                     bool cow_on_read, int *err)
+  __attribute__((__nonnull__ (1, 3, 5)));
 
 /* Read multiple blocks from the overlay or plugin. */
 extern int blk_read_multiple (nbdkit_next *next,
                               uint64_t blknum, uint64_t nrblocks,
-                              uint8_t *block, int *err)
-  __attribute__((__nonnull__ (1, 4, 5)));
+                              uint8_t *block,
+                              bool cow_on_read, int *err)
+  __attribute__((__nonnull__ (1, 4, 6)));
 
 /* Cache mode for blocks not already in overlay */
 enum cache_mode {
