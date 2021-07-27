@@ -1047,19 +1047,29 @@ This callback is not required.  If omitted, then we return false.
  int can_cache (void *handle);
 
 This is called during the option negotiation phase to find out if the
-plugin supports a cache operation. The nature of the caching is
-unspecified (including whether there are limits on how much can be
-cached at once, and whether writes to a cached region have
-write-through or write-back semantics), but the command exists to let
-clients issue a hint to the server that they will be accessing that
-region of the export.
+plugin supports a cache or prefetch operation.
 
-If this returns C<NBDKIT_CACHE_NONE>, cache support is not advertised
-to the client; if this returns C<NBDKIT_CACHE_EMULATE>, caching is
-emulated by the server calling C<.pread> and ignoring the results; if
-this returns C<NBDKIT_CACHE_NATIVE>, then the C<.cache> callback will
-be used.  If there is an error, C<.can_cache> should call
-C<nbdkit_error> with an error message and return C<-1>.
+This can return:
+
+=over 4
+
+=item C<NBDKIT_CACHE_NONE>
+
+Cache support is not advertised to the client.
+
+=item C<NBDKIT_CACHE_EMULATE>
+
+Caching is emulated by the server calling C<.pread> and discarding the
+result.
+
+=item C<NBDKIT_CACHE_NATIVE>
+
+The C<.cache> callback will be called.
+
+=back
+
+If there is an error, C<.can_cache> should call C<nbdkit_error> with
+an error message and return C<-1>.
 
 This callback is not required.  If omitted, then we return
 C<NBDKIT_CACHE_NONE> if the C<.cache> callback is missing, or
@@ -1284,23 +1294,28 @@ called.  C<errno> will be set to a suitable value.
 
 During the data serving phase, this callback is used to give the
 plugin a hint that the client intends to make further accesses to the
-given region of the export.  The nature of caching is not specified
-further by the NBD specification (for example, a server may place
-limits on how much may be cached at once, and there is no way to
-control if writes to a cached area have write-through or write-back
-semantics).  In fact, the cache command can always fail and still be
-compliant, and success might not guarantee a performance gain.  If
-this callback is omitted, then the results of C<.can_cache> determine
-whether nbdkit will reject cache requests, treat them as instant
-success, or emulate caching by calling C<.pread> over the same region
-and ignoring the results.
+given region of the export.
+
+The nature of caching/prefetching is not specified further by the NBD
+specification.  For example, a server may place limits on how much may
+be cached at once, and there is no way to control if writes to a
+cached area have write-through or write-back semantics.  In fact, the
+cache command can always fail and still be compliant, and success
+might not guarantee a performance gain.
+
+If this callback is omitted, then the results of C<.can_cache>
+determine whether nbdkit will reject cache requests, treat them as
+instant success, or emulate caching by calling C<.pread> over the same
+region and ignoring the results.
 
 This function will not be called if C<.can_cache> did not return
-C<NBDKIT_CACHE_NATIVE>.  The parameter C<flags> exists in case of
-future NBD protocol extensions; at this time, it will be 0 on input. A
-plugin must fail this function if C<flags> includes an unrecognized
-flag, as that may indicate a requirement that the plugin comply must
-with a specific caching semantic.
+C<NBDKIT_CACHE_NATIVE>.
+
+The C<flags> parameter exists in case of future NBD protocol
+extensions; at this time, it will be 0 on input.  A plugin must fail
+this function if C<flags> includes an unrecognized flag, as that may
+indicate a requirement that the plugin comply must with a specific
+caching semantic.
 
 If there is an error, C<.cache> should call C<nbdkit_error> with an
 error message, and C<nbdkit_set_error> to record an appropriate error
