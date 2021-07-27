@@ -54,12 +54,13 @@ serve the same data to each client.
 
 =item B<cow-on-cache=true>
 
-Treat a client cache request as a shortcut for copying unmodified data
-from the plugin to the overlay, rather than the default of passing
-cache requests on to the plugin. This parameter defaults to false
-(which leaves the overlay as small as possible), but setting it can be
-useful for converting cache commands into a form of copy-on-read
-behavior, in addition to the filter's normal copy-on-write semantics.
+When the client issues a cache (prefetch) request, preemptively save
+the data from the plugin into the overlay.
+
+=item B<cow-on-cache=false>
+
+Do not save data from cache (prefetch) requests in the overlay.  This
+leaves the overlay as small as possible.  This is the default.
 
 =back
 
