@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,25 +35,53 @@ set -e
 set -x
 
 requires_filter cache
+requires_filter delay
 requires_nbdsh_uri
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
-files="$sock cache-on-read.pid"
+files="$sock cache-on-read-caches.pid"
 rm -f $files
 cleanup_fn rm -f $files
 
-# Run nbdkit with the caching filter and cache-on-read set.
-start_nbdkit -P cache-on-read.pid -U $sock \
-             --filter=cache \
-             memory 128K cache-on-read=true
+# Run nbdkit with the cache filter, cache-on-read and a read delay.
+start_nbdkit -P cache-on-read-caches.pid -U $sock \
+             --filter=cache --filter=delay \
+             memory 64K cache-on-read=true rdelay=10
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-# Write some pattern data to the overlay and check it reads back OK.
+from time import time
+
+# First read should suffer a penalty.  Because we are reading
+# a single 64K block (same size as the cache block), we should
+# only suffer one penalty of approx. 10 seconds.
+st = time()
+zb = h.pread(65536, 0)
+et = time()
+el = et-st
+print("elapsed time: %g" % el)
+assert et-st >= 10
+assert zb == bytearray(65536)
+
+# Second read should not suffer a penalty.
+st = time()
+zb = h.pread(65536, 0)
+et = time()
+el = et-st
+print("elapsed time: %g" % el)
+assert el < 10
+assert zb == bytearray(65536)
+
+# Write something.
 buf = b"abcd" * 16384
-h.pwrite(buf, 32768)
-zero = h.pread(32768, 0)
-assert zero == bytearray(32768)
-buf2 = h.pread(65536, 32768)
+h.pwrite(buf, 0)
+
+# Reading back should be quick since it is stored in the overlay.
+st = time()
+buf2 = h.pread(65536, 0)
+et = time()
+el = et-st
+print("elapsed time: %g" % el)
+assert el < 10
 assert buf == buf2
 '

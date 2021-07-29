@@ -1373,6 +1373,7 @@ TESTS += \
 	test-cache.sh \
 	test-cache-block-size.sh \
 	test-cache-on-read.sh \
+	test-cache-on-read-caches.sh \
 	test-cache-max-size.sh \
 	test-cache-unaligned.sh \
 	$(NULL)
@@ -1380,6 +1381,7 @@ EXTRA_DIST += \
 	test-cache.sh \
 	test-cache-block-size.sh \
 	test-cache-on-read.sh \
+	test-cache-on-read-caches.sh \
 	test-cache-max-size.sh \
 	test-cache-unaligned.sh \
 	$(NULL)
