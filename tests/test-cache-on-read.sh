@@ -38,18 +38,14 @@ requires_filter cache
 requires_nbdsh_uri
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
-files="cache-on-read.img $sock cache-on-read.pid"
+files="$sock cache-on-read.pid"
 rm -f $files
 cleanup_fn rm -f $files
-
-# Create an empty base image.
-truncate -s 128K cache-on-read.img
 
 # Run nbdkit with the caching filter and cache-on-read set.
 start_nbdkit -P cache-on-read.pid -U $sock \
              --filter=cache \
-             file cache-on-read.img \
-             cache-on-read=true
+             memory 128K cache-on-read=true
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
