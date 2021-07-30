@@ -49,6 +49,8 @@ static int delay_trim_ms = 0;   /* trim delay (milliseconds) */
 static int delay_extents_ms = 0;/* extents delay (milliseconds) */
 static int delay_cache_ms = 0;  /* cache delay (milliseconds) */
 static int delay_fast_zero = 1; /* whether delaying zero includes fast zero */
+static int delay_open_ms = 0;   /* open delay (milliseconds) */
+static int delay_close_ms = 0;  /* close delay (milliseconds) */
 
 static int
 parse_delay (const char *key, const char *value)
@@ -128,6 +130,18 @@ cache_delay (int *err)
   return delay (delay_cache_ms, err);
 }
 
+static int
+open_delay (int *err)
+{
+  return delay (delay_open_ms, err);
+}
+
+static int
+close_delay (int *err)
+{
+  return delay (delay_close_ms, err);
+}
+
 /* Called for each key=value passed on the command line. */
 static int
 delay_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
@@ -191,6 +205,18 @@ delay_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
       return -1;
     return 0;
   }
+  else if (strcmp (key, "delay-open") == 0) {
+    delay_open_ms = parse_delay (key, value);
+    if (delay_open_ms == -1)
+      return -1;
+    return 0;
+  }
+  else if (strcmp (key, "delay-close") == 0) {
+    delay_close_ms = parse_delay (key, value);
+    if (delay_close_ms == -1)
+      return -1;
+    return 0;
+  }
   else
     return next (nxdata, key, value);
 }
@@ -204,7 +230,9 @@ delay_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   "delay-extents=<NN>[ms]         Extents delay in seconds/milliseconds.\n" \
   "delay-cache=<NN>[ms]           Cache delay in seconds/milliseconds.\n" \
   "wdelay=<NN>[ms]                Write, zero and trim delay in secs/msecs.\n" \
-  "delay-fast-zero=<BOOL>         Delay fast zero requests (default true).\n"
+  "delay-fast-zero=<BOOL>         Delay fast zero requests (default true).\n" \
+  "delay-open=<NN>[ms]            Open delay in seconds/milliseconds.\n" \
+  "delay-close=<NN>[ms]           Close delay in seconds/milliseconds."
 
 /* Override the plugin's .can_fast_zero if needed */
 static int
@@ -215,6 +243,34 @@ delay_can_fast_zero (nbdkit_next *next,
   if (delay_zero_ms && !delay_fast_zero)
     return 1;
   return next->can_fast_zero (next);
+}
+
+/* Open connection. */
+static void *
+delay_open (nbdkit_next_open *next, nbdkit_context *nxdata,
+            int readonly, const char *exportname, int is_tls)
+{
+  int err;
+
+  if (open_delay (&err) == -1) {
+    errno = err;
+    nbdkit_error ("delay: %m");
+    return NULL;
+  }
+
+  if (next (nxdata, readonly, exportname) == -1)
+    return NULL;
+
+  return NBDKIT_HANDLE_NOT_NEEDED;
+}
+
+/* Close connection. */
+static void
+delay_close (void *handle)
+{
+  int err;
+
+  close_delay (&err);
 }
 
 /* Read data. */
@@ -294,6 +350,8 @@ static struct nbdkit_filter filter = {
   .config            = delay_config,
   .config_help       = delay_config_help,
   .can_fast_zero     = delay_can_fast_zero,
+  .open              = delay_open,
+  .close             = delay_close,
   .pread             = delay_pread,
   .pwrite            = delay_pwrite,
   .zero              = delay_zero,
