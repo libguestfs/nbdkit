@@ -150,6 +150,8 @@ C<nbdkit-cow-filter> first appeared in nbdkit 1.2.
 
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
+L<nbdkit-cache-filter(1)>,
+L<nbdkit-cacheextents-filter(1)>,
 L<nbdkit-xz-filter(1)>,
 L<nbdkit-filter(3)>,
 L<qemu-img(1)>.
