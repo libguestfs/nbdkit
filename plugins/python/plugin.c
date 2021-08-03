@@ -298,6 +298,24 @@ py_after_fork (void)
   return 0;
 }
 
+static void
+py_cleanup (void)
+{
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
+  PyObject *fn;
+  PyObject *r;
+
+  if (callback_defined ("cleanup", &fn)) {
+    PyErr_Clear ();
+
+    r = PyObject_CallObject (fn, NULL);
+    Py_DECREF (fn);
+    if (check_python_failure ("cleanup") == -1)
+      return;
+    Py_DECREF (r);
+  }
+}
+
 static int
 py_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
 {
@@ -1039,6 +1057,7 @@ static struct nbdkit_plugin plugin = {
   .thread_model       = py_thread_model,
   .get_ready          = py_get_ready,
   .after_fork         = py_after_fork,
+  .cleanup            = py_cleanup,
   .list_exports       = py_list_exports,
   .default_export     = py_default_export,
 

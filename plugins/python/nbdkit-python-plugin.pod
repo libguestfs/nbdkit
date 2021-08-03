@@ -259,6 +259,12 @@ There are no arguments or return value.
 
 There are no arguments or return value.
 
+=item C<cleanup>
+
+(Optional, nbdkit E<ge> 1.28)
+
+There are no arguments or return value.
+
 =item C<list_exports>
 
 (Optional)
@@ -500,10 +506,18 @@ optionally using C<nbdkit.set_error> first.
 
 =over 4
 
-=item Missing: C<load> and C<unload>
+=item Missing: C<load>
 
-These are not needed because you can just use ordinary Python
-constructs.
+This is not needed since you can use regular Python mechanisms like
+top level statements to run code when the module is loaded.
+
+=item Missing: C<unload>
+
+This is missing, but in nbdkit E<ge> 1.28 you can put code in the
+C<cleanup()> function to have it run when nbdkit exits.  In earlier
+versions of nbdkit, using a Python
+L<atexit|https://docs.python.org/3/library/atexit.html> handler is
+recommended.
 
 =item Missing:
 C<name>,
