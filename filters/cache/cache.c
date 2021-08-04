@@ -493,7 +493,7 @@ cache_zero (struct nbdkit_next_ops *next_ops, void *nxdata,
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
     r = blk_read (next_ops, nxdata, blknum, block, err);
     if (r != -1) {
-      memset (&block[count], 0, blksize - count);
+      memset (block, 0, count);
       r = blk_write (next_ops, nxdata, blknum, block, flags, err);
     }
     if (r == -1)
