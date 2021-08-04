@@ -418,7 +418,7 @@ cow_zero (nbdkit_next *next,
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
     r = blk_read (next, blknum, block, err);
     if (r != -1) {
-      memset (&block[count], 0, BLKSIZE - count);
+      memset (block, 0, count);
       r = blk_write (blknum, block, err);
     }
     if (r == -1)
@@ -489,7 +489,7 @@ cow_trim (nbdkit_next *next,
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&rmw_lock);
     r = blk_read (next, blknum, block, err);
     if (r != -1) {
-      memset (&block[count], 0, BLKSIZE - count);
+      memset (block, 0, count);
       r = blk_write (blknum, block, err);
     }
     if (r == -1)
