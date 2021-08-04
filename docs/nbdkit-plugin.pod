@@ -1314,8 +1314,8 @@ C<NBDKIT_CACHE_NATIVE>.
 The C<flags> parameter exists in case of future NBD protocol
 extensions; at this time, it will be 0 on input.  A plugin must fail
 this function if C<flags> includes an unrecognized flag, as that may
-indicate a requirement that the plugin comply must with a specific
-caching semantic.
+indicate a requirement that the plugin must comply with to provide a
+specific caching semantic.
 
 If there is an error, C<.cache> should call C<nbdkit_error> with an
 error message, and C<nbdkit_set_error> to record an appropriate error
