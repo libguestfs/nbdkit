@@ -43,28 +43,39 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create an empty base image.
-truncate -s 128K cache-block-size.img
+truncate -s 256K cache-block-size.img
 
 # Run nbdkit with the caching filter.
 start_nbdkit -P cache-block-size.pid -U $sock --filter=cache \
-             file cache-block-size.img cache-min-block-size=4K
+             file cache-block-size.img cache-min-block-size=128K \
+             cache-on-read=true
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-# Write some pattern data to the overlay and check it reads back OK.
-buf = b"abcd" * 16384
-h.pwrite(buf, 32768)
-zero = h.pread(32768, 0)
-assert zero == bytearray(32768)
-buf2 = h.pread(65536, 32768)
-assert buf == buf2
+# Read half of cache-min-block-size
 
-# Flushing should write through to the underlying file.
-h.flush()
+zero = h.pread(64 * 1024, 0)
+assert zero == bytearray(64 * 1024)
 
+buf = b"abcd" * 16 * 1024
+
+# Write past the first read
+with open("cache-block-size.img", "wb") as file:
+    file.seek(64 * 1024)
+    file.write(buf * 2)
+    file.truncate(256 * 1024)
+
+# Check that it got written
 with open("cache-block-size.img", "rb") as file:
-    zero = file.read(32768)
-    assert zero == bytearray(32768)
-    buf2 = file.read(65536)
-    assert buf == buf2
+    file.seek(64 * 1024)
+    buf2 = file.read(128 * 1024)
+    assert (buf * 2) == buf2
+
+# Now read the rest of the cache-min-block-size, it should stay empty
+zero = h.pread(64 * 1024, 64 * 1024)
+assert zero == bytearray(64 * 1024)
+
+# Read past that, the pattern should be visible there
+buf2 = h.pread(64 * 1024, 128 * 1024)
+assert buf == buf2
 '
