@@ -40,23 +40,22 @@
 
 #include "internal.h"
 
-/* Called with flockfile (stderr) taken. */
 static void
-prologue (void)
+prologue (FILE *fp)
 {
   const char *name = threadlocal_get_name ();
   size_t instance_num = threadlocal_get_instance_num ();
 
-  fprintf (stderr, "%s: ", program_name);
+  fprintf (fp, "%s: ", program_name);
 
   if (name) {
-    fprintf (stderr, "%s", name);
+    fprintf (fp, "%s", name);
     if (instance_num > 0)
-      fprintf (stderr, "[%zu]", instance_num);
-    fprintf (stderr, ": ");
+      fprintf (fp, "[%zu]", instance_num);
+    fprintf (fp, ": ");
   }
 
-  fprintf (stderr, "debug: ");
+  fprintf (fp, "debug: ");
 }
 
 /* Note: preserves the previous value of errno. */
@@ -64,20 +63,30 @@ NBDKIT_DLL_PUBLIC void
 nbdkit_vdebug (const char *fs, va_list args)
 {
   int err = errno;
+  CLEANUP_FREE char *str = NULL;
+  size_t len = 0;
+  FILE *fp;
 
   if (!verbose)
     return;
-#ifdef HAVE_FLOCKFILE
-  flockfile (stderr);
-#endif
-  prologue ();
 
-  vfprintf (stderr, fs, args);
+  fp = open_memstream (&str, &len);
+  if (fp == NULL) {
+    /* Try to emit what we can. */
+    errno = err;
+    vfprintf (stderr, fs, args);
+    return;
+  }
 
-  fprintf (stderr, "\n");
-#ifdef HAVE_FUNLOCKFILE
-  funlockfile (stderr);
-#endif
+  prologue (fp);
+
+  errno = err;
+  vfprintf (fp, fs, args);
+
+  fprintf (fp, "\n");
+  fclose (fp);
+
+  fputs (str, stderr);
 
   errno = err;
 }
@@ -86,25 +95,36 @@ nbdkit_vdebug (const char *fs, va_list args)
 NBDKIT_DLL_PUBLIC void
 nbdkit_debug (const char *fs, ...)
 {
-  va_list args;
   int err = errno;
+  va_list args;
+  CLEANUP_FREE char *str = NULL;
+  size_t len = 0;
+  FILE *fp;
 
   if (!verbose)
     return;
 
-#ifdef HAVE_FLOCKFILE
-  flockfile (stderr);
-#endif
-  prologue ();
+  fp = open_memstream (&str, &len);
+  if (fp == NULL) {
+    /* Try to emit what we can. */
+    va_start (args, fs);
+    errno = err;
+    vfprintf (stderr, fs, args);
+    va_end (args);
+    return;
+  }
+
+  prologue (fp);
 
   va_start (args, fs);
-  vfprintf (stderr, fs, args);
+  errno = err;
+  vfprintf (fp, fs, args);
   va_end (args);
 
-  fprintf (stderr, "\n");
-#ifdef HAVE_FUNLOCKFILE
-  funlockfile (stderr);
-#endif
+  fprintf (fp, "\n");
+  fclose (fp);
+
+  fputs (str, stderr);
 
   errno = err;
 }
