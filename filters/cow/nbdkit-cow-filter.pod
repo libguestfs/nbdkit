@@ -5,33 +5,23 @@ nbdkit-cow-filter - nbdkit copy-on-write (COW) filter
 =head1 SYNOPSIS
 
  nbdkit --filter=cow plugin [plugin-args...]
+                            [cow-on-cache=false|true]
+                            [cow-on-read=false|true|/PATH]
 
 =head1 DESCRIPTION
 
 C<nbdkit-cow-filter> is a filter that makes a temporary writable copy
-on top of a read-only plugin.  It can be used to enable writes for
-plugins which only implement read-only access.  Note that:
+on top of a plugin.  It can also be used to enable writes for plugins
+which are read-only.
 
-=over 4
+The underlying plugin is opened read-only.  This filter does not pass
+any writes or write-like operations (like trim and zero) through to
+the underlying plugin.
 
-=item *
-
-B<Anything written is thrown away as soon as nbdkit exits.>
-
-=item *
-
-All connections to the nbdkit instance see the same view of the disk.
-
-This is different from L<nbd-server(1)> where each connection sees its
-own copy-on-write overlay and simply disconnecting the client throws
-that away.  It also allows us to create diffs, see below.
-
-=item *
-
-The plugin is opened read-only (as if the I<-r> flag was passed), but
-you should B<not> pass the I<-r> flag to nbdkit.
-
-=back
+B<Note that anything written is thrown away as soon as nbdkit exits.>
+If you want to save changes, either copy out the whole disk using a
+tool like L<nbdcopy(1)>, or use the method described in L</NOTES>
+below to create a diff.
 
 Limitations of the filter include:
 
@@ -52,25 +42,25 @@ serve the same data to each client.
 
 =over 4
 
-=item B<cow-on-cache=true>
-
-When the client issues a cache (prefetch) request, preemptively save
-the data from the plugin into the overlay.
-
 =item B<cow-on-cache=false>
 
 Do not save data from cache (prefetch) requests in the overlay.  This
 leaves the overlay as small as possible.  This is the default.
 
-=item B<cow-on-read=true>
+=item B<cow-on-cache=true>
 
-When the client issues a read request, copy the data into the overlay
-so that the same data can be served more quickly later.
+When the client issues a cache (prefetch) request, preemptively save
+the data from the plugin into the overlay.
 
 =item B<cow-on-read=false>
 
 Do not save data from read requests in the overlay.  This leaves the
 overlay as small as possible.  This is the default.
+
+=item B<cow-on-read=true>
+
+When the client issues a read request, copy the data into the overlay
+so that the same data can be served more quickly later.
 
 =item B<cow-on-read=/PATH>
 
@@ -83,18 +73,23 @@ behaviour while nbdkit is running.
 
 =head1 EXAMPLES
 
-Serve the file F<disk.img>, allowing writes, but do not save any
-changes into the file:
+=head2 nbdkit --filter=cow file disk.img
 
- nbdkit --filter=cow file disk.img
+Serve the file F<disk.img>, allowing writes, but do not save any
+changes into the file.
+
+=head2 nbdkit --filter=cow --filter=xz file disk.xz cow-on-read=true
 
 L<nbdkit-xz-filter(1)> only supports read access, but you can provide
-temporary write access by doing (although this does B<not> save
-changes to the file):
+temporary write access by using the command above.  Because xz
+decompression is slow, using C<cow-on-read=true> causes reads to be
+cached as well as writes, improving performance at the expense of
+using more temporary space.  Note that writes are thrown away when
+nbdkit exits and do not get saved into the file.
 
- nbdkit --filter=cow --filter=xz file disk.xz
+=head1 NOTES
 
-=head1 CREATING A DIFF WITH QEMU-IMG
+=head2 Creating a diff with qemu-img
 
 Although nbdkit-cow-filter itself cannot save the differences, it is
 possible to do this using an obscure feature of L<qemu-img(1)>.
@@ -117,6 +112,14 @@ the differences:
 F<diff.qcow2> now contains the differences between the base
 (F<disk.img>) and the changes stored in nbdkit-cow-filter.  C<nbdkit>
 can now be killed.
+
+=head2 Compared to nbd-server -c option
+
+All connections to the nbdkit instance see the same view of the disk.
+This is different from L<nbd-server(1)> I<-c> option where each
+connection sees its own copy-on-write overlay and simply disconnecting
+the client throws that away.  It also allows us to create diffs as
+above.
 
 =head1 ENVIRONMENT VARIABLES
 
@@ -154,6 +157,7 @@ L<nbdkit-cache-filter(1)>,
 L<nbdkit-cacheextents-filter(1)>,
 L<nbdkit-xz-filter(1)>,
 L<nbdkit-filter(3)>,
+L<nbdcopy(1)>,
 L<qemu-img(1)>.
 
 =head1 AUTHORS
