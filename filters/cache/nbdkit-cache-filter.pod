@@ -4,13 +4,13 @@ nbdkit-cache-filter - nbdkit caching filter
 
 =head1 SYNOPSIS
 
- nbdkit --filter=cache plugin [cache=writeback|writethrough|unsafe]
+ nbdkit --filter=cache plugin [plugin-args...]
+                              [cache=writeback|writethrough|unsafe]
                               [cache-min-block-size=SIZE]
                               [cache-max-size=SIZE]
                               [cache-high-threshold=N]
                               [cache-low-threshold=N]
                               [cache-on-read=true|false|/PATH]
-                              [plugin-args...]
 
 =head1 DESCRIPTION
 
