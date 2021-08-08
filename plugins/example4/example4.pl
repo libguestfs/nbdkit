@@ -72,8 +72,11 @@ sub config
     }
 }
 
-# When all config parameters have been seen, allocate the disk.
-sub config_complete
+# This is called just before forking into the background and is the
+# last opportunity for the plugin to print an error message that the
+# user can see (without digging through log files).  Here we allocate
+# the disk.
+sub get_ready
 {
     die "size was not set" unless defined $size;
     $disk = "\0" x $size;
