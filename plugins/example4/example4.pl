@@ -72,13 +72,19 @@ sub config
     }
 }
 
+# After all the parameters have been parsed, this can be used to check
+# for invalid or missing parameters.
+sub config_complete
+{
+    die "size was not set" unless defined $size;
+}
+
 # This is called just before forking into the background and is the
 # last opportunity for the plugin to print an error message that the
 # user can see (without digging through log files).  Here we allocate
 # the disk.
 sub get_ready
 {
-    die "size was not set" unless defined $size;
     $disk = "\0" x $size;
 }
 
