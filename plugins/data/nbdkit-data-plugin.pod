@@ -172,18 +172,24 @@ compact format.  It is a string containing a list of bytes which are
 written into the disk image sequentially.  You can move the virtual
 offset where bytes are written using C<@offset>.
 
-For example:
-
  nbdkit data '0 1 2 3 @0x1fe 0x55 0xaa'
 
-creates a 0x200 = 512 byte (1 sector) image containing the four bytes
-C<0 1 2 3> at the start, and the two bytes C<0x55 0xaa> at the end of
-the sector, with the remaining 506 bytes in the middle being all
-zeroes.  In this example the size (512 bytes) is implied by the data.
-But you could additionally use the C<size> parameter to either
-truncate or extend (with zeroes) the disk image.
+creates:
 
-Whitespace between fields in the string is ignored.
+             total size 0x200 = 512 bytes (1 sector)
+┌──────┬──────┬──────┬──────┬───────── ── ── ───┬──────┬──────┐
+│   0  │   1  │   2  │   3  │  0     0  ...  0  │ 0x55 │ 0xaa │
+└──────┴──────┴──────┴──────┴───────── ── ── ───┴──────┴──────┘
+                                                  ↑
+                                            offset 0x1fe
+
+In this example the size is implied by the data.  But you could also
+use the C<size> parameter to either truncate or extend (with zeroes)
+the disk image.  Another way to write the same disk would be this,
+where we align the offset to the end of the sector and move back 2
+bytes to write the signature:
+
+ nbdkit data '0 1 2 3 @^0x200 @-2 le16:0xaa55'
 
 Fields in the string can be:
 
