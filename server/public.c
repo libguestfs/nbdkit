@@ -693,6 +693,8 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
    * - the current connection is multi-threaded and another thread detects
    *   NBD_CMD_DISC or a problem with the connection
    * - the input socket detects POLLRDHUP/POLLHUP/POLLERR
+   * - the input socket is invalid (POLLNVAL, probably closed by
+   *   another thread)
    */
   struct connection *conn = threadlocal_get_conn ();
   struct pollfd fds[] = {
@@ -724,7 +726,8 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
    */
   assert (quit ||
           (conn && conn->nworkers > 0 && connection_get_status () < 1) ||
-          (conn && (fds[2].revents & (POLLRDHUP | POLLHUP | POLLERR))));
+          (conn && (fds[2].revents & (POLLRDHUP | POLLHUP | POLLERR |
+                                      POLLNVAL))));
   nbdkit_error ("aborting sleep to shut down");
   errno = ESHUTDOWN;
   return -1;
