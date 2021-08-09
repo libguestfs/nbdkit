@@ -46,7 +46,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # This should work and show the "extra debugging" line in debug output.
-nbdkit -f -v -D example2.extra=1 example2 file=disk \
+nbdkit -U - -f -v -D example2.extra=1 example2 file=disk \
        --run 'nbdinfo "$uri"' 2>debug-flags.out
 cat debug-flags.out
 if ! grep -sq 'extra debugging:' debug-flags.out ; then
@@ -82,33 +82,33 @@ check_warning ()
 
 # This is expected to fail because we didn't set the file= parameter,
 # but it should not fail because of the debug flag.
-nbdkit -f -D example2.extra=1 example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D example2.extra=1 example2 2>debug-flags.out && expected_failure
 check_error "you must supply the file="
 
 # This should fail because we didn't set the file= parameter, but it
 # should also print a warning about the unknown -D flag.
-nbdkit -f -D example2.unknown=1 example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D example2.unknown=1 example2 2>debug-flags.out && expected_failure
 check_error "you must supply the file="
 check_warning "does not contain a global variable called example2_debug_unknown"
 
 # This should fail because we didn't set the file= parameter, but it
 # should also print a warning because the -D flag is unused.
-nbdkit -f -D example1.foo=1 example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D example1.foo=1 example2 2>debug-flags.out && expected_failure
 check_error "you must supply the file="
 check_warning "was not used"
 
 # These should fail because the -D flag has a bad format.
-nbdkit -f -D = example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D = example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
-nbdkit -f -D . example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D . example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
-nbdkit -f -D =. example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D =. example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
-nbdkit -f -D .= example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D .= example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
-nbdkit -f -D .extra=1 example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D .extra=1 example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
-nbdkit -f -D example2.=1 example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D example2.=1 example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
-nbdkit -f -D example2.extra= example2 2>debug-flags.out && expected_failure
+nbdkit -U - -f -D example2.extra= example2 2>debug-flags.out && expected_failure
 check_error "must have the format"
