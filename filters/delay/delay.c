@@ -42,25 +42,28 @@
 
 #include <nbdkit-filter.h>
 
-static int delay_read_ms = 0;   /* read delay (milliseconds) */
-static int delay_write_ms = 0;  /* write delay (milliseconds) */
-static int delay_zero_ms = 0;   /* zero delay (milliseconds) */
-static int delay_trim_ms = 0;   /* trim delay (milliseconds) */
-static int delay_extents_ms = 0;/* extents delay (milliseconds) */
-static int delay_cache_ms = 0;  /* cache delay (milliseconds) */
+static unsigned delay_read_ms = 0;   /* read delay (milliseconds) */
+static unsigned delay_write_ms = 0;  /* write delay (milliseconds) */
+static unsigned delay_zero_ms = 0;   /* zero delay (milliseconds) */
+static unsigned delay_trim_ms = 0;   /* trim delay (milliseconds) */
+static unsigned delay_extents_ms = 0;/* extents delay (milliseconds) */
+static unsigned delay_cache_ms = 0;  /* cache delay (milliseconds) */
+static unsigned delay_open_ms = 0;   /* open delay (milliseconds) */
+static unsigned delay_close_ms = 0;  /* close delay (milliseconds) */
+
 static int delay_fast_zero = 1; /* whether delaying zero includes fast zero */
-static int delay_open_ms = 0;   /* open delay (milliseconds) */
-static int delay_close_ms = 0;  /* close delay (milliseconds) */
 
 static int
-parse_delay (const char *key, const char *value)
+parse_delay (const char *key, const char *value, unsigned *r)
 {
   size_t len = strlen (value);
-  int r;
 
   if (len > 2 && strcmp (&value[len-2], "ms") == 0) {
-    if (sscanf (value, "%d", &r) == 1 && r >= 0)
-      return r;
+    /* We have to use sscanf here instead of nbdkit_parse_unsigned
+     * because that function will reject the "ms" suffix.
+     */
+    if (sscanf (value, "%u", r) == 1)
+      return 0;
     else {
       nbdkit_error ("cannot parse %s in milliseconds parameter: %s",
                     key, value);
@@ -68,24 +71,19 @@ parse_delay (const char *key, const char *value)
     }
   }
   else {
-    if (sscanf (value, "%d", &r) == 1 && r >= 0) {
-      if (r * 1000LL > INT_MAX) {
-        nbdkit_error ("seconds parameter %s is too large: %s",
-                      key, value);
-        return -1;
-      }
-      return r * 1000;
-    }
-    else {
-      nbdkit_error ("cannot parse %s in seconds parameter: %s",
-                    key, value);
+    if (nbdkit_parse_unsigned (key, value, r) == -1)
+      return -1;
+    if (*r * 1000U > UINT_MAX) {
+      nbdkit_error ("seconds parameter %s is too large: %s", key, value);
       return -1;
     }
+    *r *= 1000;
+    return 0;
   }
 }
 
 static int
-delay (int ms, int *err)
+delay (unsigned ms, int *err)
 {
   if (ms > 0 && nbdkit_nanosleep (ms / 1000, (ms % 1000) * 1000000) == -1) {
     *err = errno;
@@ -150,14 +148,12 @@ delay_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   if (strcmp (key, "rdelay") == 0 ||
       strcmp (key, "delay-read") == 0 ||
       strcmp (key, "delay-reads") == 0) {
-    delay_read_ms = parse_delay (key, value);
-    if (delay_read_ms == -1)
+    if (parse_delay (key, value, &delay_read_ms) == -1)
       return -1;
     return 0;
   }
   else if (strcmp (key, "wdelay") == 0) {
-    delay_write_ms = parse_delay (key, value);
-    if (delay_write_ms == -1)
+    if (parse_delay (key, value, &delay_write_ms) == -1)
       return -1;
     /* Historically wdelay set all write-related delays. */
     delay_zero_ms = delay_trim_ms = delay_write_ms;
@@ -165,15 +161,13 @@ delay_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   }
   else if (strcmp (key, "delay-write") == 0 ||
            strcmp (key, "delay-writes") == 0) {
-    delay_write_ms = parse_delay (key, value);
-    if (delay_write_ms == -1)
+    if (parse_delay (key, value, &delay_write_ms) == -1)
       return -1;
     return 0;
   }
   else if (strcmp (key, "delay-zero") == 0 ||
            strcmp (key, "delay-zeroes") == 0) {
-    delay_zero_ms = parse_delay (key, value);
-    if (delay_zero_ms == -1)
+    if (parse_delay (key, value, &delay_zero_ms) == -1)
       return -1;
     return 0;
   }
@@ -181,21 +175,18 @@ delay_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
            strcmp (key, "delay-trims") == 0 ||
            strcmp (key, "delay-discard") == 0 ||
            strcmp (key, "delay-discards") == 0) {
-    delay_trim_ms = parse_delay (key, value);
-    if (delay_trim_ms == -1)
+    if (parse_delay (key, value, &delay_trim_ms) == -1)
       return -1;
     return 0;
   }
   else if (strcmp (key, "delay-extent") == 0 ||
            strcmp (key, "delay-extents") == 0) {
-    delay_extents_ms = parse_delay (key, value);
-    if (delay_extents_ms == -1)
+    if (parse_delay (key, value, &delay_extents_ms) == -1)
       return -1;
     return 0;
   }
   else if (strcmp (key, "delay-cache") == 0) {
-    delay_cache_ms = parse_delay (key, value);
-    if (delay_cache_ms == -1)
+    if (parse_delay (key, value, &delay_cache_ms) == -1)
       return -1;
     return 0;
   }
@@ -206,14 +197,12 @@ delay_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
     return 0;
   }
   else if (strcmp (key, "delay-open") == 0) {
-    delay_open_ms = parse_delay (key, value);
-    if (delay_open_ms == -1)
+    if (parse_delay (key, value, &delay_open_ms) == -1)
       return -1;
     return 0;
   }
   else if (strcmp (key, "delay-close") == 0) {
-    delay_close_ms = parse_delay (key, value);
-    if (delay_close_ms == -1)
+    if (parse_delay (key, value, &delay_close_ms) == -1)
       return -1;
     return 0;
   }
