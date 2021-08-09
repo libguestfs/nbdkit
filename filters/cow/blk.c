@@ -254,8 +254,10 @@ blk_read_multiple (nbdkit_next *next,
 
   if (cow_debug_verbose)
     nbdkit_debug ("cow: blk_read_multiple block %" PRIu64
-                  " (offset %" PRIu64 ") is %s",
-                  blknum, (uint64_t) offset, state_to_string (state));
+                  " (offset %" PRIu64 ") run of length %" PRIu64
+                  " is %s",
+                  blknum, (uint64_t) offset, runblocks,
+                  state_to_string (state));
 
   if (state == BLOCK_NOT_ALLOCATED) { /* Read underlying plugin. */
     unsigned n, tail = 0;
@@ -281,6 +283,11 @@ blk_read_multiple (nbdkit_next *next,
      * set them as allocated.
      */
     if (cow_on_read) {
+      if (cow_debug_verbose)
+        nbdkit_debug ("cow: cow-on-read saving %" PRIu64 " blocks "
+                      "at offset %" PRIu64 " into the cache",
+                      runblocks, offset);
+
       if (full_pwrite (fd, block, BLKSIZE * runblocks, offset) == -1) {
         *err = errno;
         nbdkit_error ("pwrite: %m");
