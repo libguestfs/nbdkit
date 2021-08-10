@@ -117,15 +117,23 @@ the plugin.
 
 =item B<delay-open=>NNB<ms>
 
+(nbdkit E<ge> 1.28)
+
+Delay open (client connection) by C<SECS> seconds or C<NN>
+milliseconds.
+
 =item B<delay-close=>SECS
 
 =item B<delay-close=>NNB<ms>
 
 (nbdkit E<ge> 1.28)
 
-Delay open and close operations by C<SECS> seconds or C<NN>
-milliseconds.  Open corresponds to client connection.  Close may not
-be visible to clients if they abruptly disconnect.
+Delay close (client disconnection) by C<SECS> seconds or C<NN>
+milliseconds.  This can also cause server shutdown to be delayed if
+clients are connected at the time.  This only affects clients that
+gracefully disconnect (using C<NBD_CMD_DISC> / libnbd function
+L<nbd_shutdown(3)>).  Clients that abruptly disconnect from the server
+cannot be delayed.
 
 =back
 
