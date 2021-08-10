@@ -1427,8 +1427,16 @@ EXTRA_DIST += \
 	$(NULL)
 
 # delay filter tests.
-TESTS += test-delay-shutdown.sh
-EXTRA_DIST += test-delay-shutdown.sh
+TESTS += \
+	test-delay-close.sh \
+	test-delay-open.sh \
+	test-delay-shutdown.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-delay-close.sh \
+	test-delay-open.sh \
+	test-delay-shutdown.sh \
+	$(NULL)
 LIBNBD_TESTS += test-delay
 
 test_delay_SOURCES = test-delay.c
