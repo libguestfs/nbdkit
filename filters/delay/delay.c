@@ -39,6 +39,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
 
 #include <nbdkit-filter.h>
 
@@ -132,12 +133,6 @@ static int
 open_delay (int *err)
 {
   return delay (delay_open_ms, err);
-}
-
-static int
-close_delay (int *err)
-{
-  return delay (delay_close_ms, err);
 }
 
 /* Called for each key=value passed on the command line. */
@@ -253,13 +248,36 @@ delay_open (nbdkit_next_open *next, nbdkit_context *nxdata,
   return NBDKIT_HANDLE_NOT_NEEDED;
 }
 
-/* Close connection. */
-static void
-delay_close (void *handle)
+/* Close connection.
+ *
+ * We cannot call nbdkit_nanosleep here because the socket may have
+ * been closed and that function will abort and return immediately.
+ * However we want to force a sleep (even if the server is shutting
+ * down) so use regular nanosleep instead.
+ *
+ * We cannot use the .close callback because that happens after the
+ * socket has closed, thus not delaying the client.  By using
+ * .finalize we can delay well-behaved clients (those that use
+ * NBD_CMD_DISC).  We cannot delay clients that drop the connection.
+ */
+static int
+delay_finalize (nbdkit_next *next, void *handle)
 {
-  int err;
+  const unsigned ms = delay_close_ms;
 
-  close_delay (&err);
+  if (ms > 0) {
+    struct timespec ts;
+
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+    /* If nanosleep fails we don't really want to interrupt the chain
+     * of finalize calls through the other filters, so ignore any
+     * error here.
+     */
+    nanosleep (&ts, NULL);
+  }
+
+  return next->finalize (next);
 }
 
 /* Read data. */
@@ -340,7 +358,7 @@ static struct nbdkit_filter filter = {
   .config_help       = delay_config_help,
   .can_fast_zero     = delay_can_fast_zero,
   .open              = delay_open,
-  .close             = delay_close,
+  .finalize          = delay_finalize,
   .pread             = delay_pread,
   .pwrite            = delay_pwrite,
   .zero              = delay_zero,
