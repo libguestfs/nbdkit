@@ -44,7 +44,6 @@ AC_USE_SYSTEM_EXTENSIONS
 
 dnl NB: Do not [quote] this parameter.
 AM_INIT_AUTOMAKE(foreign)
-AC_PROG_LIBTOOL
 LT_INIT([win32-dll])
 
 dnl Extra string, a freeform string defined by downstream packagers.
@@ -156,7 +155,7 @@ dnl Some very basic tools.
 AC_PROG_SED
 
 dnl Check for basic C environment.
-AC_PROG_CC_STDC
+AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_CPP
 AC_SYS_LARGEFILE
