@@ -638,20 +638,22 @@ dnl Check for valgrind.
 AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
 
 dnl If valgrind headers are available (optional).
-dnl Since this is only useful for developers, you have to enable
-dnl it explicitly using --enable-valgrind.
+dnl Although the runtime check adds only a trivial amount of code, you can
+dnl avoid it with explicit --disable-valgrind.
 AC_ARG_ENABLE([valgrind],
-    [AS_HELP_STRING([--enable-valgrind],
-                    [enable Valgrind extensions (for developers)])],
-    [enable_valgrind=yes],
-    [enable_valgrind=no])
-AS_IF([test "x$enable_valgrind" = "xyes"],[
+    [AS_HELP_STRING([--disable-valgrind],
+                    [disable Valgrind probe])],
+    [],
+    [enable_valgrind=check])
+AS_IF([test "x$enable_valgrind" != "xno"],[
     PKG_CHECK_MODULES([VALGRIND], [valgrind], [
         AC_SUBST([VALGRIND_CFLAGS])
         AC_SUBST([VALGRIND_LIBS])
         AC_DEFINE([HAVE_VALGRIND],[1],[Valgrind headers found at compile time])
     ],[
-        AC_MSG_ERROR([--enable-valgrind given, but Valgrind headers are not available])
+        AS_IF([test "x$enable_valgrind" = "xyes"], [
+            AC_MSG_ERROR([--enable-valgrind given, but Valgrind headers are not available])
+        ])
     ])
 ])
 
@@ -660,7 +662,7 @@ dnl normal builds.  See fuzzing/README.
 AC_ARG_ENABLE([libfuzzer],
     [AS_HELP_STRING([--enable-libfuzzer],
                     [build libFuzzer test binary (developers only)])],
-    [enable_libfuzzer=yes],
+    [],
     [enable_libfuzzer=no])
 AS_IF([test "x$enable_libfuzzer" = "xyes"],[
     AC_DEFINE([ENABLE_LIBFUZZER],[1],[Enable special libFuzzer binary])

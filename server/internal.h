@@ -63,11 +63,7 @@
 #define if_verbose if (verbose)
 #endif
 
-#if HAVE_VALGRIND
-# include <valgrind.h>
-/* http://valgrind.org/docs/manual/faq.html#faq.unhelpful */
-# define DO_DLCLOSE !RUNNING_ON_VALGRIND
-#elif defined(__SANITIZE_ADDRESS__)
+#if defined(__SANITIZE_ADDRESS__)
 # define DO_DLCLOSE 0
 #elif ENABLE_LIBFUZZER
 /* XXX This causes dlopen in the server to leak during fuzzing.
@@ -76,7 +72,13 @@
  */
 # define DO_DLCLOSE 0
 #else
-# define DO_DLCLOSE 1
+# if HAVE_VALGRIND
+#  include <valgrind.h>
+/* http://valgrind.org/docs/manual/faq.html#faq.unhelpful */
+#  define DO_DLCLOSE !RUNNING_ON_VALGRIND
+# else
+#  define DO_DLCLOSE 1
+# endif
 #endif
 
 /* Declare program_name. */
