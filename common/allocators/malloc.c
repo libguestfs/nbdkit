@@ -105,25 +105,6 @@ extend (struct m_alloc *ma, uint64_t new_size)
       return -1;
     }
 
-    /* Hints to the kernel.  Doesn't matter if these fail.
-     * XXX Consider in future: MADV_MERGEABLE (tunable)
-     */
-#ifdef MADV_RANDOM
-    madvise (ma->ba.ptr, ma->ba.alloc, MADV_RANDOM);
-#endif
-#ifdef MADV_WILLNEED
-    madvise (ma->ba.ptr, ma->ba.alloc, MADV_WILLNEED);
-#endif
-#ifdef MADV_DONTFORK
-    madvise (ma->ba.ptr, ma->ba.alloc, MADV_DONTFORK);
-#endif
-#ifdef MADV_HUGEPAGE
-    madvise (ma->ba.ptr, ma->ba.alloc, MADV_HUGEPAGE);
-#endif
-#ifdef MADV_DONTDUMP
-    madvise (ma->ba.ptr, ma->ba.alloc, MADV_DONTDUMP);
-#endif
-
     /* Initialize the newly allocated memory to 0. */
     memset (ma->ba.ptr + old_size, 0, n);
 
