@@ -19,6 +19,7 @@ Makefile.in
 
 /local*
 /nbdkit-*.tar.gz
+/nbdkit-*.tar.gz.sig
 /nbdkit-*.*/
 
 docs/*.1
