@@ -179,6 +179,16 @@ do_test '( "foo" )' 'b"foo"'
 do_test '( <(echo hello) )' 'b"hello\n"'
 do_test '( $hello )' 'b"hello"' hello=' "hello" '
 
+# Single byte * N is optimized to a fill.
+do_test '1*100000' 'b"\x01" * 100000'
+do_test '"1"*100000' 'b"1" * 100000'
+
+# Zero fill should overwrite existing data.
+do_test '1*1000 @100 0*100' 'b"\x01" * 100 + bytearray(100) + b"\x01" * 800'
+
+# Zero fill should extend the disk.
+do_test '1*1000 @100 0*1000' 'b"\x01" * 100 + bytearray(1000)'
+
 #----------------------------------------------------------------------
 # Assignments.
 do_test '

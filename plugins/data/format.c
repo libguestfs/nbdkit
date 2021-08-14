@@ -89,6 +89,7 @@ struct expr {
     EXPR_FILE,                  /* filename - read a file */
     EXPR_SCRIPT,                /* script   - run script */
     EXPR_STRING,                /* string   - string + length */
+    EXPR_FILL,                  /* fl.n, fl.b - fill same byte b, N times */
     EXPR_NAME,                  /* name     - insert a named expression */
     EXPR_ASSIGN,                /* a.name, a.id - assign name to expr */
     EXPR_REPEAT,                /* r.id, r.n - expr * N */
@@ -103,6 +104,10 @@ struct expr {
     char *filename;
     char *script;
     string string;
+    struct {
+      uint64_t n;
+      uint8_t b;
+    } fl;
     char *name;
     struct {
       char *name;
@@ -240,6 +245,10 @@ debug_expr (node_id id, int level)
     nbdkit_debug ("%s\"%s\"", debug_indent (level), s.ptr);
     break;
   }
+  case EXPR_FILL:
+    nbdkit_debug ("%sfill(%" PRIu8 "*%" PRIu64 ")",
+                  debug_indent (level), e->fl.b, e->fl.n);
+    break;
   case EXPR_NAME:
     nbdkit_debug ("%s\\%s", debug_indent (level), e->name);
     break;
@@ -971,6 +980,7 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
  * expressions.
  */
 static bool expr_list_only_bytes (const expr_t *);
+static bool expr_is_single_byte (const expr_t *, uint8_t *b);
 
 static int
 optimize_ast (node_id root, node_id *root_rtn)
@@ -1117,6 +1127,14 @@ optimize_ast (node_id root, node_id *root_rtn)
       *root_rtn = new_node (e);
       return 0;
     }
+    /* fill(b,X)*Y can be replaced by fill(b,X*Y). */
+    if (get_node (id)->t == EXPR_FILL) {
+      e.t = EXPR_FILL;
+      e.fl.n = get_node (root)->r.n * get_node (id)->fl.n;
+      e.fl.b = get_node (id)->fl.b;
+      *root_rtn = new_node (e);
+      return 0;
+    }
     /* For short strings and small values or N, string*N can be
      * replaced by N copies of the string.
      */
@@ -1141,6 +1159,18 @@ optimize_ast (node_id root, node_id *root_rtn)
       *root_rtn = new_node (e);
       return 0;
     }
+    /* Single byte expression * N can be replaced by a fill. */
+    {
+      uint8_t b;
+
+      if (expr_is_single_byte (get_node (id), &b)) {
+        e.t = EXPR_FILL;
+        e.fl.n = get_node (root)->r.n;
+        e.fl.b = b;
+        *root_rtn = new_node (e);
+        return 0;
+      }
+    }
 
     get_node (root)->r.id = id;
     *root_rtn = root;
@@ -1163,6 +1193,16 @@ optimize_ast (node_id root, node_id *root_rtn)
   case EXPR_STRING:
     /* A zero length string can be replaced with null. */
     if (get_node (root)->string.size == 0) {
+      e.t = EXPR_NULL;
+      *root_rtn = new_node (e);
+      return 0;
+    }
+    *root_rtn = root;
+    return 0;
+
+  case EXPR_FILL:
+    /* Zero-length fill can be replaced by null. */
+    if (get_node (root)->fl.n == 0) {
       e.t = EXPR_NULL;
       *root_rtn = new_node (e);
       return 0;
@@ -1196,6 +1236,35 @@ expr_list_only_bytes (const expr_t *e)
       return false;
   }
   return true;
+}
+
+/* For some constant expressions which are a length 1 byte, return
+ * true and the byte.
+ */
+static bool
+expr_is_single_byte (const expr_t *e, uint8_t *b)
+{
+  switch (e->t) {
+  case EXPR_BYTE:               /* A single byte. */
+    if (b) *b = e->b;
+    return true;
+  case EXPR_STRING:             /* A length-1 string. */
+    if (e->string.size != 1)
+      return false;
+    if (b) *b = e->string.ptr[0];
+    return true;
+  case EXPR_FILL:               /* A length-1 fill. */
+    if (e->fl.n != 1)
+      return false;
+    if (b) *b = e->fl.b;
+    return true;
+  case EXPR_REPEAT:             /* EXPR*1 if EXPR is single byte */
+    if (e->r.n != 1)
+      return false;
+    return expr_is_single_byte (get_node (e->r.id), b);
+  default:
+    return false;
+  }
 }
 
 static int store_file (struct allocator *a,
@@ -1286,6 +1355,12 @@ evaluate (const dict_t *dict, node_id root,
       *offset += e->string.size;
       break;
 
+    case EXPR_FILL:
+      if (a->f->fill (a, e->fl.b, e->fl.n, *offset) == -1)
+        return -1;
+      *offset += e->fl.n;
+      break;
+
     case EXPR_ASSIGN: {
       dict_t *d_next = d;
 
@@ -1339,20 +1414,11 @@ evaluate (const dict_t *dict, node_id root,
        * new allocator.
        */
 
-      /* BYTE*N was optimized in the previous ad hoc parser so it makes
-       * sense to optimize it here.
-       */
-      if (e->t == EXPR_REPEAT && get_node (e->id)->t == EXPR_BYTE) {
-        if (a->f->fill (a, get_node (e->id)->b, e->r.n, *offset) == -1)
-          return -1;
-        *offset += e->r.n;
-      }
-
       /* <FILE[N:M] can be optimized by not reading in the whole file.
        * For files like /dev/urandom which are infinite this stops an
        * infinite loop.
        */
-      else if (e->t == EXPR_SLICE && get_node (e->sl.id)->t == EXPR_FILE) {
+      if (e->t == EXPR_SLICE && get_node (e->sl.id)->t == EXPR_FILE) {
         if (store_file_slice (a, get_node (e->sl.id)->filename,
                               e->sl.n, e->sl.m, offset) == -1)
           return -1;
