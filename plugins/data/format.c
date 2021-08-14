@@ -79,7 +79,7 @@ DEFINE_VECTOR_TYPE(node_ids, node_id);
 
 struct expr {
   enum {
-    EXPR_NULL,                  /* null expression, no effect */
+    EXPR_NULL = 0,              /* null expression, no effect */
     EXPR_LIST,                  /* list     - list of node IDs */
     EXPR_BYTE,                  /* b        - single byte */
     EXPR_ABS_OFFSET,            /* ui       - absolute offset (@OFFSET) */
@@ -125,12 +125,20 @@ struct expr {
   };
 };
 
-/* We store a list of expressions (expr_t) in a global table.  When
- * referencing one expression from another (eg. for EXPR_EXPR) we
+/* We store a list of expressions (expr_t) in a global table.
+ *
+ * When referencing one expression from another (eg. for EXPR_EXPR) we
  * refer to the index into this table (node_id) instead of pointing to
- * the sub-expr_t directly.  This allows us to have nodes which
- * reference each other or are shared or removed without having to
- * worry about reference counting.
+ * the expr_t directly.
+ *
+ * This allows us to have nodes which reference each other or are
+ * shared or removed without having to worry about reference counting.
+ * The whole table is freed when the plugin is unloaded.
+ *
+ * As an optimization, the zeroth element (node_id == 0) is a common
+ * EXPR_NULL.  (This is optimized automatically, don't use node_id 0
+ * explicitly, in particular because if the table hasn't yet been
+ * allocated then there is no zeroth element).
  */
 DEFINE_VECTOR_TYPE(expr_list, expr_t);
 static expr_list expr_table;
@@ -139,7 +147,15 @@ static expr_list expr_table;
 static node_id
 new_node (const expr_t e)
 {
+  if (expr_table.size == 0) {
+    static const expr_t enull = { .t = EXPR_NULL };
+    if (expr_list_append (&expr_table, enull) == -1)
+      goto out_of_memory;
+  }
+  if (e.t == EXPR_NULL)
+    return 0;
   if (expr_list_append (&expr_table, e) == -1) {
+  out_of_memory:
     nbdkit_error ("realloc");
     exit (EXIT_FAILURE);
   }
