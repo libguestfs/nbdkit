@@ -192,6 +192,10 @@ do_test '1*1000 @100 0*100' 'b"\x01" * 100 + bytearray(100) + b"\x01" * 800'
 # Zero fill should extend the disk.
 do_test '1*1000 @100 0*1000' 'b"\x01" * 100 + bytearray(1000)'
 
+# Combining adjacent bytes, strings and fills.
+do_test '1 2 "3"' 'b"\x01\x023"'
+do_test '1 2 "3"*3 4' 'b"\x01\x02333\x04"'
+
 #----------------------------------------------------------------------
 # Assignments.
 do_test '

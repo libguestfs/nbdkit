@@ -995,8 +995,8 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
 /* This simple optimization pass over the AST simplifies some
  * expressions.
  */
-static bool expr_list_only_bytes (const expr_t *);
 static bool expr_is_single_byte (const expr_t *, uint8_t *b);
+static bool exprs_can_combine (node_id id0, node_id id1, node_id *id_rtn);
 
 static int
 optimize_ast (node_id root, node_id *root_rtn)
@@ -1033,6 +1033,19 @@ optimize_ast (node_id root, node_id *root_rtn)
       }
     }
 
+    /* Combine adjacent pairs of elements if possible. */
+    for (i = 1; i < e.list.size; ++i) {
+      node_id id0, id1;
+
+      id0 = e.list.ptr[i-1];
+      id1 = e.list.ptr[i];
+      if (exprs_can_combine (id0, id1, &id)) {
+        e.list.ptr[i-1] = id;
+        node_ids_remove (&e.list, i);
+        --i;
+      }
+    }
+
     /* List of length 0 is replaced with null. */
     if (e.list.size == 0) {
       free (e.list.ptr);
@@ -1046,23 +1059,6 @@ optimize_ast (node_id root, node_id *root_rtn)
       id = e.list.ptr[0];
       free (e.list.ptr);
       *root_rtn = id;
-      return 0;
-    }
-
-    /* List that contains only byte elements can be replaced by a string. */
-    if (expr_list_only_bytes (&e)) {
-      string s = empty_vector;
-      for (i = 0; i < e.list.size; ++i) {
-        char c = (char) get_node (e.list.ptr[i])->b;
-        if (string_append (&s, c) == -1) {
-          nbdkit_error ("realloc: %m");
-          exit (EXIT_FAILURE);
-        }
-      }
-      free (e.list.ptr);
-      e.t = EXPR_STRING;
-      e.string = s;
-      *root_rtn = new_node (e);
       return 0;
     }
 
@@ -1231,19 +1227,6 @@ optimize_ast (node_id root, node_id *root_rtn)
   abort ();
 }
 
-static bool
-expr_list_only_bytes (const expr_t *e)
-{
-  size_t i;
-
-  assert (e->t == EXPR_LIST);
-  for (i = 0; i < e->list.size; ++i) {
-    if (get_node (e->list.ptr[i])->t != EXPR_BYTE)
-      return false;
-  }
-  return true;
-}
-
 /* For some constant expressions which are a length 1 byte, return
  * true and the byte.
  */
@@ -1275,6 +1258,120 @@ expr_is_single_byte (const expr_t *e, uint8_t *b)
   default:
     return false;
   }
+}
+
+/* Test if two adjacent constant expressions can be combined and if so
+ * return a new expression which is the combination of both.  For
+ * example, two bytes are combined into a string (1 2 => "\x01\x02"),
+ * or a string and a byte into a longer string ("\x01\x02" 3 =>
+ * "\x01\x02\x03").
+ */
+static bool
+exprs_can_combine (node_id id0, node_id id1, node_id *id_rtn)
+{
+  expr_t e = { 0 };
+  uint8_t b1, b2;
+  string s = empty_vector;
+  size_t len, len1;
+
+  switch (get_node (id0)->t) {
+  case EXPR_BYTE:
+    switch (get_node (id1)->t) {
+    case EXPR_BYTE:             /* byte byte => fill | string */
+      b1 = get_node (id0)->b;
+      b2 = get_node (id1)->b;
+      if (b1 == b2) {
+        e.t = EXPR_FILL;
+        e.fl.b = b1;
+        e.fl.n = 2;
+      }
+      else {
+        e.t = EXPR_STRING;
+        if (string_append (&s, b1) == -1 ||
+            string_append (&s, b2) == -1)
+          goto out_of_memory;
+        e.string = s;
+      }
+      *id_rtn = new_node (e);
+      return true;
+    case EXPR_STRING:           /* byte string => string */
+      e.t = EXPR_STRING;
+      len = get_node (id1)->string.size;
+      if (string_reserve (&s, len+1) == -1)
+        goto out_of_memory;
+      s.size = len+1;
+      s.ptr[0] = get_node (id0)->b;
+      memcpy (&s.ptr[1], get_node (id1)->string.ptr, len);
+      e.string = s;
+      *id_rtn = new_node (e);
+      return true;
+    case EXPR_FILL:             /* byte fill => fill, if the same */
+      if (get_node (id0)->b != get_node (id1)->fl.b)
+        return false;
+      e = *get_node (id1);
+      e.fl.n++;
+      *id_rtn = new_node (e);
+      return true;
+    default:
+      return false;
+    }
+
+  case EXPR_STRING:
+    switch (get_node (id1)->t) {
+    case EXPR_BYTE:             /* string byte => string */
+      e.t = EXPR_STRING;
+      len = get_node (id0)->string.size;
+      if (string_reserve (&s, len+1) == -1)
+        goto out_of_memory;
+      s.size = len+1;
+      memcpy (s.ptr, get_node (id0)->string.ptr, len);
+      s.ptr[len] = get_node (id1)->b;
+      e.string = s;
+      *id_rtn = new_node (e);
+      return true;
+    case EXPR_STRING:           /* string string => string */
+      e.t = EXPR_STRING;
+      len = get_node (id0)->string.size;
+      len1 = get_node (id1)->string.size;
+      if (string_reserve (&s, len+len1) == -1)
+        goto out_of_memory;
+      s.size = len+len1;
+      memcpy (s.ptr, get_node (id0)->string.ptr, len);
+      memcpy (&s.ptr[len], get_node (id1)->string.ptr, len1);
+      e.string = s;
+      *id_rtn = new_node (e);
+      return true;
+    default:
+      return false;
+    }
+
+  case EXPR_FILL:
+    switch (get_node (id1)->t) {
+    case EXPR_BYTE:             /* fill byte => fill, if the same */
+      if (get_node (id0)->fl.b != get_node (id1)->b)
+        return false;
+      e = *get_node (id0);
+      e.fl.n++;
+      *id_rtn = new_node (e);
+      return true;
+    case EXPR_FILL:             /* fill fill => fill, if the same */
+      if (get_node (id0)->fl.b != get_node (id1)->fl.b)
+        return false;
+      e = *get_node (id0);
+      e.fl.n += get_node (id1)->fl.n;
+      *id_rtn = new_node (e);
+      return true;
+    default:
+      return false;
+    }
+
+  default:
+    return false;
+  }
+
+ out_of_memory:
+  nbdkit_error ("realloc: %m");
+  exit (EXIT_FAILURE);
 }
 
 static int store_file (struct allocator *a,
