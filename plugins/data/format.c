@@ -841,18 +841,8 @@ optimize_ast (node_id root, node_id *root_rtn)
 
   switch (get_node (root)->t) {
   case EXPR_LIST:
-    /* Optimize each element of the list.  For convenience this
-     * builds a new node.
-     */
+    /* Optimize each element of the list. */
     e.t = EXPR_LIST;
-#define APPEND_EXPR                             \
-    do {                                        \
-      node_id _id = new_node (e);               \
-      if (node_ids_append (&list, _id) == -1) { \
-        nbdkit_error ("realloc: %m");           \
-        exit (EXIT_FAILURE);                    \
-      }                                         \
-    } while (0)
 
     for (i = 0; i < get_node (root)->list.size; ++i) {
       id = get_node (root)->list.ptr[i];
