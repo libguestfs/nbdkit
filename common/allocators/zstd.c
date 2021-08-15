@@ -466,7 +466,7 @@ zstd_array_zero (struct allocator *a, uint64_t count, uint64_t offset)
   CLEANUP_FREE void *tbuf = NULL;
   uint64_t n;
   void *p;
-  struct l2_entry *l2_entry;
+  struct l2_entry *l2_entry = NULL;
 
   tbuf = malloc (PAGE_SIZE);
   if (tbuf == NULL) {
@@ -481,7 +481,7 @@ zstd_array_zero (struct allocator *a, uint64_t count, uint64_t offset)
       n = count;
     memset (p, 0, n);
 
-    if (l2_entry->page) {
+    if (l2_entry && l2_entry->page) {
       /* If the whole page is now zero, free it. */
       if (n >= PAGE_SIZE || is_zero (l2_entry->page, PAGE_SIZE)) {
         if (za->a.debug)

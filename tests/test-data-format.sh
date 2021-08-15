@@ -154,6 +154,9 @@ do_test '
 \a*2[:0] \a[:0]*2
 ' 'b""'
 
+# In nbdkit <= 1.27.5 this caused allocator=zstd to crash.
+do_test '0*10' 'bytearray(10)'
+
 #----------------------------------------------------------------------
 # Test various optimizations preserve the meaning.
 
