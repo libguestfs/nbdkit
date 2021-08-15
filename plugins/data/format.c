@@ -1199,6 +1199,25 @@ optimize_ast (node_id root, node_id *root_rtn)
       *root_rtn = new_node (e);
       return 0;
     }
+    /* Strings containing the same character can be replaced by a
+     * fill.  These can be produced by other optimizations.
+     */
+    if (get_node (root)->string.size > 1) {
+      const string *s = &get_node (root)->string;
+      uint64_t b = s->ptr[0];
+
+      for (i = 1; i < s->size; ++i)
+        if (s->ptr[i] != b)
+          break;
+
+      if (i == s->size) {
+        e.t = EXPR_FILL;
+        e.fl.b = b;
+        e.fl.n = s->size;
+        *root_rtn = new_node (e);
+        return 0;
+      }
+    }
     *root_rtn = root;
     return 0;
 
