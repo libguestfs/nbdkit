@@ -127,7 +127,7 @@
   name##_remove (name *v, size_t i)                                     \
   {                                                                     \
     assert (i < v->size);                                               \
-    memmove (&v->ptr[i], &v->ptr[i+1], (v->size-i) * sizeof (type));    \
+    memmove (&v->ptr[i], &v->ptr[i+1], (v->size-i-1) * sizeof (type));  \
     v->size--;                                                          \
   }                                                                     \
                                                                         \
