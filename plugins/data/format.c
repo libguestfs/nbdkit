@@ -1254,6 +1254,10 @@ expr_is_single_byte (const expr_t *e, uint8_t *b)
   case EXPR_BYTE:               /* A single byte. */
     if (b) *b = e->b;
     return true;
+  case EXPR_LIST:               /* A single element list if it is single byte */
+    if (e->list.size != 1)
+      return false;
+    return expr_is_single_byte (get_node (e->list.ptr[0]), b);
   case EXPR_STRING:             /* A length-1 string. */
     if (e->string.size != 1)
       return false;
