@@ -1079,6 +1079,7 @@ optimize_ast (node_id root, node_id *root_rtn)
     case EXPR_FILE:
     case EXPR_SCRIPT:
     case EXPR_STRING:
+    case EXPR_FILL:
     case EXPR_NAME:
       *root_rtn = id;
       return 0;
