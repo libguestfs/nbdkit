@@ -447,6 +447,9 @@ negotiate_handshake_newstyle_options (void)
         debug ("using TLS on this connection");
         /* Wipe out any cached state. */
         conn->structured_replies = false;
+        free (conn->exportname_from_set_meta_context);
+        conn->exportname_from_set_meta_context = NULL;
+        conn->meta_context_base_allocation = false;
       }
       break;
 
