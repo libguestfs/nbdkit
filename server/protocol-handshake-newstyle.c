@@ -414,6 +414,8 @@ negotiate_handshake_newstyle_options (struct connection *conn)
           return -1;
         conn->using_tls = true;
         debug ("using TLS on this connection");
+        /* Wipe out any cached state. */
+        conn->structured_replies = false;
       }
       break;
 
