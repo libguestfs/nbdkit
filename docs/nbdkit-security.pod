@@ -10,7 +10,7 @@ For how to report new security issues, see the C<SECURITY> file in the
 top level source directory, also available online here:
 L<https://gitlab.com/nbdkit/nbdkit/blob/master/SECURITY>
 
-=head2 CVE-2019-14850 
+=head2 CVE-2019-14850
 denial of service due to premature opening of back-end connection
 
 See the full announcement and links to mitigation, tests and fixes
@@ -26,6 +26,13 @@ See the full announcement and links to mitigation, tests and fixes
 here:
 https://www.redhat.com/archives/libguestfs/2019-September/msg00272.html
 
+=head2 CVE-2021-3716
+structured read denial of service attack against starttls
+
+See the full announcement and links to mitigation, tests and fixes
+here:
+https://www.redhat.com/archives/libguestfs/2021-August/msg00083.html
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>.
@@ -38,4 +45,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2020 Red Hat Inc.
+Copyright (C) 2013-2021 Red Hat Inc.
