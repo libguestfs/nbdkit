@@ -495,7 +495,8 @@ negotiate_handshake_newstyle_options (void)
           return -1;
         conn->using_tls = true;
         debug ("using TLS on this connection");
-        /* Wipe out any cached default export name. */
+        /* Wipe out any cached state. */
+        conn->structured_replies = false;
         for_each_backend (b) {
           free (conn->default_exportname[b->i]);
           conn->default_exportname[b->i] = NULL;
