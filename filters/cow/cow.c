@@ -58,7 +58,7 @@
  */
 static pthread_mutex_t rmw_lock = PTHREAD_MUTEX_INITIALIZER;
 
-bool cow_on_cache;
+static bool cow_on_cache;
 
 /* Cache on read ("cow-on-read") mode. */
 extern enum cor_mode {
