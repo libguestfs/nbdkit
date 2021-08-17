@@ -33,11 +33,6 @@
 #ifndef NBDKIT_BLK_H
 #define NBDKIT_BLK_H
 
-/* Size of a block in the overlay.  A 4K block size means that we need
- * 64 MB of memory to store the bitmap for a 1 TB underlying image.
- */
-#define BLKSIZE 65536
-
 /* Initialize the overlay and bitmap. */
 extern int blk_init (void);
 

@@ -5,6 +5,7 @@ nbdkit-cow-filter - nbdkit copy-on-write (COW) filter
 =head1 SYNOPSIS
 
  nbdkit --filter=cow plugin [plugin-args...]
+                            [cow-block-size=N]
                             [cow-on-cache=false|true]
                             [cow-on-read=false|true|/PATH]
 
@@ -41,6 +42,10 @@ serve the same data to each client.
 =head1 PARAMETERS
 
 =over 4
+
+=item B<cow-block-size=>N
+
+Set the block size used by the filter.  The default is 64K.
 
 =item B<cow-on-cache=false>
 
