@@ -99,6 +99,7 @@
 #include "pwrite.h"
 #include "utils.h"
 
+#include "cow.h"
 #include "blk.h"
 
 /* The temporary overlay. */
@@ -137,7 +138,7 @@ blk_init (void)
   size_t len;
   char *template;
 
-  bitmap_init (&bm, BLKSIZE, 2 /* bits per block */);
+  bitmap_init (&bm, blksize, 2 /* bits per block */);
 
   tmpdir = getenv ("TMPDIR");
   if (!tmpdir)
@@ -199,7 +200,7 @@ blk_set_size (uint64_t new_size)
   if (bitmap_resize (&bm, size) == -1)
     return -1;
 
-  if (ftruncate (fd, ROUND_UP (size, BLKSIZE)) == -1) {
+  if (ftruncate (fd, ROUND_UP (size, blksize)) == -1) {
     nbdkit_error ("ftruncate: %m");
     return -1;
   }
@@ -228,7 +229,7 @@ blk_read_multiple (nbdkit_next *next,
                    uint64_t blknum, uint64_t nrblocks,
                    uint8_t *block, bool cow_on_read, int *err)
 {
-  off_t offset = blknum * BLKSIZE;
+  off_t offset = blknum * blksize;
   enum bm_entry state;
   uint64_t b, runblocks;
 
@@ -262,8 +263,8 @@ blk_read_multiple (nbdkit_next *next,
   if (state == BLOCK_NOT_ALLOCATED) { /* Read underlying plugin. */
     unsigned n, tail = 0;
 
-    assert (BLKSIZE * runblocks <= UINT_MAX);
-    n = BLKSIZE * runblocks;
+    assert (blksize * runblocks <= UINT_MAX);
+    n = blksize * runblocks;
 
     if (offset + n > size) {
       tail = offset + n - size;
@@ -288,7 +289,7 @@ blk_read_multiple (nbdkit_next *next,
                       "at offset %" PRIu64 " into the cache",
                       runblocks, offset);
 
-      if (full_pwrite (fd, block, BLKSIZE * runblocks, offset) == -1) {
+      if (full_pwrite (fd, block, blksize * runblocks, offset) == -1) {
         *err = errno;
         nbdkit_error ("pwrite: %m");
         return -1;
@@ -298,14 +299,14 @@ blk_read_multiple (nbdkit_next *next,
     }
   }
   else if (state == BLOCK_ALLOCATED) { /* Read overlay. */
-    if (full_pread (fd, block, BLKSIZE * runblocks, offset) == -1) {
+    if (full_pread (fd, block, blksize * runblocks, offset) == -1) {
       *err = errno;
       nbdkit_error ("pread: %m");
       return -1;
     }
   }
   else /* state == BLOCK_TRIMMED */ {
-    memset (block, 0, BLKSIZE * runblocks);
+    memset (block, 0, blksize * runblocks);
   }
 
   /* If all done, return. */
@@ -316,7 +317,7 @@ blk_read_multiple (nbdkit_next *next,
   return blk_read_multiple (next,
                             blknum + runblocks,
                             nrblocks - runblocks,
-                            block + BLKSIZE * runblocks,
+                            block + blksize * runblocks,
                             cow_on_read, err);
 }
 
@@ -333,9 +334,9 @@ blk_cache (nbdkit_next *next,
 {
   /* XXX Could make this lock more fine-grained with some thought. */
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  off_t offset = blknum * BLKSIZE;
+  off_t offset = blknum * blksize;
   enum bm_entry state = bitmap_get_blk (&bm, blknum, BLOCK_NOT_ALLOCATED);
-  unsigned n = BLKSIZE, tail = 0;
+  unsigned n = blksize, tail = 0;
 
   if (offset + n > size) {
     tail = offset + n - size;
@@ -348,7 +349,7 @@ blk_cache (nbdkit_next *next,
 
   if (state == BLOCK_ALLOCATED) {
 #if HAVE_POSIX_FADVISE
-    int r = posix_fadvise (fd, offset, BLKSIZE, POSIX_FADV_WILLNEED);
+    int r = posix_fadvise (fd, offset, blksize, POSIX_FADV_WILLNEED);
     if (r) {
       errno = r;
       nbdkit_error ("posix_fadvise: %m");
@@ -373,7 +374,7 @@ blk_cache (nbdkit_next *next,
   memset (block + n, 0, tail);
 
   if (mode == BLK_CACHE_COW) {
-    if (full_pwrite (fd, block, BLKSIZE, offset) == -1) {
+    if (full_pwrite (fd, block, blksize, offset) == -1) {
       *err = errno;
       nbdkit_error ("pwrite: %m");
       return -1;
@@ -386,13 +387,13 @@ blk_cache (nbdkit_next *next,
 int
 blk_write (uint64_t blknum, const uint8_t *block, int *err)
 {
-  off_t offset = blknum * BLKSIZE;
+  off_t offset = blknum * blksize;
 
   if (cow_debug_verbose)
     nbdkit_debug ("cow: blk_write block %" PRIu64 " (offset %" PRIu64 ")",
                   blknum, (uint64_t) offset);
 
-  if (full_pwrite (fd, block, BLKSIZE, offset) == -1) {
+  if (full_pwrite (fd, block, blksize, offset) == -1) {
     *err = errno;
     nbdkit_error ("pwrite: %m");
     return -1;
@@ -407,14 +408,14 @@ blk_write (uint64_t blknum, const uint8_t *block, int *err)
 int
 blk_trim (uint64_t blknum, int *err)
 {
-  off_t offset = blknum * BLKSIZE;
+  off_t offset = blknum * blksize;
 
   if (cow_debug_verbose)
     nbdkit_debug ("cow: blk_trim block %" PRIu64 " (offset %" PRIu64 ")",
                   blknum, (uint64_t) offset);
 
   /* XXX As an optimization we could punch a whole in the overlay
-   * here.  However it's not trivial since BLKSIZE is unrelated to the
+   * here.  However it's not trivial since blksize is unrelated to the
    * overlay filesystem block size.
    */
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);

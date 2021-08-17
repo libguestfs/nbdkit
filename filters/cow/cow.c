@@ -40,6 +40,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <pthread.h>
 
@@ -47,9 +48,11 @@
 
 #include "cleanup.h"
 #include "isaligned.h"
+#include "ispowerof2.h"
 #include "minmax.h"
 #include "rounding.h"
 
+#include "cow.h"
 #include "blk.h"
 
 /* Read-modify-write requests are serialized through this global lock.
@@ -57,6 +60,8 @@
  * infrequent.
  */
 static pthread_mutex_t rmw_lock = PTHREAD_MUTEX_INITIALIZER;
+
+unsigned blksize = 65536;       /* block size */
 
 static bool cow_on_cache;
 
@@ -70,13 +75,6 @@ enum cor_mode cor_mode = COR_OFF;
 const char *cor_path;
 
 static void
-cow_load (void)
-{
-  if (blk_init () == -1)
-    exit (EXIT_FAILURE);
-}
-
-static void
 cow_unload (void)
 {
   blk_free ();
@@ -86,7 +84,19 @@ static int
 cow_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
             const char *key, const char *value)
 {
-  if (strcmp (key, "cow-on-cache") == 0) {
+  if (strcmp (key, "cow-block-size") == 0) {
+    int64_t r = nbdkit_parse_size (value);
+    if (r == -1)
+      return -1;
+    if (r <= 4096 || r > UINT_MAX || !is_power_of_2 (r)) {
+      nbdkit_error ("cow-block-size is out of range (4096..2G) "
+                    "or not a power of 2");
+      return -1;
+    }
+    blksize = r;
+    return 0;
+  }
+  else if (strcmp (key, "cow-on-cache") == 0) {
     int r;
 
     r = nbdkit_parse_bool (value);
@@ -114,8 +124,18 @@ cow_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
 }
 
 #define cow_config_help \
+  "cow-block-size=<N>       Set COW block size.\n" \
   "cow-on-cache=<BOOL>      Copy cache (prefetch) requests to the overlay.\n" \
   "cow-on-read=<BOOL>|/PATH Copy read requests to the overlay."
+
+static int
+cow_get_ready (int thread_model)
+{
+  if (blk_init () == -1)
+    return -1;
+
+  return 0;
+}
 
 /* Decide if cow-on-read is currently on or off. */
 bool
@@ -249,8 +269,8 @@ cow_pread (nbdkit_next *next,
   uint64_t blknum, blkoffs, nrblocks;
   int r;
 
-  if (!IS_ALIGNED (count | offset, BLKSIZE)) {
-    block = malloc (BLKSIZE);
+  if (!IS_ALIGNED (count | offset, blksize)) {
+    block = malloc (blksize);
     if (block == NULL) {
       *err = errno;
       nbdkit_error ("malloc: %m");
@@ -258,12 +278,12 @@ cow_pread (nbdkit_next *next,
     }
   }
 
-  blknum = offset / BLKSIZE;  /* block number */
-  blkoffs = offset % BLKSIZE; /* offset within the block */
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
 
   /* Unaligned head */
   if (blkoffs) {
-    uint64_t n = MIN (BLKSIZE - blkoffs, count);
+    uint64_t n = MIN (blksize - blkoffs, count);
 
     assert (block);
     r = blk_read (next, blknum, block, cow_on_read (), err);
@@ -279,15 +299,15 @@ cow_pread (nbdkit_next *next,
   }
 
   /* Aligned body */
-  nrblocks = count / BLKSIZE;
+  nrblocks = count / blksize;
   if (nrblocks > 0) {
     r = blk_read_multiple (next, blknum, nrblocks, buf, cow_on_read (), err);
     if (r == -1)
       return -1;
 
-    buf += nrblocks * BLKSIZE;
-    count -= nrblocks * BLKSIZE;
-    offset += nrblocks * BLKSIZE;
+    buf += nrblocks * blksize;
+    count -= nrblocks * blksize;
+    offset += nrblocks * blksize;
     blknum += nrblocks;
   }
 
@@ -314,8 +334,8 @@ cow_pwrite (nbdkit_next *next,
   uint64_t blknum, blkoffs;
   int r;
 
-  if (!IS_ALIGNED (count | offset, BLKSIZE)) {
-    block = malloc (BLKSIZE);
+  if (!IS_ALIGNED (count | offset, blksize)) {
+    block = malloc (blksize);
     if (block == NULL) {
       *err = errno;
       nbdkit_error ("malloc: %m");
@@ -323,12 +343,12 @@ cow_pwrite (nbdkit_next *next,
     }
   }
 
-  blknum = offset / BLKSIZE;  /* block number */
-  blkoffs = offset % BLKSIZE; /* offset within the block */
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
 
   /* Unaligned head */
   if (blkoffs) {
-    uint64_t n = MIN (BLKSIZE - blkoffs, count);
+    uint64_t n = MIN (blksize - blkoffs, count);
 
     /* Do a read-modify-write operation on the current block.
      * Hold the rmw_lock over the whole operation.
@@ -350,14 +370,14 @@ cow_pwrite (nbdkit_next *next,
   }
 
   /* Aligned body */
-  while (count >= BLKSIZE) {
+  while (count >= blksize) {
     r = blk_write (blknum, buf, err);
     if (r == -1)
       return -1;
 
-    buf += BLKSIZE;
-    count -= BLKSIZE;
-    offset += BLKSIZE;
+    buf += blksize;
+    count -= blksize;
+    offset += blksize;
     blknum++;
   }
 
@@ -397,19 +417,19 @@ cow_zero (nbdkit_next *next,
     return -1;
   }
 
-  block = malloc (BLKSIZE);
+  block = malloc (blksize);
   if (block == NULL) {
     *err = errno;
     nbdkit_error ("malloc: %m");
     return -1;
   }
 
-  blknum = offset / BLKSIZE;  /* block number */
-  blkoffs = offset % BLKSIZE; /* offset within the block */
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
 
   /* Unaligned head */
   if (blkoffs) {
-    uint64_t n = MIN (BLKSIZE - blkoffs, count);
+    uint64_t n = MIN (blksize - blkoffs, count);
 
     /* Do a read-modify-write operation on the current block.
      * Hold the rmw_lock over the whole operation.
@@ -429,9 +449,9 @@ cow_zero (nbdkit_next *next,
   }
 
   /* Aligned body */
-  if (count >= BLKSIZE)
-    memset (block, 0, BLKSIZE);
-  while (count >= BLKSIZE) {
+  if (count >= blksize)
+    memset (block, 0, blksize);
+  while (count >= blksize) {
     /* XXX There is the possibility of optimizing this: since this loop is
      * writing a whole, aligned block, we should use FALLOC_FL_ZERO_RANGE.
      */
@@ -439,8 +459,8 @@ cow_zero (nbdkit_next *next,
     if (r == -1)
       return -1;
 
-    count -= BLKSIZE;
-    offset += BLKSIZE;
+    count -= blksize;
+    offset += blksize;
     blknum++;
   }
 
@@ -471,8 +491,8 @@ cow_trim (nbdkit_next *next,
   uint64_t blknum, blkoffs;
   int r;
 
-  if (!IS_ALIGNED (count | offset, BLKSIZE)) {
-    block = malloc (BLKSIZE);
+  if (!IS_ALIGNED (count | offset, blksize)) {
+    block = malloc (blksize);
     if (block == NULL) {
       *err = errno;
       nbdkit_error ("malloc: %m");
@@ -480,12 +500,12 @@ cow_trim (nbdkit_next *next,
     }
   }
 
-  blknum = offset / BLKSIZE;  /* block number */
-  blkoffs = offset % BLKSIZE; /* offset within the block */
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
 
   /* Unaligned head */
   if (blkoffs) {
-    uint64_t n = MIN (BLKSIZE - blkoffs, count);
+    uint64_t n = MIN (blksize - blkoffs, count);
 
     /* Do a read-modify-write operation on the current block.
      * Hold the lock over the whole operation.
@@ -505,13 +525,13 @@ cow_trim (nbdkit_next *next,
   }
 
   /* Aligned body */
-  while (count >= BLKSIZE) {
+  while (count >= blksize) {
     r = blk_trim (blknum, err);
     if (r == -1)
       return -1;
 
-    count -= BLKSIZE;
-    offset += BLKSIZE;
+    count -= blksize;
+    offset += blksize;
     blknum++;
   }
 
@@ -568,22 +588,22 @@ cow_cache (nbdkit_next *next,
     mode = BLK_CACHE_COW;
 
   assert (!flags);
-  block = malloc (BLKSIZE);
+  block = malloc (blksize);
   if (block == NULL) {
     *err = errno;
     nbdkit_error ("malloc: %m");
     return -1;
   }
 
-  blknum = offset / BLKSIZE;  /* block number */
-  blkoffs = offset % BLKSIZE; /* offset within the block */
+  blknum = offset / blksize;  /* block number */
+  blkoffs = offset % blksize; /* offset within the block */
 
   /* Unaligned head */
   remaining += blkoffs;
   offset -= blkoffs;
 
   /* Unaligned tail */
-  remaining = ROUND_UP (remaining, BLKSIZE);
+  remaining = ROUND_UP (remaining, blksize);
 
   /* Aligned body */
   while (remaining) {
@@ -591,8 +611,8 @@ cow_cache (nbdkit_next *next,
     if (r == -1)
       return -1;
 
-    remaining -= BLKSIZE;
-    offset += BLKSIZE;
+    remaining -= blksize;
+    offset += blksize;
     blknum++;
   }
 
@@ -616,13 +636,13 @@ cow_extents (nbdkit_next *next,
    * value so rounding up is safe here.
    */
   end = offset + count;
-  offset = ROUND_DOWN (offset, BLKSIZE);
-  end = ROUND_UP (end, BLKSIZE);
+  offset = ROUND_DOWN (offset, blksize);
+  end = ROUND_UP (end, blksize);
   count = end - offset;
-  blknum = offset / BLKSIZE;
+  blknum = offset / blksize;
 
-  assert (IS_ALIGNED (offset, BLKSIZE));
-  assert (IS_ALIGNED (count, BLKSIZE));
+  assert (IS_ALIGNED (offset, blksize));
+  assert (IS_ALIGNED (count, blksize));
   assert (count > 0);           /* We must make forward progress. */
 
   while (count > 0) {
@@ -634,7 +654,7 @@ cow_extents (nbdkit_next *next,
     /* Present in the overlay. */
     if (present) {
       e.offset = offset;
-      e.length = BLKSIZE;
+      e.length = blksize;
 
       if (trimmed)
         e.type = NBDKIT_EXTENT_HOLE|NBDKIT_EXTENT_ZERO;
@@ -647,8 +667,8 @@ cow_extents (nbdkit_next *next,
       }
 
       blknum++;
-      offset += BLKSIZE;
-      count -= BLKSIZE;
+      offset += blksize;
+      count -= blksize;
     }
 
     /* Not present in the overlay, but we can ask the plugin. */
@@ -667,12 +687,12 @@ cow_extents (nbdkit_next *next,
          * (range_count), but count is a 64 bit quantity, so don't
          * overflow range_count here.
          */
-        if (range_count >= UINT32_MAX - BLKSIZE + 1) break;
+        if (range_count >= UINT32_MAX - blksize + 1) break;
 
         blknum++;
-        offset += BLKSIZE;
-        count -= BLKSIZE;
-        range_count += BLKSIZE;
+        offset += blksize;
+        count -= blksize;
+        range_count += blksize;
 
         if (count == 0) break;
         blk_status (blknum, &present, &trimmed);
@@ -706,7 +726,7 @@ cow_extents (nbdkit_next *next,
     /* Otherwise assume the block is non-sparse. */
     else {
       e.offset = offset;
-      e.length = BLKSIZE;
+      e.length = blksize;
       e.type = 0;
 
       if (nbdkit_add_extent (extents, e.offset, e.length, e.type) == -1) {
@@ -715,8 +735,8 @@ cow_extents (nbdkit_next *next,
       }
 
       blknum++;
-      offset += BLKSIZE;
-      count -= BLKSIZE;
+      offset += blksize;
+      count -= blksize;
     }
 
     /* If the caller only wanted the first extent, and we've managed
@@ -734,11 +754,11 @@ cow_extents (nbdkit_next *next,
 static struct nbdkit_filter filter = {
   .name              = "cow",
   .longname          = "nbdkit copy-on-write (COW) filter",
-  .load              = cow_load,
   .unload            = cow_unload,
   .open              = cow_open,
   .config            = cow_config,
   .config_help       = cow_config_help,
+  .get_ready         = cow_get_ready,
   .prepare           = cow_prepare,
   .get_size          = cow_get_size,
   .can_write         = cow_can_write,
