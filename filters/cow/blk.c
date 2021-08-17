@@ -83,10 +83,6 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
-
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
