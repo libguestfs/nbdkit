@@ -57,7 +57,7 @@
  */
 static pthread_mutex_t rmw_lock = PTHREAD_MUTEX_INITIALIZER;
 
-bool cow_on_cache;
+static bool cow_on_cache;
 
 static void
 cow_load (void)
