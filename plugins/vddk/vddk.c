@@ -42,6 +42,7 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <libgen.h>
+#include <sys/time.h>
 
 #include <pthread.h>
 
@@ -52,6 +53,8 @@
 #include "isaligned.h"
 #include "minmax.h"
 #include "rounding.h"
+#include "tvdiff.h"
+#include "vector.h"
 
 #include "vddk.h"
 #include "vddk-structs.h"
@@ -60,6 +63,7 @@
 NBDKIT_DLL_PUBLIC int vddk_debug_diskinfo;
 NBDKIT_DLL_PUBLIC int vddk_debug_extents;
 NBDKIT_DLL_PUBLIC int vddk_debug_datapath = 1;
+NBDKIT_DLL_PUBLIC int vddk_debug_stats;
 
 /* For each VDDK API define a static global variable.  These globals
  * are initialized when the plugin is loaded (by vddk_get_ready).
@@ -96,22 +100,52 @@ static const char *username;               /* user */
 static const char *vmx_spec;               /* vm */
 static bool is_remote;
 
-#define VDDK_ERROR(err, fs, ...)                                \
-  do {                                                          \
-    char *vddk_err_msg;                                         \
-    vddk_err_msg = VixDiskLib_GetErrorText ((err), NULL);       \
-    nbdkit_error (fs ": %s", ##__VA_ARGS__, vddk_err_msg);      \
-    VixDiskLib_FreeErrorText (vddk_err_msg);                    \
-  } while (0)
+/* For each VDDK API define a variable to store the time taken (used
+ * to implement -D vddk.stats=1).
+ */
+static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
+static void display_stats (void);
+#define STUB(fn,ret,args) static int64_t stats_##fn;
+#define OPTIONAL_STUB(fn,ret,args) static int64_t stats_##fn;
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
 
 #define VDDK_CALL_START(fn, fs, ...)                                    \
+  do {                                                                  \
+  struct timeval start_t, end_t;                                        \
+  if (vddk_debug_stats)                                                 \
+    gettimeofday (&start_t, NULL);                                      \
   nbdkit_debug ("VDDK call: %s (" fs ")", #fn, ##__VA_ARGS__);          \
   do
 #define VDDK_CALL_START_DATAPATH(fn, fs, ...)                           \
+  do {                                                                  \
+  struct timeval start_t, end_t;                                        \
+  if (vddk_debug_stats)                                                 \
+    gettimeofday (&start_t, NULL);                                      \
   if (vddk_debug_datapath)                                              \
     nbdkit_debug ("VDDK call: %s (" fs ")", #fn, ##__VA_ARGS__);        \
   do
-#define VDDK_CALL_END(fn) while (0)
+#define VDDK_CALL_END(fn)                               \
+  while (0);                                            \
+  if (vddk_debug_stats) {                               \
+    gettimeofday (&end_t, NULL);                        \
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&stats_lock);       \
+    stats_##fn += tvdiff_usec (&start_t, &end_t);       \
+  }                                                     \
+  } while (0)
+
+#define VDDK_ERROR(err, fs, ...)                                \
+  do {                                                          \
+    char *vddk_err_msg;                                         \
+    VDDK_CALL_START (VixDiskLib_GetErrorText, "%lu", err) {     \
+      vddk_err_msg = VixDiskLib_GetErrorText ((err), NULL);     \
+    } VDDK_CALL_END (VixDiskLib_GetErrorText);                  \
+    nbdkit_error (fs ": %s", ##__VA_ARGS__, vddk_err_msg);      \
+    VDDK_CALL_START (VixDiskLib_FreeErrorText, "") {            \
+      VixDiskLib_FreeErrorText (vddk_err_msg);                  \
+    } VDDK_CALL_END (VixDiskLib_FreeErrorText);                 \
+  } while (0)
 
 /* Unload the plugin. */
 static void
@@ -124,9 +158,59 @@ vddk_unload (void)
   }
   if (dl)
     dlclose (dl);
+
+  if (vddk_debug_stats)
+    display_stats ();
+
   free (config);
   free (libdir);
   free (password);
+}
+
+struct vddk_stat {
+  const char *fn;
+  int64_t usecs;
+};
+DEFINE_VECTOR_TYPE(statlist, struct vddk_stat)
+
+static int
+stat_compare (const void *vp1, const void *vp2)
+{
+  const struct vddk_stat *st1 = vp1;
+  const struct vddk_stat *st2 = vp2;
+
+  /* Note: sorts in reverse order. */
+  if (st1->usecs < st2->usecs) return 1;
+  else if (st1->usecs > st2->usecs) return -1;
+  else return 0;
+}
+
+static void
+display_stats (void)
+{
+  statlist stats = empty_vector;
+  struct vddk_stat st;
+  size_t i;
+
+#define ADD_ONE_STAT(fn_, usecs_)               \
+  st.fn = fn_;                                  \
+  st.usecs = usecs_;                            \
+  statlist_append (&stats, st)
+#define STUB(fn,ret,args) ADD_ONE_STAT (#fn, stats_##fn);
+#define OPTIONAL_STUB(fn,ret,args) ADD_ONE_STAT (#fn, stats_##fn);
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
+#undef ADD_ONE_STAT
+
+  qsort (stats.ptr, stats.size, sizeof stats.ptr[0], stat_compare);
+
+  nbdkit_debug ("VDDK function stats (-D vddk.stats=1):");
+  nbdkit_debug ("%-40s  %9s", "", "µs");
+  for (i = 0; i < stats.size; ++i) {
+    if (stats.ptr[i].usecs)
+      nbdkit_debug ("%-40s %9" PRIi64, stats.ptr[i].fn, stats.ptr[i].usecs);
+  }
 }
 
 static void
@@ -557,6 +641,7 @@ vddk_open (int readonly)
   struct vddk_handle *h;
   VixError err;
   uint32_t flags;
+  const char *transport_mode;
 
   h = malloc (sizeof *h);
   if (h == NULL) {
@@ -635,8 +720,10 @@ vddk_open (int readonly)
     goto err2;
   }
 
-  nbdkit_debug ("transport mode: %s",
-                VixDiskLib_GetTransportMode (h->handle));
+  VDDK_CALL_START (VixDiskLib_GetTransportMode, "handle") {
+    transport_mode = VixDiskLib_GetTransportMode (h->handle);
+  } VDDK_CALL_END (VixDiskLib_GetTransportMode);
+  nbdkit_debug ("transport mode: %s", transport_mode);
 
   return h;
 
