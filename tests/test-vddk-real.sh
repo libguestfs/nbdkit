@@ -79,7 +79,7 @@ if grep 'cannot open shared object file' test-vddk-real.log; then
 fi
 
 # Now run nbdkit for the test.
-start_nbdkit -P $pid -U $sock vddk libdir="$vddkdir" $vmdk
+start_nbdkit -P $pid -U $sock -D vddk.stats=1 vddk libdir="$vddkdir" $vmdk
 uri="nbd+unix:///?socket=$sock"
 
 # VDDK < 6.0 did not support flush, so disable flush test there.  Also
