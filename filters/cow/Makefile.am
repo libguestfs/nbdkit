@@ -39,6 +39,7 @@ nbdkit_cow_filter_la_SOURCES = \
 	blk.c \
 	blk.h \
 	cow.c \
+	cow.h \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
 
