@@ -1,6 +1,6 @@
 =head1 NAME
 
-nbdkit-service - how to mount NBD filesystems on a client machine
+nbdkit-client - how to mount NBD filesystems on a client machine
 
 =head1 DESCRIPTION
 
