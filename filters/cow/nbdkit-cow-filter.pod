@@ -45,7 +45,12 @@ serve the same data to each client.
 
 =item B<cow-block-size=>N
 
-Set the block size used by the filter.  The default is 64K.
+Set the block size used by the filter.  This has to be a power of two
+and the minimum block size is 4K.  The maximum block size depends on
+the plugin, but a block size larger than a few megabytes is not
+usually a good idea.
+
+The default is 64K.
 
 =item B<cow-on-cache=false>
 
