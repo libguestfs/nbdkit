@@ -166,7 +166,25 @@
   {                                                                     \
     return bsearch (key, v->ptr, v->size, sizeof (type),                \
                     (void *) compare);                                  \
-  }
+  }                                                                     \
+                                                                        \
+  /* Make a new vector with the same elements. */                       \
+  static inline int                                                     \
+  name##_duplicate (name *v, name *copy)                                \
+  {                                                                     \
+    /* Note it's allowed for v and copy to be the same pointer. */      \
+    type *vptr = v->ptr;                                                \
+    type *newptr;                                                       \
+    size_t len = v->size * sizeof (type);                               \
+                                                                        \
+    newptr = malloc (len);                                              \
+    if (newptr == NULL) return -1;                                      \
+    memcpy (newptr, vptr, len);                                         \
+    copy->ptr = newptr;                                                 \
+    copy->size = copy->alloc = v->size;                                 \
+    return 0;                                                           \
+  }                                                                     \
+                                                                        \
 
 #define empty_vector { .ptr = NULL, .size = 0, .alloc = 0 }
 
