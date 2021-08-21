@@ -569,6 +569,18 @@ AS_IF([test "x$is_windows" = "xyes"],[
 
 AC_SEARCH_LIBS([getaddrinfo], [network socket])
 
+dnl Does this platform require libc_malloc_debug.so (glibc >= 2.34)?
+AC_MSG_CHECKING([if this is glibc >= 2.34])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <limits.h>
+#if !defined(__GLIBC__) || __GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 34)
+#error "not glibc 2.34"
+#endif
+        ]])], [is_glibc_234=yes], [is_glibc_234=no]
+)
+AC_MSG_RESULT([$is_glibc_234])
+AM_CONDITIONAL([HAVE_GLIBC_234], [test "x$is_glibc_234" = "xyes"])
+
 dnl Check for SELinux socket labelling (optional).
 PKG_CHECK_MODULES([LIBSELINUX], [libselinux], [
     AC_SUBST([LIBSELINUX_CFLAGS])
