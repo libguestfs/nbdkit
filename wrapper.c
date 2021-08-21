@@ -220,6 +220,14 @@ main (int argc, char *argv[])
      * https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/57EYTAFQJVVG4APOV6AMM7C26H77IQEC/
      */
     unsetenv ("DEBUGINFOD_URLS");
+
+    /* Don't invoke malloc debugging when we are valgrinding because
+     * it duplicates work done by valgrind and might even hide issues.
+     *
+     * Originally this was a workaround for:
+     * https://sourceware.org/bugzilla/show_bug.cgi?id=28256
+     */
+    unsetenv ("GLIBC_TUNABLES");
   }
   else {
     s = getenv ("NBDKIT_GDB");
