@@ -37,6 +37,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <stdarg.h>
 #include <string.h>
 #include <assert.h>
 
@@ -77,24 +78,26 @@ cleanup_free_string (string *v)
 typedef size_t node_id;         /* references a node in expr_table below */
 DEFINE_VECTOR_TYPE(node_ids, node_id);
 
+enum expr_type {
+  EXPR_NULL = 0,              /* null expression, no effect */
+  EXPR_LIST,                  /* list     - list of node IDs */
+  EXPR_BYTE,                  /* b        - single byte */
+  EXPR_ABS_OFFSET,            /* ui       - absolute offset (@OFFSET) */
+  EXPR_REL_OFFSET,            /* i        - relative offset (@+N or @-N) */
+  EXPR_ALIGN_OFFSET,          /* ui       - align offset (@^ALIGNMENT) */
+  EXPR_EXPR,                  /* id       - nested expression */
+  EXPR_FILE,                  /* filename - read a file */
+  EXPR_SCRIPT,                /* script   - run script */
+  EXPR_STRING,                /* string   - string + length */
+  EXPR_FILL,                  /* fl.n, fl.b - fill same byte b, N times */
+  EXPR_NAME,                  /* name     - insert a named expression */
+  EXPR_ASSIGN,                /* a.name, a.id - assign name to expr */
+  EXPR_REPEAT,                /* r.id, r.n - expr * N */
+  EXPR_SLICE,                 /* sl.id, sl.n, sl.m - expr[N:M] */
+};
+
 struct expr {
-  enum {
-    EXPR_NULL = 0,              /* null expression, no effect */
-    EXPR_LIST,                  /* list     - list of node IDs */
-    EXPR_BYTE,                  /* b        - single byte */
-    EXPR_ABS_OFFSET,            /* ui       - absolute offset (@OFFSET) */
-    EXPR_REL_OFFSET,            /* i        - relative offset (@+N or @-N) */
-    EXPR_ALIGN_OFFSET,          /* ui       - align offset (@^ALIGNMENT) */
-    EXPR_EXPR,                  /* id       - nested expression */
-    EXPR_FILE,                  /* filename - read a file */
-    EXPR_SCRIPT,                /* script   - run script */
-    EXPR_STRING,                /* string   - string + length */
-    EXPR_FILL,                  /* fl.n, fl.b - fill same byte b, N times */
-    EXPR_NAME,                  /* name     - insert a named expression */
-    EXPR_ASSIGN,                /* a.name, a.id - assign name to expr */
-    EXPR_REPEAT,                /* r.id, r.n - expr * N */
-    EXPR_SLICE,                 /* sl.id, sl.n, sl.m - expr[N:M] */
-  } t;
+  enum expr_type t;
   union {
     node_ids list;
     uint8_t b;
@@ -143,7 +146,7 @@ struct expr {
 DEFINE_VECTOR_TYPE(expr_list, expr_t);
 static expr_list expr_table;
 
-/* Add expression to the table, returning the node_id. */
+/* Add the expression to the table, returning the node_id. */
 static node_id
 new_node (const expr_t e)
 {
@@ -162,34 +165,145 @@ new_node (const expr_t e)
   return expr_table.size-1;
 }
 
-/* Get a pointer to an expression by node_id. */
-static expr_t *
+/* Get an expression by node_id. */
+static expr_t
 get_node (node_id id)
 {
   assert (id < expr_table.size);
-  return &expr_table.ptr[id];
+  return expr_table.ptr[id];
 }
 
 static void
 free_expr_table (void)
 {
   size_t i;
-  expr_t *e;
+  expr_t e;
 
   for (i = 0; i < expr_table.size; ++i) {
     e = get_node (i);
-    switch (e->t) {
-    case EXPR_LIST:   free (e->list.ptr); break;
-    case EXPR_FILE:   free (e->filename); break;
-    case EXPR_SCRIPT: free (e->script); break;
-    case EXPR_STRING: free (e->string.ptr); break;
-    case EXPR_NAME:   free (e->name); break;
-    case EXPR_ASSIGN: free (e->a.name); break;
+    switch (e.t) {
+    case EXPR_LIST:   free (e.list.ptr); break;
+    case EXPR_FILE:   free (e.filename); break;
+    case EXPR_SCRIPT: free (e.script); break;
+    case EXPR_STRING: free (e.string.ptr); break;
+    case EXPR_NAME:   free (e.name); break;
+    case EXPR_ASSIGN: free (e.a.name); break;
     default: break;
     }
   }
 
   expr_list_reset (&expr_table);
+}
+
+/* Construct an expression. */
+static expr_t
+expr (enum expr_type t, ...)
+{
+  expr_t e = { .t = t };
+  va_list args;
+
+  /* Note that you cannot pass uint8_t through varargs, so for the
+   * byte fields we use int here.
+   */
+  va_start (args, t);
+  switch (t) {
+  case EXPR_NULL: /* nothing */ break;
+  case EXPR_LIST: e.list = va_arg (args, node_ids); break;
+  case EXPR_BYTE: e.b = va_arg (args, int); break;
+  case EXPR_ABS_OFFSET:
+  case EXPR_ALIGN_OFFSET:
+    e.ui = va_arg (args, uint64_t);
+    break;
+  case EXPR_REL_OFFSET: e.i = va_arg (args, int64_t); break;
+  case EXPR_EXPR: e.id = va_arg (args, node_id); break;
+  case EXPR_FILE: e.filename = va_arg (args, char *); break;
+  case EXPR_SCRIPT: e.script = va_arg (args, char *); break;
+  case EXPR_STRING: e.string = va_arg (args, string); break;
+  case EXPR_FILL:
+    e.fl.b = va_arg (args, int);
+    e.fl.n = va_arg (args, uint64_t);
+    break;
+  case EXPR_NAME: e.name = va_arg (args, char *); break;
+  case EXPR_ASSIGN:
+    e.a.name = va_arg (args, char *);
+    e.a.id = va_arg (args, node_id);
+    break;
+  case EXPR_REPEAT:
+    e.r.id = va_arg (args, node_id);
+    e.r.n = va_arg (args, uint64_t);
+    break;
+  case EXPR_SLICE:
+    e.sl.id = va_arg (args, node_id);
+    e.sl.n = va_arg (args, uint64_t);
+    e.sl.m = va_arg (args, int64_t);
+    break;
+  }
+  va_end (args);
+
+  return e;
+}
+
+/* Make a shallow copy of an expression. */
+static expr_t
+copy_expr (expr_t e)
+{
+  switch (e.t) {
+    /* These have fields that have to be duplicated. */
+  case EXPR_LIST:
+    if (node_ids_duplicate (&e.list, &e.list) == -1) {
+      nbdkit_error ("malloc");
+      exit (EXIT_FAILURE);
+    }
+    break;
+  case EXPR_FILE:
+    e.filename = strdup (e.filename);
+    if (e.filename == NULL) {
+      nbdkit_error ("strdup");
+      exit (EXIT_FAILURE);
+    };
+    break;
+  case EXPR_SCRIPT:
+    e.script = strdup (e.script);
+    if (e.script == NULL) {
+      nbdkit_error ("strdup");
+      exit (EXIT_FAILURE);
+    };
+    break;
+  case EXPR_STRING:
+    if (string_duplicate (&e.string, &e.string) == -1) {
+      nbdkit_error ("malloc");
+      exit (EXIT_FAILURE);
+    }
+    break;
+  case EXPR_NAME:
+    e.name = strdup (e.name);
+    if (e.name == NULL) {
+      nbdkit_error ("strdup");
+      exit (EXIT_FAILURE);
+    };
+    break;
+  case EXPR_ASSIGN:
+    e.a.name = strdup (e.a.name);
+    if (e.a.name == NULL) {
+      nbdkit_error ("strdup");
+      exit (EXIT_FAILURE);
+    };
+    break;
+
+    /* These don't require anything special. */
+  case EXPR_NULL:
+  case EXPR_BYTE:
+  case EXPR_ABS_OFFSET:
+  case EXPR_REL_OFFSET:
+  case EXPR_ALIGN_OFFSET:
+  case EXPR_EXPR:
+  case EXPR_FILL:
+  case EXPR_REPEAT:
+  case EXPR_SLICE:
+    break;
+  }
+
+  return e;
 }
 
 static const char *
@@ -206,50 +320,50 @@ debug_indent (int level)
 static void
 debug_expr (node_id id, int level)
 {
-  const expr_t *e = get_node (id);
+  const expr_t e = get_node (id);
   size_t i;
 
-  switch (e->t) {
+  switch (e.t) {
   case EXPR_NULL:
     nbdkit_debug ("%snull", debug_indent (level));
     break;
   case EXPR_LIST:
     nbdkit_debug ("%s[", debug_indent (level));
-    for (i = 0; i < e->list.size; ++i)
-      debug_expr (e->list.ptr[i], level+1);
+    for (i = 0; i < e.list.size; ++i)
+      debug_expr (e.list.ptr[i], level+1);
     nbdkit_debug ("%s]", debug_indent (level));
     break;
   case EXPR_BYTE:
-    nbdkit_debug ("%s%" PRIu8, debug_indent (level), e->b);
+    nbdkit_debug ("%s%" PRIu8, debug_indent (level), e.b);
     break;
   case EXPR_ABS_OFFSET:
-    nbdkit_debug ("%s@%" PRIu64, debug_indent (level), e->ui);
+    nbdkit_debug ("%s@%" PRIu64, debug_indent (level), e.ui);
     break;
   case EXPR_REL_OFFSET:
-    nbdkit_debug ("%s@%" PRIi64, debug_indent (level), e->i);
+    nbdkit_debug ("%s@%" PRIi64, debug_indent (level), e.i);
     break;
   case EXPR_ALIGN_OFFSET:
-    nbdkit_debug ("%s@^%" PRIi64, debug_indent (level), e->ui);
+    nbdkit_debug ("%s@^%" PRIi64, debug_indent (level), e.ui);
     break;
   case EXPR_EXPR:
     nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e->id, level+1);
+    debug_expr (e.id, level+1);
     nbdkit_debug ("%s)", debug_indent (level));
     break;
   case EXPR_FILE:
-    nbdkit_debug ("%s<%s", debug_indent (level), e->filename);
+    nbdkit_debug ("%s<%s", debug_indent (level), e.filename);
     break;
   case EXPR_SCRIPT:
-    nbdkit_debug ("%s<(%s)", debug_indent (level), e->script);
+    nbdkit_debug ("%s<(%s)", debug_indent (level), e.script);
     break;
   case EXPR_STRING: {
     CLEANUP_FREE_STRING string s = empty_vector;
     static const char hex[] = "0123456789abcdef";
 
-    for (i = 0; i < e->string.size; ++i) {
-      char c = e->string.ptr[i];
+    for (i = 0; i < e.string.size; ++i) {
+      char c = e.string.ptr[i];
       if (ascii_isprint ((char) c))
-        string_append (&s, e->string.ptr[i]);
+        string_append (&s, e.string.ptr[i]);
       else {
         string_append (&s, '\\');
         string_append (&s, 'x');
@@ -263,26 +377,26 @@ debug_expr (node_id id, int level)
   }
   case EXPR_FILL:
     nbdkit_debug ("%sfill(%" PRIu8 "*%" PRIu64 ")",
-                  debug_indent (level), e->fl.b, e->fl.n);
+                  debug_indent (level), e.fl.b, e.fl.n);
     break;
   case EXPR_NAME:
-    nbdkit_debug ("%s\\%s", debug_indent (level), e->name);
+    nbdkit_debug ("%s\\%s", debug_indent (level), e.name);
     break;
   case EXPR_ASSIGN:
     nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e->a.id, level+1);
-    nbdkit_debug ("%s) -> \\%s", debug_indent (level), e->a.name);
+    debug_expr (e.a.id, level+1);
+    nbdkit_debug ("%s) -> \\%s", debug_indent (level), e.a.name);
     break;
   case EXPR_REPEAT:
     nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e->r.id, level+1);
-    nbdkit_debug ("%s) *%" PRIu64, debug_indent (level), e->r.n);
+    debug_expr (e.r.id, level+1);
+    nbdkit_debug ("%s) *%" PRIu64, debug_indent (level), e.r.n);
     break;
   case EXPR_SLICE:
     nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e->sl.id, level+1);
+    debug_expr (e.sl.id, level+1);
     nbdkit_debug ("%s)[%" PRIu64 ":%" PRIi64 "]",
-                  debug_indent (level), e->sl.n, e->sl.m);
+                  debug_indent (level), e.sl.n, e.sl.m);
     break;
   }
 }
@@ -292,10 +406,10 @@ debug_expr (node_id id, int level)
  * expressions like "@0 * 10".
  */
 static bool
-is_data_expr (const expr_t *e)
+is_data_expr (const expr_t e)
 {
-  return e->t != EXPR_ABS_OFFSET && e->t != EXPR_REL_OFFSET
-    && e->t != EXPR_ALIGN_OFFSET;
+  return e.t != EXPR_ABS_OFFSET && e.t != EXPR_REL_OFFSET
+    && e.t != EXPR_ALIGN_OFFSET;
 }
 
 /* Simple dictionary of name -> expression. */
@@ -365,19 +479,16 @@ parser (int level, const char *value, size_t *start, size_t len,
   node_ids list = empty_vector;
 
   while (i < len) {
-    /* Used as a scratch buffer while creating an expr to append to list. */
-    expr_t e = { 0 };
-#define APPEND_EXPR                             \
-    do {                                        \
-      node_id _id = new_node (e);               \
-      if (node_ids_append (&list, _id) == -1) { \
-        nbdkit_error ("realloc: %m");           \
-        exit (EXIT_FAILURE);                    \
-      }                                         \
+#define APPEND_EXPR(node_id)                                  \
+    do {                                                      \
+      if (node_ids_append (&list, (node_id)) == -1) {         \
+        nbdkit_error ("realloc: %m");                         \
+        exit (EXIT_FAILURE);                                  \
+      }                                                       \
     } while (0)
     node_id id;
     int j, n;
-    int64_t i64;
+    int64_t i64, m;
     size_t flen;
 
     switch (value[i]) {
@@ -392,67 +503,60 @@ parser (int level, const char *value, size_t *start, size_t len,
       switch (value[i]) {
       case '+':                 /* @+N */
         if (++i == len) goto parse_error;
-        e.t = EXPR_REL_OFFSET;
-        if (sscanf (&value[i], "%" SCNi64 "%n", &e.i, &n) == 1) {
-          if (e.i < 0) {
+        if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
+          if (i64 < 0) {
             nbdkit_error ("data parameter after @+ must not be negative");
             return -1;
           }
           i += n;
-          APPEND_EXPR;
+          APPEND_EXPR (new_node (expr (EXPR_REL_OFFSET, i64)));
         }
         else
           goto parse_error;
         break;
       case '-':                 /* @-N */
         if (++i == len) goto parse_error;
-        e.t = EXPR_REL_OFFSET;
-        if (sscanf (&value[i], "%" SCNi64 "%n", &e.i, &n) == 1) {
-          if (e.i < 0) {
+        if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
+          if (i64 < 0) {
             nbdkit_error ("data parameter after @- must not be negative");
             return -1;
           }
           i += n;
-          e.i = -e.i;
-          APPEND_EXPR;
+          APPEND_EXPR (new_node (expr (EXPR_REL_OFFSET, -i64)));
         }
         else
           goto parse_error;
         break;
       case '^':                 /* @^ALIGNMENT */
         if (++i == len) goto parse_error;
-        e.t = EXPR_ALIGN_OFFSET;
         /* We must use %i into i64 in order to parse 0x etc. */
         if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
           if (i64 < 0) {
             nbdkit_error ("data parameter after @^ must not be negative");
             return -1;
           }
-          e.ui = (uint64_t) i64;
           /* XXX fix this arbitrary restriction */
-          if (!is_power_of_2 (e.ui)) {
-            nbdkit_error ("data parameter @^%" PRIu64 " must be a power of 2",
-                          e.ui);
+          if (!is_power_of_2 (i64)) {
+            nbdkit_error ("data parameter @^%" PRIi64 " must be a power of 2",
+                          i64);
             return -1;
           }
           i += n;
-          APPEND_EXPR;
+          APPEND_EXPR (new_node (expr (EXPR_ALIGN_OFFSET, (uint64_t) i64)));
         }
         else
           goto parse_error;
         break;
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-        e.t = EXPR_ABS_OFFSET;
         /* We must use %i into i64 in order to parse 0x etc. */
         if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
           if (i64 < 0) {
             nbdkit_error ("data parameter @OFFSET must not be negative");
             return -1;
           }
-          e.ui = (uint64_t) i64;
           i += n;
-          APPEND_EXPR;
+          APPEND_EXPR (new_node (expr (EXPR_ABS_OFFSET, (uint64_t) i64)));
         }
         else
           goto parse_error;
@@ -468,9 +572,7 @@ parser (int level, const char *value, size_t *start, size_t len,
       /* Call self recursively. */
       if (parser (level+1, value, &i, len, &id) == -1)
         return -1;
-      e.t = EXPR_EXPR;
-      e.id = id;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_EXPR, id)));
       break;
 
     case ')':                   /* ) */
@@ -491,7 +593,6 @@ parser (int level, const char *value, size_t *start, size_t len,
         nbdkit_error ("*N cannot be applied to this type of expression");
         return -1;
       }
-      e.t = EXPR_REPEAT;
       if (sscanf (&value[i], "%" SCNi64 "%n", &i64, &n) == 1) {
         if (i64 < 0) {
           nbdkit_error ("data parameter @OFFSET must not be negative");
@@ -503,10 +604,9 @@ parser (int level, const char *value, size_t *start, size_t len,
         nbdkit_error ("*N not numeric");
         return -1;
       }
-      e.r.n = (uint64_t) i64;
-      e.r.id = list.ptr[list.size-1];
+      id = list.ptr[list.size-1];
       list.size--;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_REPEAT, id, (uint64_t) i64)));
       break;
 
     case '[':                 /* expr[k:m] */
@@ -519,12 +619,11 @@ parser (int level, const char *value, size_t *start, size_t len,
         nbdkit_error ("[N:M] cannot be applied to this type of expression");
         return -1;
       }
-      e.t = EXPR_SLICE;
       i64 = 0;
-      e.sl.m = -1;
+      m = -1;
       if (sscanf (&value[i], "%" SCNi64 ":%" SCNi64 "]%n",
-                  &i64, &e.sl.m, &n) == 2 ||
-          sscanf (&value[i], ":%" SCNi64 "]%n", &e.sl.m, &n) == 1 ||
+                  &i64, &m, &n) == 2 ||
+          sscanf (&value[i], ":%" SCNi64 "]%n", &m, &n) == 1 ||
           sscanf (&value[i], "%" SCNi64 ":]%n", &i64, &n) == 1)
         i += n;
       else if (strncmp (&value[i], ":]", 2) == 0)
@@ -533,68 +632,76 @@ parser (int level, const char *value, size_t *start, size_t len,
         nbdkit_error ("enclosed pattern (...)[N:M] not numeric");
         return -1;
       }
-      e.sl.n = i64;
-      e.sl.id = list.ptr[list.size-1];
+      id = list.ptr[list.size-1];
       list.size--;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_SLICE, id, i64, m)));
       break;
 
     case '<':
       if (i+1 < len && value[i+1] == '(') { /* <(SCRIPT) */
+        char *script;
+
         i += 2;
 
-        e.t = EXPR_SCRIPT;
         flen = get_script (value, i, len);
         if (flen == 0) goto parse_error;
-        e.script = strndup (&value[i], flen);
-        if (e.script == NULL) {
+        script = strndup (&value[i], flen);
+        if (script == NULL) {
           nbdkit_error ("strndup: %m");
           return -1;
         }
         i += flen + 1;          /* +1 for trailing ) */
+        APPEND_EXPR (new_node (expr (EXPR_SCRIPT, script)));
       }
       else {                    /* <FILE */
+        char *filename;
+
         i++;
 
-        e.t = EXPR_FILE;
         /* The filename follows next in the string. */
         flen = strcspn (&value[i], "*[) \t\n");
         if (flen == 0) {
           nbdkit_error ("data parameter <FILE not a filename");
           return -1;
         }
-        e.filename = strndup (&value[i], flen);
-        if (e.filename == NULL) {
+        filename = strndup (&value[i], flen);
+        if (filename == NULL) {
           nbdkit_error ("strndup: %m");
           return -1;
         }
         i += flen;
+        APPEND_EXPR (new_node (expr (EXPR_FILE, filename)));
       }
-      APPEND_EXPR;
       break;
 
-    case '"':                   /* "String" */
+    case '"': {                 /* "String" */
+      string str = empty_vector;
+
       i++;
-      e.t = EXPR_STRING;
-      if (parse_string (value, &i, len, &e.string) == -1)
+      if (parse_string (value, &i, len, &str) == -1)
         return -1;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_STRING, str)));
       break;
+    }
 
-    case '\\':                  /* \\NAME */
+    case '\\': {                /* \\NAME */
+      char *name;
+
       flen = get_name (value, i, len, &i);
       if (flen == 0) goto parse_error;
-      e.t = EXPR_NAME;
-      e.name = strndup (&value[i], flen);
-      if (e.name == NULL) {
+      name = strndup (&value[i], flen);
+      if (name == NULL) {
         nbdkit_error ("strndup: %m");
         return -1;
       }
       i += flen;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_NAME, name)));
       break;
+    }
 
-    case '-':                   /* -> \\NAME */
+    case '-': {                 /* -> \\NAME */
+      char *name;
+
       i++;
       if (value[i] != '>') goto parse_error;
       i++;
@@ -608,17 +715,17 @@ parser (int level, const char *value, size_t *start, size_t len,
       }
       flen = get_name (value, i, len, &i);
       if (flen == 0) goto parse_error;
-      e.t = EXPR_ASSIGN;
-      e.a.name = strndup (&value[i], flen);
-      if (e.a.name == NULL) {
+      name = strndup (&value[i], flen);
+      if (name == NULL) {
         nbdkit_error ("strndup: %m");
         return -1;
       }
-      e.a.id = list.ptr[list.size-1];
+      id = list.ptr[list.size-1];
       i += flen;
       list.size--;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_ASSIGN, name, id)));
       break;
+    }
 
     case '$': {                 /* $VAR */
       CLEANUP_FREE char *name = NULL;
@@ -648,15 +755,12 @@ parser (int level, const char *value, size_t *start, size_t len,
       ci = 0;
       if (parser (0, content, &ci, strlen (content), &id) == -1)
         return -1;
-      e.t = EXPR_EXPR;
-      e.id = id;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_EXPR, id)));
       break;
     }
 
     case '0': case '1': case '2': case '3': case '4': /* BYTE */
     case '5': case '6': case '7': case '8': case '9':
-      e.t = EXPR_BYTE;
       /* We need to use %i here so it scans 0x etc correctly. */
       if (sscanf (&value[i], "%i%n", &j, &n) == 1)
         i += n;
@@ -666,16 +770,17 @@ parser (int level, const char *value, size_t *start, size_t len,
         nbdkit_error ("data parameter BYTE must be in the range 0..255");
         return -1;
       }
-      e.b = j;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_BYTE, j)));
       break;
 
-    case 'l': case 'b':         /* le or be + NN: + WORD */
-      e.t = EXPR_STRING;
-      if (parse_word (value, &i, len, &e.string) == -1)
+    case 'l': case 'b': {       /* le or be + NN: + WORD */
+      string str = empty_vector;
+
+      if (parse_word (value, &i, len, &str) == -1)
         return -1;
-      APPEND_EXPR;
+      APPEND_EXPR (new_node (expr (EXPR_STRING, str)));
       break;
+    }
 
     case ' ': case '\t': case '\n': /* Skip whitespace. */
     case '\f': case '\r': case '\v':
@@ -701,8 +806,7 @@ parser (int level, const char *value, size_t *start, size_t len,
   *start = i;
 
   /* Return the node ID. */
-  expr_t e2 = { .t = EXPR_LIST, .list = list };
-  *rtn = new_node (e2);
+  *rtn = new_node (expr (EXPR_LIST, list));
   return 0;
 }
 
@@ -995,33 +1099,34 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
 /* This simple optimization pass over the AST simplifies some
  * expressions.
  */
-static bool expr_is_single_byte (const expr_t *, uint8_t *b);
-static bool exprs_can_combine (node_id id0, node_id id1, node_id *id_rtn);
+static bool expr_is_single_byte (const expr_t, uint8_t *b);
+static bool exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn);
 
 static int
 optimize_ast (node_id root, node_id *root_rtn)
 {
   size_t i, j;
   node_id id;
-  expr_t e = { 0 };
+  node_ids list = empty_vector;
+  expr_t e2;
 
-  switch (get_node (root)->t) {
+  switch (get_node (root).t) {
   case EXPR_LIST:
-    /* Optimize each element of the list. */
-    e.t = EXPR_LIST;
+    /* For convenience this makes a new list node. */
 
-    for (i = 0; i < get_node (root)->list.size; ++i) {
-      id = get_node (root)->list.ptr[i];
+    /* Optimize each element of the list. */
+    for (i = 0; i < get_node (root).list.size; ++i) {
+      id = get_node (root).list.ptr[i];
       if (optimize_ast (id, &id) == -1)
         return -1;
-      switch (get_node (id)->t) {
+      switch (get_node (id).t) {
       case EXPR_NULL:
         /* null elements of a list can be ignored. */
         break;
       case EXPR_LIST:
         /* List within a list is flattened. */
-        for (j = 0; j < get_node (id)->list.size; ++j) {
-          if (node_ids_append (&e.list, get_node (id)->list.ptr[j]) == -1) {
+        for (j = 0; j < get_node (id).list.size; ++j) {
+          if (node_ids_append (&list, get_node (id).list.ptr[j]) == -1) {
           append_error:
             nbdkit_error ("realloc: %m");
             exit (EXIT_FAILURE);
@@ -1029,51 +1134,50 @@ optimize_ast (node_id root, node_id *root_rtn)
         }
         break;
       default:
-        if (node_ids_append (&e.list, id) == -1) goto append_error;
+        if (node_ids_append (&list, id) == -1) goto append_error;
       }
     }
 
     /* Combine adjacent pairs of elements if possible. */
-    for (i = 1; i < e.list.size; ++i) {
+    for (i = 1; i < list.size; ++i) {
       node_id id0, id1;
 
-      id0 = e.list.ptr[i-1];
-      id1 = e.list.ptr[i];
-      if (exprs_can_combine (id0, id1, &id)) {
-        e.list.ptr[i-1] = id;
-        node_ids_remove (&e.list, i);
+      id0 = list.ptr[i-1];
+      id1 = list.ptr[i];
+      if (exprs_can_combine (get_node (id0), get_node (id1), &id)) {
+        list.ptr[i-1] = id;
+        node_ids_remove (&list, i);
         --i;
       }
     }
 
     /* List of length 0 is replaced with null. */
-    if (e.list.size == 0) {
-      free (e.list.ptr);
-      e.t = EXPR_NULL;
-      *root_rtn = new_node (e);
+    if (list.size == 0) {
+      free (list.ptr);
+      *root_rtn = new_node (expr (EXPR_NULL));
       return 0;
     }
 
     /* List of length 1 is replaced with the first element. */
-    if (e.list.size == 1) {
-      id = e.list.ptr[0];
-      free (e.list.ptr);
+    if (list.size == 1) {
+      id = list.ptr[0];
+      free (list.ptr);
       *root_rtn = id;
       return 0;
     }
 
-    *root_rtn = new_node (e);
+    *root_rtn = new_node (expr (EXPR_LIST, list));
     return 0;
 
   case EXPR_EXPR:
-    id = get_node (root)->id;
+    id = get_node (root).id;
     if (optimize_ast (id, &id) == -1)
       return -1;
     /* For a range of constant subexpressions we can simply replace
      * the nested expression with the constant, eg.
      * ( "String" ) => "String", ( null ) => null.
      */
-    switch (get_node (id)->t) {
+    switch (get_node (id).t) {
     case EXPR_NULL:
     case EXPR_BYTE:
     case EXPR_FILE:
@@ -1086,80 +1190,73 @@ optimize_ast (node_id root, node_id *root_rtn)
     default: ;
     }
     /* ( ( expr ) ) can be replaced by ( expr ) */
-    if (get_node (id)->t == EXPR_EXPR) {
-      e.t = EXPR_EXPR;
-      e.id = get_node (id)->id;
-      *root_rtn = new_node (e);
+    if (get_node (id).t == EXPR_EXPR) {
+      *root_rtn = new_node (copy_expr (get_node (id)));
       return 0;
     }
-    get_node (root)->id = id;
-    *root_rtn = root;
+    *root_rtn = new_node (expr (EXPR_EXPR, id));
     return 0;
 
   case EXPR_ASSIGN:
-    id = get_node (root)->a.id;
+    id = get_node (root).a.id;
     if (optimize_ast (id, &id) == -1)
       return -1;
-    get_node (root)->a.id = id;
-    *root_rtn = root;
+    e2 = copy_expr (get_node (root));
+    e2.a.id = id;
+    *root_rtn = new_node (e2);
     return 0;
 
   case EXPR_REPEAT:
     /* Repeating zero times can be replaced by null. */
-    if (get_node (root)->r.n == 0) {
-      e.t = EXPR_NULL;
-      *root_rtn = new_node (e);
+    if (get_node (root).r.n == 0) {
+      *root_rtn = new_node (expr (EXPR_NULL));
       return 0;
     }
-    id = get_node (root)->r.id;
+    id = get_node (root).r.id;
     if (optimize_ast (id, &id) == -1)
       return -1;
 
     /* expr*1 can be replaced with simply expr.
      * null*N can be replaced with null.
      */
-    if (get_node (root)->r.n == 1 || get_node (id)->t == EXPR_NULL) {
+    if (get_node (root).r.n == 1 || get_node (id).t == EXPR_NULL) {
       *root_rtn = id;
       return 0;
     }
     /* expr*X*Y can be replaced by expr*(X*Y). */
-    if (get_node (id)->t == EXPR_REPEAT) {
-      e.t = EXPR_REPEAT;
-      e.r.n = get_node (root)->r.n * get_node (id)->r.n;
-      e.r.id = get_node (id)->r.id;
-      *root_rtn = new_node (e);
+    if (get_node (id).t == EXPR_REPEAT) {
+      *root_rtn = new_node (expr (EXPR_REPEAT,
+                                  get_node (id).r.id,
+                                  get_node (root).r.n * get_node (id).r.n));
       return 0;
     }
     /* fill(b,X)*Y can be replaced by fill(b,X*Y). */
-    if (get_node (id)->t == EXPR_FILL) {
-      e.t = EXPR_FILL;
-      e.fl.n = get_node (root)->r.n * get_node (id)->fl.n;
-      e.fl.b = get_node (id)->fl.b;
-      *root_rtn = new_node (e);
+    if (get_node (id).t == EXPR_FILL) {
+      *root_rtn = new_node (expr (EXPR_FILL,
+                                  get_node (id).fl.b,
+                                  get_node (root).r.n * get_node (id).fl.n));
       return 0;
     }
     /* For short strings and small values or N, string*N can be
      * replaced by N copies of the string.
      */
-    if (get_node (id)->t == EXPR_STRING &&
-        get_node (root)->r.n <= 4 &&
-        get_node (id)->string.size <= 512) {
+    if (get_node (id).t == EXPR_STRING &&
+        get_node (root).r.n <= 4 &&
+        get_node (id).string.size <= 512) {
       string s = empty_vector;
-      size_t n = get_node (root)->r.n;
-      const string *sub = &get_node (id)->string;
+      size_t n = get_node (root).r.n;
+      const string sub = get_node (id).string;
 
       for (i = 0; i < n; ++i) {
-        for (j = 0; j < sub->size; ++j) {
-          if (string_append (&s, sub->ptr[j]) == -1) {
+        for (j = 0; j < sub.size; ++j) {
+          if (string_append (&s, sub.ptr[j]) == -1) {
             nbdkit_error ("realloc: %m");
             return -1;
           }
         }
       }
 
-      e.t = EXPR_STRING;
-      e.string = s;
-      *root_rtn = new_node (e);
+      *root_rtn = new_node (expr (EXPR_STRING, s));
       return 0;
     }
     /* Single byte expression * N can be replaced by a fill. */
@@ -1167,55 +1264,50 @@ optimize_ast (node_id root, node_id *root_rtn)
       uint8_t b;
 
       if (expr_is_single_byte (get_node (id), &b)) {
-        e.t = EXPR_FILL;
-        e.fl.n = get_node (root)->r.n;
-        e.fl.b = b;
-        *root_rtn = new_node (e);
+        *root_rtn = new_node (expr (EXPR_FILL, b, get_node (root).r.n));
         return 0;
       }
     }
 
-    get_node (root)->r.id = id;
-    *root_rtn = root;
+    e2 = copy_expr (get_node (root));
+    e2.r.id = id;
+    *root_rtn = new_node (e2);
     return 0;
 
   case EXPR_SLICE:
     /* A zero-length slice can be replaced by null. */
-    if (get_node (root)->sl.n == get_node (root)->sl.m) {
-      e.t = EXPR_NULL;
-      *root_rtn = new_node (e);
+    if (get_node (root).sl.n == get_node (root).sl.m) {
+      *root_rtn = new_node (expr (EXPR_NULL));
       return 0;
     }
-    id = get_node (root)->sl.id;
+    id = get_node (root).sl.id;
     if (optimize_ast (id, &id) == -1)
       return -1;
-    get_node (root)->sl.id = id;
-    *root_rtn = root;
+
+    e2 = copy_expr (get_node (root));
+    e2.sl.id = id;
+    *root_rtn = new_node (e2);
     return 0;
 
   case EXPR_STRING:
     /* A zero length string can be replaced with null. */
-    if (get_node (root)->string.size == 0) {
-      e.t = EXPR_NULL;
-      *root_rtn = new_node (e);
+    if (get_node (root).string.size == 0) {
+      *root_rtn = new_node (expr (EXPR_NULL));
       return 0;
     }
     /* Strings containing the same character can be replaced by a
      * fill.  These can be produced by other optimizations.
      */
-    if (get_node (root)->string.size > 1) {
-      const string *s = &get_node (root)->string;
-      uint64_t b = s->ptr[0];
+    if (get_node (root).string.size > 1) {
+      const string s = get_node (root).string;
+      uint64_t b = s.ptr[0];
 
-      for (i = 1; i < s->size; ++i)
-        if (s->ptr[i] != b)
+      for (i = 1; i < s.size; ++i)
+        if (s.ptr[i] != b)
           break;
 
-      if (i == s->size) {
-        e.t = EXPR_FILL;
-        e.fl.b = b;
-        e.fl.n = s->size;
-        *root_rtn = new_node (e);
+      if (i == s.size) {
+        *root_rtn = new_node (expr (EXPR_FILL, b, s.size));
         return 0;
       }
     }
@@ -1224,9 +1316,8 @@ optimize_ast (node_id root, node_id *root_rtn)
 
   case EXPR_FILL:
     /* Zero-length fill can be replaced by null. */
-    if (get_node (root)->fl.n == 0) {
-      e.t = EXPR_NULL;
-      *root_rtn = new_node (e);
+    if (get_node (root).fl.n == 0) {
+      *root_rtn = new_node (expr (EXPR_NULL));
       return 0;
     }
     *root_rtn = root;
@@ -1251,30 +1342,30 @@ optimize_ast (node_id root, node_id *root_rtn)
  * true and the byte.
  */
 static bool
-expr_is_single_byte (const expr_t *e, uint8_t *b)
+expr_is_single_byte (const expr_t e, uint8_t *b)
 {
-  switch (e->t) {
+  switch (e.t) {
   case EXPR_BYTE:               /* A single byte. */
-    if (b) *b = e->b;
+    if (b) *b = e.b;
     return true;
   case EXPR_LIST:               /* A single element list if it is single byte */
-    if (e->list.size != 1)
+    if (e.list.size != 1)
       return false;
-    return expr_is_single_byte (get_node (e->list.ptr[0]), b);
+    return expr_is_single_byte (get_node (e.list.ptr[0]), b);
   case EXPR_STRING:             /* A length-1 string. */
-    if (e->string.size != 1)
+    if (e.string.size != 1)
       return false;
-    if (b) *b = e->string.ptr[0];
+    if (b) *b = e.string.ptr[0];
     return true;
   case EXPR_FILL:               /* A length-1 fill. */
-    if (e->fl.n != 1)
+    if (e.fl.n != 1)
       return false;
-    if (b) *b = e->fl.b;
+    if (b) *b = e.fl.b;
     return true;
   case EXPR_REPEAT:             /* EXPR*1 if EXPR is single byte */
-    if (e->r.n != 1)
+    if (e.r.n != 1)
       return false;
-    return expr_is_single_byte (get_node (e->r.id), b);
+    return expr_is_single_byte (get_node (e.r.id), b);
   default:
     return false;
   }
@@ -1287,99 +1378,86 @@ expr_is_single_byte (const expr_t *e, uint8_t *b)
  * "\x01\x02\x03").
  */
 static bool
-exprs_can_combine (node_id id0, node_id id1, node_id *id_rtn)
+exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn)
 {
-  expr_t e = { 0 };
-  uint8_t b1, b2;
   string s = empty_vector;
   size_t len, len1;
+  expr_t e2;
 
-  switch (get_node (id0)->t) {
+  switch (e0.t) {
   case EXPR_BYTE:
-    switch (get_node (id1)->t) {
+    switch (e1.t) {
     case EXPR_BYTE:             /* byte byte => fill | string */
-      b1 = get_node (id0)->b;
-      b2 = get_node (id1)->b;
-      if (b1 == b2) {
-        e.t = EXPR_FILL;
-        e.fl.b = b1;
-        e.fl.n = 2;
+      if (e0.b == e1.b) {
+        *id_rtn = new_node (expr (EXPR_FILL, e0.b, 2));
       }
       else {
-        e.t = EXPR_STRING;
-        if (string_append (&s, b1) == -1 ||
-            string_append (&s, b2) == -1)
+        if (string_append (&s, e0.b) == -1 ||
+            string_append (&s, e1.b) == -1)
           goto out_of_memory;
-        e.string = s;
+        *id_rtn = new_node (expr (EXPR_STRING, s));
       }
-      *id_rtn = new_node (e);
       return true;
     case EXPR_STRING:           /* byte string => string */
-      e.t = EXPR_STRING;
-      len = get_node (id1)->string.size;
+      len = e1.string.size;
       if (string_reserve (&s, len+1) == -1)
         goto out_of_memory;
       s.size = len+1;
-      s.ptr[0] = get_node (id0)->b;
-      memcpy (&s.ptr[1], get_node (id1)->string.ptr, len);
-      e.string = s;
-      *id_rtn = new_node (e);
+      s.ptr[0] = e0.b;
+      memcpy (&s.ptr[1], e1.string.ptr, len);
+      *id_rtn = new_node (expr (EXPR_STRING, s));
       return true;
     case EXPR_FILL:             /* byte fill => fill, if the same */
-      if (get_node (id0)->b != get_node (id1)->fl.b)
+      if (e0.b != e1.fl.b)
         return false;
-      e = *get_node (id1);
-      e.fl.n++;
-      *id_rtn = new_node (e);
+      e2 = copy_expr (e1);
+      e2.fl.n++;
+      *id_rtn = new_node (e2);
       return true;
     default:
       return false;
     }
 
   case EXPR_STRING:
-    switch (get_node (id1)->t) {
+    switch (e1.t) {
     case EXPR_BYTE:             /* string byte => string */
-      e.t = EXPR_STRING;
-      len = get_node (id0)->string.size;
+      len = e0.string.size;
       if (string_reserve (&s, len+1) == -1)
         goto out_of_memory;
       s.size = len+1;
-      memcpy (s.ptr, get_node (id0)->string.ptr, len);
-      s.ptr[len] = get_node (id1)->b;
-      e.string = s;
-      *id_rtn = new_node (e);
+      memcpy (s.ptr, e0.string.ptr, len);
+      s.ptr[len] = e1.b;
+      *id_rtn = new_node (expr (EXPR_STRING, s));
       return true;
     case EXPR_STRING:           /* string string => string */
-      e.t = EXPR_STRING;
-      len = get_node (id0)->string.size;
-      len1 = get_node (id1)->string.size;
+      len = e0.string.size;
+      len1 = e1.string.size;
       if (string_reserve (&s, len+len1) == -1)
         goto out_of_memory;
       s.size = len+len1;
-      memcpy (s.ptr, get_node (id0)->string.ptr, len);
-      memcpy (&s.ptr[len], get_node (id1)->string.ptr, len1);
-      e.string = s;
-      *id_rtn = new_node (e);
+      memcpy (s.ptr, e0.string.ptr, len);
+      memcpy (&s.ptr[len], e1.string.ptr, len1);
+      *id_rtn = new_node (expr (EXPR_STRING, s));
       return true;
     default:
       return false;
     }
 
   case EXPR_FILL:
-    switch (get_node (id1)->t) {
+    switch (e1.t) {
     case EXPR_BYTE:             /* fill byte => fill, if the same */
-      if (get_node (id0)->fl.b != get_node (id1)->b)
+      if (e0.fl.b != e1.b)
         return false;
-      e = *get_node (id0);
-      e.fl.n++;
-      *id_rtn = new_node (e);
+      e2 = copy_expr (e0);
+      e2.fl.n++;
+      *id_rtn = new_node (e2);
       return true;
     case EXPR_FILL:             /* fill fill => fill, if the same */
-      if (get_node (id0)->fl.b != get_node (id1)->fl.b)
+      if (e0.fl.b != e1.fl.b)
         return false;
-      e = *get_node (id0);
-      e.fl.n += get_node (id1)->fl.n;
-      *id_rtn = new_node (e);
+      e2 = copy_expr (e0);
+      e2.fl.n += e1.fl.n;
+      *id_rtn = new_node (e2);
       return true;
     default:
       return false;
@@ -1419,73 +1497,75 @@ evaluate (const dict_t *dict, node_id root,
    */
   dict_t *d = (dict_t *) dict;
   size_t i, j;
-  const expr_t *e;
   node_ids list;
 
-  e = get_node (root);
-  if (e->t == EXPR_LIST)
-    memcpy (&list, &e->list, sizeof list);
+  /* Extract the list from the current node.  If the current node is
+   * not EXPR_LIST then make one for convenience below.
+   */
+  if (get_node (root).t == EXPR_LIST) {
+    list = get_node (root).list;
+  }
   else {
     list.size = 1;
     list.ptr = &root;
   }
 
   for (i = 0; i < list.size; ++i) {
-    e = get_node (list.ptr[i]);
+    const expr_t e = get_node (list.ptr[i]);
 
-    switch (e->t) {
+    switch (e.t) {
     case EXPR_LIST: abort ();
 
     case EXPR_NULL: /* does nothing */ break;
 
     case EXPR_BYTE:
       /* Store the byte. */
-      if (a->f->write (a, &e->b, 1, *offset) == -1)
+      if (a->f->write (a, &e.b, 1, *offset) == -1)
         return -1;
       (*offset)++;
       break;
 
     case EXPR_ABS_OFFSET:
       /* XXX Check it does not overflow 63 bits. */
-      *offset = e->ui;
+      *offset = e.ui;
       break;
 
     case EXPR_REL_OFFSET:
-      if (e->i < 0 && -e->i > *offset) {
+      if (e.i < 0 && -e.i > *offset) {
         nbdkit_error ("data parameter @-%" PRIi64 " "
                       "must not be larger than the current offset %" PRIu64,
-                      -e->i, *offset);
+                      -e.i, *offset);
         return -1;
       }
       /* XXX Check it does not overflow 63 bits. */
-      *offset += e->i;
+      *offset += e.i;
       break;
 
     case EXPR_ALIGN_OFFSET:
-      *offset = ROUND_UP (*offset, e->ui);
+      *offset = ROUND_UP (*offset, e.ui);
       break;
 
     case EXPR_FILE:
-      if (store_file (a, e->filename, offset) == -1)
+      if (store_file (a, e.filename, offset) == -1)
         return -1;
       break;
 
     case EXPR_SCRIPT:
-      if (store_script (a, e->script, offset) == -1)
+      if (store_script (a, e.script, offset) == -1)
         return -1;
       break;
 
     case EXPR_STRING:
       /* Copy the string into the allocator. */
-      if (a->f->write (a, e->string.ptr, e->string.size, *offset) == -1)
+      if (a->f->write (a, e.string.ptr, e.string.size, *offset) == -1)
         return -1;
-      *offset += e->string.size;
+      *offset += e.string.size;
       break;
 
     case EXPR_FILL:
-      if (a->f->fill (a, e->fl.b, e->fl.n, *offset) == -1)
+      if (a->f->fill (a, e.fl.b, e.fl.n, *offset) == -1)
         return -1;
-      *offset += e->fl.n;
+      *offset += e.fl.n;
       break;
 
     case EXPR_ASSIGN: {
@@ -1497,8 +1577,8 @@ evaluate (const dict_t *dict, node_id root,
         return -1;
       }
       d->next = d_next;
-      d->name = e->a.name;
-      d->id = e->a.id;
+      d->name = e.a.name;
+      d->id = e.a.id;
       break;
     }
 
@@ -1509,10 +1589,10 @@ evaluate (const dict_t *dict, node_id root,
 
       /* Look up the expression in the current dictionary. */
       for (t = d; t != NULL; t = t->next)
-        if (strcmp (t->name, e->name) == 0)
+        if (strcmp (t->name, e.name) == 0)
           break;
       if (t == NULL) {
-        nbdkit_error ("\\%s not defined", e->name);
+        nbdkit_error ("\\%s not defined", e.name);
         return -1;
       }
 
@@ -1545,18 +1625,18 @@ evaluate (const dict_t *dict, node_id root,
        * For files like /dev/urandom which are infinite this stops an
        * infinite loop.
        */
-      if (e->t == EXPR_SLICE && get_node (e->sl.id)->t == EXPR_FILE) {
-        if (store_file_slice (a, get_node (e->sl.id)->filename,
-                              e->sl.n, e->sl.m, offset) == -1)
+      if (e.t == EXPR_SLICE && get_node (e.sl.id).t == EXPR_FILE) {
+        if (store_file_slice (a, get_node (e.sl.id).filename,
+                              e.sl.n, e.sl.m, offset) == -1)
           return -1;
       }
 
       /* <(SCRIPT)[:LEN] must be optimized by truncating the
        * output of the script.
        */
-      else if (e->t == EXPR_SLICE && e->sl.n == 0 &&
-               get_node (e->sl.id)->t == EXPR_SCRIPT) {
-        if (store_script_len (a, get_node (e->sl.id)->script, e->sl.m,
+      else if (e.t == EXPR_SLICE && e.sl.n == 0 &&
+               get_node (e.sl.id).t == EXPR_SCRIPT) {
+        if (store_script_len (a, get_node (e.sl.id).script, e.sl.m,
                               offset) == -1)
           return -1;
       }
@@ -1575,10 +1655,10 @@ evaluate (const dict_t *dict, node_id root,
           nbdkit_error ("malloc: %m");
           return -1;
         }
-        if (evaluate (d, e->id, a2, &offset2, &size2) == -1)
+        if (evaluate (d, e.id, a2, &offset2, &size2) == -1)
           return -1;
 
-        switch (e->t) {
+        switch (e.t) {
         case EXPR_EXPR:
           if (a->f->blit (a2, a, size2, 0, *offset) == -1)
             return -1;
@@ -1586,7 +1666,7 @@ evaluate (const dict_t *dict, node_id root,
           break;
         case EXPR_REPEAT:
           /* Duplicate the allocator a2 N times. */
-          for (j = 0; j < e->r.n; ++j) {
+          for (j = 0; j < e.r.n; ++j) {
             if (a->f->blit (a2, a, size2, 0, *offset) == -1)
               return -1;
             *offset += size2;
@@ -1594,17 +1674,17 @@ evaluate (const dict_t *dict, node_id root,
           break;
         case EXPR_SLICE:
           /* Slice [N:M] */
-          m = e->sl.m < 0 ? size2 : e->sl.m;
-          if (e->sl.n < 0 || m < 0 ||
-              e->sl.n > size2 || m > size2 ||
-              e->sl.n > m ) {
+          m = e.sl.m < 0 ? size2 : e.sl.m;
+          if (e.sl.n < 0 || m < 0 ||
+              e.sl.n > size2 || m > size2 ||
+              e.sl.n > m ) {
             nbdkit_error ("[N:M] does not describe a valid slice");
             return -1;
           }
           /* Take a slice from the allocator. */
-          if (a->f->blit (a2, a, m-e->sl.n, e->sl.n, *offset) == -1)
+          if (a->f->blit (a2, a, m-e.sl.n, e.sl.n, *offset) == -1)
             return -1;
-          *offset += m-e->sl.n;
+          *offset += m-e.sl.n;
           break;
         default:
           abort ();
