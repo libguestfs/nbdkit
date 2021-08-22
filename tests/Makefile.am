@@ -640,6 +640,7 @@ TESTS += \
 	test-data-extents.sh \
 	test-data-file.sh \
 	test-data-format.sh \
+	test-data-optimum.sh \
 	test-data-partition.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
@@ -656,6 +657,7 @@ EXTRA_DIST += \
 	test-data-extents.sh \
 	test-data-file.sh \
 	test-data-format.sh \
+	test-data-optimum.sh \
 	test-data-partition.sh \
 	test-data-raw.sh \
 	test-data-raw-copy.sh \
