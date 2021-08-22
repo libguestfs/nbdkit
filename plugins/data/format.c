@@ -80,12 +80,11 @@ DEFINE_VECTOR_TYPE(node_ids, node_id);
 
 enum expr_type {
   EXPR_NULL = 0,              /* null expression, no effect */
-  EXPR_LIST,                  /* list     - list of node IDs */
+  EXPR_LIST,                  /* list     - list of node IDs / nested expr */
   EXPR_BYTE,                  /* b        - single byte */
   EXPR_ABS_OFFSET,            /* ui       - absolute offset (@OFFSET) */
   EXPR_REL_OFFSET,            /* i        - relative offset (@+N or @-N) */
   EXPR_ALIGN_OFFSET,          /* ui       - align offset (@^ALIGNMENT) */
-  EXPR_EXPR,                  /* id       - nested expression */
   EXPR_FILE,                  /* filename - read a file */
   EXPR_SCRIPT,                /* script   - run script */
   EXPR_STRING,                /* string   - string + length */
@@ -130,9 +129,9 @@ struct expr {
 
 /* We store a list of expressions (expr_t) in a global table.
  *
- * When referencing one expression from another (eg. for EXPR_EXPR) we
- * refer to the index into this table (node_id) instead of pointing to
- * the expr_t directly.
+ * When referencing one expression from another (eg. for EXPR_REPEAT)
+ * we refer to the index into this table (node_id) instead of pointing
+ * to the expr_t directly.
  *
  * This allows us to have nodes which reference each other or are
  * shared or removed without having to worry about reference counting.
@@ -215,7 +214,6 @@ expr (enum expr_type t, ...)
     e.ui = va_arg (args, uint64_t);
     break;
   case EXPR_REL_OFFSET: e.i = va_arg (args, int64_t); break;
-  case EXPR_EXPR: e.id = va_arg (args, node_id); break;
   case EXPR_FILE: e.filename = va_arg (args, char *); break;
   case EXPR_SCRIPT: e.script = va_arg (args, char *); break;
   case EXPR_STRING: e.string = va_arg (args, string); break;
@@ -296,7 +294,6 @@ copy_expr (expr_t e)
   case EXPR_ABS_OFFSET:
   case EXPR_REL_OFFSET:
   case EXPR_ALIGN_OFFSET:
-  case EXPR_EXPR:
   case EXPR_FILL:
   case EXPR_REPEAT:
   case EXPR_SLICE:
@@ -328,10 +325,10 @@ debug_expr (node_id id, int level)
     nbdkit_debug ("%snull", debug_indent (level));
     break;
   case EXPR_LIST:
-    nbdkit_debug ("%s[", debug_indent (level));
+    nbdkit_debug ("%s(", debug_indent (level));
     for (i = 0; i < e.list.size; ++i)
       debug_expr (e.list.ptr[i], level+1);
-    nbdkit_debug ("%s]", debug_indent (level));
+    nbdkit_debug ("%s)", debug_indent (level));
     break;
   case EXPR_BYTE:
     nbdkit_debug ("%s%" PRIu8, debug_indent (level), e.b);
@@ -344,11 +341,6 @@ debug_expr (node_id id, int level)
     break;
   case EXPR_ALIGN_OFFSET:
     nbdkit_debug ("%s@^%" PRIi64, debug_indent (level), e.ui);
-    break;
-  case EXPR_EXPR:
-    nbdkit_debug ("%s(", debug_indent (level));
-    debug_expr (e.id, level+1);
-    nbdkit_debug ("%s)", debug_indent (level));
     break;
   case EXPR_FILE:
     nbdkit_debug ("%s<%s", debug_indent (level), e.filename);
@@ -572,7 +564,9 @@ parser (int level, const char *value, size_t *start, size_t len,
       /* Call self recursively. */
       if (parser (level+1, value, &i, len, &id) == -1)
         return -1;
-      APPEND_EXPR (new_node (expr (EXPR_EXPR, id)));
+      /* parser() always returns a list. */
+      assert (get_node (id).t == EXPR_LIST);
+      APPEND_EXPR (id);
       break;
 
     case ')':                   /* ) */
@@ -755,7 +749,9 @@ parser (int level, const char *value, size_t *start, size_t len,
       ci = 0;
       if (parser (0, content, &ci, strlen (content), &id) == -1)
         return -1;
-      APPEND_EXPR (new_node (expr (EXPR_EXPR, id)));
+      /* parser() always returns a list. */
+      assert (get_node (id).t == EXPR_LIST);
+      APPEND_EXPR (id);
       break;
     }
 
@@ -1099,6 +1095,7 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
 /* This simple optimization pass over the AST simplifies some
  * expressions.
  */
+static bool expr_contains_assignments (const expr_t);
 static bool expr_is_single_byte (const expr_t, uint8_t *b);
 static bool exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn);
 
@@ -1124,17 +1121,24 @@ optimize_ast (node_id root, node_id *root_rtn)
         /* null elements of a list can be ignored. */
         break;
       case EXPR_LIST:
-        /* List within a list is flattened. */
-        for (j = 0; j < get_node (id).list.size; ++j) {
-          if (node_ids_append (&list, get_node (id).list.ptr[j]) == -1) {
-          append_error:
-            nbdkit_error ("realloc: %m");
-            exit (EXIT_FAILURE);
+        /* List with a list can be flattened, but only if it doesn't
+         * contain assignments.  The reason is that assignments are
+         * scoped and flattening a list here could change the scope.
+         */
+        if (! expr_contains_assignments (get_node (id))) {
+          for (j = 0; j < get_node (id).list.size; ++j) {
+            if (node_ids_append (&list, get_node (id).list.ptr[j]) == -1)
+              goto list_append_error;
           }
+          break;
         }
-        break;
+        /*FALLTHROUGH*/
       default:
-        if (node_ids_append (&list, id) == -1) goto append_error;
+        if (node_ids_append (&list, id) == -1) {
+        list_append_error:
+          nbdkit_error ("realloc: %m");
+          return -1;
+        }
       }
     }
 
@@ -1167,34 +1171,6 @@ optimize_ast (node_id root, node_id *root_rtn)
     }
 
     *root_rtn = new_node (expr (EXPR_LIST, list));
-    return 0;
-
-  case EXPR_EXPR:
-    id = get_node (root).id;
-    if (optimize_ast (id, &id) == -1)
-      return -1;
-    /* For a range of constant subexpressions we can simply replace
-     * the nested expression with the constant, eg.
-     * ( "String" ) => "String", ( null ) => null.
-     */
-    switch (get_node (id).t) {
-    case EXPR_NULL:
-    case EXPR_BYTE:
-    case EXPR_FILE:
-    case EXPR_SCRIPT:
-    case EXPR_STRING:
-    case EXPR_FILL:
-    case EXPR_NAME:
-      *root_rtn = id;
-      return 0;
-    default: ;
-    }
-    /* ( ( expr ) ) can be replaced by ( expr ) */
-    if (get_node (id).t == EXPR_EXPR) {
-      *root_rtn = new_node (copy_expr (get_node (id)));
-      return 0;
-    }
-    *root_rtn = new_node (expr (EXPR_EXPR, id));
     return 0;
 
   case EXPR_ASSIGN:
@@ -1336,6 +1312,33 @@ optimize_ast (node_id root, node_id *root_rtn)
   }
 
   abort ();
+}
+
+/* Test if an expression contains assignments or names. */
+static bool
+expr_contains_assignments (const expr_t e)
+{
+  size_t i;
+
+  switch (e.t) {
+  case EXPR_ASSIGN:
+  case EXPR_NAME:
+    return true;
+
+  case EXPR_REPEAT:
+    return expr_contains_assignments (get_node (e.r.id));
+  case EXPR_SLICE:
+    return expr_contains_assignments (get_node (e.sl.id));
+  case EXPR_LIST:
+    for (i = 0; i < e.list.size; ++i) {
+      if (expr_contains_assignments (get_node (e.list.ptr[i])))
+        return true;
+    }
+    return false;
+
+  default:
+    return false;
+  }
 }
 
 /* For some constant expressions which are a length 1 byte, return
@@ -1514,8 +1517,6 @@ evaluate (const dict_t *dict, node_id root,
     const expr_t e = get_node (list.ptr[i]);
 
     switch (e.t) {
-    case EXPR_LIST: abort ();
-
     case EXPR_NULL: /* does nothing */ break;
 
     case EXPR_BYTE:
@@ -1614,7 +1615,7 @@ evaluate (const dict_t *dict, node_id root,
       break;
     }
 
-    case EXPR_EXPR:
+    case EXPR_LIST:
     case EXPR_REPEAT:
     case EXPR_SLICE:
       /* Optimize some cases so we don't always have to create a
@@ -1649,17 +1650,25 @@ evaluate (const dict_t *dict, node_id root,
          */
         CLEANUP_FREE_ALLOCATOR struct allocator *a2 = NULL;
         uint64_t offset2 = 0, size2 = 0, m;
+        node_id id;
+
+        switch (e.t) {
+        case EXPR_LIST:   id = list.ptr[i]; break;
+        case EXPR_REPEAT: id = e.r.id; break;
+        case EXPR_SLICE:  id = e.sl.id; break;
+        default: abort ();
+        }
 
         a2 = create_allocator ("sparse", false);
         if (a2 == NULL) {
           nbdkit_error ("malloc: %m");
           return -1;
         }
-        if (evaluate (d, e.id, a2, &offset2, &size2) == -1)
+        if (evaluate (d, id, a2, &offset2, &size2) == -1)
           return -1;
 
         switch (e.t) {
-        case EXPR_EXPR:
+        case EXPR_LIST:
           if (a->f->blit (a2, a, size2, 0, *offset) == -1)
             return -1;
           *offset += size2;
