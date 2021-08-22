@@ -64,7 +64,8 @@ NBDKIT_DLL_PUBLIC int data_debug_AST = 0;
 /* The abstract syntax tree. */
 typedef struct expr expr_t;
 
-DEFINE_VECTOR_TYPE(string, char); /* string + length, \0 allowed */
+/* string + length, \0 allowed */
+DEFINE_VECTOR_TYPE(string, char);
 
 #define CLEANUP_FREE_STRING \
   __attribute__((cleanup (cleanup_free_string)))
@@ -73,6 +74,23 @@ static void
 cleanup_free_string (string *v)
 {
   free (v->ptr);
+}
+
+static string
+substring (string s, size_t offset, size_t len)
+{
+  size_t i;
+  string r = empty_vector;
+
+  for (i = 0; i < len; ++i) {
+    assert (offset+i < s.size);
+    if (string_append (&r, s.ptr[offset+i]) == -1) {
+      nbdkit_error ("realloc: %m");
+      exit (EXIT_FAILURE);
+    }
+  }
+
+  return r;
 }
 
 typedef size_t node_id;         /* references a node in expr_table below */
@@ -1250,9 +1268,13 @@ optimize_ast (node_id root, node_id *root_rtn)
     *root_rtn = new_node (e2);
     return 0;
 
-  case EXPR_SLICE:
+  case EXPR_SLICE: {
+    uint64_t n = get_node (root).sl.n;
+    int64_t m = get_node (root).sl.m;
+    uint64_t len;
+
     /* A zero-length slice can be replaced by null. */
-    if (get_node (root).sl.n == get_node (root).sl.m) {
+    if (n == m) {
       *root_rtn = new_node (expr (EXPR_NULL));
       return 0;
     }
@@ -1260,10 +1282,70 @@ optimize_ast (node_id root, node_id *root_rtn)
     if (optimize_ast (id, &id) == -1)
       return -1;
 
+    /* Some constant expressions can be sliced into something shorter.
+     * Be conservative.  If the slice is invalid then we prefer to do
+     * nothing here because the whole expression might be optimized
+     * away and if it isn't then we will give an error later.
+     */
+    switch (get_node (id).t) {
+    case EXPR_NULL:             /* null[:0] or null[0:] => null */
+      if (m == 0 || (n == 0 && m == -1)) {
+        *root_rtn = new_node (expr (EXPR_NULL));
+        return 0;
+      }
+      break;
+    case EXPR_BYTE:             /* byte[:1] or byte[0:] => byte */
+      if (m == 1 || (n == 0 && m == -1)) {
+        *root_rtn = new_node (expr (EXPR_BYTE, get_node (id).b));
+        return 0;
+      }
+      break;
+    case EXPR_STRING:           /* substring */
+      len = get_node (id).string.size;
+      if (m >= 0 && n <= m && m <= len) {
+        if (m-n == 1)
+          *root_rtn = new_node (expr (EXPR_BYTE, get_node (id).string.ptr[n]));
+        else {
+          string sub = substring (get_node (id).string, n, m-n);
+          *root_rtn = new_node (expr (EXPR_STRING, sub));
+        }
+        return 0;
+      }
+      if (m == -1 && n <= len) {
+        if (len-n == 1)
+          *root_rtn = new_node (expr (EXPR_BYTE, get_node (id).string.ptr[n]));
+        else {
+          string sub = substring (get_node (id).string, n, len-n);
+          *root_rtn = new_node (expr (EXPR_STRING, sub));
+        }
+        return 0;
+      }
+      break;
+    case EXPR_FILL:             /* slice of a fill is a shorter fill */
+      len = get_node (id).fl.n;
+      if (m >= 0 && n <= m && m <= len) {
+        if (m-n == 1)
+          *root_rtn = new_node (expr (EXPR_BYTE, get_node (id).fl.b));
+        else
+          *root_rtn = new_node (expr (EXPR_FILL, get_node (id).fl.b, m-n));
+        return 0;
+      }
+      if (m == -1 && n <= len) {
+        if (len-n == 1)
+          *root_rtn = new_node (expr (EXPR_BYTE, get_node (id).fl.b));
+        else
+          *root_rtn = new_node (expr (EXPR_FILL, get_node (id).fl.b, len-n));
+        return 0;
+      }
+      break;
+    default: ;
+    }
+
     e2 = copy_expr (get_node (root));
     e2.sl.id = id;
     *root_rtn = new_node (e2);
     return 0;
+  }
 
   case EXPR_STRING:
     /* A zero length string can be replaced with null. */
