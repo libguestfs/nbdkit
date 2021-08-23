@@ -147,6 +147,9 @@ do_test '( @4 )' 'bytearray(4)'
 do_test '( @4 )*4 1' 'bytearray(16) + b"\x01"'
 do_test '( @7 )*4' 'bytearray(28)'
 
+# Nested offsets apply only to the nested expression.
+do_test '1 (@2 2) (@3 3)' 'b"\1\0\0\2\0\0\0\3"'
+
 # These should all expand to nothing.  They are here to test corner
 # cases in the parser and optimizer.
 do_test '

@@ -1113,7 +1113,7 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
 /* This simple optimization pass over the AST simplifies some
  * expressions.
  */
-static bool expr_contains_assignments (const expr_t);
+static bool list_safe_to_inline (const node_ids);
 static bool expr_is_single_byte (const expr_t, uint8_t *b);
 static bool exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn);
 
@@ -1139,11 +1139,11 @@ optimize_ast (node_id root, node_id *root_rtn)
         /* null elements of a list can be ignored. */
         break;
       case EXPR_LIST:
-        /* List with a list can be flattened, but only if it doesn't
-         * contain assignments.  The reason is that assignments are
-         * scoped and flattening a list here could change the scope.
+        /* Simple lists can be inlined, but be careful with
+         * assignments, offsets and other expressions which are scoped
+         * because flattening the list changes the scope.
          */
-        if (! expr_contains_assignments (get_node (id))) {
+        if (list_safe_to_inline (get_node (id).list)) {
           for (j = 0; j < get_node (id).list.size; ++j) {
             if (node_ids_append (&list, get_node (id).list.ptr[j]) == -1)
               goto list_append_error;
@@ -1396,31 +1396,42 @@ optimize_ast (node_id root, node_id *root_rtn)
   abort ();
 }
 
-/* Test if an expression contains assignments or names. */
+/* Test if a list can be inlined without changing any scoped expressions. */
 static bool
-expr_contains_assignments (const expr_t e)
+list_safe_to_inline (const node_ids list)
 {
   size_t i;
 
-  switch (e.t) {
-  case EXPR_ASSIGN:
-  case EXPR_NAME:
-    return true;
+  for (i = 0; i < list.size; ++i) {
+    const expr_t e = get_node (list.ptr[i]);
 
-  case EXPR_REPEAT:
-    return expr_contains_assignments (get_node (e.r.id));
-  case EXPR_SLICE:
-    return expr_contains_assignments (get_node (e.sl.id));
-  case EXPR_LIST:
-    for (i = 0; i < e.list.size; ++i) {
-      if (expr_contains_assignments (get_node (e.list.ptr[i])))
-        return true;
+    switch (e.t) {
+      /* Assignments and named expressions are scoped. */
+    case EXPR_ASSIGN:
+    case EXPR_NAME:
+      return false;
+
+      /* @Offsets are scoped. */
+    case EXPR_ABS_OFFSET:
+    case EXPR_REL_OFFSET:
+    case EXPR_ALIGN_OFFSET:
+      return false;
+
+      /* Everything else should be safe. */
+    case EXPR_NULL:
+    case EXPR_LIST:
+    case EXPR_BYTE:
+    case EXPR_FILE:
+    case EXPR_SCRIPT:
+    case EXPR_STRING:
+    case EXPR_FILL:
+    case EXPR_REPEAT:
+    case EXPR_SLICE:
+      ;
     }
-    return false;
-
-  default:
-    return false;
   }
+
+  return true;
 }
 
 /* For some constant expressions which are a length 1 byte, return
