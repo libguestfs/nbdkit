@@ -1358,14 +1358,14 @@ optimize_ast (node_id root, node_id *root_rtn)
      */
     if (get_node (root).string.size > 1) {
       const string s = get_node (root).string;
-      uint64_t b = s.ptr[0];
+      uint8_t b = s.ptr[0];
 
       for (i = 1; i < s.size; ++i)
         if (s.ptr[i] != b)
           break;
 
       if (i == s.size) {
-        *root_rtn = new_node (expr (EXPR_FILL, b, s.size));
+        *root_rtn = new_node (expr (EXPR_FILL, b, (uint64_t) s.size));
         return 0;
       }
     }
@@ -1485,7 +1485,7 @@ exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn)
     switch (e1.t) {
     case EXPR_BYTE:             /* byte byte => fill | string */
       if (e0.b == e1.b) {
-        *id_rtn = new_node (expr (EXPR_FILL, e0.b, 2));
+        *id_rtn = new_node (expr (EXPR_FILL, e0.b, UINT64_C(2)));
       }
       else {
         if (string_append (&s, e0.b) == -1 ||
