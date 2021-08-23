@@ -645,6 +645,7 @@ LIBGUESTFS_TESTS += test-data
 TESTS += \
 	test-data-64b.sh \
 	test-data-7E.sh \
+	test-data-bad.sh \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \
@@ -662,6 +663,7 @@ TESTS += \
 EXTRA_DIST += \
 	test-data-64b.sh \
 	test-data-7E.sh \
+	test-data-bad.sh \
 	test-data-base64.sh \
 	test-data-extents.sh \
 	test-data-file.sh \

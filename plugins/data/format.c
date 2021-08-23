@@ -1113,6 +1113,7 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
 /* This simple optimization pass over the AST simplifies some
  * expressions.
  */
+static bool expr_safe_to_inline (const expr_t);
 static bool list_safe_to_inline (const node_ids);
 static bool expr_is_single_byte (const expr_t, uint8_t *b);
 static bool exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn);
@@ -1180,8 +1181,10 @@ optimize_ast (node_id root, node_id *root_rtn)
       return 0;
     }
 
-    /* List of length 1 is replaced with the first element. */
-    if (list.size == 1) {
+    /* List of length 1 is replaced with the first element, but as
+     * above avoid inlining if it is not a safe expression.
+     */
+    if (list.size == 1 && expr_safe_to_inline (get_node (list.ptr[0]))) {
       id = list.ptr[0];
       free (list.ptr);
       *root_rtn = id;
@@ -1396,39 +1399,49 @@ optimize_ast (node_id root, node_id *root_rtn)
   abort ();
 }
 
-/* Test if a list can be inlined without changing any scoped expressions. */
+/* Test if an expression can be safely inlined in a superior list
+ * without changing the meaning of any scoped expressions.
+ */
+static bool
+expr_safe_to_inline (const expr_t e)
+{
+  switch (e.t) {
+    /* Assignments and named expressions are scoped. */
+  case EXPR_ASSIGN:
+  case EXPR_NAME:
+    return false;
+
+    /* @Offsets are scoped. */
+  case EXPR_ABS_OFFSET:
+  case EXPR_REL_OFFSET:
+  case EXPR_ALIGN_OFFSET:
+    return false;
+
+    /* Everything else should be safe. */
+  case EXPR_NULL:
+  case EXPR_LIST:
+  case EXPR_BYTE:
+  case EXPR_FILE:
+  case EXPR_SCRIPT:
+  case EXPR_STRING:
+  case EXPR_FILL:
+  case EXPR_REPEAT:
+  case EXPR_SLICE:
+    ;
+  }
+
+  return true;
+}
+
+/* Test if a list of expressions is safe to inline in a superior list. */
 static bool
 list_safe_to_inline (const node_ids list)
 {
   size_t i;
 
   for (i = 0; i < list.size; ++i) {
-    const expr_t e = get_node (list.ptr[i]);
-
-    switch (e.t) {
-      /* Assignments and named expressions are scoped. */
-    case EXPR_ASSIGN:
-    case EXPR_NAME:
+    if (!expr_safe_to_inline (get_node (list.ptr[i])))
       return false;
-
-      /* @Offsets are scoped. */
-    case EXPR_ABS_OFFSET:
-    case EXPR_REL_OFFSET:
-    case EXPR_ALIGN_OFFSET:
-      return false;
-
-      /* Everything else should be safe. */
-    case EXPR_NULL:
-    case EXPR_LIST:
-    case EXPR_BYTE:
-    case EXPR_FILE:
-    case EXPR_SCRIPT:
-    case EXPR_STRING:
-    case EXPR_FILL:
-    case EXPR_REPEAT:
-    case EXPR_SLICE:
-      ;
-    }
   }
 
   return true;
