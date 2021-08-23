@@ -122,7 +122,7 @@ do_test '1 @^4 "\x00"' 'b"\x01\x00\x00\x00\x00"'
 do_test '#' 'b""'
 do_test '# ignore' 'b""'
 do_test '# ignore
-         1 2 3' 'b"\x01\x02\x03"'
+         1 2 3' 'b"\1\2\3"'
 
 #----------------------------------------------------------------------
 # Nested expressions and repeat.
@@ -144,7 +144,7 @@ do_test '( "Hello" @^8 )*2' 'b"Hello\0\0\0Hello\0\0\0"'
 
 # Nest with only an offset.
 do_test '( @4 )' 'bytearray(4)'
-do_test '( @4 )*4 1' 'bytearray(16) + b"\x01"'
+do_test '( @4 )*4 1' 'bytearray(16) + b"\1"'
 do_test '( @7 )*4' 'bytearray(28)'
 
 # Nested offsets apply only to the nested expression.
@@ -169,11 +169,11 @@ do_test '0*10' 'bytearray(10)'
 # Test various optimizations preserve the meaning.
 
 # expr*X*Y is equivalent to expr*(X*Y)
-do_test '1*2*3' 'b"\x01" * 6'
-do_test '1*2*3*4' 'b"\x01" * 24'
+do_test '1*2*3' 'b"\1" * 6'
+do_test '1*2*3*4' 'b"\1" * 24'
 
 # ( ( expr ) ) optimized to ( expr )
-do_test '( ( ( ( 1 2 ) ) ) )' 'b"\x01\x02"'
+do_test '( ( ( ( 1 2 ) ) ) )' 'b"\1\2"'
 
 # string*N is sometimes optimized to N copies of string.
 do_test '"foo"*2' 'b"foo" * 2'
@@ -186,14 +186,14 @@ do_test '( <(echo hello) )' 'b"hello\n"'
 do_test '( $hello )' 'b"hello"' hello=' "hello" '
 
 # Single byte * N is optimized to a fill.
-do_test '1*100000' 'b"\x01" * 100000'
+do_test '1*100000' 'b"\1" * 100000'
 do_test '"1"*100000' 'b"1" * 100000'
 
 # Zero fill should overwrite existing data.
-do_test '1*1000 @100 0*100' 'b"\x01" * 100 + bytearray(100) + b"\x01" * 800'
+do_test '1*1000 @100 0*100' 'b"\1" * 100 + bytearray(100) + b"\1" * 800'
 
 # Zero fill should extend the disk.
-do_test '1*1000 @100 0*1000' 'b"\x01" * 100 + bytearray(1000)'
+do_test '1*1000 @100 0*1000' 'b"\1" * 100 + bytearray(1000)'
 
 # Combining adjacent bytes, strings and fills.
 do_test '1 2 "3"' 'b"\x01\x023"'
@@ -251,7 +251,7 @@ do_test '
 # It should now be the new value (4).
 ( \1 ) -> \test
 \test
-' 'b"\x01\x01\x01\x01\x04"'
+' 'b"\1\1\1\1\4"'
 
 #----------------------------------------------------------------------
 # Slices.
@@ -299,27 +299,27 @@ fi
 export a=' 1 2 '
 export b=' 3 4 '
 export c=' 5*5 '
-do_test ' $a $b $c ' 'b"\x01\x02\x03\x04\x05\x05\x05\x05\x05"'
+do_test ' $a $b $c ' 'b"\1\2\3\4\5\5\5\5\5"'
 
 # Same but using command line parameters.
 unset a
 unset b
 unset c
-do_test ' $a $b $c ' 'b"\x01\x02\x03\x04\x05\x05\x05\x05\x05"' \
+do_test ' $a $b $c ' 'b"\1\2\3\4\5\5\5\5\5"' \
         a=' 1 2 ' b=' 3 4 ' c=' 5*5 '
 
 # Same but using a mix.
 export a='BLAH'
 export b=' 3 4 '
 export c='FOO'
-do_test ' $a $b $c ' 'b"\x01\x02\x03\x04\x05\x05\x05\x05\x05"' \
+do_test ' $a $b $c ' 'b"\1\2\3\4\5\5\5\5\5"' \
         a=' 1 2 ' c=' 5*5 '
 
 # Variables referencing variables.
 unset a
 unset b
 unset c
-do_test ' $a $b $c ' 'b"\x01\x02\x03\x04\x05\x05\x05\x05\x05"' \
+do_test ' $a $b $c ' 'b"\1\2\3\4\5\5\5\5\5"' \
         a=' 1 2 ' b=' 3 4 ' c=' $d*5 ' d=' 5 '
 
 # Badly formatted variable should fail.
@@ -344,11 +344,11 @@ unset c
 # Most of the tests above fit into a single page for sparse and zstd
 # allocators (32K).  It could be useful to test at page boundaries.
 
-do_test '@32766 1 2 3'   'b"\0"*32766 + b"\x01\x02\x03"'
-do_test '@32766 1*6'     'b"\0"*32766 + b"\x01"*6'
-do_test '@32766 1*32800' 'b"\0"*32766 + b"\x01"*32800'
+do_test '@32766 1 2 3'   'b"\0"*32766 + b"\1\2\3"'
+do_test '@32766 1*6'     'b"\0"*32766 + b"\1"*6'
+do_test '@32766 1*32800' 'b"\0"*32766 + b"\1"*32800'
 
 # Since we do sparseness detection, automatically trimming whole
 # pages if they are zero, this should be interesting:
 do_test '@32766 1*5 @65534 2*5 @32768 0*32768' \
-        'b"\0"*32766 + b"\x01\x01" + b"\0"*32768 + b"\x02\x02\x02"'
+        'b"\0"*32766 + b"\1\1" + b"\0"*32768 + b"\2\2\2"'
