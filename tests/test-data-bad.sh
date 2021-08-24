@@ -45,7 +45,7 @@ if [ "$NBDKIT_VALGRIND" = "1" ]; then
     exit 77
 fi
 
-do_test ()
+bad ()
 {
     data="$1"
 
@@ -57,105 +57,105 @@ do_test ()
 }
 
 # Invalid bytes, numbers and words.
-do_test '-1'
-do_test '-'
-do_test '256'
-do_test '0400'
-do_test '0x100'
-do_test '0xfff'
-do_test '0xffffffffffffffff'
-do_test '0xffffffffffffffffffffffffffffffff'
+bad '-1'
+bad '-'
+bad '256'
+bad '0400'
+bad '0x100'
+bad '0xfff'
+bad '0xffffffffffffffff'
+bad '0xffffffffffffffffffffffffffffffff'
 
 for prefix in le16 be16 le32 be32 le64 be64; do
-    do_test "$prefix"
-    do_test "$prefix:"
-    do_test "$prefix:-1"
-    do_test "$prefix:abc"
-    do_test "$prefix:0xffffffffffffffffffffffffffffffff"
+    bad "$prefix"
+    bad "$prefix:"
+    bad "$prefix:-1"
+    bad "$prefix:abc"
+    bad "$prefix:0xffffffffffffffffffffffffffffffff"
 done
 
-do_test 'le16:0x10000'
-do_test 'be16:0x10000'
-do_test 'le32:0x100000000'
-do_test 'be32:0x100000000'
-do_test 'le64:0x10000000000000000'
-do_test 'be64:0x10000000000000000'
+bad 'le16:0x10000'
+bad 'be16:0x10000'
+bad 'le32:0x100000000'
+bad 'be32:0x100000000'
+bad 'le64:0x10000000000000000'
+bad 'be64:0x10000000000000000'
 
 # Invalid barewords and symbols.
-do_test 'a'
-do_test 'x'
-do_test 'be'
-do_test 'le'
-do_test 'be1'
-do_test 'le3'
-do_test '¢'
-#do_test '0x'  # should fail but does not XXX
-do_test '?'
-do_test '\'
-do_test '^'
-do_test '@'
-do_test '@+'
-do_test '@-'
-do_test '@^'
-do_test '<'
-do_test '<('
-do_test '$'
-do_test '*'
-do_test '['
-do_test ':'
-do_test ']'
+bad 'a'
+bad 'x'
+bad 'be'
+bad 'le'
+bad 'be1'
+bad 'le3'
+bad '¢'
+#bad '0x'  # should fail but does not XXX
+bad '?'
+bad '\'
+bad '^'
+bad '@'
+bad '@+'
+bad '@-'
+bad '@^'
+bad '<'
+bad '<('
+bad '$'
+bad '*'
+bad '['
+bad ':'
+bad ']'
 
 # Invalid offsets.
-do_test '@-2'
-do_test '@2 @-3'
-do_test '@2 @-2 @-1'
-do_test '@1 @^2 @-3'
+bad '@-2'
+bad '@2 @-3'
+bad '@2 @-2 @-1'
+bad '@1 @^2 @-3'
 
 # Mismatched parentheses.
-do_test "("
-do_test ")"
-do_test "( ("
-do_test "( ( )"
-do_test ") ( )"
-do_test "( ) )"
+bad "("
+bad ")"
+bad "( ("
+bad "( ( )"
+bad ") ( )"
+bad "( ) )"
 
 # Invalid strings.
-do_test '"'
-do_test '"\'
-do_test '"\\'
-do_test '"\"'
-do_test '"\x"'
+bad '"'
+bad '"\'
+bad '"\\'
+bad '"\"'
+bad '"\x"'
 
 # Bad repeats.
-do_test '*0'
-do_test '*1'
-do_test '0*-1'
-do_test '0*'
-do_test '0*x'
-do_test '0**'
+bad '*0'
+bad '*1'
+bad '0*-1'
+bad '0*'
+bad '0*x'
+bad '0**'
 
 # Bad slices.
-do_test '0[2:]'
-do_test '0[:2]'
-do_test '[:]'
-do_test '[0:1]'
-do_test '"111"[4:]'
-do_test '"123"[4:]'
-do_test '"123"[1:0]'
+bad '0[2:]'
+bad '0[:2]'
+bad '[:]'
+bad '[0:1]'
+bad '"111"[4:]'
+bad '"123"[4:]'
+bad '"123"[1:0]'
 
 # Bad files.
 if [ ! -r /NOFILE ]; then
-    do_test '</NOFILE'
+    bad '</NOFILE'
 fi
 
 # Unknown and out of scope assignments.
-do_test '\a'
-do_test '( 0 -> \a ) \a'
-do_test '\a ( 0 -> \a )'
-do_test '0 -> \a \b'
-do_test '0 -> \a \a \b'
-do_test '( 0 -> \a \a ) \a'
+bad '\a'
+bad '( 0 -> \a ) \a'
+bad '\a ( 0 -> \a )'
+bad '0 -> \a \b'
+bad '0 -> \a \a \b'
+bad '( 0 -> \a \a ) \a'
 
 # Unknown variable definition
 unset unknownvar
-do_test '$unknownvar'
+bad '$unknownvar'
