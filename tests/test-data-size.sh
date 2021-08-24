@@ -99,6 +99,7 @@ size '(0 @100) -> \a (0 @200) -> \b \a @0 \b' 200
 
 # Scripts.
 size '<( for i in `seq 0 99`; do printf "%04d" $i; done )' $(( 100 * 4 ))
+size '<( while true; do echo -n .; done )[:400]' 400
 
 # Strings.
 size '""' 0
