@@ -658,6 +658,7 @@ TESTS += \
 	test-data-random-slice2.sh \
 	test-data-reloffset.sh \
 	test-data-sectors.sh \
+	test-data-size.sh \
 	test-disk2data.sh \
 	$(NULL)
 EXTRA_DIST += \
@@ -676,6 +677,7 @@ EXTRA_DIST += \
 	test-data-random-slice2.sh \
 	test-data-reloffset.sh \
 	test-data-sectors.sh \
+	test-data-size.sh \
 	test-disk2data.sh \
 	$(NULL)
 
