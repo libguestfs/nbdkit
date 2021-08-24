@@ -569,7 +569,7 @@ AS_IF([test "x$is_windows" = "xyes"],[
 
 AC_SEARCH_LIBS([getaddrinfo], [network socket])
 
-dnl Does this platform require libc_malloc_debug.so (glibc >= 2.34)?
+dnl Does this platform require libc_malloc_debug.so.0 (glibc >= 2.34)?
 AC_MSG_CHECKING([if this is glibc >= 2.34])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <limits.h>
