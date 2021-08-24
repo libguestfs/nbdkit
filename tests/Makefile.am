@@ -76,7 +76,7 @@ TESTS_ENVIRONMENT = \
 random = $(shell bash -c 'echo $$(( 1 + (RANDOM & 255) ))')
 if HAVE_GLIBC_234
 TESTS_ENVIRONMENT += \
-	LD_PRELOAD="$${LD_PRELOAD:+"$$LD_PRELOAD:"}$(libdir)/libc_malloc_debug.so" \
+	LD_PRELOAD="$${LD_PRELOAD:+"$$LD_PRELOAD:"}$(libdir)/libc_malloc_debug.so.0" \
 	GLIBC_TUNABLES=glibc.malloc.check=1:glibc.malloc.perturb=$(random) \
 	$(NULL)
 else
