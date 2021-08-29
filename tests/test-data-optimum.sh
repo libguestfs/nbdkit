@@ -34,10 +34,11 @@
 
 source ./functions.sh
 set -e
-set -x
 
 requires_run
 requires_nbdsh_uri
+requires sed --version
+requires tr --version
 
 log=data-optimum.log
 cleanup_fn rm -f $log
@@ -52,8 +53,28 @@ do_test ()
     expected_AST="$2"
 
     nbdkit -U - -fv -D data.AST=1 data "$data" --run true >$log 2>&1
-    cat $log
-    grep -sqF "debug: $expected_AST" "$log"
+
+    # Collect up all lines of debug output containing the AST
+    # and concatenate them into a single string.
+    actual_AST="$(
+        sed -n '
+        /BEGIN AST/,/END AST/{
+            /BEGIN AST/n;
+            /END AST/q;
+            s/.*debug: //p;
+        }' $log | tr -s '[:space:]' ' '
+    )"
+    actual_AST="${actual_AST% }" ;# remove trailing space
+
+    # Check expected = actual AST
+    if [ "$expected_AST" != "$actual_AST" ]; then
+        echo "$0: '$data' was not optimized to expected abstract syntax tree"
+        echo "expected AST = $expected_AST"
+        echo "actual AST   = $actual_AST"
+        echo "full output from nbdkit:"
+        cat $log
+        exit 1
+    fi
 }
 
 # Single byte.
@@ -83,6 +104,13 @@ do_test '((((1))))' '1'
 do_test '(1 1 1) 1 (1 1 1 1)' 'fill(1*8)'
 do_test '(((1 1 1))) 1 (1 1 1 1)' 'fill(1*8)'
 do_test '(((1 1 1) 1)) (1 1 1 1)' 'fill(1*8)'
+
+# Adjacent lists with non-identical bytes.
+do_test '(((2 2 2) 2)) (1 1 1 1)' '( fill(2*4) fill(1*4) )'
+do_test '(((2 2 2) 2)) (1 1 1 1 3)' '( fill(2*4) fill(1*4) 3 )'
+# XXX could optimize these better:
+do_test '(((2 2 2) 2)) (1 1 1 (1 3))' '( fill(2*4) fill(1*3) "\x01\x03" )'
+do_test '(((2 2 2) 2)) (3 1 1 1 1)' '( fill(2*4) "\x03\x01\x01\x01\x01" )'
 
 # Zero repeats become null.
 do_test '(1 2 3)*0' 'null'

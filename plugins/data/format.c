@@ -456,8 +456,11 @@ read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
   if (optimize_ast (root, &root) == -1)
     goto out;
 
-  if (data_debug_AST)
+  if (data_debug_AST) {
+    nbdkit_debug ("BEGIN AST (-D data.AST=1)");
     debug_expr (root, 0);
+    nbdkit_debug ("END AST");
+  }
 
   /* Evaluate the expression into the allocator. */
   r = evaluate (NULL, root, a, &offset, size_rtn);
