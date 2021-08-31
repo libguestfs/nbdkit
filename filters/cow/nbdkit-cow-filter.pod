@@ -116,8 +116,8 @@ At the end, disconnect the client.
 Run these C<qemu-img> commands to construct a qcow2 file containing
 the differences:
 
- qemu-img create -f qcow2 -b nbd:localhost diff.qcow2
- qemu-img rebase -b disk.img diff.qcow2
+ qemu-img create -F raw -b nbd:localhost -f qcow2 diff.qcow2
+ qemu-img rebase -F raw -b disk.img -f qcow2 diff.qcow2
 
 F<diff.qcow2> now contains the differences between the base
 (F<disk.img>) and the changes stored in nbdkit-cow-filter.  C<nbdkit>

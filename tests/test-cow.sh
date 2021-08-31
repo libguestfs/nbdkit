@@ -72,8 +72,8 @@ fi
 # If we have qemu-img, try the hairy rebase operation documented
 # in the nbdkit-cow-filter manual.
 if qemu-img --version >/dev/null 2>&1; then
-    qemu-img create -f qcow2 -b nbd:unix:$sock cow-diff.qcow2
-    time qemu-img rebase -b cow-base.img cow-diff.qcow2
+    qemu-img create -F raw -b nbd:unix:$sock -f qcow2 cow-diff.qcow2
+    time qemu-img rebase -F raw -b cow-base.img -f qcow2 cow-diff.qcow2
     qemu-img info cow-diff.qcow2
 
     # This checks the file we created exists.
