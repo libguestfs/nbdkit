@@ -467,11 +467,6 @@ SUBHTML: {
         $r .= "#" . $self->idify ($anchor, 1) if defined $anchor;
         $r;
     }
-
-    # For some reason Pod::Simple::XHTML usually cannot find a
-    # title for the page.  This defaults the HTML <title> field
-    # to the same as the man page name.
-    sub default_title { $name }
 }
 
 if ($html) {
@@ -481,6 +476,7 @@ if ($html) {
     my $output;
     $parser->no_errata_section (1);
     $parser->complain_stderr (1);
+    $parser->force_title ($name[0]); # from @name above
     $parser->output_string (\$output);
     # Added in Pod::Simple 3.16, 2011-03-14.
     eval { $parser->html_charset ("UTF-8") };
