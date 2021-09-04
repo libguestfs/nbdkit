@@ -1,12 +1,14 @@
 =head1 NAME
 
 nbdkit-tls - authentication and encryption of NBD connections
-(sometimes incorrectly called "SSL")
+(sometimes called "SSL")
 
 =head1 SYNOPSIS
 
- nbdkit [--tls=off|on|require] [--tls-certificates /path/to/certificates]
-        [--tls-psk /path/to/pskfile] [--tls-verify-peer]
+ nbdkit [--tls=off|on|require]
+        [--tls-certificates=/path/to/certificates]
+        [--tls-psk=/path/to/pskfile]
+        [--tls-verify-peer]
         PLUGIN [...]
 
 =head1 DESCRIPTION
@@ -22,19 +24,14 @@ connect, it will be rejected by the server (in other words, as if the
 server doesn't support TLS).
 
 I<--tls=on> means that the client may choose to connect either with or
-without TLS.  In this mode, a plugin may wish to serve different
-content depending on whether the client has authenticated; the
-function C<nbdkit_is_tls()> can be used during the C<.open> callback
-for that purpose.  Or, you can opt to use
-L<nbdkit-tls-fallback-filter(1)> to provide safe fallback content to
-plaintext connections, saving the plugin content only for secure
-connections.
+without TLS.
 
-Because I<--tls=on> is subject to downgrade attacks where a malicious
-proxy pretends not to support TLS in order to force either the client
-or server to communicate in plaintext, you can also specify
-I<--tls=require>, where the server enables TLS B<and> rejects all
-non-TLS connection attempts.
+I<--tls=require> enables TLS B<and> rejects all non-TLS connection
+attempts.  This prevents downgrade attacks where a malicious proxy
+pretends not to support TLS in order to force either the client or
+server to communicate in plaintext.
+
+=head2 Example
 
 If certificates have been set up correctly then you should be able to
 start a TLS server by doing:
@@ -45,30 +42,17 @@ and connect to it by doing:
 
  nbdinfo nbds://localhost
 
+If certificates are in a non-standard directory and you have
+S<libnbd E<ge> 1.10>:
+
+ nbdkit --tls=require --tls-certificates=/certs memory 1G
+ nbdinfo nbds://localhost?tls-certificates=/certs
+
 =head2 TLS with X.509 certificates
 
 When nbdkit starts up, it loads TLS certificates from some built-in
 paths, or from the directory specified by the I<--tls-certificates>
 option.
-
-Without I<--tls-certificates>, if nbdkit is started as a non-root user
-(note this does not include use of the I<-u> or I<-g> options), nbdkit
-looks in each of these paths in turn:
-
- $HOME/.pki/nbdkit/
- $HOME/.config/pki/nbdkit/
-
-Without I<--tls-certificates>, if nbdkit is started as root, nbkit
-looks in:
-
- $sysconfdir/pki/nbdkit/
-
-(Use C<nbdkit --dump-config> and look at the
-C<root_tls_certificates_dir> setting to get the actual directory built
-into the binary.)
-
-You can override both directories above by using
-I<--tls-certificates=/path/to/certificates>.
 
 In this directory, nbdkit expects to find several files:
 
@@ -145,11 +129,12 @@ The server DNS name (C<cn> below) must be the fully qualified hostname
 
 =head3 Issuing and checking client certificates
 
-B<Note:>
-You don't need to create client certificates unless you want to check
-and limit which clients can connect to nbdkit.  nbdkit B<does not>
-check client certificates unless you specify the I<--tls-verify-peer>
-option on the command line.
+B<Note:> You don't need to create client certificates unless you want
+to check and limit which clients can connect to nbdkit.  B<nbdkit does
+not check client certificates> unless you specify the
+I<--tls-verify-peer> option on the command line.  There are other
+methods for limiting access to nbdkit including
+L<nbdkit-ip-filter(1)>.
 
 For each client you should generate a private key and a client
 certificate:
@@ -259,6 +244,93 @@ expect TLS then it is best to specify the I<--tls> option that you
 require, and if you want to check client certificates, specify the
 I<--tls-verify-peer> option.
 
+=head2 Controlling TLS fallback to plaintext
+
+When I<--tls=on> is used, the connection can fall back to plaintext.
+You can use L<nbdkit-tls-fallback-filter(1)> to provide safe fallback
+content to plaintext connections.  With this filter the underlying
+plugin content is only served on secure connections.
+
+Alternatively a plugin may wish to serve different content depending
+on whether the client is using TLS.  The function C<nbdkit_is_tls()>
+can be used during the C<.open> callback for that purpose.
+
+=head2 NBD URIs for TLS
+
+Tools such L<nbdcopy(1)>, L<nbdinfo(1)> and L<nbdsh(1)> (from
+L<libnbd(3)>) allow you to use C<nbds://> or C<nbds+unix://> URIs to
+connect to nbdkit servers using TLS.
+
+The syntax is fully documented in the NBD URI specification:
+L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/uri.md>.
+This section contains an outline.  You can also find further examples
+in L<nbd_connect_uri(3)>.
+
+=over 4
+
+=item B<nbds://>example.com
+
+Connect over TCP with TLS, to C<example.com> port 10809.  If the
+server does not support TLS then this will fail.
+
+=item B<nbds+unix:///?socket=>SOCKET
+
+As above, but connect over a Unix domain socket called F<SOCKET>.
+
+=item B<nbds+unix:///?socket=>SOCKETB<&tls-certificates=>DIR
+
+As above, but specify the directory F<DIR> containing TLS certificates
+(used by the client to verify the server, and to present client
+authentication to the server).  Note this requires S<libnbd E<ge> 1.10>.
+
+=item B<nbds+unix:///?socket=>SOCKETB<&tls-psk-file=>FILENAME
+
+As above, but use TLS with Pre-Shared Keys (PSK), stored in the
+secrets file F<FILENAME>.
+
+=item B<nbds+unix://>aliceB<@/?socket=>SOCKETB<&tls-psk-file=>FILENAME
+
+As above, but use C<alice> as the username.
+
+=back
+
+=head2 Default location of certificates
+
+Without I<--tls-certificates> nbdkit and libnbd look in several
+locations for certificates.
+
+If nbdkit is started as a non-root user (note this does not include
+use of the I<-u> or I<-g> options), nbdkit looks in each of these
+paths in turn:
+
+ $HOME/.pki/nbdkit/
+ $HOME/.config/pki/nbdkit/
+
+If nbdkit is started as root:
+
+ $sysconfdir/pki/nbdkit/
+
+where $sysconfdir is set when nbdkit is compiled, usually F</etc>.
+(Use C<nbdkit --dump-config> and look at the
+C<root_tls_certificates_dir> setting to get the actual directory built
+into the binary.)
+
+In libnbd the paths are different.  For non-root:
+
+ $HOME/.pki/libnbd/
+ $HOME/.config/pki/libnbd/
+
+For root:
+
+ $sysconfdir/pki/libnbd/
+
+In nbdkit you can override these directories by using
+I<--tls-certificates=/path/to/certificates>.
+
+In libnbd you can use L<nbd_set_tls_certificates(3)>.
+In S<libnbd E<ge> 1.10> you can append
+C<&tls-certificates=/path/to/certificates> to URIs.
+
 =head2 Choice of TLS algorithms
 
 TLS has a bewildering choice of algorithms that can be used.  To
@@ -289,47 +361,17 @@ F</etc/crypto-policies/config> if the first file does not exist.
 
 More information can be found in L<gnutls_priority_init(3)>.
 
-=head2 NBD URIs for TLS
-
-Tools such L<nbdcopy(1)>, L<nbdinfo(1)> and L<nbdsh(1)> (from
-L<libnbd(3)>) allow you to use C<nbds://> or C<nbds+unix://> URIs to
-connect to nbdkit servers using TLS.
-
-The syntax is fully documented in the NBD URI specification:
-L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/uri.md>.
-This section contains an outline.  You can also find further examples
-in L<nbd_connect_uri(3)>.
-
-=over 4
-
-=item B<nbds://>example.com
-
-Connect over TCP with TLS, to C<example.com> port 10809.  If the
-server does not support TLS then this will fail.
-
-=item B<nbds+unix:///?socket=>SOCKET
-
-As above, but connect over a Unix domain socket called F<SOCKET>.
-
-=item B<nbds+unix:///?socket=>SOCKETB<&tls-psk-file=>FILENAME
-
-As above, but use TLS with Pre-Shared Keys (PSK), stored in the
-secrets file F<FILENAME>.
-
-=item B<nbds+unix://>aliceB<@/?socket=>SOCKETB<&tls-psk-file=>FILENAME
-
-As above, but use C<alice> as the username.
-
-=back
-
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
 L<nbdkit-tls-fallback-filter(1)>,
 L<nbdcopy(1)>,
+L<nbdfuse(1)>,
 L<nbdinfo(1)>,
 L<nbdsh(1)>,
-L<nbd_connect_uri(1)>,
+L<nbd_connect_uri(3)>,
+L<nbd_set_tls(3)>,
+L<nbd_set_tls_certificates(3)>,
 L<gnutls_priority_init(3)>,
 L<psktool(1)>,
 L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md>,
@@ -346,4 +388,4 @@ Pino Toscano
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2020 Red Hat Inc.
+Copyright (C) 2013-2021 Red Hat Inc.
