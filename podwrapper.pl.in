@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # podwrapper.pl
 # @configure_input@
-# Copyright (C) 2010-2020 Red Hat Inc.
+# Copyright (C) 2010-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -45,6 +45,16 @@ use File::Basename;
 # https://www.redhat.com/archives/libguestfs/2013-May/thread.html#00088
 eval { $Text::Wrap::huge = "overflow" };
 
+# All man page names must match this function.
+sub validate_name_field
+{
+    local $_ = shift;
+    $_ =~ m/^nbdkit/;
+}
+
+# The license for man pages in this package - see LICENSE below.
+my $package_license = "bsd";
+
 =head1 NAME
 
 podwrapper.pl - generate documentation from POD input files
@@ -68,7 +78,7 @@ podwrapper.pl - generate documentation from POD input files
 =head1 DESCRIPTION
 
 podwrapper.pl is a Perl script that generates various output formats
-from POD input files that nbdkit uses for most documentation.
+from POD input files that this project uses for most documentation.
 
 You must specify one input file, and one or more output formats.  The
 output options are I<--man>, I<--html> and I<--text> (see below).
@@ -301,17 +311,29 @@ pop @name;
 pop @name;
 die "$progname: $input: empty NAME section\n"
     unless @name >= 1;
-die "$progname: $input: NAME doesn't start with nbdkit\n"
-    unless $name[0] =~ m/^nbdkit/;
+die "$progname: $input: NAME doesn't start with $package_name\n"
+    unless validate_name_field ($name[0]);
 die "$progname: $input: NAME does not conform with Linux man pages standard\n"
     if $name[0] !~ m/- [a-z]/ || $name[@name-1] =~ m/\.$/;
 
 # Add standard LICENSE section at the end.
-$content .=
-"
+my $license_lgplv2plus = "\
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
 
-=head1 LICENSE
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
 
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+";
+
+my $license_bsd = "\
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
@@ -350,6 +372,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 ";
+
+$content .= "\n=head1 LICENSE\n";
+$content .= eval "\$license_$package_license";
 
 @lines = split /\n/, $content;
 unless ($allow_long_lines) {
@@ -416,7 +441,7 @@ if ($man) {
     my $parser = Podwrapper::Man->new (
         name => $name,
         release => $release, section => $section,
-        center => "NBDKIT",
+        center => uc $package_name,
         date => $date,
         stderr => 1, utf8 => 1
     );
@@ -468,7 +493,7 @@ SUBHTML: {
     sub resolve_man_page_link
     {
         my $self = shift;
-        my $name = $_[0];   # eg. "nbdkit(1)", can be undef
+        my $name = $_[0];   # eg. "foobar(3)", can be undef
         my $anchor = $_[1]; # eg. "SYNOPSIS", can be undef
         my $r = "";
         if (defined $name) {
@@ -564,4 +589,4 @@ Richard W.M. Jones.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2012-2020 Red Hat Inc.
+Copyright (C) 2010-2021 Red Hat Inc.
