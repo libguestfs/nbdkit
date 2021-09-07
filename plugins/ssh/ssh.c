@@ -294,7 +294,7 @@ authenticate (struct ssh_handle *h)
     return -1;
 
   method = ssh_userauth_list (h->session, NULL);
-  nbdkit_debug ("authentication methods offered by the server: 0x%x"
+  nbdkit_debug ("authentication methods offered by the server [0x%x]: "
                 "%s%s%s%s%s%s%s",
                 method,
                 method & SSH_AUTH_METHOD_NONE        ? " none" : "",
