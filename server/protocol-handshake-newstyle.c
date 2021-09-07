@@ -706,7 +706,7 @@ negotiate_handshake_newstyle_options (void)
         /* Note that we support base:allocation whether or not the plugin
          * supports can_extents.
          */
-        if (!conn->structured_replies) {
+        if (option == NBD_OPT_SET_META_CONTEXT && !conn->structured_replies) {
           if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
               == -1)
             return -1;
