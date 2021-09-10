@@ -41,6 +41,11 @@ requires_filter cow
 requires_plugin sparse-random
 requires nbdinfo --version
 
+if ! nbdinfo --help | grep -- --map ; then
+    echo "$0: nbdinfo --map option required to run this test"
+    exit 77
+fi
+
 for size in 0 3G 4G 5G 8G; do
     nbdkit -U - sparse-random $size --filter=cow --run 'nbdinfo --map $uri'
 done
