@@ -118,4 +118,5 @@ main (int argc, char *argv[])
 {
   test_int64_vector ();
   test_string_vector ();
+  return 0;
 }
