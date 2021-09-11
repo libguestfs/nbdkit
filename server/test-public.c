@@ -100,6 +100,7 @@ int tls;
 static bool
 test_nbdkit_parse_size (void)
 {
+  size_t i;
   bool pass = true;
   struct pair {
     const char *str;
@@ -166,7 +167,7 @@ test_nbdkit_parse_size (void)
     { "1E", 1024LL * 1024 * 1024 * 1024 * 1024 * 1024 },
   };
 
-  for (size_t i = 0; i < sizeof pairs / sizeof pairs[0]; i++) {
+  for (i = 0; i < sizeof pairs / sizeof pairs[0]; i++) {
     int64_t r;
 
     error_flagged = false;
