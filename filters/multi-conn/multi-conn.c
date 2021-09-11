@@ -185,6 +185,7 @@ multi_conn_prepare (nbdkit_next *next, void *handle, int readonly)
   struct group *g;
   bool new_group = false;
   int r;
+  size_t i;
 
   h->next = next;
   if (mode == AUTO) { /* See also .get_ready turning AUTO into DISABLE */
@@ -206,7 +207,7 @@ multi_conn_prepare (nbdkit_next *next, void *handle, int readonly)
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   if (byname) {
     g = NULL;
-    for (size_t i = 0; i < groups.size; i++)
+    for (i = 0; i < groups.size; i++)
       if (strcmp (groups.ptr[i]->name, h->name) == 0) {
         g = groups.ptr[i];
         break;
@@ -243,20 +244,21 @@ static int
 multi_conn_finalize (nbdkit_next *next, void *handle)
 {
   struct handle *h = handle;
+  size_t i;
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   assert (h->next == next);
   assert (h->group);
 
   /* XXX should we add a config param to flush if the client forgot? */
-  for (size_t i = 0; i < h->group->conns.size; i++) {
+  for (i = 0; i < h->group->conns.size; i++) {
     if (h->group->conns.ptr[i] == h) {
       conns_vector_remove (&h->group->conns, i);
       break;
     }
   }
   if (h->group->conns.size == 0) {
-    for (size_t i = 0; i < groups.size; i++)
+    for (i = 0; i < groups.size; i++)
       if (groups.ptr[i] == h->group) {
         group_vector_remove (&groups, i);
         free (h->group->name);
