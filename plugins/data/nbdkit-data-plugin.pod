@@ -5,13 +5,13 @@ nbdkit-data-plugin - nbdkit plugin for serving data from the command line
 =head1 SYNOPSIS
 
  nbdkit data [data=]'0 1 2 3 @0x1fe 0x55 0xaa'
-             [size=SIZE] [allocator=sparse|...]
+             [size=SIZE] [allocator=sparse|malloc|zstd]
 
  nbdkit data base64='aGVsbG8gbmJka2l0IHVzZXI='
-             [size=SIZE] [allocator=sparse|...]
+             [size=SIZE] [allocator=sparse|malloc|zstd]
 
  nbdkit data raw='binary_data'
-             [size=SIZE] [allocator=sparse|...]
+             [size=SIZE] [allocator=sparse|malloc|zstd]
 
 =head1 DESCRIPTION
 

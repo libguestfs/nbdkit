@@ -4,7 +4,7 @@ nbdkit-memory-plugin - nbdkit virtual memory (RAM disk) plugin
 
 =head1 SYNOPSIS
 
- nbdkit memory [size=]SIZE [allocator=sparse|...]
+ nbdkit memory [size=]SIZE [allocator=sparse|malloc|zstd]
 
 =head1 DESCRIPTION
 
