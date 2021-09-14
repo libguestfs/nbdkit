@@ -11,8 +11,9 @@ nbdkit 1.28.0 was released on B<XXX September 2021>.
 
 =head2 Security
 
-CVE-2021-3716 "reset structured replies on starttls": nbdkit was
-vulnerable to injected plaintext when upgrading to a secure
+=head3 CVE-2021-3716 reset structured replies on starttls
+
+nbdkit was vulnerable to injected plaintext when upgrading to a secure
 connection.  For the full announcement see
 L<https://www.redhat.com/archives/libguestfs/2021-August/msg00083.html>
 (Eric Blake).
@@ -120,7 +121,7 @@ Siddhesh Poyarekar).
 When running nbdkit from the source directory (using the wrapper) we
 suppress C<$DEBUGINFOD_URLS> because of performance issues.
 
-F<./configure.ac> now uses spaces consistently, and has been
+F<configure.ac> now uses spaces consistently, and has been
 modernized to support the latest autotools (Eric Blake).
 
 F<podwrapper.pl> has been unified (almost) with the copy in libnbd.
