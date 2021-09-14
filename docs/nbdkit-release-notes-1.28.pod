@@ -1,0 +1,164 @@
+=head1 NAME
+
+nbdkit-release-notes-1.28 - release notes for nbdkit 1.28
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.28.
+This describes the major changes since 1.26.
+
+nbdkit 1.28.0 was released on B<XXX September 2021>.
+
+=head2 Security
+
+CVE-2021-3716 "reset structured replies on starttls": nbdkit was
+vulnerable to injected plaintext when upgrading to a secure
+connection.  For the full announcement see
+L<https://www.redhat.com/archives/libguestfs/2021-August/msg00083.html>
+(Eric Blake).
+
+All past security issues and information about how to report new ones
+can be found in L<nbdkit-security(1)>.
+
+=head2 Plugins
+
+L<nbdkit-data-plugin(1)> has new leE<lt>NNE<gt>: and beE<lt>NNE<gt>:
+prefixes for little and big endian words.  Also the plugin tries much
+harder to optimize expressions.  The test suite has been greatly
+expanded to catch potential regressions.
+
+L<nbdkit-floppy-plugin(1)> now allows you to reserve free space (Nolan
+Leake).
+
+L<nbdkit-ssh-plugin(1)> no longer references SHA1 host keys, which are
+insecure (Daniel Berrangé).
+
+L<nbdkit-vddk-plugin(1)> reports C<can_flush> and C<can_fua> based on
+what the version of VDDK supports.  New debug flag I<-D vddk.stats=1>
+prints the amount of time spent in VDDK calls on exit which can be
+useful for profiling performance.
+
+=head2 Filters
+
+L<nbdkit-cow-filter(1)> and L<nbdkit-cache-filter(1)> no longer break
+up large read requests into page-sized requests.  In addition the
+default block size for both filters is now 64K.  Both changes greatly
+improve performance.
+
+L<nbdkit-cache-filter(1)> has a new C<cache-on-read=/PATH> parameter
+allowing callers to enable and disable the cache-on-read feature at
+runtime.  Also there is a new C<cache-min-block-size> parameter
+letting you select the block size at runtime (thanks Martin
+Kletzander).
+
+L<nbdkit-cow-filter(1)> has a new C<cow-on-read> parameter which works
+similarly to the corresponding cache filter feature.  The new
+C<cow-block-size> parameter lets you select the block size at runtime.
+
+L<nbdkit-cow-filter(1)> has less verbose debugging.  To restore the
+old debug output use I<-D cow.verbose=1>
+
+L<nbdkit-delay-filter(1)> has new C<delay-open> and C<delay-close>
+parameters to inject delays when clients connect and disconnect.
+Delay filter parameters are now parsed more accurately (thanks Ming
+Xie).
+
+=head2 Language bindings
+
+The OCaml bindings now call C<caml_shutdown> when unloading the
+plugin.  This causes C<Stdlib.at_exit> handlers to run correctly,
+closes file descriptors, releases dependent shared libraries and frees
+memory.  Valgrind on OCaml plugins should not show any false positives
+about leaked memory.
+
+OCaml and Python bindings may now use the C<.cleanup> method.
+
+References to Python 2 in L<nbdkit-python-plugin(3)> have been removed.
+
+=head2 Server
+
+Fix captive nbdkit C<$uri> variable so when TLS is used the URI is
+constructed with the C<nbds:> prefix.  Additionally add a new variable
+C<$tls> which can be used by the subprocess to tell if TLS is enabled.
+
+Debug messages are now printed atomically.  This means that debug
+messages are no longer broken up across multiple lines if there are
+other processes writing to stderr at the same time (which often
+happened when using captive nbdkit).
+
+Enhanced valgrind support (F<./configure --enable-valgrind>) can now
+be enabled safely and with no performance impact even in production
+builds (Eric Blake).
+
+=head2 API
+
+Plugins or filters using C<nbdkit_nanosleep> now don't hang if the
+client closes the socket abruptly (thanks Ming Xie).
+
+=head2 Bug fixes
+
+L<nbdkit-data-plugin(1)> and L<nbdkit-memory-plugin(1)> using
+allocator=malloc no longer crashes because of memory corruption in
+some corner cases (only seen on s390x, but could happen on any
+architecture).  Meanwhile C<allocator=zstd> no longer crashes when
+zeroing unallocated space.
+
+=begin comment
+
+=head2 Documentation
+
+=end comment
+
+=head2 Tests
+
+Tests now use the new C<GLIBC_TUNABLES> feature, replacing
+C<MALLOC_CHECK_> on glibc E<ge> 2.34 (thanks Eric Blake,
+Siddhesh Poyarekar).
+
+=head2 Build
+
+When running nbdkit from the source directory (using the wrapper) we
+suppress C<$DEBUGINFOD_URLS> because of performance issues.
+
+F<./configure.ac> now uses spaces consistently, and has been
+modernized to support the latest autotools (Eric Blake).
+
+F<podwrapper.pl> has been unified (almost) with the copy in libnbd.
+
+=begin comment
+
+=head2 Internals
+
+=end comment
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Authors of nbdkit 1.28:
+
+=begin comment
+
+git shortlog -s v1.26.0..
+
+=end comment
+
+=over 4
+
+=item Daniel P. Berrangé
+
+=item Eric Blake
+
+=item Martin Kletzander
+
+=item Nolan Leake
+
+=item Richard W.M. Jones
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright (C) 2021 Red Hat Inc.
