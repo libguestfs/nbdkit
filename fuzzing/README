@@ -1,21 +1,20 @@
 To report security bugs, see ‘SECURITY’ in the top source directory.
 
 
-Fuzzing nbdkit using the American Fuzzy Lop (afl) fuzzer
+Fuzzing nbdkit using the American Fuzzy Lop (AFL) fuzzer
 ========================================================
 
-We can fuzz nbdkit using the -s (read from stdin) option, and feeding
-in a file of "network" input.  The stdout from nbdkit (ie. data that
-would normally be sent back to the client) is ignored.
+You can fuzz nbdkit with AFL or AFL++ (https://aflplus.plus/) using
+the -s (read from stdin) option.
 
-You will need to recompile nbdkit with afl instrumentation:
+You will need to recompile nbdkit with AFL instrumentation:
 
   ./configure CC=/usr/bin/afl-gcc CXX=/usr/bin/afl-g++
   make clean
   make
 
 The fuzzing/testcase_dir directory contains some initial testcases
-that afl can use.
+that AFL can use.
 
 Run multiple copies of afl-fuzz.  Usually you should run 1 master (-M)
 and as many slaves (-S) as you can.
@@ -46,7 +45,7 @@ profiling:
   make clean
   make
 
-(2) Assuming ../nbdkit-afl is the nbdkit source compiled with afl, and
+(2) Assuming ../nbdkit-afl is the nbdkit source compiled with AFL, and
 the current directory is nbdkit compiled with profiling, then run the
 command below.  You can run this even while afl-fuzz is running.
 
