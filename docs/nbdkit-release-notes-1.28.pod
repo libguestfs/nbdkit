@@ -118,9 +118,6 @@ Siddhesh Poyarekar).
 
 =head2 Build
 
-When running nbdkit from the source directory (using the wrapper) we
-suppress C<$DEBUGINFOD_URLS> because of performance issues.
-
 F<configure.ac> now uses spaces consistently, and has been
 modernized to support the latest autotools (Eric Blake).
 
