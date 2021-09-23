@@ -7,7 +7,7 @@ nbdkit-release-notes-1.28 - release notes for nbdkit 1.28
 These are the release notes for nbdkit stable release 1.28.
 This describes the major changes since 1.26.
 
-nbdkit 1.28.0 was released on B<XXX September 2021>.
+nbdkit 1.28.0 was released on B<23 September 2021>.
 
 =head2 Security
 
@@ -23,16 +23,16 @@ can be found in L<nbdkit-security(1)>.
 
 =head2 Plugins
 
-L<nbdkit-data-plugin(1)> has new leE<lt>NNE<gt>: and beE<lt>NNE<gt>:
-prefixes for little and big endian words.  Also the plugin tries much
-harder to optimize expressions.  The test suite has been greatly
-expanded to catch potential regressions.
+L<nbdkit-data-plugin(1)> has new C<leE<lt>NNE<gt>:> and
+C<beE<lt>NNE<gt>:> prefixes for little and big endian words.  Also the
+plugin tries much harder to optimize expressions.  The test suite has
+been greatly expanded to catch potential regressions.
 
 L<nbdkit-floppy-plugin(1)> now allows you to reserve free space (Nolan
 Leake).
 
-L<nbdkit-ssh-plugin(1)> no longer references SHA1 host keys, which are
-insecure (Daniel Berrangé).
+L<nbdkit-ssh-plugin(1)> no longer references SHA1 host keys as part of
+the effort to remove insecure algorithms (Daniel Berrangé).
 
 L<nbdkit-vddk-plugin(1)> reports C<can_flush> and C<can_fua> based on
 what the version of VDDK supports.  New debug flag I<-D vddk.stats=1>
@@ -99,9 +99,9 @@ client closes the socket abruptly (thanks Ming Xie).
 =head2 Bug fixes
 
 L<nbdkit-data-plugin(1)> and L<nbdkit-memory-plugin(1)> using
-allocator=malloc no longer crashes because of memory corruption in
-some corner cases (only seen on s390x, but could happen on any
-architecture).  Meanwhile C<allocator=zstd> no longer crashes when
+allocator=malloc no longer crash because of memory corruption in some
+corner cases (only seen on s390x, but could happen on other
+architectures).  Meanwhile C<allocator=zstd> no longer crashes when
 zeroing unallocated space.
 
 =begin comment
@@ -122,6 +122,8 @@ F<configure.ac> now uses spaces consistently, and has been
 modernized to support the latest autotools (Eric Blake).
 
 F<podwrapper.pl> has been unified (almost) with the copy in libnbd.
+
+Continue fuzzing using AFL++.  Updated the fuzzing documentation.
 
 =begin comment
 
