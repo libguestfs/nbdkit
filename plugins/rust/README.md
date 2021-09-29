@@ -39,7 +39,7 @@ plugin!(MyPlugin {write_at, trim, ...});
 
 # Minimum Supported Rust Version (MSRV)
 
-`nbdkit` is supported on Rust 1.42.0 and higher.  The MSRV will not be
+`nbdkit` is supported on Rust 1.46.0 and higher.  The MSRV will not be
 changed in the future without raising the major or minor version.
 
 # License
