@@ -281,6 +281,11 @@ Set the timeout for requests.
 
 Use the default libcurl timeout for requests.
 
+=item B<tls13-ciphers=>CIPHER[:CIPHER...]
+
+Select TLSv1.3 ciphers available.  See L<CURLOPT_TLS13_CIPHERS(3)> and
+L<https://curl.se/docs/ssl-ciphers.html>
+
 =item B<unix-socket-path=>PATH
 
 (nbdkit E<ge> 1.10)
@@ -488,6 +493,7 @@ L<CURLOPT_SSL_CIPHER_LIST(3)>,
 L<CURLOPT_SSLVERSION(3)>,
 L<CURLOPT_TCP_KEEPALIVE(3)>,
 L<CURLOPT_TCP_NODELAY(3)>,
+L<CURLOPT_TLS13_CIPHERS(3)>,
 L<CURLOPT_URL(3)>,
 L<CURLOPT_UNIX_SOCKET_PATH(3)>,
 L<CURLOPT_USERAGENT(3)>,
@@ -500,7 +506,8 @@ L<nbdkit-retry-filter(1)>,
 L<nbdkit-ssh-plugin(1)>,
 L<nbdkit-torrent-plugin(1)>,
 L<nbdkit-plugin(3)>,
-L<http://curl.haxx.se>.
+L<http://curl.haxx.se>,
+L<https://curl.se/docs/ssl-ciphers.html>
 
 =head1 AUTHORS
 
