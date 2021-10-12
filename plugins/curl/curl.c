@@ -83,6 +83,8 @@ const char *proxy = NULL;
 char *proxy_password = NULL;
 const char *proxy_user = NULL;
 bool sslverify = true;
+const char *ssl_version = NULL;
+const char *ssl_cipher_list = NULL;
 bool tcp_keepalive = false;
 bool tcp_nodelay = true;
 uint32_t timeout = 0;
@@ -301,6 +303,12 @@ curl_config (const char *key, const char *value)
     sslverify = r;
   }
 
+  else if (strcmp (key, "ssl-version") == 0)
+    ssl_version = value;
+
+  else if (strcmp (key, "ssl-cipher-list") == 0)
+    ssl_cipher_list = value;
+
   else if (strcmp (key, "tcp-keepalive") == 0) {
     r = nbdkit_parse_bool (value);
     if (r == -1)
@@ -403,6 +411,8 @@ curl_config_complete (void)
   "proxy-user=<USER>          The proxy user.\n" \
   "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
   "sslverify=false            Do not verify SSL certificate of remote host.\n" \
+  "ssl-version=<VERSION>      Specify preferred TLS/SSL version.\n " \
+  "ssl-cipher-list=C1:C2:..   Specify TLS/SSL cipher suites to be used.\n" \
   "tcp-keepalive=true         Enable TCP keepalives.\n" \
   "tcp-nodelay=false          Disable Nagle’s algorithm.\n" \
   "unix-socket-path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
@@ -520,6 +530,30 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYHOST, 0L);
   }
+  if (ssl_version) {
+    if (strcmp (ssl_version, "tlsv1") == 0)
+      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1);
+    else if (strcmp (ssl_version, "sslv2") == 0)
+      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv2);
+    else if (strcmp (ssl_version, "sslv3") == 0)
+      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
+    else if (strcmp (ssl_version, "tlsv1.0") == 0)
+      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
+    else if (strcmp (ssl_version, "tlsv1.1") == 0)
+      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
+    else if (strcmp (ssl_version, "tlsv1.2") == 0)
+      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+    else if (strcmp (ssl_version, "tlsv1.3") == 0)
+      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
+    else {
+      display_curl_error (h, r, "curl_easy_setopt: CURLOPT_SSLVERSION [%s]",
+			  ssl_version);
+      goto err;
+    }
+
+  }
+  if (ssl_cipher_list)
+    curl_easy_setopt (h->c, CURLOPT_SSL_CIPHER_LIST, ssl_cipher_list);
   if (tcp_keepalive)
     curl_easy_setopt (h->c, CURLOPT_TCP_KEEPALIVE, 1L);
   if (!tcp_nodelay)
