@@ -42,6 +42,9 @@ ports and protocols used to serve NBD see L<nbdkit(1)>).
 
 Configure CA bundle for libcurl. See L<CURLOPT_CAINFO(3)> for details.
 
+Pass empty string in order to not use the default certificate store
+that libcurl is compiled with.
+
 =item B<capath=>PATH
 
 (nbdkit E<ge> 1.18)

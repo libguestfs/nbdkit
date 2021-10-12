@@ -488,8 +488,12 @@ curl_open (int readonly)
   curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1L);
 
   /* Options. */
-  if (cainfo)
-    curl_easy_setopt (h->c, CURLOPT_CAINFO, cainfo);
+  if (cainfo) {
+    if (strlen (cainfo) == 0)
+      curl_easy_setopt (h->c, CURLOPT_CAINFO, NULL);
+    else
+      curl_easy_setopt (h->c, CURLOPT_CAINFO, cainfo);
+  }
   if (capath)
     curl_easy_setopt (h->c, CURLOPT_CAPATH, capath);
   if (cookie)
