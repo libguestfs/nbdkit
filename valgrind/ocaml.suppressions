@@ -38,3 +38,11 @@
    ...
    fun:caml_stat_alloc*
 }
+
+# This one seems to be a real leak, starting in OCaml 4.13
+{
+   caml_setup_stack_overflow_detection
+   Memcheck:Leak
+   ...
+   fun:caml_setup_stack_overflow_detection
+}
