@@ -161,6 +161,8 @@ C<nbdkit-error-filter> first appeared in nbdkit 1.6.
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-full-plugin(1)>,
+L<nbdkit-retry-filter(1)>,
+L<nbdkit-retry-request-filter(1)>,
 L<nbdkit-filter(3)>.
 
 =head1 AUTHORS

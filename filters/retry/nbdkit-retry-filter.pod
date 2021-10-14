@@ -16,6 +16,10 @@ make long-running copy operations reliable in the presence of
 temporary network failures, without requiring any changes to the
 plugin or the NBD client.
 
+An alternative and more fine-grained filter is
+L<nbdkit-retry-request-filter(1)> which will retry only single
+requests that fail.
+
 Several optional parameters are available to control:
 
 =over 4
@@ -113,7 +117,8 @@ C<nbdkit-retry-filter> first appeared in nbdkit 1.16.
 
 L<nbdkit(1)>,
 L<nbdkit-filter(3)>,
-L<nbdkit-readahead-filter(1)>.
+L<nbdkit-readahead-filter(1)>,
+L<nbdkit-retry-request-filter(1)>.
 
 =head1 AUTHORS
 

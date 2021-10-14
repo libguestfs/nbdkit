@@ -118,7 +118,8 @@ help performance:
         --run 'qemu-img convert $nbd disk.img'
 
 If the source suffers from temporary network failures
-L<nbdkit-retry-filter(1)> may help.
+L<nbdkit-retry-filter(1)> or L<nbdkit-retry-request-filter(1)> may
+help.
 
 To overwrite a file inside an uncompressed tar file (the file being
 overwritten must be the same size), use L<nbdkit-tar-filter(1)> like

@@ -139,6 +139,7 @@ filters="\
         rate \
         readahead \
         retry \
+        retry-request \
         stats \
         swab \
         tar \
@@ -1343,6 +1344,7 @@ AC_CONFIG_FILES([Makefile
                  filters/rate/Makefile
                  filters/readahead/Makefile
                  filters/retry/Makefile
+                 filters/retry-request/Makefile
                  filters/stats/Makefile
                  filters/swab/Makefile
                  filters/tar/Makefile

@@ -1693,6 +1693,16 @@ EXTRA_DIST += \
 	test-retry-zero-flags.sh \
 	$(NULL)
 
+# retry-request filter test.
+TESTS += \
+	test-retry-request.sh \
+	test-retry-request-open.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-retry-request.sh \
+	test-retry-request-open.sh \
+	$(NULL)
+
 # swab filter test.
 TESTS += \
 	test-swab-8.sh \
