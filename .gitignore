@@ -155,6 +155,7 @@ plugins/*/*.3
 /tests/test-python
 /tests/test-random
 /tests/test-readahead
+/tests/test-retry-request-mirror
 /tests/test-ruby
 /tests/test-S3/boto3/__pycache__/
 /tests/test-shell

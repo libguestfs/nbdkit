@@ -57,6 +57,8 @@
 #define SOCK_CLOEXEC 0
 #endif
 
+enum method { HEAD, GET };
+
 static char tmpdir[]   = "/tmp/wsXXXXXX";
 static char sockpath[] = "............./sock";
 static int listen_sock = -1;
@@ -67,7 +69,12 @@ static check_request_t check_request;
 
 static void *start_web_server (void *arg);
 static void handle_requests (int s);
-static void handle_request (int s, bool headers_only);
+static void handle_file_request (int s, enum method method);
+static void handle_mirror_redirect_request (int s);
+static void handle_mirror_data_request (int s, enum method method, char byte);
+static void send_404_not_found (int s);
+static void send_405_method_not_allowed (int s);
+static void send_500_internal_server_error (int s);
 static void xwrite (int s, const char *buf, size_t len);
 static void xpread (char *buf, size_t count, off_t offset);
 
@@ -177,12 +184,15 @@ start_web_server (void *arg)
 static void
 handle_requests (int s)
 {
-  size_t r, n, sz;
   bool eof = false;
 
   fprintf (stderr, "web server: accepted connection\n");
 
   while (!eof) {
+    size_t r, n, sz;
+    enum method method;
+    char path[128];
+
     /* Read request until we see "\r\n\r\n" (end of headers) or EOF. */
     n = 0;
     for (;;) {
@@ -214,30 +224,73 @@ handle_requests (int s)
     /* Call the optional user function to check the request. */
     if (check_request) check_request (request);
 
-    /* HEAD or GET request? */
-    if (strncmp (request, "HEAD ", 5) == 0)
-      handle_request (s, true);
-    else if (strncmp (request, "GET ", 4) == 0)
-      handle_request (s, false);
+    /* Get the method and path fields from the first line. */
+    if (strncmp (request, "HEAD ", 5) == 0) {
+      method = HEAD;
+      n = strcspn (&request[5], " \n\t");
+      if (n >= sizeof path) {
+        send_500_internal_server_error (s);
+        eof = true;
+        break;
+      }
+      memcpy (path, &request[5], n);
+      path[n] = '\0';
+    }
+    else if (strncmp (request, "GET ", 4) == 0) {
+      method = GET;
+      n = strcspn (&request[4], " \n\t");
+      if (n >= sizeof path) {
+        send_500_internal_server_error (s);
+        eof = true;
+        break;
+      }
+      memcpy (path, &request[4], n);
+      path[n] = '\0';
+    }
     else {
-      /* Return 405 Method Not Allowed. */
-      const char response[] =
-        "HTTP/1.1 405 Method Not Allowed\r\n"
-        "Content-Length: 0\r\n"
-        "Connection: close\r\n"
-        "\r\n";
-      xwrite (s, response, strlen (response));
+      send_405_method_not_allowed (s);
       eof = true;
       break;
     }
+
+    fprintf (stderr, "web server: requested path: %s\n", path);
+
+    /* For testing retry-request + curl:
+     *   /mirror redirects round-robin to /mirror1, /mirror2, /mirror3
+     *   /mirror1 returns a file of \x01 bytes
+     *   /mirror2 returns a file of \x02 bytes
+     *   /mirror3 returns 404 errors
+     * Anything else returns a 500 error
+     */
+    if (strcmp (path, "/mirror") == 0)
+      handle_mirror_redirect_request (s);
+    else if (strcmp (path, "/mirror1") == 0)
+      handle_mirror_data_request (s, method, 1);
+    else if (strcmp (path, "/mirror2") == 0)
+      handle_mirror_data_request (s, method, 2);
+    else if (strcmp (path, "/mirror3") == 0) {
+      send_404_not_found (s);
+      eof = true;
+    }
+    else if (strncmp (path, "/mirror", 7) == 0) {
+      send_500_internal_server_error (s);
+      eof = true;
+    }
+
+    /* Otherwise it's a regular file request.  'path' is ignored, we
+     * only serve a single file passed to web_server().
+     */
+    else
+      handle_file_request (s, method);
   }
 
   close (s);
 }
 
 static void
-handle_request (int s, bool headers_only)
+handle_file_request (int s, enum method method)
 {
+  const bool headers_only = method == HEAD;
   uint64_t offset, length, end;
   const char *p;
   const char response1_ok[] = "HTTP/1.1 200 OK\r\n";
@@ -293,6 +346,120 @@ handle_request (int s, bool headers_only)
   xwrite (s, data, length);
 
   free (data);
+}
+
+/* Request for /mirror */
+static void
+handle_mirror_redirect_request (int s)
+{
+  static char rr = '1';         /* round robin '1', '2', '3' */
+  /* Note we send 302 (temporary redirect), same as Fedora's mirrorservice. */
+  const char found[] = "HTTP/1.1 302 Found\r\nContent-Length: 0\r\n";
+  char location[] = "Location: /mirrorX\r\n";
+  const char eol[] = "\r\n";
+
+  location[17] = rr;
+  rr++;
+  if (rr == '4')
+    rr = '1';
+
+  xwrite (s, found, strlen (found));
+  xwrite (s, location, strlen (location));
+  xwrite (s, eol, strlen (eol));
+}
+
+static void
+handle_mirror_data_request (int s, enum method method, char byte)
+{
+  const bool headers_only = method == HEAD;
+  uint64_t offset, length, end;
+  const char *p;
+  const char response1_ok[] = "HTTP/1.1 200 OK\r\n";
+  const char response1_partial[] = "HTTP/1.1 206 Partial Content\r\n";
+  const char response2[] =
+    "Accept-rANGES:     bytes\r\n" /* See RHBZ#1837337 */
+    "Connection: keep-alive\r\n"
+    "Content-Type: application/octet-stream\r\n";
+  char response3[64];
+  const char response4[] = "\r\n";
+  char *data;
+
+  /* If there's no Range request header then send the full size as the
+   * content-length.
+   */
+  p = strcasestr (request, "\r\nRange: bytes=");
+  if (p == NULL) {
+    offset = 0;
+    length = statbuf.st_size;
+    xwrite (s, response1_ok, strlen (response1_ok));
+  }
+  else {
+    p += 15;
+    if (sscanf (p, "%" SCNu64 "-%" SCNu64, &offset, &end) != 2) {
+      fprintf (stderr, "web server: could not parse "
+               "range request from curl client\n");
+      exit (EXIT_FAILURE);
+    }
+    /* Unclear but "Range: bytes=0-4" means bytes 0-3.  '4' is the
+     * byte beyond the end of the range.
+     */
+    length = end - offset;
+    xwrite (s, response1_partial, strlen (response1_partial));
+  }
+
+  xwrite (s, response2, strlen (response2));
+  snprintf (response3, sizeof response3,
+            "Content-Length: %" PRIu64 "\r\n", length);
+  xwrite (s, response3, strlen (response3));
+  xwrite (s, response4, strlen (response4));
+
+  if (headers_only)
+    return;
+
+  /* Send the file content. */
+  data = malloc (length);
+  if (data == NULL) {
+    perror ("malloc");
+    exit (EXIT_FAILURE);
+  }
+
+  memset (data, byte, length);
+  xwrite (s, data, length);
+
+  free (data);
+}
+
+static void
+send_404_not_found (int s)
+{
+  const char response[] =
+    "HTTP/1.1 404 Not Found\r\n"
+    "Content-Length: 0\r\n"
+    "Connection: close\r\n"
+    "\r\n";
+  xwrite (s, response, strlen (response));
+}
+
+static void
+send_405_method_not_allowed (int s)
+{
+  const char response[] =
+    "HTTP/1.1 405 Method Not Allowed\r\n"
+    "Content-Length: 0\r\n"
+    "Connection: close\r\n"
+    "\r\n";
+  xwrite (s, response, strlen (response));
+}
+
+static void
+send_500_internal_server_error (int s)
+{
+  const char response[] =
+    "HTTP/1.1 500 Internal Server Error\r\n"
+    "Content-Length: 0\r\n"
+    "Connection: close\r\n"
+    "\r\n";
+  xwrite (s, response, strlen (response));
 }
 
 static void

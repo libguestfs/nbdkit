@@ -1703,6 +1703,30 @@ EXTRA_DIST += \
 	test-retry-request-open.sh \
 	$(NULL)
 
+LIBNBD_TESTS += test-retry-request-mirror
+
+test_retry_request_mirror_SOURCES = \
+	test-retry-request-mirror.c \
+	web-server.c \
+	web-server.h \
+	test.h \
+	$(NULL)
+test_retry_request_mirror_CPPFLAGS = \
+	-I$(top_srcdir)/common/utils
+test_retry_request_mirror_CFLAGS = \
+	$(WARNINGS_CFLAGS) \
+	$(PTHREAD_CFLAGS) \
+	$(LIBNBD_CFLAGS) \
+	$(NULL)
+test_retry_request_mirror_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
+	$(PTHREAD_LIBS) \
+	$(NULL)
+test_retry_request_mirror_LDADD = \
+	libtest.la \
+	$(LIBNBD_LIBS) \
+	$(NULL)
+
 # swab filter test.
 TESTS += \
 	test-swab-8.sh \
