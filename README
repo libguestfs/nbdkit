@@ -243,6 +243,17 @@ the PYTHON variable when configuring.  For example:
 
     ./configure PYTHON=/usr/bin/python3.8
 
+OCaml
+-----
+
+Most recent (less than, say, 8 years old) versions of the OCaml
+compiler should work.  By default the configure script should detect
+the bytecode and native code compilers and enable either one or both.
+
+To enable OCaml warnings and turn them into hard errors (developers only):
+
+    ./configure OCAMLOPTFLAGS="-warn-error +A-3"
+
 Running the tests
 -----------------
 
