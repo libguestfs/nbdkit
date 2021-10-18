@@ -1,6 +1,6 @@
 [package]
 name = "nbdkit"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Alan Somers <asomers@gmail.com>"]
 license = "BSD-2-Clause"
 edition = "2018"
