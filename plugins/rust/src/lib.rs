@@ -64,12 +64,11 @@
 //! plugin!(MyPlugin {});
 //! # fn main() {}
 //! ```
-#![cfg_attr(feature = "nightly-docs", feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(missing_docs)]
 
 use bitflags::bitflags;
 #[cfg(feature = "nix")]
-#[cfg_attr(feature = "nightly-docs", doc(cfg(feature = "nix")))]
 pub use nix::sys::socket::{SockAddr, sockaddr_storage_to_addr};
 use std::{
     ffi::{CStr, CString},
@@ -1037,7 +1036,6 @@ impl Builder {
 }
 
 // C functions provided by the nbdkit binary
-// TODO: nbdkit_peer_name
 extern "C" {
     fn nbdkit_add_extent(extents: *mut c_void, offset: u64, length: u64,
                          ty: u32) -> c_int;
@@ -1083,8 +1081,7 @@ pub fn is_stdio_safe() -> bool {
 /// Note that this function must be called from one of nbdkit's own threads.
 /// That is, it can only be called in the same thread as one of the `Server`
 /// callbacks.
-#[cfg(any(feature = "nix", all(feature = "nightly-docs", rustdoc)))]
-#[cfg_attr(feature = "nightly-docs", doc(cfg(feature = "nix")))]
+#[cfg(feature = "nix")]
 pub fn peername() -> std::result::Result<SockAddr, Box<dyn error::Error>> {
     let mut ss = mem::MaybeUninit::<libc::sockaddr_storage>::uninit();
     let mut len = mem::size_of_val(&ss) as libc::socklen_t;
