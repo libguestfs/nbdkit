@@ -33,6 +33,7 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = \
 	Cargo.toml \
+	CHANGELOG.md \
 	examples/ramdisk.rs \
 	LICENSE \
 	nbdkit-rust-plugin.pod \
