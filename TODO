@@ -140,6 +140,11 @@ VDDK:
 * Map export name to file parameter, allowing clients to access
   multiple disks from a single VM.
 
+* For testing VDDK, try to come up with delay filter + sparse plugin
+  settings which behave closely (in terms of performance and API
+  latency) to the real thing.  This would allow us to tune some
+  performance tools without needing VMware all the time.
+
 nbdkit-torrent-plugin:
 
 * There are lots of settings we could map into parameters:
