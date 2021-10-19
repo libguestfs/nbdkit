@@ -109,6 +109,15 @@ is no compelling reason unless the result is better than qemu-nbd.
 For the majority of users it would be better if they were directed to
 qemu-nbd for these use cases.
 
+* libblkio https://gitlab.com/libblkio/libblkio is a library for high
+  performance block device I/O.  It presently (2021) only creates an
+  abstraction over io_uring for Linux devices, but in future it could
+  support vhost-user.  This would allow those devices to be exposed as
+  NBD through nbdkit (although the only known exporter of vhost-user,
+  qemu, can already expose NBD directly).  There is some mismatch
+  between the libblkio API and what nbdkit plugins expect -- in
+  particular we may need to use bounce buffers.
+
 * XVA files
 
   https://lists.gnu.org/archive/html/qemu-devel/2017-11/msg02971.html
