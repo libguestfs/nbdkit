@@ -57,6 +57,9 @@ target/release/libnbdkit.rlib: Cargo.toml src/lib.rs
 target/release/examples/libramdisk.so: Cargo.toml examples/ramdisk.rs
 	cargo build --release --example ramdisk
 
+clean-local:
+	cargo clean
+
 TESTS = test.sh
 
 if HAVE_POD
