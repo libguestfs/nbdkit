@@ -58,7 +58,7 @@ target/release/libnbdkit.rlib: Cargo.toml src/lib.rs
 target/release/examples/libramdisk.so: Cargo.toml examples/ramdisk.rs
 	cargo build --release --example ramdisk
 
-clean-local:
+distclean-local:
 	cargo clean
 
 TESTS = test.sh
