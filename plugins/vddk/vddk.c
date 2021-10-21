@@ -125,28 +125,16 @@ static void display_stats (void);
 #define VDDK_CALL_START(fn, fs, ...)                                    \
   do {                                                                  \
   struct timeval start_t, end_t;                                        \
+  /* GCC can optimize this away at compile time: */                     \
+  const bool datapath =                                                 \
+    strcmp (#fn, "VixDiskLib_Read") == 0 ||                             \
+    strcmp (#fn, "VixDiskLib_Write") == 0;                              \
   if (vddk_debug_stats)                                                 \
     gettimeofday (&start_t, NULL);                                      \
-  nbdkit_debug ("VDDK call: %s (" fs ")", #fn, ##__VA_ARGS__);          \
-  do
-#define VDDK_CALL_START_DATAPATH(fn, fs, ...)                           \
-  do {                                                                  \
-  struct timeval start_t, end_t;                                        \
-  if (vddk_debug_stats)                                                 \
-    gettimeofday (&start_t, NULL);                                      \
-  if (vddk_debug_datapath)                                              \
+  if (!datapath || vddk_debug_datapath)                                 \
     nbdkit_debug ("VDDK call: %s (" fs ")", #fn, ##__VA_ARGS__);        \
   do
-#define VDDK_CALL_END(fn)                               \
-  while (0);                                            \
-  if (vddk_debug_stats) {                               \
-    gettimeofday (&end_t, NULL);                        \
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&stats_lock);       \
-    stats_##fn.usecs += tvdiff_usec (&start_t, &end_t); \
-    stats_##fn.calls++;                                 \
-  }                                                     \
-  } while (0)
-#define VDDK_CALL_END_DATAPATH(fn, bytes_)              \
+#define VDDK_CALL_END(fn, bytes_)                       \
   while (0);                                            \
   if (vddk_debug_stats) {                               \
     gettimeofday (&end_t, NULL);                        \
@@ -161,13 +149,13 @@ static void display_stats (void);
 #define VDDK_ERROR(err, fs, ...)                                \
   do {                                                          \
     char *vddk_err_msg;                                         \
-    VDDK_CALL_START (VixDiskLib_GetErrorText, "%lu", err) {     \
+    VDDK_CALL_START (VixDiskLib_GetErrorText, "%lu", err)       \
       vddk_err_msg = VixDiskLib_GetErrorText ((err), NULL);     \
-    } VDDK_CALL_END (VixDiskLib_GetErrorText);                  \
+    VDDK_CALL_END (VixDiskLib_GetErrorText, 0);                 \
     nbdkit_error (fs ": %s", ##__VA_ARGS__, vddk_err_msg);      \
-    VDDK_CALL_START (VixDiskLib_FreeErrorText, "") {            \
+    VDDK_CALL_START (VixDiskLib_FreeErrorText, "")              \
       VixDiskLib_FreeErrorText (vddk_err_msg);                  \
-    } VDDK_CALL_END (VixDiskLib_FreeErrorText);                 \
+    VDDK_CALL_END (VixDiskLib_FreeErrorText, 0);                \
   } while (0)
 
 /* Unload the plugin. */
@@ -175,9 +163,9 @@ static void
 vddk_unload (void)
 {
   if (init_called) {
-    VDDK_CALL_START (VixDiskLib_Exit, "") {
+    VDDK_CALL_START (VixDiskLib_Exit, "")
       VixDiskLib_Exit ();
-    } VDDK_CALL_END (VixDiskLib_Exit);
+    VDDK_CALL_END (VixDiskLib_Exit, 0);
   }
   if (dl)
     dlclose (dl);
@@ -572,13 +560,13 @@ vddk_after_fork (void)
   VDDK_CALL_START (VixDiskLib_InitEx,
                    "%d, %d, &debug_fn, &error_fn, &error_fn, %s, %s",
                    VDDK_MAJOR, VDDK_MINOR,
-                   libdir, config ? : "NULL") {
+                   libdir, config ? : "NULL")
     err = VixDiskLib_InitEx (VDDK_MAJOR, VDDK_MINOR,
                              &debug_function, /* log function */
                              &error_function, /* warn function */
                              &error_function, /* panic function */
                              libdir, config);
-  } VDDK_CALL_END (VixDiskLib_InitEx);
+  VDDK_CALL_END (VixDiskLib_InitEx, 0);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_InitEx");
     exit (EXIT_FAILURE);
@@ -640,9 +628,9 @@ allocate_connect_params (void)
   VixDiskLibConnectParams *ret;
 
   if (VixDiskLib_AllocateConnectParams != NULL) {
-    VDDK_CALL_START (VixDiskLib_AllocateConnectParams, "") {
+    VDDK_CALL_START (VixDiskLib_AllocateConnectParams, "")
       ret = VixDiskLib_AllocateConnectParams ();
-    } VDDK_CALL_END (VixDiskLib_AllocateConnectParams);
+    VDDK_CALL_END (VixDiskLib_AllocateConnectParams, 0);
   }
   else
     ret = calloc (1, sizeof (VixDiskLibConnectParams));
@@ -657,9 +645,9 @@ free_connect_params (VixDiskLibConnectParams *params)
    * originally called.  Otherwise use free.
    */
   if (VixDiskLib_AllocateConnectParams != NULL) {
-    VDDK_CALL_START (VixDiskLib_FreeConnectParams, "params") {
+    VDDK_CALL_START (VixDiskLib_FreeConnectParams, "params")
       VixDiskLib_FreeConnectParams (params);
-    } VDDK_CALL_END (VixDiskLib_FreeConnectParams);
+    VDDK_CALL_END (VixDiskLib_FreeConnectParams, 0);
   }
   else
     free (params);
@@ -716,13 +704,13 @@ vddk_open (int readonly)
                    "h->params, %d, %s, %s, &connection",
                    readonly,
                    snapshot_moref ? : "NULL",
-                   transport_modes ? : "NULL") {
+                   transport_modes ? : "NULL")
     err = VixDiskLib_ConnectEx (h->params,
                                 readonly,
                                 snapshot_moref,
                                 transport_modes,
                                 &h->connection);
-  } VDDK_CALL_END (VixDiskLib_ConnectEx);
+  VDDK_CALL_END (VixDiskLib_ConnectEx, 0);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_ConnectEx");
     goto err1;
@@ -743,25 +731,25 @@ vddk_open (int readonly)
   }
 
   VDDK_CALL_START (VixDiskLib_Open,
-                   "connection, %s, %d, &handle", filename, flags) {
+                   "connection, %s, %d, &handle", filename, flags)
     err = VixDiskLib_Open (h->connection, filename, flags, &h->handle);
-  } VDDK_CALL_END (VixDiskLib_Open);
+  VDDK_CALL_END (VixDiskLib_Open, 0);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Open: %s", filename);
     goto err2;
   }
 
-  VDDK_CALL_START (VixDiskLib_GetTransportMode, "handle") {
+  VDDK_CALL_START (VixDiskLib_GetTransportMode, "handle")
     transport_mode = VixDiskLib_GetTransportMode (h->handle);
-  } VDDK_CALL_END (VixDiskLib_GetTransportMode);
+  VDDK_CALL_END (VixDiskLib_GetTransportMode, 0);
   nbdkit_debug ("transport mode: %s", transport_mode);
 
   return h;
 
  err2:
-  VDDK_CALL_START (VixDiskLib_Disconnect, "connection") {
+  VDDK_CALL_START (VixDiskLib_Disconnect, "connection")
     VixDiskLib_Disconnect (h->connection);
-  } VDDK_CALL_END (VixDiskLib_Disconnect);
+  VDDK_CALL_END (VixDiskLib_Disconnect, 0);
  err1:
   free_connect_params (h->params);
  err0:
@@ -776,12 +764,12 @@ vddk_close (void *handle)
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&open_close_lock);
   struct vddk_handle *h = handle;
 
-  VDDK_CALL_START (VixDiskLib_Close, "handle") {
+  VDDK_CALL_START (VixDiskLib_Close, "handle")
     VixDiskLib_Close (h->handle);
-  } VDDK_CALL_END (VixDiskLib_Close);
-  VDDK_CALL_START (VixDiskLib_Disconnect, "connection") {
+  VDDK_CALL_END (VixDiskLib_Close, 0);
+  VDDK_CALL_START (VixDiskLib_Disconnect, "connection")
     VixDiskLib_Disconnect (h->connection);
-  } VDDK_CALL_END (VixDiskLib_Disconnect);
+  VDDK_CALL_END (VixDiskLib_Disconnect, 0);
 
   free_connect_params (h->params);
   free (h);
@@ -796,9 +784,9 @@ vddk_get_size (void *handle)
   VixError err;
   uint64_t size;
 
-  VDDK_CALL_START (VixDiskLib_GetInfo, "handle, &info") {
+  VDDK_CALL_START (VixDiskLib_GetInfo, "handle, &info")
     err = VixDiskLib_GetInfo (h->handle, &info);
-  } VDDK_CALL_END (VixDiskLib_GetInfo);
+  VDDK_CALL_END (VixDiskLib_GetInfo, 0);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_GetInfo");
     return -1;
@@ -827,9 +815,9 @@ vddk_get_size (void *handle)
                   info->uuid ? : "NULL");
   }
 
-  VDDK_CALL_START (VixDiskLib_FreeInfo, "info") {
+  VDDK_CALL_START (VixDiskLib_FreeInfo, "info")
     VixDiskLib_FreeInfo (info);
-  } VDDK_CALL_END (VixDiskLib_FreeInfo);
+  VDDK_CALL_END (VixDiskLib_FreeInfo, 0);
 
   return (int64_t) size;
 }
@@ -857,12 +845,12 @@ vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
   offset /= VIXDISKLIB_SECTOR_SIZE;
   count /= VIXDISKLIB_SECTOR_SIZE;
 
-  VDDK_CALL_START_DATAPATH (VixDiskLib_Read,
-                            "handle, %" PRIu64 " sectors, "
-                            "%" PRIu32 " sectors, buffer",
-                            offset, count) {
+  VDDK_CALL_START (VixDiskLib_Read,
+                   "handle, %" PRIu64 " sectors, "
+                   "%" PRIu32 " sectors, buffer",
+                   offset, count)
     err = VixDiskLib_Read (h->handle, offset, count, buf);
-  } VDDK_CALL_END_DATAPATH (VixDiskLib_Read, count * VIXDISKLIB_SECTOR_SIZE);
+  VDDK_CALL_END (VixDiskLib_Read, count * VIXDISKLIB_SECTOR_SIZE);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Read");
     return -1;
@@ -897,12 +885,12 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   offset /= VIXDISKLIB_SECTOR_SIZE;
   count /= VIXDISKLIB_SECTOR_SIZE;
 
-  VDDK_CALL_START_DATAPATH (VixDiskLib_Write,
-                            "handle, %" PRIu64 " sectors, "
-                            "%" PRIu32 " sectors, buffer",
-                            offset, count) {
+  VDDK_CALL_START (VixDiskLib_Write,
+                   "handle, %" PRIu64 " sectors, "
+                   "%" PRIu32 " sectors, buffer",
+                   offset, count)
     err = VixDiskLib_Write (h->handle, offset, count, buf);
-  } VDDK_CALL_END_DATAPATH (VixDiskLib_Write, count * VIXDISKLIB_SECTOR_SIZE);
+  VDDK_CALL_END (VixDiskLib_Write, count * VIXDISKLIB_SECTOR_SIZE);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Write");
     return -1;
@@ -945,9 +933,9 @@ vddk_flush (void *handle, uint32_t flags)
    * file so it appears to be the correct call to use here.
    */
 
-  VDDK_CALL_START (VixDiskLib_Flush, "handle") {
+  VDDK_CALL_START (VixDiskLib_Flush, "handle")
     err = VixDiskLib_Flush (h->handle);
-  } VDDK_CALL_END (VixDiskLib_Flush);
+  VDDK_CALL_END (VixDiskLib_Flush, 0);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Flush");
     return -1;
@@ -983,17 +971,17 @@ vddk_can_extents (void *handle)
    */
   VDDK_CALL_START (VixDiskLib_QueryAllocatedBlocks,
                    "handle, 0, %d sectors, %d sectors",
-                   VIXDISKLIB_MIN_CHUNK_SIZE, VIXDISKLIB_MIN_CHUNK_SIZE) {
+                   VIXDISKLIB_MIN_CHUNK_SIZE, VIXDISKLIB_MIN_CHUNK_SIZE)
     err = VixDiskLib_QueryAllocatedBlocks (h->handle,
                                            0, VIXDISKLIB_MIN_CHUNK_SIZE,
                                            VIXDISKLIB_MIN_CHUNK_SIZE,
                                            &block_list);
-  } VDDK_CALL_END (VixDiskLib_QueryAllocatedBlocks);
+  VDDK_CALL_END (VixDiskLib_QueryAllocatedBlocks, 0);
   error_suppression = 0;
   if (err == VIX_OK) {
-    VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list") {
+    VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list")
       VixDiskLib_FreeBlockList (block_list);
-    } VDDK_CALL_END (VixDiskLib_FreeBlockList);
+    VDDK_CALL_END (VixDiskLib_FreeBlockList, 0);
   }
   if (err != VIX_OK) {
     char *errmsg = VixDiskLib_GetErrorText (err, NULL);
@@ -1073,12 +1061,12 @@ vddk_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
     VDDK_CALL_START (VixDiskLib_QueryAllocatedBlocks,
                      "handle, %" PRIu64 " sectors, %" PRIu64 " sectors, "
                      "%d sectors",
-                     start_sector, nr_sectors, VIXDISKLIB_MIN_CHUNK_SIZE) {
+                     start_sector, nr_sectors, VIXDISKLIB_MIN_CHUNK_SIZE)
       err = VixDiskLib_QueryAllocatedBlocks (h->handle,
                                              start_sector, nr_sectors,
                                              VIXDISKLIB_MIN_CHUNK_SIZE,
                                              &block_list);
-    } VDDK_CALL_END (VixDiskLib_QueryAllocatedBlocks);
+    VDDK_CALL_END (VixDiskLib_QueryAllocatedBlocks, 0);
     if (err != VIX_OK) {
       VDDK_ERROR (err, "VixDiskLib_QueryAllocatedBlocks");
       return -1;
@@ -1097,15 +1085,15 @@ vddk_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
            add_extent (extents, &position, blk_offset, true) == -1) ||
           (add_extent (extents,
                        &position, blk_offset + blk_length, false) == -1)) {
-        VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list") {
+        VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list")
           VixDiskLib_FreeBlockList (block_list);
-        } VDDK_CALL_END (VixDiskLib_FreeBlockList);
+        VDDK_CALL_END (VixDiskLib_FreeBlockList, 0);
         return -1;
       }
     }
-    VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list") {
+    VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list")
       VixDiskLib_FreeBlockList (block_list);
-    } VDDK_CALL_END (VixDiskLib_FreeBlockList);
+    VDDK_CALL_END (VixDiskLib_FreeBlockList, 0);
 
     /* There's an implicit hole after the returned list of blocks, up
      * to the end of the QueryAllocatedBlocks request.
