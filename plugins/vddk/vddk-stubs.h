@@ -109,7 +109,7 @@ OPTIONAL_STUB (VixDiskLib_Flush,
                VixError,
                (VixDiskLibHandle handle));
 
-  /* Added in VDDK 6.7, these will be NULL for earlier versions: */
+/* Added in VDDK 6.7, these will be NULL for earlier versions: */
 OPTIONAL_STUB (VixDiskLib_QueryAllocatedBlocks,
                VixError,
                (VixDiskLibHandle diskHandle,
