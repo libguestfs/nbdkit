@@ -517,8 +517,7 @@ Suppress debugging of datapath calls (C<Read> and C<Write>).
 
 =item B<-D vddk.stats=1>
 
-When the plugin exits print some statistics about the amount of time
-spent waiting on each VDDK call.
+When the plugin exits print some statistics about each VDDK call.
 
 =back
 
