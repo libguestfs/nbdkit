@@ -106,6 +106,8 @@ static bool is_remote;
 struct vddk_stat {
   const char *name;             /* function name */
   int64_t usecs;                /* total number of usecs consumed */
+  uint64_t calls;               /* number of times called */
+  uint64_t bytes;               /* bytes transferred, datapath calls only */
 };
 static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 static void display_stats (void);
@@ -141,6 +143,17 @@ static void display_stats (void);
     gettimeofday (&end_t, NULL);                        \
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&stats_lock);       \
     stats_##fn.usecs += tvdiff_usec (&start_t, &end_t); \
+    stats_##fn.calls++;                                 \
+  }                                                     \
+  } while (0)
+#define VDDK_CALL_END_DATAPATH(fn, bytes_)              \
+  while (0);                                            \
+  if (vddk_debug_stats) {                               \
+    gettimeofday (&end_t, NULL);                        \
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&stats_lock);       \
+    stats_##fn.usecs += tvdiff_usec (&start_t, &end_t); \
+    stats_##fn.calls++;                                 \
+    stats_##fn.bytes += bytes_;                         \
   }                                                     \
   } while (0)
 
@@ -191,6 +204,12 @@ stat_compare (const void *vp1, const void *vp2)
   else return 0;
 }
 
+static const char *
+api_name_without_prefix (const char *name)
+{
+  return strncmp (name, "VixDiskLib_", 11) == 0 ? name + 11 : name;
+}
+
 static void
 display_stats (void)
 {
@@ -206,10 +225,22 @@ display_stats (void)
   qsort (stats.ptr, stats.size, sizeof stats.ptr[0], stat_compare);
 
   nbdkit_debug ("VDDK function stats (-D vddk.stats=1):");
-  nbdkit_debug ("%-40s  %9s", "", "µs");
+  nbdkit_debug ("%-24s  %15s %5s %15s",
+                "VixDiskLib_...", "µs", "calls", "bytes");
   for (i = 0; i < stats.size; ++i) {
-    if (stats.ptr[i].usecs)
-      nbdkit_debug ("%-40s %9" PRIi64, stats.ptr[i].name, stats.ptr[i].usecs);
+    if (stats.ptr[i].usecs) {
+      if (stats.ptr[i].bytes > 0)
+        nbdkit_debug ("  %-22s %15" PRIi64 " %5" PRIu64 " %15" PRIu64,
+                      api_name_without_prefix (stats.ptr[i].name),
+                      stats.ptr[i].usecs,
+                      stats.ptr[i].calls,
+                      stats.ptr[i].bytes);
+      else
+        nbdkit_debug ("  %-22s %15" PRIi64 " %5" PRIu64,
+                      api_name_without_prefix (stats.ptr[i].name),
+                      stats.ptr[i].usecs,
+                      stats.ptr[i].calls);
+    }
   }
   statlist_reset (&stats);
 }
@@ -831,7 +862,7 @@ vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
                             "%" PRIu32 " sectors, buffer",
                             offset, count) {
     err = VixDiskLib_Read (h->handle, offset, count, buf);
-  } VDDK_CALL_END (VixDiskLib_Read);
+  } VDDK_CALL_END_DATAPATH (VixDiskLib_Read, count * VIXDISKLIB_SECTOR_SIZE);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Read");
     return -1;
@@ -871,7 +902,7 @@ vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
                             "%" PRIu32 " sectors, buffer",
                             offset, count) {
     err = VixDiskLib_Write (h->handle, offset, count, buf);
-  } VDDK_CALL_END (VixDiskLib_Write);
+  } VDDK_CALL_END_DATAPATH (VixDiskLib_Write, count * VIXDISKLIB_SECTOR_SIZE);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Write");
     return -1;
