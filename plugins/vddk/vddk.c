@@ -211,6 +211,7 @@ display_stats (void)
     if (stats.ptr[i].usecs)
       nbdkit_debug ("%-40s %9" PRIi64, stats.ptr[i].fn, stats.ptr[i].usecs);
   }
+  statlist_reset (&stats);
 }
 
 static void
