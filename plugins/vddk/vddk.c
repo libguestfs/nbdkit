@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -103,14 +103,23 @@ static bool is_remote;
 /* For each VDDK API define a variable to store the time taken (used
  * to implement -D vddk.stats=1).
  */
+struct vddk_stat {
+  const char *name;             /* function name */
+  int64_t usecs;                /* total number of usecs consumed */
+};
 static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 static void display_stats (void);
-#define STUB(fn,ret,args) static int64_t stats_##fn;
-#define OPTIONAL_STUB(fn,ret,args) static int64_t stats_##fn;
+#define STUB(fn,ret,args) \
+  static struct vddk_stat stats_##fn = { .name = #fn }
+#define OPTIONAL_STUB(fn,ret,args) \
+  static struct vddk_stat stats_##fn = { .name = #fn }
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
 
+/* Macros to bracket each VDDK API call, for printing debugging
+ * information and collecting statistics.
+ */
 #define VDDK_CALL_START(fn, fs, ...)                                    \
   do {                                                                  \
   struct timeval start_t, end_t;                                        \
@@ -131,10 +140,11 @@ static void display_stats (void);
   if (vddk_debug_stats) {                               \
     gettimeofday (&end_t, NULL);                        \
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&stats_lock);       \
-    stats_##fn += tvdiff_usec (&start_t, &end_t);       \
+    stats_##fn.usecs += tvdiff_usec (&start_t, &end_t); \
   }                                                     \
   } while (0)
 
+/* Print VDDK errors. */
 #define VDDK_ERROR(err, fs, ...)                                \
   do {                                                          \
     char *vddk_err_msg;                                         \
@@ -167,10 +177,6 @@ vddk_unload (void)
   free (password);
 }
 
-struct vddk_stat {
-  const char *fn;
-  int64_t usecs;
-};
 DEFINE_VECTOR_TYPE(statlist, struct vddk_stat)
 
 static int
@@ -179,7 +185,7 @@ stat_compare (const void *vp1, const void *vp2)
   const struct vddk_stat *st1 = vp1;
   const struct vddk_stat *st2 = vp2;
 
-  /* Note: sorts in reverse order. */
+  /* Note: sorts in reverse order of time spent in each API call. */
   if (st1->usecs < st2->usecs) return 1;
   else if (st1->usecs > st2->usecs) return -1;
   else return 0;
@@ -189,19 +195,13 @@ static void
 display_stats (void)
 {
   statlist stats = empty_vector;
-  struct vddk_stat st;
   size_t i;
 
-#define ADD_ONE_STAT(fn_, usecs_)               \
-  st.fn = fn_;                                  \
-  st.usecs = usecs_;                            \
-  statlist_append (&stats, st)
-#define STUB(fn,ret,args) ADD_ONE_STAT (#fn, stats_##fn);
-#define OPTIONAL_STUB(fn,ret,args) ADD_ONE_STAT (#fn, stats_##fn);
+#define STUB(fn,ret,args) statlist_append (&stats, stats_##fn)
+#define OPTIONAL_STUB(fn,ret,args) statlist_append (&stats, stats_##fn)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
-#undef ADD_ONE_STAT
 
   qsort (stats.ptr, stats.size, sizeof stats.ptr[0], stat_compare);
 
@@ -209,7 +209,7 @@ display_stats (void)
   nbdkit_debug ("%-40s  %9s", "", "µs");
   for (i = 0; i < stats.size; ++i) {
     if (stats.ptr[i].usecs)
-      nbdkit_debug ("%-40s %9" PRIi64, stats.ptr[i].fn, stats.ptr[i].usecs);
+      nbdkit_debug ("%-40s %9" PRIi64, stats.ptr[i].name, stats.ptr[i].usecs);
   }
   statlist_reset (&stats);
 }
