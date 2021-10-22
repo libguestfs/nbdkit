@@ -475,6 +475,63 @@ and restarting the C<hostd> service:
 
 For more information see L<https://bugzilla.redhat.com/1614276>.
 
+=head2 Troubleshooting performance problems
+
+VDDK has very uneven performance with some operations being very slow.
+This plugin has options to allow you to debug performance issues.  If
+your application has a debug or diagnostic setting, add the following
+nbdkit command line options:
+
+ -v -D nbdkit.backend.datapath=0 -D vddk.datapath=0 -D vddk.stats=1
+
+C<-v> enables verbose messages and the two datapath options I<disable>
+the very verbose per-read/-write messages.  C<-D vddk.stats=1> enables
+a summary when nbdkit exits of the cumulative time taken in each VDDK
+function, the number of times each function was called, and (for read
+and write) the number of bytes transferred.  An example of what those
+stats look like can be found here:
+L<https://gitlab.com/nbdkit/nbdkit/-/commit/5c80f0d290db45a679d55baf37ff39bacb8ce7ec>
+
+You can interpret the stats as follows:
+
+=over 4
+
+=item C<Read>
+
+The cumulative time spent waiting for VDDK to return from
+C<VixDiskLib_Read> calls, the number of times this function was
+called, and the total bytes read.  You can use this to determine the
+read bandwidth to the VMware server.
+
+=item C<Write>
+
+=item C<Flush>
+
+Same as above, but for writing and flushing writes.
+
+=item C<QueryAllocatedBlocks>
+
+This call is used to query information about the sparseness of the
+remote disk.  It is only available in VDDK E<ge> 6.7.  The call is
+notably very slow in all versions of VMware we have tested.
+
+=item C<Open>
+
+=item C<Close>
+
+=item C<ConnectEx>
+
+=item C<Disconnect>
+
+=item C<InitEx>
+
+=item C<Exit>
+
+The cumulative time spent connecting and disconnecting from the VMware
+server, which can also be very slow.
+
+=back
+
 =head1 SUPPORTED VERSIONS OF VDDK
 
 This plugin requires VDDK E<ge> 5.5.5, which in turn means that it
