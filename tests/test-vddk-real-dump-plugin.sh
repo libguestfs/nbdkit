@@ -58,10 +58,12 @@ rm -f $files
 cleanup_fn rm -f $files
 
 nbdkit -f -v vddk libdir="$vddkdir" --dump-plugin > $out
+cat $out
 
 # Check the vddk_* entries are set.
 grep ^vddk_default_libdir= $out
 grep ^vddk_has_nfchostport= $out
+grep ^vddk_library_version= $out
 grep ^vddk_dll= $out
 
 dll="$(grep ^vddk_dll $out | cut -d= -f2)"

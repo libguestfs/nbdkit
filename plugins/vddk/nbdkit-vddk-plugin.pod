@@ -422,6 +422,10 @@ at runtime.
 If this is printed then the C<nfchostport=PORT> parameter is supported
 by this build.
 
+=item C<vddk_library_version=...>
+
+The VDDK major library version: 5, 6, 7, ...
+
 =item C<vddk_dll=...>
 
 Prints the full path to the VDDK shared library.  Since this requires

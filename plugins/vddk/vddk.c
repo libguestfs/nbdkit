@@ -81,6 +81,7 @@ NBDKIT_DLL_PUBLIC int vddk_debug_stats;
 static void *dl;                           /* dlopen handle */
 static bool init_called;                   /* was InitEx called */
 static __thread int error_suppression;     /* threadlocal error suppression */
+static int library_version;                /* VDDK major: 5, 6, 7, ... */
 
 static enum { NONE = 0, ZLIB, FASTLZ, SKIPZ } compression; /* compression */
 static char *config;                       /* config */
@@ -405,7 +406,10 @@ vddk_config (const char *key, const char *value)
 static void
 load_library (bool load_error_is_fatal)
 {
-  static const char *sonames[] = {
+  static struct {
+    const char *soname;
+    int library_version;
+  } libs[] = {
     /* Prefer the newest library in case multiple exist.  Check two
      * possible directories: the usual VDDK installation puts .so
      * files in an arch-specific subdirectory of $libdir (our minimum
@@ -413,12 +417,13 @@ load_library (bool load_error_is_fatal)
      * but our testsuite is easier to write if we point libdir
      * directly to a stub .so.
      */
-    "lib64/libvixDiskLib.so.7",
-    "libvixDiskLib.so.7",
-    "lib64/libvixDiskLib.so.6",
-    "libvixDiskLib.so.6",
-    "lib64/libvixDiskLib.so.5",
-    "libvixDiskLib.so.5",
+    { "lib64/libvixDiskLib.so.7", 7 },
+    { "libvixDiskLib.so.7",       7 },
+    { "lib64/libvixDiskLib.so.6", 6 },
+    { "libvixDiskLib.so.6",       6 },
+    { "lib64/libvixDiskLib.so.5", 5 },
+    { "libvixDiskLib.so.5",       5 },
+    { NULL }
   };
   size_t i;
   CLEANUP_FREE char *orig_error = NULL;
@@ -431,19 +436,20 @@ load_library (bool load_error_is_fatal)
     }
   }
 
-  for (i = 0; i < sizeof sonames / sizeof sonames[0]; ++i) {
+  for (i = 0; libs[i].soname != NULL; ++i) {
     CLEANUP_FREE char *path;
 
     /* Set the full path so that dlopen will preferentially load the
      * system libraries from the same directory.
      */
-    if (asprintf (&path, "%s/%s", libdir, sonames[i]) == -1) {
+    if (asprintf (&path, "%s/%s", libdir, libs[i].soname) == -1) {
       nbdkit_error ("asprintf: %m");
       exit (EXIT_FAILURE);
     }
 
     dl = dlopen (path, RTLD_NOW);
     if (dl != NULL) {
+      library_version = libs[i].library_version;
       /* Now that we found the library, ensure that LD_LIBRARY_PATH
        * includes its directory for all future loads.  This may modify
        * path in-place and/or re-exec nbdkit, but that's okay.
@@ -464,9 +470,11 @@ load_library (bool load_error_is_fatal)
                   "If '%s' is located on a non-standard path you may need to\n"
                   "set libdir=/path/to/vmware-vix-disklib-distrib.\n\n"
                   "See nbdkit-vddk-plugin(1) man page section \"LIBRARY LOCATION\" for details.",
-                  orig_error ? : "(unknown error)", sonames[0]);
+                  orig_error ? : "(unknown error)", libs[0].soname);
     exit (EXIT_FAILURE);
   }
+
+  assert (library_version >= 5);
 
   /* Load symbols. */
 #define STUB(fn,ret,args)                                         \
@@ -583,6 +591,7 @@ vddk_dump_plugin (void)
 
   printf ("vddk_default_libdir=%s\n", VDDK_LIBDIR);
   printf ("vddk_has_nfchostport=1\n");
+  printf ("vddk_library_version=%d\n", library_version);
 
 #if defined(HAVE_DLADDR)
   /* It would be nice to print the version of VDDK from the shared
