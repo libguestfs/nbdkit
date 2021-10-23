@@ -822,6 +822,12 @@ vddk_get_size (void *handle)
                   info->parentFileNameHint ? : "NULL");
     nbdkit_debug ("disk info: uuid: %s",
                   info->uuid ? : "NULL");
+    if (library_version >= 7) {
+      nbdkit_debug ("disk info: sectory size: "
+                    "logical %" PRIu32 " physical %" PRIu32,
+                    info->logicalSectorSize,
+                    info->physicalSectorSize);
+    }
   }
 
   VDDK_CALL_START (VixDiskLib_FreeInfo, "info")
