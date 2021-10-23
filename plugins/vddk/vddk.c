@@ -591,7 +591,14 @@ vddk_dump_plugin (void)
 
   printf ("vddk_default_libdir=%s\n", VDDK_LIBDIR);
   printf ("vddk_has_nfchostport=1\n");
-  printf ("vddk_library_version=%d\n", library_version);
+
+  /* Because load_library (false) we might not have loaded VDDK, in
+   * which case we didn't set library_version.  Note this cannot
+   * happen in the normal (non-debug-plugin) path because there we use
+   * load_library (true).
+   */
+  if (library_version > 0)
+    printf ("vddk_library_version=%d\n", library_version);
 
 #if defined(HAVE_DLADDR)
   /* It would be nice to print the version of VDDK from the shared
