@@ -777,7 +777,8 @@ vddk_get_size (void *handle)
   size = info->capacity * (uint64_t)VIXDISKLIB_SECTOR_SIZE;
 
   if (vddk_debug_diskinfo) {
-    nbdkit_debug ("disk info: capacity: %" PRIu64 " (size: %" PRIi64 ")",
+    nbdkit_debug ("disk info: capacity: %" PRIu64 " sectors "
+                  "(%" PRIi64 " bytes)",
                   info->capacity, size);
     nbdkit_debug ("disk info: biosGeo: C:%" PRIu32 " H:%" PRIu32 " S:%" PRIu32,
                   info->biosGeo.cylinders,
