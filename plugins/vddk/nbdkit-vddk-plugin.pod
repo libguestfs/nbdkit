@@ -400,8 +400,13 @@ working), use:
 
  nbdkit vddk --dump-plugin
 
-If the plugin is not present, not working or the library path is wrong
-you will get an error.
+or:
+
+ nbdkit vddk --dump-plugin libdir=/opt/vmware-vix-disklib-distrib
+
+(see L</LIBRARY LOCATION> above).
+
+If the plugin is not present or not working you will get an error.
 
 If it works the output will include:
 
