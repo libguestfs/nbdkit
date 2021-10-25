@@ -47,6 +47,7 @@ set -x
 requires_nbdsh_uri
 requires nbdsh -c 'print(h.connect_vsock)'
 requires_linux_kernel_version 5.6
+requires_vsock_support
 
 # Because vsock ports are 32 bits, we can basically pick one at random
 # and be sure that it's not used.  However we must pick one >= 1024
