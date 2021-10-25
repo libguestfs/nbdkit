@@ -47,6 +47,7 @@ requires nbdsh --version
 requires nbdsh -c 'print(h.connect_vsock)'
 requires_nbdsh_uri
 requires_linux_kernel_version 5.6
+requires_vsock_support
 
 # Not supported on Windows.
 if is_windows; then

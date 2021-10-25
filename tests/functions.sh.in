@@ -239,6 +239,16 @@ requires_non_root ()
     fi
 }
 
+# Tests that use the vsock interface will fail if vsock is not
+# supported.
+requires_vsock_support ()
+{
+    if ! grep -q ^AF_VSOCK /proc/net/protocols; then
+        echo "$0: test skipped because AF_VSOCK is not supported."
+        exit 77
+    fi
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to
