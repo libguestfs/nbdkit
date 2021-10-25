@@ -432,6 +432,15 @@ If this is omitted it means the library could not be loaded.
 Prints the full path to the VDDK shared library.  Since this requires
 a glibc extension it may not be available in all builds of the plugin.
 
+=item C<VixDiskLib_...=1>
+
+For each VDDK API that the plugin uses I<and> which is present in the
+VDDK library that was loaded, we print the name of the API
+(eg. C<VixDiskLib_Open=1>).  This lets you see which optional APIs are
+available, such as C<VixDiskLib_Flush> and
+C<VixDiskLib_QueryAllocatedBlocks>.  If the library could not be
+loaded then these lines are not printed.
+
 =back
 
 =head1 NOTES
