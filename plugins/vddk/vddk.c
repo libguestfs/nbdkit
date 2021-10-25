@@ -616,6 +616,16 @@ vddk_dump_plugin (void)
     printf ("vddk_dll=%s\n", p);
   }
 #endif
+
+  /* Note we print all VDDK APIs found here, not just the optional
+   * ones.  That is so if we update the baseline VDDK in future and
+   * make optional into required APIs, the output doesn't change.
+   */
+#define STUB(fn,ret,args) if (fn != NULL) printf ("%s=1\n", #fn);
+#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
 }
 
 /* The rules on threads and VDDK are here:
