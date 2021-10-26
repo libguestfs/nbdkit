@@ -906,6 +906,14 @@ vddk_flush (void *handle, uint32_t flags)
   struct vddk_handle *h = handle;
   VixError err;
 
+  /* The documentation for Flush is missing, but the comment in the
+   * header file seems to indicate that it waits for WriteAsync
+   * commands to finish.  We don't use WriteAsync, and in any case
+   * there's a new function Wait to wait for those.  However I
+   * verified using strace that in fact Flush does call fsync on the
+   * file so it appears to be the correct call to use here.
+   */
+
   VDDK_CALL_START (VixDiskLib_Flush, "handle") {
     err = VixDiskLib_Flush (h->handle);
   } VDDK_CALL_END (VixDiskLib_Flush);
