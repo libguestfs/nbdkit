@@ -721,10 +721,9 @@ vddk_open (int readonly)
     h->params->specType = VIXDISKLIB_SPEC_VMX;
   }
 
-  /* XXX Some documentation suggests we should call
-   * VixDiskLib_PrepareForAccess here.  It may be required for
-   * Advanced Transport modes, but I could not make it work with
-   * either ESXi or vCenter servers.
+  /* XXX We should call VixDiskLib_PrepareForAccess here.  It disables
+   * live storage migration (Storage VMotion) of the VM while we are
+   * accessing it, and may be required for "Advanced Transport modes".
    */
 
   VDDK_CALL_START (VixDiskLib_ConnectEx,
