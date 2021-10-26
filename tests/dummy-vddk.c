@@ -198,3 +198,9 @@ VixDiskLib_Write (VixDiskLibHandle handle,
   memcpy (disk + offset, buf, nr_sectors * VIXDISKLIB_SECTOR_SIZE);
   return VIX_OK;
 }
+
+NBDKIT_DLL_PUBLIC VixError
+VixDiskLib_Wait (VixDiskLibHandle handle)
+{
+  return VIX_OK;
+}
