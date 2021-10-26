@@ -424,7 +424,7 @@ by this build.
 
 =item C<vddk_library_version=...>
 
-The VDDK major library version: 5, 6, 7, ...
+The VDDK major library version: 6, 7, ...
 If this is omitted it means the library could not be loaded.
 
 =item C<vddk_dll=...>
@@ -548,15 +548,11 @@ server, which can also be very slow.
 
 =head1 SUPPORTED VERSIONS OF VDDK
 
-This plugin requires VDDK E<ge> 5.5.5, which in turn means that it
-is only supported on x64-64 platforms.
+This plugin requires VDDK E<ge> 6.5 (released Nov 2016).  It is only
+supported on the x64-64 archtecture.
 
 It has been tested with all versions up to 7.0.3 (but should work with
 future versions).
-
-VDDK E<ge> 6.0 should be used if possible.  This is the first version
-which added Flush support which is crucial for data integrity when
-writing.
 
 VDDK 6.7 was the first version that supported the
 C<VixDiskLib_QueryAllocatedBlocks> API, required to provide extent

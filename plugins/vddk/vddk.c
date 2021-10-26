@@ -75,13 +75,13 @@ NBDKIT_DLL_PUBLIC int vddk_debug_stats;
 #undef OPTIONAL_STUB
 
 /* Parameters passed to InitEx. */
-#define VDDK_MAJOR 5
+#define VDDK_MAJOR 6
 #define VDDK_MINOR 5
 
 static void *dl;                           /* dlopen handle */
 static bool init_called;                   /* was InitEx called */
 static __thread int error_suppression;     /* threadlocal error suppression */
-static int library_version;                /* VDDK major: 5, 6, 7, ... */
+static int library_version;                /* VDDK major: 6, 7, ... */
 
 static enum { NONE = 0, ZLIB, FASTLZ, SKIPZ } compression; /* compression */
 static char *config;                       /* config */
@@ -413,16 +413,14 @@ load_library (bool load_error_is_fatal)
     /* Prefer the newest library in case multiple exist.  Check two
      * possible directories: the usual VDDK installation puts .so
      * files in an arch-specific subdirectory of $libdir (our minimum
-     * supported version is VDDK 5.5.5, which only supports x64-64);
-     * but our testsuite is easier to write if we point libdir
-     * directly to a stub .so.
+     * supported version is VDDK 6.5, which only supports x64-64); but
+     * our testsuite is easier to write if we point libdir directly to
+     * a stub .so.
      */
     { "lib64/libvixDiskLib.so.7", 7 },
     { "libvixDiskLib.so.7",       7 },
     { "lib64/libvixDiskLib.so.6", 6 },
     { "libvixDiskLib.so.6",       6 },
-    { "lib64/libvixDiskLib.so.5", 5 },
-    { "libvixDiskLib.so.5",       5 },
     { NULL }
   };
   size_t i;
@@ -474,7 +472,7 @@ load_library (bool load_error_is_fatal)
     exit (EXIT_FAILURE);
   }
 
-  assert (library_version >= 5);
+  assert (library_version >= 6);
 
   /* Load symbols. */
 #define STUB(fn,ret,args)                                         \
@@ -490,6 +488,16 @@ load_library (bool load_error_is_fatal)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
+
+  /* Additionally, VDDK version must be >= 6.5.  This was the first
+   * version which introduced VixDiskLib_Wait symbol so we can check
+   * for that.
+   */
+  if (VixDiskLib_Wait == NULL) {
+    nbdkit_error ("VDDK version must be >= 6.5. "
+                  "See nbdkit-vddk-plugin(1) man page section \"SUPPORTED VERSIONS OF VDDK\".");
+    exit (EXIT_FAILURE);
+  }
 }
 
 static int
