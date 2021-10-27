@@ -50,9 +50,6 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
-#include "minmax.h"
-#include "rounding.h"
-#include "tvdiff.h"
 #include "vector.h"
 
 #include "vddk.h"
@@ -522,22 +519,17 @@ vddk_dump_plugin (void)
 /* The rules on threads and VDDK are here:
  * https://code.vmware.com/docs/11750/virtual-disk-development-kit-programming-guide/GUID-6BE903E8-DC70-46D9-98E4-E34A2002C2AD.html
  *
- * Before nbdkit 1.22 we used SERIALIZE_ALL_REQUESTS.  Since nbdkit
- * 1.22 we changed this to SERIALIZE_REQUESTS and added a mutex around
- * calls to VixDiskLib_Open and VixDiskLib_Close.  This is not quite
- * within the letter of the rules, but is within the spirit.
+ * Before nbdkit 1.22 we used SERIALIZE_ALL_REQUESTS.  In nbdkit
+ * 1.22-1.28 we changed this to SERIALIZE_REQUESTS and added a mutex
+ * around calls to VixDiskLib_Open and VixDiskLib_Close.  In nbdkit
+ * 1.30 and above we assign a background thread per connection to do
+ * asynch operations and use the PARALLEL model.  We still need the
+ * lock around Open and Close.
  */
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
 
 /* Lock protecting open/close calls - see above. */
 static pthread_mutex_t open_close_lock = PTHREAD_MUTEX_INITIALIZER;
-
-/* The per-connection handle. */
-struct vddk_handle {
-  VixDiskLibConnectParams *params; /* connection parameters */
-  VixDiskLibConnection connection; /* connection */
-  VixDiskLibHandle handle;         /* disk handle */
-};
 
 static inline VixDiskLibConnectParams *
 allocate_connect_params (void)
@@ -579,12 +571,16 @@ vddk_open (int readonly)
   VixError err;
   uint32_t flags;
   const char *transport_mode;
+  int pterr;
 
-  h = malloc (sizeof *h);
+  h = calloc (1, sizeof *h);
   if (h == NULL) {
-    nbdkit_error ("malloc: %m");
+    nbdkit_error ("calloc: %m");
     return NULL;
   }
+  h->commands = (command_queue) empty_vector;
+  pthread_mutex_init (&h->commands_lock, NULL);
+  pthread_cond_init (&h->commands_cond, NULL);
 
   h->params = allocate_connect_params ();
   if (h->params == NULL) {
@@ -661,8 +657,22 @@ vddk_open (int readonly)
   VDDK_CALL_END (VixDiskLib_GetTransportMode, 0);
   nbdkit_debug ("transport mode: %s", transport_mode);
 
+  /* Start the background thread which actually does the asynchronous
+   * work.
+   */
+  pterr = pthread_create (&h->thread, NULL, vddk_worker_thread, h);
+  if (pterr != 0) {
+    errno = pterr;
+    nbdkit_error ("pthread_create: %m");
+    goto err3;
+  }
+
   return h;
 
+ err3:
+  VDDK_CALL_START (VixDiskLib_Close, "handle")
+    VixDiskLib_Close (h->handle);
+  VDDK_CALL_END (VixDiskLib_Close, 0);
  err2:
   VDDK_CALL_START (VixDiskLib_Disconnect, "connection")
     VixDiskLib_Disconnect (h->connection);
@@ -670,6 +680,8 @@ vddk_open (int readonly)
  err1:
   free_connect_params (h->params);
  err0:
+  pthread_mutex_destroy (&h->commands_lock);
+  pthread_cond_destroy (&h->commands_cond);
   free (h);
   return NULL;
 }
@@ -680,6 +692,10 @@ vddk_close (void *handle)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&open_close_lock);
   struct vddk_handle *h = handle;
+  struct command stop_cmd = { .type = STOP };
+
+  send_command_and_wait (h, &stop_cmd);
+  pthread_join (h->thread, NULL);
 
   VDDK_CALL_START (VixDiskLib_Close, "handle")
     VixDiskLib_Close (h->handle);
@@ -689,6 +705,9 @@ vddk_close (void *handle)
   VDDK_CALL_END (VixDiskLib_Disconnect, 0);
 
   free_connect_params (h->params);
+  pthread_mutex_destroy (&h->commands_lock);
+  pthread_cond_destroy (&h->commands_cond);
+  command_queue_reset (&h->commands);
   free (h);
 }
 
@@ -697,134 +716,13 @@ static int64_t
 vddk_get_size (void *handle)
 {
   struct vddk_handle *h = handle;
-  VixDiskLibInfo *info;
-  VixError err;
   uint64_t size;
+  struct command get_size_cmd = { .type = GET_SIZE, .ptr = &size };
 
-  VDDK_CALL_START (VixDiskLib_GetInfo, "handle, &info")
-    err = VixDiskLib_GetInfo (h->handle, &info);
-  VDDK_CALL_END (VixDiskLib_GetInfo, 0);
-  if (err != VIX_OK) {
-    VDDK_ERROR (err, "VixDiskLib_GetInfo");
+  if (send_command_and_wait (h, &get_size_cmd) == -1)
     return -1;
-  }
-
-  size = info->capacity * (uint64_t)VIXDISKLIB_SECTOR_SIZE;
-
-  if (vddk_debug_diskinfo) {
-    nbdkit_debug ("disk info: capacity: %" PRIu64 " sectors "
-                  "(%" PRIi64 " bytes)",
-                  info->capacity, size);
-    nbdkit_debug ("disk info: biosGeo: C:%" PRIu32 " H:%" PRIu32 " S:%" PRIu32,
-                  info->biosGeo.cylinders,
-                  info->biosGeo.heads,
-                  info->biosGeo.sectors);
-    nbdkit_debug ("disk info: physGeo: C:%" PRIu32 " H:%" PRIu32 " S:%" PRIu32,
-                  info->physGeo.cylinders,
-                  info->physGeo.heads,
-                  info->physGeo.sectors);
-    nbdkit_debug ("disk info: adapter type: %d",
-                  (int) info->adapterType);
-    nbdkit_debug ("disk info: num links: %d", info->numLinks);
-    nbdkit_debug ("disk info: parent filename hint: %s",
-                  info->parentFileNameHint ? : "NULL");
-    nbdkit_debug ("disk info: uuid: %s",
-                  info->uuid ? : "NULL");
-    if (library_version >= 7) {
-      nbdkit_debug ("disk info: sector size: "
-                    "logical %" PRIu32 " physical %" PRIu32,
-                    info->logicalSectorSize,
-                    info->physicalSectorSize);
-    }
-  }
-
-  VDDK_CALL_START (VixDiskLib_FreeInfo, "info")
-    VixDiskLib_FreeInfo (info);
-  VDDK_CALL_END (VixDiskLib_FreeInfo, 0);
 
   return (int64_t) size;
-}
-
-/* Read data from the file.
- *
- * Note that reads have to be aligned to sectors (XXX).
- */
-static int
-vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
-            uint32_t flags)
-{
-  struct vddk_handle *h = handle;
-  VixError err;
-
-  /* Align to sectors. */
-  if (!IS_ALIGNED (offset, VIXDISKLIB_SECTOR_SIZE)) {
-    nbdkit_error ("%s is not aligned to sectors", "read");
-    return -1;
-  }
-  if (!IS_ALIGNED (count, VIXDISKLIB_SECTOR_SIZE)) {
-    nbdkit_error ("%s is not aligned to sectors", "read");
-    return -1;
-  }
-  offset /= VIXDISKLIB_SECTOR_SIZE;
-  count /= VIXDISKLIB_SECTOR_SIZE;
-
-  VDDK_CALL_START (VixDiskLib_Read,
-                   "handle, %" PRIu64 " sectors, "
-                   "%" PRIu32 " sectors, buffer",
-                   offset, count)
-    err = VixDiskLib_Read (h->handle, offset, count, buf);
-  VDDK_CALL_END (VixDiskLib_Read, count * VIXDISKLIB_SECTOR_SIZE);
-  if (err != VIX_OK) {
-    VDDK_ERROR (err, "VixDiskLib_Read");
-    return -1;
-  }
-
-  return 0;
-}
-
-static int vddk_flush (void *handle, uint32_t flags);
-
-/* Write data to the file.
- *
- * Note that writes have to be aligned to sectors (XXX).
- */
-static int
-vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
-             uint32_t flags)
-{
-  const bool fua = flags & NBDKIT_FLAG_FUA;
-  struct vddk_handle *h = handle;
-  VixError err;
-
-  /* Align to sectors. */
-  if (!IS_ALIGNED (offset, VIXDISKLIB_SECTOR_SIZE)) {
-    nbdkit_error ("%s is not aligned to sectors", "write");
-    return -1;
-  }
-  if (!IS_ALIGNED (count, VIXDISKLIB_SECTOR_SIZE)) {
-    nbdkit_error ("%s is not aligned to sectors", "write");
-    return -1;
-  }
-  offset /= VIXDISKLIB_SECTOR_SIZE;
-  count /= VIXDISKLIB_SECTOR_SIZE;
-
-  VDDK_CALL_START (VixDiskLib_Write,
-                   "handle, %" PRIu64 " sectors, "
-                   "%" PRIu32 " sectors, buffer",
-                   offset, count)
-    err = VixDiskLib_Write (h->handle, offset, count, buf);
-  VDDK_CALL_END (VixDiskLib_Write, count * VIXDISKLIB_SECTOR_SIZE);
-  if (err != VIX_OK) {
-    VDDK_ERROR (err, "VixDiskLib_Write");
-    return -1;
-  }
-
-  if (fua) {
-    if (vddk_flush (handle, 0) == -1)
-      return -1;
-  }
-
-  return 0;
 }
 
 static int
@@ -841,112 +739,81 @@ vddk_can_flush (void *handle)
   return VixDiskLib_Flush != NULL;
 }
 
+/* Read data from the file.
+ *
+ * Note that reads have to be aligned to sectors (XXX).
+ */
+static int
+vddk_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
+            uint32_t flags)
+{
+  struct vddk_handle *h = handle;
+  struct command read_cmd = {
+    .type = READ,
+    .ptr = buf,
+    .count = count,
+    .offset = offset,
+  };
+
+  return send_command_and_wait (h, &read_cmd);
+}
+
+static int vddk_flush (void *handle, uint32_t flags);
+
+/* Write data to the file.
+ *
+ * Note that writes have to be aligned to sectors (XXX).
+ */
+static int
+vddk_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
+             uint32_t flags)
+{
+  struct vddk_handle *h = handle;
+  const bool fua = flags & NBDKIT_FLAG_FUA;
+  struct command write_cmd = {
+    .type = WRITE,
+    .ptr = (void *) buf,
+    .count = count,
+    .offset = offset,
+  };
+
+  if (send_command_and_wait (h, &write_cmd) == -1)
+    return -1;
+
+  if (fua) {
+    if (vddk_flush (handle, 0) == -1)
+      return -1;
+  }
+
+  return 0;
+}
+
 /* Flush data to the file. */
 static int
 vddk_flush (void *handle, uint32_t flags)
 {
   struct vddk_handle *h = handle;
-  VixError err;
+  struct command flush_cmd = {
+    .type = FLUSH,
+  };
 
-  /* The documentation for Flush is missing, but the comment in the
-   * header file seems to indicate that it waits for WriteAsync
-   * commands to finish.  We don't use WriteAsync, and in any case
-   * there's a new function Wait to wait for those.  However I
-   * verified using strace that in fact Flush does call fsync on the
-   * file so it appears to be the correct call to use here.
-   */
-
-  VDDK_CALL_START (VixDiskLib_Flush, "handle")
-    err = VixDiskLib_Flush (h->handle);
-  VDDK_CALL_END (VixDiskLib_Flush, 0);
-  if (err != VIX_OK) {
-    VDDK_ERROR (err, "VixDiskLib_Flush");
-    return -1;
-  }
-
-  return 0;
+  return send_command_and_wait (h, &flush_cmd);
 }
 
 static int
 vddk_can_extents (void *handle)
 {
   struct vddk_handle *h = handle;
-  VixError err;
-  VixDiskLibBlockList *block_list;
+  int ret;
+  struct command can_extents_cmd = {
+    .type = CAN_EXTENTS,
+    .ptr = &ret,
+  };
 
-  /* This call was added in VDDK 6.7.  In earlier versions the
-   * function pointer will be NULL and we cannot query extents.
-   */
-  if (VixDiskLib_QueryAllocatedBlocks == NULL) {
-    nbdkit_debug ("can_extents: VixDiskLib_QueryAllocatedBlocks == NULL, "
-                  "probably this is VDDK < 6.7");
-    return 0;
-  }
-
-  /* Suppress errors around this call.  See:
-   * https://bugzilla.redhat.com/show_bug.cgi?id=1709211#c7
-   */
-  error_suppression = 1;
-
-  /* However even when the call is available it rarely works well so
-   * the best thing we can do here is to try the call and if it's
-   * non-functional return false.
-   */
-  VDDK_CALL_START (VixDiskLib_QueryAllocatedBlocks,
-                   "handle, 0, %d sectors, %d sectors",
-                   VIXDISKLIB_MIN_CHUNK_SIZE, VIXDISKLIB_MIN_CHUNK_SIZE)
-    err = VixDiskLib_QueryAllocatedBlocks (h->handle,
-                                           0, VIXDISKLIB_MIN_CHUNK_SIZE,
-                                           VIXDISKLIB_MIN_CHUNK_SIZE,
-                                           &block_list);
-  VDDK_CALL_END (VixDiskLib_QueryAllocatedBlocks, 0);
-  error_suppression = 0;
-  if (err == VIX_OK) {
-    VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list")
-      VixDiskLib_FreeBlockList (block_list);
-    VDDK_CALL_END (VixDiskLib_FreeBlockList, 0);
-  }
-  if (err != VIX_OK) {
-    char *errmsg = VixDiskLib_GetErrorText (err, NULL);
-    nbdkit_debug ("can_extents: VixDiskLib_QueryAllocatedBlocks test failed, "
-                  "extents support will be disabled: "
-                  "original error: %s",
-                  errmsg);
-    VixDiskLib_FreeErrorText (errmsg);
-    return 0;
-  }
-
-  return 1;
-}
-
-static int
-add_extent (struct nbdkit_extents *extents,
-            uint64_t *position, uint64_t next_position, bool is_hole)
-{
-  uint32_t type = 0;
-  const uint64_t length = next_position - *position;
-
-  if (is_hole) {
-    type = NBDKIT_EXTENT_HOLE;
-    /* Images opened as single link might be backed by another file in the
-       chain, so the holes are not guaranteed to be zeroes. */
-    if (!single_link)
-      type |= NBDKIT_EXTENT_ZERO;
-  }
-
-  assert (*position <= next_position);
-  if (*position == next_position)
-    return 0;
-
-  if (vddk_debug_extents)
-    nbdkit_debug ("adding extent type %s at [%" PRIu64 "...%" PRIu64 "]",
-                  is_hole ? "hole" : "allocated data",
-                  *position, next_position-1);
-  if (nbdkit_add_extent (extents, *position, length, type) == -1)
+  if (send_command_and_wait (h, &can_extents_cmd) == -1)
     return -1;
 
-  *position = next_position;
-  return 0;
+  return ret;
 }
 
 static int
@@ -955,88 +822,15 @@ vddk_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
 {
   struct vddk_handle *h = handle;
   bool req_one = flags & NBDKIT_FLAG_REQ_ONE;
-  uint64_t position, end, start_sector;
+  struct command extents_cmd = {
+    .type = EXTENTS,
+    .ptr = extents,
+    .count = count,
+    .offset = offset,
+    .req_one = req_one,
+  };
 
-  position = offset;
-  end = offset + count;
-
-  /* We can only query whole chunks.  Therefore start with the first
-   * chunk before offset.
-   */
-  start_sector =
-    ROUND_DOWN (offset, VIXDISKLIB_MIN_CHUNK_SIZE * VIXDISKLIB_SECTOR_SIZE)
-    / VIXDISKLIB_SECTOR_SIZE;
-  while (start_sector * VIXDISKLIB_SECTOR_SIZE < end) {
-    VixError err;
-    uint32_t i;
-    uint64_t nr_chunks, nr_sectors;
-    VixDiskLibBlockList *block_list;
-
-    assert (IS_ALIGNED (start_sector, VIXDISKLIB_MIN_CHUNK_SIZE));
-
-    nr_chunks =
-      ROUND_UP (end - start_sector * VIXDISKLIB_SECTOR_SIZE,
-                VIXDISKLIB_MIN_CHUNK_SIZE * VIXDISKLIB_SECTOR_SIZE)
-      / (VIXDISKLIB_MIN_CHUNK_SIZE * VIXDISKLIB_SECTOR_SIZE);
-    nr_chunks = MIN (nr_chunks, VIXDISKLIB_MAX_CHUNK_NUMBER);
-    nr_sectors = nr_chunks * VIXDISKLIB_MIN_CHUNK_SIZE;
-
-    VDDK_CALL_START (VixDiskLib_QueryAllocatedBlocks,
-                     "handle, %" PRIu64 " sectors, %" PRIu64 " sectors, "
-                     "%d sectors",
-                     start_sector, nr_sectors, VIXDISKLIB_MIN_CHUNK_SIZE)
-      err = VixDiskLib_QueryAllocatedBlocks (h->handle,
-                                             start_sector, nr_sectors,
-                                             VIXDISKLIB_MIN_CHUNK_SIZE,
-                                             &block_list);
-    VDDK_CALL_END (VixDiskLib_QueryAllocatedBlocks, 0);
-    if (err != VIX_OK) {
-      VDDK_ERROR (err, "VixDiskLib_QueryAllocatedBlocks");
-      return -1;
-    }
-
-    for (i = 0; i < block_list->numBlocks; ++i) {
-      uint64_t blk_offset, blk_length;
-
-      blk_offset = block_list->blocks[i].offset * VIXDISKLIB_SECTOR_SIZE;
-      blk_length = block_list->blocks[i].length * VIXDISKLIB_SECTOR_SIZE;
-
-      /* The query returns allocated blocks.  We must insert holes
-       * between the blocks as necessary.
-       */
-      if ((position < blk_offset &&
-           add_extent (extents, &position, blk_offset, true) == -1) ||
-          (add_extent (extents,
-                       &position, blk_offset + blk_length, false) == -1)) {
-        VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list")
-          VixDiskLib_FreeBlockList (block_list);
-        VDDK_CALL_END (VixDiskLib_FreeBlockList, 0);
-        return -1;
-      }
-    }
-    VDDK_CALL_START (VixDiskLib_FreeBlockList, "block_list")
-      VixDiskLib_FreeBlockList (block_list);
-    VDDK_CALL_END (VixDiskLib_FreeBlockList, 0);
-
-    /* There's an implicit hole after the returned list of blocks, up
-     * to the end of the QueryAllocatedBlocks request.
-     */
-    if (add_extent (extents,
-                    &position,
-                    (start_sector + nr_sectors) * VIXDISKLIB_SECTOR_SIZE,
-                    true) == -1)
-      return -1;
-
-    start_sector += nr_sectors;
-
-    /* If one extent was requested, as long as we've added an extent
-     * overlapping the original offset we're done.
-     */
-    if (req_one && position > offset)
-      break;
-  }
-
-  return 0;
+  return send_command_and_wait (h, &extents_cmd);
 }
 
 static struct nbdkit_plugin plugin = {

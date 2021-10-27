@@ -189,6 +189,19 @@ VixDiskLib_Read (VixDiskLibHandle handle,
 }
 
 NBDKIT_DLL_PUBLIC VixError
+VixDiskLib_ReadAsync (VixDiskLibHandle handle,
+                      uint64_t start_sector, uint64_t nr_sectors,
+                      unsigned char *buf,
+                      VixDiskLibCompletionCB callback, void *data)
+{
+  size_t offset = start_sector * VIXDISKLIB_SECTOR_SIZE;
+
+  memcpy (buf, disk + offset, nr_sectors * VIXDISKLIB_SECTOR_SIZE);
+  callback (data, VIX_OK);
+  return VIX_ASYNC;
+}
+
+NBDKIT_DLL_PUBLIC VixError
 VixDiskLib_Write (VixDiskLibHandle handle,
                   uint64_t start_sector, uint64_t nr_sectors,
                   const unsigned char *buf)
@@ -196,6 +209,25 @@ VixDiskLib_Write (VixDiskLibHandle handle,
   size_t offset = start_sector * VIXDISKLIB_SECTOR_SIZE;
 
   memcpy (disk + offset, buf, nr_sectors * VIXDISKLIB_SECTOR_SIZE);
+  return VIX_OK;
+}
+
+NBDKIT_DLL_PUBLIC VixError
+VixDiskLib_WriteAsync (VixDiskLibHandle handle,
+                       uint64_t start_sector, uint64_t nr_sectors,
+                       const unsigned char *buf,
+                       VixDiskLibCompletionCB callback, void *data)
+{
+  size_t offset = start_sector * VIXDISKLIB_SECTOR_SIZE;
+
+  memcpy (disk + offset, buf, nr_sectors * VIXDISKLIB_SECTOR_SIZE);
+  callback (data, VIX_OK);
+  return VIX_ASYNC;
+}
+
+NBDKIT_DLL_PUBLIC VixError
+VixDiskLib_Flush (VixDiskLibHandle handle)
+{
   return VIX_OK;
 }
 

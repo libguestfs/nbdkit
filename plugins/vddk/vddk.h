@@ -90,7 +90,9 @@ extern int vddk_debug_stats;
   /* GCC can optimize this away at compile time: */                     \
   const bool datapath =                                                 \
     strcmp (#fn, "VixDiskLib_Read") == 0 ||                             \
-    strcmp (#fn, "VixDiskLib_Write") == 0;                              \
+    strcmp (#fn, "VixDiskLib_ReadAsync") == 0 ||                        \
+    strcmp (#fn, "VixDiskLib_Write") == 0 ||                            \
+    strcmp (#fn, "VixDiskLib_WriteAsync") == 0;                         \
   if (vddk_debug_stats)                                                 \
     gettimeofday (&start_t, NULL);                                      \
   if (!datapath || vddk_debug_datapath)                                 \
@@ -120,6 +122,46 @@ extern int vddk_debug_stats;
     VDDK_CALL_END (VixDiskLib_FreeErrorText, 0);                \
   } while (0)
 
+/* Queue of asynchronous commands sent to the background thread. */
+enum command_type { GET_SIZE, READ, WRITE, FLUSH, CAN_EXTENTS, EXTENTS, STOP };
+struct command {
+  /* These fields are set by the caller. */
+  enum command_type type;       /* command */
+  void *ptr;                    /* buffer, extents list, return values */
+  uint32_t count;               /* READ, WRITE, EXTENTS */
+  uint64_t offset;              /* READ, WRITE, EXTENTS */
+  bool req_one;                 /* EXTENTS NBDKIT_FLAG_REQ_ONE */
+
+  /* This field is set to a unique value by send_command_and_wait. */
+  uint64_t id;                  /* serial number */
+
+  /* These fields are used by the internal implementation. */
+  pthread_mutex_t mutex;        /* completion mutex */
+  pthread_cond_t cond;          /* completion condition */
+  enum { SUBMITTED, SUCCEEDED, FAILED } status;
+};
+
+DEFINE_VECTOR_TYPE(command_queue, struct command *)
+
+/* The per-connection handle. */
+struct vddk_handle {
+  VixDiskLibConnectParams *params; /* connection parameters */
+  VixDiskLibConnection connection; /* connection */
+  VixDiskLibHandle handle;         /* disk handle */
+
+  pthread_t thread;                /* background thread for asynch work */
+
+  /* Command queue of commands sent to the background thread.  Use
+   * send_command_and_wait to add a command.  Only the background
+   * thread must make VDDK API calls (apart from opening and closing).
+   * The lock protects all of these fields.
+   */
+  pthread_mutex_t commands_lock;   /* lock */
+  command_queue commands;          /* command queue */
+  pthread_cond_t commands_cond;    /* condition (queue size 0 -> 1) */
+  uint64_t id;                     /* next command ID */
+};
+
 /* reexec.c */
 extern bool noreexec;
 extern char *reexeced;
@@ -140,5 +182,10 @@ extern pthread_mutex_t stats_lock;
 #undef STUB
 #undef OPTIONAL_STUB
 extern void display_stats (void);
+
+/* worker.c */
+extern const char *command_type_string (enum command_type type);
+extern int send_command_and_wait (struct vddk_handle *h, struct command *cmd);
+extern void *vddk_worker_thread (void *handle);
 
 #endif /* NBDKIT_VDDK_H */
