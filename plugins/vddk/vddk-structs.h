@@ -43,6 +43,7 @@
 
 typedef uint64_t VixError;
 #define VIX_OK 0
+#define VIX_ASYNC 25000
 
 #define VIXDISKLIB_FLAG_OPEN_UNBUFFERED 1
 #define VIXDISKLIB_FLAG_OPEN_SINGLE_LINK 2
@@ -60,6 +61,8 @@ typedef void *VixDiskLibConnection;
 typedef void *VixDiskLibHandle;
 
 typedef void VixDiskLibGenericLogFunc (const char *fmt, va_list args);
+
+typedef void (*VixDiskLibCompletionCB) (void *data, VixError result);
 
 enum VixDiskLibCredType {
   VIXDISKLIB_CRED_UID       = 1,

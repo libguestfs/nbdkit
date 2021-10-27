@@ -103,8 +103,25 @@ STUB (VixDiskLib_Write,
        uint64_t start_sector, uint64_t nr_sectors,
        const unsigned char *buf));
 
-/* Added in VDDK 6.0, this will be NULL in earlier versions. */
+/* Added in VDDK 6.0, these will be NULL in earlier versions. */
 OPTIONAL_STUB (VixDiskLib_Flush,
+               VixError,
+               (VixDiskLibHandle handle));
+OPTIONAL_STUB (VixDiskLib_ReadAsync,
+               VixError,
+               (VixDiskLibHandle handle,
+                uint64_t start_sector, uint64_t nr_sectors,
+                unsigned char *buf,
+                VixDiskLibCompletionCB callback, void *data));
+OPTIONAL_STUB (VixDiskLib_WriteAsync,
+               VixError,
+               (VixDiskLibHandle handle,
+                uint64_t start_sector, uint64_t nr_sectors,
+                const unsigned char *buf,
+                VixDiskLibCompletionCB callback, void *data));
+
+/* Added in VDDK 6.5, this will be NULL in earlier versions. */
+OPTIONAL_STUB (VixDiskLib_Wait,
                VixError,
                (VixDiskLibHandle handle));
 
