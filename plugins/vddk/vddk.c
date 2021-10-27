@@ -61,7 +61,6 @@
 NBDKIT_DLL_PUBLIC int vddk_debug_diskinfo;
 NBDKIT_DLL_PUBLIC int vddk_debug_extents;
 NBDKIT_DLL_PUBLIC int vddk_debug_datapath = 1;
-NBDKIT_DLL_PUBLIC int vddk_debug_stats;
 
 /* For each VDDK API define a global variable.  These globals are
  * initialized when the plugin is loaded (by vddk_get_ready).
@@ -99,25 +98,6 @@ bool unbuffered;                       /* unbuffered */
 const char *username;                  /* user */
 const char *vmx_spec;                  /* vm */
 
-/* For each VDDK API define a variable to store the time taken (used
- * to implement -D vddk.stats=1).
- */
-struct vddk_stat {
-  const char *name;             /* function name */
-  int64_t usecs;                /* total number of usecs consumed */
-  uint64_t calls;               /* number of times called */
-  uint64_t bytes;               /* bytes transferred, datapath calls only */
-};
-static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
-static void display_stats (void);
-#define STUB(fn,ret,args) \
-  static struct vddk_stat stats_##fn = { .name = #fn }
-#define OPTIONAL_STUB(fn,ret,args) \
-  static struct vddk_stat stats_##fn = { .name = #fn }
-#include "vddk-stubs.h"
-#undef STUB
-#undef OPTIONAL_STUB
-
 /* Unload the plugin. */
 static void
 vddk_unload (void)
@@ -130,67 +110,11 @@ vddk_unload (void)
   if (dl)
     dlclose (dl);
 
-  if (vddk_debug_stats)
-    display_stats ();
+  display_stats ();
 
   free (config);
   free (libdir);
   free (password);
-}
-
-DEFINE_VECTOR_TYPE(statlist, struct vddk_stat)
-
-static int
-stat_compare (const void *vp1, const void *vp2)
-{
-  const struct vddk_stat *st1 = vp1;
-  const struct vddk_stat *st2 = vp2;
-
-  /* Note: sorts in reverse order of time spent in each API call. */
-  if (st1->usecs < st2->usecs) return 1;
-  else if (st1->usecs > st2->usecs) return -1;
-  else return 0;
-}
-
-static const char *
-api_name_without_prefix (const char *name)
-{
-  return strncmp (name, "VixDiskLib_", 11) == 0 ? name + 11 : name;
-}
-
-static void
-display_stats (void)
-{
-  statlist stats = empty_vector;
-  size_t i;
-
-#define STUB(fn,ret,args) statlist_append (&stats, stats_##fn)
-#define OPTIONAL_STUB(fn,ret,args) statlist_append (&stats, stats_##fn)
-#include "vddk-stubs.h"
-#undef STUB
-#undef OPTIONAL_STUB
-
-  qsort (stats.ptr, stats.size, sizeof stats.ptr[0], stat_compare);
-
-  nbdkit_debug ("VDDK function stats (-D vddk.stats=1):");
-  nbdkit_debug ("%-24s  %15s %5s %15s",
-                "VixDiskLib_...", "µs", "calls", "bytes");
-  for (i = 0; i < stats.size; ++i) {
-    if (stats.ptr[i].usecs) {
-      if (stats.ptr[i].bytes > 0)
-        nbdkit_debug ("  %-22s %15" PRIi64 " %5" PRIu64 " %15" PRIu64,
-                      api_name_without_prefix (stats.ptr[i].name),
-                      stats.ptr[i].usecs,
-                      stats.ptr[i].calls,
-                      stats.ptr[i].bytes);
-      else
-        nbdkit_debug ("  %-22s %15" PRIi64 " %5" PRIu64,
-                      api_name_without_prefix (stats.ptr[i].name),
-                      stats.ptr[i].usecs,
-                      stats.ptr[i].calls);
-    }
-  }
-  statlist_reset (&stats);
 }
 
 static void
