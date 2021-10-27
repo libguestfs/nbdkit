@@ -523,6 +523,14 @@ read bandwidth to the VMware server.
 
 Same as above, but for writing and flushing writes.
 
+=item C<ReadAsync>
+
+=item C<WriteAsync>
+
+Same as above, but for asynchronous read and write calls introduced in
+nbdkit 1.30.  Unfortunately at the moment the amount of time spent in
+these calls is not accounted for correctly.
+
 =item C<QueryAllocatedBlocks>
 
 This call is used to query information about the sparseness of the
@@ -580,7 +588,8 @@ Debug extents returned by C<QueryAllocatedBlocks>.
 
 =item B<-D vddk.datapath=0>
 
-Suppress debugging of datapath calls (C<Read> and C<Write>).
+Suppress debugging of datapath calls (C<Read>, C<ReadAsync>, C<Write>
+and C<WriteAsync>).
 
 =item B<-D vddk.stats=1>
 
