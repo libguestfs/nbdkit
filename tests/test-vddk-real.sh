@@ -80,11 +80,11 @@ qemu-img create -f vmdk $vmdk 10M
 # Check first that the VDDK library can be fully loaded.  We have to
 # check the log file for missing modules since they may not show up as
 # errors.
-nbdkit -fv -U - vddk libdir="$vddkdir" $vmdk --run 'nbdinfo "$uri"' >$log 2>&1
+nbdkit -fv -U - vddk libdir="$vddkdir" $vmdk --run 'nbdinfo "$uri"' 2>&1 |
+    tee $log
 
 # Check the log for missing modules
-cat $log
-if grep 'cannot open shared object file' test-vddk-real.log; then
+if grep 'cannot open shared object file' $log; then
    exit 1
 fi
 
