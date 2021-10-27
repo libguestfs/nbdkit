@@ -62,9 +62,6 @@ fi
 # not translating errors.
 export LANG=C
 
-# Strict malloc checking breaks VDDK 7.0.0 and 7.0.3.
-unset GLIBC_TUNABLES
-
 pid=test-vddk-real.pid
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 vmdk=$PWD/test-vddk-real.vmdk ;# note must be an absolute path
