@@ -50,14 +50,12 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
-#include "isaligned.h"
 #include "minmax.h"
 #include "rounding.h"
 #include "tvdiff.h"
 #include "vector.h"
 
 #include "vddk.h"
-#include "vddk-structs.h"
 
 /* Debug flags. */
 NBDKIT_DLL_PUBLIC int vddk_debug_diskinfo;
@@ -65,11 +63,11 @@ NBDKIT_DLL_PUBLIC int vddk_debug_extents;
 NBDKIT_DLL_PUBLIC int vddk_debug_datapath = 1;
 NBDKIT_DLL_PUBLIC int vddk_debug_stats;
 
-/* For each VDDK API define a static global variable.  These globals
- * are initialized when the plugin is loaded (by vddk_get_ready).
+/* For each VDDK API define a global variable.  These globals are
+ * initialized when the plugin is loaded (by vddk_get_ready).
  */
-#define STUB(fn,ret,args) static ret (*fn) args
-#define OPTIONAL_STUB(fn,ret,args) static ret (*fn) args
+#define STUB(fn,ret,args) ret (*fn) args
+#define OPTIONAL_STUB(fn,ret,args) ret (*fn) args
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
@@ -78,28 +76,28 @@ NBDKIT_DLL_PUBLIC int vddk_debug_stats;
 #define VDDK_MAJOR 6
 #define VDDK_MINOR 5
 
-static void *dl;                           /* dlopen handle */
-static bool init_called;                   /* was InitEx called */
-static __thread int error_suppression;     /* threadlocal error suppression */
-static int library_version;                /* VDDK major: 6, 7, ... */
+void *dl;                              /* dlopen handle */
+bool init_called;                      /* was InitEx called */
+__thread int error_suppression;        /* threadlocal error suppression */
+int library_version;                   /* VDDK major: 6, 7, ... */
+bool is_remote;                        /* true if remote connection */
 
-static enum { NONE = 0, ZLIB, FASTLZ, SKIPZ } compression; /* compression */
-static char *config;                       /* config */
-static const char *cookie;                 /* cookie */
-static const char *filename;               /* file */
-char *libdir;                              /* libdir */
-static uint16_t nfc_host_port;             /* nfchostport */
-char *password;                            /* password */
-static uint16_t port;                      /* port */
-static const char *server_name;            /* server */
-static bool single_link;                   /* single-link */
-static const char *snapshot_moref;         /* snapshot */
-static const char *thumb_print;            /* thumbprint */
-static const char *transport_modes;        /* transports */
-static bool unbuffered;                    /* unbuffered */
-static const char *username;               /* user */
-static const char *vmx_spec;               /* vm */
-static bool is_remote;
+enum compression_type compression;     /* compression */
+char *config;                          /* config */
+const char *cookie;                    /* cookie */
+const char *filename;                  /* file */
+char *libdir;                          /* libdir */
+uint16_t nfc_host_port;                /* nfchostport */
+char *password;                        /* password */
+uint16_t port;                         /* port */
+const char *server_name;               /* server */
+bool single_link;                      /* single-link */
+const char *snapshot_moref;            /* snapshot */
+const char *thumb_print;               /* thumbprint */
+const char *transport_modes;           /* transports */
+bool unbuffered;                       /* unbuffered */
+const char *username;                  /* user */
+const char *vmx_spec;                  /* vm */
 
 /* For each VDDK API define a variable to store the time taken (used
  * to implement -D vddk.stats=1).
@@ -119,45 +117,6 @@ static void display_stats (void);
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
-
-/* Macros to bracket each VDDK API call, for printing debugging
- * information and collecting statistics.
- */
-#define VDDK_CALL_START(fn, fs, ...)                                    \
-  do {                                                                  \
-  struct timeval start_t, end_t;                                        \
-  /* GCC can optimize this away at compile time: */                     \
-  const bool datapath =                                                 \
-    strcmp (#fn, "VixDiskLib_Read") == 0 ||                             \
-    strcmp (#fn, "VixDiskLib_Write") == 0;                              \
-  if (vddk_debug_stats)                                                 \
-    gettimeofday (&start_t, NULL);                                      \
-  if (!datapath || vddk_debug_datapath)                                 \
-    nbdkit_debug ("VDDK call: %s (" fs ")", #fn, ##__VA_ARGS__);        \
-  do
-#define VDDK_CALL_END(fn, bytes_)                       \
-  while (0);                                            \
-  if (vddk_debug_stats) {                               \
-    gettimeofday (&end_t, NULL);                        \
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&stats_lock);       \
-    stats_##fn.usecs += tvdiff_usec (&start_t, &end_t); \
-    stats_##fn.calls++;                                 \
-    stats_##fn.bytes += bytes_;                         \
-  }                                                     \
-  } while (0)
-
-/* Print VDDK errors. */
-#define VDDK_ERROR(err, fs, ...)                                \
-  do {                                                          \
-    char *vddk_err_msg;                                         \
-    VDDK_CALL_START (VixDiskLib_GetErrorText, "%lu", err)       \
-      vddk_err_msg = VixDiskLib_GetErrorText ((err), NULL);     \
-    VDDK_CALL_END (VixDiskLib_GetErrorText, 0);                 \
-    nbdkit_error (fs ": %s", ##__VA_ARGS__, vddk_err_msg);      \
-    VDDK_CALL_START (VixDiskLib_FreeErrorText, "")              \
-      VixDiskLib_FreeErrorText (vddk_err_msg);                  \
-    VDDK_CALL_END (VixDiskLib_FreeErrorText, 0);                \
-  } while (0)
 
 /* Unload the plugin. */
 static void
