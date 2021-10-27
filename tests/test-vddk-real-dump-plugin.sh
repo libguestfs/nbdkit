@@ -39,6 +39,13 @@ requires test -d "$vddkdir"
 requires test -f "$vddkdir/lib64/libvixDiskLib.so"
 requires cut --version
 
+# Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
+# this test if valgrinding.
+if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
+    echo "$0: skipped LD_LIBRARY_PATH test when doing valgrind"
+    exit 77
+fi
+
 # VDDK > 5.1.1 only supports x86_64.
 if [ `uname -m` != "x86_64" ]; then
     echo "$0: unsupported architecture"
