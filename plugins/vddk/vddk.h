@@ -126,4 +126,19 @@ extern char *reexeced;
 extern void reexec_if_needed (const char *prepend);
 extern int restore_ld_library_path (void);
 
+/* stats.c */
+struct vddk_stat {
+  const char *name;             /* function name */
+  int64_t usecs;                /* total number of usecs consumed */
+  uint64_t calls;               /* number of times called */
+  uint64_t bytes;               /* bytes transferred, datapath calls only */
+};
+extern pthread_mutex_t stats_lock;
+#define STUB(fn,ret,args) extern struct vddk_stat stats_##fn;
+#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
+#include "vddk-stubs.h"
+#undef STUB
+#undef OPTIONAL_STUB
+extern void display_stats (void);
+
 #endif /* NBDKIT_VDDK_H */

@@ -46,6 +46,7 @@ nbdkit_vddk_plugin_la_SOURCES = \
 	vddk.c \
 	vddk.h \
 	reexec.c \
+	stats.c \
 	vddk-structs.h \
 	vddk-stubs.h \
 	$(top_srcdir)/include/nbdkit-plugin.h \
