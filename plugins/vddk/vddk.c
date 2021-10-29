@@ -378,6 +378,12 @@ load_library (bool load_error_is_fatal)
                   "See nbdkit-vddk-plugin(1) man page section \"SUPPORTED VERSIONS OF VDDK\".");
     exit (EXIT_FAILURE);
   }
+
+  /* Added in VDDK 6.0 so it must always be present.  Since we are
+   * going to call this function unconditionally, fail early and hard
+   * if for some reason it's not present.
+   */
+  assert (VixDiskLib_Flush != NULL);
 }
 
 static int
@@ -725,18 +731,19 @@ vddk_get_size (void *handle)
   return (int64_t) size;
 }
 
+/* The Flush call was added in VDDK 6.0, since we support minimum 6.5
+ * we are always able to do FUA / flush.
+ */
 static int
 vddk_can_fua (void *handle)
 {
-  /* The Flush call was not available in VDDK < 6.0. */
-  return VixDiskLib_Flush != NULL ? NBDKIT_FUA_NATIVE : NBDKIT_FUA_NONE;
+  return NBDKIT_FUA_NATIVE;
 }
 
 static int
 vddk_can_flush (void *handle)
 {
-  /* The Flush call was not available in VDDK < 6.0. */
-  return VixDiskLib_Flush != NULL;
+  return 1;
 }
 
 /* Read data from the file.
