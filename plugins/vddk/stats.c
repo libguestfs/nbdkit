@@ -89,7 +89,7 @@ display_stats (void)
   if (!vddk_debug_stats) return;
 
 #define STUB(fn,ret,args) statlist_append (&stats, stats_##fn)
-#define OPTIONAL_STUB(fn,ret,args) statlist_append (&stats, stats_##fn)
+#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
