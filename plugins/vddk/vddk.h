@@ -76,7 +76,7 @@ extern int vddk_debug_datapath;
 extern int vddk_debug_stats;
 
 #define STUB(fn,ret,args) extern ret (*fn) args
-#define OPTIONAL_STUB(fn,ret,args) extern ret (*fn) args
+#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB

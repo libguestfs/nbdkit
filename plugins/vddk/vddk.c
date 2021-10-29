@@ -63,7 +63,7 @@ NBDKIT_DLL_PUBLIC int vddk_debug_datapath = 1;
  * initialized when the plugin is loaded (by vddk_get_ready).
  */
 #define STUB(fn,ret,args) ret (*fn) args
-#define OPTIONAL_STUB(fn,ret,args) ret (*fn) args
+#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
@@ -282,6 +282,17 @@ vddk_config (const char *key, const char *value)
   return 0;
 }
 
+static void
+missing_required_symbol (const char *fn)
+{
+  nbdkit_error ("required VDDK symbol \"%s\" is missing. "
+                "VDDK version must be >= 6.5. "
+                "See nbdkit-vddk-plugin(1) man page section \"SUPPORTED VERSIONS OF VDDK\". "
+                "Original dlopen error: %s\n",
+                fn, dlerror ());
+  exit (EXIT_FAILURE);
+}
+
 /* Load the VDDK library. */
 static void
 load_library (bool load_error_is_fatal)
@@ -358,32 +369,13 @@ load_library (bool load_error_is_fatal)
 #define STUB(fn,ret,args)                                         \
   do {                                                            \
     fn = dlsym (dl, #fn);                                         \
-    if (fn == NULL) {                                             \
-      nbdkit_error ("required VDDK symbol \"%s\" is missing: %s", \
-                    #fn, dlerror ());                             \
-      exit (EXIT_FAILURE);                                        \
-    }                                                             \
+    if (fn == NULL)                                               \
+      missing_required_symbol (#fn);                              \
   } while (0)
 #define OPTIONAL_STUB(fn,ret,args) fn = dlsym (dl, #fn)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
-
-  /* Additionally, VDDK version must be >= 6.5.  This was the first
-   * version which introduced VixDiskLib_Wait symbol so we can check
-   * for that.
-   */
-  if (VixDiskLib_Wait == NULL) {
-    nbdkit_error ("VDDK version must be >= 6.5. "
-                  "See nbdkit-vddk-plugin(1) man page section \"SUPPORTED VERSIONS OF VDDK\".");
-    exit (EXIT_FAILURE);
-  }
-
-  /* Added in VDDK 6.0 so it must always be present.  Since we are
-   * going to call this function unconditionally, fail early and hard
-   * if for some reason it's not present.
-   */
-  assert (VixDiskLib_Flush != NULL);
 }
 
 static int

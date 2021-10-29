@@ -39,10 +39,7 @@
  * function name, return value, arguments.
  */
 
-/* Required stubs, present in all versions of VDDK that we support.  I
- * have checked that all these exist in at least VDDK 5.5.5 (2015).
- */
-
+/* Required stubs, present in all versions of VDDK since 6.5 (Nov 2016). */
 STUB (VixDiskLib_InitEx,
       VixError,
       (uint32_t major, uint32_t minor,
@@ -103,27 +100,27 @@ STUB (VixDiskLib_Write,
        uint64_t start_sector, uint64_t nr_sectors,
        const unsigned char *buf));
 
-/* Added in VDDK 6.0, these will be NULL in earlier versions. */
-OPTIONAL_STUB (VixDiskLib_Flush,
-               VixError,
-               (VixDiskLibHandle handle));
-OPTIONAL_STUB (VixDiskLib_ReadAsync,
-               VixError,
-               (VixDiskLibHandle handle,
-                uint64_t start_sector, uint64_t nr_sectors,
-                unsigned char *buf,
-                VixDiskLibCompletionCB callback, void *data));
-OPTIONAL_STUB (VixDiskLib_WriteAsync,
-               VixError,
-               (VixDiskLibHandle handle,
-                uint64_t start_sector, uint64_t nr_sectors,
-                const unsigned char *buf,
-                VixDiskLibCompletionCB callback, void *data));
+/* Added in VDDK 6.0. */
+STUB (VixDiskLib_Flush,
+      VixError,
+      (VixDiskLibHandle handle));
+STUB (VixDiskLib_ReadAsync,
+      VixError,
+      (VixDiskLibHandle handle,
+       uint64_t start_sector, uint64_t nr_sectors,
+       unsigned char *buf,
+       VixDiskLibCompletionCB callback, void *data));
+STUB (VixDiskLib_WriteAsync,
+      VixError,
+      (VixDiskLibHandle handle,
+       uint64_t start_sector, uint64_t nr_sectors,
+       const unsigned char *buf,
+       VixDiskLibCompletionCB callback, void *data));
 
-/* Added in VDDK 6.5, this will be NULL in earlier versions. */
-OPTIONAL_STUB (VixDiskLib_Wait,
-               VixError,
-               (VixDiskLibHandle handle));
+/* Added in VDDK 6.5. */
+STUB (VixDiskLib_Wait,
+      VixError,
+      (VixDiskLibHandle handle));
 
 /* Added in VDDK 6.7, these will be NULL for earlier versions: */
 OPTIONAL_STUB (VixDiskLib_QueryAllocatedBlocks,
