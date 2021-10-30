@@ -513,7 +513,7 @@ vddk_config_complete (void)
 
 #define vddk_config_help \
   "[file=]<FILENAME>   (required) The filename (eg. VMDK file) to serve.\n" \
-  "Many optional parameters are supported, see nbdkit-vddk-plugin(3)."
+  "Many optional parameters are supported, see nbdkit-vddk-plugin(1)."
 
 static int
 vddk_get_ready (void)
