@@ -14,21 +14,10 @@ export VMDK files and VMware disks over NBD.
 You do NOT require VDDK to compile the plugin, and the plugin does not
 contain any VMware code.  You only need VDDK at runtime.  The plugin
 uses dlopen to load the library from a directory determined by the
-configuration parameter libdir (LD_LIBRARY_PATH or the standard shared
-library locations can also be used, although that approach is not
-recommended).
+configuration parameter libdir.  It is NOT recommended to put VDDK in
+your regular library path (eg /usr/lib) because it contains components
+that conflict with system libraries.
 
 After building nbdkit-vddk-plugin.so, read the man page to find out
 how to use it (nbdkit-vddk-plugin(1)).  You'll probably also want to
 read the VDDK developer documentation.
-
-Bugs
-----
-
-Write calls sometimes return VIX_E_DISK_OUTOFRANGE even for write
-requests which are well inside the disk.
-
-The way we do threading in nbdkit is not congruent with the way you're
-supposed to call VDDK from multithreaded programs.  For more
-information see:
-https://www.redhat.com/archives/libguestfs/2019-October/msg00062.html
