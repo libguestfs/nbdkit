@@ -792,9 +792,7 @@ static int
 vddk_flush (void *handle, uint32_t flags)
 {
   struct vddk_handle *h = handle;
-  struct command flush_cmd = {
-    .type = FLUSH,
-  };
+  struct command flush_cmd = { .type = FLUSH };
 
   return send_command_and_wait (h, &flush_cmd);
 }
@@ -804,10 +802,7 @@ vddk_can_extents (void *handle)
 {
   struct vddk_handle *h = handle;
   int ret;
-  struct command can_extents_cmd = {
-    .type = CAN_EXTENTS,
-    .ptr = &ret,
-  };
+  struct command can_extents_cmd = { .type = CAN_EXTENTS, .ptr = &ret };
 
   if (send_command_and_wait (h, &can_extents_cmd) == -1)
     return -1;
