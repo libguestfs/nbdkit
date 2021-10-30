@@ -114,61 +114,6 @@ vddk_unload (void)
   free (password);
 }
 
-static void
-trim (char *str)
-{
-  size_t len = strlen (str);
-
-  if (len > 0 && str[len-1] == '\n')
-    str[len-1] = '\0';
-}
-
-/* Turn log messages from the library into nbdkit_debug. */
-static void
-debug_function (const char *fs, va_list args)
-{
-  CLEANUP_FREE char *str = NULL;
-
-  if (vasprintf (&str, fs, args) == -1) {
-    nbdkit_debug ("lost debug message: %s", fs);
-    return;
-  }
-
-  trim (str);
-
-  nbdkit_debug ("%s", str);
-}
-
-/* Turn error messages from the library into nbdkit_error. */
-static void
-error_function (const char *fs, va_list args)
-{
-  CLEANUP_FREE char *str = NULL;
-
-  /* If the thread-local error_suppression flag is non-zero then we
-   * will suppress error messages from VDDK in this thread.
-   */
-  if (error_suppression) return;
-
-  if (vasprintf (&str, fs, args) == -1) {
-    nbdkit_error ("lost error message: %s", fs);
-    return;
-  }
-
-  trim (str);
-
-  /* VDDK 7 added a useless error message about their "phone home"
-   * system called CEIP which only panics users.  Demote it to a debug
-   * statement.  https://bugzilla.redhat.com/show_bug.cgi?id=1834267
-   */
-  if (strstr (str, "Get CEIP status failed") != NULL) {
-    nbdkit_debug ("%s", str);
-    return;
-  }
-
-  nbdkit_error ("%s", str);
-}
-
 /* Configuration. */
 static int
 vddk_config (const char *key, const char *value)
@@ -282,6 +227,56 @@ vddk_config (const char *key, const char *value)
   return 0;
 }
 
+static int
+vddk_config_complete (void)
+{
+  if (filename == NULL) {
+    nbdkit_error ("you must supply the file=<FILENAME> parameter "
+                  "after the plugin name on the command line");
+    return -1;
+  }
+
+  /* For remote connections, check all the parameters have been
+   * passed.  Note that VDDK will segfault if parameters that it
+   * expects are NULL (and there's no real way to tell what parameters
+   * it is expecting).  This implements the same test that the VDDK
+   * sample program does.
+   */
+  is_remote =
+    vmx_spec ||
+    server_name ||
+    username ||
+    password ||
+    cookie ||
+    thumb_print ||
+    port ||
+    nfc_host_port;
+
+  if (is_remote) {
+#define missing(test, param)                                            \
+    if (test) {                                                         \
+      nbdkit_error ("remote connection requested, missing parameter: %s", \
+                    param);                                             \
+      return -1;                                                        \
+    }
+    missing (!server_name, "server");
+    missing (!username, "user");
+    missing (!password, "password");
+    missing (!vmx_spec, "vm");
+#undef missing
+  }
+
+  /* Restore original LD_LIBRARY_PATH after reexec. */
+  if (restore_ld_library_path () == -1)
+    return -1;
+
+  return 0;
+}
+
+#define vddk_config_help \
+  "[file=]<FILENAME>   (required) The filename (eg. VMDK file) to serve.\n" \
+  "Many optional parameters are supported, see nbdkit-vddk-plugin(1)."
+
 static void
 missing_required_symbol (const char *fn)
 {
@@ -379,60 +374,56 @@ load_library (bool load_error_is_fatal)
 }
 
 static int
-vddk_config_complete (void)
-{
-  if (filename == NULL) {
-    nbdkit_error ("you must supply the file=<FILENAME> parameter "
-                  "after the plugin name on the command line");
-    return -1;
-  }
-
-  /* For remote connections, check all the parameters have been
-   * passed.  Note that VDDK will segfault if parameters that it
-   * expects are NULL (and there's no real way to tell what parameters
-   * it is expecting).  This implements the same test that the VDDK
-   * sample program does.
-   */
-  is_remote =
-    vmx_spec ||
-    server_name ||
-    username ||
-    password ||
-    cookie ||
-    thumb_print ||
-    port ||
-    nfc_host_port;
-
-  if (is_remote) {
-#define missing(test, param)                                            \
-    if (test) {                                                         \
-      nbdkit_error ("remote connection requested, missing parameter: %s", \
-                    param);                                             \
-      return -1;                                                        \
-    }
-    missing (!server_name, "server");
-    missing (!username, "user");
-    missing (!password, "password");
-    missing (!vmx_spec, "vm");
-#undef missing
-  }
-
-  /* Restore original LD_LIBRARY_PATH after reexec. */
-  if (restore_ld_library_path () == -1)
-    return -1;
-
-  return 0;
-}
-
-#define vddk_config_help \
-  "[file=]<FILENAME>   (required) The filename (eg. VMDK file) to serve.\n" \
-  "Many optional parameters are supported, see nbdkit-vddk-plugin(1)."
-
-static int
 vddk_get_ready (void)
 {
   load_library (true);
   return 0;
+}
+
+/* Turn log messages from the library into nbdkit_debug. */
+static void
+debug_function (const char *fs, va_list args)
+{
+  CLEANUP_FREE char *str = NULL;
+
+  if (vasprintf (&str, fs, args) == -1) {
+    nbdkit_debug ("lost debug message: %s", fs);
+    return;
+  }
+
+  trim (str);
+
+  nbdkit_debug ("%s", str);
+}
+
+/* Turn error messages from the library into nbdkit_error. */
+static void
+error_function (const char *fs, va_list args)
+{
+  CLEANUP_FREE char *str = NULL;
+
+  /* If the thread-local error_suppression flag is non-zero then we
+   * will suppress error messages from VDDK in this thread.
+   */
+  if (error_suppression) return;
+
+  if (vasprintf (&str, fs, args) == -1) {
+    nbdkit_error ("lost error message: %s", fs);
+    return;
+  }
+
+  trim (str);
+
+  /* VDDK 7 added a useless error message about their "phone home"
+   * system called CEIP which only panics users.  Demote it to a debug
+   * statement.  https://bugzilla.redhat.com/show_bug.cgi?id=1834267
+   */
+  if (strstr (str, "Get CEIP status failed") != NULL) {
+    nbdkit_debug ("%s", str);
+    return;
+  }
+
+  nbdkit_error ("%s", str);
 }
 
 /* Defer VDDK initialization until after fork because it is known to

@@ -183,6 +183,9 @@ extern pthread_mutex_t stats_lock;
 #undef OPTIONAL_STUB
 extern void display_stats (void);
 
+/* utils.c */
+extern void trim (char *str);
+
 /* worker.c */
 extern const char *command_type_string (enum command_type type);
 extern int send_command_and_wait (struct vddk_handle *h, struct command *cmd);
