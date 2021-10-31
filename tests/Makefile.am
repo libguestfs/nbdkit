@@ -1269,7 +1269,10 @@ TESTS += \
 	test-shebang-cc.sh \
 	$(NULL)
 if HAVE_OCAML
-TESTS += test-cc-ocaml.sh
+TESTS += \
+	test-cc-ocaml.sh \
+	test-shebang-cc-ocaml.sh \
+	$(NULL)
 endif
 EXTRA_DIST += \
 	cc-shebang.c \
@@ -1278,6 +1281,7 @@ EXTRA_DIST += \
 	test-cc-cpp.sh \
 	test-cc-ocaml.sh \
 	test-shebang-cc.sh \
+	test-shebang-cc-ocaml.sh \
 	$(NULL)
 
 #----------------------------------------------------------------------
