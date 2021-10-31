@@ -567,6 +567,13 @@ cc_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
     return 0;
 }
 
+static void
+cc_cleanup (void)
+{
+  if (subplugin.cleanup)
+    subplugin.cleanup ();
+}
+
 static struct nbdkit_plugin plugin = {
   .name              = "cc",
   .longname          = "nbdkit C compiler plugin",
@@ -585,6 +592,7 @@ static struct nbdkit_plugin plugin = {
    */
   .get_ready          = cc_get_ready,
   .after_fork         = cc_after_fork,
+  .cleanup            = cc_cleanup,
 
   .preconnect         = cc_preconnect,
   .list_exports       = cc_list_exports,
