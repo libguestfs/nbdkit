@@ -1276,11 +1276,9 @@ EXTRA_DIST += \
 	test-cc.sh \
 	test-cc-cpp.cpp \
 	test-cc-cpp.sh \
+	test-cc-ocaml.sh \
 	test-shebang-cc.sh \
 	$(NULL)
-if HAVE_OCAML
-EXTRA_DIST += test-cc-ocaml.sh
-endif
 
 #----------------------------------------------------------------------
 # Tests of filters.
