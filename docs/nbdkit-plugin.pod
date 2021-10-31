@@ -499,7 +499,7 @@ all plugins.
  const char *version;
 
 Plugins may optionally set a version string which is displayed in help
-and debugging output.
+and debugging output.  (See also L</VERSION> below)
 
 =head2 C<.longname>
 
@@ -1713,6 +1713,38 @@ connected over a Unix domain socket.
 
 On success this returns the user ID.  On error, C<nbdkit_error> is
 called and this call returns C<-1>.
+
+=head1 VERSION
+
+=head2 Compile-time version of nbdkit
+
+The macros C<NBDKIT_VERSION_MAJOR>, C<NBDKIT_VERSION_MINOR> and
+C<NBDKIT_VERSION_MICRO> expand to integers containing the version of
+the nbdkit headers that you are compiling against.
+
+C<NBDKIT_VERSION_MAJOR> is always 1.  C<NBDKIT_VERSION_MINOR> is even
+for stable releases of nbdkit and odd for development releases.
+
+The macro C<NBDKIT_VERSION_STRING> expands to the same version as a
+string.
+
+=head2 Run-time version of nbdkit
+
+When the plugin is loaded into nbdkit, it may not be the same version
+that it was compiled against.  nbdkit guarantees backwards
+compatibility of the API and ABI, so provided that nbdkit is the same
+version or newer, the plugin will still work.  There is no way to get
+the version of nbdkit from the plugin.
+
+=head2 Version of the plugin
+
+The plugin itself can use any versioning scheme you want, and put any
+string into the C<.version> field of the plugin struct (or leave the
+field NULL).
+
+=head2 API version
+
+See L</WRITING AN NBDKIT PLUGIN> above.
 
 =head1 DEBUGGING
 
