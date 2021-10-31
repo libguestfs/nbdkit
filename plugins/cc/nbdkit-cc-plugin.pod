@@ -79,24 +79,38 @@ plugin parameters, eg:
  ./plugin.c -p 10000 --filter=cow
  ./plugin.c param=1
 
-=head2 Using this plugin with other programming languages
-
-This plugin can be used with most ahead-of-time compiled programming
-languages if they can create shared objects (F<.so> files).  The only
-requirement is that the compiler (C<CC>) supports an I<-o> option to
-write a shared object.  Some examples follow.
-
-=head3 Using this plugin with C++
+=head2 Using this plugin with C++
 
  nbdkit cc CC=g++ source.cpp
 
-=head3 Using this plugin with OCaml
+C++ plugin scripts can be created similarly to C, but you must add
+C<CC=g++> as a parameter to exec nbdkit.
+
+=head2 Using this plugin with OCaml
 
  nbdkit cc CC=ocamlopt \
            CFLAGS="-output-obj -runtime-variant _pic NBDKit.cmx -cclib -lnbdkitocaml" \
            source.ml
 
-See L<nbdkit-ocaml-plugin(3)>.
+OCaml plugin scripts can be created using this trick:
+
+ (*/.)>/dev/null 2>&1
+ exec nbdkit cc "$0" \
+      CC=ocamlopt \
+      CFLAGS="-output-obj -runtime-variant _pic NBDKit.cmx -cclib -lnbdkitocaml" \
+      "$@"
+ *)
+ (* followed by OCaml code for the plugin here *)
+
+As with C plugin scripts, the file must be executable.  See also
+L<nbdkit-ocaml-plugin(3)>.
+
+=head2 Using this plugin with other programming languages
+
+This plugin can be used with most ahead-of-time compiled programming
+languages if they can create shared objects (F<.so> files).  The only
+requirement is that the compiler (C<CC>) supports an I<-o> option to
+write a shared object.
 
 =head1 PARAMETERS
 
@@ -191,6 +205,8 @@ C<nbdkit-cc-plugin> first appeared in nbdkit 1.22.
 
 L<nbdkit(1)>,
 L<nbdkit-plugin(3)>,
+L<nbdkit-eval-plugin(3)>.
+L<nbdkit-ocaml-plugin(3)>.
 L<nbdkit-sh-plugin(3)>.
 
 =head1 AUTHORS

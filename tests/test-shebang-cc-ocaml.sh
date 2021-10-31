@@ -45,4 +45,9 @@ requires_nbdsh_uri
 
 $script -fv -U - \
         EXTRA_CFLAGS="-I ../plugins/ocaml -I ../plugins/ocaml/.libs" \
-        --run ' nbdsh --uri "$uri" -c "h.pread(512, 0)" '
+        size=512 \
+        --run '
+    nbdsh --uri "$uri" \
+        -c "assert(h.get_size() == 512)" \
+        -c "h.pread(512, 0)"
+'
