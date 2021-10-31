@@ -1272,7 +1272,7 @@ if HAVE_OCAML
 TESTS += test-cc-ocaml.sh
 endif
 EXTRA_DIST += \
-	shebang.c \
+	cc-shebang.c \
 	test-cc.sh \
 	test-cc-cpp.cpp \
 	test-cc-cpp.sh \

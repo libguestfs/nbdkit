@@ -42,9 +42,9 @@ if test "$SRCDIR" = ""; then
     exit 1
 fi
 
-script=$SRCDIR/shebang.c
+script=$SRCDIR/cc-shebang.c
 if test ! -f "$script"; then
-    echo "$0: could not locate shebang.c"
+    echo "$0: could not locate cc-shebang.c"
     exit 1
 fi
 
