@@ -1261,6 +1261,7 @@ TESTS += \
 endif
 EXTRA_DIST += \
 	cc-shebang.c \
+	cc_shebang.ml \
 	test-cc.sh \
 	test-cc-cpp.cpp \
 	test-cc-cpp.sh \
