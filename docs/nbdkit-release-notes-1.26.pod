@@ -30,7 +30,7 @@ nbdkit-gzip-plugin and nbdkit-tar-plugin have been removed.  They were
 deprecated in nbdkit 1.22.  The functionality has been replaced by
 L<nbdkit-gzip-filter(1)> and L<nbdkit-tar-filter(1)> respectively.
 
-L<nbdkit-streaming-plugin(1)> has been deprecated and will be removed
+nbdkit-streaming-plugin(1) has been deprecated and will be removed
 in S<nbdkit 1.30>.  You can use L<nbdcopy(1)> instead.
 
 L<nbdkit-curl-plugin(1)> adds these features: C<followlocation=false>

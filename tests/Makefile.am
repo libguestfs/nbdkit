@@ -984,21 +984,6 @@ stamp-ssh-user-key:
 endif HAVE_SSH_KEYGEN
 endif HAVE_SSH
 
-# streaming plugin test.
-LIBNBD_TESTS += test-streaming
-TESTS += \
-	test-streaming-qemu-read.sh \
-	test-streaming-qemu-write.sh \
-	$(NULL)
-EXTRA_DIST += \
-	test-streaming-qemu-read.sh \
-	test-streaming-qemu-write.sh \
-	$(NULL)
-
-test_streaming_SOURCES = test-streaming.c
-test_streaming_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
-test_streaming_LDADD = $(LIBNBD_LIBS)
-
 # tmpdisk plugin test.
 LIBGUESTFS_TESTS += test-tmpdisk
 TESTS += test-tmpdisk-command.sh

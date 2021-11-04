@@ -63,7 +63,7 @@ parameters which allow you to run a subordinate NBD server as a
 command directly from the plugin, or pass in an already connected NBD
 endpoint.
 
-L<nbdkit-streaming-plugin(1)> supports streaming to and from local
+nbdkit-streaming-plugin(1) supports streaming to and from local
 pipes.
 
 L<nbdkit-vddk-plugin(1)> now has support for VDDK 7.0.  A new and

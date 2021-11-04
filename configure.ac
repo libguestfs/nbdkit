@@ -101,7 +101,6 @@ non_lang_plugins="\
         sparse-random \
         split \
         ssh \
-        streaming \
         tmpdisk \
         torrent \
         vddk \
@@ -1307,7 +1306,6 @@ AC_CONFIG_FILES([Makefile
                  plugins/ssh/Makefile
                  plugins/sparse-random/Makefile
                  plugins/split/Makefile
-                 plugins/streaming/Makefile
                  plugins/tcl/Makefile
                  plugins/tmpdisk/Makefile
                  plugins/torrent/Makefile
