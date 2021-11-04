@@ -54,25 +54,22 @@ do_test ()
 {
     label=$1
     nrparts=$2
-    skip_extended=$3
+    ignored=$3
 
     rm -f $d/disk
     truncate -s 1G $d/disk
     sfdisk -X $label $d/disk
 
+    # The smallest partition in any test is 1023 sectors.  However
+    # to make things quicker only write a sector of random data.
+    dd if=/dev/urandom of=$d/rand bs=512 count=1
+
     # Run nbdkit on each partition, copying data in and out.
     for ((part=1; part <= $nrparts; ++part)); do
-        # The smallest partition in any test is 1023 sectors.  However
-        # to make things quicker only write a sector of random data.
-        dd if=/dev/urandom of=$d/rand bs=512 count=1
-
-        if [ "$part" != "$skip_extended" ]; then
+        if [ "$part" != "$ignored" ]; then
             nbdkit -f -v -U - \
                    --filter=partition file $d/disk partition=$part \
-                   --run "nbdcopy $d/rand \$uri"
-            nbdkit -f -v -U - \
-                   --filter=partition file $d/disk partition=$part \
-                   --run "nbdcopy \$uri $d/out"
+                   --run "nbdcopy -C 1 $d/rand \$uri && nbdcopy -C 1 \$uri $d/out"
             truncate -s 512 $d/out
             cmp $d/rand $d/out
         fi
