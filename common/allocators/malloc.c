@@ -88,16 +88,16 @@ extend (struct m_alloc *ma, uint64_t new_size)
   ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE (&ma->lock);
   size_t old_size, n;
 
-  if (ma->ba.alloc < new_size) {
-    old_size = ma->ba.alloc;
-    n = new_size - ma->ba.alloc;
+  if (ma->ba.cap < new_size) {
+    old_size = ma->ba.cap;
+    n = new_size - ma->ba.cap;
 
 #ifdef HAVE_MUNLOCK
     /* Since the memory might be moved by realloc, we must unlock the
      * original array.
      */
     if (ma->use_mlock)
-      munlock (ma->ba.ptr, ma->ba.alloc);
+      munlock (ma->ba.ptr, ma->ba.cap);
 #endif
 
     if (bytearray_reserve (&ma->ba, n) == -1) {
@@ -110,7 +110,7 @@ extend (struct m_alloc *ma, uint64_t new_size)
 
 #ifdef HAVE_MLOCK
     if (ma->use_mlock) {
-      if (mlock (ma->ba.ptr, ma->ba.alloc) == -1) {
+      if (mlock (ma->ba.ptr, ma->ba.cap) == -1) {
         nbdkit_error ("allocator=malloc: mlock: %m");
         return -1;
       }
@@ -138,11 +138,11 @@ m_alloc_read (struct allocator *a, void *buf,
   /* Avoid reading beyond the end of the allocated array.  Return
    * zeroes for that part.
    */
-  if (offset >= ma->ba.alloc)
+  if (offset >= ma->ba.cap)
     memset (buf, 0, count);
-  else if (offset + count > ma->ba.alloc) {
-    memcpy (buf, ma->ba.ptr + offset, ma->ba.alloc - offset);
-    memset (buf + ma->ba.alloc - offset, 0, offset + count - ma->ba.alloc);
+  else if (offset + count > ma->ba.cap) {
+    memcpy (buf, ma->ba.ptr + offset, ma->ba.cap - offset);
+    memset (buf + ma->ba.cap - offset, 0, offset + count - ma->ba.cap);
   }
   else
     memcpy (buf, ma->ba.ptr + offset, count);
@@ -191,9 +191,9 @@ m_alloc_zero (struct allocator *a, uint64_t count, uint64_t offset)
   /* Try to avoid extending the array, since the unallocated part
    * always reads as zero.
    */
-  if (offset < ma->ba.alloc) {
-    if (offset + count > ma->ba.alloc)
-      memset (ma->ba.ptr + offset, 0, ma->ba.alloc - offset);
+  if (offset < ma->ba.cap) {
+    if (offset + count > ma->ba.cap)
+      memset (ma->ba.ptr + offset, 0, ma->ba.cap - offset);
     else
       memset (ma->ba.ptr + offset, 0, count);
   }

@@ -86,7 +86,7 @@
   struct name {                                                         \
     type *ptr;                 /* Pointer to array of items. */         \
     size_t size;               /* Number of valid items in the array. */ \
-    size_t alloc;              /* Number of items allocated. */         \
+    size_t cap;                /* Maximum number of items. */           \
   };                                                                    \
   typedef struct name name;                                             \
                                                                         \
@@ -106,7 +106,7 @@
   name##_insert (name *v, type elem, size_t i)                          \
   {                                                                     \
     assert (i <= v->size);                                              \
-    if (v->size >= v->alloc) {                                          \
+    if (v->size >= v->cap) {                                            \
       if (name##_reserve (v, 1) == -1) return -1;                       \
     }                                                                   \
     memmove (&v->ptr[i+1], &v->ptr[i], (v->size-i) * sizeof (elem));    \
@@ -137,7 +137,7 @@
   {                                                                     \
     free (v->ptr);                                                      \
     v->ptr = NULL;                                                      \
-    v->size = v->alloc = 0;                                             \
+    v->size = v->cap = 0;                                               \
   }                                                                     \
                                                                         \
   /* Iterate over the vector, calling f() on each element. */           \
@@ -181,17 +181,17 @@
     if (newptr == NULL) return -1;                                      \
     memcpy (newptr, vptr, len);                                         \
     copy->ptr = newptr;                                                 \
-    copy->size = copy->alloc = v->size;                                 \
+    copy->size = copy->cap = v->size;                                   \
     return 0;                                                           \
   }                                                                     \
                                                                         \
 
-#define empty_vector { .ptr = NULL, .size = 0, .alloc = 0 }
+#define empty_vector { .ptr = NULL, .size = 0, .cap = 0 }
 
 struct generic_vector {
   void *ptr;
   size_t size;
-  size_t alloc;
+  size_t cap;
 };
 
 extern int generic_vector_reserve (struct generic_vector *v,
