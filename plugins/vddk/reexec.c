@@ -116,7 +116,7 @@ perform_reexec (const char *env, const char *prepend)
       nbdkit_error ("realloc: %m");
       exit (EXIT_FAILURE);
     }
-    r = read (fd, buf.ptr + buf.size, buf.alloc - buf.size);
+    r = read (fd, buf.ptr + buf.size, buf.cap - buf.size);
     if (r == -1) {
       nbdkit_error ("read: %s: %m", cmdline_file);
       exit (EXIT_FAILURE);
