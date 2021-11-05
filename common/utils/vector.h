@@ -59,14 +59,14 @@
  *
  *   string_vector names = empty_vector;
  *
- * where ‘names.ptr[]’ will be an array of strings and ‘names.size’
+ * where ‘names.ptr[]’ will be an array of strings and ‘names.len’
  * will be the number of strings.  There are no get/set accessors.  To
  * iterate over the strings you can use the ‘.ptr’ field directly:
  *
- *   for (size_t i = 0; i < names.size; ++i)
+ *   for (size_t i = 0; i < names.len; ++i)
  *     printf ("%s\n", names.ptr[i]);
  *
- * Initializing with ‘empty_vector’ sets ‘.ptr = NULL’ and ‘.size = 0’.
+ * Initializing with ‘empty_vector’ sets ‘.ptr = NULL’ and ‘.len = 0’.
  *
  * DEFINE_VECTOR_TYPE also defines utility functions.  For the full
  * list see the definition below, but useful functions include:
@@ -84,15 +84,15 @@
  */
 #define DEFINE_VECTOR_TYPE(name, type)                                  \
   struct name {                                                         \
-    type *ptr;                 /* Pointer to array of items. */         \
-    size_t size;               /* Number of valid items in the array. */ \
-    size_t cap;                /* Maximum number of items. */           \
+    type *ptr;              /* Pointer to array of items. */            \
+    size_t len;             /* Number of valid items in the array. */   \
+    size_t cap;             /* Maximum number of items. */              \
   };                                                                    \
   typedef struct name name;                                             \
                                                                         \
   /* Reserve n elements at the end of the vector.  Note space is        \
-   * allocated but the vector size is not increased and the new         \
-   * elements are not initialized.                                      \
+   * allocated and capacity is increased, but the vector length         \
+   * is not increased and the new elements are not initialized.         \
    */                                                                   \
   static inline int                                                     \
   name##_reserve (name *v, size_t n)                                    \
@@ -101,17 +101,17 @@
                                    sizeof (type));                      \
   }                                                                     \
                                                                         \
-  /* Insert at i'th element.  i=0 => beginning  i=size => append */     \
+  /* Insert at i'th element.  i=0 => beginning  i=len => append */      \
   static inline int                                                     \
   name##_insert (name *v, type elem, size_t i)                          \
   {                                                                     \
-    assert (i <= v->size);                                              \
-    if (v->size >= v->cap) {                                            \
+    assert (i <= v->len);                                               \
+    if (v->len >= v->cap) {                                             \
       if (name##_reserve (v, 1) == -1) return -1;                       \
     }                                                                   \
-    memmove (&v->ptr[i+1], &v->ptr[i], (v->size-i) * sizeof (elem));    \
+    memmove (&v->ptr[i+1], &v->ptr[i], (v->len-i) * sizeof (elem));     \
     v->ptr[i] = elem;                                                   \
-    v->size++;                                                          \
+    v->len++;                                                           \
     return 0;                                                           \
   }                                                                     \
                                                                         \
@@ -119,16 +119,16 @@
   static inline int                                                     \
   name##_append (name *v, type elem)                                    \
   {                                                                     \
-    return name##_insert (v, elem, v->size);                            \
+    return name##_insert (v, elem, v->len);                             \
   }                                                                     \
                                                                         \
-  /* Remove i'th element.  i=0 => beginning  i=size-1 => end */         \
+  /* Remove i'th element.  i=0 => beginning  i=len-1 => end */          \
   static inline void                                                    \
   name##_remove (name *v, size_t i)                                     \
   {                                                                     \
-    assert (i < v->size);                                               \
-    memmove (&v->ptr[i], &v->ptr[i+1], (v->size-i-1) * sizeof (type));  \
-    v->size--;                                                          \
+    assert (i < v->len);                                                \
+    memmove (&v->ptr[i], &v->ptr[i+1], (v->len-i-1) * sizeof (type));   \
+    v->len--;                                                           \
   }                                                                     \
                                                                         \
   /* Remove all elements and deallocate the vector. */                  \
@@ -137,7 +137,7 @@
   {                                                                     \
     free (v->ptr);                                                      \
     v->ptr = NULL;                                                      \
-    v->size = v->cap = 0;                                               \
+    v->len = v->cap = 0;                                                \
   }                                                                     \
                                                                         \
   /* Iterate over the vector, calling f() on each element. */           \
@@ -145,7 +145,7 @@
   name##_iter (name *v, void (*f) (type elem))                          \
   {                                                                     \
     size_t i;                                                           \
-    for (i = 0; i < v->size; ++i)                                       \
+    for (i = 0; i < v->len; ++i)                                        \
       f (v->ptr[i]);                                                    \
   }                                                                     \
                                                                         \
@@ -154,7 +154,7 @@
   name##_sort (name *v,                                                 \
                int (*compare) (const type *p1, const type *p2))         \
   {                                                                     \
-    qsort (v->ptr, v->size, sizeof (type), (void *) compare);           \
+    qsort (v->ptr, v->len, sizeof (type), (void *) compare);            \
   }                                                                     \
                                                                         \
   /* Search for an exactly matching element in the vector using a       \
@@ -164,7 +164,7 @@
   name##_search (const name *v, const void *key,                        \
                  int (*compare) (const void *key, const type *v))       \
   {                                                                     \
-    return bsearch (key, v->ptr, v->size, sizeof (type),                \
+    return bsearch (key, v->ptr, v->len, sizeof (type),                 \
                     (void *) compare);                                  \
   }                                                                     \
                                                                         \
@@ -175,22 +175,22 @@
     /* Note it's allowed for v and copy to be the same pointer. */      \
     type *vptr = v->ptr;                                                \
     type *newptr;                                                       \
-    size_t len = v->size * sizeof (type);                               \
+    size_t len = v->len * sizeof (type);                                \
                                                                         \
     newptr = malloc (len);                                              \
     if (newptr == NULL) return -1;                                      \
     memcpy (newptr, vptr, len);                                         \
     copy->ptr = newptr;                                                 \
-    copy->size = copy->cap = v->size;                                   \
+    copy->len = copy->cap = v->len;                                     \
     return 0;                                                           \
   }                                                                     \
                                                                         \
 
-#define empty_vector { .ptr = NULL, .size = 0, .cap = 0 }
+#define empty_vector { .ptr = NULL, .len = 0, .cap = 0 }
 
 struct generic_vector {
   void *ptr;
-  size_t size;
+  size_t len;
   size_t cap;
 };
 

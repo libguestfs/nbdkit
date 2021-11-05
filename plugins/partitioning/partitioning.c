@@ -104,7 +104,7 @@ partitioning_unload (void)
 {
   size_t i;
 
-  for (i = 0; i < the_files.size; ++i)
+  for (i = 0; i < the_files.len; ++i)
     close (the_files.ptr[i].fd);
   free (the_files.ptr);
 
@@ -116,7 +116,7 @@ partitioning_unload (void)
   free (primary);
   free (secondary);
   if (ebr) {
-    for (i = 0; i < the_files.size-3; ++i)
+    for (i = 0; i < the_files.len-3; ++i)
       free (ebr[i]);
     free (ebr);
   }
@@ -235,19 +235,19 @@ partitioning_config_complete (void)
   bool needs_gpt;
 
   /* Not enough / too many files? */
-  if (the_files.size == 0) {
+  if (the_files.len == 0) {
     nbdkit_error ("at least one file= parameter must be supplied");
     return -1;
   }
 
   total_size = 0;
-  for (i = 0; i < the_files.size; ++i)
+  for (i = 0; i < the_files.len; ++i)
     total_size += the_files.ptr[i].statbuf.st_size;
   needs_gpt = total_size > MAX_MBR_DISK_SIZE;
 
   /* Choose default parttype if not set. */
   if (parttype == PARTTYPE_UNSET) {
-    if (needs_gpt || the_files.size > 4) {
+    if (needs_gpt || the_files.len > 4) {
       parttype = PARTTYPE_GPT;
       nbdkit_debug ("picking partition type GPT");
     }
@@ -262,7 +262,7 @@ partitioning_config_complete (void)
                   "but you requested %zu partition(s) "
                   "and a total size of %" PRIu64 " bytes (> %" PRIu64 ").  "
                   "Try using: partition-type=gpt",
-                  the_files.size, total_size, (uint64_t) MAX_MBR_DISK_SIZE);
+                  the_files.len, total_size, (uint64_t) MAX_MBR_DISK_SIZE);
     return -1;
   }
 
@@ -327,7 +327,7 @@ partitioning_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
     switch (region->type) {
     case region_file:
       i = region->u.i;
-      assert (i < the_files.size);
+      assert (i < the_files.len);
       r = pread (the_files.ptr[i].fd, buf, len, offset - region->start);
       if (r == -1) {
         nbdkit_error ("pread: %s: %m", the_files.ptr[i].filename);
@@ -376,7 +376,7 @@ partitioning_pwrite (void *handle,
     switch (region->type) {
     case region_file:
       i = region->u.i;
-      assert (i < the_files.size);
+      assert (i < the_files.len);
       r = pwrite (the_files.ptr[i].fd, buf, len, offset - region->start);
       if (r == -1) {
         nbdkit_error ("pwrite: %s: %m", the_files.ptr[i].filename);
@@ -418,7 +418,7 @@ partitioning_flush (void *handle)
 {
   size_t i;
 
-  for (i = 0; i < the_files.size; ++i) {
+  for (i = 0; i < the_files.len; ++i) {
     if (fdatasync (the_files.ptr[i].fd) == -1) {
       nbdkit_error ("fdatasync: %m");
       return -1;

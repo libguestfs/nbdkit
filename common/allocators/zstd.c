@@ -136,7 +136,7 @@ zstd_array_free (struct allocator *a)
 
     ZSTD_freeCCtx (za->zcctx);
     ZSTD_freeDStream (za->zdstrm);
-    for (i = 0; i < za->l1_dir.size; ++i)
+    for (i = 0; i < za->l1_dir.len; ++i)
       free_l2_dir (za->l1_dir.ptr[i].l2_dir);
     free (za->l1_dir.ptr);
     pthread_mutex_destroy (&za->lock);
@@ -170,7 +170,7 @@ insert_l1_entry (struct zstd_array *za, const struct l1_entry *entry)
 {
   size_t i;
 
-  for (i = 0; i < za->l1_dir.size; ++i) {
+  for (i = 0; i < za->l1_dir.len; ++i) {
     if (entry->offset < za->l1_dir.ptr[i].offset) {
       /* Insert new entry before i'th directory entry. */
       if (l1_dir_insert (&za->l1_dir, *entry, i) == -1) {
@@ -600,7 +600,7 @@ zstd_array_create (const void *paramsv)
   const allocator_parameters *params  = paramsv;
   struct zstd_array *za;
 
-  if (params->size > 0) {
+  if (params->len > 0) {
     nbdkit_error ("allocator=zstd does not take extra parameters");
     return NULL;
   }

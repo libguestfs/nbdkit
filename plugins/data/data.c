@@ -158,7 +158,7 @@ get_extra_param (const char *name)
 {
   size_t i;
 
-  for (i = 0; i < params.size; ++i) {
+  for (i = 0; i < params.len; ++i) {
     if (strcmp (params.ptr[i].key, name) == 0)
       return params.ptr[i].value;
   }
@@ -176,7 +176,7 @@ data_config_complete (void)
     return -1;
   }
 
-  if (data_seen != DATA && params.size != 0) {
+  if (data_seen != DATA && params.len != 0) {
     nbdkit_error ("extra parameters passed and not using data='...'");
     return -1;
   }

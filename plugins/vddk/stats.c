@@ -94,12 +94,12 @@ display_stats (void)
 #undef STUB
 #undef OPTIONAL_STUB
 
-  qsort (stats.ptr, stats.size, sizeof stats.ptr[0], stat_compare);
+  qsort (stats.ptr, stats.len, sizeof stats.ptr[0], stat_compare);
 
   nbdkit_debug ("VDDK function stats (-D vddk.stats=1):");
   nbdkit_debug ("%-24s  %15s %5s %15s",
                 "VixDiskLib_...", "µs", "calls", "bytes");
-  for (i = 0; i < stats.size; ++i) {
+  for (i = 0; i < stats.len; ++i) {
     if (stats.ptr[i].usecs) {
       if (stats.ptr[i].bytes > 0)
         nbdkit_debug ("  %-22s %15" PRIi64 " %5" PRIu64 " %15" PRIu64,

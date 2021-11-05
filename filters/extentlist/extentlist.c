@@ -134,7 +134,7 @@ parse_extentlist (void)
 
   assert (extentlist != NULL);
   assert (extents.ptr == NULL);
-  assert (extents.size == 0);
+  assert (extents.len == 0);
 
   fp = fopen (extentlist, "r");
   if (!fp) {
@@ -200,7 +200,7 @@ parse_extentlist (void)
 
   /* There must not be overlaps at this point. */
   end = 0;
-  for (i = 0; i < extents.size; ++i) {
+  for (i = 0; i < extents.len; ++i) {
     if (extents.ptr[i].offset < end ||
         extents.ptr[i].offset + extents.ptr[i].length < extents.ptr[i].offset) {
       nbdkit_error ("extents in the extent list are overlapping");
@@ -210,8 +210,8 @@ parse_extentlist (void)
   }
 
   /* If there's a gap at the beginning, insert a hole|zero extent. */
-  if (extents.size == 0 || extents.ptr[0].offset > 0) {
-    end = extents.size == 0 ? UINT64_MAX : extents.ptr[0].offset;
+  if (extents.len == 0 || extents.ptr[0].offset > 0) {
+    end = extents.len == 0 ? UINT64_MAX : extents.ptr[0].offset;
     if (extent_list_insert (&extents,
                             (struct extent){.offset = 0, .length = end,
                                             .type = HOLE},
@@ -224,7 +224,7 @@ parse_extentlist (void)
   /* Now insert hole|zero extents after every extent where there
    * is a gap between that extent and the next one.
    */
-  for (i = 0; i < extents.size-1; ++i) {
+  for (i = 0; i < extents.len-1; ++i) {
     end = extents.ptr[i].offset + extents.ptr[i].length;
     if (end < extents.ptr[i+1].offset)
       if (extent_list_insert (&extents,
@@ -238,7 +238,7 @@ parse_extentlist (void)
   }
 
   /* If there's a gap at the end, insert a hole|zero extent. */
-  end = extents.ptr[extents.size-1].offset + extents.ptr[extents.size-1].length;
+  end = extents.ptr[extents.len-1].offset + extents.ptr[extents.len-1].length;
   if (end < UINT64_MAX) {
     if (extent_list_append (&extents,
                             (struct extent){.offset = end,
@@ -250,7 +250,7 @@ parse_extentlist (void)
   }
 
   /* Debug the final list. */
-  for (i = 0; i < extents.size; ++i) {
+  for (i = 0; i < extents.len; ++i) {
     nbdkit_debug ("extentlist: "
                   "extent[%zu] = %" PRIu64 "-%" PRIu64 " (length %" PRIu64 ")"
                   " type %" PRIu32,

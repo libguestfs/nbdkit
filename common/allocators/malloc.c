@@ -241,7 +241,7 @@ m_alloc_create (const void *paramsv)
   size_t i;
 
   /* Parse the optional mlock=true|false parameter. */
-  for (i = 0; i < params->size; ++i) {
+  for (i = 0; i < params->len; ++i) {
     if (strcmp (params->ptr[i].key, "mlock") == 0) {
       int r = nbdkit_parse_bool (params->ptr[i].value);
       if (r == -1) return NULL;

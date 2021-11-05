@@ -117,13 +117,13 @@ nbdkit_extents_free (struct nbdkit_extents *exts)
 NBDKIT_DLL_PUBLIC size_t
 nbdkit_extents_count (const struct nbdkit_extents *exts)
 {
-  return exts->extents.size;
+  return exts->extents.len;
 }
 
 NBDKIT_DLL_PUBLIC struct nbdkit_extent
 nbdkit_get_extent (const struct nbdkit_extents *exts, size_t i)
 {
-  assert (i < exts->extents.size);
+  assert (i < exts->extents.len);
   return exts->extents.ptr[i];
 }
 
@@ -160,7 +160,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
     return 0;
 
   /* Ignore extents beyond the end of the range, or if list is full. */
-  if (offset >= exts->end || exts->extents.size >= MAX_EXTENTS)
+  if (offset >= exts->end || exts->extents.len >= MAX_EXTENTS)
     return 0;
 
   /* Shorten extents that overlap the end of the range. */
@@ -169,7 +169,7 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
     length -= overlap;
   }
 
-  if (exts->extents.size == 0) {
+  if (exts->extents.len == 0) {
     /* If there are no existing extents, and the new extent is
      * entirely before start, ignore it.
      */
@@ -196,10 +196,10 @@ nbdkit_add_extent (struct nbdkit_extents *exts,
   }
 
   /* If we get here we are going to either add or extend. */
-  if (exts->extents.size > 0 &&
-      exts->extents.ptr[exts->extents.size-1].type == type) {
+  if (exts->extents.len > 0 &&
+      exts->extents.ptr[exts->extents.len-1].type == type) {
     /* Coalesce with the last extent. */
-    exts->extents.ptr[exts->extents.size-1].length += length;
+    exts->extents.ptr[exts->extents.len-1].length += length;
     return 0;
   }
   else {
@@ -226,13 +226,13 @@ nbdkit_extents_aligned (struct context *next_c,
   /* Perform an initial query, then scan for the first unaligned extent. */
   if (next->extents (next_c, count, offset, flags, exts, err) == -1)
     return -1;
-  for (i = 0; i < exts->extents.size; ++i) {
+  for (i = 0; i < exts->extents.len; ++i) {
     e = &exts->extents.ptr[i];
     if (!IS_ALIGNED(e->length, align)) {
       /* If the unalignment is past align, just truncate and return early */
       if (e->offset + e->length > offset + align) {
         e->length = ROUND_DOWN (e->length, align);
-        exts->extents.size = i + !!e->length;
+        exts->extents.len = i + !!e->length;
         exts->next = e->offset + e->length;
         break;
       }
@@ -249,7 +249,7 @@ nbdkit_extents_aligned (struct context *next_c,
        */
       assert (i == 0);
       while (e->length < align) {
-        if (exts->extents.size > 1) {
+        if (exts->extents.len > 1) {
           e->length += exts->extents.ptr[1].length;
           e->type &= exts->extents.ptr[1].type;
           extents_remove (&exts->extents, 1);
@@ -284,7 +284,7 @@ nbdkit_extents_aligned (struct context *next_c,
         }
       }
       e->length = align;
-      exts->extents.size = 1;
+      exts->extents.len = 1;
       exts->next = e->offset + e->length;
       break;
     }

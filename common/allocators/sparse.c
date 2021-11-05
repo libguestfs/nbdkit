@@ -150,7 +150,7 @@ sparse_array_free (struct allocator *a)
   size_t i;
 
   if (sa) {
-    for (i = 0; i < sa->l1_dir.size; ++i)
+    for (i = 0; i < sa->l1_dir.len; ++i)
       free_l2_dir (sa->l1_dir.ptr[i].l2_dir);
     free (sa->l1_dir.ptr);
     pthread_mutex_destroy (&sa->lock);
@@ -184,7 +184,7 @@ insert_l1_entry (struct sparse_array *sa, const struct l1_entry *entry)
 {
   size_t i;
 
-  for (i = 0; i < sa->l1_dir.size; ++i) {
+  for (i = 0; i < sa->l1_dir.len; ++i) {
     if (entry->offset < sa->l1_dir.ptr[i].offset) {
       /* Insert new entry before i'th directory entry. */
       if (l1_dir_insert (&sa->l1_dir, *entry, i) == -1) {
@@ -508,7 +508,7 @@ sparse_array_create (const void *paramsv)
   const allocator_parameters *params  = paramsv;
   struct sparse_array *sa;
 
-  if (params->size > 0) {
+  if (params->len > 0) {
     nbdkit_error ("allocator=sparse does not take extra parameters");
     return NULL;
   }

@@ -84,17 +84,17 @@ extern void free_regions (regions *regions)
 static inline size_t __attribute__((__nonnull__ (1)))
 nr_regions (regions *rs)
 {
-  return rs->size;
+  return rs->len;
 }
 
 /* Return the virtual size of the disk. */
 static inline int64_t __attribute__((__nonnull__ (1)))
 virtual_size (regions *rs)
 {
-  if (rs->size == 0)
+  if (rs->len == 0)
     return 0;
   else
-    return rs->ptr[rs->size-1].end + 1;
+    return rs->ptr[rs->len-1].end + 1;
 }
 
 /* Look up the region corresponding to the given offset.  If the

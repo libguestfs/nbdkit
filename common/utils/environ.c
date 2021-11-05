@@ -82,7 +82,7 @@ copy_environ (char **env, ...)
 
     /* Search for key in the existing environment.  It's O(n^2) ... */
     len = strlen (key);
-    for (i = 0; i < ret.size; ++i) {
+    for (i = 0; i < ret.len; ++i) {
       if (strncmp (key, ret.ptr[i], len) == 0 && ret.ptr[i][len] == '=') {
         /* Replace the existing key. */
         free (ret.ptr[i]);

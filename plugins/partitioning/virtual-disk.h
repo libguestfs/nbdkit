@@ -55,7 +55,7 @@
  * 32 if the number of files is <= GPT_MIN_PARTITIONS, which is the
  * normal case.
  */
-#define GPT_PTA_SIZE ROUND_UP (the_files.size, GPT_MIN_PARTITIONS)
+#define GPT_PTA_SIZE ROUND_UP (the_files.len, GPT_MIN_PARTITIONS)
 #define GPT_PTA_LBAs (GPT_PTA_SIZE * GPT_PT_ENTRY_SIZE / SECTOR_SIZE)
 
 /* Maximum possible and default alignment between partitions. */

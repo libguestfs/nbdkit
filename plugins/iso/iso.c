@@ -105,7 +105,7 @@ make_iso (void)
   fprintf (fp, " -quiet");
   if (params)
     fprintf (fp, " %s", params);
-  for (i = 0; i < dirs.size; ++i) {
+  for (i = 0; i < dirs.len; ++i) {
     fputc (' ', fp);
     shell_quote (dirs.ptr[i], fp);
   }
@@ -169,7 +169,7 @@ iso_config (const char *key, const char *value)
 static int
 iso_config_complete (void)
 {
-  if (dirs.size == 0) {
+  if (dirs.len == 0) {
     nbdkit_error ("you must supply the dir=<DIRECTORY> parameter "
                   "after the plugin name on the command line");
     return -1;

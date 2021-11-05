@@ -130,9 +130,9 @@ print_command (void)
 {
   size_t i;
 
-  if (cmd.size > 0)
+  if (cmd.len > 0)
     shell_quote (cmd.ptr[0], stderr);
-  for (i = 1; i < cmd.size && cmd.ptr[i] != NULL; ++i) {
+  for (i = 1; i < cmd.len && cmd.ptr[i] != NULL; ++i) {
     fputc (' ', stderr);
     shell_quote (cmd.ptr[i], stderr);
   }

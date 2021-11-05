@@ -246,14 +246,14 @@ bind_tcpip_socket (sockets *socks)
 
   freeaddrinfo (ai);
 
-  if (socks->size == 0 && addr_in_use) {
+  if (socks->len == 0 && addr_in_use) {
     fprintf (stderr, "%s: unable to bind to any sockets: %s\n",
              program_name, strerror (EADDRINUSE));
     exit (EXIT_FAILURE);
   }
 
   debug ("bound to IP address %s:%s (%zu socket(s))",
-         ipaddr ? ipaddr : "<any>", port, socks->size);
+         ipaddr ? ipaddr : "<any>", port, socks->len);
 }
 
 void
@@ -443,7 +443,7 @@ accept_connection (int listen_sock)
 static void
 check_sockets_and_quit_fd (const sockets *socks)
 {
-  const size_t nr_socks = socks->size;
+  const size_t nr_socks = socks->len;
   size_t i;
   int r;
 
@@ -552,7 +552,7 @@ accept_incoming_connections (const sockets *socks)
   }
   pthread_mutex_unlock (&count_mutex);
 
-  for (i = 0; i < socks->size; ++i)
+  for (i = 0; i < socks->len; ++i)
     closesocket (socks->ptr[i]);
   free (socks->ptr);
 }

@@ -137,7 +137,7 @@ create_allocator (const char *type, bool debug)
     return NULL;
 
   /* See if we can find the allocator. */
-  for (i = 0; i < allocators.size; ++i) {
+  for (i = 0; i < allocators.len; ++i) {
     if (strncmp (type, allocators.ptr[i]->type, type_len) == 0) {
       ret = allocators.ptr[i]->create (&params);
       break;

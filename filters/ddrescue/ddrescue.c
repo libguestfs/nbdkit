@@ -180,7 +180,7 @@ ddrescue_pread (nbdkit_next *next,
 {
   size_t i;
 
-  for (i = 0; i < map.ranges.size; i++) {
+  for (i = 0; i < map.ranges.len; i++) {
     if (map.ranges.ptr[i].status != '+')
       continue;
     if (offset >= map.ranges.ptr[i].start && offset <= map.ranges.ptr[i].end) {

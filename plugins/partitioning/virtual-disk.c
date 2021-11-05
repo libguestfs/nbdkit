@@ -56,7 +56,7 @@ create_virtual_disk_layout (void)
   size_t i;
 
   assert (nr_regions (&the_regions) == 0);
-  assert (the_files.size > 0);
+  assert (the_files.len > 0);
   assert (primary == NULL);
   assert (secondary == NULL);
 
@@ -68,17 +68,17 @@ create_virtual_disk_layout (void)
       return -1;
     }
 
-    if (the_files.size > 4) {
+    if (the_files.len > 4) {
       /* The first 3 primary partitions will be real partitions, the
        * 4th will be an extended partition, and so we need to store
        * EBRs for the_files.size-3 logical partitions.
        */
-      ebr = malloc (sizeof (unsigned char *) * (the_files.size-3));
+      ebr = malloc (sizeof (unsigned char *) * (the_files.len-3));
       if (ebr == NULL) {
         nbdkit_error ("malloc: %m");
         return -1;
       }
-      for (i = 0; i < the_files.size-3; ++i) {
+      for (i = 0; i < the_files.len-3; ++i) {
         ebr[i] = calloc (1, SECTOR_SIZE);
         if (ebr[i] == NULL) {
           nbdkit_error ("malloc: %m");
@@ -117,7 +117,7 @@ create_virtual_disk_layout (void)
   }
 
   /* The partitions. */
-  for (i = 0; i < the_files.size; ++i) {
+  for (i = 0; i < the_files.len; ++i) {
     uint64_t offset;
 
     offset = virtual_size (&the_regions);
@@ -127,7 +127,7 @@ create_virtual_disk_layout (void)
     assert (IS_ALIGNED (offset, SECTOR_SIZE));
 
     /* Logical partitions are preceeded by an EBR. */
-    if (parttype == PARTTYPE_MBR && the_files.size > 4 && i >= 3) {
+    if (parttype == PARTTYPE_MBR && the_files.len > 4 && i >= 3) {
       if (append_region_len (&the_regions, "EBR",
                              SECTOR_SIZE, 0, 0,
                              region_data, ebr[i-3]) == -1)

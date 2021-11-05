@@ -292,12 +292,12 @@ cc_config_complete (void)
   if (subplugin.load)
     subplugin.load ();
   if (subplugin.config) {
-    for (i = 0; i < params.size; ++i) {
+    for (i = 0; i < params.len; ++i) {
       if (subplugin.config (params.ptr[i].key, params.ptr[i].value) == -1)
         return -1;
     }
   }
-  else if (params.size > 0) {
+  else if (params.len > 0) {
     /* Just print the first one in the error message. */
     nbdkit_error ("unknown parameter: %s", params.ptr[0].key);
     return -1;
