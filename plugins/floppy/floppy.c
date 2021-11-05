@@ -172,7 +172,7 @@ floppy_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
     switch (region->type) {
     case region_file:
       i = region->u.i;
-      assert (i < floppy.files.size);
+      assert (i < floppy.files.len);
       host_path = floppy.files.ptr[i].host_path;
       fd = open (host_path, O_RDONLY|O_CLOEXEC);
       if (fd == -1) {

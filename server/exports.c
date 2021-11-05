@@ -90,13 +90,13 @@ nbdkit_exports_free (struct nbdkit_exports *exps)
 NBDKIT_DLL_PUBLIC size_t
 nbdkit_exports_count (const struct nbdkit_exports *exps)
 {
-  return exps->exports.size;
+  return exps->exports.len;
 }
 
 NBDKIT_DLL_PUBLIC const struct nbdkit_export
 nbdkit_get_export (const struct nbdkit_exports *exps, size_t i)
 {
-  assert (i < exps->exports.size);
+  assert (i < exps->exports.len);
   return exps->exports.ptr[i];
 }
 
@@ -106,7 +106,7 @@ nbdkit_add_export (struct nbdkit_exports *exps,
 {
   struct nbdkit_export e = { NULL, NULL };
 
-  if (exps->exports.size == MAX_EXPORTS) {
+  if (exps->exports.len == MAX_EXPORTS) {
     nbdkit_error ("nbdkit_add_export: too many exports");
     errno = EINVAL;
     return -1;

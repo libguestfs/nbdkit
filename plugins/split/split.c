@@ -121,13 +121,13 @@ split_open (int readonly)
     return NULL;
   }
 
-  h->files = malloc (filenames.size * sizeof (struct file));
+  h->files = malloc (filenames.len * sizeof (struct file));
   if (h->files == NULL) {
     nbdkit_error ("malloc: %m");
     free (h);
     return NULL;
   }
-  for (i = 0; i < filenames.size; ++i)
+  for (i = 0; i < filenames.len; ++i)
     h->files[i].fd = -1;
 
   /* Open the files. */
@@ -137,7 +137,7 @@ split_open (int readonly)
   else
     flags |= O_RDWR;
 
-  for (i = 0; i < filenames.size; ++i) {
+  for (i = 0; i < filenames.len; ++i) {
     h->files[i].fd = open (filenames.ptr[i], flags);
     if (h->files[i].fd == -1) {
       nbdkit_error ("open: %s: %m", filenames.ptr[i]);
@@ -146,7 +146,7 @@ split_open (int readonly)
   }
 
   offset = 0;
-  for (i = 0; i < filenames.size; ++i) {
+  for (i = 0; i < filenames.len; ++i) {
     h->files[i].offset = offset;
 
     if (fstat (h->files[i].fd, &statbuf) == -1) {
@@ -179,7 +179,7 @@ split_open (int readonly)
   return h;
 
  err:
-  for (i = 0; i < filenames.size; ++i) {
+  for (i = 0; i < filenames.len; ++i) {
     if (h->files[i].fd >= 0)
       close (h->files[i].fd);
   }
@@ -195,7 +195,7 @@ split_close (void *handle)
   struct handle *h = handle;
   size_t i;
 
-  for (i = 0; i < filenames.size; ++i)
+  for (i = 0; i < filenames.len; ++i)
     close (h->files[i].fd);
   free (h->files);
   free (h);
@@ -242,7 +242,7 @@ static struct file *
 get_file (struct handle *h, uint64_t offset)
 {
   return bsearch (&offset, h->files,
-                  filenames.size, sizeof (struct file),
+                  filenames.len, sizeof (struct file),
                   compare_offset);
 }
 

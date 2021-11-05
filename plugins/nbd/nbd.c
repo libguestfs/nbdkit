@@ -244,7 +244,7 @@ static int
 nbdplug_config_complete (void)
 {
   int c = !!sockname + !!hostname + !!uri +
-    (command.size > 0) + (socket_fd >= 0) + !!raw_cid;
+    (command.len > 0) + (socket_fd >= 0) + !!raw_cid;
 
   /* Check the user passed exactly one connection parameter. */
   if (c > 1) {
@@ -303,7 +303,7 @@ nbdplug_config_complete (void)
       return -1;
 #endif
   }
-  else if (command.size > 0) {
+  else if (command.len > 0) {
     /* Add NULL sentinel to the command. */
     if (string_vector_append (&command, NULL) == -1) {
       nbdkit_error ("realloc: %m");
@@ -574,7 +574,7 @@ nbdplug_connect (struct nbd_handle *nbd)
 #else
     return nbd_connect_vsock (nbd, cid, vport);
 #endif
-  else if (command.size > 0)
+  else if (command.len > 0)
     return nbd_connect_systemd_socket_activation (nbd, (char **) command.ptr);
   else if (socket_fd >= 0)
     return nbd_connect_socket (nbd, socket_fd);

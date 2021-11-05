@@ -397,7 +397,7 @@ ssh_open (int readonly)
      * as this file is rarely present.
      */
   }
-  for (i = 0; i < identities.size; ++i) {
+  for (i = 0; i < identities.len; ++i) {
     r = ssh_options_set (h->session,
                          SSH_OPTIONS_ADD_IDENTITY, identities.ptr[i]);
     if (r != SSH_OK) {

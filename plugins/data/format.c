@@ -83,7 +83,7 @@ substring (string s, size_t offset, size_t len)
   string r = empty_vector;
 
   for (i = 0; i < len; ++i) {
-    assert (offset+i < s.size);
+    assert (offset+i < s.len);
     if (string_append (&r, s.ptr[offset+i]) == -1) {
       nbdkit_error ("realloc: %m");
       exit (EXIT_FAILURE);
@@ -167,7 +167,7 @@ static expr_list expr_table;
 static node_id
 new_node (const expr_t e)
 {
-  if (expr_table.size == 0) {
+  if (expr_table.len == 0) {
     static const expr_t enull = { .t = EXPR_NULL };
     if (expr_list_append (&expr_table, enull) == -1)
       goto out_of_memory;
@@ -179,14 +179,14 @@ new_node (const expr_t e)
     nbdkit_error ("realloc");
     exit (EXIT_FAILURE);
   }
-  return expr_table.size-1;
+  return expr_table.len-1;
 }
 
 /* Get an expression by node_id. */
 static expr_t
 get_node (node_id id)
 {
-  assert (id < expr_table.size);
+  assert (id < expr_table.len);
   return expr_table.ptr[id];
 }
 
@@ -196,7 +196,7 @@ free_expr_table (void)
   size_t i;
   expr_t e;
 
-  for (i = 0; i < expr_table.size; ++i) {
+  for (i = 0; i < expr_table.len; ++i) {
     e = get_node (i);
     switch (e.t) {
     case EXPR_LIST:   free (e.list.ptr); break;
@@ -344,7 +344,7 @@ debug_expr (node_id id, int level)
     break;
   case EXPR_LIST:
     nbdkit_debug ("%s(", debug_indent (level));
-    for (i = 0; i < e.list.size; ++i)
+    for (i = 0; i < e.list.len; ++i)
       debug_expr (e.list.ptr[i], level+1);
     nbdkit_debug ("%s)", debug_indent (level));
     break;
@@ -370,7 +370,7 @@ debug_expr (node_id id, int level)
     CLEANUP_FREE_STRING string s = empty_vector;
     static const char hex[] = "0123456789abcdef";
 
-    for (i = 0; i < e.string.size; ++i) {
+    for (i = 0; i < e.string.len; ++i) {
       char c = e.string.ptr[i];
       if (ascii_isprint ((char) c))
         string_append (&s, e.string.ptr[i]);
@@ -445,7 +445,7 @@ read_data_format (const char *value, struct allocator *a, uint64_t *size_rtn)
   uint64_t offset = 0;
   int r = -1;
 
-  assert (expr_table.size == 0);
+  assert (expr_table.len == 0);
 
   /* Run the parser across the entire string, returning the top level
    * expression.
@@ -600,11 +600,11 @@ parser (int level, const char *value, size_t *start, size_t len,
 
     case '*':                   /* expr*N */
       i++;
-      if (list.size == 0) {
+      if (list.len == 0) {
         nbdkit_error ("*N must follow an expression");
         return -1;
       }
-      if (! is_data_expr (get_node (list.ptr[list.size-1]))) {
+      if (! is_data_expr (get_node (list.ptr[list.len-1]))) {
         nbdkit_error ("*N cannot be applied to this type of expression");
         return -1;
       }
@@ -619,18 +619,18 @@ parser (int level, const char *value, size_t *start, size_t len,
         nbdkit_error ("*N not numeric");
         return -1;
       }
-      id = list.ptr[list.size-1];
-      list.size--;
+      id = list.ptr[list.len-1];
+      list.len--;
       APPEND_EXPR (new_node (expr (EXPR_REPEAT, id, (uint64_t) i64)));
       break;
 
     case '[':                 /* expr[k:m] */
       i++;
-      if (list.size == 0) {
+      if (list.len == 0) {
         nbdkit_error ("[N:M] must follow an expression");
         return -1;
       }
-      if (! is_data_expr (get_node (list.ptr[list.size-1]))) {
+      if (! is_data_expr (get_node (list.ptr[list.len-1]))) {
         nbdkit_error ("[N:M] cannot be applied to this type of expression");
         return -1;
       }
@@ -647,8 +647,8 @@ parser (int level, const char *value, size_t *start, size_t len,
         nbdkit_error ("enclosed pattern (...)[N:M] not numeric");
         return -1;
       }
-      id = list.ptr[list.size-1];
-      list.size--;
+      id = list.ptr[list.len-1];
+      list.len--;
       APPEND_EXPR (new_node (expr (EXPR_SLICE, id, i64, m)));
       break;
 
@@ -720,11 +720,11 @@ parser (int level, const char *value, size_t *start, size_t len,
       i++;
       if (value[i] != '>') goto parse_error;
       i++;
-      if (list.size == 0) {
+      if (list.len == 0) {
         nbdkit_error ("-> must follow an expression");
         return -1;
       }
-      if (! is_data_expr (get_node (list.ptr[list.size-1]))) {
+      if (! is_data_expr (get_node (list.ptr[list.len-1]))) {
         nbdkit_error ("-> cannot be applied to this type of expression");
         return -1;
       }
@@ -735,9 +735,9 @@ parser (int level, const char *value, size_t *start, size_t len,
         nbdkit_error ("strndup: %m");
         return -1;
       }
-      id = list.ptr[list.size-1];
+      id = list.ptr[list.len-1];
       i += flen;
-      list.size--;
+      list.len--;
       APPEND_EXPR (new_node (expr (EXPR_ASSIGN, name, id)));
       break;
     }
@@ -1023,7 +1023,7 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
   }
   memcpy (copy.ptr, &value[*start], n);
   copy.ptr[n] = '\0';
-  copy.size = n + 1;
+  copy.len = n + 1;
   *start = i;
 
   /* Reserve enough space in the return buffer for the longest
@@ -1036,22 +1036,22 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
 
   /* Parse the rest of {le|be}{16|32|64}: */
   if (strncmp (copy.ptr, "le16:", 5) == 0) {
-    endian = little; rtn->size = 2;
+    endian = little; rtn->len = 2;
   }
   else if (strncmp (copy.ptr, "le32:", 5) == 0) {
-    endian = little; rtn->size = 4;
+    endian = little; rtn->len = 4;
   }
   else if (strncmp (copy.ptr, "le64:", 5) == 0) {
-    endian = little; rtn->size = 8;
+    endian = little; rtn->len = 8;
   }
   else if (strncmp (copy.ptr, "be16:", 5) == 0) {
-    endian = big; rtn->size = 2;
+    endian = big; rtn->len = 2;
   }
   else if (strncmp (copy.ptr, "be32:", 5) == 0) {
-    endian = big; rtn->size = 4;
+    endian = big; rtn->len = 4;
   }
   else if (strncmp (copy.ptr, "be64:", 5) == 0) {
-    endian = big; rtn->size = 8;
+    endian = big; rtn->len = 8;
   }
   else {
     nbdkit_error ("data parameter: expected \"le16/32/64:\" "
@@ -1060,7 +1060,7 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
   }
 
   /* Parse the word field into a host-order unsigned int. */
-  switch (rtn->size) {
+  switch (rtn->len) {
   case 2:
     if (nbdkit_parse_uint16_t ("data", &copy.ptr[5], &u16) == -1)
       return -1;
@@ -1081,7 +1081,7 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
    */
   switch (endian) {
   case little:
-    switch (rtn->size) {
+    switch (rtn->len) {
     case 2:                     /* le16: */
       *((uint16_t *) rtn->ptr) = htole16 (u16);
       break;
@@ -1096,7 +1096,7 @@ parse_word (const char *value, size_t *start, size_t len, string *rtn)
     break;
 
   case big:
-    switch (rtn->size) {
+    switch (rtn->len) {
     case 2:                     /* be16: */
       *((uint16_t *) rtn->ptr) = htobe16 (u16);
       break;
@@ -1134,7 +1134,7 @@ optimize_ast (node_id root, node_id *root_rtn)
     /* For convenience this makes a new list node. */
 
     /* Optimize each element of the list. */
-    for (i = 0; i < get_node (root).list.size; ++i) {
+    for (i = 0; i < get_node (root).list.len; ++i) {
       id = get_node (root).list.ptr[i];
       if (optimize_ast (id, &id) == -1)
         return -1;
@@ -1148,7 +1148,7 @@ optimize_ast (node_id root, node_id *root_rtn)
          * because flattening the list changes the scope.
          */
         if (list_safe_to_inline (get_node (id).list)) {
-          for (j = 0; j < get_node (id).list.size; ++j) {
+          for (j = 0; j < get_node (id).list.len; ++j) {
             if (node_ids_append (&list, get_node (id).list.ptr[j]) == -1)
               goto list_append_error;
           }
@@ -1165,7 +1165,7 @@ optimize_ast (node_id root, node_id *root_rtn)
     }
 
     /* Combine adjacent pairs of elements if possible. */
-    for (i = 1; i < list.size; ++i) {
+    for (i = 1; i < list.len; ++i) {
       node_id id0, id1;
 
       id0 = list.ptr[i-1];
@@ -1178,7 +1178,7 @@ optimize_ast (node_id root, node_id *root_rtn)
     }
 
     /* List of length 0 is replaced with null. */
-    if (list.size == 0) {
+    if (list.len == 0) {
       free (list.ptr);
       *root_rtn = new_node (expr (EXPR_NULL));
       return 0;
@@ -1187,7 +1187,7 @@ optimize_ast (node_id root, node_id *root_rtn)
     /* List of length 1 is replaced with the first element, but as
      * above avoid inlining if it is not a safe expression.
      */
-    if (list.size == 1 && expr_safe_to_inline (get_node (list.ptr[0]))) {
+    if (list.len == 1 && expr_safe_to_inline (get_node (list.ptr[0]))) {
       id = list.ptr[0];
       free (list.ptr);
       *root_rtn = id;
@@ -1242,13 +1242,13 @@ optimize_ast (node_id root, node_id *root_rtn)
      */
     if (get_node (id).t == EXPR_STRING &&
         get_node (root).r.n <= 4 &&
-        get_node (id).string.size <= 512) {
+        get_node (id).string.len <= 512) {
       string s = empty_vector;
       size_t n = get_node (root).r.n;
       const string sub = get_node (id).string;
 
       for (i = 0; i < n; ++i) {
-        for (j = 0; j < sub.size; ++j) {
+        for (j = 0; j < sub.len; ++j) {
           if (string_append (&s, sub.ptr[j]) == -1) {
             nbdkit_error ("realloc: %m");
             return -1;
@@ -1307,7 +1307,7 @@ optimize_ast (node_id root, node_id *root_rtn)
       }
       break;
     case EXPR_STRING:           /* substring */
-      len = get_node (id).string.size;
+      len = get_node (id).string.len;
       if (m >= 0 && n <= m && m <= len) {
         if (m-n == 1)
           *root_rtn = new_node (expr (EXPR_BYTE, get_node (id).string.ptr[n]));
@@ -1355,23 +1355,23 @@ optimize_ast (node_id root, node_id *root_rtn)
 
   case EXPR_STRING:
     /* A zero length string can be replaced with null. */
-    if (get_node (root).string.size == 0) {
+    if (get_node (root).string.len == 0) {
       *root_rtn = new_node (expr (EXPR_NULL));
       return 0;
     }
     /* Strings containing the same character can be replaced by a
      * fill.  These can be produced by other optimizations.
      */
-    if (get_node (root).string.size > 1) {
+    if (get_node (root).string.len > 1) {
       const string s = get_node (root).string;
       uint8_t b = s.ptr[0];
 
-      for (i = 1; i < s.size; ++i)
+      for (i = 1; i < s.len; ++i)
         if (s.ptr[i] != b)
           break;
 
-      if (i == s.size) {
-        *root_rtn = new_node (expr (EXPR_FILL, b, (uint64_t) s.size));
+      if (i == s.len) {
+        *root_rtn = new_node (expr (EXPR_FILL, b, (uint64_t) s.len));
         return 0;
       }
     }
@@ -1442,7 +1442,7 @@ list_safe_to_inline (const node_ids list)
 {
   size_t i;
 
-  for (i = 0; i < list.size; ++i) {
+  for (i = 0; i < list.len; ++i) {
     if (!expr_safe_to_inline (get_node (list.ptr[i])))
       return false;
   }
@@ -1461,11 +1461,11 @@ expr_is_single_byte (const expr_t e, uint8_t *b)
     if (b) *b = e.b;
     return true;
   case EXPR_LIST:               /* A single element list if it is single byte */
-    if (e.list.size != 1)
+    if (e.list.len != 1)
       return false;
     return expr_is_single_byte (get_node (e.list.ptr[0]), b);
   case EXPR_STRING:             /* A length-1 string. */
-    if (e.string.size != 1)
+    if (e.string.len != 1)
       return false;
     if (b) *b = e.string.ptr[0];
     return true;
@@ -1511,10 +1511,10 @@ exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn)
       }
       return true;
     case EXPR_STRING:           /* byte string => string */
-      len = e1.string.size;
+      len = e1.string.len;
       if (string_reserve (&s, len+1) == -1)
         goto out_of_memory;
-      s.size = len+1;
+      s.len = len+1;
       s.ptr[0] = e0.b;
       memcpy (&s.ptr[1], e1.string.ptr, len);
       *id_rtn = new_node (expr (EXPR_STRING, s));
@@ -1533,20 +1533,20 @@ exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn)
   case EXPR_STRING:
     switch (e1.t) {
     case EXPR_BYTE:             /* string byte => string */
-      len = e0.string.size;
+      len = e0.string.len;
       if (string_reserve (&s, len+1) == -1)
         goto out_of_memory;
-      s.size = len+1;
+      s.len = len+1;
       memcpy (s.ptr, e0.string.ptr, len);
       s.ptr[len] = e1.b;
       *id_rtn = new_node (expr (EXPR_STRING, s));
       return true;
     case EXPR_STRING:           /* string string => string */
-      len = e0.string.size;
-      len1 = e1.string.size;
+      len = e0.string.len;
+      len1 = e1.string.len;
       if (string_reserve (&s, len+len1) == -1)
         goto out_of_memory;
-      s.size = len+len1;
+      s.len = len+len1;
       memcpy (s.ptr, e0.string.ptr, len);
       memcpy (&s.ptr[len], e1.string.ptr, len1);
       *id_rtn = new_node (expr (EXPR_STRING, s));
@@ -1618,11 +1618,11 @@ evaluate (const dict_t *dict, node_id root,
     list = get_node (root).list;
   }
   else {
-    list.size = 1;
+    list.len = 1;
     list.ptr = &root;
   }
 
-  for (i = 0; i < list.size; ++i) {
+  for (i = 0; i < list.len; ++i) {
     const expr_t e = get_node (list.ptr[i]);
 
     switch (e.t) {
@@ -1667,9 +1667,9 @@ evaluate (const dict_t *dict, node_id root,
 
     case EXPR_STRING:
       /* Copy the string into the allocator. */
-      if (a->f->write (a, e.string.ptr, e.string.size, *offset) == -1)
+      if (a->f->write (a, e.string.ptr, e.string.len, *offset) == -1)
         return -1;
-      *offset += e.string.size;
+      *offset += e.string.len;
       break;
 
     case EXPR_FILL:

@@ -116,20 +116,20 @@ perform_reexec (const char *env, const char *prepend)
       nbdkit_error ("realloc: %m");
       exit (EXIT_FAILURE);
     }
-    r = read (fd, buf.ptr + buf.size, buf.cap - buf.size);
+    r = read (fd, buf.ptr + buf.len, buf.cap - buf.len);
     if (r == -1) {
       nbdkit_error ("read: %s: %m", cmdline_file);
       exit (EXIT_FAILURE);
     }
     if (r == 0)
       break;
-    buf.size += r;
+    buf.len += r;
   }
   close (fd);
-  nbdkit_debug ("original command line occupies %zu bytes", buf.size);
+  nbdkit_debug ("original command line occupies %zu bytes", buf.len);
 
   /* Split cmdline into argv, then append one more arg. */
-  for (len = 0; len < buf.size; len += strlen (buf.ptr + len) + 1) {
+  for (len = 0; len < buf.len; len += strlen (buf.ptr + len) + 1) {
     char *arg = buf.ptr + len;  /* Next \0-terminated argument. */
 
     /* See below for why we eat password parameter(s). */

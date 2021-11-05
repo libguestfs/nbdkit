@@ -207,14 +207,14 @@ multi_conn_prepare (nbdkit_next *next, void *handle, int readonly)
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   if (byname) {
     g = NULL;
-    for (i = 0; i < groups.size; i++)
+    for (i = 0; i < groups.len; i++)
       if (strcmp (groups.ptr[i]->name, h->name) == 0) {
         g = groups.ptr[i];
         break;
       }
   }
   else
-    g = groups.size ? groups.ptr[0] : NULL;
+    g = groups.len ? groups.ptr[0] : NULL;
 
   if (!g) {
     g = calloc (1, sizeof *g);
@@ -230,7 +230,7 @@ multi_conn_prepare (nbdkit_next *next, void *handle, int readonly)
   }
   if (conns_vector_append (&g->conns, h) == -1) {
     if (new_group) {
-      group_vector_remove (&groups, groups.size - 1);
+      group_vector_remove (&groups, groups.len - 1);
       free (g->name);
       free (g);
     }
@@ -251,14 +251,14 @@ multi_conn_finalize (nbdkit_next *next, void *handle)
   assert (h->group);
 
   /* XXX should we add a config param to flush if the client forgot? */
-  for (i = 0; i < h->group->conns.size; i++) {
+  for (i = 0; i < h->group->conns.len; i++) {
     if (h->group->conns.ptr[i] == h) {
       conns_vector_remove (&h->group->conns, i);
       break;
     }
   }
-  if (h->group->conns.size == 0) {
-    for (i = 0; i < groups.size; i++)
+  if (h->group->conns.len == 0) {
+    for (i = 0; i < groups.len; i++)
       if (groups.ptr[i] == h->group) {
         group_vector_remove (&groups, i);
         free (h->group->name);
@@ -451,7 +451,7 @@ multi_conn_flush (nbdkit_next *next,
   assert (h->group);
   if (h->mode == EMULATE) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    for (i = 0; i < h->group->conns.size; i++) {
+    for (i = 0; i < h->group->conns.len; i++) {
       h2 = h->group->conns.ptr[i];
       if (track == OFF || (h->group->dirty &&
                            (track == FAST || h2->dirty & READ)) ||
@@ -474,7 +474,7 @@ multi_conn_flush (nbdkit_next *next,
     case CONN:
       if (next->can_multi_conn (next) == 1) {
         ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-        for (i = 0; i < h->group->conns.size; i++)
+        for (i = 0; i < h->group->conns.len; i++)
           h->group->conns.ptr[i]->dirty = 0;
         h->group->dirty = 0;
       }

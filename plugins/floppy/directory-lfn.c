@@ -79,8 +79,8 @@ create_directory (size_t di, const char *label,
                   struct virtual_floppy *floppy)
 {
   size_t i;
-  const size_t nr_subdirs = floppy->dirs.ptr[di].subdirs.size;
-  const size_t nr_files = floppy->dirs.ptr[di].fileidxs.size;
+  const size_t nr_subdirs = floppy->dirs.ptr[di].subdirs.len;
+  const size_t nr_files = floppy->dirs.ptr[di].fileidxs.len;
   struct lfn *lfns, *lfn;
   const char *name;
   uint8_t attributes;
@@ -109,14 +109,14 @@ create_directory (size_t di, const char *label,
   }
   for (i = 0; i < nr_subdirs; ++i) {
     const size_t sdi = floppy->dirs.ptr[di].subdirs.ptr[i];
-    assert (sdi < floppy->dirs.size);
+    assert (sdi < floppy->dirs.len);
 
     name = floppy->dirs.ptr[sdi].name;
     lfns[i].name = name;
   }
   for (i = 0; i < nr_files; ++i) {
     const size_t fi = floppy->dirs.ptr[di].fileidxs.ptr[i];
-    assert (fi < floppy->files.size);
+    assert (fi < floppy->files.len);
 
     name = floppy->files.ptr[fi].name;
     lfns[nr_subdirs+i].name = name;
@@ -132,7 +132,7 @@ create_directory (size_t di, const char *label,
   file_size = 0;
   for (i = 0; i < nr_subdirs; ++i) {
     const size_t sdi = floppy->dirs.ptr[di].subdirs.ptr[i];
-    assert (sdi < floppy->dirs.size);
+    assert (sdi < floppy->dirs.len);
 
     lfn = &lfns[i];
     statbuf = &floppy->dirs.ptr[sdi].statbuf;
@@ -148,7 +148,7 @@ create_directory (size_t di, const char *label,
   attributes = DIR_ENTRY_ARCHIVE; /* Same as set by Linux kernel. */
   for (i = 0; i < nr_files; ++i) {
     const size_t fi = floppy->dirs.ptr[di].fileidxs.ptr[i];
-    assert (fi < floppy->files.size);
+    assert (fi < floppy->files.len);
 
     lfn = &lfns[nr_subdirs+i];
     statbuf = &floppy->files.ptr[fi].statbuf;
@@ -532,7 +532,7 @@ append_dir_table (size_t di, const struct dir_entry *entry,
 {
   size_t i;
 
-  i = floppy->dirs.ptr[di].table.size;
+  i = floppy->dirs.ptr[di].table.len;
   if (dir_entries_append (&floppy->dirs.ptr[di].table, *entry) == -1) {
     nbdkit_error ("realloc: %m");
     return -1;
@@ -550,8 +550,8 @@ int
 update_directory_first_cluster (size_t di, struct virtual_floppy *floppy)
 {
   size_t i, j, pdi;
-  const size_t nr_subdirs = floppy->dirs.ptr[di].subdirs.size;
-  const size_t nr_files = floppy->dirs.ptr[di].fileidxs.size;
+  const size_t nr_subdirs = floppy->dirs.ptr[di].subdirs.len;
+  const size_t nr_files = floppy->dirs.ptr[di].fileidxs.len;
   uint32_t first_cluster;
   struct dir_entry *entry;
 
@@ -561,7 +561,7 @@ update_directory_first_cluster (size_t di, struct virtual_floppy *floppy)
    * table entries.
    */
   i = 0;
-  for (j = 0; j < floppy->dirs.ptr[di].table.size; ++j) {
+  for (j = 0; j < floppy->dirs.ptr[di].table.len; ++j) {
     entry = &floppy->dirs.ptr[di].table.ptr[j];
 
     /* Skip LFN entries. */
@@ -596,12 +596,12 @@ update_directory_first_cluster (size_t di, struct virtual_floppy *floppy)
      */
     if (i < nr_subdirs) {
       const size_t sdi = floppy->dirs.ptr[di].subdirs.ptr[i];
-      assert (sdi < floppy->dirs.size);
+      assert (sdi < floppy->dirs.len);
       first_cluster = floppy->dirs.ptr[sdi].first_cluster;
     }
     else if (i < nr_subdirs + nr_files) {
       const size_t fi = floppy->dirs.ptr[di].fileidxs.ptr[i-nr_subdirs];
-      assert (fi < floppy->files.size);
+      assert (fi < floppy->files.len);
       first_cluster = floppy->files.ptr[fi].first_cluster;
     }
     else

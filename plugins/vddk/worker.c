@@ -82,7 +82,7 @@ send_command_and_wait (struct vddk_handle *h, struct command *cmd)
       return -1;
 
     /* Signal the caller if it could be sleeping on an empty queue. */
-    if (h->commands.size == 1)
+    if (h->commands.len == 1)
       pthread_cond_signal (&h->commands_cond);
 
     /* This will be used to signal command completion back to us. */
@@ -497,7 +497,7 @@ vddk_worker_thread (void *handle)
     /* Wait until we are sent at least one command. */
     {
       ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&h->commands_lock);
-      while (h->commands.size == 0)
+      while (h->commands.len == 0)
         pthread_cond_wait (&h->commands_cond, &h->commands_lock);
       cmd = h->commands.ptr[0];
       command_queue_remove (&h->commands, 0);

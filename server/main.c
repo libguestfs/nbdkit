@@ -940,7 +940,7 @@ start_serving (void)
       r = sockets_append (&socks, s);
       assert (r == 0);
     }
-    debug ("using socket activation, nr_socks = %zu", socks.size);
+    debug ("using socket activation, nr_socks = %zu", socks.len);
     change_user ();
     write_pidfile ();
     top->after_fork (top);

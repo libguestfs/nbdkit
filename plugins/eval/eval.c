@@ -114,7 +114,7 @@ insert_method_script (const char *method, char *script)
   size_t i;
   struct method_script new_entry = { .method = method, .script = script };
 
-  for (i = 0; i < method_scripts.size; ++i) {
+  for (i = 0; i < method_scripts.len; ++i) {
     r = compare_script (method, &method_scripts.ptr[i]);
     /* This shouldn't happen.  insert_method_script() must not be
      * called if the method has already been added.  Call get_script()

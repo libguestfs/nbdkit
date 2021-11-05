@@ -73,7 +73,7 @@ test_int64_vector (void)
     assert (v.ptr[i] == i);
 
   int64_vector_remove (&v, 1);
-  assert (v.size == 9);
+  assert (v.len == 9);
   assert (v.ptr[1] == 2);
 
   tmp = 10;

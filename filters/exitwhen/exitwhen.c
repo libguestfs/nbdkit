@@ -143,7 +143,7 @@ check_for_event (void)
   size_t i;
 
   if (!exiting) {
-    for (i = 0; i < events.size; ++i) {
+    for (i = 0; i < events.len; ++i) {
       const struct event *event = &events.ptr[i];
 
       switch (event->type) {
