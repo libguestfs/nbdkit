@@ -102,6 +102,11 @@ check-root:
 check-vddk:
 	$(MAKE) -C tests check-vddk
 
+bench: all
+	@for d in common/utils; do \
+	    $(MAKE) -C $$d bench || exit 1; \
+	done
+
 #----------------------------------------------------------------------
 # Maintainers only!
 

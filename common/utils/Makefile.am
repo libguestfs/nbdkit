@@ -100,6 +100,9 @@ test_quotes_SOURCES = test-quotes.c quote.c utils.h
 test_quotes_CPPFLAGS = -I$(srcdir)
 test_quotes_CFLAGS = $(WARNINGS_CFLAGS)
 
-test_vector_SOURCES = test-vector.c vector.c vector.h
+test_vector_SOURCES = test-vector.c vector.c vector.h bench.h
 test_vector_CPPFLAGS = -I$(srcdir)
 test_vector_CFLAGS = $(WARNINGS_CFLAGS)
+
+bench: test-vector
+	NBDKIT_BENCH=1 ./test-vector
