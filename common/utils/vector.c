@@ -41,11 +41,21 @@ int
 generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
 {
   void *newptr;
+  size_t reqalloc, newalloc;
 
-  newptr = realloc (v->ptr, (n + v->alloc) * itemsize);
+  reqalloc = v->alloc + n;
+  if (reqalloc < v->alloc)
+    return -1; /* overflow */
+
+  newalloc = (v->alloc * 3 + 1) / 2;
+
+  if (newalloc < reqalloc)
+    newalloc = reqalloc;
+
+  newptr = realloc (v->ptr, newalloc * itemsize);
   if (newptr == NULL)
     return -1;
   v->ptr = newptr;
-  v->alloc += n;
+  v->alloc = newalloc;
   return 0;
 }
