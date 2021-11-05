@@ -274,6 +274,13 @@ nbdkit-vddk-plugin against the library like this:
 
     make check-vddk vddkdir=vmware-vix-disklib-distrib
 
+Running the benchmarks
+----------------------
+
+To run benchmarks:
+
+    make bench
+
 DOWNLOAD TARBALLS
 =================
 

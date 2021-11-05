@@ -38,9 +38,13 @@
 #undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 
+#include "bench.h"
 #include "vector.h"
 
+#define APPENDS 1000000
+
 DEFINE_VECTOR_TYPE(int64_vector, int64_t);
+DEFINE_VECTOR_TYPE(uint32_vector, uint32_t);
 DEFINE_VECTOR_TYPE(string_vector, char *);
 
 static int
@@ -113,10 +117,57 @@ test_string_vector (void)
   free (v.ptr);
 }
 
+static void
+bench_reserve (void)
+{
+  uint32_vector v = empty_vector;
+  struct bench b;
+
+  bench_start(&b);
+
+  uint32_vector_reserve(&v, APPENDS);
+
+  for (uint32_t i = 0; i < APPENDS; i++) {
+    uint32_vector_append (&v, i);
+  }
+
+  bench_stop(&b);
+
+  assert (v.ptr[APPENDS - 1] == APPENDS - 1);
+  free (v.ptr);
+
+  printf ("bench_reserve: %d appends in %.6f s\n", APPENDS, bench_sec (&b));
+}
+
+static void
+bench_append (void)
+{
+  uint32_vector v = empty_vector;
+  struct bench b;
+
+  bench_start(&b);
+
+  for (uint32_t i = 0; i < APPENDS; i++) {
+    uint32_vector_append (&v, i);
+  }
+
+  bench_stop(&b);
+
+  assert (v.ptr[APPENDS - 1] == APPENDS - 1);
+  free (v.ptr);
+
+  printf ("bench_append: %d appends in %.6f s\n", APPENDS, bench_sec (&b));
+}
+
 int
 main (int argc, char *argv[])
 {
-  test_int64_vector ();
-  test_string_vector ();
+  if (getenv("NBDKIT_BENCH")) {
+    bench_reserve ();
+    bench_append ();
+  } else {
+    test_int64_vector ();
+    test_string_vector ();
+  }
   return 0;
 }
