@@ -233,8 +233,7 @@ my $date;
 my $filename = "$abs_top_srcdir/.git";
 if (!$date && -d $filename) {
     local $ENV{GIT_DIR} = $filename;
-    $_ = `git show -O/dev/null -s --format=%ci`;
-    $date = $1 if /^(\d+-\d+-\d+)\s/;
+    $date = `git show -O/dev/null -s --format=%cs`;
 }
 if (!$date) {
     my ($day, $month, $year) = (gmtime($ENV{SOURCE_DATE_EPOCH} || time))[3,4,5];
