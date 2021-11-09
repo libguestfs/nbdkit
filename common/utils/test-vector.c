@@ -34,6 +34,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 #undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
@@ -162,12 +163,23 @@ bench_append (void)
 int
 main (int argc, char *argv[])
 {
-  if (getenv("NBDKIT_BENCH")) {
-    bench_reserve ();
-    bench_append ();
-  } else {
+  const char *s;
+  bool bench;
+
+  s = getenv ("NBDKIT_BENCH");
+  bench = s && strcmp (s, "1") == 0;
+
+  if (!bench) {
+    /* Do normal tests. */
     test_int64_vector ();
     test_string_vector ();
   }
+
+  else {
+    /* Do benchmarks. */
+    bench_reserve ();
+    bench_append ();
+  }
+
   return 0;
 }
