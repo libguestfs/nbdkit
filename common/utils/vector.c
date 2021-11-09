@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -34,6 +34,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "vector.h"
 
@@ -44,12 +45,14 @@ generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
   size_t reqcap, newcap;
 
   reqcap = v->cap + n;
-  if (reqcap < v->cap)
+  if (reqcap * itemsize < v->cap * itemsize) {
+    errno = ENOMEM;
     return -1; /* overflow */
+  }
 
-  newcap = (v->cap * 3 + 1) / 2;
+  newcap = v->cap + (v->cap + 1) / 2;
 
-  if (newcap < reqcap)
+  if (newcap * itemsize < reqcap * itemsize)
     newcap = reqcap;
 
   newptr = realloc (v->ptr, newcap * itemsize);
