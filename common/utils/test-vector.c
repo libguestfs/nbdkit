@@ -124,17 +124,17 @@ bench_reserve (void)
   uint32_vector v = empty_vector;
   struct bench b;
 
-  bench_start(&b);
+  bench_start (&b);
 
-  uint32_vector_reserve(&v, APPENDS);
+  uint32_vector_reserve (&v, APPENDS);
 
   for (uint32_t i = 0; i < APPENDS; i++) {
     uint32_vector_append (&v, i);
   }
 
-  bench_stop(&b);
+  bench_stop (&b);
 
-  assert (v.ptr[APPENDS - 1] == APPENDS - 1);
+  assert (v.ptr[APPENDS-1] == APPENDS-1);
   free (v.ptr);
 
   printf ("bench_reserve: %d appends in %.6f s\n", APPENDS, bench_sec (&b));
@@ -146,13 +146,13 @@ bench_append (void)
   uint32_vector v = empty_vector;
   struct bench b;
 
-  bench_start(&b);
+  bench_start (&b);
 
   for (uint32_t i = 0; i < APPENDS; i++) {
     uint32_vector_append (&v, i);
   }
 
-  bench_stop(&b);
+  bench_stop (&b);
 
   assert (v.ptr[APPENDS - 1] == APPENDS - 1);
   free (v.ptr);

@@ -38,23 +38,23 @@
 #define MICROSECONDS 1000000
 
 struct bench {
-    struct timeval start, stop;
+  struct timeval start, stop;
 };
 
 static inline void
-bench_start(struct bench *b)
+bench_start (struct bench *b)
 {
   gettimeofday (&b->start, NULL);
 }
 
 static inline void
-bench_stop(struct bench *b)
+bench_stop (struct bench *b)
 {
   gettimeofday (&b->stop, NULL);
 }
 
 static inline double
-bench_sec(struct bench *b)
+bench_sec (struct bench *b)
 {
   struct timeval dt;
 
