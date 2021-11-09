@@ -37,6 +37,7 @@ EXTRA_DIST = \
 	ascii-ctype.h \
 	ascii-string.h \
 	byte-swapping.h \
+	checked-overflow.h \
 	exit-with-parent.h \
 	isaligned.h \
 	ispowerof2.h \

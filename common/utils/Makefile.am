@@ -52,6 +52,7 @@ libutils_la_SOURCES = \
 	$(NULL)
 libutils_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	$(NULL)
 libutils_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
@@ -101,7 +102,7 @@ test_quotes_CPPFLAGS = -I$(srcdir)
 test_quotes_CFLAGS = $(WARNINGS_CFLAGS)
 
 test_vector_SOURCES = test-vector.c vector.c vector.h bench.h
-test_vector_CPPFLAGS = -I$(srcdir)
+test_vector_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/common/include
 test_vector_CFLAGS = $(WARNINGS_CFLAGS)
 
 bench: test-vector

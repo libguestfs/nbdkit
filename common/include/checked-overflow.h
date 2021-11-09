@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2021 Red Hat Inc.
+ * Copyright (C) 2013-2021 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -30,56 +30,40 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
+/* This header file defines functions for checking overflow in common
+ * integer arithmetic operations.
+ *
+ * It uses GCC/Clang built-ins: a possible future enhancement is to
+ * provide fallbacks in plain C or for other compilers.  The only
+ * purpose of having a header file for this is to have a single place
+ * where we would extend this in future.
+ */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
+#ifndef NBDKIT_CHECKED_OVERFLOW_H
+#define NBDKIT_CHECKED_OVERFLOW_H
 
-#include "checked-overflow.h"
-#include "vector.h"
+#if !defined(__GNUC__) && !defined(__clang__)
+#error "this file may need to be ported to your compiler"
+#endif
 
-int
-generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
-{
-  void *newptr;
-  size_t reqcap, reqbytes, newcap, newbytes, t;
+/* Add two uint64_t values.  *r = a + b
+ * Returns true if overflow happened.
+ */
+#define ADD_UINT64_T_OVERFLOW(a, b, r) __builtin_add_overflow((a), (b), (r))
 
-  /* New capacity requested.  We must allocate this minimum (or fail).
-   * reqcap = v->cap + n
-   * reqbytes = reqcap * itemsize
-   */
-  if (ADD_SIZE_T_OVERFLOW (v->cap, n, &reqcap) ||
-      MUL_SIZE_T_OVERFLOW (reqcap, itemsize, &reqbytes)) {
-    errno = ENOMEM;
-    return -1;
-  }
+/* Multiply two uint64_t values.  *r = a * b
+ * Returns true if overflow happened.
+ */
+#define MUL_UINT64_T_OVERFLOW(a, b, r) __builtin_mul_overflow((a), (b), (r))
 
-  /* However for the sake of optimization, scale buffer by 3/2 so that
-   * repeated reservations don't call realloc often.
-   * newcap = v->cap + (v->cap + 1) / 2
-   * newbytes = newcap * itemsize
-   */
-  if (ADD_SIZE_T_OVERFLOW (v->cap, 1, &t))
-    goto fallback;
-  t /= 2;
-  if (ADD_SIZE_T_OVERFLOW (v->cap, t, &newcap))
-    goto fallback;
-  if (MUL_SIZE_T_OVERFLOW (newcap, itemsize, &newbytes))
-    goto fallback;
-  if (newbytes < reqbytes) {
-  fallback:
-    /* If that either overflows or is less than the minimum requested,
-     * fall back to the requested capacity.
-     */
-    newcap = reqcap;
-    newbytes = reqbytes;
-  }
+/* Add two size_t values.  *r = a + b
+ * Returns true if overflow happened.
+ */
+#define ADD_SIZE_T_OVERFLOW(a, b, r) __builtin_add_overflow((a), (b), (r))
 
-  newptr = realloc (v->ptr, newbytes);
-  if (newptr == NULL)
-    return -1;
-  v->ptr = newptr;
-  v->cap = newcap;
-  return 0;
-}
+/* Multiply two size_t values.  *r = a * b
+ * Returns true if overflow happened.
+ */
+#define MUL_SIZE_T_OVERFLOW(a, b, r) __builtin_mul_overflow((a), (b), (r))
+
+#endif /* NBDKIT_CHECKED_OVERFLOW_H */
