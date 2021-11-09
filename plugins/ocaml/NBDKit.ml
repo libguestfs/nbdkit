@@ -152,13 +152,13 @@ let default_callbacks = {
   export_description = None;
 }
 
-external set_name : string -> unit = "ocaml_nbdkit_set_name" "noalloc"
-external set_longname : string -> unit = "ocaml_nbdkit_set_longname" "noalloc"
-external set_version : string -> unit = "ocaml_nbdkit_set_version" "noalloc"
-external set_description : string -> unit = "ocaml_nbdkit_set_description" "noalloc"
-external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" "noalloc"
+external set_name : string -> unit = "ocaml_nbdkit_set_name" [@@noalloc]
+external set_longname : string -> unit = "ocaml_nbdkit_set_longname" [@@noalloc]
+external set_version : string -> unit = "ocaml_nbdkit_set_version" [@@noalloc]
+external set_description : string -> unit = "ocaml_nbdkit_set_description" [@@noalloc]
+external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" [@@noalloc]
 
-external set_field : string -> 'a -> unit = "ocaml_nbdkit_set_field" "noalloc"
+external set_field : string -> 'a -> unit = "ocaml_nbdkit_set_field" [@@noalloc]
 
 let register_plugin plugin =
   (* Check the required fields have been set by the caller. *)
@@ -220,7 +220,7 @@ let register_plugin plugin =
 
 (* Bindings to nbdkit server functions. *)
 
-external _set_error : int -> unit = "ocaml_nbdkit_set_error" "noalloc"
+external _set_error : int -> unit = "ocaml_nbdkit_set_error" [@@noalloc]
 
 let set_error unix_error =
   (* There's an awkward triple translation going on here, because
@@ -250,9 +250,9 @@ external read_password : string -> string = "ocaml_nbdkit_read_password"
 external realpath : string -> string = "ocaml_nbdkit_realpath"
 external nanosleep : int -> int -> unit = "ocaml_nbdkit_nanosleep"
 external export_name : unit -> string = "ocaml_nbdkit_export_name"
-external shutdown : unit -> unit = "ocaml_nbdkit_shutdown" "noalloc"
+external shutdown : unit -> unit = "ocaml_nbdkit_shutdown" [@@noalloc]
 
-external _debug : string -> unit = "ocaml_nbdkit_debug" "noalloc"
+external _debug : string -> unit = "ocaml_nbdkit_debug" [@@noalloc]
 
 let debug fs =
   ksprintf _debug fs
