@@ -37,6 +37,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 
 #undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
@@ -157,6 +158,19 @@ test_string (void)
   free (s.ptr);
 }
 
+/* Test size_t overflow. */
+static void
+test_overflow (void)
+{
+  string s = empty_vector;
+  int r;
+
+  /* It should be impossible to reserve SIZE_MAX - epsilon. */
+  r = string_reserve (&s, SIZE_MAX - 10000);
+  assert (r == -1);
+  assert (errno == ENOMEM);
+}
+
 static void
 bench_reserve (void)
 {
@@ -213,6 +227,7 @@ main (int argc, char *argv[])
     test_int64_vector ();
     test_string_vector ();
     test_string ();
+    test_overflow ();
   }
 
   else {
