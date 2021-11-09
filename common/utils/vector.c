@@ -42,20 +42,31 @@ int
 generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
 {
   void *newptr;
-  size_t reqcap, newcap;
+  size_t reqcap, reqbytes, newcap, newbytes;
 
+  /* New capacity requested.  We must allocate this minimum (or fail). */
   reqcap = v->cap + n;
-  if (reqcap * itemsize < v->cap * itemsize) {
+  reqbytes = reqcap * itemsize;
+  if (reqbytes < v->cap * itemsize) {
     errno = ENOMEM;
     return -1; /* overflow */
   }
 
+  /* However for the sake of optimization, scale buffer by 3/2 so that
+   * repeated reservations don't call realloc often.
+   */
   newcap = v->cap + (v->cap + 1) / 2;
+  newbytes = newcap * itemsize;
 
-  if (newcap * itemsize < reqcap * itemsize)
+  if (newbytes < reqbytes) {
+    /* If that either overflows or is less than the minimum requested,
+     * fall back to the requested capacity.
+     */
     newcap = reqcap;
+    newbytes = reqbytes;
+  }
 
-  newptr = realloc (v->ptr, newcap * itemsize);
+  newptr = realloc (v->ptr, newbytes);
   if (newptr == NULL)
     return -1;
   v->ptr = newptr;
