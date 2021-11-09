@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
+
 #undef NDEBUG /* Keep test strong even for nbdkit built without assertions */
 #include <assert.h>
 
@@ -47,6 +49,7 @@
 DEFINE_VECTOR_TYPE(int64_vector, int64_t);
 DEFINE_VECTOR_TYPE(uint32_vector, uint32_t);
 DEFINE_VECTOR_TYPE(string_vector, char *);
+DEFINE_VECTOR_TYPE(string, char);
 
 static int
 compare (const int64_t *a, const int64_t *b)
@@ -119,6 +122,42 @@ test_string_vector (void)
 }
 
 static void
+test_string_concat (string *s, const char *append)
+{
+  const size_t len = strlen (append);
+  size_t i;
+  int r;
+
+  r = string_reserve (s, len);
+  assert (r == 0);
+
+  /* The contract is that after calling string_reserve with 'n', we
+   * can append up to 'n' items to the vector without failing.
+   */
+  for (i = 0; i < len; ++i) {
+    r = string_append (s, append[i]);
+    assert (r == 0);
+  }
+}
+
+static void
+test_string (void)
+{
+  string s = empty_vector;
+  int r;
+  char nul = 0;
+
+  test_string_concat (&s, "hello");
+  test_string_concat (&s, " world");
+  r = string_append (&s, nul);
+  assert (r == 0);
+
+  assert (strcmp (s.ptr, "hello world") == 0);
+  assert (s.len == 12); /* hello + space + world + \0 */
+  free (s.ptr);
+}
+
+static void
 bench_reserve (void)
 {
   uint32_vector v = empty_vector;
@@ -173,6 +212,7 @@ main (int argc, char *argv[])
     /* Do normal tests. */
     test_int64_vector ();
     test_string_vector ();
+    test_string ();
   }
 
   else {
