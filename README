@@ -155,7 +155,7 @@ For the Python plugin:
 
 For the OCaml plugin:
 
- - OCaml >= 4.02.2
+ - OCaml >= 4.03
 
 For the Tcl plugin:
 

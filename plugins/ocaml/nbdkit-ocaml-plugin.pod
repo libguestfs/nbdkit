@@ -11,10 +11,7 @@ nbdkit-ocaml-plugin - writing nbdkit plugins in OCaml
 =head1 DESCRIPTION
 
 This manual page describes how to write nbdkit plugins in natively
-compiled OCaml code.
-
-Note this requires OCaml E<ge> 4.02.2, which has support for shared
-libraries.  See L<http://caml.inria.fr/mantis/view.php?id=6693>
+compiled OCaml code.  This requires OCaml E<ge> 4.03.
 
 =head1 WRITING AN OCAML NBDKIT PLUGIN
 
