@@ -46,24 +46,14 @@
 #error "this file may need to be ported to your compiler"
 #endif
 
-/* Add two uint64_t values.  *r = a + b
+/* Add two values.  *r = a + b
  * Returns true if overflow happened.
  */
-#define ADD_UINT64_T_OVERFLOW(a, b, r) __builtin_add_overflow((a), (b), (r))
+#define ADD_OVERFLOW(a, b, r) __builtin_add_overflow((a), (b), (r))
 
-/* Multiply two uint64_t values.  *r = a * b
+/* Multiply two values.  *r = a * b
  * Returns true if overflow happened.
  */
-#define MUL_UINT64_T_OVERFLOW(a, b, r) __builtin_mul_overflow((a), (b), (r))
-
-/* Add two size_t values.  *r = a + b
- * Returns true if overflow happened.
- */
-#define ADD_SIZE_T_OVERFLOW(a, b, r) __builtin_add_overflow((a), (b), (r))
-
-/* Multiply two size_t values.  *r = a * b
- * Returns true if overflow happened.
- */
-#define MUL_SIZE_T_OVERFLOW(a, b, r) __builtin_mul_overflow((a), (b), (r))
+#define MUL_OVERFLOW(a, b, r) __builtin_mul_overflow((a), (b), (r))
 
 #endif /* NBDKIT_CHECKED_OVERFLOW_H */

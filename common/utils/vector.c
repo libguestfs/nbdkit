@@ -49,8 +49,8 @@ generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
    *   reqcap = v->cap + n
    *   reqbytes = reqcap * itemsize
    */
-  if (ADD_SIZE_T_OVERFLOW (v->cap, n, &reqcap) ||
-      MUL_SIZE_T_OVERFLOW (reqcap, itemsize, &reqbytes)) {
+  if (ADD_OVERFLOW (v->cap, n, &reqcap) ||
+      MUL_OVERFLOW (reqcap, itemsize, &reqbytes)) {
     errno = ENOMEM;
     return -1;
   }
@@ -60,9 +60,9 @@ generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
    *   newcap = v->cap + (v->cap + 1) / 2
    *   newbytes = newcap * itemsize
    */
-  if (ADD_SIZE_T_OVERFLOW (v->cap, 1, &t) ||
-      ADD_SIZE_T_OVERFLOW (v->cap, t/2, &newcap) ||
-      MUL_SIZE_T_OVERFLOW (newcap, itemsize, &newbytes) ||
+  if (ADD_OVERFLOW (v->cap, 1, &t) ||
+      ADD_OVERFLOW (v->cap, t/2, &newcap) ||
+      MUL_OVERFLOW (newcap, itemsize, &newbytes) ||
       newbytes < reqbytes) {
     /* If that either overflows or is less than the minimum requested,
      * fall back to the requested capacity.
