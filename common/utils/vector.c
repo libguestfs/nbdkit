@@ -46,8 +46,8 @@ generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
   size_t reqcap, reqbytes, newcap, newbytes, t;
 
   /* New capacity requested.  We must allocate this minimum (or fail).
-   * reqcap = v->cap + n
-   * reqbytes = reqcap * itemsize
+   *   reqcap = v->cap + n
+   *   reqbytes = reqcap * itemsize
    */
   if (ADD_SIZE_T_OVERFLOW (v->cap, n, &reqcap) ||
       MUL_SIZE_T_OVERFLOW (reqcap, itemsize, &reqbytes)) {
@@ -57,8 +57,8 @@ generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
 
   /* However for the sake of optimization, scale buffer by 3/2 so that
    * repeated reservations don't call realloc often.
-   * newcap = v->cap + (v->cap + 1) / 2
-   * newbytes = newcap * itemsize
+   *   newcap = v->cap + (v->cap + 1) / 2
+   *   newbytes = newcap * itemsize
    */
   if (ADD_SIZE_T_OVERFLOW (v->cap, 1, &t) ||
       ADD_SIZE_T_OVERFLOW (v->cap, t/2, &newcap) ||
@@ -74,6 +74,7 @@ generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
   newptr = realloc (v->ptr, newbytes);
   if (newptr == NULL)
     return -1;
+
   v->ptr = newptr;
   v->cap = newcap;
   return 0;
