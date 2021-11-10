@@ -965,25 +965,25 @@ impl Builder {
         });
 
         let config_help = S::config_help()
-            .map(|_| unsafe {CONFIG_HELP.as_ptr()} as *const i8)
+            .map(|_| unsafe {CONFIG_HELP.as_ptr()} as *const c_char)
             .unwrap_or(ptr::null());
         let description = S::description()
-            .map(|_| unsafe {DESCRIPTION.as_ptr()} as *const i8)
+            .map(|_| unsafe {DESCRIPTION.as_ptr()} as *const c_char)
             .unwrap_or(ptr::null());
         let longname = S::longname()
-            .map(|_| unsafe {LONGNAME.as_ptr()} as *const i8)
+            .map(|_| unsafe {LONGNAME.as_ptr()} as *const c_char)
             .unwrap_or(ptr::null());
         let magic_config_key = S::magic_config_key()
-            .map(|_| unsafe {MAGIC_CONFIG_KEY.as_ptr()} as *const i8)
+            .map(|_| unsafe {MAGIC_CONFIG_KEY.as_ptr()} as *const c_char)
             .unwrap_or(ptr::null());
         let version = S::version()
-            .map(|_| unsafe {VERSION.as_ptr()} as *const i8)
+            .map(|_| unsafe {VERSION.as_ptr()} as *const c_char)
             .unwrap_or(ptr::null());
         let plugin = Plugin {
             _struct_size: mem::size_of::<Plugin>() as u64,
             _api_version: 2,
             _thread_model: ThreadModel::Parallel as c_int,
-            name: unsafe{ NAME.as_ptr() } as *const i8,
+            name: unsafe{ NAME.as_ptr() } as *const c_char,
             longname,
             version,
             description,
