@@ -60,15 +60,10 @@ generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
    * newcap = v->cap + (v->cap + 1) / 2
    * newbytes = newcap * itemsize
    */
-  if (ADD_SIZE_T_OVERFLOW (v->cap, 1, &t))
-    goto fallback;
-  t /= 2;
-  if (ADD_SIZE_T_OVERFLOW (v->cap, t, &newcap))
-    goto fallback;
-  if (MUL_SIZE_T_OVERFLOW (newcap, itemsize, &newbytes))
-    goto fallback;
-  if (newbytes < reqbytes) {
-  fallback:
+  if (ADD_SIZE_T_OVERFLOW (v->cap, 1, &t) ||
+      ADD_SIZE_T_OVERFLOW (v->cap, t/2, &newcap) ||
+      MUL_SIZE_T_OVERFLOW (newcap, itemsize, &newbytes) ||
+      newbytes < reqbytes) {
     /* If that either overflows or is less than the minimum requested,
      * fall back to the requested capacity.
      */
