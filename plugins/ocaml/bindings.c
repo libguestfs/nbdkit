@@ -42,6 +42,7 @@
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
 #include <caml/threads.h>
+#include <caml/unixsupport.h>
 
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
@@ -54,26 +55,7 @@
 NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_error (value nv)
 {
-  int err;
-
-  switch (Int_val (nv)) {
-    /* Host errno values that will map to NBD protocol values */
-  case 1: err = EPERM; break;
-  case 2: err = EIO; break;
-  case 3: err = ENOMEM; break;
-  case 4: err = EINVAL; break;
-  case 5: err = ENOSPC; break;
-  case 6: err = ESHUTDOWN; break;
-  case 7: err = EOVERFLOW; break;
-  case 8: err = EOPNOTSUPP; break;
-    /* Other errno values that server/protocol.c treats specially */
-  case 9: err = EROFS; break;
-  case 10: err = EFBIG; break;
-  default: abort ();
-  }
-
-  nbdkit_set_error (err);
-
+  nbdkit_set_error (code_of_unix_error (nv));
   return Val_unit;
 }
 

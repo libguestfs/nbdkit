@@ -4,7 +4,7 @@
 # shell as an impossible command which is ignored.  The line below is
 # run by the shell and ignored by OCaml.
 
-exec nbdkit cc "$0" CC=ocamlopt CFLAGS="-output-obj -runtime-variant _pic NBDKit.cmx -cclib -lnbdkitocaml" "$@"
+exec nbdkit cc "$0" CC=ocamlopt CFLAGS="-output-obj -runtime-variant _pic unix.cmxa NBDKit.cmx -cclib -lnbdkitocaml" "$@"
 *)
 
 open Printf

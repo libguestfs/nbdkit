@@ -89,7 +89,7 @@ C<CC=g++> as a parameter to exec nbdkit.
 =head2 Using this plugin with OCaml
 
  nbdkit cc CC=ocamlopt \
-           CFLAGS="-output-obj -runtime-variant _pic NBDKit.cmx -cclib -lnbdkitocaml" \
+           CFLAGS="-output-obj -runtime-variant _pic unix.cmxa NBDKit.cmx -cclib -lnbdkitocaml" \
            source.ml
 
 OCaml plugin scripts can be created using this trick:
@@ -97,7 +97,7 @@ OCaml plugin scripts can be created using this trick:
  (*/.)>/dev/null 2>&1
  exec nbdkit cc "$0" \
       CC=ocamlopt \
-      CFLAGS="-output-obj -runtime-variant _pic NBDKit.cmx -cclib -lnbdkitocaml" \
+      CFLAGS="-output-obj -runtime-variant _pic unix.cmxa NBDKit.cmx -cclib -lnbdkitocaml" \
       "$@"
  *)
  (* followed by OCaml code for the plugin here *)

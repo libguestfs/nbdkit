@@ -53,7 +53,7 @@ using this command:
 
  ocamlopt.opt -output-obj -runtime-variant _pic \
               -o nbdkit-myplugin-plugin.so \
-              NBDKit.cmx myplugin.ml \
+              unix.cmxa NBDKit.cmx myplugin.ml \
               -cclib -lnbdkitocaml
 
 You can then use C<nbdkit-myplugin-plugin.so> as an nbdkit plugin (see

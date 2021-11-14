@@ -146,6 +146,7 @@ plugins/*/*.3
 /tests/test-nbd
 /tests/test-null
 /tests/test-ocaml
+/tests/test-ocaml-errorcodes
 /tests/test-offset
 /tests/test-oldstyle
 /tests/test-old-plugins-*.sh

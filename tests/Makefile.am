@@ -1067,6 +1067,7 @@ EXTRA_DIST += test-zero.sh
 if HAVE_OCAML
 
 LIBGUESTFS_TESTS += test-ocaml
+LIBNBD_TESTS += test-ocaml-errorcodes
 
 test_ocaml_SOURCES = test-ocaml.c test.h
 test_ocaml_CFLAGS = \
@@ -1075,13 +1076,35 @@ test_ocaml_CFLAGS = \
 	$(NULL)
 test_ocaml_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
-check_SCRIPTS += test-ocaml-plugin.so
-test-ocaml-plugin.so: test_ocaml_plugin.cmx ../plugins/ocaml/libnbdkitocaml.la ../plugins/ocaml/NBDKit.cmi ../plugins/ocaml/NBDKit.cmx
+test_ocaml_errorcodes_SOURCES = test-ocaml-errorcodes.c
+test_ocaml_errorcodes_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_ocaml_errorcodes_LDADD = $(LIBNBD_LIBS)
+
+check_SCRIPTS += \
+	test-ocaml-plugin.so \
+	test-ocaml-errorcodes-plugin.so
+
+OCAML_PLUGIN_DEPS = \
+	../plugins/ocaml/libnbdkitocaml.la \
+	../plugins/ocaml/NBDKit.cmi \
+	../plugins/ocaml/NBDKit.cmx
+
+test-ocaml-plugin.so: test_ocaml_plugin.cmx $(OCAML_PLUGIN_DEPS)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml \
 	  -output-obj -runtime-variant _pic -o $@ \
-	  NBDKit.cmx $< \
+	  unix.cmxa NBDKit.cmx $< \
 	  -cclib -L../plugins/ocaml/.libs -cclib -lnbdkitocaml
-test_ocaml_plugin.cmx: test_ocaml_plugin.ml ../plugins/ocaml/NBDKit.cmi ../plugins/ocaml/NBDKit.cmx
+test_ocaml_plugin.cmx: test_ocaml_plugin.ml $(OCAML_PLUGIN_DEPS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml -c $< -o $@
+
+test-ocaml-errorcodes-plugin.so: \
+	    test_ocaml_errorcodes_plugin.cmx $(OCAML_PLUGIN_DEPS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml \
+	  -output-obj -runtime-variant _pic -o $@ \
+	  unix.cmxa NBDKit.cmx $< \
+	  -cclib -L../plugins/ocaml/.libs -cclib -lnbdkitocaml
+test_ocaml_errorcodes_plugin.cmx: \
+	    test_ocaml_errorcodes_plugin.ml $(OCAML_PLUGIN_DEPS)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -I ../plugins/ocaml -c $< -o $@
 
 endif HAVE_OCAML
