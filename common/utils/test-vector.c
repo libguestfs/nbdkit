@@ -176,12 +176,13 @@ bench_reserve (void)
 {
   uint32_vector v = empty_vector;
   struct bench b;
+  uint32_t i;
 
   bench_start (&b);
 
   uint32_vector_reserve (&v, APPENDS);
 
-  for (uint32_t i = 0; i < APPENDS; i++) {
+  for (i = 0; i < APPENDS; i++) {
     uint32_vector_append (&v, i);
   }
 
@@ -198,10 +199,11 @@ bench_append (void)
 {
   uint32_vector v = empty_vector;
   struct bench b;
+  uint32_t i;
 
   bench_start (&b);
 
-  for (uint32_t i = 0; i < APPENDS; i++) {
+  for (i = 0; i < APPENDS; i++) {
     uint32_vector_append (&v, i);
   }
 
