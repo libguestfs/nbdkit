@@ -1081,8 +1081,6 @@ if HAVE_OCAML
 
 LIBGUESTFS_TESTS += test-ocaml
 
-# This is somewhat different from the other tests because we have
-# to build an actual plugin here.
 test_ocaml_SOURCES = test-ocaml.c test.h
 test_ocaml_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
