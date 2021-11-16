@@ -229,7 +229,8 @@ TESTS += \
 	test-random-sock.sh \
 	test-tls.sh \
 	test-tls-psk.sh \
-	test-ip.sh \
+	test-ipv4-lo.sh \
+	test-ipv6-lo.sh \
 	test-foreground.sh \
 	test-debug-flags.sh \
 	test-long-name.sh \
@@ -260,7 +261,8 @@ EXTRA_DIST += \
 	test-foreground.sh \
 	test-help-example1.sh \
 	test-help-plugin.sh \
-	test-ip.sh \
+	test-ipv4-lo.sh \
+	test-ipv6-lo.sh \
 	test-long-name.sh \
 	test-nbdkit-backend-debug.sh \
 	test-probe-filter.sh \

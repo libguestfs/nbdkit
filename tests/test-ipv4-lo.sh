@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2016-2020 Red Hat Inc.
+# Copyright (C) 2016-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -30,8 +30,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Every other test uses a Unix domain socket.  This tests nbdkit over
-# IPv4 and IPv6 localhost connections.
+# Almost every other test uses a Unix domain socket.  This tests
+# nbdkit over the IPv4 localhost connection.
 
 source ./functions.sh
 set -e
@@ -46,18 +46,17 @@ fi
 requires ip -V
 requires qemu-img --version
 requires qemu-img info --image-opts driver=file,filename=functions.sh
-requires_ipv6_loopback
 
-rm -f ip.pid ipv4.out ipv6.out
-cleanup_fn rm -f ip.pid ipv4.out ipv6.out
+rm -f ipv4lo.pid ipv4lo.out
+cleanup_fn rm -f ipv4lo.pid ipv4lo.out
 
 # Find an unused port to listen on.
 pick_unused_port
 
 # By default nbdkit will listen on all available interfaces, ie.
 # IPv4 and IPv6.
-start_nbdkit -P ip.pid -p $port example1
-pid="$(cat ip.pid)"
+start_nbdkit -P ipv4lo.pid -p $port example1
+pid="$(cat ipv4lo.pid)"
 
 # Check the process exists.
 kill -s 0 $pid
@@ -66,16 +65,7 @@ kill -s 0 $pid
 ipv4_lo="$(ip -o -4 addr show scope host)"
 if test -n "$ipv4_lo"; then
     qemu-img info --output=json \
-        --image-opts "file.driver=nbd,file.host=127.0.0.1,file.port=$port" > ipv4.out
-    cat ipv4.out
-    grep -sq '"virtual-size": *104857600\b' ipv4.out
-fi
-
-# Check we can connect over the IPv6 loopback interface.
-ipv6_lo="$(ip -o -6 addr show scope host)"
-if test -n "$ipv6_lo"; then
-    qemu-img info --output=json \
-        --image-opts "file.driver=nbd,file.host=::1,file.port=$port" > ipv6.out
-    cat ipv6.out
-    grep -sq '"virtual-size": *104857600\b' ipv6.out
+        --image-opts "file.driver=nbd,file.host=127.0.0.1,file.port=$port" > ipv4lo.out
+    cat ipv4lo.out
+    grep -sq '"virtual-size": *104857600\b' ipv4lo.out
 fi
