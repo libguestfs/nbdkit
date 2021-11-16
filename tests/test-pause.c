@@ -78,11 +78,12 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  char *args[] = {
-    "nbdkit", "-s", "--exit-with-parent", "--filter", "pause",
-    "example1", "pause-control=" SOCKET, NULL
-  };
-  if (nbd_connect_command (nbd, args) == -1) {
+  if (nbd_connect_command (nbd,
+                           (char *[]) {
+                             "nbdkit", "-s", "--exit-with-parent",
+                             "--filter", "pause",
+                             "example1", "pause-control=" SOCKET,
+                             NULL }) == -1) {
     fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }

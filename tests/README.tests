@@ -65,9 +65,10 @@ To test a plugin using libnbd
 
 Open a libnbd handle, and configure it using:
 
-  char *args[] = { "nbdkit", "-s", "--exit-with-parent",
-                    "plugin", <plugin args ...>, NULL };
-  nbd_connect_command (nbd, args);
+  nbd_connect_command (nbd,
+                       (char *[]) {
+                         "nbdkit", "-s", "--exit-with-parent",
+                         "plugin", <plugin args ...>, NULL });
 
 Perform tests via libnbd functions.
 

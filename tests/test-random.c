@@ -72,10 +72,11 @@ main (int argc, char *argv[])
   }
 
   snprintf (sizearg, sizeof sizearg, "%d", SIZE);
-  char *args[] = {
-    "nbdkit", "-s", "--exit-with-parent", "random", sizearg, NULL
-  };
-  if (nbd_connect_command (nbd, args) == -1) {
+  if (nbd_connect_command (nbd,
+                           (char *[]) {
+                             "nbdkit", "-s", "--exit-with-parent",
+                             "random", sizearg,
+                             NULL }) == -1) {
     fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }

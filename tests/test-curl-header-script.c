@@ -126,17 +126,16 @@ main (int argc, char *argv[])
     perror ("asprintf");
     exit (EXIT_FAILURE);
   }
-  char *args[] = {
-    "nbdkit", "-s", "--exit-with-parent", "-v",
-    "curl",
-    "-D", "curl.verbose=1",
-    "http://localhost/disk",
-    "header-script=" SCRIPT,
-    "header-script-renew=1",
-    usp_param, /* unix-socket-path=... */
-    NULL
-  };
-  if (nbd_connect_command (nbd, args) == -1) {
+  if (nbd_connect_command (nbd,
+                           (char *[]) {
+                             "nbdkit", "-s", "--exit-with-parent", "-v",
+                             "curl",
+                             "-D", "curl.verbose=1",
+                             "http://localhost/disk",
+                             "header-script=" SCRIPT,
+                             "header-script-renew=1",
+                             usp_param, /* unix-socket-path=... */
+                             NULL }) == -1) {
     fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
