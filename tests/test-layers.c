@@ -157,19 +157,20 @@ main (int argc, char *argv[])
   }
 
   /* Start nbdkit. */
-  char *args[] = {
-    "nbdkit", "--exit-with-parent", "-fvns",
-    /* Because of asynchronous shutdown with threads, finalize
-     * isn't reliably called unless we disable parallel.
-     */
-    "-t", "1",
-    "--filter", ".libs/test-layers-filter3." SOEXT,
-    "--filter", ".libs/test-layers-filter2." SOEXT,
-    "--filter", ".libs/test-layers-filter1." SOEXT,
-    ".libs/test-layers-plugin." SOEXT,
-    "foo=bar",
-    NULL};
-  if (nbd_connect_command (nbd, args) == -1) {
+  if (nbd_connect_command (nbd,
+                           (char *[]) {
+                             "nbdkit", "--exit-with-parent", "-fvns",
+                             /* Because of asynchronous shutdown with
+                              * threads, finalize isn't reliably
+                              * called unless we disable parallel.
+                              */
+                             "-t", "1",
+                             "--filter", ".libs/test-layers-filter3." SOEXT,
+                             "--filter", ".libs/test-layers-filter2." SOEXT,
+                             "--filter", ".libs/test-layers-filter1." SOEXT,
+                             ".libs/test-layers-plugin." SOEXT,
+                             "foo=bar",
+                             NULL }) == -1) {
     dprintf (orig_stderr, "nbd_connect_command: %s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }

@@ -51,12 +51,12 @@ main (int argc, char *argv[])
     exit (EXIT_FAILURE);
   }
 
-  char *args[] = {
-    "nbdkit", "-s", "--exit-with-parent",
-    "split", "split1", "split2", "file=split3" /* leave file= to test */,
-    NULL
-  };
-  if (nbd_connect_command (nbd, args) == -1) {
+  if (nbd_connect_command (nbd,
+                           (char *[]) {
+                             "nbdkit", "-s", "--exit-with-parent",
+                             "split", "split1", "split2",
+                             "file=split3" /* leave file= to test */,
+                             NULL }) == -1) {
     fprintf (stderr, "%s\n", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
