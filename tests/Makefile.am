@@ -1111,6 +1111,7 @@ endif HAVE_OCAML
 
 EXTRA_DIST += \
 	test_ocaml_plugin.ml \
+	test_ocaml_errorcodes_plugin.ml \
 	test-ocaml.c \
 	$(NULL)
 
