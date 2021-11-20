@@ -35,15 +35,13 @@ let pwrite () buf offset _ =
   let offset = Int64.to_int offset in
   String.blit buf 0 !disk offset len
 
-let plugin = {
-  NBDKit.default_callbacks with
-    NBDKit.name     = "cc-shebang.ml";
-    version         = NBDKit.version ();
-    config          = Some config;
-    open_connection = Some open_connection;
-    get_size        = Some get_size;
-    pread           = Some pread;
-    pwrite          = Some pwrite
-  }
-
-let () = NBDKit.register_plugin plugin
+let () =
+  NBDKit.register_plugin
+    ~name:    "cc-shebang.ml"
+    ~version: (NBDKit.version ())
+    ~config
+    ~open_connection
+    ~get_size
+    ~pread
+    ~pwrite
+    ()

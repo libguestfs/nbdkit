@@ -58,100 +58,6 @@ type export = {
   description : string option;
 }
 
-type 'a plugin = {
-  name : string;
-  longname : string;
-  version : string;
-  description : string;
-
-  load : (unit -> unit) option;
-  get_ready : (unit -> unit) option;
-  after_fork : (unit -> unit) option;
-  cleanup : (unit -> unit) option;
-  unload : (unit -> unit) option;
-
-  config : (string -> string -> unit) option;
-  config_complete : (unit -> unit) option;
-  config_help : string;
-  thread_model : (unit -> thread_model) option;
-
-  preconnect : (bool -> unit) option;
-  open_connection : (bool -> 'a) option;
-  close : ('a -> unit) option;
-
-  get_size : ('a -> int64) option;
-  can_cache : ('a -> cache_flag) option;
-  can_extents : ('a -> bool) option;
-  can_fast_zero : ('a -> bool) option;
-  can_flush : ('a -> bool) option;
-  can_fua : ('a -> fua_flag) option;
-  can_multi_conn : ('a -> bool) option;
-  can_trim : ('a -> bool) option;
-  can_write : ('a -> bool) option;
-  can_zero : ('a -> bool) option;
-  is_rotational : ('a -> bool) option;
-
-  pread : ('a -> int32 -> int64 -> flags -> string) option;
-  pwrite : ('a -> string -> int64 -> flags -> unit) option;
-  flush : ('a -> flags -> unit) option;
-  trim : ('a -> int32 -> int64 -> flags -> unit) option;
-  zero : ('a -> int32 -> int64 -> flags -> unit) option;
-  extents : ('a -> int32 -> int64 -> flags -> extent list) option;
-  cache : ('a -> int32 -> int64 -> flags -> unit) option;
-
-  dump_plugin : (unit -> unit) option;
-  list_exports : (bool -> bool -> export list) option;
-  default_export : (bool -> bool -> string) option;
-  export_description : ('a -> string) option;
-}
-
-let default_callbacks = {
-  name = "";
-  longname = "";
-  version = "";
-  description = "";
-
-  load = None;
-  get_ready = None;
-  after_fork = None;
-  cleanup = None;
-  unload = None;
-
-  config = None;
-  config_complete = None;
-  config_help = "";
-  thread_model = None;
-
-  preconnect = None;
-  open_connection = None;
-  close = None;
-
-  get_size = None;
-  can_cache = None;
-  can_extents = None;
-  can_fast_zero = None;
-  can_flush = None;
-  can_fua = None;
-  can_multi_conn = None;
-  can_trim = None;
-  can_write = None;
-  can_zero = None;
-  is_rotational = None;
-
-  pread = None;
-  pwrite = None;
-  flush = None;
-  trim = None;
-  zero = None;
-  extents = None;
-  cache = None;
-
-  dump_plugin = None;
-  list_exports = None;
-  default_export = None;
-  export_description = None;
-}
-
 external set_name : string -> unit = "ocaml_nbdkit_set_name" [@@noalloc]
 external set_longname : string -> unit = "ocaml_nbdkit_set_longname" [@@noalloc]
 external set_version : string -> unit = "ocaml_nbdkit_set_version" [@@noalloc]
@@ -160,63 +66,87 @@ external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" [@@no
 
 external set_field : string -> 'a -> unit = "ocaml_nbdkit_set_field" [@@noalloc]
 
-let register_plugin plugin =
-  (* Check the required fields have been set by the caller. *)
-  let required fieldname = function
-    | true -> ()
-    | false ->
-       if plugin.name = "" then
-         failwith (sprintf "NBDKit.plugin.%s field is not set" fieldname)
-       else
-         failwith (sprintf "%s: NBDKit.plugin.%s field is not set"
-                     plugin.name fieldname)
-  in
-  required "name"            (plugin.name <> "");
-  required "open_connection" (plugin.open_connection <> None);
-  required "get_size"        (plugin.get_size <> None);
-  required "pread"           (plugin.pread <> None);
-
+let register_plugin ~name
+                    ?longname
+                    ?version
+                    ?description
+                    ?load
+                    ?get_ready
+                    ?after_fork
+                    ?cleanup
+                    ?unload
+                    ?config
+                    ?config_complete
+                    ?config_help
+                    ?thread_model
+                    ?preconnect
+                    ~open_connection
+                    ?close
+                    ~get_size
+                    ?can_cache
+                    ?can_extents
+                    ?can_fast_zero
+                    ?can_flush
+                    ?can_fua
+                    ?can_multi_conn
+                    ?can_trim
+                    ?can_write
+                    ?can_zero
+                    ?is_rotational
+                    ~pread
+                    ?pwrite
+                    ?flush
+                    ?trim
+                    ?zero
+                    ?extents
+                    ?cache
+                    ?dump_plugin
+                    ?list_exports
+                    ?default_export
+                    ?export_description
+                    () =
   (* Set fields in the C plugin struct. *)
-  set_name plugin.name;
-  if plugin.longname <> "" then    set_longname plugin.longname;
-  if plugin.version <> "" then     set_version plugin.version;
-  if plugin.description <> "" then set_description plugin.description;
-  if plugin.config_help <> "" then set_config_help plugin.config_help;
+  set_name name;
+  set_field "open" open_connection;
+  set_field "pread" pread;
+  set_field "get_size" get_size;
 
   let may f = function None -> () | Some a -> f a in
-  may (set_field "after_fork") plugin.after_fork;
-  may (set_field "cache") plugin.cache;
-  may (set_field "can_cache") plugin.can_cache;
-  may (set_field "can_extents") plugin.can_extents;
-  may (set_field "can_fast_zero") plugin.can_fast_zero;
-  may (set_field "can_flush") plugin.can_flush;
-  may (set_field "can_fua") plugin.can_fua;
-  may (set_field "can_multi_conn") plugin.can_multi_conn;
-  may (set_field "can_trim") plugin.can_trim;
-  may (set_field "can_write") plugin.can_write;
-  may (set_field "can_zero") plugin.can_zero;
-  may (set_field "cleanup") plugin.cleanup;
-  may (set_field "close") plugin.close;
-  may (set_field "config") plugin.config;
-  may (set_field "config_complete") plugin.config_complete;
-  may (set_field "default_export") plugin.default_export;
-  may (set_field "dump_plugin") plugin.dump_plugin;
-  may (set_field "export_description") plugin.export_description;
-  may (set_field "extents") plugin.extents;
-  may (set_field "flush") plugin.flush;
-  may (set_field "get_ready") plugin.get_ready;
-  may (set_field "get_size") plugin.get_size;
-  may (set_field "is_rotational") plugin.is_rotational;
-  may (set_field "list_exports") plugin.list_exports;
-  may (set_field "load") plugin.load;
-  may (set_field "open") plugin.open_connection;
-  may (set_field "pread") plugin.pread;
-  may (set_field "preconnect") plugin.preconnect;
-  may (set_field "pwrite") plugin.pwrite;
-  may (set_field "thread_model") plugin.thread_model;
-  may (set_field "trim") plugin.trim;
-  may (set_field "unload") plugin.unload;
-  may (set_field "zero") plugin.zero
+  may set_longname longname;
+  may set_version version;
+  may set_description description;
+  may set_config_help config_help;
+
+  may (set_field "after_fork") after_fork;
+  may (set_field "cache") cache;
+  may (set_field "can_cache") can_cache;
+  may (set_field "can_extents") can_extents;
+  may (set_field "can_fast_zero") can_fast_zero;
+  may (set_field "can_flush") can_flush;
+  may (set_field "can_fua") can_fua;
+  may (set_field "can_multi_conn") can_multi_conn;
+  may (set_field "can_trim") can_trim;
+  may (set_field "can_write") can_write;
+  may (set_field "can_zero") can_zero;
+  may (set_field "cleanup") cleanup;
+  may (set_field "close") close;
+  may (set_field "config") config;
+  may (set_field "config_complete") config_complete;
+  may (set_field "default_export") default_export;
+  may (set_field "dump_plugin") dump_plugin;
+  may (set_field "export_description") export_description;
+  may (set_field "extents") extents;
+  may (set_field "flush") flush;
+  may (set_field "get_ready") get_ready;
+  may (set_field "is_rotational") is_rotational;
+  may (set_field "list_exports") list_exports;
+  may (set_field "load") load;
+  may (set_field "preconnect") preconnect;
+  may (set_field "pwrite") pwrite;
+  may (set_field "thread_model") thread_model;
+  may (set_field "trim") trim;
+  may (set_field "unload") unload;
+  may (set_field "zero") zero
 
 (* Bindings to nbdkit server functions. *)
 

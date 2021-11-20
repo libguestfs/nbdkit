@@ -51,14 +51,12 @@ let pread () count offset _ =
   | 5 -> NBDKit.set_error EINVAL;    failwith "EINVAL"
   | _ -> assert false
 
-let plugin = {
-  NBDKit.default_callbacks with
-    NBDKit.name     = "test-ocaml-errorcodes";
-    version         = NBDKit.version ();
+let () =
+  NBDKit.register_plugin
+    ~name:    "test-ocaml-errorcodes"
+    ~version: (NBDKit.version ())
 
-    open_connection = Some open_connection;
-    get_size        = Some get_size;
-    pread           = Some pread;
-}
-
-let () = NBDKit.register_plugin plugin
+    ~open_connection
+    ~get_size
+    ~pread
+    ()

@@ -26,19 +26,16 @@ interface for OCaml plugins.
 
 Your OCaml code should call C<NBDKit.register_plugin> like this:
 
- let plugin = {
-   NBDKit.default_callbacks with
-     NBDKit.name     = "myplugin";
-     version         = "1.0";
-     open_connection = Some myplugin_open;
-     get_size        = Some myplugin_get_size;
-     pread           = Some myplugin_pread;
-     thread_model    =
-         Some (fun () -> NBDKit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS);
+ NBDKit.register_plugin
+     ~name:            "myplugin";
+     ~version:         "1.0";
+     ~open_connection: myplugin_open
+     ~get_size:        myplugin_get_size
+     ~pread:           myplugin_pread
+     ~thread_model:
+         (fun () -> NBDKit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS)
      (* etc *)
- }
- 
- let () = NBDKit.register_plugin plugin
+     ()
 
 Your plugin must call C<register_plugin> exactly once when the plugin
 is loaded.
@@ -108,10 +105,10 @@ to control this.
 
 =head2 Threads
 
-One of the members in the plugin record passed to
-C<NBDKit.register_plugin> is C<thread model>, which must return one of
-the values in the table below.  For more information on thread models,
-see L<nbdkit-plugin(3)/THREADS>.  If this optional function is not
+One of the optional parameters of C<NBDKit.register_plugin> is
+C<thread model>, which must return one of the values in the table
+below.  For more information on thread models, see
+L<nbdkit-plugin(3)/THREADS>.  If this optional parameter is not
 provided, the thread model defaults to THREAD_MODEL_PARALLEL.  Note
 that because of the garbage collector lock in OCaml, callbacks are
 never truly concurrent.
@@ -160,4 +157,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2014 Red Hat Inc.
+Copyright (C) 2014-2021 Red Hat Inc.

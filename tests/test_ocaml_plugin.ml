@@ -81,13 +81,24 @@ let after_fork () =
 let cleanup () =
   NBDKit.debug "test ocaml plugin cleaning up"
 
+(* Test the handle is received by callbacks. *)
+type handle = {
+  h_id : int;
+  h_sentinel : string;
+}
+
+let id = ref 0
 let open_connection readonly =
   let export_name = NBDKit.export_name () in
   NBDKit.debug "test ocaml plugin handle opened readonly=%b export=%S"
     readonly export_name;
-  ()
+  incr id;
+  { h_id = !id; h_sentinel = "TESTING" }
 
-let close () =
+let close h =
+  NBDKit.debug "test ocaml plugin closing handle id=%d" h.h_id;
+  assert (h.h_id > 0);
+  assert (h.h_sentinel = "TESTING");
   ()
 
 let list_exports _ _ =
@@ -96,10 +107,15 @@ let list_exports _ _ =
 
 let default_export _ _ = "name1"
 
-let get_size () =
+let get_size h =
+  NBDKit.debug "test ocaml plugin get_size handle id=%d" h.h_id;
+  assert (h.h_id > 0);
+  assert (h.h_sentinel = "TESTING");
   Int64.of_int (Bytes.length disk)
 
-let pread () count offset _ =
+let pread h count offset _ =
+  assert (h.h_id > 0);
+  assert (h.h_sentinel = "TESTING");
   let count = Int32.to_int count in
   let buf = Bytes.create count in
   Bytes.blit disk (Int64.to_int offset) buf 0 count;
@@ -108,13 +124,15 @@ let pread () count offset _ =
 let set_non_sparse offset len =
   Bytes.fill sparse (offset/sector_size) ((len-1)/sector_size) '\001'
 
-let pwrite () buf offset _ =
+let pwrite h buf offset _ =
+  assert (h.h_id > 0);
+  assert (h.h_sentinel = "TESTING");
   let len = String.length buf in
   let offset = Int64.to_int offset in
   String.blit buf 0 disk offset len;
   set_non_sparse offset len
 
-let extents () count offset _ =
+let extents _ count offset _ =
   let extents = Array.init nr_sectors (
     fun sector ->
       { NBDKit.offset = Int64.of_int (sector*sector_size);
@@ -131,30 +149,28 @@ let extents () count offset _ =
 let thread_model () =
   NBDKit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
-let plugin = {
-  NBDKit.default_callbacks with
-    NBDKit.name     = "testocaml";
-    version         = NBDKit.version ();
+let () =
+  NBDKit.register_plugin
+    ~name:   "testocaml"
+    ~version: (NBDKit.version ())
 
-    load            = Some load;
-    get_ready       = Some get_ready;
-    after_fork      = Some after_fork;
-    cleanup         = Some cleanup;
-    unload          = Some unload;
+    ~load
+    ~get_ready
+    ~after_fork
+    ~cleanup
+    ~unload
 
-    config          = Some config;
-    config_complete = Some config_complete;
-    thread_model    = Some thread_model;
+    ~config
+    ~config_complete
+    ~thread_model
 
-    open_connection = Some open_connection;
-    close           = Some close;
-    get_size        = Some get_size;
-    pread           = Some pread;
-    pwrite          = Some pwrite;
-    extents         = Some extents;
+    ~open_connection
+    ~close
+    ~get_size
+    ~pread
+    ~pwrite
+    ~extents
 
-    list_exports    = Some list_exports;
-    default_export  = Some default_export;
-}
-
-let () = NBDKit.register_plugin plugin
+    ~list_exports
+    ~default_export
+    ()

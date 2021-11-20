@@ -59,6 +59,7 @@ let open_connection readonly =
   { h_id = !id }
 
 let get_size h =
+  NBDKit.debug "example OCaml plugin get_size id=%d" h.h_id;
   Int64.of_int (Bytes.length !disk)
 
 let pread h count offset _ =
@@ -75,25 +76,19 @@ let pwrite h buf offset _ =
 let thread_model () =
   NBDKit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
-let plugin = {
-  NBDKit.default_callbacks with
-    (* name, open_connection, get_size and pread are required,
-     * everything else is optional.
-     *)
-    NBDKit.name        = "ocamlexample";
-    version            = NBDKit.version ();
-
-    load               = Some load;
-    unload             = Some unload;
-
-    config             = Some config;
-
-    open_connection    = Some open_connection;
-    get_size           = Some get_size;
-    pread              = Some pread;
-    pwrite             = Some pwrite;
-
-    thread_model       = Some thread_model;
-}
-
-let () = NBDKit.register_plugin plugin
+let () =
+  (* name, open_connection, get_size and pread are required,
+   * everything else is optional.
+   *)
+  NBDKit.register_plugin
+    ~name:    "ocamlexample"
+    ~version: (NBDKit.version ())
+    ~load
+    ~unload
+    ~config
+    ~open_connection
+    ~get_size
+    ~pread
+    ~pwrite
+    ~thread_model
+    ()

@@ -64,70 +64,64 @@ type thread_model =
 | THREAD_MODEL_SERIALIZE_REQUESTS
 | THREAD_MODEL_PARALLEL
 
-(** The plugin fields and callbacks.
+(** Register the plugin with nbdkit.
 
     The ['a] parameter is the handle type returned by your
     [open_connection] method and passed back to all connected calls. *)
-type 'a plugin = {
+val register_plugin :
   (* Plugin description. *)
-  name : string;                (** required field *)
-  longname : string;
-  version : string;
-  description : string;
+  name : string ->
+  ?longname : string ->
+  ?version : string ->
+  ?description : string ->
 
   (* Plugin lifecycle. *)
-  load : (unit -> unit) option;
-  get_ready : (unit -> unit) option;
-  after_fork : (unit -> unit) option;
-  cleanup : (unit -> unit) option;
-  unload : (unit -> unit) option;
+  ?load : (unit -> unit) ->
+  ?get_ready : (unit -> unit) ->
+  ?after_fork : (unit -> unit) ->
+  ?cleanup : (unit -> unit) ->
+  ?unload : (unit -> unit) ->
 
   (* Plugin configuration. *)
-  config : (string -> string -> unit) option;
-  config_complete : (unit -> unit) option;
-  config_help : string;
-  thread_model : (unit -> thread_model) option;
+  ?config : (string -> string -> unit) ->
+  ?config_complete : (unit -> unit) ->
+  ?config_help : string ->
+  ?thread_model : (unit -> thread_model) ->
 
   (* Connection lifecycle. *)
-  preconnect : (bool -> unit) option;
-  open_connection : (bool -> 'a) option; (** required field *)
-  close : ('a -> unit) option;
+  ?preconnect : (bool -> unit) ->
+  open_connection : (bool -> 'a) ->
+  ?close : ('a -> unit) ->
 
   (* NBD negotiation. *)
-  get_size : ('a -> int64) option; (** required field *)
-  can_cache : ('a -> cache_flag) option;
-  can_extents : ('a -> bool) option;
-  can_fast_zero : ('a -> bool) option;
-  can_flush : ('a -> bool) option;
-  can_fua : ('a -> fua_flag) option;
-  can_multi_conn : ('a -> bool) option;
-  can_trim : ('a -> bool) option;
-  can_write : ('a -> bool) option;
-  can_zero : ('a -> bool) option;
-  is_rotational : ('a -> bool) option;
+  get_size : ('a -> int64) ->
+  ?can_cache : ('a -> cache_flag) ->
+  ?can_extents : ('a -> bool) ->
+  ?can_fast_zero : ('a -> bool) ->
+  ?can_flush : ('a -> bool) ->
+  ?can_fua : ('a -> fua_flag) ->
+  ?can_multi_conn : ('a -> bool) ->
+  ?can_trim : ('a -> bool) ->
+  ?can_write : ('a -> bool) ->
+  ?can_zero : ('a -> bool) ->
+  ?is_rotational : ('a -> bool) ->
 
   (* Serving data. *)
-  pread : ('a -> int32 -> int64 -> flags -> string) option;(** required field *)
-  pwrite : ('a -> string -> int64 -> flags -> unit) option;
-  flush : ('a -> flags -> unit) option;
-  trim : ('a -> int32 -> int64 -> flags -> unit) option;
-  zero : ('a -> int32 -> int64 -> flags -> unit) option;
-  extents : ('a -> int32 -> int64 -> flags -> extent list) option;
-  cache : ('a -> int32 -> int64 -> flags -> unit) option;
+  pread : ('a -> int32 -> int64 -> flags -> string) ->
+  ?pwrite : ('a -> string -> int64 -> flags -> unit) ->
+  ?flush : ('a -> flags -> unit) ->
+  ?trim : ('a -> int32 -> int64 -> flags -> unit) ->
+  ?zero : ('a -> int32 -> int64 -> flags -> unit) ->
+  ?extents : ('a -> int32 -> int64 -> flags -> extent list) ->
+  ?cache : ('a -> int32 -> int64 -> flags -> unit) ->
 
   (* Miscellaneous. *)
-  dump_plugin : (unit -> unit) option;
-  list_exports : (bool -> bool -> export list) option;
-  default_export : (bool -> bool -> string) option;
-  export_description : ('a -> string) option;
-}
+  ?dump_plugin : (unit -> unit) ->
+  ?list_exports : (bool -> bool -> export list) ->
+  ?default_export : (bool -> bool -> string) ->
+  ?export_description : ('a -> string) ->
 
-(** The plugin with all fields set to [None], so you can write
-    [{ default_callbacks with field1 = Some foo1; field2 = Some foo2 }] *)
-val default_callbacks : 'a plugin
-
-(** Register the plugin with nbdkit. *)
-val register_plugin : 'a plugin -> unit
+  unit -> unit
 
 (** Set the errno returned over the NBD protocol to the client.
 
