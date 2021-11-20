@@ -87,6 +87,7 @@ val register_plugin :
   ?config_complete : (unit -> unit) ->
   ?config_help : string ->
   ?thread_model : (unit -> thread_model) ->
+  ?magic_config_key : string ->
 
   (* Connection lifecycle. *)
   ?preconnect : (bool -> unit) ->

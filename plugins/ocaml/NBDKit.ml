@@ -63,6 +63,7 @@ external set_longname : string -> unit = "ocaml_nbdkit_set_longname" [@@noalloc]
 external set_version : string -> unit = "ocaml_nbdkit_set_version" [@@noalloc]
 external set_description : string -> unit = "ocaml_nbdkit_set_description" [@@noalloc]
 external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" [@@noalloc]
+external set_magic_config_key : string -> unit = "ocaml_nbdkit_set_magic_config_key" [@@noalloc]
 
 external set_field : string -> 'a -> unit = "ocaml_nbdkit_set_field" [@@noalloc]
 
@@ -79,6 +80,7 @@ let register_plugin ~name
                     ?config_complete
                     ?config_help
                     ?thread_model
+                    ?magic_config_key
                     ?preconnect
                     ~open_connection
                     ?close
@@ -116,6 +118,7 @@ let register_plugin ~name
   may set_version version;
   may set_description description;
   may set_config_help config_help;
+  may set_magic_config_key magic_config_key;
 
   may (set_field "after_fork") after_fork;
   may (set_field "cache") cache;

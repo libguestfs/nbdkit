@@ -51,7 +51,11 @@ main (int argc, char *argv[])
   int64_t size;
   char *data;
 
-  if (test_start_nbdkit ("./test-ocaml-plugin.so", "a=1", "b=2", "c=3",
+  if (test_start_nbdkit ("./test-ocaml-plugin.so",
+                         /* ordinary parameters */
+                         "a=1", "b=2", "c=3",
+                         /* magic config key, so equivalent to d=4 */
+                         "4",
                          NULL) == -1)
     exit (EXIT_FAILURE);
 

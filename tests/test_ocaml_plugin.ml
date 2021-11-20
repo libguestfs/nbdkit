@@ -67,7 +67,7 @@ let config k v =
 
 let config_complete () =
   let params = List.rev !params in
-  assert (params = [ "a", "1"; "b", "2"; "c", "3" ])
+  assert (params = [ "a", "1"; "b", "2"; "c", "3"; "d", "4" ])
 
 let get_ready () =
   (* We could allocate the disk here, but it's easier to allocate
@@ -163,6 +163,7 @@ let () =
     ~config
     ~config_complete
     ~thread_model
+    ~magic_config_key: "d"
 
     ~open_connection
     ~close

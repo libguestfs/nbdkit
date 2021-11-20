@@ -129,6 +129,7 @@ unload_wrapper (void)
   free ((char *) plugin.version);
   free ((char *) plugin.description);
   free ((char *) plugin.config_help);
+  free ((char *) plugin.magic_config_key);
 
   remove_roots ();
 
@@ -799,6 +800,14 @@ NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_config_help (value helpv)
 {
   plugin.config_help = strdup (String_val (helpv));
+  return Val_unit;
+}
+
+/* NB: noalloc function */
+NBDKIT_DLL_PUBLIC value
+ocaml_nbdkit_set_magic_config_key (value magicv)
+{
+  plugin.magic_config_key = strdup (String_val (magicv));
   return Val_unit;
 }
 
