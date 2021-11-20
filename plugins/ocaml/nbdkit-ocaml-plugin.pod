@@ -24,11 +24,12 @@ read L<nbdkit-plugin(3)> first.
 You should also look at L<NBDKit(3)> which describes the plugin
 interface for OCaml plugins.
 
-Your OCaml code should call C<NBDKit.register_plugin> like this:
+Your OCaml code should call C<NBDKit.register_plugin> like this when
+the plugin is loaded:
 
  NBDKit.register_plugin
-     ~name:            "myplugin";
-     ~version:         "1.0";
+     ~name:            "myplugin"
+     ~version:         "1.0"
      ~open_connection: myplugin_open
      ~get_size:        myplugin_get_size
      ~pread:           myplugin_pread
@@ -37,8 +38,8 @@ Your OCaml code should call C<NBDKit.register_plugin> like this:
      (* etc *)
      ()
 
-Your plugin must call C<register_plugin> exactly once when the plugin
-is loaded.
+C<~name>, C<~open_connection>, C<~get_size> and C<~pread> are
+required.  All other parameters are optional.
 
 =head2 Compiling an OCaml nbdkit plugin
 
@@ -106,12 +107,8 @@ to control this.
 =head2 Threads
 
 One of the optional parameters of C<NBDKit.register_plugin> is
-C<thread model>, which must return one of the values in the table
-below.  For more information on thread models, see
-L<nbdkit-plugin(3)/THREADS>.  If this optional parameter is not
-provided, the thread model defaults to THREAD_MODEL_PARALLEL.  Note
-that because of the garbage collector lock in OCaml, callbacks are
-never truly concurrent.
+C<~thread_model>, which must return one of the values in the table
+below:
 
 =over 4
 
@@ -124,6 +121,13 @@ never truly concurrent.
 =item C<NBDKit.THREAD_MODEL_PARALLEL>
 
 =back
+
+If this optional parameter is not provided, the thread model defaults
+to C<NBDKit.THREAD_MODEL_PARALLEL>.  The garbage collector lock is
+acquired when calling into OCaml code and because of this callbacks
+are never truly concurrent.
+
+For more information on thread models, see L<nbdkit-plugin(3)/THREADS>.
 
 =head2 Debugging
 
