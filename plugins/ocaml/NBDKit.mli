@@ -43,7 +43,7 @@ type fua_flag = FuaNone | FuaEmulate | FuaNative
 
 type cache_flag = CacheNone | CacheEmulate | CacheNop
 
-(** The type of the extent list returned by {!plugin.extents} *)
+(** The type of the extent list returned by [extents] *)
 type extent = {
   offset : int64;
   length : int64;
@@ -51,13 +51,13 @@ type extent = {
   is_zero : bool;
 }
 
-(** The type of the export list returned by {!plugin.list_exports} *)
+(** The type of the export list returned by [list_exports] *)
 type export = {
   name : string;
   description : string option;
 }
 
-(** The type of the thread model returned by {!plugin.thread_model} *)
+(** The type of the thread model returned by [thread_model] *)
 type thread_model =
 | THREAD_MODEL_SERIALIZE_CONNECTIONS
 | THREAD_MODEL_SERIALIZE_ALL_REQUESTS
