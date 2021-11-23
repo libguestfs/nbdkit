@@ -33,6 +33,14 @@ let load () =
 let unload () =
   NBDKit.debug "example OCaml plugin unloaded"
 
+(* Add some extra fields to --dump-plugin output.
+ * To test this from the build directory:
+ *   ./nbdkit --dump-plugin plugins/ocaml/nbdkit-ocamlexample-plugin.so
+ *)
+let dump_plugin () =
+  Printf.printf "ocamlexample_data=42\n";
+  flush stdout
+
 let config key value =
   match key with
   | "size" ->
@@ -85,6 +93,7 @@ let () =
     ~version: (NBDKit.version ())
     ~load
     ~unload
+    ~dump_plugin
     ~config
     ~open_connection
     ~get_size
