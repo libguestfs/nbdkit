@@ -58,18 +58,9 @@ type export = {
   description : string option;
 }
 
-(* Set fixed fields in the C plugin struct, for anything which is
- * not a function pointer.
- *)
-external set_name : string -> unit = "ocaml_nbdkit_set_name" [@@noalloc]
-external set_longname : string -> unit = "ocaml_nbdkit_set_longname" [@@noalloc]
-external set_version : string -> unit = "ocaml_nbdkit_set_version" [@@noalloc]
-external set_description : string -> unit
-  = "ocaml_nbdkit_set_description" [@@noalloc]
-external set_config_help : string -> unit
-  = "ocaml_nbdkit_set_config_help" [@@noalloc]
-external set_magic_config_key : string -> unit
-  = "ocaml_nbdkit_set_magic_config_key" [@@noalloc]
+(* Set a named string field in the C plugin struct. *)
+external set_string_field : string -> string -> unit
+  = "ocaml_nbdkit_set_string_field" [@@noalloc]
 
 (* Set an arbitrary named function pointer field in the C plugin struct.
  *
@@ -121,17 +112,17 @@ let register_plugin ~name
                     ?export_description
                     () =
   (* Set fields in the C plugin struct. *)
-  set_name name;
+  set_string_field "name" name;
   set_field "open" open_connection;
   set_field "pread" pread;
   set_field "get_size" get_size;
 
   let may f = function None -> () | Some a -> f a in
-  may set_longname longname;
-  may set_version version;
-  may set_description description;
-  may set_config_help config_help;
-  may set_magic_config_key magic_config_key;
+  may (set_string_field "longname") longname;
+  may (set_string_field "version") version;
+  may (set_string_field "description") description;
+  may (set_string_field "config_help") config_help;
+  may (set_string_field "magic_config_key") magic_config_key;
 
   may (set_field "after_fork") after_fork;
   may (set_field "cache") cache;

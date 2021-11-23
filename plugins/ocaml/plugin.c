@@ -68,6 +68,7 @@ constructor (void)
  * function.
  */
 static void unload_wrapper (void);
+static void free_strings (void);
 static void remove_roots (void);
 
 static struct nbdkit_plugin plugin = {
@@ -124,13 +125,7 @@ unload_wrapper (void)
     caml_callback (unload_fn, Val_unit);
   }
 
-  free ((char *) plugin.name);
-  free ((char *) plugin.longname);
-  free ((char *) plugin.version);
-  free ((char *) plugin.description);
-  free ((char *) plugin.config_help);
-  free ((char *) plugin.magic_config_key);
-
+  free_strings ();
   remove_roots ();
 
 #ifdef HAVE_CAML_SHUTDOWN
@@ -765,50 +760,39 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
 
 /* NB: noalloc function */
 NBDKIT_DLL_PUBLIC value
-ocaml_nbdkit_set_name (value namev)
+ocaml_nbdkit_set_string_field (value fieldv, value strv)
 {
-  plugin.name = strdup (String_val (namev));
+  const char *field = String_val (fieldv);
+  char *str = strdup (String_val (strv));
+
+  if (strcmp (field, "name") == 0)
+    plugin.name = str;
+  else if (strcmp (field, "longname") == 0)
+    plugin.longname = str;
+  else if (strcmp (field, "version") == 0)
+    plugin.version = str;
+  else if (strcmp (field, "description") == 0)
+    plugin.description = str;
+  else if (strcmp (field, "config_help") == 0)
+    plugin.config_help = str;
+  else if (strcmp (field, "magic_config_key") == 0)
+    plugin.magic_config_key = str;
+  else
+    abort ();                   /* unknown field name */
+
   return Val_unit;
 }
 
-/* NB: noalloc function */
-NBDKIT_DLL_PUBLIC value
-ocaml_nbdkit_set_longname (value longnamev)
+/* Free string fields, called from unload(). */
+static void
+free_strings (void)
 {
-  plugin.longname = strdup (String_val (longnamev));
-  return Val_unit;
-}
-
-/* NB: noalloc function */
-NBDKIT_DLL_PUBLIC value
-ocaml_nbdkit_set_version (value versionv)
-{
-  plugin.version = strdup (String_val (versionv));
-  return Val_unit;
-}
-
-/* NB: noalloc function */
-NBDKIT_DLL_PUBLIC value
-ocaml_nbdkit_set_description (value descriptionv)
-{
-  plugin.description = strdup (String_val (descriptionv));
-  return Val_unit;
-}
-
-/* NB: noalloc function */
-NBDKIT_DLL_PUBLIC value
-ocaml_nbdkit_set_config_help (value helpv)
-{
-  plugin.config_help = strdup (String_val (helpv));
-  return Val_unit;
-}
-
-/* NB: noalloc function */
-NBDKIT_DLL_PUBLIC value
-ocaml_nbdkit_set_magic_config_key (value magicv)
-{
-  plugin.magic_config_key = strdup (String_val (magicv));
-  return Val_unit;
+  free ((char *) plugin.name);
+  free ((char *) plugin.longname);
+  free ((char *) plugin.version);
+  free ((char *) plugin.description);
+  free ((char *) plugin.config_help);
+  free ((char *) plugin.magic_config_key);
 }
 
 /* NB: noalloc function */
