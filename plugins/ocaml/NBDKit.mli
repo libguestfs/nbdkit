@@ -70,59 +70,60 @@ type thread_model =
     [open_connection] method and passed back to all connected calls. *)
 val register_plugin :
   (* Plugin description. *)
-  name : string ->
-  ?longname : string ->
-  ?version : string ->
-  ?description : string ->
+  name: string ->
+  ?longname: string ->
+  ?version: string ->
+  ?description: string ->
 
   (* Plugin lifecycle. *)
-  ?load : (unit -> unit) ->
-  ?get_ready : (unit -> unit) ->
-  ?after_fork : (unit -> unit) ->
-  ?cleanup : (unit -> unit) ->
-  ?unload : (unit -> unit) ->
+  ?load: (unit -> unit) ->
+  ?get_ready: (unit -> unit) ->
+  ?after_fork: (unit -> unit) ->
+  ?cleanup: (unit -> unit) ->
+  ?unload: (unit -> unit) ->
 
   (* Plugin configuration. *)
-  ?config : (string -> string -> unit) ->
-  ?config_complete : (unit -> unit) ->
-  ?config_help : string ->
-  ?thread_model : (unit -> thread_model) ->
-  ?magic_config_key : string ->
+  ?config: (string -> string -> unit) ->
+  ?config_complete: (unit -> unit) ->
+  ?config_help: string ->
+  ?thread_model: (unit -> thread_model) ->
+  ?magic_config_key: string ->
 
   (* Connection lifecycle. *)
-  ?preconnect : (bool -> unit) ->
-  open_connection : (bool -> 'a) ->
-  ?close : ('a -> unit) ->
+  ?preconnect: (bool -> unit) ->
+  open_connection: (bool -> 'a) ->
+  ?close: ('a -> unit) ->
 
   (* NBD negotiation. *)
-  get_size : ('a -> int64) ->
-  ?can_cache : ('a -> cache_flag) ->
-  ?can_extents : ('a -> bool) ->
-  ?can_fast_zero : ('a -> bool) ->
-  ?can_flush : ('a -> bool) ->
-  ?can_fua : ('a -> fua_flag) ->
-  ?can_multi_conn : ('a -> bool) ->
-  ?can_trim : ('a -> bool) ->
-  ?can_write : ('a -> bool) ->
-  ?can_zero : ('a -> bool) ->
-  ?is_rotational : ('a -> bool) ->
+  get_size: ('a -> int64) ->
+  ?can_cache: ('a -> cache_flag) ->
+  ?can_extents: ('a -> bool) ->
+  ?can_fast_zero: ('a -> bool) ->
+  ?can_flush: ('a -> bool) ->
+  ?can_fua: ('a -> fua_flag) ->
+  ?can_multi_conn: ('a -> bool) ->
+  ?can_trim: ('a -> bool) ->
+  ?can_write: ('a -> bool) ->
+  ?can_zero: ('a -> bool) ->
+  ?is_rotational: ('a -> bool) ->
 
   (* Serving data. *)
-  pread : ('a -> int32 -> int64 -> flags -> string) ->
-  ?pwrite : ('a -> string -> int64 -> flags -> unit) ->
-  ?flush : ('a -> flags -> unit) ->
-  ?trim : ('a -> int32 -> int64 -> flags -> unit) ->
-  ?zero : ('a -> int32 -> int64 -> flags -> unit) ->
-  ?extents : ('a -> int32 -> int64 -> flags -> extent list) ->
-  ?cache : ('a -> int32 -> int64 -> flags -> unit) ->
+  pread: ('a -> int32 -> int64 -> flags -> string) ->
+  ?pwrite: ('a -> string -> int64 -> flags -> unit) ->
+  ?flush: ('a -> flags -> unit) ->
+  ?trim: ('a -> int32 -> int64 -> flags -> unit) ->
+  ?zero: ('a -> int32 -> int64 -> flags -> unit) ->
+  ?extents: ('a -> int32 -> int64 -> flags -> extent list) ->
+  ?cache: ('a -> int32 -> int64 -> flags -> unit) ->
 
   (* Miscellaneous. *)
-  ?dump_plugin : (unit -> unit) ->
-  ?list_exports : (bool -> bool -> export list) ->
-  ?default_export : (bool -> bool -> string) ->
-  ?export_description : ('a -> string) ->
+  ?dump_plugin: (unit -> unit) ->
+  ?list_exports: (bool -> bool -> export list) ->
+  ?default_export: (bool -> bool -> string) ->
+  ?export_description: ('a -> string) ->
 
-  unit -> unit
+  unit ->
+  unit
 
 (** Set the errno returned over the NBD protocol to the client.
 

@@ -58,15 +58,28 @@ type export = {
   description : string option;
 }
 
+(* Set fixed fields in the C plugin struct, for anything which is
+ * not a function pointer.
+ *)
 external set_name : string -> unit = "ocaml_nbdkit_set_name" [@@noalloc]
 external set_longname : string -> unit = "ocaml_nbdkit_set_longname" [@@noalloc]
 external set_version : string -> unit = "ocaml_nbdkit_set_version" [@@noalloc]
-external set_description : string -> unit = "ocaml_nbdkit_set_description" [@@noalloc]
-external set_config_help : string -> unit = "ocaml_nbdkit_set_config_help" [@@noalloc]
-external set_magic_config_key : string -> unit = "ocaml_nbdkit_set_magic_config_key" [@@noalloc]
+external set_description : string -> unit
+  = "ocaml_nbdkit_set_description" [@@noalloc]
+external set_config_help : string -> unit
+  = "ocaml_nbdkit_set_config_help" [@@noalloc]
+external set_magic_config_key : string -> unit
+  = "ocaml_nbdkit_set_magic_config_key" [@@noalloc]
 
+(* Set an arbitrary named function pointer field in the C plugin struct.
+ *
+ * Caution: There is no type checking here, the parameter type
+ * declared in [NBDKit.mli] must match what the corresponding
+ * [<field_name>_wrapper] function in [plugin.c] calls.
+ *)
 external set_field : string -> 'a -> unit = "ocaml_nbdkit_set_field" [@@noalloc]
 
+(* Register the plugin. *)
 let register_plugin ~name
                     ?longname
                     ?version
@@ -152,7 +165,6 @@ let register_plugin ~name
   may (set_field "zero") zero
 
 (* Bindings to nbdkit server functions. *)
-
 external set_error : Unix.error -> unit = "ocaml_nbdkit_set_error" [@@noalloc]
 external parse_size : string -> int64 = "ocaml_nbdkit_parse_size"
 external parse_bool : string -> bool = "ocaml_nbdkit_parse_bool"
@@ -161,12 +173,8 @@ external realpath : string -> string = "ocaml_nbdkit_realpath"
 external nanosleep : int -> int -> unit = "ocaml_nbdkit_nanosleep"
 external export_name : unit -> string = "ocaml_nbdkit_export_name"
 external shutdown : unit -> unit = "ocaml_nbdkit_shutdown" [@@noalloc]
-
 external _debug : string -> unit = "ocaml_nbdkit_debug" [@@noalloc]
-
-let debug fs =
-  ksprintf _debug fs
-
+let debug fs = ksprintf _debug fs
 external version : unit -> string = "ocaml_nbdkit_version"
 external peer_pid : unit -> int64 = "ocaml_nbdkit_peer_pid"
 external peer_uid : unit -> int64 = "ocaml_nbdkit_peer_uid"
