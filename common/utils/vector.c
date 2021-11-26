@@ -60,7 +60,7 @@ generic_vector_reserve (struct generic_vector *v, size_t n, size_t itemsize)
    *   newcap = v->cap + (v->cap + 1) / 2
    *   newbytes = newcap * itemsize
    */
-  if (ADD_OVERFLOW (v->cap, 1, &t) ||
+  if (ADD_OVERFLOW (v->cap, 1u, &t) ||
       ADD_OVERFLOW (v->cap, t/2, &newcap) ||
       MUL_OVERFLOW (newcap, itemsize, &newbytes) ||
       newbytes < reqbytes) {
