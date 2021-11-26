@@ -1665,6 +1665,20 @@ test_pause_SOURCES = test-pause.c
 test_pause_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_pause_LDADD = $(LIBNBD_LIBS)
 
+# protect filter test.
+LIBNBD_TESTS += test-protect
+
+test_protect_SOURCES = test-protect.c
+test_protect_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
+test_protect_LDADD = $(LIBNBD_LIBS)
+
+TESTS += \
+	test-protect-ranges.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-protect-ranges.sh \
+	$(NULL)
+
 # rate filter test.
 TESTS += \
 	test-rate.sh \

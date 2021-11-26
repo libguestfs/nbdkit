@@ -153,6 +153,7 @@ plugins/*/*.3
 /tests/test-partition
 /tests/test-pause
 /tests/test-perl
+/tests/test-protect
 /tests/test-python
 /tests/test-random
 /tests/test-readahead
