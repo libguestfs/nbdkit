@@ -57,6 +57,7 @@ TESTS = \
 	test-ascii-ctype \
 	test-ascii-string \
 	test-byte-swapping \
+	test-checked-overflow \
 	test-isaligned \
 	test-ispowerof2 \
 	test-iszero \
@@ -78,6 +79,10 @@ test_ascii_string_CFLAGS = $(WARNINGS_CFLAGS)
 test_byte_swapping_SOURCES = test-byte-swapping.c byte-swapping.h
 test_byte_swapping_CPPFLAGS = -I$(srcdir)
 test_byte_swapping_CFLAGS = $(WARNINGS_CFLAGS)
+
+test_checked_overflow_SOURCES = test-checked-overflow.c checked-overflow.h
+test_checked_overflow_CPPFLAGS = -I$(srcdir)
+test_checked_overflow_CFLAGS = $(WARNINGS_CFLAGS)
 
 test_isaligned_SOURCES = test-isaligned.c isaligned.h
 test_isaligned_CPPFLAGS = -I$(srcdir)

@@ -221,6 +221,12 @@ CFLAGS="$old_CFLAGS"
 AC_MSG_RESULT([$supports_std_c90])
 AM_CONDITIONAL([CAN_TEST_ANSI_C], [test "x$supports_std_c90" = "xyes"])
 
+dnl Check for __builtin_*_overflow.  We need the dummy parameters
+dnl else detection doesn't work correctly for some reason.
+AC_CHECK_DECLS([__builtin_add_overflow(int, int, int *),
+                __builtin_mul_overflow(int, int, int *)],
+                [], [], [])
+
 dnl On Haiku we must use BSD-compatibility headers to get the endian
 dnl macros we use.
 AC_MSG_CHECKING(whether OS-dependent include paths are required)
