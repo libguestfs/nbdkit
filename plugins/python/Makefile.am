@@ -53,8 +53,9 @@ nbdkit_python_plugin_la_SOURCES = \
 	$(NULL)
 
 nbdkit_python_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/include \
 	$(NULL)
 
 nbdkit_python_plugin_la_CFLAGS = \

@@ -603,6 +603,7 @@ test_curl_header_script_SOURCES = \
 	web-server.h \
 	$(NULL)
 test_curl_header_script_CPPFLAGS = \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 test_curl_header_script_CFLAGS = \
@@ -624,6 +625,7 @@ test_curl_cookie_script_SOURCES = \
 	web-server.h \
 	$(NULL)
 test_curl_cookie_script_CPPFLAGS = \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 test_curl_cookie_script_CFLAGS = \
@@ -1738,7 +1740,9 @@ test_retry_request_mirror_SOURCES = \
 	test.h \
 	$(NULL)
 test_retry_request_mirror_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils \
+	$(NULL)
 test_retry_request_mirror_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(PTHREAD_CFLAGS) \

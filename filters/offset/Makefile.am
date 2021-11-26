@@ -41,8 +41,9 @@ nbdkit_offset_filter_la_SOURCES = \
 	$(NULL)
 
 nbdkit_offset_filter_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/include \
 	$(NULL)
 nbdkit_offset_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_offset_filter_la_LDFLAGS = \

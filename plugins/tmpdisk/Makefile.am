@@ -59,8 +59,9 @@ nbdkit_tmpdisk_plugin_la_SOURCES = \
 	$(NULL)
 
 nbdkit_tmpdisk_plugin_la_CPPFLAGS = \
-	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/include \
 	$(NULL)
 nbdkit_tmpdisk_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_tmpdisk_plugin_la_LIBADD = \

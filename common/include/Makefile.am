@@ -47,6 +47,7 @@ EXTRA_DIST = \
 	random.h \
 	rounding.h \
 	tvdiff.h \
+	unique-name.h \
 	unix-path-max.h \
 	$(NULL)
 

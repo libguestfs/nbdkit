@@ -531,7 +531,7 @@ extern void threadlocal_pop_context (struct context **ctx);
 #define CLEANUP_CONTEXT_POP __attribute__((cleanup (threadlocal_pop_context)))
 #define PUSH_CONTEXT_FOR_SCOPE(ctx)                                     \
   CLEANUP_CONTEXT_POP CLANG_UNUSED_VARIABLE_WORKAROUND                  \
-  struct context *UNIQUE_VAR(_ctx) = threadlocal_push_context (ctx)
+  struct context *UNIQUE_NAME(_ctx) = threadlocal_push_context (ctx)
 
 /* Macro which sets local variable struct connection *conn from
  * thread-local storage, asserting that it is non-NULL.  If you want

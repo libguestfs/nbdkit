@@ -36,17 +36,14 @@
 #include <pthread.h>
 #include <assert.h>
 
+#include "unique-name.h"
+
 /* Work around clang bug: https://bugs.llvm.org/show_bug.cgi?id=43482 */
 #ifdef __clang__
 #define CLANG_UNUSED_VARIABLE_WORKAROUND __attribute__((__unused__))
 #else
 #define CLANG_UNUSED_VARIABLE_WORKAROUND
 #endif
-
-/* https://stackoverflow.com/a/1597129 */
-#define XXUNIQUE_VAR(name, line) name ## line
-#define XUNIQUE_VAR(name, line) XXUNIQUE_VAR (name, line)
-#define UNIQUE_VAR(name) XUNIQUE_VAR (name, __LINE__)
 
 /* cleanup.c */
 extern void cleanup_free (void *ptr);
@@ -56,27 +53,27 @@ extern void cleanup_mutex_unlock (pthread_mutex_t **ptr);
 #define CLEANUP_MUTEX_UNLOCK __attribute__((cleanup (cleanup_mutex_unlock)))
 
 #define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex)                           \
-  CLEANUP_MUTEX_UNLOCK pthread_mutex_t *UNIQUE_VAR(_lock) = mutex;      \
+  CLEANUP_MUTEX_UNLOCK pthread_mutex_t *UNIQUE_NAME(_lock) = mutex;     \
   do {                                                                  \
-    int _r = pthread_mutex_lock (UNIQUE_VAR(_lock));                    \
+    int _r = pthread_mutex_lock (UNIQUE_NAME(_lock));                   \
     assert (!_r);                                                       \
   } while (0)
 
 extern void cleanup_rwlock_unlock (pthread_rwlock_t **ptr);
 #define CLEANUP_RWLOCK_UNLOCK __attribute__((cleanup (cleanup_rwlock_unlock)))
 
-#define ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE(rwlock)                        \
-  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *UNIQUE_VAR(_rwlock) = rwlock; \
-  do {                                                                  \
-    int _r = pthread_rwlock_wrlock (UNIQUE_VAR(_rwlock));               \
-    assert (!_r);                                                       \
+#define ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE(rwlock)                         \
+  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *UNIQUE_NAME(_rwlock) = rwlock; \
+  do {                                                                   \
+    int _r = pthread_rwlock_wrlock (UNIQUE_NAME(_rwlock));               \
+    assert (!_r);                                                        \
   } while (0)
 
-#define ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE(rwlock)                        \
-  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *UNIQUE_VAR(_rwlock) = rwlock; \
-  do {                                                                  \
-    int _r = pthread_rwlock_rdlock (UNIQUE_VAR(_rwlock));               \
-    assert (!_r);                                                       \
+#define ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE(rwlock)                         \
+  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *UNIQUE_NAME(_rwlock) = rwlock; \
+  do {                                                                   \
+    int _r = pthread_rwlock_rdlock (UNIQUE_NAME(_rwlock));               \
+    assert (!_r);                                                        \
   } while (0)
 
 /* cleanup-nbdkit.c */

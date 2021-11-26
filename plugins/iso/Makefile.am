@@ -46,6 +46,7 @@ nbdkit_iso_plugin_la_SOURCES = \
 	$(NULL)
 
 nbdkit_iso_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	-I$(top_srcdir)/include \
 	-I. \
