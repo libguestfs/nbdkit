@@ -119,10 +119,10 @@ append_padding (regions *rs, uint64_t alignment)
 }
 
 int
-append_region_len (regions *rs,
+append_region_va (regions *rs,
                    const char *description, uint64_t len,
                    uint64_t pre_aligment, uint64_t post_alignment,
-                   enum region_type type, ...)
+                   enum region_type type, va_list ap)
 {
   struct region region;
 
@@ -139,24 +139,10 @@ append_region_len (regions *rs,
   region.len = len;
   region.end = region.start + region.len - 1;
   region.type = type;
-  if (type == region_file) {
-    va_list ap;
-    size_t i;
-
-    va_start (ap, type);
-    i = va_arg (ap, size_t);
-    va_end (ap);
-    region.u.i = i;
-  }
-  else if (type == region_data) {
-    va_list ap;
-    const unsigned char *data;
-
-    va_start (ap, type);
-    data = va_arg (ap, const unsigned char *);
-    va_end (ap);
-    region.u.data = data;
-  }
+  if (type == region_file)
+    region.u.i = va_arg (ap, size_t);
+  else if (type == region_data)
+    region.u.data = va_arg (ap, const unsigned char *);
   if (append_one_region (rs, region) == -1)
     return -1;
 
@@ -168,4 +154,38 @@ append_region_len (regions *rs,
   }
 
   return 0;
+}
+
+int
+append_region_len (regions *rs,
+                   const char *description, uint64_t len,
+                   uint64_t pre_aligment, uint64_t post_alignment,
+                   enum region_type type, ...)
+{
+  va_list ap;
+  int r;
+
+  va_start (ap, type);
+  r = append_region_va (rs, description, len,
+                        pre_aligment, post_alignment, type, ap);
+  va_end (ap);
+  return r;
+}
+
+int
+append_region_end (regions *rs,
+                   const char *description, uint64_t end,
+                   uint64_t pre_aligment, uint64_t post_alignment,
+                   enum region_type type, ...)
+{
+  va_list ap;
+  int r;
+  uint64_t len;
+
+  va_start (ap, type);
+  len = end - virtual_size (rs) + 1;
+  r = append_region_va (rs, description, len,
+                        pre_aligment, post_alignment, type, ap);
+  va_end (ap);
+  return r;
 }

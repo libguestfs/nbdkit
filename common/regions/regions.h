@@ -123,7 +123,6 @@ extern int append_region_len (regions *regions,
                               uint64_t pre_aligment, uint64_t post_alignment,
                               enum region_type type, ...);
 
-#if 0
 /* Same as append_region_len (above) but instead of specifying the
  * size of the main region, specify the end byte as an offset.  Note
  * the end byte is included in the region, it's is NOT the end+1 byte.
@@ -132,6 +131,5 @@ extern int append_region_end (regions *regions,
                               const char *description, uint64_t end,
                               uint64_t pre_aligment, uint64_t post_alignment,
                               enum region_type type, ...);
-#endif
 
 #endif /* NBDKIT_REGIONS_H */
