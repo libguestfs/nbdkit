@@ -19,7 +19,8 @@ qcow2 header), since that can be used in some exploits.
 
 To make the whole plugin readonly, use the nbdkit I<-r> option on the
 command line.  To give selective access to the server, use
-L<nbdkit-ip-filter(1)>.
+L<nbdkit-ip-filter(1)>.  To serve only a subset of the plugin use
+L<nbdkit-offset-filter(1)> or L<nbdkit-partition-filter(1)>.
 
 =head1 EXAMPLES
 
@@ -30,30 +31,36 @@ MBR partition table to be updated:
 
  nbdkit --filter=protect file disk.img protect=0-0x1bd
 
-=head2 Protect a single partition
+=head2 Protect everything except a single partition
 
-Allow clients to access a single partition from a disk, but prevent
-access to the partition table, boot sector, other partitions, or any
-other metadata outside the partition:
+Allow clients to write to a single partition on the disk, but prevent
+modifications to the partition table, boot sector, other partitions,
+or any other metadata outside the partition:
 
  $ fdisk -l disk.img
  Device    Boot  Start       End  Sectors Size Id Type
  disk.img1 *      2048  12580863 12578816   6G 83 Linux
  $ start=$((2048*512))
- $ end=$((12580864*512-1))
+ $ end=$((12580863*512+511))
  $ nbdkit --filter=protect file disk.img protect=~$start-$end
+
+Notes:
 
 =over 4
 
 =item *
 
-This is different from L<nbdkit-partition-filter(1)> since that filter
-exposes the partition as a whole device.
+Data in other partitions and parts of the disk is still readable.
 
 =item *
 
-Notice the C<~> character which complements the range protected.  You
-might need to escape it from the shell using quotes or backslash.
+The C<'~'> character complements the range protected.  You might need
+to escape it from the shell using quotes or backslash.
+
+=item *
+
+This is different from L<nbdkit-partition-filter(1)> — that filter
+exposes the partition as a whole device.
 
 =back
 
@@ -64,20 +71,20 @@ might need to escape it from the shell using quotes or backslash.
 =item B<protect=>STARTB<->END
 
 Protect the bytes starting at offset C<START> through to offset C<END>
-(inclusive).  Writes to the range are only permitted if they do not
-change the content.  If an attempt is made to change the content, then
-the error C<NBD_EPERM> (Operation not permitted) is returned to the
-client.
+(inclusive).  Reads are permitted.  Writes to the protected range are
+only permitted if they do not change the content.  If an attempt is
+made to change the content, then the error C<NBD_EPERM> (Operation not
+permitted) is returned to the client.
 
-C<START> and C<END> can be expressed in decimal, octal (starting with
-C<0>) or hexadecimal (C<0x>).  If omitted then they default to the
-start and end of the underlying plugin respectively.
+C<START> and C<END> can be expressed in decimal, octal (C<0NN>) or
+hexadecimal (C<0xNN>).  If omitted then they default to the start and
+end of the underlying plugin respectively.
 
 This parameter can be given multiple times to protect several ranges.
 
 =item B<protect=~>STARTB<->END
 
-This protects the complement of the range C<START> to end C<END>.
+This protects the complement of the range C<START> to C<END>.
 
 =back
 
@@ -102,6 +109,8 @@ C<nbdkit-offset-filter> first appeared in nbdkit 1.30.
 L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-ip-filter(1)>,
+L<nbdkit-offset-filter(1)>,
+L<nbdkit-partition-filter(1)>,
 L<nbdkit-filter(3)>.
 
 =head1 AUTHORS

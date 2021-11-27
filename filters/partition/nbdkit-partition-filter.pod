@@ -61,6 +61,7 @@ L<nbdkit-file-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-offset-filter(1)>,
 L<nbdkit-partitioning-plugin(1)>,
+L<nbdkit-protect-filter(1)>,
 L<nbdkit-truncate-filter(1)>,
 L<parted(8)>.
 
