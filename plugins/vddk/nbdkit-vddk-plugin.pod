@@ -452,14 +452,6 @@ sector boundaries.  This is because the VDDK Read and Write APIs only
 take sector numbers.  If your client needs finer granularity, you can
 use L<nbdkit-blocksize-filter(1)> with the setting C<minblock=512>.
 
-=head2 Threads
-
-Handling threads in the VDDK API is complex and does not map well to
-any of the thread models offered by nbdkit (see
-L<nbdkit-plugin(3)/THREADS>).  The plugin uses the nbdkit
-C<SERIALIZE_REQUESTS> model, but technically even this is not
-completely safe.  This is a subject of future work.
-
 =head2 Out of memory errors
 
 In the verbose log you may see errors like:
