@@ -44,6 +44,7 @@ nbdkit_guestfs_plugin_la_SOURCES = \
 
 nbdkit_guestfs_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
 nbdkit_guestfs_plugin_la_CFLAGS = \
