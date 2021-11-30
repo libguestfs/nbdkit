@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -62,7 +62,8 @@ if HAVE_POD
 man_MANS = nbdkit-exportname-filter.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-exportname-filter.1: nbdkit-exportname-filter.pod
+nbdkit-exportname-filter.1: nbdkit-exportname-filter.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

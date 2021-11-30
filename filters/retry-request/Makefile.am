@@ -60,7 +60,8 @@ if HAVE_POD
 man_MANS = nbdkit-retry-request-filter.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-retry-request-filter.1: nbdkit-retry-request-filter.pod
+nbdkit-retry-request-filter.1: nbdkit-retry-request-filter.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

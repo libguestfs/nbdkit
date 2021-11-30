@@ -60,7 +60,8 @@ if HAVE_POD
 man_MANS = nbdkit-multi-conn-filter.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-multi-conn-filter.1: nbdkit-multi-conn-filter.pod
+nbdkit-multi-conn-filter.1: nbdkit-multi-conn-filter.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

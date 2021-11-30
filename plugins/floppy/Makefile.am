@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright (C) 2018-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -69,7 +69,8 @@ if HAVE_POD
 man_MANS = nbdkit-floppy-plugin.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-floppy-plugin.1: nbdkit-floppy-plugin.pod
+nbdkit-floppy-plugin.1: nbdkit-floppy-plugin.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

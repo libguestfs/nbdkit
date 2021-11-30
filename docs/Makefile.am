@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2020 Red Hat Inc.
+# Copyright (C) 2013-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -91,7 +91,7 @@ man_MANS = \
 CLEANFILES += $(man_MANS)
 
 nbdkit.1: nbdkit.pod plugin-links.pod lang-plugin-links.pod filter-links.pod \
-		synopsis.txt
+		synopsis.txt $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
@@ -100,119 +100,134 @@ nbdkit.1: nbdkit.pod plugin-links.pod lang-plugin-links.pod filter-links.pod \
 	    --verbatim $(srcdir)/synopsis.txt:__SYNOPSIS__ \
 	    $<
 
-nbdkit-captive.1: nbdkit-captive.pod
+nbdkit-captive.1: nbdkit-captive.pod $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-client.1: nbdkit-client.pod
+nbdkit-client.1: nbdkit-client.pod $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-loop.1: nbdkit-loop.pod
+nbdkit-loop.1: nbdkit-loop.pod $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-probing.1: nbdkit-probing.pod
+nbdkit-probing.1: nbdkit-probing.pod $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-protocol.1: nbdkit-protocol.pod
+nbdkit-protocol.1: nbdkit-protocol.pod $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.4.1: nbdkit-release-notes-1.4.pod
+nbdkit-release-notes-1.4.1: nbdkit-release-notes-1.4.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.6.1: nbdkit-release-notes-1.6.pod
+nbdkit-release-notes-1.6.1: nbdkit-release-notes-1.6.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.8.1: nbdkit-release-notes-1.8.pod
+nbdkit-release-notes-1.8.1: nbdkit-release-notes-1.8.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.10.1: nbdkit-release-notes-1.10.pod
+nbdkit-release-notes-1.10.1: nbdkit-release-notes-1.10.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.12.1: nbdkit-release-notes-1.12.pod
+nbdkit-release-notes-1.12.1: nbdkit-release-notes-1.12.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.14.1: nbdkit-release-notes-1.14.pod
+nbdkit-release-notes-1.14.1: nbdkit-release-notes-1.14.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.16.1: nbdkit-release-notes-1.16.pod
+nbdkit-release-notes-1.16.1: nbdkit-release-notes-1.16.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.18.1: nbdkit-release-notes-1.18.pod
+nbdkit-release-notes-1.18.1: nbdkit-release-notes-1.18.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.20.1: nbdkit-release-notes-1.20.pod
+nbdkit-release-notes-1.20.1: nbdkit-release-notes-1.20.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.22.1: nbdkit-release-notes-1.22.pod
+nbdkit-release-notes-1.22.1: nbdkit-release-notes-1.22.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.24.1: nbdkit-release-notes-1.24.pod
+nbdkit-release-notes-1.24.1: nbdkit-release-notes-1.24.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.26.1: nbdkit-release-notes-1.26.pod
+nbdkit-release-notes-1.26.1: nbdkit-release-notes-1.26.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.28.1: nbdkit-release-notes-1.28.pod
+nbdkit-release-notes-1.28.1: nbdkit-release-notes-1.28.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-security.1: nbdkit-security.pod
+nbdkit-security.1: nbdkit-security.pod $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-service.1: nbdkit-service.pod
+nbdkit-service.1: nbdkit-service.pod $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-tls.1: nbdkit-tls.pod
+nbdkit-tls.1: nbdkit-tls.pod $(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-plugin.3: nbdkit-plugin.pod plugin-links.pod lang-plugin-links.pod
+nbdkit-plugin.3: nbdkit-plugin.pod plugin-links.pod lang-plugin-links.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=3 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    --insert plugin-links.pod:__PLUGIN_LINKS__ \
 	    --insert lang-plugin-links.pod:__LANG_PLUGIN_LINKS__ \
 	    $<
 
-nbdkit-filter.3: nbdkit-filter.pod filter-links.pod
+nbdkit-filter.3: nbdkit-filter.pod filter-links.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=3 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    --insert filter-links.pod:__FILTER_LINKS__ \

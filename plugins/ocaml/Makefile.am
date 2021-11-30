@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2014 Red Hat Inc.
+# Copyright (C) 2014-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -94,7 +94,8 @@ man_MANS += NBDKit.3
 endif
 CLEANFILES += $(man_MANS)
 
-nbdkit-ocaml-plugin.3: nbdkit-ocaml-plugin.pod
+nbdkit-ocaml-plugin.3: nbdkit-ocaml-plugin.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=3 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

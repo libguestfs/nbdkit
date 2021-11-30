@@ -62,7 +62,8 @@ if HAVE_POD
 man_MANS = nbdkit-protect-filter.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-protect-filter.1: nbdkit-protect-filter.pod
+nbdkit-protect-filter.1: nbdkit-protect-filter.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<

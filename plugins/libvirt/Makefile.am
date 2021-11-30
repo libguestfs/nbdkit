@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013 Red Hat Inc.
+# Copyright (C) 2013-2021 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -63,7 +63,8 @@ if HAVE_POD
 man_MANS = nbdkit-libvirt-plugin.1
 CLEANFILES += $(man_MANS)
 
-nbdkit-libvirt-plugin.1: nbdkit-libvirt-plugin.pod
+nbdkit-libvirt-plugin.1: nbdkit-libvirt-plugin.pod \
+		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
 	    $<
