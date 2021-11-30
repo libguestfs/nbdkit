@@ -1,0 +1,89 @@
+#!/bin/bash -
+# @configure_input@
+# Copyright (C) 2013-2021 Red Hat Inc.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# * Neither the name of Red Hat nor the names of its contributors may be
+# used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY RED HAT AND CONTRIBUTORS ''AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL RED HAT OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+# Open an nbdkit-vddk-plugin connection to the first disk of a guest
+# on a VMware ESXi server.  This script automates the tedious bits of
+# getting the disk name, moref, etc.  However please read the
+# nbdkit-vddk-plugin documentation as well.
+#
+# Usage:
+#   scripts/vddk-open.sh SERVER GUEST -r -f -v libdir=/path/to/vmware-vix-disklib-distrib [...]
+#
+# where SERVER is the hostname or IP address of the ESXi server and
+# GUEST is the name of the guest.
+#
+# These two required parameters are followed by any extra nbdkit
+# parameters you want to use, such as VDDK libdir, flags, filters etc.
+#
+# Note that the script runs ./nbdkit (ie. the wrapper in the top build
+# directory).
+
+nbdkit="@abs_top_builddir@/nbdkit"
+
+server="$1"
+guest="$2"
+shift 2
+
+# Get the libvirt XML, filename and moref.
+echo -n "root password? "
+xml="$( virsh -c "esx://root@$server/?no_verify=1" dumpxml "$guest" )"
+echo
+
+file="$( echo "$xml" | grep '<source file=' | head -1 |
+         sed -e "s/.*'\(.*\)'.*/\1/" )"
+moref="$( echo "$xml" | grep '<vmware:moref' |
+          sed -e 's,.*>\(.*\)<.*,\1,' )"
+
+#echo file="$file"
+#echo moref="$moref"
+
+# Get the thumbprint.
+thumbprint="$( openssl s_client -connect "$server:443" </dev/null 2>/dev/null |
+               openssl x509 -in /dev/stdin -fingerprint -sha1 -noout 2>/dev/null |
+               grep '^sha1 Fingerprint=' |
+               sed 's/.*Fingerprint=\([A-F0-9:]\+\)/\1/' )"
+
+#echo thumbprint="$thumbprint"
+
+# Construct the nbdkit command line.
+declare -a args
+
+args[${#args[@]}]="$nbdkit"
+args[${#args[@]}]="vddk"
+args[${#args[@]}]="file=$file"
+args[${#args[@]}]="vm=moref=$moref"
+args[${#args[@]}]="server=$server"
+args[${#args[@]}]="thumbprint=$thumbprint"
+args[${#args[@]}]="user=root"
+
+echo "${args[@]}" "$@"
+"${args[@]}" "$@"

@@ -46,7 +46,7 @@ EXTRA_DIST = \
 	SECURITY \
 	$(NULL)
 
-CLEANFILES += html/*.html
+CLEANFILES += html/*.html scripts/*~
 
 if !ENABLE_LIBFUZZER
 # NB: This is not the real nbdkit binary.  It's a wrapper that allows
