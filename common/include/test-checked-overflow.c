@@ -37,28 +37,32 @@
 
 #include "checked-overflow.h"
 
-#define TEST_ADD(a, b, result, expected_overflow, expected_result)       \
-  do {                                                                   \
-    bool UNIQUE_NAME(_overflow);                                         \
-                                                                         \
-    UNIQUE_NAME(_overflow) = ADD_OVERFLOW_FALLBACK ((a), (b), (result)); \
-    assert (UNIQUE_NAME(_overflow) == (expected_overflow));              \
-    assert (*(result) == (expected_result));                             \
-    UNIQUE_NAME(_overflow) = ADD_OVERFLOW_FALLBACK ((b), (a), (result)); \
-    assert (UNIQUE_NAME(_overflow) == (expected_overflow));              \
-    assert (*(result) == (expected_result));                             \
+#define TEST_ADD(a, b, result, expected_overflow, expected_result)      \
+  do {                                                                  \
+    bool UNIQUE_NAME(_actual_overflow);                                 \
+                                                                        \
+    UNIQUE_NAME(_actual_overflow) =                                     \
+      ADD_OVERFLOW_FALLBACK ((a), (b), (result));                       \
+    assert (UNIQUE_NAME(_actual_overflow) == (expected_overflow));      \
+    assert (*(result) == (expected_result));                            \
+    UNIQUE_NAME(_actual_overflow) =                                     \
+      ADD_OVERFLOW_FALLBACK ((b), (a), (result));                       \
+    assert (UNIQUE_NAME(_actual_overflow) == (expected_overflow));      \
+    assert (*(result) == (expected_result));                            \
   } while (0)
 
-#define TEST_MUL(a, b, result, expected_overflow, expected_result)       \
-  do {                                                                   \
-    bool UNIQUE_NAME(_overflow);                                         \
-                                                                         \
-    UNIQUE_NAME(_overflow) = MUL_OVERFLOW_FALLBACK ((a), (b), (result)); \
-    assert (UNIQUE_NAME(_overflow) == (expected_overflow));              \
-    assert (*(result) == (expected_result));                             \
-    UNIQUE_NAME(_overflow) = MUL_OVERFLOW_FALLBACK ((b), (a), (result)); \
-    assert (UNIQUE_NAME(_overflow) == (expected_overflow));              \
-    assert (*(result) == (expected_result));                             \
+#define TEST_MUL(a, b, result, expected_overflow, expected_result)      \
+  do {                                                                  \
+    bool UNIQUE_NAME(_actual_overflow);                                 \
+                                                                        \
+    UNIQUE_NAME(_actual_overflow) =                                     \
+      MUL_OVERFLOW_FALLBACK ((a), (b), (result));                       \
+    assert (UNIQUE_NAME(_actual_overflow) == (expected_overflow));      \
+    assert (*(result) == (expected_result));                            \
+    UNIQUE_NAME(_actual_overflow) =                                     \
+      MUL_OVERFLOW_FALLBACK ((b), (a), (result));                       \
+    assert (UNIQUE_NAME(_actual_overflow) == (expected_overflow));      \
+    assert (*(result) == (expected_result));                            \
   } while (0)
 
 /* Define these const-qualified objects because the UINTN_MAX object-like
