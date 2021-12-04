@@ -582,7 +582,9 @@ test_curl_SOURCES = \
 	test.h \
 	$(NULL)
 test_curl_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/common/include \
+	$(NULL)
 test_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
@@ -1835,7 +1837,9 @@ test_gzip_curl_SOURCES = \
 	test.h \
 	$(NULL)
 test_gzip_curl_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/common/include \
+	$(NULL)
 test_gzip_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
@@ -1857,7 +1861,9 @@ test_tar_gzip_curl_SOURCES = \
 	test.h \
 	$(NULL)
 test_tar_gzip_curl_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/common/include \
+	$(NULL)
 test_tar_gzip_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
@@ -1879,7 +1885,9 @@ test_xz_curl_SOURCES = \
 	test.h \
 	$(NULL)
 test_xz_curl_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/common/include \
+	$(NULL)
 test_xz_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
@@ -1901,7 +1909,9 @@ test_tar_xz_curl_SOURCES = \
 	test.h \
 	$(NULL)
 test_tar_xz_curl_CPPFLAGS = \
-	-I$(top_srcdir)/common/utils
+	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/common/include \
+	$(NULL)
 test_tar_xz_curl_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
