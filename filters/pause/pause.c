@@ -168,8 +168,8 @@ do_resume (void)
   if (!is_paused) return;
 
   /* Release the worker threads. */
-  pthread_mutex_unlock (&paused);
   is_paused = false;
+  pthread_mutex_unlock (&paused);
   nbdkit_debug ("pause: resumed");
 }
 
