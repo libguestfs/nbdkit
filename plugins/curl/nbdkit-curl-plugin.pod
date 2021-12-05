@@ -249,7 +249,15 @@ Enable TCP keepalives.
 
 (nbdkit E<ge> 1.20)
 
-Disable Nagle’s algorithm.
+Enable Nagle’s algorithm.  Small writes on the network socket will not
+be sent immediately but will be held in a local buffer and coalesced
+if possible.  This is more efficient for the network but can cause
+increased latency.
+
+The default (in libcurl E<ge> 7.50.2) is that Nagle’s algorithm is
+disabled for better latency at the expense of network efficiency.
+
+See L<CURLOPT_TCP_NODELAY(3)>.
 
 =item B<timeout=>SECS
 
