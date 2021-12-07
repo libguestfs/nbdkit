@@ -85,6 +85,69 @@ static int fadvise_mode =
 /* cache mode */
 static enum { cache_default, cache_none } cache_mode = cache_default;
 
+/* Define EVICT_WRITES if we are going to evict the page cache
+ * (cache=none) after writing.  This is only known to work on Linux.
+ */
+#ifdef __linux__
+#define EVICT_WRITES 1
+#endif
+
+#ifdef EVICT_WRITES
+/* Queue writes so they will be evicted from the cache.  See
+ * libnbd.git copy/file-ops.c for the rationale behind this.
+ */
+#define NR_WINDOWS 8
+
+struct write_window {
+  int fd;
+  uint64_t offset;
+  size_t len;
+};
+
+static pthread_mutex_t window_lock = PTHREAD_MUTEX_INITIALIZER;
+static struct write_window window[NR_WINDOWS];
+
+static void
+evict_writes (int fd, uint64_t offset, size_t len)
+{
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&window_lock);
+
+  /* Evict the oldest window from the page cache. */
+  if (window[0].len > 0) {
+    sync_file_range (window[0].fd, window[0].offset, window[0].len,
+                     SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|
+                     SYNC_FILE_RANGE_WAIT_AFTER);
+    posix_fadvise (window[0].fd, window[0].offset, window[0].len,
+                   POSIX_FADV_DONTNEED);
+  }
+
+  /* Move the Nth window to N-1. */
+  memmove (&window[0], &window[1], sizeof window[0] * (NR_WINDOWS-1));
+
+  /* Set up the current window and tell Linux to start writing it out
+   * to disk (asynchronously).
+   */
+  sync_file_range (fd, offset, len, SYNC_FILE_RANGE_WRITE);
+  window[NR_WINDOWS-1].fd = fd;
+  window[NR_WINDOWS-1].offset = offset;
+  window[NR_WINDOWS-1].len = len;
+}
+
+/* When we close the handle we must remove any windows which are still
+ * associated.  They missed the boat, oh well :-(
+ */
+static void
+remove_fd_from_window (int fd)
+{
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&window_lock);
+  size_t i;
+
+  for (i = 0; i < NR_WINDOWS; ++i)
+    if (window[i].len > 0 && window[i].fd == fd)
+      window[i].len = 0;
+}
+#endif /* EVICT_WRITES */
+
 /* Any callbacks using lseek must be protected by this lock. */
 static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -431,6 +494,9 @@ file_close (void *handle)
 {
   struct handle *h = handle;
 
+#ifdef EVICT_WRITES
+  remove_fd_from_window (h->fd);
+#endif
   close (h->fd);
   free (h);
 }
@@ -583,15 +649,9 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 {
   struct handle *h = handle;
 
-#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_DONTNEED)
+#if EVICT_WRITES
   uint32_t orig_count = count;
   uint64_t orig_offset = offset;
-
-  /* If cache=none we want to force pages we have just written to the
-   * file to be flushed to disk so we can immediately evict them from
-   * the page cache.
-   */
-  if (cache_mode == cache_none) flags |= NBDKIT_FLAG_FUA;
 #endif
 
   while (count > 0) {
@@ -608,10 +668,9 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   if ((flags & NBDKIT_FLAG_FUA) && file_flush (handle, 0) == -1)
     return -1;
 
-#if defined (HAVE_POSIX_FADVISE) && defined (POSIX_FADV_DONTNEED)
-  /* On Linux this will evict the pages we just wrote from the page cache. */
+#if EVICT_WRITES
   if (cache_mode == cache_none)
-    posix_fadvise (h->fd, orig_offset, orig_count, POSIX_FADV_DONTNEED);
+    evict_writes (h->fd, orig_offset, orig_count);
 #endif
 
   return 0;

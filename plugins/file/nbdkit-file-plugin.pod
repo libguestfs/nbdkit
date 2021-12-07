@@ -117,6 +117,9 @@ cache:
 
  nbdkit file disk.img fadvise=sequential cache=none
 
+Only use fadvise=sequential if reading, and the reads are mainly
+sequential.
+
 =head2 Files on tmpfs
 
 If you want to expose a file that resides on a file system known to
