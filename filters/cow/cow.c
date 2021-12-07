@@ -88,7 +88,7 @@ cow_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
     int64_t r = nbdkit_parse_size (value);
     if (r == -1)
       return -1;
-    if (r <= 4096 || r > UINT_MAX || !is_power_of_2 (r)) {
+    if (r < 4096 || r > UINT_MAX || !is_power_of_2 (r)) {
       nbdkit_error ("cow-block-size is out of range (4096..2G) "
                     "or not a power of 2");
       return -1;
