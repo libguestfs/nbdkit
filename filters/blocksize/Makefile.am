@@ -52,6 +52,7 @@ nbdkit_blocksize_filter_la_LDFLAGS = \
 	$(NULL)
 nbdkit_blocksize_filter_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
 
