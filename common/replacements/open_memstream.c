@@ -105,11 +105,11 @@ close_memstream (FILE *fp)
   string_vector content = empty_vector;
   struct file_to_memstream *f2m;
 
-  for (i = 0; i < files.size; ++i) {
+  for (i = 0; i < files.len; ++i) {
     if (files.ptr[i].fp == fp)
       break;
   }
-  assert (i < files.size);
+  assert (i < files.len);
   f2m = &files.ptr[i];
 
   /* Read the file back into memory. */
@@ -139,7 +139,7 @@ close_memstream (FILE *fp)
 
   /* Pass the buffer to the user.  User will free it. */
   *(files.ptr[i].ptr) = content.ptr;
-  *(files.ptr[i].size) = content.size - 1;
+  *(files.ptr[i].size) = content.len - 1;
   file_vector_remove (&files, i);
   return 0;
 }

@@ -489,7 +489,7 @@ check_sockets_and_quit_fd (const sockets *socks)
 static void
 check_sockets_and_quit_fd (const sockets *socks)
 {
-  const size_t nr_socks = socks->size;
+  const size_t nr_socks = socks->len;
   size_t i;
   HANDLE h, handles[nr_socks+1];
   DWORD r;
