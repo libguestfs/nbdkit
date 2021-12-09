@@ -41,6 +41,9 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "pread.h"
+#include "pwrite.h"
+
 ssize_t
 full_pread (int fd, void *buf, size_t count, off_t offset)
 {

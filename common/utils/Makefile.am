@@ -52,6 +52,7 @@ libutils_la_SOURCES = \
 	$(NULL)
 libutils_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/replacements \
 	$(NULL)
 libutils_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
