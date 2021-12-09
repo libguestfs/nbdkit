@@ -48,6 +48,7 @@ nbdkit_random_plugin_la_CPPFLAGS = \
 nbdkit_random_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_random_plugin_la_LIBADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(NULL)
 nbdkit_random_plugin_la_LDFLAGS = \
