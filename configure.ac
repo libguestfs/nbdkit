@@ -1146,7 +1146,8 @@ AS_IF([test "$with_libzstd" != "no"],[
 ])
 AM_CONDITIONAL([HAVE_LIBZSTD],[test "x$LIBZSTD_LIBS" != "x"])
 
-dnl Check for libguestfs (only for the guestfs plugin and the test suite).
+dnl Check for libguestfs (only for the guestfs plugin and parts of
+dnl the test suite).
 AC_ARG_WITH([libguestfs],
     [AS_HELP_STRING([--without-libguestfs],
                     [disable guestfs plugin and tests @<:@default=check@:>@])],
@@ -1172,6 +1173,17 @@ AS_IF([test "$with_libguestfs" != "no"],[
     [AC_MSG_WARN([libguestfs not found, guestfs plugin and tests will be disabled])])
 ])
 AM_CONDITIONAL([HAVE_LIBGUESTFS],[test "x$LIBGUESTFS_LIBS" != "x"])
+
+dnl Disable tests which need libguestfs.
+AC_ARG_ENABLE([libguestfs-tests],
+    [AS_HELP_STRING([--disable-libguestfs-tests],
+                    [disable tests which need libguestfs])],
+    [],
+    [enable_libguestfs_tests=check]
+)
+AM_CONDITIONAL([USE_LIBGUESTFS_FOR_TESTS],
+               [test "x$LIBGUESTFS_LIBS" != "x" && \
+                test "x$enable_libguestfs_tests" != "xno"])
 
 dnl Check for ext2fs and com_err, for the ext2 filter.
 AC_ARG_WITH([ext2],
@@ -1447,6 +1459,9 @@ echo "Other optional features:"
 echo
 feature "allocator=zstd ......................... " \
         test "x$HAVE_LIBZSTD_TRUE" = "x"
+feature "tests using libguestfs ................. " \
+        test "x$HAVE_LIBGUESTFS_TRUE" = "x" -a      \
+             "x$USE_LIBGUESTFS_FOR_TESTS_TRUE" = "x"
 
 echo
 echo "If any optional component is configured ‘no’ when you expected ‘yes’"
