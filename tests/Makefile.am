@@ -1526,7 +1526,6 @@ EXTRA_DIST += test-exportname.sh
 # ext2 filter test.
 if HAVE_MKE2FS_WITH_D
 if HAVE_EXT2
-if HAVE_GUESTFISH
 
 LIBGUESTFS_TESTS += test-ext2
 
@@ -1540,21 +1539,18 @@ EXTRA_DIST += test-ext2-exportname.sh
 check_DATA += ext2.img
 CLEANFILES += ext2.img
 
+# NB: truncate + explicit size is required because of a bug in mke2fs:
+# https://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg1813759.html
 ext2.img: disk test-ext2-exportname.sh
-	rm -f $@ $@-t
-	echo /disks/disk.img > manifest
-	guestfish \
-	    sparse $@-t 2G : \
-	    run : \
-	    mkfs ext4 /dev/sda : \
-	    mount /dev/sda / : \
-	    mkdir /disks : \
-	    upload $< /disks/disk.img : \
-	    upload manifest /manifest
-	rm manifest
+	rm -rf $@ $@-t ext2.img.d
+	mkdir -p ext2.img.d/disks
+	cp $< ext2.img.d/disks/disk.img
+	echo /disks/disk.img > ext2.img.d/manifest
+	truncate -s 2147483648 $@-t
+	mke2fs -q -F -t ext4 -d ext2.img.d $@-t 2147483648
+	rm -r ext2.img.d
 	mv $@-t $@
 
-endif HAVE_GUESTFISH
 endif HAVE_EXT2
 endif HAVE_MKE2FS_WITH_D
 
