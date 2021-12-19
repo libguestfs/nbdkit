@@ -964,7 +964,7 @@ py_extents (void *handle, uint32_t count, uint64_t offset,
   if (callback_defined ("extents", &fn)) {
     PyErr_Clear ();
 
-    r = PyObject_CallFunction (fn, "OiLI", h->py_h, count, offset, flags);
+    r = PyObject_CallFunction (fn, "OILI", h->py_h, count, offset, flags);
     Py_DECREF (fn);
     if (check_python_failure ("extents") == -1)
       return -1;
