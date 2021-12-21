@@ -330,7 +330,10 @@ py_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
 
   PyErr_Clear ();
 
-  r = PyObject_CallFunction (fn, "ii", readonly, is_tls);
+  r = PyObject_CallFunctionObjArgs (fn,
+                                    readonly ? Py_True : Py_False,
+                                    is_tls ? Py_True : Py_False,
+                                    NULL);
   Py_DECREF (fn);
   if (check_python_failure ("list_exports") == -1)
     return -1;
@@ -394,7 +397,10 @@ py_default_export (int readonly, int is_tls)
 
   PyErr_Clear ();
 
-  r = PyObject_CallFunction (fn, "ii", readonly, is_tls);
+  r = PyObject_CallFunctionObjArgs (fn,
+                                    readonly ? Py_True : Py_False,
+                                    is_tls ? Py_True : Py_False,
+                                    NULL);
   Py_DECREF (fn);
   if (check_python_failure ("default_export") == -1)
     return NULL;
@@ -567,7 +573,7 @@ py_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
 
   switch (py_api_version) {
   case 1:
-    r = PyObject_CallFunction (fn, "OiL", h->py_h, count, offset);
+    r = PyObject_CallFunction (fn, "OIL", h->py_h, count, offset);
     break;
   case 2:
     r = PyObject_CallFunction (fn, "ONLI", h->py_h,
@@ -694,10 +700,10 @@ py_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 
     switch (py_api_version) {
     case 1:
-      r = PyObject_CallFunction (fn, "OiL", h->py_h, count, offset);
+      r = PyObject_CallFunction (fn, "OIL", h->py_h, count, offset);
       break;
     case 2:
-      r = PyObject_CallFunction (fn, "OiLI", h->py_h, count, offset, flags);
+      r = PyObject_CallFunction (fn, "OILI", h->py_h, count, offset, flags);
       break;
     default: abort ();
     }
@@ -729,13 +735,13 @@ py_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
     switch (py_api_version) {
     case 1: {
       int may_trim = flags & NBDKIT_FLAG_MAY_TRIM;
-      r = PyObject_CallFunction (fn, "OiLO",
+      r = PyObject_CallFunction (fn, "OILO",
                                  h->py_h, count, offset,
                                  may_trim ? Py_True : Py_False);
       break;
     }
     case 2:
-      r = PyObject_CallFunction (fn, "OiLI", h->py_h, count, offset, flags);
+      r = PyObject_CallFunction (fn, "OILI", h->py_h, count, offset, flags);
       break;
     default: abort ();
     }
@@ -775,7 +781,8 @@ py_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
     switch (py_api_version) {
     case 1:
     case 2:
-      r = PyObject_CallFunction (fn, "OiLI", h->py_h, count, offset, flags, NULL);
+      r = PyObject_CallFunction (fn, "OILI",
+                                 h->py_h, count, offset, flags, NULL);
       break;
     default: abort ();
     }

@@ -231,6 +231,13 @@ class Test(unittest.TestCase):
                       "zero_expect_fast_zero": True})
         self.h.zero(512, 0, nbd.CMD_FLAG_NO_HOLE | nbd.CMD_FLAG_FAST_ZERO)
 
+    def test_zero_large(self):
+        """Test large zero."""
+        self.connect({"size": 0x10_0000_0000,
+                      "can_zero": True,
+                      "create_disk": False})
+        self.h.zero(0xf000_0000, 0, nbd.CMD_FLAG_NO_HOLE)
+
     def test_cache(self):
         """Test cache."""
         self.connect({"size": 512, "can_cache": "native"})
