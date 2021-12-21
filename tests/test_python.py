@@ -190,24 +190,26 @@ class Test(unittest.TestCase):
         self.connect({"size": 512, "can_flush": True})
         self.h.flush()
 
-    # Test trim + flags.
     def test_trim(self):
+        """Test trim."""
         self.connect({"size": 512, "can_trim": True})
         self.h.trim(512, 0)
 
     def test_trim_fua(self):
+        """Test trim + flags."""
         self.connect({"size": 512,
                       "can_trim": True,
                       "can_fua": "native",
                       "trim_expect_fua": True})
         self.h.trim(512, 0, nbd.CMD_FLAG_FUA)
 
-    # Test zero + flags.
     def test_zero(self):
+        """Test zero."""
         self.connect({"size": 512, "can_zero": True})
         self.h.zero(512, 0, nbd.CMD_FLAG_NO_HOLE)
 
     def test_zero_fua(self):
+        """Test zero + flags."""
         self.connect({"size": 512,
                       "can_zero": True,
                       "can_fua": "native",
@@ -215,12 +217,14 @@ class Test(unittest.TestCase):
         self.h.zero(512, 0, nbd.CMD_FLAG_NO_HOLE | nbd.CMD_FLAG_FUA)
 
     def test_zero_may_trim(self):
+        """Test zero + may trim."""
         self.connect({"size": 512,
                       "can_zero": True,
                       "zero_expect_may_trim": True})
         self.h.zero(512, 0, 0)  # absence of nbd.CMD_FLAG_NO_HOLE
 
     def test_zero_fast_zero(self):
+        """Test zero + fast zero."""
         self.connect({"size": 512,
                       "can_zero": True,
                       "can_fast_zero": True,
