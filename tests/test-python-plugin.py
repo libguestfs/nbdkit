@@ -51,13 +51,17 @@ def config_complete():
 
 
 def open(readonly):
+    if cfg.get('create_disk', True):
+        disk = bytearray(cfg.get('size', 0))
+    else:
+        disk = None
     return {
-        'disk': bytearray(cfg.get('size', 0))
+        'disk': disk
     }
 
 
 def get_size(h):
-    return len(h['disk'])
+    return cfg.get('size', 0)
 
 
 def is_rotational(h):
@@ -123,6 +127,7 @@ def pwrite(h, buf, offset, flags):
     actual_fua = bool(flags & nbdkit.FLAG_FUA)
     assert expect_fua == actual_fua
     end = offset + len(buf)
+    assert h['disk'] is not None
     h['disk'][offset:end] = buf
 
 
@@ -134,7 +139,8 @@ def trim(h, count, offset, flags):
     expect_fua = cfg.get('trim_expect_fua', False)
     actual_fua = bool(flags & nbdkit.FLAG_FUA)
     assert expect_fua == actual_fua
-    h['disk'][offset:offset+count] = bytearray(count)
+    if h['disk'] is not None:
+        h['disk'][offset:offset+count] = bytearray(count)
 
 
 def zero(h, count, offset, flags):
@@ -147,7 +153,8 @@ def zero(h, count, offset, flags):
     expect_fast_zero = cfg.get('zero_expect_fast_zero', False)
     actual_fast_zero = bool(flags & nbdkit.FLAG_FAST_ZERO)
     assert expect_fast_zero == actual_fast_zero
-    h['disk'][offset:offset+count] = bytearray(count)
+    if h['disk'] is not None:
+        h['disk'][offset:offset+count] = bytearray(count)
 
 
 def cache(h, count, offset, flags):
