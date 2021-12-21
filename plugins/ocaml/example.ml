@@ -84,13 +84,20 @@ let pwrite h buf offset _ =
 let thread_model () =
   NBDKit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
+(* Version is optional.  If used, it can be any string. *)
+let version =
+  (* You can return a standard version string such as: *)
+  (* "1.0" *)
+  (* This will return the version of nbdkit used at compile time: *)
+  NBDKit.version ()
+
 let () =
   (* name, open_connection, get_size and pread are required,
    * everything else is optional.
    *)
   NBDKit.register_plugin
-    ~name:    "ocamlexample"
-    ~version: (NBDKit.version ())
+    ~name: "ocamlexample"
+    ~version
     ~load
     ~unload
     ~dump_plugin
