@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014-2020 Red Hat Inc.
+ * Copyright (C) 2014-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -802,29 +802,28 @@ ocaml_nbdkit_set_config_help (value helpv)
   return Val_unit;
 }
 
-/* NB: noalloc function */
 NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_field (value fieldv, value fv)
 {
-  const char *field = String_val (fieldv);
+  CAMLparam2 (fieldv, fv);
   value *root;
 
   /* This isn't very efficient because we string-compare the field
    * names.  However it is only called when the plugin is being loaded
    * for a handful of fields so it's not performance critical.
    */
-#define CB(name)                                \
-  if (strcmp (field, #name) == 0) {             \
-    plugin.name = name##_wrapper;               \
-    name##_fn = fv;                             \
-    root = &name##_fn;                          \
+#define CB(name)                                        \
+  if (strcmp (String_val (fieldv), #name) == 0) {       \
+    plugin.name = name##_wrapper;                       \
+    name##_fn = fv;                                     \
+    root = &name##_fn;                                  \
   } else
 #include "callbacks.h"
 #undef CB
   /* else if the field is not known */ abort ();
 
   caml_register_generational_global_root (root);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 /* Called from unload() to remove the GC roots registered by set* functions. */
