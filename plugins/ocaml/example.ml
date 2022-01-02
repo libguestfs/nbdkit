@@ -8,7 +8,11 @@
 
    You can run it from the build directory like this:
 
-     ./nbdkit -f -v plugins/ocaml/nbdkit-ocamlexample-plugin.so [size=100M]
+     ./nbdkit -f -v plugins/ocaml/nbdkit-ocamlexample-plugin.so
+
+   or specify the size of the disk:
+
+     ./nbdkit -f -v plugins/ocaml/nbdkit-ocamlexample-plugin.so 100M
 
    and connect to it with guestfish like this:
 
@@ -86,9 +90,10 @@ let thread_model () =
 
 (* Version is optional.  If used, it can be any string. *)
 let version =
-  (* You can return a standard version string such as: *)
-  (* "1.0" *)
-  (* This will return the version of nbdkit used at compile time: *)
+  (* You can return a normal version string such as "1.0"
+   * or call this function which returns the version of
+   * nbdkit at compile time:
+   *)
   NBDKit.version ()
 
 let () =
@@ -102,6 +107,7 @@ let () =
     ~unload
     ~dump_plugin
     ~config
+    ~magic_config_key: "size"
     ~open_connection
     ~get_size
     ~pread
