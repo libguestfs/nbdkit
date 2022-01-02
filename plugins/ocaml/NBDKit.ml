@@ -1,6 +1,6 @@
 (* hey emacs, this is OCaml code: -*- tuareg -*- *)
 (* nbdkit OCaml interface
- * Copyright (C) 2014-2020 Red Hat Inc.
+ * Copyright (C) 2014-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -68,7 +68,7 @@ external set_string_field : string -> string -> unit
  * declared in [NBDKit.mli] must match what the corresponding
  * [<field_name>_wrapper] function in [plugin.c] calls.
  *)
-external set_field : string -> 'a -> unit = "ocaml_nbdkit_set_field" [@@noalloc]
+external set_field : string -> 'a -> unit = "ocaml_nbdkit_set_field"
 
 (* Register the plugin. *)
 let register_plugin ~name
