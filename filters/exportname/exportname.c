@@ -39,6 +39,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "open_memstream.h"
 #include "utils.h"
 
 static const char *default_export;
@@ -179,7 +180,7 @@ get_desc (const char *name, const char *def)
   fprintf (fp, "export name; name=");
   shell_quote (name, fp);
   fprintf (fp, "\n%s\n", desc);
-  if (fclose (fp) == EOF) {
+  if (close_memstream (fp) == -1) {
     nbdkit_debug ("memstream failed: %m");
     return NULL;
   }
