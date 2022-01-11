@@ -42,10 +42,16 @@
 # deliberately don't run dlclose because otherwise valgrind cannot
 # print symbols.  So it's expected that dlopen will leak.
 {
-  glibc_2
+  glibc_2a
   Memcheck:Leak
   ...
   obj:/usr/lib*/libdl-*
+}
+{
+  glibc_2b
+  Memcheck:Leak
+  ...
+  fun:dlopen@@*
 }
 
 # bindtextdomain leaks.
