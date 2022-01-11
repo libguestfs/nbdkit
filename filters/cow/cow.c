@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
+#include <assert.h>
 
 #include <pthread.h>
 
@@ -582,7 +583,7 @@ cow_cache (nbdkit_next *next,
     mode = BLK_CACHE_PASSTHROUGH;
     break;
   default:
-    assert (false); /* Guaranteed thanks to early caching */
+    abort ();                 /* Guaranteed thanks to early caching */
   }
   if (cow_on_cache)
     mode = BLK_CACHE_COW;
