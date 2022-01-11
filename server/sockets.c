@@ -491,8 +491,15 @@ check_sockets_and_quit_fd (const sockets *socks)
 {
   const size_t nr_socks = socks->len;
   size_t i;
-  HANDLE h, handles[nr_socks+1];
+  HANDLE h;
+  CLEANUP_FREE HANDLE *handles = NULL;
   DWORD r;
+
+  handles = malloc ((nr_socks+1) * sizeof (HANDLE));
+  if (handles == NULL) {
+    perror ("malloc");
+    exit (EXIT_FAILURE);
+  }
 
   for (i = 0; i < nr_socks; ++i) {
     h = WSACreateEvent ();
