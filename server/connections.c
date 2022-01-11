@@ -59,7 +59,9 @@ static void free_connection (struct connection *conn);
 /* Don't call these raw socket functions directly.  Use conn->recv etc. */
 static int raw_recv ( void *buf, size_t len);
 static int raw_send_socket (const void *buf, size_t len, int flags);
+#ifndef WIN32
 static int raw_send_other (const void *buf, size_t len, int flags);
+#endif
 static void raw_close (void);
 
 int
@@ -238,8 +240,10 @@ static struct connection *
 new_connection (int sockin, int sockout, int nworkers)
 {
   struct connection *conn;
+#ifndef WIN32
   int opt;
   socklen_t optlen = sizeof opt;
+#endif
 
   conn = calloc (1, sizeof *conn);
   if (conn == NULL) {
@@ -321,7 +325,9 @@ new_connection (int sockin, int sockout, int nworkers)
 
   return conn;
 
+#if defined(HAVE_PIPE2) || defined(HAVE_PIPE)
  error2:
+#endif
   if (conn->status_pipe[0] >= 0)
     close (conn->status_pipe[0]);
   if (conn->status_pipe[1] >= 0)
@@ -412,6 +418,7 @@ raw_send_socket (const void *vbuf, size_t len, int flags)
   return 0;
 }
 
+#ifndef WIN32
 /* Write buffer to conn->sockout with write() and either succeed completely
  * (returns 0) or fail (returns -1). flags is ignored.
  */
@@ -436,6 +443,7 @@ raw_send_other (const void *vbuf, size_t len, int flags)
 
   return 0;
 }
+#endif /* !WIN32 */
 
 /* Read buffer from conn->sockin and either succeed completely
  * (returns > 0), read an EOF (returns 0), or fail (returns -1).
