@@ -373,6 +373,8 @@ AC_CHECK_FUNCS([\
         fdatasync \
         flockfile \
         funlockfile \
+        inet_ntop \
+        inet_pton \
         mkostemp \
         mlock \
         mlockall \

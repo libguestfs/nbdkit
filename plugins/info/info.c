@@ -99,8 +99,14 @@ info_config (const char *key, const char *value)
       return -1;
 #endif
     }
-    else if (ascii_strcasecmp (value, "address") == 0)
+    else if (ascii_strcasecmp (value, "address") == 0) {
+#ifdef HAVE_INET_NTOP
       mode = MODE_ADDRESS;
+#else
+      nbdkit_error ("the plugin was compiled without inet_ntop");
+      return -1;
+#endif
+    }
     else if (ascii_strcasecmp (value, "time") == 0)
       mode = MODE_TIME;
     else if (ascii_strcasecmp (value, "uptime") == 0)
@@ -130,6 +136,9 @@ info_dump_plugin (void)
 {
 #ifdef HAVE_BASE64
   printf ("info_base64=yes\n");
+#endif
+#ifdef HAVE_INET_NTOP
+  printf ("info_inet_ntop=yes\n");
 #endif
 }
 
@@ -183,6 +192,7 @@ static int
 handle_address (struct sockaddr *sa, socklen_t addrlen,
                 struct handle *ret)
 {
+#ifdef HAVE_INET_NTOP
   struct sockaddr_in *addr = (struct sockaddr_in *) sa;
   struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *) sa;
   union {
@@ -245,6 +255,10 @@ handle_address (struct sockaddr *sa, socklen_t addrlen,
     ret->len = 0;
     return 0;
   }
+#else
+  nbdkit_error ("the plugin was compiled without inet_ntop");
+  return -1;
+#endif
 }
 
 /* Create the per-connection handle.
