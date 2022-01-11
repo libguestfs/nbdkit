@@ -53,9 +53,9 @@ extern void cleanup_mutex_unlock (pthread_mutex_t **ptr);
 #define CLEANUP_MUTEX_UNLOCK __attribute__((cleanup (cleanup_mutex_unlock)))
 
 #define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex)                           \
-  CLEANUP_MUTEX_UNLOCK pthread_mutex_t *UNIQUE_NAME(_lock) = mutex;     \
+  CLEANUP_MUTEX_UNLOCK pthread_mutex_t *NBDKIT_UNIQUE_NAME(_lock) = mutex; \
   do {                                                                  \
-    int _r = pthread_mutex_lock (UNIQUE_NAME(_lock));                   \
+    int _r = pthread_mutex_lock (NBDKIT_UNIQUE_NAME(_lock));            \
     assert (!_r);                                                       \
   } while (0)
 
@@ -63,16 +63,16 @@ extern void cleanup_rwlock_unlock (pthread_rwlock_t **ptr);
 #define CLEANUP_RWLOCK_UNLOCK __attribute__((cleanup (cleanup_rwlock_unlock)))
 
 #define ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE(rwlock)                         \
-  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *UNIQUE_NAME(_rwlock) = rwlock; \
+  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *NBDKIT_UNIQUE_NAME(_rwlock) = rwlock; \
   do {                                                                   \
-    int _r = pthread_rwlock_wrlock (UNIQUE_NAME(_rwlock));               \
+    int _r = pthread_rwlock_wrlock (NBDKIT_UNIQUE_NAME(_rwlock));        \
     assert (!_r);                                                        \
   } while (0)
 
 #define ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE(rwlock)                         \
-  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *UNIQUE_NAME(_rwlock) = rwlock; \
+  CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *NBDKIT_UNIQUE_NAME(_rwlock) = rwlock; \
   do {                                                                   \
-    int _r = pthread_rwlock_rdlock (UNIQUE_NAME(_rwlock));               \
+    int _r = pthread_rwlock_rdlock (NBDKIT_UNIQUE_NAME(_rwlock));        \
     assert (!_r);                                                        \
   } while (0)
 

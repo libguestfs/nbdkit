@@ -132,32 +132,32 @@
  */
 #define ADD_OVERFLOW_FALLBACK(a, b, r)                                \
   ({                                                                  \
-    bool UNIQUE_NAME(_overflow);                                      \
-    uintmax_t UNIQUE_NAME(_tmp);                                      \
+    bool NBDKIT_UNIQUE_NAME(_overflow);                               \
+    uintmax_t NBDKIT_UNIQUE_NAME(_tmp);                               \
                                                                       \
     STATIC_ASSERT_UNSIGNED_INT (a);                                   \
     STATIC_ASSERT_UNSIGNED_INT (b);                                   \
     STATIC_ASSERT_UNSIGNED_INT (*(r));                                \
-    UNIQUE_NAME(_overflow) = check_add_overflow ((a), (b),            \
+    NBDKIT_UNIQUE_NAME(_overflow) = check_add_overflow ((a), (b),     \
                                                  (typeof (*(r)))-1,   \
-                                                 &UNIQUE_NAME(_tmp)); \
-    *(r) = UNIQUE_NAME(_tmp);                                         \
-    UNIQUE_NAME(_overflow);                                           \
+                                                 &NBDKIT_UNIQUE_NAME(_tmp)); \
+    *(r) = NBDKIT_UNIQUE_NAME(_tmp);                                  \
+    NBDKIT_UNIQUE_NAME(_overflow);                                    \
   })
 
 #define MUL_OVERFLOW_FALLBACK(a, b, r)                                \
   ({                                                                  \
-    bool UNIQUE_NAME(_overflow);                                      \
-    uintmax_t UNIQUE_NAME(_tmp);                                      \
+    bool NBDKIT_UNIQUE_NAME(_overflow);                               \
+    uintmax_t NBDKIT_UNIQUE_NAME(_tmp);                               \
                                                                       \
     STATIC_ASSERT_UNSIGNED_INT (a);                                   \
     STATIC_ASSERT_UNSIGNED_INT (b);                                   \
     STATIC_ASSERT_UNSIGNED_INT (*(r));                                \
-    UNIQUE_NAME(_overflow) = check_mul_overflow ((a), (b),            \
+    NBDKIT_UNIQUE_NAME(_overflow) = check_mul_overflow ((a), (b),     \
                                                  (typeof (*(r)))-1,   \
-                                                 &UNIQUE_NAME(_tmp)); \
-    *(r) = UNIQUE_NAME(_tmp);                                         \
-    UNIQUE_NAME(_overflow);                                           \
+                                                 &NBDKIT_UNIQUE_NAME(_tmp)); \
+    *(r) = NBDKIT_UNIQUE_NAME(_tmp);                                  \
+    NBDKIT_UNIQUE_NAME(_overflow);                                    \
   })
 
 /* Assert, at compile time, that the expression "x" has some unsigned integer
@@ -167,7 +167,7 @@
  */
 #define STATIC_ASSERT_UNSIGNED_INT(x)                                       \
   do {                                                                      \
-    typedef char UNIQUE_NAME(_x_has_uint_type)[(typeof (x))-1 > 0 ? 1 : -1] \
+    typedef char NBDKIT_UNIQUE_NAME(_x_has_uint_type)[(typeof (x))-1 > 0 ? 1 : -1] \
       __attribute__((__unused__));                                          \
   } while (0)
 

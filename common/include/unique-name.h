@@ -36,6 +36,6 @@
 /* https://stackoverflow.com/a/1597129 */
 #define XXUNIQUE_NAME(name, line) name ## line
 #define XUNIQUE_NAME(name, line) XXUNIQUE_NAME (name, line)
-#define UNIQUE_NAME(name) XUNIQUE_NAME (name, __LINE__)
+#define NBDKIT_UNIQUE_NAME(name) XUNIQUE_NAME (name, __LINE__)
 
 #endif /* NBDKIT_UNIQUE_NAME_H */
