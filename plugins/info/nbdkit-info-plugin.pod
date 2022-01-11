@@ -110,6 +110,15 @@ Send the client's IP address and client port number as a string in the
 usual format.  For Unix sockets this sets the disk to the string
 C<"unix"> to avoid leaking host paths.
 
+This mode is only supported on some platforms.  You can find out if it
+is supported by checking if:
+
+ $ nbdkit info --dump-plugin
+
+contains:
+
+ info_address=yes
+
 =item [B<mode=>]B<base64exportname>
 
 Send the export name passed by the client, assuming the client string

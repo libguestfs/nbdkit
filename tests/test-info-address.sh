@@ -36,13 +36,14 @@ source ./functions.sh
 set -e
 set -x
 
-# getpeername on Windows returns b'0.0.0.0:0' below.
-if is_windows; then
-    echo "$0: test does not work on Windows"
+requires nbdsh --version
+requires_plugin info
+
+# Test if mode=address is supported in this build.
+if ! nbdkit info --dump-plugin | grep -sq "info_address=yes"; then
+    echo "$0: mode=address is not supported in this build"
     exit 77
 fi
-
-requires nbdsh --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="info-address.out info-address.pid $sock"

@@ -134,11 +134,11 @@ info_config (const char *key, const char *value)
 static void
 info_dump_plugin (void)
 {
+#ifdef HAVE_INET_NTOP
+  printf ("info_address=yes\n");
+#endif
 #ifdef HAVE_BASE64
   printf ("info_base64=yes\n");
-#endif
-#ifdef HAVE_INET_NTOP
-  printf ("info_inet_ntop=yes\n");
 #endif
 }
 
