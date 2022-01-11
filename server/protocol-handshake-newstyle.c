@@ -226,7 +226,7 @@ send_newstyle_option_reply_meta_context (uint32_t option, uint32_t reply,
 /* Sub-function during negotiate_handshake_newstyle, to uniformly handle
  * a client hanging up on a message boundary.
  */
-static int __attribute__ ((format (printf, 3, 4)))
+static int ATTRIBUTE_FORMAT_PRINTF(3, 4)
 conn_recv_full (void *buf, size_t len, const char *fmt, ...)
 {
   GET_CONN;

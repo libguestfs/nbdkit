@@ -63,7 +63,7 @@ static gnutls_certificate_credentials_t x509_creds;
 static gnutls_psk_server_credentials_t psk_creds;
 
 static void print_gnutls_error (int err, const char *fs, ...)
-  __attribute__((format (printf, 2, 3)));
+  ATTRIBUTE_FORMAT_PRINTF(2, 3);
 
 static void
 print_gnutls_error (int err, const char *fs, ...)

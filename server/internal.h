@@ -303,9 +303,9 @@ extern void log_verror (const char *fs, va_list args);
 
 /* log-*.c */
 extern void log_stderr_verror (const char *fs, va_list args)
-  __attribute__((__format__ (printf, 1, 0)));
+  ATTRIBUTE_FORMAT_PRINTF(1, 0);
 extern void log_syslog_verror (const char *fs, va_list args)
-  __attribute__((__format__ (printf, 1, 0)));
+  ATTRIBUTE_FORMAT_PRINTF(1, 0);
 
 /* vfprintf.c */
 #if !HAVE_VFPRINTF_PERCENT_M
