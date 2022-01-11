@@ -57,8 +57,10 @@
 DEFINE_VECTOR_TYPE(string_vector, char *);
 static string_vector filenames = empty_vector;
 
+#ifdef SEEK_HOLE
 /* Any callbacks using lseek must be protected by this lock. */
 static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 static void
 split_unload (void)
@@ -113,7 +115,9 @@ split_open (int readonly)
   size_t i;
   uint64_t offset;
   struct stat statbuf;
+#ifdef SEEK_HOLE
   off_t r;
+#endif
 
   h = malloc (sizeof *h);
   if (h == NULL) {
