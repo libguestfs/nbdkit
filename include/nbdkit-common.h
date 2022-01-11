@@ -54,7 +54,8 @@
 extern "C" {
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && \
+    defined(HAVE_VFPRINTF_PERCENT_M)
 #define ATTRIBUTE_FORMAT_PRINTF(fmtpos, argpos) \
   __attribute__((__format__ (__printf__, fmtpos, argpos)))
 #else
