@@ -39,6 +39,7 @@
 #include <errno.h>
 
 #include "internal.h"
+#include "open_memstream.h"
 
 static void
 prologue (FILE *fp)

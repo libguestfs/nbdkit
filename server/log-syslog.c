@@ -39,6 +39,7 @@
 #include <errno.h>
 
 #include "internal.h"
+#include "open_memstream.h"
 #include "syslog.h"
 
 /* Tempted to use LOG_FTP instead of LOG_DAEMON! */
@@ -55,9 +56,7 @@ log_syslog_verror (const char *fs, va_list args)
   size_t len = 0;
   FILE *fp = NULL;
 
-#ifdef HAVE_OPEN_MEMSTREAM
   fp = open_memstream (&msg, &len);
-#endif
   if (fp == NULL) {
     /* Fallback to logging using fs, args directly. */
     errno = err; /* Must restore in case fs contains %m */
@@ -74,7 +73,7 @@ log_syslog_verror (const char *fs, va_list args)
 
   errno = err; /* Must restore in case fs contains %m */
   vfprintf (fp, fs, args);
-  fclose (fp);
+  close_memstream (fp);
 
   syslog (PRIORITY, "%s", msg);
 
