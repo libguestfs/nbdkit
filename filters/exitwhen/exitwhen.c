@@ -315,7 +315,7 @@ check_for_event_script (const struct event *event)
  */
 static pthread_mutex_t pause_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static void *
+static void * __attribute__((noreturn))
 polling_thread (void *vp)
 {
   for (;;) {
@@ -368,7 +368,9 @@ exitwhen_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
     event.u.filename = nbdkit_absolute_path (value);
     if (event.u.filename == NULL)
       return -1;
+#ifdef EVENT_FD_CLOSED
   append_event:
+#endif
     if (event_list_append (&events, event) == -1)
       return -1;
     return 0;
