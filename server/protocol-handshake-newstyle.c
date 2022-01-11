@@ -43,6 +43,7 @@
 #include "byte-swapping.h"
 #include "nbd-protocol.h"
 #include "protostrings.h"
+#include "strndup.h"
 
 /* Initial bound of client options we allow before giving up.
  * However, a client that issues NBD_OPT_LIST is permitted to follow

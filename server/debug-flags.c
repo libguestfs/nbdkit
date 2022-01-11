@@ -39,6 +39,7 @@
 #include <dlfcn.h>
 
 #include "internal.h"
+#include "strndup.h"
 
 struct debug_flag {
   struct debug_flag *next;

@@ -46,6 +46,7 @@
 #include "iszero.h"
 #include "minmax.h"
 #include "regions.h"
+#include "strndup.h"
 #include "vector.h"
 
 /* Range definition.

@@ -43,6 +43,7 @@ liballocators_la_SOURCES = \
 	$(NULL)
 liballocators_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)

@@ -41,6 +41,7 @@
 
 #include "allocator.h"
 #include "allocator-internal.h"
+#include "strndup.h"
 #include "vector.h"
 
 /* The list of registered allocators. */
