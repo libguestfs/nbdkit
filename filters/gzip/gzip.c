@@ -161,6 +161,7 @@ do_uncompress (nbdkit_next *next)
 #else
   /* This is only invoked serially with the lock held, so this is safe. */
   fd = mkstemp (template);
+#ifndef WIN32
   if (fd >= 0) {
     fd = set_cloexec (fd);
     if (fd < 0) {
@@ -169,7 +170,8 @@ do_uncompress (nbdkit_next *next)
       errno = e;
     }
   }
-#endif
+#endif /* WIN32 */
+#endif /* !HAVE_MKOSTEMP */
   if (fd == -1) {
     nbdkit_error ("mkostemp: %s: %m", tmpdir);
     return -1;
