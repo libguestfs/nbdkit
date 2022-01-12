@@ -41,6 +41,19 @@
 
 #else
 
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#endif
+
+#ifdef HAVE_WINSOCK2_H
+#undef POLLIN
+#undef POLLOUT
+#undef POLLERR
+#undef POLLHUP
+#undef POLLRDHUP
+#define pollfd rpl_pollfd
+#endif
+
 struct pollfd {
   int fd;
   short events;

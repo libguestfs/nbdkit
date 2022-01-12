@@ -363,7 +363,8 @@ AC_CHECK_HEADERS([\
         sys/statvfs.h \
         sys/ucred.h \
         sys/un.h \
-        sys/wait.h])
+        sys/wait.h \
+        winsock2.h])
 
 AC_CHECK_HEADERS([linux/vm_sockets.h], [], [], [#include <sys/socket.h>])
 
