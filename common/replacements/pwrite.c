@@ -54,14 +54,22 @@ pwrite (int fd, const void *buf, size_t count, off_t offset)
 {
   DWORD r;
   OVERLAPPED ovl;
+  HANDLE h;
 
   memset (&ovl, 0, sizeof ovl);
   /* Seriously WTF Windows? */
   ovl.Offset = offset & 0xffffffff;
   ovl.OffsetHigh = offset >> 32;
 
+  h = (HANDLE) _get_osfhandle (fd);
+  if (h == INVALID_HANDLE_VALUE) {
+    nbdkit_debug ("ReadFile: bad handle");
+    errno = EIO;
+    return -1;
+  }
+
   /* XXX Will fail weirdly if count is larger than 32 bits. */
-  if (!WriteFile (_get_osfhandle (fd), buf, count, &r, &ovl)) {
+  if (!WriteFile (h, buf, count, &r, &ovl)) {
     nbdkit_debug ("WriteFile: error %d", GetLastError ());
     errno = EIO;
     return -1;

@@ -51,7 +51,16 @@
 int
 fsync (int fd)
 {
-  if (!FlushFileBuffers (_get_osfhandle (fd))) {
+  HANDLE h;
+
+  h = (HANDLE) _get_osfhandle (fd);
+  if (h == INVALID_HANDLE_VALUE) {
+    nbdkit_debug ("ReadFile: bad handle");
+    errno = EIO;
+    return -1;
+  }
+
+  if (!FlushFileBuffers (h)) {
     nbdkit_debug ("FlushFileBuffers: error %d", GetLastError ());
     errno = EIO;
     return -1;

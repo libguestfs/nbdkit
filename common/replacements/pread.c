@@ -54,14 +54,22 @@ pread (int fd, void *buf, size_t count, off_t offset)
 {
   DWORD r;
   OVERLAPPED ovl;
+  HANDLE h;
 
   memset (&ovl, 0, sizeof ovl);
   /* Seriously WTF Windows? */
   ovl.Offset = offset & 0xffffffff;
   ovl.OffsetHigh = offset >> 32;
 
+  h = (HANDLE) _get_osfhandle (fd);
+  if (h == INVALID_HANDLE_VALUE) {
+    nbdkit_debug ("ReadFile: bad handle");
+    errno = EIO;
+    return -1;
+  }
+
   /* XXX Will fail weirdly if count is larger than 32 bits. */
-  if (!ReadFile (_get_osfhandle (fd), buf, count, &r, &ovl)) {
+  if (!ReadFile (h, buf, count, &r, &ovl)) {
     if (GetLastError () == ERROR_HANDLE_EOF)
       return 0;
     nbdkit_debug ("ReadFile: error %d", GetLastError ());
