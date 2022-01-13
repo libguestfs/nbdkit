@@ -61,7 +61,7 @@ export plugin f
 
 # Password read interactively from stdin tty.
 expect -f - <<'EOF'
-  spawn $env(plugin) -U - -fv password=- file=$env(f)
+  spawn bash $env(plugin) -U - -fv password=- file=$env(f)
   expect "ssword:"
   send "abc\r"
   wait
@@ -71,7 +71,7 @@ grep '^abc$' $f
 # Empty password read interactively from stdin tty.
 rm -f $f
 expect -f - <<'EOF'
-  spawn $env(plugin) -U - -fv password=- file=$env(f)
+  spawn bash $env(plugin) -U - -fv password=- file=$env(f)
   expect "ssword:"
   send "\r"
   wait
