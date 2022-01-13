@@ -67,7 +67,7 @@ do_test ()
 }
 
 # All caps, no trailing whitespace, ENOMEM
-do_test 'Cannot allocate memory' <<'EOF'
+do_test '(Cannot allocate|Out of) memory' <<'EOF'
 case "$1" in
     get_size) echo 64K ;;
     pread) printf ENOMEM >&2; exit 1 ;;
@@ -103,7 +103,7 @@ esac
 EOF
 
 # Any errno that can't be sent over NBD is flattened to EIO
-do_test 'Input/output error' <<'EOF'
+do_test '(Input/output|I/O) error' <<'EOF'
 case "$1" in
     get_size) echo 1M ;;
     pread) echo EPIPE >&2; exit 1 ;;
@@ -112,7 +112,7 @@ esac
 EOF
 
 # EINVALID is not a real errno name, and should not be confused with EINVAL
-do_test 'Input/output error' <<'EOF'
+do_test '(Input/output| I/O) error' <<'EOF'
 case "$1" in
     get_size) echo 1M ;;
     pread) echo EINVALID >&2; exit 1 ;;
