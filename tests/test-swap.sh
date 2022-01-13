@@ -37,6 +37,7 @@ set -e
 set -x
 
 requires test `id -u` -eq 0
+requires_caps cap_sys_resource
 requires nbdsh --version
 
 nbdsh -c -<<'EOF'

@@ -249,6 +249,35 @@ requires_vsock_support ()
     fi
 }
 
+# requires_caps
+#
+# Check for linux capabilities.  Parameters are in the form of "cap_name", e.g.
+#   requires_caps cap_net_admin cap_chown
+#
+# This should be coupled with requires_root as it will not fail when capsh
+# utility from libcapng is not installed or the capabilities are not found in
+# /proc/<pid>/status (to future-proof this against non-Linux platforms).
+requires_caps ()
+{
+    test -r /proc/$$/status || return 0
+    type capsh 2>/dev/null >&2 || return 0
+
+    local cap_eff
+    local cap_str
+
+    cap_eff="$(sed -n 's/CapEff:\s*\([^0-9a-fA-F]*\)/\1/p' /proc/$$/status)"
+    test -z "$cap_eff" && return 0
+
+    cap_str=$(capsh --decode="$cap_eff")
+    while test "$#" -gt 0; do
+        if [[ ! "$cap_str" =~ [,=]$1(,|$) ]]; then
+            echo "$0: test skipped because of missing capability: $1"
+            exit 77
+        fi
+        shift
+    done
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to
