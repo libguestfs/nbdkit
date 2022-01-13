@@ -348,6 +348,7 @@ AC_CHECK_HEADERS([\
         byteswap.h \
         endian.h \
         grp.h \
+        linux/fs.h \
         netdb.h \
         netinet/in.h \
         netinet/tcp.h \
