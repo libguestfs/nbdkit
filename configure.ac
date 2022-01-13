@@ -1025,12 +1025,23 @@ AC_ARG_WITH([ssh],
     [with_ssh=check])
 AS_IF([test "$with_ssh" != "no"],[
     PKG_CHECK_MODULES([SSH], [libssh >= 0.8.0],[
-        AC_SUBST([SSH_CFLAGS])
-        AC_SUBST([SSH_LIBS])
+        # Ubuntu 18.04 shipped prerelease of libssh-0.8.0 without
+        # SSH_OPTIONS_NODELAY
+        old_CFLAGS="$CFLAGS"
+        CFLAGS="$CFLAGS $SSH_CFLAGS"
+        AC_CHECK_DECL([SSH_OPTIONS_NODELAY], [
+            AC_SUBST([SSH_CFLAGS])
+            AC_SUBST([SSH_LIBS])
+            # We don't need this in the code, just in this configure
+            HAVE_SSH_OPTIONS_NODELAY=1
+            ], [], [
+            #include <libssh/libssh.h>
+        ])
+        CFLAGS="$old_CFLAGS"
     ],
     [AC_MSG_WARN([libssh not found, ssh plugin will be disabled])])
 ])
-AM_CONDITIONAL([HAVE_SSH],[test "x$SSH_LIBS" != "x"])
+AM_CONDITIONAL([HAVE_SSH],[test "x$HAVE_SSH_OPTIONS_NODELAY" != "x"])
 
 dnl Check for ssh-keygen, only needed if you want to test the SSH plugin.
 AC_CHECK_PROG([SSH_KEYGEN],[ssh-keygen],[ssh-keygen],[no])
