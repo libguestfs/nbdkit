@@ -59,7 +59,7 @@
 #include <linux/falloc.h>   /* For FALLOC_FL_*, glibc < 2.18 */
 #endif
 
-#if defined (__linux__)
+#if defined (__linux__) && HAVE_LINUX_FS_H
 #include <linux/fs.h>       /* For BLKZEROOUT */
 #endif
 
