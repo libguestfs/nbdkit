@@ -57,8 +57,17 @@ start_nbdkit -P $pidfile -U $sock --filter=noparallel --filter=delay \
 
 # Early client death should not stall connection of second client.
 trap '' ERR
+
+# Find out the exit status for timed out processes
+timeout 1s sleep 5 >/dev/null
+timeout_status=$?
+if test $timeout_status = 0; then
+    echo "Failed to get timeout exit status"
+    exit 1
+fi
+
 timeout 1s qemu-io -f raw "nbd+unix:///?socket=$sock" -c 'r 0 512' </dev/null
-test $? = 124 || {
+test $? = $timeout_status || {
     echo "Unexpected status; qemu-io should have been killed for timing out"
     fail=1
 }
