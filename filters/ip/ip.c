@@ -54,6 +54,8 @@
 
 #ifdef HAVE_LINUX_VM_SOCKETS_H
 #include <linux/vm_sockets.h>
+#elif HAVE_SYS_VSOCK_H
+#include <sys/vsock.h>
 #endif
 
 #include <nbdkit-filter.h>
