@@ -67,6 +67,14 @@ main (int argc, char *argv[])
     exit (77);
   }
 
+  /* /dev/loop-control must be accessible. */
+  r = access ("/dev/loop-control", W_OK);
+  if (r != 0) {
+    fprintf (stderr, "%s: /dev/loop-control is not writable.\n",
+             program_name);
+    exit (77);
+  }
+
   /* losetup must be available. */
   r = system ("losetup --version");
   if (r != 0) {
