@@ -175,7 +175,7 @@ nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
        --run 'nbdinfo --no-content --json "$uri"' > exportname.out || st=$?
 cat exportname.out
 if test $? = 0; then
-    jq -c "$query" exportname.out && fail=1
+    test -s exportname.out && jq -c "$query" exportname.out && fail=1
 fi
 
 st=0
@@ -184,7 +184,7 @@ nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
        --run 'nbdinfo --no-content --json "$uri"' > exportname.out || st=$?
 cat exportname.out
 if test $? = 0; then
-    jq -c "$query" exportname.out && fail=1
+    test -s exportname.out && jq -c "$query" exportname.out && fail=1
 fi
 
 nbdkit -U - --filter=exportname sh exportname.sh exportname-strict=true \
