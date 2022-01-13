@@ -365,6 +365,7 @@ AC_CHECK_HEADERS([\
         sys/statvfs.h \
         sys/ucred.h \
         sys/un.h \
+        sys/vsock.h \
         sys/wait.h \
         winsock2.h])
 
