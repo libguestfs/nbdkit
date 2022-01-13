@@ -135,6 +135,10 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin (can be NULL) */
        const char **argv)                /* script + parameters */
 {
   const char *argv0 = argv[0]; /* script name, used in error messages */
+#ifndef __GLIBC__
+  CLEANUP_FREE const char **sh_argv = NULL;
+  size_t i;
+#endif
   pid_t pid = -1;
   int status;
   int ret = ERROR;
@@ -192,6 +196,25 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin (can be NULL) */
           out_fd[0] > STDERR_FILENO && out_fd[1] > STDERR_FILENO &&
           err_fd[0] > STDERR_FILENO && err_fd[1] > STDERR_FILENO);
 
+#ifndef __GLIBC__
+  /* glibc contains a workaround for scripts which don't have a
+   * shebang.  See maybe_script_execute in glibc posix/execvpe.c.
+   * We rely on this in nbdkit, so if not using glibc we emulate it.
+   * Note this is tested when we do CI on Alpine (which uses musl).
+   */
+  /* Count the number of arguments, ignoring script name. */
+  for (i = 2; argv[i]; i++)
+    ;
+  sh_argv = calloc (i + 2 /* /bin/sh + NULL */, sizeof (const char *));
+  if (sh_argv == NULL) {
+    nbdkit_error ("%s: calloc: %m", argv0);
+    goto error;
+  }
+  sh_argv[0] = "/bin/sh";
+  for (i = 0; argv[i]; i++)
+    sh_argv[i+1] = argv[i];
+#endif
+
   pid = fork ();
   if (pid == -1) {
     nbdkit_error ("%s: fork: %m", argv0);
@@ -218,6 +241,11 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin (can be NULL) */
      */
     environ = env;
     execvp (argv[0], (char **) argv);
+#ifndef __GLIBC__
+    /* Non-glibc workaround for missing shebang - see above. */
+    if (errno == ENOEXEC)
+      execvp (sh_argv[0], (char **) sh_argv);
+#endif
     perror (argv[0]);
     _exit (EXIT_FAILURE);
   }
