@@ -361,7 +361,7 @@ main (int argc, char *argv[])
       break;
 
     case VSOCK_OPTION:
-#ifdef AF_VSOCK
+#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
       vsock = true;
       break;
 #else

@@ -479,7 +479,7 @@ matches_rule (const struct rule *rule,
   const struct sockaddr_in *sin;
   uint32_t cin, rin, mask;
   const struct sockaddr_in6 *sin6;
-#ifdef AF_VSOCK
+#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
   const struct sockaddr_vm *svm;
 #endif
 
@@ -522,7 +522,7 @@ matches_rule (const struct rule *rule,
     if (family != AF_UNIX) return false;
     return nbdkit_peer_gid () == rule->u.id;
 
-#ifdef AF_VSOCK
+#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
   case ANYVSOCK:
     return family == AF_VSOCK;
 
@@ -576,7 +576,7 @@ check_if_allowed (const struct sockaddr *addr)
    * sockets, see the manual.
    */
   if (family != AF_INET && family != AF_INET6 && family != AF_UNIX
-#ifdef AF_VSOCK
+#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
       && family != AF_VSOCK
 #endif
       )
