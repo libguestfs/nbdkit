@@ -369,6 +369,9 @@ qemu as a client then it also supports snapshots.
 Run nbdkit as a captive subprocess of C<CMD>.  When C<CMD> exits,
 nbdkit is killed.  See L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
 
+Note that the command is executed by F</bin/sh>.  On some platforms
+like Debian this might not be a full-featured shell.
+
 This option implies I<--foreground>.
 
 =item B<-s>

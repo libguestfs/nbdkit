@@ -43,9 +43,9 @@ requires nbdsh --version
 
 nbdkit -U - null --filter=delay delay-close=3 \
        --run '
-start_t=$SECONDS
+start_t=$(date +%s)
 nbdsh -u "$uri" -c "h.shutdown()"
-end_t=$SECONDS
+end_t=$(date +%s)
 
 if [ $((end_t - start_t)) -lt 3 ]; then
     echo "$0: delay filter failed: delay-close=3 caused delay < 3 seconds"
