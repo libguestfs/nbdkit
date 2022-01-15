@@ -657,7 +657,7 @@ trim_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
-  offsetv = caml_copy_int32 (offset);
+  offsetv = caml_copy_int64 (offset);
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
@@ -678,7 +678,7 @@ zero_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
-  offsetv = caml_copy_int32 (offset);
+  offsetv = caml_copy_int64 (offset);
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
@@ -700,7 +700,7 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
   LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
-  offsetv = caml_copy_int32 (offset);
+  offsetv = caml_copy_int64 (offset);
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
@@ -740,7 +740,7 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
   countv = caml_copy_int32 (count);
-  offsetv = caml_copy_int32 (offset);
+  offsetv = caml_copy_int64 (offset);
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
