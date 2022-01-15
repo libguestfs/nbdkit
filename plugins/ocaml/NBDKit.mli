@@ -111,10 +111,10 @@ val register_plugin :
   pread: ('a -> int32 -> int64 -> flags -> string) ->
   ?pwrite: ('a -> string -> int64 -> flags -> unit) ->
   ?flush: ('a -> flags -> unit) ->
-  ?trim: ('a -> int32 -> int64 -> flags -> unit) ->
-  ?zero: ('a -> int32 -> int64 -> flags -> unit) ->
-  ?extents: ('a -> int32 -> int64 -> flags -> extent list) ->
-  ?cache: ('a -> int32 -> int64 -> flags -> unit) ->
+  ?trim: ('a -> int64 -> int64 -> flags -> unit) ->
+  ?zero: ('a -> int64 -> int64 -> flags -> unit) ->
+  ?extents: ('a -> int64 -> int64 -> flags -> extent list) ->
+  ?cache: ('a -> int64 -> int64 -> flags -> unit) ->
 
   (* Miscellaneous. *)
   ?dump_plugin: (unit -> unit) ->
