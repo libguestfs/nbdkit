@@ -75,7 +75,6 @@ let get_size h =
   Int64.of_int (Bytes.length !disk)
 
 let pread h count offset _ =
-  let count = Int32.to_int count in
   let buf = Bytes.create count in
   Bytes.blit !disk (Int64.to_int offset) buf 0 count;
   Bytes.unsafe_to_string buf

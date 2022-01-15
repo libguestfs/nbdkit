@@ -43,7 +43,7 @@ let pread () count offset _ =
    * error code.
    *)
   match (Int64.to_int offset) / sector_size with
-  | 0 -> (* good, return data *) String.make (Int32.to_int count) '\000'
+  | 0 -> (* good, return data *) String.make count '\000'
   | 1 -> NBDKit.set_error EPERM;     failwith "EPERM"
   | 2 -> NBDKit.set_error EIO;       failwith "EIO"
   | 3 -> NBDKit.set_error ENOMEM;    failwith "ENOMEM"

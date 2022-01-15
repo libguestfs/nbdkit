@@ -116,7 +116,6 @@ let get_size h =
 let pread h count offset _ =
   assert (h.h_id > 0);
   assert (h.h_sentinel = "TESTING");
-  let count = Int32.to_int count in
   let buf = Bytes.create count in
   Bytes.blit disk (Int64.to_int offset) buf 0 count;
   Bytes.unsafe_to_string buf

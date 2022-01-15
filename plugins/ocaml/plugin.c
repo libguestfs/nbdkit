@@ -588,7 +588,7 @@ pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset,
   mlsize_t len;
   LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
 
-  countv = caml_copy_int32 (count);
+  countv = Val_int (count);
   offsetv = caml_copy_int64 (offset);
   flagsv = Val_flags (flags);
 

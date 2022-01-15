@@ -108,7 +108,7 @@ val register_plugin :
   ?is_rotational: ('a -> bool) ->
 
   (* Serving data. *)
-  pread: ('a -> int32 -> int64 -> flags -> string) ->
+  pread: ('a -> int -> int64 -> flags -> string) ->
   ?pwrite: ('a -> string -> int64 -> flags -> unit) ->
   ?flush: ('a -> flags -> unit) ->
   ?trim: ('a -> int64 -> int64 -> flags -> unit) ->
