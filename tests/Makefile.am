@@ -171,8 +171,8 @@ if HAVE_VDDK
 #
 #   make check-vddk vddkdir=vmware-vix-disklib-distrib
 check-vddk:
-	$(MAKE) check TESTS="test-vddk-real.sh
-	                     test-vddk-real-dump-plugin.sh
+	$(MAKE) check TESTS="test-vddk-real.sh \
+	                     test-vddk-real-dump-plugin.sh \
 	                     test-vddk-real-create.sh"
 endif HAVE_VDDK
 
