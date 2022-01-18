@@ -51,7 +51,7 @@ input disk:
 
  nbdkit -U - vddk \
         /absolute/path/to/output.vmdk \
-        create=1 create-size=100M \
+        create=true create-size=100M \
         --run 'qemu-img convert input.qcow2 $uri'
 
 =head2 Open a file on a remote VMware ESXi hypervisor
