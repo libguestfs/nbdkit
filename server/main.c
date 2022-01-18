@@ -86,6 +86,7 @@ static void error_if_stdio_closed (void);
 static void switch_stdio (void);
 static void winsock_init (void);
 
+int tcpip_sock_af = AF_UNSPEC;  /* -4, -6 */
 struct debug_flag *debug_flags; /* -D */
 bool exit_with_parent;          /* --exit-with-parent */
 const char *export_name;        /* -e */
@@ -366,6 +367,14 @@ main (int argc, char *argv[])
                program_name);
       exit (EXIT_FAILURE);
 #endif
+
+    case '4':
+      tcpip_sock_af = AF_INET;
+      break;
+
+    case '6':
+      tcpip_sock_af = AF_INET6;
+      break;
 
     case 'D':
       add_debug_flag (optarg);

@@ -59,8 +59,10 @@ enum {
   VSOCK_OPTION,
 };
 
-static const char *short_options = "D:e:fg:i:nop:P:rst:u:U:vV";
+static const char *short_options = "46D:e:fg:i:nop:P:rst:u:U:vV";
 static const struct option long_options[] = {
+  { "ipv4-only",        no_argument,       NULL, '4' },
+  { "ipv6-only",        no_argument,       NULL, '6' },
   { "debug",            required_argument, NULL, 'D' },
   { "dump-config",      no_argument,       NULL, DUMP_CONFIG_OPTION },
   { "dump-plugin",      no_argument,       NULL, DUMP_PLUGIN_OPTION },

@@ -179,7 +179,8 @@ bind_tcpip_socket (sockets *socks)
     port = "10809";
 
   memset (&hints, 0, sizeof hints);
-  hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+  hints.ai_flags = AI_PASSIVE;
+  hints.ai_family = tcpip_sock_af;
   hints.ai_socktype = SOCK_STREAM;
 
   err = getaddrinfo (ipaddr, port, &hints, &ai);
