@@ -184,7 +184,7 @@ bind_tcpip_socket (sockets *socks)
 
   err = getaddrinfo (ipaddr, port, &hints, &ai);
   if (err != 0) {
-    fprintf (stderr, "%s: getaddrinfo: %s: %s: %s",
+    fprintf (stderr, "%s: getaddrinfo: %s: %s: %s\n",
              program_name,
              ipaddr ? ipaddr : "<any>",
              port,
