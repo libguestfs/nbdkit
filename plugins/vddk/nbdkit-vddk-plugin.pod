@@ -195,10 +195,14 @@ Specify the VMDK disk adapter type.  The default is C<scsi-buslogic>.
 
 =item B<create-hwversion=esx65>
 
+=item B<create-hwversion=>N
+
 (nbdkit E<ge> 1.30)
 
-Specify the VMDK virtual hardware version.  The default is
-C<workstation5>.
+Specify the VMDK virtual hardware version.  You can give either the
+named version or the equivalent 16 bit number.
+
+The default is C<workstation5> (N = 4).
 
 =item B<create-size=>SIZE
 
