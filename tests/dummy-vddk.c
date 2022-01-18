@@ -236,3 +236,13 @@ VixDiskLib_Wait (VixDiskLibHandle handle)
 {
   return VIX_OK;
 }
+
+NBDKIT_DLL_PUBLIC VixError
+VixDiskLib_Create (const VixDiskLibConnection connection,
+                   const char *path,
+                   const VixDiskLibCreateParams *create_params,
+                   void *progress_function_unused,
+                   void *progress_data_unused)
+{
+  return VIX_E_NOT_SUPPORTED;
+}

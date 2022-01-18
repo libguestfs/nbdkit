@@ -99,6 +99,13 @@ STUB (VixDiskLib_Write,
       (VixDiskLibHandle handle,
        uint64_t start_sector, uint64_t nr_sectors,
        const unsigned char *buf));
+STUB (VixDiskLib_Create,
+      VixError,
+      (const VixDiskLibConnection connection,
+       const char *path,
+       const VixDiskLibCreateParams *create_params,
+       void *progress_function_unused,
+       void *progress_data_unused));
 
 /* Added in VDDK 6.0. */
 STUB (VixDiskLib_Flush,

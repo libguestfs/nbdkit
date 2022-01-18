@@ -6,7 +6,11 @@ nbdkit-vddk-plugin - nbdkit VMware VDDK plugin
 
  nbdkit vddk [file=]FILENAME
              [compression=none|zlib|fastlz|skipz]
-             [config=FILENAME] [cookie=COOKIE] [libdir=LIBRARY]
+             [config=FILENAME] [cookie=COOKIE]
+             [create=true] [create-adapter-type=ide|scsi-buslogic|...]
+             [create-hwversion=workstation4|workstation5|...]
+             [create-size=...] [create-type=monolithic-sparse|...]
+             [libdir=LIBRARY]
              [nfchostport=PORT] [single-link=true]
              [password=PASSWORD | password=- | password=+FILENAME |
               password=-FD]
@@ -26,7 +30,7 @@ yourself (see L</LIBRARY LOCATION> below).
 
 =head1 EXAMPLES
 
-=head2 Open a local VMDK file
+=head2 Open an existing local VMDK file
 
  nbdkit vddk /absolute/path/to/file.vmdk
 
@@ -37,6 +41,18 @@ filesystem.  You can avoid this by opening the file read-only (the
 I<-r> option):
 
  nbdkit -r vddk /absolute/path/to/file.vmdk
+
+=head2 Create a new local VMDK file
+
+You can use VDDK to create a VMDK file and fill it with the contents
+of a disk image.  Note the C<create-size> parameter is the virtual
+size of the final VMDK disk image and must be at least as large as the
+input disk:
+
+ nbdkit -U - vddk \
+        /absolute/path/to/output.vmdk \
+        create=1 create-size=100M \
+        --run 'qemu-img convert input.qcow2 $uri'
 
 =head2 Open a file on a remote VMware ESXi hypervisor
 
@@ -135,6 +151,88 @@ This changes the authentication type from C<VIXDISKLIB_CRED_UID> to
 C<VIXDISKLIB_CRED_SESSIONID> which can improve performance.  The
 cookie can be found by connecting to a VCenter Server over HTTPS and
 retrieving the C<vmware_soap_session> cookie.
+
+=item B<create=true>
+
+(nbdkit E<ge> 1.30)
+
+Create a new, local VMDK file.  Instead of opening an existing VMDK
+file, a new VMDK file is created and opened.  The filename is given by
+the C<file> parameter (see below).  The file must not exist already.
+It is not possible to create a remote file using nbdkit.
+
+If this is used, the C<create-size> parameter is required to specify
+the virtual size of the disk.  Other C<create-*> parameters (see
+below) can be used to control the VMDK sub-format.
+
+=item B<create-adapter-type=ide>
+
+=item B<create-adapter-type=scsi-buslogic>
+
+=item B<create-adapter-type=scsi-lsilogic>
+
+(nbdkit E<ge> 1.30)
+
+Specify the VMDK disk adapter type.  The default is C<scsi-buslogic>.
+
+=item B<create-hwversion=workstation4>
+
+=item B<create-hwversion=workstation5>
+
+=item B<create-hwversion=workstation6>
+
+=item B<create-hwversion=esx30>
+
+=item B<create-hwversion=esx4x>
+
+=item B<create-hwversion=esx50>
+
+=item B<create-hwversion=esx51>
+
+=item B<create-hwversion=esx55>
+
+=item B<create-hwversion=esx60>
+
+=item B<create-hwversion=esx65>
+
+(nbdkit E<ge> 1.30)
+
+Specify the VMDK virtual hardware version.  The default is
+C<workstation5>.
+
+=item B<create-size=>SIZE
+
+(nbdkit E<ge> 1.30)
+
+Specify the virtual size of the created disk.  The C<SIZE> can use
+modifiers like C<100M> etc.  It must be a multiple of 512 bytes
+because VMware only supports sector sizes.
+
+If you use C<create=true> then this parameter is required.
+
+=item B<create-type=monolithic-sparse>
+
+=item B<create-type=monolithic-flat>
+
+=item B<create-type=split-sparse>
+
+=item B<create-type=split-flat>
+
+=item B<create-type=vmfs-flat>
+
+=item B<create-type=stream-optimized>
+
+=item B<create-type=vmfs-thin>
+
+=item B<create-type=vmfs-sparse>
+
+(nbdkit E<ge> 1.30)
+
+Specify the VMDK sub-format.  The default is C<monolithic-sparse>.
+
+Some VMDK sub-formats use multiple files, where the C<file> parameter
+specifies the "Disk Descriptor File" and the disk contents are stored
+in adjacent files.
 
 =item [B<file=>]FILENAME
 

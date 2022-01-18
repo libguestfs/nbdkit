@@ -81,6 +81,14 @@ bool is_remote;                        /* true if remote connection */
 enum compression_type compression;     /* compression */
 char *config;                          /* config */
 const char *cookie;                    /* cookie */
+bool create;                           /* create */
+enum VixDiskLibAdapterType create_adapter_type =
+  VIXDISKLIB_ADAPTER_SCSI_BUSLOGIC;    /* create-adapter-type */
+uint16_t create_hwversion =
+  VIXDISKLIB_HWVERSION_WORKSTATION_5;  /* create-hwversion */
+uint64_t create_size;                  /* create-size */
+enum VixDiskLibDiskType create_type =
+  VIXDISKLIB_DISK_MONOLITHIC_SPARSE;   /* create-type */
 const char *filename;                  /* file */
 char *libdir;                          /* libdir */
 uint16_t nfc_host_port;                /* nfchostport */
@@ -119,6 +127,7 @@ static int
 vddk_config (const char *key, const char *value)
 {
   int r;
+  int64_t r64;
 
   if (strcmp (key, "compression") == 0) {
     if (strcmp (value, "zlib") == 0)
@@ -143,6 +152,82 @@ vddk_config (const char *key, const char *value)
   }
   else if (strcmp (key, "cookie") == 0) {
     cookie = value;
+  }
+  else if (strcmp (key, "create") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    create = r;
+  }
+  else if (strcmp (key, "create-adapter-type") == 0) {
+    if (strcmp (value, "ide") == 0)
+      create_adapter_type = VIXDISKLIB_ADAPTER_IDE;
+    else if (strcmp (value, "scsi-buslogic") == 0)
+      create_adapter_type = VIXDISKLIB_ADAPTER_SCSI_BUSLOGIC;
+    else if (strcmp (value, "scsi-lsilogic") == 0)
+      create_adapter_type = VIXDISKLIB_ADAPTER_SCSI_LSILOGIC;
+    else {
+      nbdkit_error ("unknown create-adapter-type: %s", value);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "create-hwversion") == 0) {
+    if (strcmp (value, "workstation4") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_WORKSTATION_4;
+    else if (strcmp (value, "workstation5") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_WORKSTATION_5;
+    else if (strcmp (value, "workstation6") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_WORKSTATION_6;
+    else if (strcmp (value, "esx30") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_ESX30;
+    else if (strcmp (value, "esx4x") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_ESX4X;
+    else if (strcmp (value, "esx50") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_ESX50;
+    else if (strcmp (value, "esx51") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_ESX51;
+    else if (strcmp (value, "esx55") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_ESX55;
+    else if (strcmp (value, "esx60") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_ESX60;
+    else if (strcmp (value, "esx65") == 0)
+      create_hwversion = VIXDISKLIB_HWVERSION_ESX65;
+    else {
+      nbdkit_error ("unknown create-hwversion: %s", value);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "create-size") == 0) {
+    r64 = nbdkit_parse_size (value);
+    if (r64 == -1)
+      return -1;
+    if (r64 <= 0 || (r64 & 511) != 0) {
+      nbdkit_error ("create-size must be greater than zero and a multiple of 512");
+      return -1;
+    }
+    create_size = r64;
+  }
+  else if (strcmp (key, "create-type") == 0) {
+    if (strcmp (value, "monolithic-sparse") == 0)
+      create_type = VIXDISKLIB_DISK_MONOLITHIC_SPARSE;
+    else if (strcmp (value, "monolithic-flat") == 0)
+      create_type = VIXDISKLIB_DISK_MONOLITHIC_FLAT;
+    else if (strcmp (value, "split-sparse") == 0)
+      create_type = VIXDISKLIB_DISK_SPLIT_SPARSE;
+    else if (strcmp (value, "split-flat") == 0)
+      create_type = VIXDISKLIB_DISK_SPLIT_FLAT;
+    else if (strcmp (value, "vmfs-flat") == 0)
+      create_type = VIXDISKLIB_DISK_VMFS_FLAT;
+    else if (strcmp (value, "stream-optimized") == 0)
+      create_type = VIXDISKLIB_DISK_STREAM_OPTIMIZED;
+    else if (strcmp (value, "vmfs-thin") == 0)
+      create_type = VIXDISKLIB_DISK_VMFS_THIN;
+    else if (strcmp (value, "vmfs-sparse") == 0)
+      create_type = VIXDISKLIB_DISK_VMFS_SPARSE;
+    else {
+      nbdkit_error ("unknown create-type: %s", value);
+      return -1;
+    }
   }
   else if (strcmp (key, "file") == 0) {
     /* NB: Don't convert this to an absolute path, because in the
@@ -264,6 +349,18 @@ vddk_config_complete (void)
     missing (!password, "password");
     missing (!vmx_spec, "vm");
 #undef missing
+  }
+
+  if (create) {
+    if (is_remote) {
+      nbdkit_error ("create=true can only be used to create local VMDK files");
+      return -1;
+    }
+
+    if (create_size == 0) {
+      nbdkit_error ("if using create=true you must specify the size using the create-size parameter");
+      return -1;
+    }
   }
 
   /* Restore original LD_LIBRARY_PATH after reexec. */
@@ -616,6 +713,34 @@ vddk_open (int readonly)
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_ConnectEx");
     goto err1;
+  }
+
+  /* Creating a disk?  The first time the connection is opened we will
+   * create it here (we need h->connection).  Then set create=false so
+   * we don't create it again.  This is all serialized through
+   * open_close_lock so it is safe.
+   */
+  if (create) {
+    VixDiskLibCreateParams cparams = {
+      .diskType = create_type,
+      .adapterType = create_adapter_type,
+      .hwVersion = create_hwversion,
+      .capacity = create_size / VIXDISKLIB_SECTOR_SIZE,
+      .logicalSectorSize = 0,
+      .physicalSectorSize = 0
+    };
+
+    VDDK_CALL_START (VixDiskLib_Create,
+                     "h->connection, %s, &cparams, NULL, NULL",
+                     filename)
+      err = VixDiskLib_Create (h->connection, filename, &cparams, NULL, NULL);
+    VDDK_CALL_END (VixDiskLib_Create, 0);
+    if (err != VIX_OK) {
+      VDDK_ERROR (err, "VixDiskLib_Create: %s", filename);
+      goto err2;
+    }
+
+    create = false; /* Don't create it again. */
   }
 
   flags = 0;
