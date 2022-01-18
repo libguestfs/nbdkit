@@ -192,7 +192,8 @@ vddk_config (const char *key, const char *value)
       create_hwversion = VIXDISKLIB_HWVERSION_ESX60;
     else if (strcmp (value, "esx65") == 0)
       create_hwversion = VIXDISKLIB_HWVERSION_ESX65;
-    else {
+    else if (nbdkit_parse_uint16_t ("create-hwversion", value,
+                                    &create_hwversion) == -1) {
       nbdkit_error ("unknown create-hwversion: %s", value);
       return -1;
     }
