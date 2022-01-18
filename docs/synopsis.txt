@@ -1,4 +1,5 @@
-nbdkit [-D|--debug PLUGIN|FILTER|nbdkit.FLAG=N]
+nbdkit [-4|--ipv4-only] [-6|--ipv6-only]
+       [-D|--debug PLUGIN|FILTER|nbdkit.FLAG=N]
        [-e|--exportname EXPORTNAME] [--exit-with-parent]
        [--filter FILTER ...] [-f|--foreground]
        [-g|--group GROUP] [-i|--ipaddr IPADDR]

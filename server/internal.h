@@ -113,6 +113,7 @@ enum log_to {
   LOG_TO_NULL,           /* --log=null forced on the command line */
 };
 
+extern int tcpip_sock_af;
 extern struct debug_flag *debug_flags;
 extern const char *export_name;
 extern bool foreground;

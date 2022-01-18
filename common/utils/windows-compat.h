@@ -75,13 +75,6 @@ struct sockaddr_un
 #define O_NOCTTY 0
 #endif
 
-/* AI_ADDRCONFIG is not available on Windows.  It enables a rather
- * obscure feature of getaddrinfo to do with IPv6.
- */
-#ifndef AI_ADDRCONFIG
-#define AI_ADDRCONFIG 0
-#endif
-
 /* Windows <errno.h> lacks certain errnos, so replace them here as
  * best we can.
  */

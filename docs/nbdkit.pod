@@ -173,6 +173,24 @@ Display information about nbdkit or a specific plugin:
 
 Display brief command line usage information and exit.
 
+=item B<-4>
+
+=item B<--ipv4-only>
+
+=item B<-6>
+
+=item B<--ipv6-only>
+
+When a non-numeric argument is passed to the I<-i> option (such as a
+Fully Qualified Domain Name, or a host name from C</etc/hosts>),
+restrict the name resolution to IPv4 or IPv6 addresses.
+
+When the I<-i> option is omitted, listen on only the IPv4 or IPv6
+address of all interfaces (C<0.0.0.0> or C<::>, respectively).
+
+When both I<-4> and I<-6> options are present on the command line, the
+last one takes effect.
+
 =item B<-D> PLUGIN.FLAG=N
 
 =item B<-D> FILTER.FLAG=N
@@ -265,7 +283,7 @@ See also I<-u>.
 =item B<--ipaddr> IPADDR
 
 Listen on the specified interface.  The default is to listen on all
-interfaces.  See also I<-p>.
+interfaces.  See also I<-4>, I<-6>, and I<-p>.
 
 =item B<--log=stderr>
 
