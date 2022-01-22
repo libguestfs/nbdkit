@@ -1,0 +1,175 @@
+=head1 NAME
+
+nbdkit-release-notes-1.30 - release notes for nbdkit 1.30
+
+=head1 DESCRIPTION
+
+These are the release notes for nbdkit stable release 1.30.
+This describes the major changes since 1.28.
+
+nbdkit 1.30.0 was released on B<XX Xxxxx 2022>.
+
+=head2 Security
+
+There were no security issues found.  All past security issues and
+information about how to report new ones can be found in
+L<nbdkit-security(1)>.
+
+=head2 Plugins
+
+B<nbdkit-streaming-plugin> has been removed.  It was deprecated in
+1.26 and scheduled for removal in this release.  If you were using
+this plugin, use L<nbdcopy(1)> instead.
+
+L<nbdkit-vddk-plugin(1)> has several changes:
+
+=over 4
+
+=item *
+
+This plugin can now create (as well as reading and writing) local VMDK
+files.  See the new C<create=true> option and the various C<create-*>
+options.
+
+=item *
+
+Read and write is now implemented using the VDDK Async functions,
+which improves performance.  The full nbdkit parallel thread model is
+supported.
+
+=item *
+
+VDDK E<ge> 6.5 (released Nov 2016) is now the minimum required
+version.
+
+=item *
+
+Stats collected when using I<-D vddk.stats=1> have been extended to
+include number of calls and bytes transferred.
+
+=item *
+
+I<--dump-plugin> output now includes the VDDK major version and
+information about each VDDK API that is implemented by the library.
+
+=item *
+
+A new example F<scripts/vddk-open.sh> is provided to help with
+automating connections to remote ESXi virtual machines.
+
+=back
+
+L<nbdkit-curl-plugin(1)> adds support for choosing TLS/SSL versions
+and ciphers and TLS 1.3 cipher versions (Przemyslaw Czarnowski).
+
+L<nbdkit-file-plugin(1)> now implements C<cache=none> for writes so
+that the Linux page cache is not destroyed when writing huge files.
+
+L<nbdkit-cc-plugin(1)> now implements the C<.cleanup> callback.  Also
+we document how to use this plugin to implement OCaml plugin scripts.
+
+L<nbdkit-info-plugin(1)> I<--dump-plugin> option now prints
+C<info_address=yes> when the platform supports C<mode=address>.
+
+
+
+=head2 Filters
+
+New L<nbdkit-retry-request-filter(1)>, which is similar to
+L<nbdkit-retry-filter(1)> but only retries a single failing request.
+
+New L<nbdkit-protect-filter(1)> lets you add write-protection over
+regions of a plugin.
+
+L<nbdkit-cow-filter(1)> now permits the COW block size to be set as
+small as 4096 bytes.
+
+
+=head2 Language bindings
+
+For L<plugins written in OCaml|nbdkit-ocaml-plugin(3)> the minimum
+version of OCaml is now 4.03 (instead of 4.02.2 previously).  Various
+source-level incompatible changes were made to OCaml plugins in this
+release.  Please consult the new documentation and example if writing
+plugins in OCaml.
+
+OCaml plugins now support C<magic_config_key>.
+
+Several fixes to the handling of integers in Python plugins (Nir
+Soffer).
+
+=head2 Server
+
+The server no longer requests the C<AI_ADDRCONFIG> hint when opening a
+server socket.  This improves handling of IPv6.  In a related change,
+the I<-i> (I<--ipaddr>) option now works as intended, and new I<-4>
+and I<-6> options have been added to restrict the listening socket to
+IPv4 or IPv6 addresses (Laszlo Ersek).
+
+=begin comment
+
+=head2 API
+
+=head2 Bug fixes
+
+=head2 Documentation
+
+=end comment
+
+=head2 Tests
+
+C<./configure --disable-libguestfs-tests> can now be used to disable
+tests which need libguestfs, without disabling
+L<nbdkit-guestfs-plugin(1)>.
+
+We now use L<mke2fs(8)> instead of L<guestfish(1)> to create the ext4
+test image.  On armv7 this allows the test suite to run much more
+quickly.
+
+The time taken to run the test suite has been reduced significantly.
+
+=head2 Build
+
+Multiple fixes to the Windows (MinGW) build.
+
+=head2 Internals
+
+The performance of the internal vector library has been improved
+greatly and overflow is now handled correctly (Nir Soffer, Laszlo
+Ersek and Eric Blake).
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>.
+
+=head1 AUTHORS
+
+Authors of nbdkit 1.30:
+
+=begin comment
+
+git shortlog -s v1.28.0..
+
+=end comment
+
+=over 4
+
+=item Alan Somers
+
+=item Eric Blake
+
+=item Hilko Bengen
+
+=item Laszlo Ersek
+
+=item Nir Soffer
+
+=item Przemyslaw Czarnowski
+
+=item Richard W.M. Jones
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright (C) 2021-2022 Red Hat Inc.
