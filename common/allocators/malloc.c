@@ -96,7 +96,7 @@ extend (struct m_alloc *ma, uint64_t new_size)
     /* Since the memory might be moved by realloc, we must unlock the
      * original array.
      */
-    if (ma->use_mlock)
+    if (ma->use_mlock && ma->ba.ptr != NULL)
       munlock (ma->ba.ptr, ma->ba.cap);
 #endif
 
