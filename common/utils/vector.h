@@ -101,6 +101,16 @@
                                    sizeof (type));                      \
   }                                                                     \
                                                                         \
+  /* Same as _reserve, but the allocation will be page aligned.  Note   \
+   * that the machine page size must be divisible by sizeof (type).     \
+   */                                                                   \
+  static inline int                                                     \
+  name##_reserve_page_aligned (name *v, size_t n)                       \
+  {                                                                     \
+    return generic_vector_reserve_page_aligned ((struct generic_vector *)v, \
+                                                n, sizeof (type));      \
+  }                                                                     \
+                                                                        \
   /* Insert at i'th element.  i=0 => beginning  i=len => append */      \
   static inline int                                                     \
   name##_insert (name *v, type elem, size_t i)                          \
@@ -196,5 +206,8 @@ struct generic_vector {
 
 extern int generic_vector_reserve (struct generic_vector *v,
                                    size_t n, size_t itemsize);
+
+extern int generic_vector_reserve_page_aligned (struct generic_vector *v,
+                                                size_t n, size_t itemsize);
 
 #endif /* NBDKIT_VECTOR_H */

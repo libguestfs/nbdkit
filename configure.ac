@@ -384,7 +384,9 @@ AC_CHECK_FUNCS([\
         pipe \
         pipe2 \
         ppoll \
-        posix_fadvise])
+        posix_fadvise \
+        posix_memalign \
+        valloc])
 
 dnl Check for structs and members.
 AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [[#include <dirent.h>]])
