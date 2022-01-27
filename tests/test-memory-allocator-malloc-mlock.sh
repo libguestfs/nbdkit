@@ -46,9 +46,9 @@ if ! nbdkit memory --dump-plugin | grep -sq mlock=yes; then
 fi
 
 # ulimit -l is measured in kilobytes and so for this test must be at
-# least 2 (kilobytes) and we actually check it's a bit larger to allow
-# room for error.  On Linux the default is usually 64.
-requires test `ulimit -l` -gt 8
+# least 10 (kilobytes) and we actually check it's a bit larger to
+# allow room for error.  On Linux the default is usually 64.
+requires test `ulimit -l` -gt 16
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="memory-allocator-malloc-mlock.pid $sock"
@@ -57,17 +57,21 @@ cleanup_fn rm -f $files
 
 # Run nbdkit with memory plugin.
 start_nbdkit -P memory-allocator-malloc-mlock.pid -U $sock \
-             memory 2048 allocator=malloc,mlock=true
+             memory 10240 allocator=malloc,mlock=true
 
 nbdsh --connect "nbd+unix://?socket=$sock" \
       -c '
-# Write some stuff to the beginning, middle and end.
+# Write some stuff.
 buf1 = b"1" * 512
 h.pwrite(buf1, 0)
 buf2 = b"2" * 512
 h.pwrite(buf2, 1024)
 buf3 = b"3" * 512
 h.pwrite(buf3, 1536)
+buf4 = b"4" * 512
+h.pwrite(buf4, 4096)
+buf5 = b"5" * 1024
+h.pwrite(buf5, 10240-len(buf5))
 
 # Read it back.
 buf11 = h.pread(len(buf1), 0)
@@ -76,4 +80,8 @@ buf22 = h.pread(len(buf2), 1024)
 assert buf2 == buf22
 buf33 = h.pread(len(buf3), 1536)
 assert buf3 == buf33
+buf44 = h.pread(len(buf4), 4096)
+assert buf4 == buf44
+buf55 = h.pread(len(buf5), 10240-len(buf5))
+assert buf5 == buf55
 '
