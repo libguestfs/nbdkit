@@ -5,4 +5,4 @@ bash-completion >= 1.99.
 Tip: To test the bash completions without having to install them,
 simply start a new shell and do:
 
-  source ./bash/nbdkit; PATH=$PWD:$PATH
+  source ./bash-completion/nbdkit; PATH=$PWD:$PATH

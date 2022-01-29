@@ -1276,7 +1276,7 @@ AC_CONFIG_FILES([scripts/vddk-open.sh],
 AC_CONFIG_FILES([common/protocol/generate-protostrings.sh],
                 [chmod +x,-w common/protocol/generate-protostrings.sh])
 AC_CONFIG_FILES([Makefile
-                 bash/Makefile
+                 bash-completion/Makefile
                  common/allocators/Makefile
                  common/bitmap/Makefile
                  common/gpt/Makefile

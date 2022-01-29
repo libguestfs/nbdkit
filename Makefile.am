@@ -68,7 +68,7 @@ EXTRA_nbdkit_DEPENDENCIES = config.status
 endif !ENABLE_LIBFUZZER
 
 SUBDIRS = \
-	bash \
+	bash-completion \
 	docs \
 	fuzzing \
 	valgrind \
