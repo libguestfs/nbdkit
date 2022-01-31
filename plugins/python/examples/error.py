@@ -18,6 +18,7 @@
 # the foreground and print debugging, which is useful when testing.
 
 import os
+import nbdkit
 
 API_VERSION = 2
 
@@ -29,6 +30,13 @@ def config(key, value):
     global filename
     assert key == "file"
     filename = value
+
+
+def thread_model():
+    # Serialize all requests so we can seek safely in pread and pwrite
+    # and be compatible with python 3.6. In python 3.7 we can use
+    # os.preadv and os.pwritev and use the parallel threading model.
+    return nbdkit.THREAD_MODEL_SERIALIZE_ALL_REQUESTS
 
 
 def open(readonly):
