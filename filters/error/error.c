@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -374,8 +374,8 @@ error_cache (nbdkit_next *next,
 }
 
 static struct nbdkit_filter filter = {
-  .name              = "error",
-  .longname          = "nbdkit error filter",
+  .name              = "error-inject",
+  .longname          = "nbdkit error injection filter",
   .load              = error_load,
   .unload            = error_unload,
   .config            = error_config,

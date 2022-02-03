@@ -129,14 +129,15 @@ settings to NBD cache requests.
 =head2 Peculiar debug output
 
 If you are looking at the debugging output (using C<nbdkit -f -v>)
-then you may see peculiar "errors" appearing when using this filter,
-for example:
+references to the name of this filter show up as C<"error-inject:">,
+and such lines indicate that the filter is not altering output, for
+example:
 
- nbdkit: file.9: debug: error: pread count=1024 offset=0 flags=0x0
+ nbdkit: file.9: debug: error-inject: pread count=1024 offset=0 flags=0x0
 
-In fact these are not errors, nbdkit core is simply printing the name
-of the filter which happens to be C<"error">.  When this filter
-injects an error you will see something like:
+Conversely, references to the string C<"error:"> occur when the
+L<nbdkit_error(3)> API was used, including when this filter injects an
+error, as in:
 
  nbdkit: file.4: error: injecting ENOSPC error into pwrite
 
