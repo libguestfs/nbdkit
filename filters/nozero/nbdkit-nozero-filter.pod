@@ -33,7 +33,7 @@ This is the default if the C<zeromode> parameter is not specified.
 
 Zero support is advertised, but emulated by the filter by using the
 plugin's C<pwrite> callback, regardless of whether the plugin itself
-has a more efficient CC<zero> callback.
+has a more efficient C<zero> callback.
 
 =item B<zeromode=notrim>
 
