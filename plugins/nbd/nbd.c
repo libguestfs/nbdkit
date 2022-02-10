@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2020 Red Hat Inc.
+ * Copyright (C) 2017-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -636,6 +636,15 @@ nbdplug_open_handle (int readonly, const char *client_export)
     goto errnbd;
 #if LIBNBD_HAVE_NBD_SET_FULL_INFO
   if (nbd_set_full_info (h->nbd, 1) == -1)
+    goto errnbd;
+#endif
+#if LIBNBD_HAVE_NBD_SET_PREAD_INITIALIZE
+  /* nbdkit guarantees that the buffers passed to our .pread callback
+   * are pre-initialized; and we in turn ensure that the buffer is not
+   * dereferenced if the NBD server replied with an error.  Thus, we
+   * are safe opting in to this libnbd speedup.
+   */
+  if (nbd_set_pread_initialize (h->nbd, false) == -1)
     goto errnbd;
 #endif
   if (dynamic_export && uri) {
