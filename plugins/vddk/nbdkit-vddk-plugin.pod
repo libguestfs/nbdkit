@@ -552,7 +552,9 @@ loaded then these lines are not printed.
 The VDDK plugin can only answer read/write requests on whole 512 byte
 sector boundaries.  This is because the VDDK Read and Write APIs only
 take sector numbers.  If your client needs finer granularity, you can
-use L<nbdkit-blocksize-filter(1)> with the setting C<minblock=512>.
+use L<nbdkit-blocksize-filter(1)>:
+
+ nbdkit vddk ... --filter=blocksize minblock=512
 
 =head2 Out of memory errors
 
@@ -563,10 +565,12 @@ In the verbose log you may see errors like:
  requested 2097176 bytes
 
 This seems especially common when there are multiple parallel
-connections open to the VMware server.
+connections open to the VMware server with large NBD reads and writes.
 
-These can be caused by resource limits set on the VMware server.  You
-can increase the limit for the NFC service by editing
+=head3 Increase resource limits on the server
+
+The error above can be caused by resource limits set on the VMware
+server.  You can increase the limit for the NFC service by editing
 F</etc/vmware/hostd/config.xml> and adjusting the
 C<E<lt>maxMemoryE<gt>> setting:
 
@@ -582,6 +586,21 @@ and restarting the C<hostd> service:
  # /etc/init.d/hostd restart
 
 For more information see L<https://bugzilla.redhat.com/1614276>.
+
+=head3 Limit request sizes
+
+In addition, or as an alternative to adjusting the server
+configuration, you can use L<nbdkit-blocksize-filter(1)> to limit the
+maximum request size.  By default this plugin translates NBD requests
+directly into VDDK requests, and it appears that very large VDDK
+requests can cause the error seen above.
+
+Using:
+
+ nbdkit vddk ... --filter=blocksize minblock=512 maxdata=2M
+
+will cause nbdkit to automatically split and combine requests so that
+VDDK sees only sizes in the range C<[512..2M]>.
 
 =head2 Troubleshooting performance problems
 
