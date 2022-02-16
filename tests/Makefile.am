@@ -562,6 +562,10 @@ EXTRA_DIST += test-eflags.sh
 TESTS += test-export-name.sh test-export-info.sh
 EXTRA_DIST += test-export-name.sh test-export-info.sh
 
+# Test block size constraints.
+TESTS += test-block-size-constraints.sh
+EXTRA_DIST += test-block-size-constraints.sh
+
 # cdi plugin test.
 TESTS += test-cdi.sh
 EXTRA_DIST += test-cdi.sh
