@@ -527,6 +527,72 @@ sh_get_size (void *handle)
 }
 
 int
+sh_block_size (void *handle,
+               uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  const char *method = "block_size";
+  const char *script = get_script (method);
+  struct sh_handle *h = handle;
+  const char *args[] = { script, method, h->h, NULL };
+  CLEANUP_FREE char *s = NULL;
+  size_t slen;
+  const char *delim = " \t\n";
+  char *sp, *p;
+  int64_t r;
+
+  switch (call_read (&s, &slen, args)) {
+  case OK:
+    if ((p = strtok_r (s, delim, &sp)) == NULL) {
+    parse_error:
+      nbdkit_error ("%s: %s method cannot be parsed", script, method);
+      return -1;
+    }
+    r = nbdkit_parse_size (p);
+    if (r == -1 || r > UINT32_MAX)
+      goto parse_error;
+    *minimum = r;
+
+    if ((p = strtok_r (NULL, delim, &sp)) == NULL)
+      goto parse_error;
+    r = nbdkit_parse_size (p);
+    if (r == -1 || r > UINT32_MAX)
+      goto parse_error;
+    *preferred = r;
+
+    if ((p = strtok_r (NULL, delim, &sp)) == NULL)
+      goto parse_error;
+    r = nbdkit_parse_size (p);
+    if (r == -1 || r > UINT32_MAX)
+      goto parse_error;
+    *maximum = r;
+
+#if 0
+    nbdkit_debug ("setting block_size: "
+                  "minimum=%" PRIu32 " "
+                  "preferred=%" PRIu32 " "
+                  "maximum=%" PRIu32,
+                  *minimum, *preferred, *maximum);
+#endif
+    return 0;
+
+  case MISSING:
+    *minimum = *preferred = *maximum = 0;
+    return 0;
+
+  case ERROR:
+    return -1;
+
+  case RET_FALSE:
+    nbdkit_error ("%s: %s method returned unexpected code (3/false)",
+                  script, method);
+    errno = EIO;
+    return -1;
+
+  default: abort ();
+  }
+}
+
+int
 sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
           uint32_t flags)
 {

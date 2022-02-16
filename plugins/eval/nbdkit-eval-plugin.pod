@@ -70,6 +70,8 @@ features):
 
 =item B<after_fork=>SCRIPT
 
+=item B<block_size=>SCRIPT
+
 =item B<cache=>SCRIPT
 
 =item B<can_cache=>SCRIPT

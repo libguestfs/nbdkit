@@ -372,6 +372,16 @@ L<nbdkit-plugin(3)/PARSING SIZE PARAMETERS>).
 
 This method is required.
 
+=item C<block_size>
+
+ /path/to/script block_size <handle>
+
+This script should print three numbers on stdout, separated by
+whitespace.  These are (in order) the minimum block size, the
+preferred block size, and the maximum block size.  You can print the
+sizes in bytes or use any format understood by C<nbdkit_parse_size>
+such as C<1M> (see L<nbdkit-plugin(3)/PARSING SIZE PARAMETERS>).
+
 =item C<can_write>
 
 =item C<can_flush>

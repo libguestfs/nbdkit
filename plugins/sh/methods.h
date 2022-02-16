@@ -51,6 +51,9 @@ extern void *sh_open (int readonly);
 extern void sh_close (void *handle);
 extern const char *sh_export_description (void *handle);
 extern int64_t sh_get_size (void *handle);
+extern int sh_block_size (void *handle,
+                          uint32_t *minimum, uint32_t *preferred,
+                          uint32_t *maximum);
 extern int sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
                      uint32_t flags);
 extern int sh_pwrite (void *handle, const void *buf, uint32_t count,
