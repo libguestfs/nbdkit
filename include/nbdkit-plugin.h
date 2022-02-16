@@ -146,6 +146,9 @@ struct nbdkit_plugin {
   const char * (*export_description) (void *handle);
 
   void (*cleanup) (void);
+
+  int (*block_size) (void *handle,
+                     uint32_t *minimum, uint32_t *preferred, uint32_t *maximum);
 };
 
 NBDKIT_EXTERN_DECL (void, nbdkit_set_error, (int err));

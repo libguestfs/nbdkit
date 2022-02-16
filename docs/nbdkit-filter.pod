@@ -711,6 +711,15 @@ This intercepts the plugin C<.export_description> method and can be
 used to read or modify the export description that the NBD client
 will see.
 
+=head2 C<.block_size>
+
+ int block_size (nbdkit_next *next, void *handle, uint32_t *minimum,
+                 uint32_t *preferred, uint32_t *maximum);
+
+This intercepts the plugin C<.block_size> method and can be used to
+read or modify the block size constraints that the NBD client will
+see.
+
 =head2 C<.can_write>
 
 =head2 C<.can_flush>

@@ -46,6 +46,7 @@
 
 #include "internal.h"
 #include "minmax.h"
+#include "ispowerof2.h"
 
 /* We extend the generic backend struct with extra fields relating
  * to this plugin.
@@ -173,6 +174,7 @@ plugin_dump_fields (struct backend *b)
   HAS (close);
   HAS (export_description);
   HAS (get_size);
+  HAS (block_size);
   HAS (can_write);
   HAS (can_flush);
   HAS (is_rotational);
@@ -406,6 +408,65 @@ plugin_get_size (struct context *c)
   assert (p->plugin.get_size != NULL);
 
   return p->plugin.get_size (c->handle);
+}
+
+static int
+plugin_block_size (struct context *c,
+                   uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  struct backend *b = c->b;
+  struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
+  int r;
+
+  if (p->plugin.block_size) {
+    r = p->plugin.block_size (c->handle, minimum, preferred, maximum);
+    if (r == 0) {
+      /* To make scripting easier, it's permitted to set
+       * minimum = preferred = maximum = 0 and return 0.
+       * That means "no information", and works the same
+       * way as the else clause below.
+       */
+      if (*minimum == 0 && *preferred == 0 && *maximum == 0)
+        return 0;
+
+      if (*minimum < 1 || *minimum > 65536) {
+        nbdkit_error ("plugin must set minimum block size between 1 and 64K");
+        r = -1;
+      }
+      if (! is_power_of_2 (*minimum)) {
+        nbdkit_error ("plugin must set minimum block size to a power of 2");
+        r = -1;
+      }
+      if (! is_power_of_2 (*preferred)) {
+        nbdkit_error ("plugin must set preferred block size to a power of 2");
+        r = -1;
+      }
+      if (*preferred < 512 || *preferred > 32 * 1024 * 1024) {
+        nbdkit_error ("plugin must set preferred block size "
+                      "between 512 and 32M");
+        r = -1;
+      }
+      if (*maximum != (uint32_t)-1 && (*maximum % *minimum) != 0) {
+        nbdkit_error ("plugin must set maximum block size "
+                      "to -1 or a multiple of minimum block size");
+        r = -1;
+      }
+      if (*minimum > *preferred || *preferred > *maximum) {
+        nbdkit_error ("plugin must set minimum block size "
+                      "<= preferred <= maximum");
+        r = -1;
+      }
+    }
+    return r;
+  }
+  else {
+    /* If there is no .block_size call then return minimum = preferred
+     * = maximum = 0, which is a sentinel meaning don't send the
+     * NBD_INFO_BLOCK_SIZE message.
+     */
+    *minimum = *preferred = *maximum = 0;
+    return 0;
+  }
 }
 
 static int
@@ -824,6 +885,7 @@ static struct backend plugin_functions = {
   .close = plugin_close,
   .export_description = plugin_export_description,
   .get_size = plugin_get_size,
+  .block_size = plugin_block_size,
   .can_write = plugin_can_write,
   .can_flush = plugin_can_flush,
   .is_rotational = plugin_is_rotational,

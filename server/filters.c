@@ -359,6 +359,22 @@ filter_get_size (struct context *c)
 }
 
 static int
+filter_block_size (struct context *c,
+                   uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  struct backend *b = c->b;
+  struct backend_filter *f = container_of (b, struct backend_filter, backend);
+  struct context *c_next = c->c_next;
+
+  if (f->filter.block_size)
+    return f->filter.block_size (c_next, c->handle,
+                                 minimum, preferred, maximum);
+  else
+    return backend_block_size (c_next,
+                               minimum, preferred, maximum);
+}
+
+static int
 filter_can_write (struct context *c)
 {
   struct backend *b = c->b;
@@ -621,6 +637,7 @@ static struct backend filter_functions = {
   .close = filter_close,
   .export_description = filter_export_description,
   .get_size = filter_get_size,
+  .block_size = filter_block_size,
   .can_write = filter_can_write,
   .can_flush = filter_can_flush,
   .is_rotational = filter_is_rotational,

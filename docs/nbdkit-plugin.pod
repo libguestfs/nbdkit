@@ -872,6 +872,41 @@ returning a compile-time constant string, you may find
 C<nbdkit_strdup_intern> helpful for returning a value that avoids a
 memory leak.
 
+=head2 C<.block_size>
+
+ int block_size (void *handle, uint32_t *minimum,
+                 uint32_t *preferred, uint32_t *maximum);
+
+This is called during the option negotiation phase of the protocol to
+get the minimum, preferred and maximum block size (all in bytes) of
+the block device.  The client should obey these constraints by not
+making requests which are smaller than the minimum size or larger than
+the maximum size, and usually making requests of a multiple of the
+preferred size.  Furthermore requests should be aligned to at least
+the minimum block size, and usually the preferred block size.
+
+"Preferred" block size in the NBD specification can be misinterpreted.
+It means the I/O size which does not have a penalty for
+read-modify-write.
+
+Even if the plugin implements this callback, this does B<not> mean
+that all client requests will obey the constraints.  A client could
+still ignore the constraints.  nbdkit passes all requests through to
+the plugin, because what the plugin does depends on the plugin's
+policy.  It might decide to serve the requests correctly anyway, or
+reject them with an error.
+
+The minimum block size must be E<ge> 1.  The maximum block size must
+be E<le> 0xffff_ffff.  minimum E<le> preferred E<le> maximum.
+
+As a special case, the plugin may return minimum == preferred ==
+maximum == 0, meaning no information.
+
+If this callback is not used, then the NBD protocol assumes by default
+minimum = 1, preferred = 4096.  (Maximum block size depends on various
+factors, see the NBD protocol specification, section "Block size
+constraints").
+
 =head2 C<.can_write>
 
  int can_write (void *handle);

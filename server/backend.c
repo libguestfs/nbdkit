@@ -214,6 +214,7 @@ static struct nbdkit_next_ops next_ops = {
   .finalize = backend_finalize,
   .export_description = backend_export_description,
   .get_size = backend_get_size,
+  .block_size = backend_block_size,
   .can_write = backend_can_write,
   .can_flush = backend_can_flush,
   .is_rotational = backend_is_rotational,
@@ -265,6 +266,7 @@ backend_open (struct backend *b, int readonly, const char *exportname,
   c->conn = shared ? NULL : conn;
   c->state = 0;
   c->exportsize = -1;
+  c->minimum_block_size = c->preferred_block_size = c->maximum_block_size = -1;
   c->can_write = readonly ? 0 : -1;
   c->can_flush = -1;
   c->is_rotational = -1;
@@ -416,6 +418,33 @@ backend_get_size (struct context *c)
     c->exportsize = b->get_size (c);
   }
   return c->exportsize;
+}
+
+int
+backend_block_size (struct context *c,
+                    uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  PUSH_CONTEXT_FOR_SCOPE (c);
+  struct backend *b = c->b;
+  int r;
+
+  assert (c->handle && (c->state & HANDLE_CONNECTED));
+  if (c->minimum_block_size != -1) {
+    *minimum = c->minimum_block_size;
+    *preferred = c->preferred_block_size;
+    *maximum = c->maximum_block_size;
+    return 0;
+  }
+  else {
+    controlpath_debug ("%s: block_size", b->name);
+    r = b->block_size (c, minimum, preferred, maximum);
+    if (r == 0) {
+      c->minimum_block_size = *minimum;
+      c->preferred_block_size = *preferred;
+      c->maximum_block_size = *maximum;
+    }
+    return r;
+  }
 }
 
 int

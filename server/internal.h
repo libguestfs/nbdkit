@@ -216,6 +216,9 @@ struct context {
   unsigned char state;  /* Bitmask of HANDLE_* values */
 
   uint64_t exportsize;
+  uint32_t minimum_block_size;
+  uint32_t preferred_block_size;
+  uint32_t maximum_block_size;
   int can_write;
   int can_flush;
   int is_rotational;
@@ -368,6 +371,8 @@ struct backend {
 
   const char *(*export_description) (struct context *);
   int64_t (*get_size) (struct context *);
+  int (*block_size) (struct context *,
+                     uint32_t *minimum, uint32_t *preferred, uint32_t *maximum);
   int (*can_write) (struct context *);
   int (*can_flush) (struct context *);
   int (*is_rotational) (struct context *);
@@ -433,6 +438,10 @@ extern const char *backend_export_description (struct context *c)
   __attribute__((__nonnull__ (1)));
 extern int64_t backend_get_size (struct context *c)
   __attribute__((__nonnull__ (1)));
+extern int backend_block_size (struct context *c,
+                               uint32_t *minimum, uint32_t *preferred,
+                               uint32_t *maximum)
+  __attribute__((__nonnull__ (1, 2, 3, 4)));
 extern int backend_can_write (struct context *c)
   __attribute__((__nonnull__ (1)));
 extern int backend_can_flush (struct context *c)

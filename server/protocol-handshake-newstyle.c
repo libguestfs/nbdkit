@@ -195,6 +195,38 @@ send_newstyle_option_reply_info_str (uint32_t option, uint32_t reply,
   return 0;
 }
 
+/* Send reply containing NBD_INFO_BLOCK_SIZE. */
+static int
+send_newstyle_option_reply_info_block_size (uint32_t option, uint32_t reply,
+                                            uint16_t info,
+                                            uint32_t minimum,
+                                            uint32_t preferred,
+                                            uint32_t maximum)
+{
+  GET_CONN;
+  struct nbd_fixed_new_option_reply fixed_new_option_reply;
+  struct nbd_fixed_new_option_reply_info_block_size block_size;
+
+  fixed_new_option_reply.magic = htobe64 (NBD_REP_MAGIC);
+  fixed_new_option_reply.option = htobe32 (option);
+  fixed_new_option_reply.reply = htobe32 (reply);
+  fixed_new_option_reply.replylen = htobe32 (14);
+  block_size.info = htobe16 (info);
+  block_size.minimum = htobe32 (minimum);
+  block_size.preferred = htobe32 (preferred);
+  block_size.maximum = htobe32 (maximum);
+
+  if (conn->send (&fixed_new_option_reply,
+                  sizeof fixed_new_option_reply, SEND_MORE) == -1 ||
+      conn->send (&block_size,
+                  sizeof block_size, 0) == -1) {
+    nbdkit_error ("write: %s: %m", name_of_nbd_opt (option));
+    return -1;
+  }
+
+  return 0;
+}
+
 static int
 send_newstyle_option_reply_meta_context (uint32_t option, uint32_t reply,
                                          uint32_t context_id,
@@ -589,10 +621,10 @@ negotiate_handshake_newstyle_options (void)
                                                     exportsize) == -1)
           return -1;
 
-        /* For now we send NBD_INFO_NAME and NBD_INFO_DESCRIPTION if
-         * requested, and ignore all other info requests (including
-         * NBD_INFO_EXPORT if it was requested, because we replied
-         * already above).
+        /* For now we send NBD_INFO_NAME, NBD_INFO_DESCRIPTION and
+         * NBD_INFO_BLOCK_SIZE if requested, and ignore all other info
+         * requests (including NBD_INFO_EXPORT if it was requested,
+         * because we replied already above).
          */
         for (i = 0; i < nrinfos; ++i) {
           memcpy (&info, &data[4 + exportnamelen + 2 + i*2], 2);
@@ -634,6 +666,29 @@ negotiate_handshake_newstyle_options (void)
                                                        NBD_REP_INFO,
                                                        NBD_INFO_DESCRIPTION,
                                                        desc, -1) == -1)
+                return -1;
+            }
+            break;
+          case NBD_INFO_BLOCK_SIZE:
+            {
+              uint32_t minimum, preferred, maximum;
+
+              if (backend_block_size (conn->top_context,
+                                      &minimum, &preferred, &maximum) == -1)
+                return -1;
+              if (minimum == 0) {
+                debug ("newstyle negotiation: %s: "
+                       "NBD_INFO_BLOCK_SIZE: client requested but "
+                       "no plugin or filter provided block size information, "
+                       "ignoring client request",
+                       optname);
+                break;
+              }
+              if (send_newstyle_option_reply_info_block_size
+                  (option,
+                   NBD_REP_INFO,
+                   NBD_INFO_BLOCK_SIZE,
+                   minimum, preferred, maximum) == -1)
                 return -1;
             }
             break;

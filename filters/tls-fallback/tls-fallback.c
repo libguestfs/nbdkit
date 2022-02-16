@@ -143,6 +143,20 @@ tls_fallback_get_size (nbdkit_next *next,
 }
 
 static int
+tls_fallback_block_size (nbdkit_next *next,
+                         void *handle,
+                         uint32_t *minimum,
+                         uint32_t *preferred,
+                         uint32_t *maximum)
+{
+  if (NOT_TLS) {
+    *minimum = *preferred = *maximum = 0;
+    return 0;
+  }
+  return next->block_size (next, minimum, preferred, maximum);
+}
+
+static int
 tls_fallback_can_write (nbdkit_next *next,
                         void *handle)
 {
@@ -219,6 +233,7 @@ static struct nbdkit_filter filter = {
   .open               = tls_fallback_open,
   .export_description = tls_fallback_export_description,
   .get_size           = tls_fallback_get_size,
+  .block_size         = tls_fallback_block_size,
   .can_write          = tls_fallback_can_write,
   .can_flush          = tls_fallback_can_flush,
   .is_rotational      = tls_fallback_is_rotational,

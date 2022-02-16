@@ -31,8 +31,7 @@ General ideas for improvements
   https://www.redhat.com/archives/libguestfs/2018-January/msg00149.html
 
 * More NBD protocol features.  The currently missing features are
-  structured replies for sparse reads, block size constraints, and
-  online resize.
+  structured replies for sparse reads, and online resize.
 
 * Add a callback to let plugins request minimum alignment for the
   buffer to pread/pwrite; useful for a plugin utilizing O_DIRECT or
