@@ -1409,6 +1409,10 @@ test_layers_filter3_la_LIBADD = $(IMPORT_LIBRARY_ON_WINDOWS)
 TESTS += test-blocksize.sh test-blocksize-extents.sh
 EXTRA_DIST += test-blocksize.sh test-blocksize-extents.sh
 
+# blocksize-policy filter test.
+TESTS += test-blocksize-policy.sh test-blocksize-error-policy.sh
+EXTRA_DIST += test-blocksize-policy.sh test-blocksize-error-policy.sh
+
 # cache filter test.
 TESTS += \
 	test-cache.sh \

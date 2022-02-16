@@ -109,6 +109,7 @@ non_lang_plugins="\
 plugins="$(echo $(printf %s\\n $lang_plugins $non_lang_plugins | sort -u))"
 filters="\
         blocksize \
+        blocksize-policy \
         cache \
         cacheextents \
         checkwrite \
@@ -1335,6 +1336,7 @@ AC_CONFIG_FILES([Makefile
                  plugins/zero/Makefile
                  filters/Makefile
                  filters/blocksize/Makefile
+                 filters/blocksize-policy/Makefile
                  filters/cache/Makefile
                  filters/cacheextents/Makefile
                  filters/checkwrite/Makefile

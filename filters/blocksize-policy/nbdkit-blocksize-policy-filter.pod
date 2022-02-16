@@ -1,0 +1,137 @@
+=head1 NAME
+
+nbdkit-blocksize-policy-filter - set minimum, preferred and
+maximum block size, and apply error policy
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=blocksize-policy PLUGIN
+        [blocksize-error-policy=allow|error]
+        [blocksize-minimum=N]
+        [blocksize-preferred=N]
+        [blocksize-maximum=N]
+
+=head1 DESCRIPTION
+
+C<nbdkit-blocksize-policy-filter> is an L<nbdkit(1)> filter that
+can add block size constraints to plugins which don't already support
+them.  It can also enforce an error policy for badly behaved clients
+which do not obey the block size constraints.
+
+For more information about block size constraints, see section
+"Block size constraints" in
+L<https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md>.
+
+The simplest usage is to place this filter on top of any plugin which
+does not advertise block size constraints, and set the
+C<blocksize-minimum>, C<blocksize-preferred> and C<blocksize-maximum>
+parameters with the desired constraints.  For example:
+
+ nbdkit --filter=blocksize-policy memory 1G \
+        blocksize-preferred=32K
+
+would adjust L<nbdkit-memory-plugin(1)> so that clients should
+prefer 32K requests.  You can query the NBD server advertised constraints
+using L<nbdinfo(1)>:
+
+ $ nbdinfo nbd://localhost
+ [...]
+     block_size_minimum: 1
+     block_size_preferred: 32768
+     block_size_maximum: 4294967295
+
+The second part of this filter is adjusting the error policy when
+badly behaved clients do not obey the minimum or maximum request size.
+Normally nbdkit permits these requests, leaving it up to the plugin
+whether it rejects the request with an error or tries to process the
+request (eg. trying to split an over-large request or doing a
+read-modify-write for an unaligned write).  With this filter you can
+use C<blocksize-error-policy=error> to reject these requests in the
+filter with an EINVAL error.  The plugin will not see them.
+
+=head2 Combining with L<nbdkit-blocksize-filter(1)>
+
+A related filter is L<nbdkit-blocksize-filter(1)>.  That filter can
+split and combine requests for plugins that cannot handle requests
+under or over a particular size.
+
+Both filters may be used together like this (note that the order of
+the filters is important):
+
+  nbdkit --filter=blocksize-policy \
+         --filter=blocksize \
+         PLUGIN ... \
+         blocksize-error-policy=allow \
+         blocksize-minimum=64K minblock=64K
+
+This says to advertise a minimum block size of 64K.  Well-behaved
+clients will obey this.  Badly behaved clients will send requests
+S<E<lt> 64K> which will be converted to slow 64K read-modify-write
+cycles to the underlying plugin.  In either case the plugin will only
+see requests on 64K (or multiples of 64K) boundaries.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<blocksize-error-policy=allow>
+
+=item B<blocksize-error-policy=error>
+
+If a client sends a request which is smaller than the permitted
+minimum size or larger than the permitted maximum size, or not aligned
+to the minimum size, C<blocksize-error-policy> chooses what the filter
+will do.  The default (and also nbdkit's default) is C<allow> which
+means pass the request through to the plugin.
+
+Use C<error> to return an EINVAL error back to the client.  The plugin
+will not see the badly formed request in this case.
+
+=item B<blocksize-minimum=>N
+
+=item B<blocksize-preferred=>N
+
+=item B<blocksize-maximum=>N
+
+Advertise minimum, preferred and/or maximum block size to the client.
+Well-behaved clients should obey these constraints.
+
+For each parameter, you can specify it as a size (using the usual
+modifiers like C<4K>).
+
+If the parameter is omitted then either the constraint advertised by
+the plugin itself is used, or a sensible default for plugins which do
+not advertise block size constraints.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-blocksize-policy-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-limit-filter> first appeared in nbdkit 1.30.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-blocksize-filter(1)>,
+L<nbdkit-filter(3)>,
+L<nbdkit-plugin(3)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2022 Red Hat Inc.

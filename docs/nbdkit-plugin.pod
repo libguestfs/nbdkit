@@ -894,7 +894,9 @@ that all client requests will obey the constraints.  A client could
 still ignore the constraints.  nbdkit passes all requests through to
 the plugin, because what the plugin does depends on the plugin's
 policy.  It might decide to serve the requests correctly anyway, or
-reject them with an error.
+reject them with an error.  Plugins can avoid this complexity by using
+L<nbdkit-blocksize-policy-filter(1)> which allows both
+setting/adjusting the constraints, and selecting an error policy.
 
 The minimum block size must be E<ge> 1.  The maximum block size must
 be E<le> 0xffff_ffff.  minimum E<le> preferred E<le> maximum.
