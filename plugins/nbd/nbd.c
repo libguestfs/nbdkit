@@ -849,6 +849,70 @@ nbdplug_get_size (void *handle)
 }
 
 static int
+nbdplug_block_size (void *handle,
+                    uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+#ifdef LIBNBD_HAVE_NBD_GET_BLOCK_SIZE
+  struct handle *h = handle;
+  int64_t r;
+
+  r = nbd_get_block_size (h->nbd, LIBNBD_SIZE_MINIMUM);
+  if (r == -1) {
+    nbdkit_error ("%s", nbd_get_error ());
+    return -1;
+  }
+  if (r == 0)
+    goto no_information;
+  if (r > UINT32_MAX) {
+    nbdkit_error ("nbd_get_block_size: LIBNBD_SIZE_MINIMUM: "
+                  "value out of range");
+    return -1;
+  }
+  *minimum = r;
+
+  r = nbd_get_block_size (h->nbd, LIBNBD_SIZE_PREFERRED);
+  if (r == -1) {
+    nbdkit_error ("%s", nbd_get_error ());
+    return -1;
+  }
+  if (r == 0)
+    goto no_information;
+  if (r > UINT32_MAX) {
+    nbdkit_error ("nbd_get_block_size: LIBNBD_SIZE_PREFERRED: "
+                  "value out of range");
+    return -1;
+  }
+  *preferred = r;
+
+  r = nbd_get_block_size (h->nbd, LIBNBD_SIZE_MAXIMUM);
+  if (r == -1) {
+    nbdkit_error ("%s", nbd_get_error ());
+    return -1;
+  }
+  if (r == 0)
+    goto no_information;
+  if (r > UINT32_MAX) {
+    nbdkit_error ("nbd_get_block_size: LIBNBD_SIZE_MAXIMUM: "
+                  "value out of range");
+    return -1;
+  }
+  *maximum = r;
+
+  return 0;
+
+#else /* !LIBNBD_HAVE_NBD_GET_BLOCK_SIZE */
+  goto no_information;
+#endif
+
+ no_information:
+  /* We reach here if there was no error, but there was insufficient
+   * information about block size constraints.
+   */
+  *minimum = *preferred = *maximum = 0;
+  return 0;
+}
+
+static int
 nbdplug_can_write (void *handle)
 {
   struct handle *h = handle;
@@ -1135,6 +1199,7 @@ static struct nbdkit_plugin plugin = {
   .close              = nbdplug_close,
   .export_description = nbdplug_export_description,
   .get_size           = nbdplug_get_size,
+  .block_size         = nbdplug_block_size,
   .can_write          = nbdplug_can_write,
   .can_flush          = nbdplug_can_flush,
   .is_rotational      = nbdplug_is_rotational,

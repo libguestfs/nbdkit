@@ -814,6 +814,7 @@ if HAVE_LIBNBD
 # nbd plugin test.
 LIBGUESTFS_TESTS += test-nbd
 TESTS += \
+	test-nbd-block-size.sh \
 	test-nbd-dynamic-content.sh \
 	test-nbd-dynamic-list.sh \
 	test-nbd-extents.sh \
@@ -823,6 +824,7 @@ TESTS += \
 	test-nbd-vsock.sh \
 	$(NULL)
 EXTRA_DIST += \
+	test-nbd-block-size.sh \
 	test-nbd-dynamic-content.sh \
 	test-nbd-dynamic-list.sh \
 	test-nbd-extents.sh \
