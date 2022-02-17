@@ -416,48 +416,48 @@ plugin_block_size (struct context *c,
 {
   struct backend *b = c->b;
   struct backend_plugin *p = container_of (b, struct backend_plugin, backend);
-  int r;
 
   if (p->plugin.block_size) {
-    r = p->plugin.block_size (c->handle, minimum, preferred, maximum);
-    if (r == 0) {
-      /* To make scripting easier, it's permitted to set
-       * minimum = preferred = maximum = 0 and return 0.
-       * That means "no information", and works the same
-       * way as the else clause below.
-       */
-      if (*minimum == 0 && *preferred == 0 && *maximum == 0)
-        return 0;
+    if (p->plugin.block_size (c->handle, minimum, preferred, maximum) == -1)
+      return -1;
 
-      if (*minimum < 1 || *minimum > 65536) {
-        nbdkit_error ("plugin must set minimum block size between 1 and 64K");
-        r = -1;
-      }
-      if (! is_power_of_2 (*minimum)) {
-        nbdkit_error ("plugin must set minimum block size to a power of 2");
-        r = -1;
-      }
-      if (! is_power_of_2 (*preferred)) {
-        nbdkit_error ("plugin must set preferred block size to a power of 2");
-        r = -1;
-      }
-      if (*preferred < 512 || *preferred > 32 * 1024 * 1024) {
-        nbdkit_error ("plugin must set preferred block size "
-                      "between 512 and 32M");
-        r = -1;
-      }
-      if (*maximum != (uint32_t)-1 && (*maximum % *minimum) != 0) {
-        nbdkit_error ("plugin must set maximum block size "
-                      "to -1 or a multiple of minimum block size");
-        r = -1;
-      }
-      if (*minimum > *preferred || *preferred > *maximum) {
-        nbdkit_error ("plugin must set minimum block size "
-                      "<= preferred <= maximum");
-        r = -1;
-      }
+    /* To make scripting easier, it's permitted to set
+     * minimum = preferred = maximum = 0 and return 0.
+     * That means "no information", and works the same
+     * way as the else clause below.
+     */
+    if (*minimum == 0 && *preferred == 0 && *maximum == 0)
+      return 0;
+
+    if (*minimum < 1 || *minimum > 65536) {
+      nbdkit_error ("plugin must set minimum block size between 1 and 64K");
+      return -1;
     }
-    return r;
+    if (! is_power_of_2 (*minimum)) {
+      nbdkit_error ("plugin must set minimum block size to a power of 2");
+      return -1;
+    }
+    if (! is_power_of_2 (*preferred)) {
+      nbdkit_error ("plugin must set preferred block size to a power of 2");
+      return -1;
+    }
+    if (*preferred < 512 || *preferred > 32 * 1024 * 1024) {
+      nbdkit_error ("plugin must set preferred block size "
+                    "between 512 and 32M");
+      return -1;
+    }
+    if (*maximum != (uint32_t)-1 && (*maximum % *minimum) != 0) {
+      nbdkit_error ("plugin must set maximum block size "
+                    "to -1 or a multiple of minimum block size");
+      return -1;
+    }
+    if (*minimum > *preferred || *preferred > *maximum) {
+      nbdkit_error ("plugin must set minimum block size "
+                    "<= preferred <= maximum");
+      return -1;
+    }
+
+    return 0;
   }
   else {
     /* If there is no .block_size call then return minimum = preferred
