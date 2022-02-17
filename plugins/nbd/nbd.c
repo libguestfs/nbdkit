@@ -706,7 +706,7 @@ collect_one (void *opaque, const char *name, const char *desc)
   struct nbdkit_exports *exports = opaque;
 
   if (nbdkit_add_export (exports, name, desc) == -1)
-    nbdkit_debug ("Unable to share export %s: %s", name, nbd_get_error ());
+    nbdkit_debug ("unable to share export %s: %s", name, nbd_get_error ());
   return 0;
 }
 #endif /* LIBNBD_HAVE_NBD_OPT_LIST */
