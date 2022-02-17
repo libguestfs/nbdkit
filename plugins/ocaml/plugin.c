@@ -391,6 +391,49 @@ get_size_wrapper (void *h)
 }
 
 static int
+block_size_wrapper (void *h,
+                    uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (rv);
+  int i;
+  int64_t i64;
+  LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE ();
+
+  rv = caml_callback_exn (block_size_fn, *(value *) h);
+  if (Is_exception_result (rv)) {
+    nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
+    CAMLreturnT (int, -1);
+  }
+
+  i = Int_val (Field  (rv, 0));
+  if (i < 0 || i > 65536) {
+    nbdkit_error ("minimum block size must be in range 1..65536");
+    CAMLreturnT (int, -1);
+  }
+  *minimum = i;
+
+  i = Int_val (Field  (rv, 1));
+  if (i < 512 || i > 32 * 1024 * 1024) {
+    nbdkit_error ("preferred block size must be in range 512..32M");
+    CAMLreturnT (int, -1);
+  }
+  *preferred = i;
+
+  i64 = Int64_val (Field  (rv, 2));
+  if (i64 < -1 || i64 > UINT32_MAX) {
+    nbdkit_error ("maximum block size out of range");
+    CAMLreturnT (int, -1);
+  }
+  if (i64 == -1) /* Allow -1L to mean greatest block size. */
+    *maximum = (uint32_t)-1;
+  else
+    *maximum = i;
+
+  CAMLreturnT (int, 0);
+}
+
+static int
 can_write_wrapper (void *h)
 {
   CAMLparam0 ();

@@ -113,6 +113,8 @@ let get_size h =
   assert (h.h_sentinel = "TESTING");
   Int64.of_int (Bytes.length disk)
 
+let block_size _ = (1, 4096, -1L)
+
 let pread h count offset _ =
   assert (h.h_id > 0);
   assert (h.h_sentinel = "TESTING");
@@ -167,6 +169,7 @@ let () =
     ~open_connection
     ~close
     ~get_size
+    ~block_size
     ~pread
     ~pwrite
     ~extents

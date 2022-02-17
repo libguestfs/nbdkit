@@ -34,6 +34,7 @@
  * plugin.c as a convenient way to define per-callback things.
  */
 CB(after_fork)
+CB(block_size)
 CB(cache)
 CB(can_cache)
 CB(can_extents)

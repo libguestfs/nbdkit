@@ -89,6 +89,7 @@ let register_plugin ~name
                     ~open_connection
                     ?close
                     ~get_size
+                    ?block_size
                     ?can_cache
                     ?can_extents
                     ?can_fast_zero
@@ -125,6 +126,7 @@ let register_plugin ~name
   may (set_string_field "magic_config_key") magic_config_key;
 
   may (set_field "after_fork") after_fork;
+  may (set_field "block_size") block_size;
   may (set_field "cache") cache;
   may (set_field "can_cache") can_cache;
   may (set_field "can_extents") can_extents;

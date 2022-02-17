@@ -96,6 +96,7 @@ val register_plugin :
 
   (* NBD negotiation. *)
   get_size: ('a -> int64) ->
+  ?block_size: ('a -> int * int * int64) ->
   ?can_cache: ('a -> cache_flag) ->
   ?can_extents: ('a -> bool) ->
   ?can_fast_zero: ('a -> bool) ->
