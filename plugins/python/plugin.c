@@ -554,6 +554,41 @@ py_get_size (void *handle)
 }
 
 static int
+py_block_size (void *handle,
+               uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  ACQUIRE_PYTHON_GIL_FOR_CURRENT_SCOPE;
+  struct handle *h = handle;
+  PyObject *fn;
+  PyObject *r;
+  unsigned u_minimum, u_preferred, u_maximum;
+
+  if (callback_defined ("block_size", &fn)) {
+    PyErr_Clear ();
+
+    r = PyObject_CallFunctionObjArgs (fn, h->py_h, NULL);
+    Py_DECREF (fn);
+    if (check_python_failure ("block_size") == -1)
+      return -1;
+
+    PyArg_ParseTuple (r, "III",
+                      &u_minimum, &u_preferred, &u_maximum);
+    Py_DECREF (r);
+    if (check_python_failure ("block_size: PyArg_ParseTuple") == -1)
+      return -1;
+
+    *minimum = u_minimum;
+    *preferred = u_preferred;
+    *maximum = u_maximum;
+    return 0;
+  }
+  else {
+    *minimum = *preferred = *maximum = 0;
+    return 0;
+  }
+}
+
+static int
 py_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
           uint32_t flags)
 {
@@ -1074,6 +1109,7 @@ static struct nbdkit_plugin plugin = {
 
   .export_description = py_export_description,
   .get_size           = py_get_size,
+  .block_size         = py_block_size,
   .is_rotational      = py_is_rotational,
   .can_multi_conn     = py_can_multi_conn,
   .can_write          = py_can_write,

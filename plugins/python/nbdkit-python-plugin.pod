@@ -325,6 +325,13 @@ contents will be garbage collected.
  def get_size(h):
    # return the size of the disk
 
+=item C<block_size>
+
+(Option)
+
+ def block_size(h):
+   # return triple (minimum, preferred, maximum) block size
+
 =item C<is_rotational>
 
 (Optional)
