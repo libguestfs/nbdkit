@@ -269,7 +269,7 @@ nbdplug_config_complete (void)
     struct nbd_handle *nbd = nbd_create ();
 
     if (!nbd) {
-      nbdkit_error ("unable to query libnbd details: %s", nbd_get_error ());
+      nbdkit_error ("%s", nbd_get_error ());
       return -1;
     }
     if (!nbd_supports_uri (nbd)) {
@@ -350,7 +350,7 @@ nbdplug_config_complete (void)
     struct nbd_handle *nbd = nbd_create ();
 
     if (!nbd) {
-      nbdkit_error ("unable to query libnbd details: %s", nbd_get_error ());
+      nbdkit_error ("%s", nbd_get_error ());
       return -1;
     }
     if (!nbd_supports_tls (nbd)) {
@@ -400,7 +400,7 @@ nbdplug_dump_plugin (void)
   struct nbd_handle *nbd = nbd_create ();
 
   if (!nbd) {
-    nbdkit_error ("unable to query libnbd details: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     exit (EXIT_FAILURE);
   }
   printf ("libnbd_version=%s\n", nbd_get_version (nbd));
@@ -511,7 +511,7 @@ nbdplug_register (struct handle *h, struct transaction *trans, int64_t cookie)
   char c = 0;
 
   if (cookie == -1) {
-    nbdkit_error ("command failed: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     trans->early_err = nbd_get_errno ();
     return;
   }
@@ -689,7 +689,7 @@ nbdplug_open_handle (int readonly, const char *client_export)
   return h;
 
  errnbd:
-  nbdkit_error ("failure while creating nbd handle: %s", nbd_get_error ());
+  nbdkit_error ("%s", nbd_get_error ());
  err:
   close (h->fds[0]);
   close (h->fds[1]);
@@ -732,7 +732,7 @@ nbdplug_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
     r = 0;
   out:
     if (r == -1)
-      nbdkit_error ("Unable to get list: %s", nbd_get_error ());
+      nbdkit_error ("%s", nbd_get_error ());
     if (nbd) {
       if (nbd_aio_is_negotiating (nbd))
         nbd_opt_abort (nbd);
@@ -802,7 +802,7 @@ static void
 nbdplug_close_handle (struct handle *h)
 {
   if (nbd_aio_disconnect (h->nbd, 0) == -1)
-    nbdkit_debug ("failed to clean up handle: %s", nbd_get_error ());
+    nbdkit_debug ("%s", nbd_get_error ());
   if ((errno = pthread_join (h->reader, NULL)))
     nbdkit_debug ("failed to join reader thread: %m");
   close (h->fds[0]);
@@ -842,7 +842,7 @@ nbdplug_get_size (void *handle)
   int64_t size = nbd_get_size (h->nbd);
 
   if (size == -1) {
-    nbdkit_error ("failure to get size: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return size;
@@ -919,7 +919,7 @@ nbdplug_can_write (void *handle)
   int i = nbd_is_read_only (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check readonly flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return !(i || h->readonly);
@@ -932,7 +932,7 @@ nbdplug_can_flush (void *handle)
   int i = nbd_can_flush (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check flush flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i;
@@ -945,7 +945,7 @@ nbdplug_is_rotational (void *handle)
   int i = nbd_is_rotational (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check rotational flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i;
@@ -958,7 +958,7 @@ nbdplug_can_trim (void *handle)
   int i = nbd_can_trim (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check trim flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i;
@@ -971,7 +971,7 @@ nbdplug_can_zero (void *handle)
   int i = nbd_can_zero (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check zero flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i;
@@ -985,7 +985,7 @@ nbdplug_can_fast_zero (void *handle)
   int i = nbd_can_fast_zero (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check fast zero flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i;
@@ -1002,7 +1002,7 @@ nbdplug_can_fua (void *handle)
   int i = nbd_can_fua (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check fua flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i ? NBDKIT_FUA_NATIVE : NBDKIT_FUA_NONE;
@@ -1015,7 +1015,7 @@ nbdplug_can_multi_conn (void *handle)
   int i = nbd_can_multi_conn (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check multi-conn flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i;
@@ -1028,7 +1028,7 @@ nbdplug_can_cache (void *handle)
   int i = nbd_can_cache (h->nbd);
 
   if (i == -1) {
-    nbdkit_error ("failure to check cache flag: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i ? NBDKIT_CACHE_NATIVE : NBDKIT_CACHE_NONE;
@@ -1041,7 +1041,7 @@ nbdplug_can_extents (void *handle)
   int i = nbd_can_meta_context (h->nbd, LIBNBD_CONTEXT_BASE_ALLOCATION);
 
   if (i == -1) {
-    nbdkit_error ("failure to check extents ability: %s", nbd_get_error ());
+    nbdkit_error ("%s", nbd_get_error ());
     return -1;
   }
   return i;
