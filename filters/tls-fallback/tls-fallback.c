@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2020 Red Hat Inc.
+ * Copyright (C) 2020-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -107,7 +107,11 @@ tls_fallback_open (nbdkit_next_open *next, nbdkit_context *nxdata,
                    const char *exportname, int is_tls)
 {
   /* We do NOT want to call next() when insecure, because we don't
-   * know how long it will take.
+   * know how long it will take.  See also CVE-2019-14850 in
+   * nbdkit-security.pod.  But that means that this filter must
+   * override every possible callback that can be reached during
+   * handshake, to avoid passing through a non-TLS call to a missing
+   * backend.
    */
   if (!is_tls)
     return &message; /* See NOT_TLS for this choice of handle */
