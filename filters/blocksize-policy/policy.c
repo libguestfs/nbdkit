@@ -227,7 +227,8 @@ policy_block_size (nbdkit_next *next, void *handle,
  * problems.
  */
 static int
-check_policy (nbdkit_next *next, const char *type, bool data,
+check_policy (nbdkit_next *next, void *handle,
+              const char *type, bool data,
               uint32_t count, uint64_t offset, int *err)
 {
   uint32_t minimum, preferred, maximum;
@@ -241,7 +242,8 @@ check_policy (nbdkit_next *next, const char *type, bool data,
    * connection.
    */
   errno = 0;
-  if (next->block_size (next, &minimum, &preferred, &maximum) == -1) {
+  if (policy_block_size (next, handle,
+                         &minimum, &preferred, &maximum) == -1) {
     *err = errno ? : EINVAL;
     return -1;
   }
@@ -290,7 +292,7 @@ policy_pread (nbdkit_next *next,
               void *handle, void *buf, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
-  if (check_policy (next, "pread", true, count, offset, err) == -1)
+  if (check_policy (next, handle, "pread", true, count, offset, err) == -1)
     return -1;
 
   return next->pread (next, buf, count, offset, flags, err);
@@ -301,7 +303,7 @@ policy_pwrite (nbdkit_next *next,
                void *handle, const void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
-  if (check_policy (next, "pwrite", true, count, offset, err) == -1)
+  if (check_policy (next, handle, "pwrite", true, count, offset, err) == -1)
     return -1;
 
   return next->pwrite (next, buf, count, offset, flags, err);
@@ -312,7 +314,7 @@ policy_zero (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
 {
-  if (check_policy (next, "zero", false, count, offset, err) == -1)
+  if (check_policy (next, handle, "zero", false, count, offset, err) == -1)
     return -1;
 
   return next->zero (next, count, offset, flags, err);
@@ -323,7 +325,7 @@ policy_trim (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offset, uint32_t flags,
              int *err)
 {
-  if (check_policy (next, "trim", false, count, offset, err) == -1)
+  if (check_policy (next, handle, "trim", false, count, offset, err) == -1)
     return -1;
 
   return next->trim (next, count, offset, flags, err);
@@ -334,7 +336,7 @@ policy_cache (nbdkit_next *next,
               void *handle, uint32_t count, uint64_t offset,
               uint32_t flags, int *err)
 {
-  if (check_policy (next, "cache", false, count, offset, err) == -1)
+  if (check_policy (next, handle, "cache", false, count, offset, err) == -1)
     return -1;
 
   return next->cache (next, count, offset, flags, err);
@@ -345,7 +347,7 @@ policy_extents (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offset, uint32_t flags,
                 struct nbdkit_extents *extents, int *err)
 {
-  if (check_policy (next, "extents", false, count, offset, err) == -1)
+  if (check_policy (next, handle, "extents", false, count, offset, err) == -1)
     return -1;
 
   return next->extents (next, count, offset, flags, extents, err);
