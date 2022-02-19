@@ -50,6 +50,7 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "minmax.h"
 #include "vector.h"
 
 #include "vddk.h"
@@ -831,13 +832,46 @@ static int64_t
 vddk_get_size (void *handle)
 {
   struct vddk_handle *h = handle;
-  uint64_t size;
-  struct command get_size_cmd = { .type = GET_SIZE, .ptr = &size };
+  VixDiskLibInfo *info;
+  int64_t size;
+  struct command info_cmd = { .type = INFO, .ptr = &info };
 
-  if (send_command_and_wait (h, &get_size_cmd) == -1)
+  if (send_command_and_wait (h, &info_cmd) == -1)
     return -1;
 
-  return (int64_t) size;
+  size = info->capacity * (int64_t)VIXDISKLIB_SECTOR_SIZE;
+
+  VDDK_CALL_START (VixDiskLib_FreeInfo, "info")
+    VixDiskLib_FreeInfo (info);
+  VDDK_CALL_END (VixDiskLib_FreeInfo, 0);
+
+  return size;
+}
+
+/* Advertise most efficient block sizes. */
+static int
+vddk_block_size (void *handle,
+                 uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  struct vddk_handle *h = handle;
+  VixDiskLibInfo *info;
+  uint32_t s;
+  struct command info_cmd = { .type = INFO, .ptr = &info };
+
+  if (send_command_and_wait (h, &info_cmd) == -1)
+    return -1;
+
+  /* VDDK can only serve whole 512 byte sectors. */
+  *minimum = VIXDISKLIB_SECTOR_SIZE;
+  s = MAX (info->logicalSectorSize, info->physicalSectorSize);
+  *preferred = MAX (4096, s);
+  *maximum = 0xffffffff;
+
+  VDDK_CALL_START (VixDiskLib_FreeInfo, "info")
+    VixDiskLib_FreeInfo (info);
+  VDDK_CALL_END (VixDiskLib_FreeInfo, 0);
+
+  return 0;
 }
 
 /* The Flush call was added in VDDK 6.0, since we support minimum 6.5
@@ -959,6 +993,7 @@ static struct nbdkit_plugin plugin = {
   .open              = vddk_open,
   .close             = vddk_close,
   .get_size          = vddk_get_size,
+  .block_size        = vddk_block_size,
   .pread             = vddk_pread,
   .pwrite            = vddk_pwrite,
   .can_fua           = vddk_can_fua,

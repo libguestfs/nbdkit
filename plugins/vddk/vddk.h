@@ -128,7 +128,7 @@ extern int vddk_debug_stats;
   } while (0)
 
 /* Queue of asynchronous commands sent to the background thread. */
-enum command_type { GET_SIZE, READ, WRITE, FLUSH, CAN_EXTENTS, EXTENTS, STOP };
+enum command_type { INFO, READ, WRITE, FLUSH, CAN_EXTENTS, EXTENTS, STOP };
 struct command {
   /* These fields are set by the caller. */
   enum command_type type;       /* command */

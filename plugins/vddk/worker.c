@@ -53,7 +53,7 @@ const char *
 command_type_string (enum command_type type)
 {
   switch (type) {
-  case GET_SIZE:    return "get_size";
+  case INFO:        return "info";
   case READ:        return "read";
   case WRITE:       return "write";
   case FLUSH:       return "flush";
@@ -150,56 +150,48 @@ do_stop (struct command *cmd, struct vddk_handle *h)
   return 0;
 }
 
-/* Get size command. */
+/* Disk info command. */
 static int64_t
-do_get_size (struct command *cmd, struct vddk_handle *h)
+do_info (struct command *cmd, struct vddk_handle *h)
 {
   VixError err;
-  VixDiskLibInfo *info;
-  uint64_t size;
+  VixDiskLibInfo **info = cmd->ptr;
 
-  VDDK_CALL_START (VixDiskLib_GetInfo, "handle, &info")
-    err = VixDiskLib_GetInfo (h->handle, &info);
+  VDDK_CALL_START (VixDiskLib_GetInfo, "handle, info")
+    err = VixDiskLib_GetInfo (h->handle, info);
   VDDK_CALL_END (VixDiskLib_GetInfo, 0);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_GetInfo");
     return -1;
   }
 
-  size = info->capacity * (uint64_t)VIXDISKLIB_SECTOR_SIZE;
-
   if (vddk_debug_diskinfo) {
-    nbdkit_debug ("disk info: capacity: %" PRIu64 " sectors "
-                  "(%" PRIi64 " bytes)",
-                  info->capacity, size);
+    nbdkit_debug ("disk info: capacity: %" PRIu64 " sectors",
+                  (*info)->capacity);
     nbdkit_debug ("disk info: biosGeo: C:%" PRIu32 " H:%" PRIu32 " S:%" PRIu32,
-                  info->biosGeo.cylinders,
-                  info->biosGeo.heads,
-                  info->biosGeo.sectors);
+                  (*info)->biosGeo.cylinders,
+                  (*info)->biosGeo.heads,
+                  (*info)->biosGeo.sectors);
     nbdkit_debug ("disk info: physGeo: C:%" PRIu32 " H:%" PRIu32 " S:%" PRIu32,
-                  info->physGeo.cylinders,
-                  info->physGeo.heads,
-                  info->physGeo.sectors);
+                  (*info)->physGeo.cylinders,
+                  (*info)->physGeo.heads,
+                  (*info)->physGeo.sectors);
     nbdkit_debug ("disk info: adapter type: %d",
-                  (int) info->adapterType);
-    nbdkit_debug ("disk info: num links: %d", info->numLinks);
+                  (int) (*info)->adapterType);
+    nbdkit_debug ("disk info: num links: %d", (*info)->numLinks);
     nbdkit_debug ("disk info: parent filename hint: %s",
-                  info->parentFileNameHint ? : "NULL");
+                  (*info)->parentFileNameHint ? : "NULL");
     nbdkit_debug ("disk info: uuid: %s",
-                  info->uuid ? : "NULL");
+                  (*info)->uuid ? : "NULL");
     if (library_version >= 7) {
       nbdkit_debug ("disk info: sector size: "
                     "logical %" PRIu32 " physical %" PRIu32,
-                    info->logicalSectorSize,
-                    info->physicalSectorSize);
+                    (*info)->logicalSectorSize,
+                    (*info)->physicalSectorSize);
     }
   }
 
-  VDDK_CALL_START (VixDiskLib_FreeInfo, "info")
-    VixDiskLib_FreeInfo (info);
-  VDDK_CALL_END (VixDiskLib_FreeInfo, 0);
-
-  return (int64_t) size;
+  return 0;
 }
 
 static int
@@ -213,10 +205,12 @@ do_read (struct command *cmd, struct vddk_handle *h)
   /* Align to sectors. */
   if (!IS_ALIGNED (offset, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("%s is not aligned to sectors", "read");
+    errno = EINVAL;
     return -1;
   }
   if (!IS_ALIGNED (count, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("%s is not aligned to sectors", "read");
+    errno = EINVAL;
     return -1;
   }
   offset /= VIXDISKLIB_SECTOR_SIZE;
@@ -248,10 +242,12 @@ do_write (struct command *cmd, struct vddk_handle *h)
   /* Align to sectors. */
   if (!IS_ALIGNED (offset, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("%s is not aligned to sectors", "write");
+    errno = EINVAL;
     return -1;
   }
   if (!IS_ALIGNED (count, VIXDISKLIB_SECTOR_SIZE)) {
     nbdkit_error ("%s is not aligned to sectors", "write");
+    errno = EINVAL;
     return -1;
   }
   offset /= VIXDISKLIB_SECTOR_SIZE;
@@ -509,16 +505,9 @@ vddk_worker_thread (void *handle)
       stop = true;
       break;
 
-    case GET_SIZE: {
-      int64_t size = do_get_size (cmd, h);
-      if (size == -1)
-        r = -1;
-      else {
-        r = 0;
-        *(uint64_t *)cmd->ptr = size;
-      }
+    case INFO:
+      r = do_info (cmd, h);
       break;
-    }
 
     case READ:
       r = do_read (cmd, h);
