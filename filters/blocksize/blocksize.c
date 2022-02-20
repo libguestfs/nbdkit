@@ -156,6 +156,29 @@ blocksize_get_size (nbdkit_next *next,
   return ROUND_DOWN (size, minblock);
 }
 
+/* Block size constraints.
+ *
+ * This filter is a little unusual because it allows clients to send a
+ * wider range of request sizes than the underlying plugin allows.
+ * Therefore we advertise the widest possible minimum and maximum
+ * block size to clients.
+ */
+static int
+blocksize_block_size (nbdkit_next *next, void *handle,
+                      uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  if (next->block_size (next, minimum, preferred, maximum) == -1)
+    return -1;
+
+  if (*preferred == 0)
+    *preferred = MAX (4096, minblock);
+
+  *minimum = 1;
+  *maximum = 0xffffffff;
+
+  return 0;
+}
+
 static int
 blocksize_pread (nbdkit_next *next,
                  void *handle, void *b, uint32_t count, uint64_t offs,
@@ -432,6 +455,7 @@ static struct nbdkit_filter filter = {
   .config_complete   = blocksize_config_complete,
   .config_help       = blocksize_config_help,
   .get_size          = blocksize_get_size,
+  .block_size        = blocksize_block_size,
   .pread             = blocksize_pread,
   .pwrite            = blocksize_pwrite,
   .trim              = blocksize_trim,
