@@ -392,6 +392,18 @@ cc_get_size (void *handle)
 }
 
 static int
+cc_block_size (void *handle,
+               uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  if (subplugin.block_size)
+    return subplugin.block_size (handle, minimum, preferred, maximum);
+  else {
+    *minimum = *preferred = *maximum = 0;
+    return 0;
+  }
+}
+
+static int
 cc_can_write (void *handle)
 {
   if (subplugin.can_write)
@@ -602,6 +614,7 @@ static struct nbdkit_plugin plugin = {
 
   .export_description = cc_export_description,
   .get_size           = cc_get_size,
+  .block_size         = cc_block_size,
   .can_write          = cc_can_write,
   .can_flush          = cc_can_flush,
   .is_rotational      = cc_is_rotational,
