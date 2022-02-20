@@ -260,6 +260,27 @@ cache_get_size (nbdkit_next *next,
   return size;
 }
 
+/* Block size constraints. */
+static int
+cache_block_size (nbdkit_next *next, void *handle,
+                  uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  if (next->block_size (next, minimum, preferred, maximum) == -1)
+    return -1;
+
+  if (*minimum == 0) {         /* No constraints set by the plugin. */
+    *minimum = 1;
+    *preferred = blksize;
+    *maximum = 0xffffffff;
+  }
+  else {
+    if (*maximum >= blksize)
+      *preferred = MAX (*preferred, blksize);
+  }
+
+  return 0;
+}
+
 /* Force an early call to cache_get_size because we have to set the
  * backing file size and bitmap size before any other read or write
  * calls.
@@ -716,6 +737,7 @@ static struct nbdkit_filter filter = {
   .get_ready         = cache_get_ready,
   .prepare           = cache_prepare,
   .get_size          = cache_get_size,
+  .block_size        = cache_block_size,
   .can_cache         = cache_can_cache,
   .can_fast_zero     = cache_can_fast_zero,
   .can_flush         = cache_can_flush,

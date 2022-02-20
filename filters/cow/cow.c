@@ -182,6 +182,27 @@ cow_get_size (nbdkit_next *next,
   return size;
 }
 
+/* Block size constraints. */
+static int
+cow_block_size (nbdkit_next *next, void *handle,
+                uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  if (next->block_size (next, minimum, preferred, maximum) == -1)
+    return -1;
+
+  if (*minimum == 0) {         /* No constraints set by the plugin. */
+    *minimum = 1;
+    *preferred = blksize;
+    *maximum = 0xffffffff;
+  }
+  else {
+    if (*maximum >= blksize)
+      *preferred = MAX (*preferred, blksize);
+  }
+
+  return 0;
+}
+
 /* Force an early call to cow_get_size because we have to set the
  * backing file size and bitmap size before any other read or write
  * calls.
@@ -762,6 +783,7 @@ static struct nbdkit_filter filter = {
   .get_ready         = cow_get_ready,
   .prepare           = cow_prepare,
   .get_size          = cow_get_size,
+  .block_size        = cow_block_size,
   .can_write         = cow_can_write,
   .can_flush         = cow_can_flush,
   .can_trim          = cow_can_trim,
