@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2021 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -45,6 +45,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+#include "ispowerof2.h"
 #include "minmax.h"
 #include "rounding.h"
 
@@ -104,7 +105,7 @@ blocksize_config_complete (nbdkit_next_config_complete *next,
                            nbdkit_backend *nxdata)
 {
   if (minblock) {
-    if (minblock & (minblock - 1)) {
+    if (!is_power_of_2 (minblock)) {
       nbdkit_error ("minblock must be a power of 2");
       return -1;
     }
