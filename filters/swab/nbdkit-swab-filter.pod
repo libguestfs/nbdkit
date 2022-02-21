@@ -34,6 +34,11 @@ the last few bytes, combine this filter with
 L<nbdkit-truncate-filter(1)>; fortunately, sector-based disk images
 are already suitably sized.
 
+Note that this filter fails operations where the offset or count are
+not aligned to the swab-bits boundaries; if you need byte-level
+access, apply the L<nbdkit-blocksize-filter(1)> before this one, to
+get read-modify-write access to individual bytes.
+
 =head1 PARAMETERS
 
 =over 4
@@ -90,6 +95,7 @@ L<nbdkit(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-pattern-plugin(1)>,
 L<nbdkit-filter(3)>,
+L<nbdkit-blocksize-filter(1)>.
 L<nbdkit-truncate-filter(1)>.
 
 =head1 AUTHORS

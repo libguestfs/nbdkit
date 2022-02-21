@@ -44,6 +44,7 @@
 #include "byte-swapping.h"
 #include "isaligned.h"
 #include "cleanup.h"
+#include "minmax.h"
 #include "rounding.h"
 
 /* Can only be 8 (filter disabled), 16, 32 or 64. */
@@ -85,8 +86,28 @@ swab_get_size (nbdkit_next *next,
   return ROUND_DOWN (size, bits/8);
 }
 
+/* Block size constraints. */
+static int
+swab_block_size (nbdkit_next *next, void *handle,
+                 uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
+{
+  if (next->block_size (next, minimum, preferred, maximum) == -1)
+    return -1;
+
+  if (*minimum == 0) {         /* No constraints set by the plugin. */
+    *minimum = bits/8;
+    *preferred = 512;
+    *maximum = 0xffffffff;
+  }
+  else {
+    *minimum = MAX (*minimum, bits/8);
+  }
+
+  return 0;
+}
+
 /* The request must be aligned.
- * XXX We could lift this restriction with more work.
+ * If you want finer alignment, use the blocksize filter.
  */
 static bool
 is_aligned (uint32_t count, uint64_t offset, int *err)
@@ -220,6 +241,7 @@ static struct nbdkit_filter filter = {
   .config            = swab_config,
   .config_help       = swab_config_help,
   .get_size          = swab_get_size,
+  .block_size        = swab_block_size,
   .pread             = swab_pread,
   .pwrite            = swab_pwrite,
   .trim              = swab_trim,
