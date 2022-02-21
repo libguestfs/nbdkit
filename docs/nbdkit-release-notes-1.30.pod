@@ -71,8 +71,6 @@ we document how to use this plugin to implement OCaml plugin scripts.
 L<nbdkit-info-plugin(1)> I<--dump-plugin> option now prints
 C<info_address=yes> when the platform supports C<mode=address>.
 
-
-
 =head2 Filters
 
 New L<nbdkit-retry-request-filter(1)>, which is similar to
@@ -81,9 +79,15 @@ L<nbdkit-retry-filter(1)> but only retries a single failing request.
 New L<nbdkit-protect-filter(1)> lets you add write-protection over
 regions of a plugin.
 
+New L<nbdkit-blocksize-policy-filter(1)> let you adjust or set the
+block size constraints and policy of underlying plugins.  See L</API>
+below.
+
 L<nbdkit-cow-filter(1)> now permits the COW block size to be set as
 small as 4096 bytes.
 
+Debug messages in L<nbdkit-error-filter(1)> are now easier to read
+because they no longer all have an C<error:> prefix (Eric Blake).
 
 =head2 Language bindings
 
@@ -98,6 +102,8 @@ OCaml plugins now support C<magic_config_key>.
 Several fixes to the handling of integers in Python plugins (Nir
 Soffer).
 
+New Python example which simulates request errors (Nir Soffer).
+
 =head2 Server
 
 The server no longer requests the C<AI_ADDRCONFIG> hint when opening a
@@ -106,11 +112,34 @@ the I<-i> (I<--ipaddr>) option now works as intended, and new I<-4>
 and I<-6> options have been added to restrict the listening socket to
 IPv4 or IPv6 addresses (Laszlo Ersek).
 
-=begin comment
-
 =head2 API
 
+There is a new C<.block_size> callback for plugins and filters.
+nbdkit uses this to export block size constraints to clients,
+specifically the minimum, preferred and maximum block size that
+clients should use.
+
+As well as regular C plugins, L<nbdkit-cc-plugin(3)>,
+L<nbdkit-eval-plugin(1)>, L<nbdkit-ocaml-plugin(3)>,
+L<nbdkit-python-plugin(3)> and L<nbdkit-sh-plugin(3)> support block
+size constraints.  L<nbdkit-nbd-plugin(1)> reexports block size
+constraints from the proxied NBD server.  L<nbdkit-vddk-plugin(1)> now
+advertises a minimum 512 byte block size.
+
+L<nbdkit-blocksize-filter(1)>, L<nbdkit-cache-filter(1)> and
+L<nbdkit-cow-filter(1)> adjust block size constraints from plugins.
+
+L<nbdkit-blocksize-policy-filter(1)> can be used to add block size
+constraints to plugins which don't support it, or adjust constraints,
+or set the error policy.
+
 =head2 Bug fixes
+
+L<nbdkit-memory-plugin(1)> (and others), using C<allocator=malloc,mlock=true>
+was broken.  This was especially evident on non-Linux or on
+Linux with 64K pages (eg. POWER).  It should now work correctly.
+
+=begin comment
 
 =head2 Documentation
 
@@ -131,6 +160,10 @@ The time taken to run the test suite has been reduced significantly.
 =head2 Build
 
 Multiple fixes to the Windows (MinGW) build.
+
+The top level F<bash> source directory has been renamed to
+F<bash-completion>.  This prevents problems when setting C<$PATH> to
+the source directory and trying to run bash.
 
 =head2 Internals
 
