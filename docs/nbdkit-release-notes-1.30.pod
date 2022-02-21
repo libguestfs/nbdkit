@@ -79,7 +79,7 @@ L<nbdkit-retry-filter(1)> but only retries a single failing request.
 New L<nbdkit-protect-filter(1)> lets you add write-protection over
 regions of a plugin.
 
-New L<nbdkit-blocksize-policy-filter(1)> let you adjust or set the
+New L<nbdkit-blocksize-policy-filter(1)> lets you adjust or set the
 block size constraints and policy of underlying plugins.  See L</API>
 below.
 
@@ -135,9 +135,10 @@ or set the error policy.
 
 =head2 Bug fixes
 
-L<nbdkit-memory-plugin(1)> (and others), using C<allocator=malloc,mlock=true>
-was broken.  This was especially evident on non-Linux or on
-Linux with 64K pages (eg. POWER).  It should now work correctly.
+L<nbdkit-memory-plugin(1)> (and others), using
+C<allocator=malloc,mlock=true> was broken.  This was especially
+evident on non-Linux or on Linux with 64K pages (eg. POWER).  It
+should now work correctly.
 
 =begin comment
 
