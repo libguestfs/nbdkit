@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -251,6 +251,7 @@ log_prepare (nbdkit_next *next, void *handle,
   struct handle *h = handle;
   const char *exportname = h->exportname;
   int64_t size = next->get_size (next);
+  uint32_t minsize, prefsize, maxsize;
   int w = next->can_write (next);
   int f = next->can_flush (next);
   int r = next->is_rotational (next);
@@ -260,9 +261,10 @@ log_prepare (nbdkit_next *next, void *handle,
   int e = next->can_extents (next);
   int c = next->can_cache (next);
   int Z = next->can_fast_zero (next);
+  int s = next->block_size (next, &minsize, &prefsize, &maxsize);
 
   if (size < 0 || w < 0 || f < 0 || r < 0 || t < 0 || z < 0 || F < 0 ||
-      e < 0 || c < 0 || Z < 0)
+      e < 0 || c < 0 || Z < 0 || s < 0)
     return -1;
 
   fp = open_memstream (&str, &len);
@@ -270,10 +272,12 @@ log_prepare (nbdkit_next *next, void *handle,
     fprintf (fp, "export=");
     shell_quote (exportname, fp);
     fprintf (fp,
-             " tls=%d size=0x%" PRIx64 " write=%d "
+             " tls=%d size=0x%" PRIx64 " minsize=0x%" PRIx32 " prefsize=0x%"
+             PRIx32 " maxsize=0x%" PRIx32 " write=%d "
              "flush=%d rotational=%d trim=%d zero=%d fua=%d extents=%d "
              "cache=%d fast_zero=%d",
-             h->tls, size, w, f, r, t, z, F, e, c, Z);
+             h->tls, size, minsize, prefsize, maxsize,
+             w, f, r, t, z, F, e, c, Z);
     fclose (fp);
     print (h, "Connect", "%s", str);
   }
