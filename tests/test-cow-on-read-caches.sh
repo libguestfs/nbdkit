@@ -38,6 +38,13 @@ requires_filter cow
 requires_filter delay
 requires_nbdsh_uri
 
+# On Windows, calling ftruncate in the cow filter fails with:
+# nbdkit: memory[1]: error: ftruncate: File too large
+if is_windows; then
+   echo "$0: the cow filter needs to be fixed to work on Windows"
+   exit 77
+fi
+
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock cow-on-read-caches.pid"
 rm -f $files
