@@ -72,9 +72,11 @@ nbdkit_vdebug (const char *fs, va_list args)
 
   fp = open_memstream (&str, &len);
   if (fp == NULL) {
+  fail:
     /* Try to emit what we can. */
     errno = err;
     vfprintf (stderr, fs, args);
+    fprintf (stderr, "\n");
     return;
   }
 
@@ -86,7 +88,10 @@ nbdkit_vdebug (const char *fs, va_list args)
   fprintf (fp, "\n");
   fclose (fp);
 
-  fputs (str, stderr);
+  if (str)
+    fputs (str, stderr);
+  else
+    goto fail;
 
   errno = err;
 }
@@ -106,11 +111,13 @@ nbdkit_debug (const char *fs, ...)
 
   fp = open_memstream (&str, &len);
   if (fp == NULL) {
+  fail:
     /* Try to emit what we can. */
     va_start (args, fs);
     errno = err;
     vfprintf (stderr, fs, args);
     va_end (args);
+    fprintf (stderr, "\n");
     return;
   }
 
@@ -124,7 +131,10 @@ nbdkit_debug (const char *fs, ...)
   fprintf (fp, "\n");
   fclose (fp);
 
-  fputs (str, stderr);
+  if (str)
+    fputs (str, stderr);
+  else
+    goto fail;
 
   errno = err;
 }
