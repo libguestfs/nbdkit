@@ -44,16 +44,23 @@
  * is required.
  */
 
-#ifdef HAVE_AUTO_TYPE
+#include "unique-name.h"
 
 #undef MIN
-#define MIN(x, y) ({                           \
+#define MIN(x, y) \
+  MIN_1((x), (y), NBDKIT_UNIQUE_NAME(_x), NBDKIT_UNIQUE_NAME(_y))
+#undef MAX
+#define MAX(x, y) \
+  MAX_1((x), (y), NBDKIT_UNIQUE_NAME(_x), NBDKIT_UNIQUE_NAME(_y))
+
+#ifdef HAVE_AUTO_TYPE
+
+#define MIN_1(x, y, _x, _y) ({                 \
       __auto_type _x = (x);                    \
       __auto_type _y = (y);                    \
       _x < _y ? _x : _y;                       \
     })
-#undef MAX
-#define MAX(x, y) ({                           \
+#define MAX_1(x, y, _x, _y) ({                 \
       __auto_type _x = (x);                    \
       __auto_type _y = (y);                    \
       _x > _y ? _x : _y;                       \
@@ -61,14 +68,12 @@
 
 #else
 
-#undef MIN
-#define MIN(x, y) ({                           \
+#define MIN_1(x, y, _x, _y) ({                 \
       typeof (x) _x = (x);                     \
       typeof (y) _y = (y);                     \
       _x < _y ? _x : _y;                       \
     })
-#undef MAX
-#define MAX(x, y) ({                           \
+#define MAX_1(x, y, _x, _y) ({                 \
       typeof (x) _x = (x);                     \
       typeof (y) _y = (y);                     \
       _x > _y ? _x : _y;                       \

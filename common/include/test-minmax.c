@@ -154,5 +154,19 @@ main (void)
   SIGNED_TEST (f, -FLT_MAX, FLT_MAX);
   SIGNED_TEST (d, -DBL_MAX, DBL_MAX);
 
+  /* Test that MIN and MAX can be nested.  This is really a compile
+   * test, but we do check the answer.
+   */
+  assert (MIN (MIN (1, 2), 3) == 1);
+  assert (MAX (MIN (1, 2), 3) == 3);
+  assert (MIN (MAX (1, 2), 3) == 2);
+  assert (MAX (MAX (1, 4), 3) == 4);
+  assert (MIN (3, MIN (1, 2)) == 1);
+  assert (MAX (3, MIN (1, 2)) == 3);
+  assert (MIN (3, MAX (1, 2)) == 2);
+  assert (MAX (3, MAX (1, 4)) == 4);
+  assert (MIN (MIN (1, MIN (2, 3)), 4) == 1);
+  assert (MAX (MAX (1, MAX (2, 3)), 4) == 4);
+
   exit (EXIT_SUCCESS);
 }
