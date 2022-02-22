@@ -56,6 +56,7 @@ nbdkit_SOURCES = wrapper.c server/options.h
 nbdkit_CPPFLAGS = \
 	-I$(top_srcdir)/server \
 	-I$(top_srcdir)/common/utils \
+	-I$(top_srcdir)/common/replacements \
 	-Dbuilddir=\"$(abs_top_builddir)\" \
 	-Dsrcdir=\"$(abs_top_srcdir)\" \
 	-DVALGRIND=\"$(VALGRIND)\" \
@@ -63,6 +64,7 @@ nbdkit_CPPFLAGS = \
 nbdkit_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_LDADD = \
 	$(top_builddir)/common/utils/libutils.la \
+	$(top_builddir)/common/replacements/libcompat.la \
 	$(NULL)
 EXTRA_nbdkit_DEPENDENCIES = config.status
 endif !ENABLE_LIBFUZZER

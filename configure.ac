@@ -422,6 +422,7 @@ AC_REPLACE_FUNCS([\
         pwrite \
         realpath \
         strndup \
+        sysconf \
         syslog \
         vsyslog])
 

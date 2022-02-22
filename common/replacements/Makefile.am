@@ -61,6 +61,8 @@ EXTRA_DIST = \
 	realpath.h \
 	strndup.c \
 	strndup.h \
+	sysconf.c \
+	sysconf.h \
 	syslog.c \
 	syslog.h \
 	vsyslog.c
