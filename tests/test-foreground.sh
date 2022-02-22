@@ -36,6 +36,14 @@ source ./functions.sh
 set -e
 set -x
 
+# nbdkit -f works fine on Windows, but this test does not because it
+# tries to use job control.  We should probably find a better way to
+# test this.
+if is_windows; then
+   echo "$0: this test needs to be fixed to work on Windows"
+   exit 77
+fi
+
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="foreground.pid $sock"
 rm -f $files
@@ -59,22 +67,11 @@ fi
 pid="$(cat foreground.pid)"
 cleanup_fn kill $pid
 
-# Check the backgrounded PID (from $!) is the same as the PID reported
-# by nbdkit.  Note this is not true for Windows because the wrapper
-# has to use spawn since exec isn't really a thing.
-if ! is_windows; then
-    test "$bg_pid" -eq "$pid"
-fi
-
 # Check the socket was created (and is a socket).
 test -S $sock
 
 # Kill the process.
-if ! is_windows; then
-    kill $pid
-else
-    wine taskkill /f /pid $pid
-fi
+kill $pid
 
 # Check the process exits (eventually).
 for i in {1..10}; do
