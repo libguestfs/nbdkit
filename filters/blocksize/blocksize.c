@@ -61,9 +61,17 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
  */
 static char bounce[BLOCKSIZE_MIN_LIMIT];
 
-static unsigned int minblock;
-static unsigned int maxdata;
-static unsigned int maxlen;
+/* Globals set by .config */
+static unsigned int config_minblock;
+static unsigned int config_maxdata;
+static unsigned int config_maxlen;
+
+/* Per-handle values set during .open */
+struct blocksize_handle {
+  uint32_t minblock;
+  uint32_t maxdata;
+  uint32_t maxlen;
+};
 
 static int
 blocksize_parse (const char *name, const char *s, unsigned int *v)
@@ -91,11 +99,11 @@ blocksize_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
 {
 
   if (strcmp (key, "minblock") == 0)
-    return blocksize_parse (key, value, &minblock);
+    return blocksize_parse (key, value, &config_minblock);
   if (strcmp (key, "maxdata") == 0)
-    return blocksize_parse (key, value, &maxdata);
+    return blocksize_parse (key, value, &config_maxdata);
   if (strcmp (key, "maxlen") == 0)
-    return blocksize_parse (key, value, &maxlen);
+    return blocksize_parse (key, value, &config_maxlen);
   return next (nxdata, key, value);
 }
 
@@ -104,39 +112,41 @@ static int
 blocksize_config_complete (nbdkit_next_config_complete *next,
                            nbdkit_backend *nxdata)
 {
-  if (minblock) {
-    if (!is_power_of_2 (minblock)) {
+  if (config_minblock) {
+    if (!is_power_of_2 (config_minblock)) {
       nbdkit_error ("minblock must be a power of 2");
       return -1;
     }
-    if (minblock > BLOCKSIZE_MIN_LIMIT) {
+    if (config_minblock > BLOCKSIZE_MIN_LIMIT) {
       nbdkit_error ("minblock must not exceed %u", BLOCKSIZE_MIN_LIMIT);
       return -1;
     }
   }
   else
-    minblock = 1;
+    config_minblock = 1;
 
-  if (maxdata) {
-    if (maxdata & (minblock - 1)) {
-      nbdkit_error ("maxdata must be a multiple of %u", minblock);
+  if (config_maxdata) {
+    if (config_maxdata & (config_minblock - 1)) {
+      nbdkit_error ("maxdata must be a multiple of %u", config_minblock);
       return -1;
     }
   }
-  else if (maxlen)
-    maxdata = MIN (maxlen, 64 * 1024 * 1024);
+  else if (config_maxlen)
+    config_maxdata = MIN (config_maxlen, 64 * 1024 * 1024);
   else
-    maxdata = 64 * 1024 * 1024;
+    config_maxdata = 64 * 1024 * 1024;
 
-  if (maxlen) {
-    if (maxlen & (minblock - 1)) {
-      nbdkit_error ("maxlen must be a multiple of %u", minblock);
+  if (config_maxlen) {
+    if (config_maxlen & (config_minblock - 1)) {
+      nbdkit_error ("maxlen must be a multiple of %u", config_minblock);
       return -1;
     }
   }
   else
-    maxlen = -minblock;
+    config_maxlen = -config_minblock;
 
+  nbdkit_debug ("configured values minblock=%u maxdata=%u maxlen=%u",
+                config_minblock, config_maxdata, config_maxlen);
   return next (nxdata);
 }
 
@@ -145,16 +155,40 @@ blocksize_config_complete (nbdkit_next_config_complete *next,
   "maxdata=<SIZE>       Maximum size for read/write (default 64M).\n" \
   "maxlen=<SIZE>        Maximum size for trim/zero (default 4G-minblock)."
 
+static void *
+blocksize_open (nbdkit_next_open *next, nbdkit_context *nxdata,
+                int readonly, const char *exportname, int is_tls)
+{
+  struct blocksize_handle *h;
+
+  if (next (nxdata, readonly, exportname) == -1)
+    return NULL;
+
+  h = malloc (sizeof *h);
+  if (h == NULL) {
+    nbdkit_error ("malloc: %m");
+    return NULL;
+  }
+
+  h->minblock = config_minblock;
+  h->maxdata = config_maxdata;
+  h->maxlen = config_maxlen;
+  nbdkit_debug ("handle values minblock=%u maxdata=%u maxlen=%u",
+                h->minblock, h->maxdata, h->maxlen);
+  return h;
+}
+
 /* Round size down to avoid issues at end of file. */
 static int64_t
 blocksize_get_size (nbdkit_next *next,
                     void *handle)
 {
+  struct blocksize_handle *h = handle;
   int64_t size = next->get_size (next);
 
   if (size == -1)
     return -1;
-  return ROUND_DOWN (size, minblock);
+  return ROUND_DOWN (size, h->minblock);
 }
 
 /* Block size constraints.
@@ -168,15 +202,19 @@ static int
 blocksize_block_size (nbdkit_next *next, void *handle,
                       uint32_t *minimum, uint32_t *preferred, uint32_t *maximum)
 {
+  struct blocksize_handle *h = handle;
+
   if (next->block_size (next, minimum, preferred, maximum) == -1)
     return -1;
 
   if (*preferred == 0)
-    *preferred = MAX (4096, minblock);
+    *preferred = MAX (4096, h->minblock);
 
   *minimum = 1;
   *maximum = 0xffffffff;
 
+  nbdkit_debug ("advertising min=%" PRIu32 " pref=%" PRIu32 " max=%" PRIu32,
+                *minimum, *preferred, *maximum);
   return 0;
 }
 
@@ -185,16 +223,17 @@ blocksize_pread (nbdkit_next *next,
                  void *handle, void *b, uint32_t count, uint64_t offs,
                  uint32_t flags, int *err)
 {
+  struct blocksize_handle *h = handle;
   char *buf = b;
   uint32_t keep;
   uint32_t drop;
 
   /* Unaligned head */
-  if (offs & (minblock - 1)) {
+  if (offs & (h->minblock - 1)) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    drop = offs & (minblock - 1);
-    keep = MIN (minblock - drop, count);
-    if (next->pread (next, bounce, minblock, offs - drop, flags, err) == -1)
+    drop = offs & (h->minblock - 1);
+    keep = MIN (h->minblock - drop, count);
+    if (next->pread (next, bounce, h->minblock, offs - drop, flags, err) == -1)
       return -1;
     memcpy (buf, bounce + drop, keep);
     buf += keep;
@@ -203,8 +242,8 @@ blocksize_pread (nbdkit_next *next,
   }
 
   /* Aligned body */
-  while (count >= minblock) {
-    keep = MIN (maxdata, ROUND_DOWN (count, minblock));
+  while (count >= h->minblock) {
+    keep = MIN (h->maxdata, ROUND_DOWN (count, h->minblock));
     if (next->pread (next, buf, keep, offs, flags, err) == -1)
       return -1;
     buf += keep;
@@ -215,7 +254,7 @@ blocksize_pread (nbdkit_next *next,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    if (next->pread (next, bounce, minblock, offs, flags, err) == -1)
+    if (next->pread (next, bounce, h->minblock, offs, flags, err) == -1)
       return -1;
     memcpy (buf, bounce, count);
   }
@@ -228,6 +267,7 @@ blocksize_pwrite (nbdkit_next *next,
                   void *handle, const void *b, uint32_t count, uint64_t offs,
                   uint32_t flags, int *err)
 {
+  struct blocksize_handle *h = handle;
   const char *buf = b;
   uint32_t keep;
   uint32_t drop;
@@ -240,14 +280,14 @@ blocksize_pwrite (nbdkit_next *next,
   }
 
   /* Unaligned head */
-  if (offs & (minblock - 1)) {
+  if (offs & (h->minblock - 1)) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    drop = offs & (minblock - 1);
-    keep = MIN (minblock - drop, count);
-    if (next->pread (next, bounce, minblock, offs - drop, 0, err) == -1)
+    drop = offs & (h->minblock - 1);
+    keep = MIN (h->minblock - drop, count);
+    if (next->pread (next, bounce, h->minblock, offs - drop, 0, err) == -1)
       return -1;
     memcpy (bounce + drop, buf, keep);
-    if (next->pwrite (next, bounce, minblock, offs - drop, flags, err) == -1)
+    if (next->pwrite (next, bounce, h->minblock, offs - drop, flags, err) == -1)
       return -1;
     buf += keep;
     offs += keep;
@@ -255,8 +295,8 @@ blocksize_pwrite (nbdkit_next *next,
   }
 
   /* Aligned body */
-  while (count >= minblock) {
-    keep = MIN (maxdata, ROUND_DOWN (count, minblock));
+  while (count >= h->minblock) {
+    keep = MIN (h->maxdata, ROUND_DOWN (count, h->minblock));
     if (next->pwrite (next, buf, keep, offs, flags, err) == -1)
       return -1;
     buf += keep;
@@ -267,10 +307,10 @@ blocksize_pwrite (nbdkit_next *next,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    if (next->pread (next, bounce, minblock, offs, 0, err) == -1)
+    if (next->pread (next, bounce, h->minblock, offs, 0, err) == -1)
       return -1;
     memcpy (bounce, buf, count);
-    if (next->pwrite (next, bounce, minblock, offs, flags, err) == -1)
+    if (next->pwrite (next, bounce, h->minblock, offs, flags, err) == -1)
       return -1;
   }
 
@@ -284,6 +324,7 @@ blocksize_trim (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                 int *err)
 {
+  struct blocksize_handle *h = handle;
   uint32_t keep;
   bool need_flush = false;
 
@@ -294,18 +335,18 @@ blocksize_trim (nbdkit_next *next,
   }
 
   /* Ignore unaligned head */
-  if (offs & (minblock - 1)) {
-    keep = MIN (minblock - (offs & (minblock - 1)), count);
+  if (offs & (h->minblock - 1)) {
+    keep = MIN (h->minblock - (offs & (h->minblock - 1)), count);
     offs += keep;
     count -= keep;
   }
 
   /* Ignore unaligned tail */
-  count = ROUND_DOWN (count, minblock);
+  count = ROUND_DOWN (count, h->minblock);
 
   /* Aligned body */
   while (count) {
-    keep = MIN (maxlen, count);
+    keep = MIN (h->maxlen, count);
     if (next->trim (next, keep, offs, flags, err) == -1)
       return -1;
     offs += keep;
@@ -322,6 +363,7 @@ blocksize_zero (nbdkit_next *next,
                 void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                 int *err)
 {
+  struct blocksize_handle *h = handle;
   uint32_t keep;
   uint32_t drop;
   bool need_flush = false;
@@ -332,7 +374,7 @@ blocksize_zero (nbdkit_next *next,
      * calls; it's easier to just declare that anything that can't be
      * done in one call to the plugin is not fast.
      */
-    if ((offs | count) & (minblock - 1) || count > maxlen) {
+    if ((offs | count) & (h->minblock - 1) || count > h->maxlen) {
       *err = ENOTSUP;
       return -1;
     }
@@ -345,14 +387,14 @@ blocksize_zero (nbdkit_next *next,
   }
 
   /* Unaligned head */
-  if (offs & (minblock - 1)) {
+  if (offs & (h->minblock - 1)) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    drop = offs & (minblock - 1);
-    keep = MIN (minblock - drop, count);
-    if (next->pread (next, bounce, minblock, offs - drop, 0, err) == -1)
+    drop = offs & (h->minblock - 1);
+    keep = MIN (h->minblock - drop, count);
+    if (next->pread (next, bounce, h->minblock, offs - drop, 0, err) == -1)
       return -1;
     memset (bounce + drop, 0, keep);
-    if (next->pwrite (next, bounce, minblock, offs - drop,
+    if (next->pwrite (next, bounce, h->minblock, offs - drop,
                       flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
       return -1;
     offs += keep;
@@ -360,8 +402,8 @@ blocksize_zero (nbdkit_next *next,
   }
 
   /* Aligned body */
-  while (count >= minblock) {
-    keep = MIN (maxlen, ROUND_DOWN (count, minblock));
+  while (count >= h->minblock) {
+    keep = MIN (h->maxlen, ROUND_DOWN (count, h->minblock));
     if (next->zero (next, keep, offs, flags, err) == -1)
       return -1;
     offs += keep;
@@ -371,10 +413,10 @@ blocksize_zero (nbdkit_next *next,
   /* Unaligned tail */
   if (count) {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    if (next->pread (next, bounce, minblock, offs, 0, err) == -1)
+    if (next->pread (next, bounce, h->minblock, offs, 0, err) == -1)
       return -1;
     memset (bounce, 0, count);
-    if (next->pwrite (next, bounce, minblock, offs,
+    if (next->pwrite (next, bounce, h->minblock, offs,
                       flags & ~NBDKIT_FLAG_MAY_TRIM, err) == -1)
       return -1;
   }
@@ -395,20 +437,22 @@ blocksize_extents (nbdkit_next *next,
    * fine to return less than the full count as long as we're making
    * progress.
    */
+  struct blocksize_handle *h = handle;
   CLEANUP_EXTENTS_FREE struct nbdkit_extents *extents2 = NULL;
   size_t i;
   struct nbdkit_extent e;
 
-  extents2 = nbdkit_extents_new (ROUND_DOWN (offset, minblock),
-                                 ROUND_UP (offset + count, minblock));
+  extents2 = nbdkit_extents_new (ROUND_DOWN (offset, h->minblock),
+                                 ROUND_UP (offset + count, h->minblock));
   if (extents2 == NULL) {
     *err = errno;
     return -1;
   }
 
-  if (nbdkit_extents_aligned (next, MIN (ROUND_UP (count, minblock), maxlen),
-                              ROUND_DOWN (offset, minblock), flags, minblock,
-                              extents2, err) == -1)
+  if (nbdkit_extents_aligned (next, MIN (ROUND_UP (count, h->minblock),
+                                         h->maxlen),
+                              ROUND_DOWN (offset, h->minblock), flags,
+                              h->minblock, extents2, err) == -1)
     return -1;
 
   for (i = 0; i < nbdkit_extents_count (extents2); ++i) {
@@ -426,20 +470,21 @@ blocksize_cache (nbdkit_next *next,
                  void *handle, uint32_t count, uint64_t offs, uint32_t flags,
                  int *err)
 {
+  struct blocksize_handle *h = handle;
   uint32_t limit;
   uint64_t remaining = count; /* Rounding out could exceed 32 bits */
 
   /* Unaligned head */
-  limit = offs & (minblock - 1);
+  limit = offs & (h->minblock - 1);
   remaining += limit;
   offs -= limit;
 
   /* Unaligned tail */
-  remaining = ROUND_UP (remaining, minblock);
+  remaining = ROUND_UP (remaining, h->minblock);
 
   /* Aligned body */
   while (remaining) {
-    limit = MIN (maxdata, remaining);
+    limit = MIN (h->maxdata, remaining);
     if (next->cache (next, limit, offs, flags, err) == -1)
       return -1;
     offs += limit;
@@ -455,6 +500,8 @@ static struct nbdkit_filter filter = {
   .config            = blocksize_config,
   .config_complete   = blocksize_config_complete,
   .config_help       = blocksize_config_help,
+  .open              = blocksize_open,
+  .close             = free,
   .get_size          = blocksize_get_size,
   .block_size        = blocksize_block_size,
   .pread             = blocksize_pread,
