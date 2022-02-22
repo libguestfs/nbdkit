@@ -57,9 +57,9 @@ of 1024.
 
 =item B<maxlen=>SIZE
 
-The maximum length for any single transaction without data (trim, zero
-or extents).  If omitted, this defaults to 0xffffffff rounded down to
-C<minsize> alignment (that is, the inherent 32-bit limit of the NBD
+The maximum length for any single transaction without data (trim, zero,
+cache or extents).  If omitted, this defaults to 0xffffffff rounded down to
+C<minblock> alignment (that is, the inherent 32-bit limit of the NBD
 protocol).  This need not be a power of two, but must be an integer
 multiple of C<minblock>, and should be at least as large as
 C<maxdata>.  The filter fragments any larger client request into
