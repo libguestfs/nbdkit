@@ -87,7 +87,7 @@ nbdkit_vdebug (const char *fs, va_list args)
   vfprintf (fp, fs, args);
 
   fprintf (fp, "\n");
-  fclose (fp);
+  close_memstream (fp);
 
   if (str)
     fputs (str, stderr);
@@ -130,7 +130,7 @@ nbdkit_debug (const char *fs, ...)
   va_end (args);
 
   fprintf (fp, "\n");
-  fclose (fp);
+  close_memstream (fp);
 
   if (str)
     fputs (str, stderr);
