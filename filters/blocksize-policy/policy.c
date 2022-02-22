@@ -49,7 +49,7 @@ static uint32_t config_preferred;
 static uint32_t config_maximum;
 
 /* Error policy. */
-static enum { ALLOW, ERROR } error_policy = ALLOW;
+static enum { EP_ALLOW, EP_ERROR } error_policy = EP_ALLOW;
 
 static int
 policy_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
@@ -59,9 +59,9 @@ policy_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
 
   if (strcmp (key, "blocksize-error-policy") == 0) {
     if (strcmp (value, "allow") == 0)
-      error_policy = ALLOW;
+      error_policy = EP_ALLOW;
     else if (strcmp (value, "error") == 0)
-      error_policy = ERROR;
+      error_policy = EP_ERROR;
     else {
       nbdkit_error ("unknown %s: %s", key, value);
       return -1;
@@ -233,7 +233,7 @@ check_policy (nbdkit_next *next, void *handle,
 {
   uint32_t minimum, preferred, maximum;
 
-  if (error_policy == ALLOW)
+  if (error_policy == EP_ALLOW)
     return 0;
 
   /* Get the current block size constraints.  Note these are cached in
