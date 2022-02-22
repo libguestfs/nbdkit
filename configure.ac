@@ -418,6 +418,7 @@ AC_REPLACE_FUNCS([\
         openlog \
         open_memstream \
         poll \
+        posix_memalign \
         pread \
         pwrite \
         realpath \

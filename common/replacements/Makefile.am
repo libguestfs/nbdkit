@@ -53,6 +53,8 @@ EXTRA_DIST = \
 	open_memstream.h \
 	poll.c \
 	poll.h \
+	posix_memalign.c \
+	posix_memalign.h \
 	pread.c \
 	pread.h \
 	pwrite.c \

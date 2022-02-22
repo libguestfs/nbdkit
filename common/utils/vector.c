@@ -39,6 +39,7 @@
 #include <assert.h>
 
 #include "checked-overflow.h"
+#include "posix_memalign.h"
 #include "sysconf.h"
 #include "vector.h"
 
@@ -102,9 +103,7 @@ int
 generic_vector_reserve_page_aligned (struct generic_vector *v,
                                      size_t n, size_t itemsize)
 {
-#ifdef HAVE_POSIX_MEMALIGN
   int r;
-#endif
   void *newptr;
   size_t newcap, newbytes;
   long pagesize;
@@ -132,18 +131,10 @@ generic_vector_reserve_page_aligned (struct generic_vector *v,
     }
   }
 
-#ifdef HAVE_POSIX_MEMALIGN
   if ((r = posix_memalign (&newptr, pagesize, newbytes)) != 0) {
     errno = r;
     return -1;
   }
-#elif HAVE_VALLOC
-  newptr = valloc (newbytes);
-  if (newptr == NULL)
-    return -1;
-#else
-#error "this platform does not have posix_memalign or valloc"
-#endif
 
   /* How much to copy here?
    *
