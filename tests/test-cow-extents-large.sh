@@ -37,6 +37,7 @@ source ./functions.sh
 set -e
 set -x
 
+requires_run
 requires_filter cow
 requires_plugin sparse-random
 requires nbdinfo --version
