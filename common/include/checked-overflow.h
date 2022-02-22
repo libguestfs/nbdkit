@@ -131,33 +131,41 @@
  * that the test suite can always test the fallback.
  */
 #define ADD_OVERFLOW_FALLBACK(a, b, r)                                \
+  ADD_OVERFLOW_FALLBACK_1 ((a), (b), (r),                             \
+                           NBDKIT_UNIQUE_NAME (_overflow),            \
+                           NBDKIT_UNIQUE_NAME (_tmp))
+#define ADD_OVERFLOW_FALLBACK_1(a, b, r, overflow, tmp)               \
   ({                                                                  \
-    bool NBDKIT_UNIQUE_NAME(_overflow);                               \
-    uintmax_t NBDKIT_UNIQUE_NAME(_tmp);                               \
+    bool overflow;                                                    \
+    uintmax_t tmp;                                                    \
                                                                       \
     STATIC_ASSERT_UNSIGNED_INT (a);                                   \
     STATIC_ASSERT_UNSIGNED_INT (b);                                   \
     STATIC_ASSERT_UNSIGNED_INT (*(r));                                \
-    NBDKIT_UNIQUE_NAME(_overflow) = check_add_overflow ((a), (b),     \
-                                                 (typeof (*(r)))-1,   \
-                                                 &NBDKIT_UNIQUE_NAME(_tmp)); \
-    *(r) = NBDKIT_UNIQUE_NAME(_tmp);                                  \
-    NBDKIT_UNIQUE_NAME(_overflow);                                    \
+    overflow = check_add_overflow ((a), (b),                          \
+                                   (typeof (*(r)))-1,                 \
+                                   &tmp);                             \
+    *(r) = tmp;                                                       \
+    overflow;                                                         \
   })
 
 #define MUL_OVERFLOW_FALLBACK(a, b, r)                                \
+  MUL_OVERFLOW_FALLBACK_1 ((a), (b), (r),                             \
+                           NBDKIT_UNIQUE_NAME (_overflow),            \
+                           NBDKIT_UNIQUE_NAME (_tmp))
+#define MUL_OVERFLOW_FALLBACK_1(a, b, r, overflow, tmp)               \
   ({                                                                  \
-    bool NBDKIT_UNIQUE_NAME(_overflow);                               \
-    uintmax_t NBDKIT_UNIQUE_NAME(_tmp);                               \
+    bool overflow;                                                    \
+    uintmax_t tmp;                                                    \
                                                                       \
     STATIC_ASSERT_UNSIGNED_INT (a);                                   \
     STATIC_ASSERT_UNSIGNED_INT (b);                                   \
     STATIC_ASSERT_UNSIGNED_INT (*(r));                                \
-    NBDKIT_UNIQUE_NAME(_overflow) = check_mul_overflow ((a), (b),     \
-                                                 (typeof (*(r)))-1,   \
-                                                 &NBDKIT_UNIQUE_NAME(_tmp)); \
-    *(r) = NBDKIT_UNIQUE_NAME(_tmp);                                  \
-    NBDKIT_UNIQUE_NAME(_overflow);                                    \
+    overflow = check_mul_overflow ((a), (b),                          \
+                                   (typeof (*(r)))-1,                 \
+                                   &tmp);                             \
+    *(r) = tmp;                                                       \
+    overflow;                                                         \
   })
 
 /* Assert, at compile time, that the expression "x" has some unsigned integer

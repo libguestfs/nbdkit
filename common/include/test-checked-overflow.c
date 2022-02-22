@@ -39,29 +39,25 @@
 
 #define TEST_ADD(a, b, result, expected_overflow, expected_result)      \
   do {                                                                  \
-    bool NBDKIT_UNIQUE_NAME(_actual_overflow);                          \
+    bool actual_overflow;                                               \
                                                                         \
-    NBDKIT_UNIQUE_NAME(_actual_overflow) =                              \
-      ADD_OVERFLOW_FALLBACK ((a), (b), (result));                       \
-    assert (NBDKIT_UNIQUE_NAME(_actual_overflow) == (expected_overflow)); \
+    actual_overflow = ADD_OVERFLOW_FALLBACK ((a), (b), (result));       \
+    assert (actual_overflow == (expected_overflow));                    \
     assert (*(result) == (expected_result));                            \
-    NBDKIT_UNIQUE_NAME(_actual_overflow) =                              \
-      ADD_OVERFLOW_FALLBACK ((b), (a), (result));                       \
-    assert (NBDKIT_UNIQUE_NAME(_actual_overflow) == (expected_overflow)); \
+    actual_overflow = ADD_OVERFLOW_FALLBACK ((b), (a), (result));       \
+    assert (actual_overflow == (expected_overflow));                    \
     assert (*(result) == (expected_result));                            \
   } while (0)
 
 #define TEST_MUL(a, b, result, expected_overflow, expected_result)      \
   do {                                                                  \
-    bool NBDKIT_UNIQUE_NAME(_actual_overflow);                          \
+    bool actual_overflow;                                               \
                                                                         \
-    NBDKIT_UNIQUE_NAME(_actual_overflow) =                              \
-      MUL_OVERFLOW_FALLBACK ((a), (b), (result));                       \
-    assert (NBDKIT_UNIQUE_NAME(_actual_overflow) == (expected_overflow)); \
+    actual_overflow = MUL_OVERFLOW_FALLBACK ((a), (b), (result));       \
+    assert (actual_overflow == (expected_overflow));                    \
     assert (*(result) == (expected_result));                            \
-    NBDKIT_UNIQUE_NAME(_actual_overflow) =                              \
-      MUL_OVERFLOW_FALLBACK ((b), (a), (result));                       \
-    assert (NBDKIT_UNIQUE_NAME(_actual_overflow) == (expected_overflow)); \
+    actual_overflow = MUL_OVERFLOW_FALLBACK ((b), (a), (result));       \
+    assert (actual_overflow == (expected_overflow));                    \
     assert (*(result) == (expected_result));                            \
   } while (0)
 

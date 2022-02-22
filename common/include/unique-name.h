@@ -33,9 +33,11 @@
 #ifndef NBDKIT_UNIQUE_NAME_H
 #define NBDKIT_UNIQUE_NAME_H
 
-/* https://stackoverflow.com/a/1597129 */
-#define XXUNIQUE_NAME(name, line) name ## line
-#define XUNIQUE_NAME(name, line) XXUNIQUE_NAME (name, line)
-#define NBDKIT_UNIQUE_NAME(name) XUNIQUE_NAME (name, __LINE__)
+/* https://stackoverflow.com/a/1597129
+ * https://stackoverflow.com/a/12711226
+ */
+#define XXUNIQUE_NAME(name, counter) name ## counter
+#define XUNIQUE_NAME(name, counter) XXUNIQUE_NAME (name, counter)
+#define NBDKIT_UNIQUE_NAME(name) XUNIQUE_NAME (name, __COUNTER__)
 
 #endif /* NBDKIT_UNIQUE_NAME_H */
