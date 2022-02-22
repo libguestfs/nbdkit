@@ -263,9 +263,6 @@ nbdkit-retry-filter:
   passed through; for example there's probably no point retrying on
   ENOMEM
 
-* implement a softer mode (retry-reopen=no) where we don't reopen the
-  plugin, we just retry the data command that failed
-
 * there are all kinds of extra complications possible here,
   eg. specifying a pattern of retrying and reopening:
   retry-method=RRRORRRRRORRRRR meaning to retry the data command 3
