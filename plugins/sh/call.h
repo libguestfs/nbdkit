@@ -33,6 +33,8 @@
 #ifndef NBDKIT_CALL_H
 #define NBDKIT_CALL_H
 
+#include "nbdkit-string.h"
+
 /* eval and sh plugin call this in .load() to initialize some things
  * in the shared call code.  This also creates the tmpdir[] directory.
  */
@@ -54,8 +56,8 @@ typedef enum exit_code {
 
 extern exit_code call (const char **argv)
   __attribute__((__nonnull__ (1)));
-extern exit_code call_read (char **rbuf, size_t *rbuflen, const char **argv)
-  __attribute__((__nonnull__ (1, 2, 3)));
+extern exit_code call_read (string *rbuf, const char **argv)
+  __attribute__((__nonnull__ (1, 2)));
 extern exit_code call_write (const char *wbuf, size_t wbuflen,
                              const char **argv)
   __attribute__((__nonnull__ (1, 3)));

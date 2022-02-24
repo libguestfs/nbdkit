@@ -51,6 +51,7 @@
 #include "ascii-string.h"
 #include "cleanup.h"
 #include "utils.h"
+#include "vector.h"
 
 #include "call.h"
 
@@ -100,25 +101,6 @@ call_unload (void)
 }
 #pragma GCC diagnostic pop
 
-/* Ensure there is at least 1 byte of space in the buffer. */
-static int
-expand_buf (const char *argv0, char **buf, size_t *buflen, size_t *bufalloc)
-{
-  char *nb;
-
-  if (*bufalloc > *buflen)
-    return 0;
-
-  *bufalloc = *bufalloc == 0 ? 64 : *bufalloc * 2;
-  nb = realloc (*buf, *bufalloc);
-  if (nb == NULL) {
-    nbdkit_error ("%s: malloc: %m", argv0);
-    return -1;
-  }
-  *buf = nb;
-  return 0;
-}
-
 static void
 debug_call (const char **argv)
 {
@@ -147,9 +129,9 @@ debug_call (const char **argv)
  * processing.
  */
 static int
-call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
-       char **rbuf, size_t *rbuflen,     /* read from stdout */
-       char **ebuf, size_t *ebuflen,     /* read from stderr */
+call3 (const char *wbuf, size_t wbuflen, /* sent to stdin (can be NULL) */
+       string *rbuf,                     /* read from stdout */
+       string *ebuf,                     /* read from stderr */
        const char **argv)                /* script + parameters */
 {
   const char *argv0 = argv[0]; /* script name, used in error messages */
@@ -159,13 +141,12 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
   int in_fd[2] = { -1, -1 };
   int out_fd[2] = { -1, -1 };
   int err_fd[2] = { -1, -1 };
-  size_t rbufalloc, ebufalloc;
   struct pollfd pfds[3];
   ssize_t r;
 
-  *rbuf = *ebuf = NULL;
-  *rbuflen = *ebuflen = 0;
-  rbufalloc = ebufalloc = 0;
+  /* Ignore any previous contents of rbuf, ebuf. */
+  string_reset (rbuf);
+  string_reset (ebuf);
 
   debug_call (argv);
 
@@ -281,9 +262,11 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 
     /* Check stdout. */
     if (pfds[1].revents & POLLIN) {
-      if (expand_buf (argv0, rbuf, rbuflen, &rbufalloc) == -1)
+      if (rbuf->cap <= rbuf->len && string_reserve (rbuf, 64) == -1) {
+        nbdkit_error ("%s: realloc: %m", argv0);
         goto error;
-      r = read (pfds[1].fd, *rbuf + *rbuflen, rbufalloc - *rbuflen);
+      }
+      r = read (pfds[1].fd, &rbuf->ptr[rbuf->len], rbuf->cap - rbuf->len);
       if (r == -1) {
         nbdkit_error ("%s: read: %m", argv0);
         goto error;
@@ -294,7 +277,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
         out_fd[0] = -1;         /* poll will ignore this fd */
       }
       else if (r > 0)
-        *rbuflen += r;
+        rbuf->len += r;
     }
     else if (pfds[1].revents & POLLHUP) {
       goto close_out;
@@ -302,9 +285,11 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 
     /* Check stderr. */
     if (pfds[2].revents & POLLIN) {
-      if (expand_buf (argv0, ebuf, ebuflen, &ebufalloc) == -1)
+      if (ebuf->cap <= ebuf->len && string_reserve (ebuf, 64) == -1) {
+        nbdkit_error ("%s: realloc: %m", argv0);
         goto error;
-      r = read (pfds[2].fd, *ebuf + *ebuflen, ebufalloc - *ebuflen);
+      }
+      r = read (pfds[2].fd, &ebuf->ptr[ebuf->len], ebuf->cap - ebuf->len);
       if (r == -1) {
         nbdkit_error ("%s: read: %m", argv0);
         goto error;
@@ -315,7 +300,7 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
         err_fd[0] = -1;         /* poll will ignore this fd */
       }
       else if (r > 0)
-        *ebuflen += r;
+        ebuf->len += r;
     }
     else if (pfds[2].revents & POLLHUP) {
       goto close_err;
@@ -342,12 +327,13 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
   }
 
   /* \0-terminate both read buffers (for convenience). */
-  if (expand_buf (argv0, rbuf, rbuflen, &rbufalloc) == -1)
+  if ((rbuf->cap <= rbuf->len && string_reserve (rbuf, 1) == -1) ||
+      (ebuf->cap <= ebuf->len && string_reserve (ebuf, 1) == -1)) {
+    nbdkit_error ("%s: realloc: %m", argv0);
     goto error;
-  if (expand_buf (argv0, ebuf, ebuflen, &ebufalloc) == -1)
-    goto error;
-  (*rbuf)[*rbuflen] = '\0';
-  (*ebuf)[*ebuflen] = '\0';
+  }
+  rbuf->ptr[rbuf->len] = '\0';
+  ebuf->ptr[ebuf->len] = '\0';
 
   ret = WEXITSTATUS (status);
   nbdkit_debug ("completed: %s %s: status %d", argv0, argv[1], ret);
@@ -372,60 +358,60 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin */
 }
 
 static void
-handle_script_error (const char *argv0, char *ebuf, size_t len)
+handle_script_error (const char *argv0, string *ebuf)
 {
   int err;
   size_t skip = 0;
   char *p;
 
-  if (len == 0) {
+  if (ebuf->len == 0) {
     err = EIO;
     goto no_error_message;
   }
 
   /* Recognize the errno values that match NBD protocol errors */
-  if (ascii_strncasecmp (ebuf, "EPERM", 5) == 0) {
+  if (ascii_strncasecmp (ebuf->ptr, "EPERM", 5) == 0) {
     err = EPERM;
     skip = 5;
   }
-  else if (ascii_strncasecmp (ebuf, "EIO", 3) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "EIO", 3) == 0) {
     err = EIO;
     skip = 3;
   }
-  else if (ascii_strncasecmp (ebuf, "ENOMEM", 6) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "ENOMEM", 6) == 0) {
     err = ENOMEM;
     skip = 6;
   }
-  else if (ascii_strncasecmp (ebuf, "EINVAL", 6) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "EINVAL", 6) == 0) {
     err = EINVAL;
     skip = 6;
   }
-  else if (ascii_strncasecmp (ebuf, "ENOSPC", 6) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "ENOSPC", 6) == 0) {
     err = ENOSPC;
     skip = 6;
   }
-  else if (ascii_strncasecmp (ebuf, "EOVERFLOW", 9) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "EOVERFLOW", 9) == 0) {
     err = EOVERFLOW;
     skip = 9;
   }
-  else if (ascii_strncasecmp (ebuf, "ESHUTDOWN", 9) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "ESHUTDOWN", 9) == 0) {
     err = ESHUTDOWN;
     skip = 9;
   }
-  else if (ascii_strncasecmp (ebuf, "ENOTSUP", 7) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "ENOTSUP", 7) == 0) {
     err = ENOTSUP;
     skip = 7;
   }
-  else if (ascii_strncasecmp (ebuf, "EOPNOTSUPP", 10) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "EOPNOTSUPP", 10) == 0) {
     err = EOPNOTSUPP;
     skip = 10;
   }
   /* Other errno values that server/protocol.c treats specially */
-  else if (ascii_strncasecmp (ebuf, "EROFS", 5) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "EROFS", 5) == 0) {
     err = EROFS;
     skip = 5;
   }
-  else if (ascii_strncasecmp (ebuf, "EDQUOT", 6) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "EDQUOT", 6) == 0) {
 #ifdef EDQUOT
     err = EDQUOT;
 #else
@@ -433,7 +419,7 @@ handle_script_error (const char *argv0, char *ebuf, size_t len)
 #endif
     skip = 6;
   }
-  else if (ascii_strncasecmp (ebuf, "EFBIG", 5) == 0) {
+  else if (ascii_strncasecmp (ebuf->ptr, "EFBIG", 5) == 0) {
     err = EFBIG;
     skip = 5;
   }
@@ -443,8 +429,8 @@ handle_script_error (const char *argv0, char *ebuf, size_t len)
     skip = 0;
   }
 
-  if (skip && ebuf[skip]) {
-    if (!ascii_isspace (ebuf[skip])) {
+  if (skip && ebuf->ptr[skip]) {
+    if (!ascii_isspace (ebuf->ptr[skip])) {
       /* Treat 'EINVALID' as EIO, not EINVAL */
       err = EIO;
       skip = 0;
@@ -452,22 +438,21 @@ handle_script_error (const char *argv0, char *ebuf, size_t len)
     else
       do
         skip++;
-      while (ascii_isspace (ebuf[skip]));
+      while (ascii_isspace (ebuf->ptr[skip]));
   }
 
-  while (len > 0 && ebuf[len-1] == '\n')
-    ebuf[--len] = '\0';
+  while (ebuf->len > 0 && ebuf->ptr[ebuf->len-1] == '\n')
+    ebuf->ptr[--ebuf->len] = '\0';
 
-  if (len > 0) {
-    p = strchr (ebuf + skip, '\n');
+  if (ebuf->len > 0) {
+    p = strchr (&ebuf->ptr[skip], '\n');
     if (p) {
       /* More than one line, so write the whole message to debug ... */
-      nbdkit_debug ("%s: %s", argv0, ebuf);
+      nbdkit_debug ("%s: %s", argv0, ebuf->ptr);
       /* ... but truncate it for the error message below. */
       *p = '\0';
     }
-    ebuf += skip;
-    nbdkit_error ("%s: %s", argv0, ebuf);
+    nbdkit_error ("%s: %s", argv0, &ebuf->ptr[skip]);
   }
   else {
   no_error_message:
@@ -487,12 +472,10 @@ exit_code
 call (const char **argv)
 {
   int r;
-  CLEANUP_FREE char *rbuf = NULL;
-  size_t rbuflen;
-  CLEANUP_FREE char *ebuf = NULL;
-  size_t ebuflen;
+  CLEANUP_FREE_STRING string rbuf = empty_vector;
+  CLEANUP_FREE_STRING string ebuf = empty_vector;
 
-  r = call3 (NULL, 0, &rbuf, &rbuflen, &ebuf, &ebuflen, argv);
+  r = call3 (NULL, 0, &rbuf, &ebuf, argv);
   switch (r) {
   case OK:
   case MISSING:
@@ -503,7 +486,7 @@ call (const char **argv)
   case ERROR:
   default:
     /* Error case. */
-    handle_script_error (argv[0], ebuf, ebuflen);
+    handle_script_error (argv[0], &ebuf);
     return ERROR;
   }
 }
@@ -512,13 +495,12 @@ call (const char **argv)
  * buffer.  Returns the exit code from the script.
  */
 exit_code
-call_read (char **rbuf, size_t *rbuflen, const char **argv)
+call_read (string *rbuf, const char **argv)
 {
   int r;
-  CLEANUP_FREE char *ebuf = NULL;
-  size_t ebuflen;
+  CLEANUP_FREE_STRING string ebuf = empty_vector;
 
-  r = call3 (NULL, 0, rbuf, rbuflen, &ebuf, &ebuflen, argv);
+  r = call3 (NULL, 0, rbuf, &ebuf, argv);
   switch (r) {
   case OK:
   case MISSING:
@@ -529,9 +511,8 @@ call_read (char **rbuf, size_t *rbuflen, const char **argv)
   case ERROR:
   default:
     /* Error case. */
-    free (*rbuf);
-    *rbuf = NULL;
-    handle_script_error (argv[0], ebuf, ebuflen);
+    string_reset (rbuf);
+    handle_script_error (argv[0], &ebuf);
     return ERROR;
   }
 }
@@ -543,12 +524,10 @@ exit_code
 call_write (const char *wbuf, size_t wbuflen, const char **argv)
 {
   int r;
-  CLEANUP_FREE char *rbuf = NULL;
-  size_t rbuflen;
-  CLEANUP_FREE char *ebuf = NULL;
-  size_t ebuflen;
+  CLEANUP_FREE_STRING string rbuf = empty_vector;
+  CLEANUP_FREE_STRING string ebuf = empty_vector;
 
-  r = call3 (wbuf, wbuflen, &rbuf, &rbuflen, &ebuf, &ebuflen, argv);
+  r = call3 (wbuf, wbuflen, &rbuf, &ebuf, argv);
   switch (r) {
   case OK:
   case MISSING:
@@ -559,7 +538,7 @@ call_write (const char *wbuf, size_t wbuflen, const char **argv)
   case ERROR:
   default:
     /* Error case. */
-    handle_script_error (argv[0], ebuf, ebuflen);
+    handle_script_error (argv[0], &ebuf);
     return ERROR;
   }
 }

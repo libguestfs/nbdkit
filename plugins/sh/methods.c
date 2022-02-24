@@ -56,14 +56,13 @@ sh_dump_plugin (void)
   const char *method = "dump_plugin";
   const char *script = get_script (method);
   const char *args[] = { script, method, NULL };
-  CLEANUP_FREE char *o = NULL;
-  size_t olen;
+  CLEANUP_FREE_STRING string o = empty_vector;
 
   if (script) {
     /* Call dump_plugin method. */
-    switch (call_read (&o, &olen, args)) {
+    switch (call_read (&o, args)) {
     case OK:
-      printf ("%s", o);
+      printf ("%s", o.ptr);
       break;
 
     case MISSING:
@@ -90,8 +89,7 @@ sh_thread_model (void)
   const char *method = "thread_model";
   const char *script = get_script (method);
   const char *args[] = { script, method, NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  CLEANUP_FREE_STRING string s = empty_vector;
   int r;
 
   /* For historical compatibility: the lack of a script is assumed to
@@ -102,24 +100,24 @@ sh_thread_model (void)
   if (!script)
     return NBDKIT_THREAD_MODEL_PARALLEL;
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
-    if (slen > 0 && s[slen-1] == '\n')
-      s[slen-1] = '\0';
-    if (ascii_strcasecmp (s, "parallel") == 0)
+    if (s.len > 0 && s.ptr[s.len-1] == '\n')
+      s.ptr[s.len-1] = '\0';
+    if (ascii_strcasecmp (s.ptr, "parallel") == 0)
       r = NBDKIT_THREAD_MODEL_PARALLEL;
-    else if (ascii_strcasecmp (s, "serialize_requests") == 0 ||
-             ascii_strcasecmp (s, "serialize-requests") == 0)
+    else if (ascii_strcasecmp (s.ptr, "serialize_requests") == 0 ||
+             ascii_strcasecmp (s.ptr, "serialize-requests") == 0)
       r = NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS;
-    else if (ascii_strcasecmp (s, "serialize_all_requests") == 0 ||
-             ascii_strcasecmp (s, "serialize-all-requests") == 0)
+    else if (ascii_strcasecmp (s.ptr, "serialize_all_requests") == 0 ||
+             ascii_strcasecmp (s.ptr, "serialize-all-requests") == 0)
       r = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
-    else if (ascii_strcasecmp (s, "serialize_connections") == 0 ||
-             ascii_strcasecmp (s, "serialize-connections") == 0)
+    else if (ascii_strcasecmp (s.ptr, "serialize_connections") == 0 ||
+             ascii_strcasecmp (s.ptr, "serialize-connections") == 0)
       r = NBDKIT_THREAD_MODEL_SERIALIZE_CONNECTIONS;
     else {
       nbdkit_debug ("%s: ignoring unrecognized thread model: %s",
-                    script, s);
+                    script, s.ptr);
       r = NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS;
     }
     return r;
@@ -219,7 +217,7 @@ sh_preconnect (int readonly)
 }
 
 struct sh_handle {
-  char *h;
+  string h;
   int can_flush;
   int can_zero;
 };
@@ -308,12 +306,11 @@ sh_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
   const char *script = get_script (method);
   const char *args[] = { script, method, readonly ? "true" : "false",
                          is_tls ? "true" : "false", NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  CLEANUP_FREE_STRING string s = empty_vector;
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
-    return parse_exports (script, s, slen, exports);
+    return parse_exports (script, s.ptr, s.len, exports);
 
   case MISSING:
     return nbdkit_use_default_export (exports);
@@ -338,22 +335,21 @@ sh_default_export (int readonly, int is_tls)
   const char *script = get_script (method);
   const char *args[] = { script, method, readonly ? "true" : "false",
                          is_tls ? "true" : "false", NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  CLEANUP_FREE_STRING string s = empty_vector;
   const char *p, *n;
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
     /* The first line determines how to parse the rest of s.  For now,
      * all export modes treat the next line as the first export.
      */
-    if ((p = skip_prefix (s, "INTERLEAVED\n")) != NULL ||
-        (p = skip_prefix (s, "NAMES+DESCRIPTIONS\n")) != NULL ||
-        (p = skip_prefix (s, "NAMES\n")) != NULL)
+    if ((p = skip_prefix (s.ptr, "INTERLEAVED\n")) != NULL ||
+        (p = skip_prefix (s.ptr, "NAMES+DESCRIPTIONS\n")) != NULL ||
+        (p = skip_prefix (s.ptr, "NAMES\n")) != NULL)
       ;
     else
-      p = s;
-    n = strchr (p, '\n') ?: s + slen;
+      p = s.ptr;
+    n = strchr (p, '\n') ?: s.ptr + s.len;
     return nbdkit_strndup_intern (p, n - p);
 
   case MISSING:
@@ -377,14 +373,13 @@ sh_open (int readonly)
 {
   const char *method = "open";
   const char *script = get_script (method);
-  size_t hlen;
   const char *args[] =
     { script, method,
       readonly ? "true" : "false",
       nbdkit_export_name () ? : "",
       nbdkit_is_tls () > 0 ? "true" : "false",
       NULL };
-  struct sh_handle *h = malloc (sizeof *h);
+  struct sh_handle *h = calloc (1, sizeof *h);
 
   if (!h) {
     nbdkit_error ("malloc: %m");
@@ -394,15 +389,13 @@ sh_open (int readonly)
   h->can_zero = -1;
 
   /* We store the string returned by open in the handle. */
-  switch (call_read (&h->h, &hlen, args)) {
+  switch (call_read (&h->h, args)) {
   case OK:
     /* Remove final newline if present. */
-    if (hlen > 0 && h->h[hlen-1] == '\n') {
-      h->h[hlen-1] = '\0';
-      hlen--;
-    }
-    if (hlen > 0)
-      nbdkit_debug ("sh: handle: %s", h->h);
+    if (h->h.len > 0 && h->h.ptr[h->h.len-1] == '\n')
+      h->h.ptr[--h->h.len] = '\0';
+    if (h->h.len > 0)
+      nbdkit_debug ("sh: handle: %s", h->h.ptr);
     return h;
 
   case MISSING:
@@ -410,22 +403,22 @@ sh_open (int readonly)
      * missing then we return "" as the handle.  Allocate a new string
      * for it because we don't know what call_read returned here.
      */
-    free (h->h);
-    h->h = strdup ("");
-    if (h->h == NULL) {
-      nbdkit_error ("strdup: %m");
+    string_reset (&h->h);
+    if (string_reserve (&h->h, 1) == -1) {
+      nbdkit_error ("realloc: %m");
       free (h);
       return NULL;
     }
+    h->h.ptr[0] = '\0';
     return h;
 
   case ERROR:
-    free (h->h);
+    string_reset (&h->h);
     free (h);
     return NULL;
 
   case RET_FALSE:
-    free (h->h);
+    string_reset (&h->h);
     free (h);
     nbdkit_error ("%s: %s method returned unexpected code (3/false)",
                   script, method);
@@ -442,14 +435,14 @@ sh_close (void *handle)
   const char *method = "close";
   const char *script = get_script (method);
   struct sh_handle *h = handle;
-  const char *args[] = { script, method, h->h, NULL };
+  const char *args[] = { script, method, h->h.ptr, NULL };
 
   switch (call (args)) {
   case OK:
   case MISSING:
   case ERROR:
   case RET_FALSE:
-    free (h->h);
+    string_reset (&h->h);
     free (h);
     return;
   default: abort ();
@@ -462,15 +455,14 @@ sh_export_description (void *handle)
   const char *method = "export_description";
   const char *script = get_script (method);
   struct sh_handle *h = handle;
-  const char *args[] = { script, method, h->h, NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  const char *args[] = { script, method, h->h.ptr, NULL };
+  CLEANUP_FREE_STRING string s = empty_vector;
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
-    if (slen > 0 && s[slen-1] == '\n')
-      s[slen-1] = '\0';
-    return nbdkit_strdup_intern (s);
+    if (s.len > 0 && s.ptr[s.len-1] == '\n')
+      s.ptr[s.len-1] = '\0';
+    return nbdkit_strdup_intern (s.ptr);
 
   case MISSING:
     return NULL;
@@ -494,19 +486,18 @@ sh_get_size (void *handle)
   const char *method = "get_size";
   const char *script = get_script (method);
   struct sh_handle *h = handle;
-  const char *args[] = { script, method, h->h, NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  const char *args[] = { script, method, h->h.ptr, NULL };
+  CLEANUP_FREE_STRING string s = empty_vector;
   int64_t r;
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
-    if (slen > 0 && s[slen-1] == '\n')
-      s[slen-1] = '\0';
-    r = nbdkit_parse_size (s);
+    if (s.len > 0 && s.ptr[s.len-1] == '\n')
+      s.ptr[s.len-1] = '\0';
+    r = nbdkit_parse_size (s.ptr);
     if (r == -1)
       nbdkit_error ("%s: could not parse output from get_size method: %s",
-                    script, s);
+                    script, s.ptr);
     return r;
 
   case MISSING:
@@ -533,16 +524,15 @@ sh_block_size (void *handle,
   const char *method = "block_size";
   const char *script = get_script (method);
   struct sh_handle *h = handle;
-  const char *args[] = { script, method, h->h, NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  const char *args[] = { script, method, h->h.ptr, NULL };
+  CLEANUP_FREE_STRING string s = empty_vector;
   const char *delim = " \t\n";
   char *sp, *p;
   int64_t r;
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
-    if ((p = strtok_r (s, delim, &sp)) == NULL) {
+    if ((p = strtok_r (s.ptr, delim, &sp)) == NULL) {
     parse_error:
       nbdkit_error ("%s: %s method cannot be parsed", script, method);
       return -1;
@@ -600,23 +590,22 @@ sh_pread (void *handle, void *buf, uint32_t count, uint64_t offset,
   const char *script = get_script (method);
   struct sh_handle *h = handle;
   char cbuf[32], obuf[32];
-  const char *args[] = { script, method, h->h, cbuf, obuf, NULL };
-  CLEANUP_FREE char *data = NULL;
-  size_t len;
+  const char *args[] = { script, method, h->h.ptr, cbuf, obuf, NULL };
+  CLEANUP_FREE_STRING string data = empty_vector;
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
 
-  switch (call_read (&data, &len, args)) {
+  switch (call_read (&data, args)) {
   case OK:
-    if (count != len) {
+    if (count != data.len) {
       nbdkit_error ("%s: incorrect amount of data read: "
                     "expecting %" PRIu32 " bytes but "
                     "received %zu bytes from the script",
-                    script, count, len);
+                    script, count, data.len);
       return -1;
     }
-    memcpy (buf, data, count);
+    memcpy (buf, data.ptr, count);
     return 0;
 
   case MISSING:
@@ -688,7 +677,7 @@ sh_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
   const char *script = get_script (method);
   struct sh_handle *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
-  const char *args[] = { script, method, h->h, cbuf, obuf, fbuf, NULL };
+  const char *args[] = { script, method, h->h.ptr, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
@@ -721,7 +710,7 @@ boolean_method (const char *script, const char *method,
                 void *handle, int def)
 {
   struct sh_handle *h = handle;
-  const char *args[] = { script, method, h->h, NULL };
+  const char *args[] = { script, method, h->h.ptr, NULL };
 
   switch (call (args)) {
   case OK:                      /* true */
@@ -811,24 +800,23 @@ sh_can_fua (void *handle)
   const char *method = "can_fua";
   const char *script = get_script (method);
   struct sh_handle *h = handle;
-  const char *args[] = { script, method, h->h, NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  const char *args[] = { script, method, h->h.ptr, NULL };
+  CLEANUP_FREE_STRING string s = empty_vector;
   int r;
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
-    if (slen > 0 && s[slen-1] == '\n')
-      s[slen-1] = '\0';
-    if (ascii_strcasecmp (s, "none") == 0)
+    if (s.len > 0 && s.ptr[s.len-1] == '\n')
+      s.ptr[s.len-1] = '\0';
+    if (ascii_strcasecmp (s.ptr, "none") == 0)
       r = NBDKIT_FUA_NONE;
-    else if (ascii_strcasecmp (s, "emulate") == 0)
+    else if (ascii_strcasecmp (s.ptr, "emulate") == 0)
       r = NBDKIT_FUA_EMULATE;
-    else if (ascii_strcasecmp (s, "native") == 0)
+    else if (ascii_strcasecmp (s.ptr, "native") == 0)
       r = NBDKIT_FUA_NATIVE;
     else {
       nbdkit_error ("%s: could not parse output from %s method: %s",
-                    script, method, s);
+                    script, method, s.ptr);
       r = -1;
     }
     return r;
@@ -866,24 +854,23 @@ sh_can_cache (void *handle)
   const char *method = "can_cache";
   const char *script = get_script (method);
   struct sh_handle *h = handle;
-  const char *args[] = { script, method, h->h, NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  const char *args[] = { script, method, h->h.ptr, NULL };
+  CLEANUP_FREE_STRING string s = empty_vector;
   int r;
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
-    if (slen > 0 && s[slen-1] == '\n')
-      s[slen-1] = '\0';
-    if (ascii_strcasecmp (s, "none") == 0)
+    if (s.len > 0 && s.ptr[s.len-1] == '\n')
+      s.ptr[s.len-1] = '\0';
+    if (ascii_strcasecmp (s.ptr, "none") == 0)
       r = NBDKIT_CACHE_NONE;
-    else if (ascii_strcasecmp (s, "emulate") == 0)
+    else if (ascii_strcasecmp (s.ptr, "emulate") == 0)
       r = NBDKIT_CACHE_EMULATE;
-    else if (ascii_strcasecmp (s, "native") == 0)
+    else if (ascii_strcasecmp (s.ptr, "native") == 0)
       r = NBDKIT_CACHE_NATIVE;
     else {
       nbdkit_error ("%s: could not parse output from %s method: %s",
-                    script, method, s);
+                    script, method, s.ptr);
       r = -1;
     }
     return r;
@@ -931,7 +918,7 @@ sh_flush (void *handle, uint32_t flags)
   const char *method = "flush";
   const char *script = get_script (method);
   struct sh_handle *h = handle;
-  const char *args[] = { script, method, h->h, NULL };
+  const char *args[] = { script, method, h->h.ptr, NULL };
 
   switch (call (args)) {
   case OK:
@@ -961,7 +948,7 @@ sh_trim (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   const char *script = get_script (method);
   struct sh_handle *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
-  const char *args[] = { script, method, h->h, cbuf, obuf, fbuf, NULL };
+  const char *args[] = { script, method, h->h.ptr, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
@@ -995,7 +982,7 @@ sh_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   const char *script = get_script (method);
   struct sh_handle *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
-  const char *args[] = { script, method, h->h, cbuf, obuf, fbuf, NULL };
+  const char *args[] = { script, method, h->h.ptr, cbuf, obuf, fbuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
@@ -1100,18 +1087,17 @@ sh_extents (void *handle, uint32_t count, uint64_t offset, uint32_t flags,
   const char *script = get_script (method);
   struct sh_handle *h = handle;
   char cbuf[32], obuf[32], fbuf[32];
-  const char *args[] = { script, method, h->h, cbuf, obuf, fbuf, NULL };
-  CLEANUP_FREE char *s = NULL;
-  size_t slen;
+  const char *args[] = { script, method, h->h.ptr, cbuf, obuf, fbuf, NULL };
+  CLEANUP_FREE_STRING string s = empty_vector;
   int r;
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);
   flags_string (flags, fbuf, sizeof fbuf);
 
-  switch (call_read (&s, &slen, args)) {
+  switch (call_read (&s, args)) {
   case OK:
-    r = parse_extents (script, s, slen, extents);
+    r = parse_extents (script, s.ptr, s.len, extents);
     return r;
 
   case MISSING:
@@ -1145,7 +1131,7 @@ sh_cache (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   const char *script = get_script (method);
   struct sh_handle *h = handle;
   char cbuf[32], obuf[32];
-  const char *args[] = { script, method, h->h, cbuf, obuf, NULL };
+  const char *args[] = { script, method, h->h.ptr, cbuf, obuf, NULL };
 
   snprintf (cbuf, sizeof cbuf, "%" PRIu32, count);
   snprintf (obuf, sizeof obuf, "%" PRIu64, offset);

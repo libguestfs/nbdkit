@@ -174,13 +174,12 @@ sh_config (const char *key, const char *value)
 
     /* Call the magic_config_key method if it exists. */
     const char *args2[] = { script, "magic_config_key", NULL };
-    CLEANUP_FREE char *s = NULL;
-    size_t slen;
-    switch (call_read (&s, &slen, args2)) {
+    CLEANUP_FREE_STRING string s = empty_vector;
+    switch (call_read (&s, args2)) {
     case OK:
-      if (slen > 0 && s[slen-1] == '\n')
-        s[slen-1] = '\0';
-      magic_config_key = strdup (s);
+      if (s.len > 0 && s.ptr[s.len-1] == '\n')
+        s.ptr[s.len-1] = '\0';
+      magic_config_key = strdup (s.ptr);
       if (magic_config_key == NULL) {
         nbdkit_error ("strdup: %m");
         return -1;
