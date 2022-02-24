@@ -66,7 +66,7 @@ static unsigned int config_minblock;
 static unsigned int config_maxdata;
 static unsigned int config_maxlen;
 
-/* Per-handle values set during .open */
+/* Per-handle values set during .prepare */
 struct blocksize_handle {
   uint32_t minblock;
   uint32_t maxdata;
@@ -122,28 +122,20 @@ blocksize_config_complete (nbdkit_next_config_complete *next,
       return -1;
     }
   }
-  else
-    config_minblock = 1;
 
-  if (config_maxdata) {
+  if (config_maxdata && config_minblock) {
     if (config_maxdata & (config_minblock - 1)) {
       nbdkit_error ("maxdata must be a multiple of %u", config_minblock);
       return -1;
     }
   }
-  else if (config_maxlen)
-    config_maxdata = MIN (config_maxlen, 64 * 1024 * 1024);
-  else
-    config_maxdata = 64 * 1024 * 1024;
 
-  if (config_maxlen) {
+  if (config_maxlen && config_minblock) {
     if (config_maxlen & (config_minblock - 1)) {
       nbdkit_error ("maxlen must be a multiple of %u", config_minblock);
       return -1;
     }
   }
-  else
-    config_maxlen = -config_minblock;
 
   nbdkit_debug ("configured values minblock=%u maxdata=%u maxlen=%u",
                 config_minblock, config_maxdata, config_maxlen);
@@ -173,9 +165,31 @@ blocksize_open (nbdkit_next_open *next, nbdkit_context *nxdata,
   h->minblock = config_minblock;
   h->maxdata = config_maxdata;
   h->maxlen = config_maxlen;
+  return h;
+}
+
+static int
+blocksize_prepare (nbdkit_next *next, void *handle,
+                   int readonly)
+{
+  struct blocksize_handle *h = handle;
+
+  if (h->minblock == 0)
+    h->minblock = 1;
+
+  if (h->maxdata == 0) {
+    if (h->maxlen)
+      h->maxdata = MIN (h->maxlen, 64 * 1024 * 1024);
+    else
+      h->maxdata = 64 * 1024 * 1024;
+  }
+
+  if (h->maxlen == 0)
+    h->maxlen = -h->minblock;
+
   nbdkit_debug ("handle values minblock=%u maxdata=%u maxlen=%u",
                 h->minblock, h->maxdata, h->maxlen);
-  return h;
+  return 0;
 }
 
 /* Round size down to avoid issues at end of file. */
@@ -501,6 +515,7 @@ static struct nbdkit_filter filter = {
   .config_complete   = blocksize_config_complete,
   .config_help       = blocksize_config_help,
   .open              = blocksize_open,
+  .prepare           = blocksize_prepare,
   .close             = free,
   .get_size          = blocksize_get_size,
   .block_size        = blocksize_block_size,
