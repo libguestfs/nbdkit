@@ -393,3 +393,10 @@ using ‘#define NBDKIT_API_VERSION <version>’.
   reason to add nbdkit_get_thread_model for use by v2 plugins.
 
 * Change config_help from a variable to a function.
+
+* Consider extra parameters to .block_size().  First so that we can
+  separately control maximum data request (eg. pread) vs maximum
+  virtual request (eg. zero).  Note that the NBD protocol does not yet
+  support this distinction.  We may also need a 'bool strict'
+  parameter to specify whether the client requested block size
+  information or not.  qemu-nbd can distinguish these two cases.
