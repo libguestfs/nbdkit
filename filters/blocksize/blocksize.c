@@ -173,9 +173,15 @@ blocksize_prepare (nbdkit_next *next, void *handle,
                    int readonly)
 {
   struct blocksize_handle *h = handle;
+  uint32_t minimum, preferred, maximum;
 
-  if (h->minblock == 0)
-    h->minblock = 1;
+  /* Here, minimum and maximum will clamp per-handle defaults not set
+   * by globals in .config; preferred has no impact until .block_size.
+   */
+  if (next->block_size (next, &minimum, &preferred, &maximum) == -1)
+    return -1;
+
+  h->minblock = MAX (MAX (h->minblock, 1), minimum);
 
   if (h->maxdata == 0) {
     if (h->maxlen)
@@ -183,9 +189,14 @@ blocksize_prepare (nbdkit_next *next, void *handle,
     else
       h->maxdata = 64 * 1024 * 1024;
   }
+  if (maximum)
+    h->maxdata = MIN (h->maxdata, maximum);
+  h->maxdata = ROUND_DOWN (h->maxdata, h->minblock);
 
   if (h->maxlen == 0)
     h->maxlen = -h->minblock;
+  else
+    h->maxlen = ROUND_DOWN (h->maxlen, h->minblock);
 
   nbdkit_debug ("handle values minblock=%u maxdata=%u maxlen=%u",
                 h->minblock, h->maxdata, h->maxlen);
@@ -218,11 +229,11 @@ blocksize_block_size (nbdkit_next *next, void *handle,
 {
   struct blocksize_handle *h = handle;
 
+  /* Here we only need preferred; see also blocksize_prepare. */
   if (next->block_size (next, minimum, preferred, maximum) == -1)
     return -1;
 
-  if (*preferred == 0)
-    *preferred = MAX (4096, h->minblock);
+  *preferred = MAX (MAX (*preferred, 4096), h->minblock);
 
   *minimum = 1;
   *maximum = 0xffffffff;

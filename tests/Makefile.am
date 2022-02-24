@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2021 Red Hat Inc.
+# Copyright (C) 2013-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -1408,8 +1408,16 @@ test_layers_filter3_la_LDFLAGS = \
 test_layers_filter3_la_LIBADD = $(IMPORT_LIBRARY_ON_WINDOWS)
 
 # blocksize filter test.
-TESTS += test-blocksize.sh test-blocksize-extents.sh
-EXTRA_DIST += test-blocksize.sh test-blocksize-extents.sh
+TESTS += \
+	test-blocksize.sh \
+	test-blocksize-extents.sh \
+	test-blocksize-default.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-blocksize.sh \
+	test-blocksize-extents.sh \
+	test-blocksize-default.sh \
+	$(NULL)
 
 # blocksize-policy filter test.
 TESTS += test-blocksize-policy.sh test-blocksize-error-policy.sh

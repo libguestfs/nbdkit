@@ -42,9 +42,6 @@ files="blocksize1.img blocksize1.log $sock1 blocksize1.pid
 rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on doing.
-# TODO: Until we implement NBD_INFO_BLOCK_SIZE, qemu-io does its own
-# read-modify-write at 512-byte alignment, while we'd like to ultimately test
-# 1-byte accesses
 truncate -s 10M blocksize1.img
 if ! qemu-io -f raw -c 'r 0 1' -c 'w -z 1000 2000' \
      -c 'w -P 0 1M 2M' -c 'discard 3M 4M' blocksize1.img; then

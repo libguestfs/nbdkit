@@ -23,6 +23,9 @@ refuses a read or write larger than 64 megabytes, while many other NBD
 servers limit things to 32 megabytes).  The blocksize filter can be
 used to modify the client requests to meet the plugin restrictions.
 
+This filter can be combined with L<nbdkit-blocksize-policy-filter(1)>
+to advertise different block sizes to the client.
+
 =head1 PARAMETERS
 
 The nbdkit-blocksize-filter accepts the following parameters.
@@ -33,7 +36,8 @@ The nbdkit-blocksize-filter accepts the following parameters.
 
 The minimum block size and alignment to pass to the plugin.  This must
 be a power of two, and no larger than 64k.  If omitted, this defaults
-to 1 (that is, no minimum size restrictions).  The filter rounds up
+to the minimum block size of the underlying plugin, or 1 if the plugin
+did not report a minimum block size.  The filter rounds up
 read requests to alignment boundaries, performs read-modify-write
 cycles for any unaligned head or tail of a write or zero request, and
 silently ignores any unaligned head or tail of a trim request.  The
@@ -47,8 +51,9 @@ This parameter understands the suffix 'k' for 1024.
 =item B<maxdata=>SIZE
 
 The maximum block size for any single transaction with data (read and
-write).  If omitted, this defaults to 64 megabytes (that is, the
-nbdkit maximum).  This need not be a power of two, but must be an
+write).  If omitted, this defaults to the minimum of 64 megabytes (that
+is, the nbdkit maximum) or any maximum reported by the underlying plugin.
+This need not be a power of two, but must be an
 integer multiple of C<minblock>.  The filter fragments any larger
 client request into multiple plugin requests.
 
@@ -113,6 +118,7 @@ L<nbdkit(1)>,
 L<nbdkit-nbd-plugin(1)>,
 L<nbdkit-vddk-plugin(1)>,
 L<nbdkit-filter(3)>,
+L<nbdkit-blocksize-policy-filter(1)>,
 L<nbdkit-truncate-filter(1)>.
 
 =head1 AUTHORS
@@ -121,4 +127,4 @@ Eric Blake
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018 Red Hat Inc.
+Copyright (C) 2018-2022 Red Hat Inc.
