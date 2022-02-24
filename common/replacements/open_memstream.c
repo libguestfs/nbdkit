@@ -53,6 +53,7 @@
  * libutils.la. XXX
  */
 #include "../utils/vector.h"
+#include "../utils/nbdkit-string.h"
 
 /* Map FILE* that we return to the user buffer. */
 struct file_to_memstream {
@@ -95,14 +96,12 @@ open_memstream (char **ptr, size_t *size)
   return fp;
 }
 
-DEFINE_VECTOR_TYPE(string_vector, char)
-
 int
 close_memstream (FILE *fp)
 {
   size_t i;
   int c, r;
-  string_vector content = empty_vector;
+  string content = empty_vector;
   struct file_to_memstream *f2m;
 
   for (i = 0; i < files.len; ++i) {
@@ -115,7 +114,7 @@ close_memstream (FILE *fp)
   /* Read the file back into memory. */
   rewind (fp);
   while ((c = getc (fp)) != EOF) {
-    if (string_vector_append (&content, c) == -1) {
+    if (string_append (&content, c) == -1) {
     append_failed:
       fclose (fp);
       unlink (f2m->tmpname);
@@ -127,7 +126,7 @@ close_memstream (FILE *fp)
   /* Make sure the buffer is \0-terminated but don't include this
    * in the buffer size returned below.
    */
-  if (string_vector_append (&content, 0) == -1) goto append_failed;
+  if (string_append (&content, 0) == -1) goto append_failed;
 
   r = fclose (fp);
   unlink (f2m->tmpname);

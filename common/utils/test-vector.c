@@ -43,6 +43,7 @@
 #include <assert.h>
 
 #include "bench.h"
+#include "nbdkit-string.h"
 #include "vector.h"
 
 #define APPENDS 1000000
@@ -50,7 +51,6 @@
 DEFINE_VECTOR_TYPE(int64_vector, int64_t);
 DEFINE_VECTOR_TYPE(uint32_vector, uint32_t);
 DEFINE_VECTOR_TYPE(string_vector, char *);
-DEFINE_VECTOR_TYPE(string, char);
 
 static int
 compare (const int64_t *a, const int64_t *b)

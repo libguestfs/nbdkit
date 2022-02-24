@@ -50,6 +50,7 @@
 #include "cleanup.h"
 #include "ispowerof2.h"
 #include "minmax.h"
+#include "nbdkit-string.h"
 #include "rounding.h"
 #include "strndup.h"
 #include "vector.h"
@@ -63,18 +64,6 @@ NBDKIT_DLL_PUBLIC int data_debug_AST = 0;
 
 /* The abstract syntax tree. */
 typedef struct expr expr_t;
-
-/* string + length, \0 allowed */
-DEFINE_VECTOR_TYPE(string, char);
-
-#define CLEANUP_FREE_STRING \
-  __attribute__((cleanup (cleanup_free_string)))
-
-static void
-cleanup_free_string (string *v)
-{
-  free (v->ptr);
-}
 
 static string
 substring (string s, size_t offset, size_t len)

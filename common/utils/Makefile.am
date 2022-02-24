@@ -42,6 +42,7 @@ libutils_la_SOURCES = \
 	environ.c \
 	full-rw.c \
 	quote.c \
+	nbdkit-string.h \
 	utils.c \
 	utils.h \
 	vector.c \

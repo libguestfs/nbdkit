@@ -45,24 +45,13 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "nbdkit-string.h"
 #include "vector.h"
 
 #include "vddk.h"
 
 bool noreexec = false;          /* hidden noreexec option */
 char *reexeced;                 /* orig LD_LIBRARY_PATH on reexec */
-
-/* Extensible buffer (string). */
-DEFINE_VECTOR_TYPE(buffer, char);
-
-#define CLEANUP_FREE_BUFFER \
-  __attribute__((cleanup (cleanup_free_buffer)))
-
-static void
-cleanup_free_buffer (buffer *v)
-{
-  free (v->ptr);
-}
 
 /* List of strings. */
 DEFINE_VECTOR_TYPE(string_vector, char *);
@@ -88,7 +77,7 @@ perform_reexec (const char *env, const char *prepend)
   static const char cmdline_file[] = "/proc/self/cmdline";
   static const char exe_file[] = "/proc/self/exe";
   CLEANUP_FREE char *library = NULL;
-  CLEANUP_FREE_BUFFER buffer buf = empty_vector;
+  CLEANUP_FREE_STRING string buf = empty_vector;
   CLEANUP_FREE_STRING_VECTOR string_vector argv = empty_vector;
   int fd;
   size_t len;
@@ -112,7 +101,7 @@ perform_reexec (const char *env, const char *prepend)
   for (;;) {
     ssize_t r;
 
-    if (buffer_reserve (&buf, 512) == -1) {
+    if (string_reserve (&buf, 512) == -1) {
       nbdkit_error ("realloc: %m");
       exit (EXIT_FAILURE);
     }
