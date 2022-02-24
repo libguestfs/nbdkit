@@ -7,7 +7,7 @@ nbdkit-release-notes-1.30 - release notes for nbdkit 1.30
 These are the release notes for nbdkit stable release 1.30.
 This describes the major changes since 1.28.
 
-nbdkit 1.30.0 was released on B<XX Xxxxx 2022>.
+nbdkit 1.30.0 was released on B<24 February 2022>.
 
 =head2 Security
 
@@ -126,8 +126,13 @@ size constraints.  L<nbdkit-nbd-plugin(1)> reexports block size
 constraints from the proxied NBD server.  L<nbdkit-vddk-plugin(1)> now
 advertises a minimum 512 byte block size.
 
-L<nbdkit-blocksize-filter(1)>, L<nbdkit-cache-filter(1)> and
-L<nbdkit-cow-filter(1)> adjust block size constraints from plugins.
+L<nbdkit-blocksize-filter(1)>, L<nbdkit-cache-filter(1)>,
+L<nbdkit-cow-filter(1)> and L<nbdkit-swab-filter(1)> adjust block size
+constraints from plugins (Eric Blake).
+
+L<nbdkit-blocksize-filter(1)> can also use the block size hints from
+the plugin instead of needing manual adjustment on the command line.
+L<nbdkit-log-filter(1)> logs block size constraints (Eric Blake).
 
 L<nbdkit-blocksize-policy-filter(1)> can be used to add block size
 constraints to plugins which don't support it, or adjust constraints,
@@ -160,7 +165,9 @@ The time taken to run the test suite has been reduced significantly.
 
 =head2 Build
 
-Multiple fixes to the Windows (MinGW) build.
+Multiple fixes to the Windows (MinGW) build.  The test suite should
+now pass fully if you have the version of Wine with the unofficial
+C<AF_UNIX> patch.
 
 The top level F<bash> source directory has been renamed to
 F<bash-completion>.  This prevents problems when setting C<$PATH> to
@@ -171,6 +178,12 @@ the source directory and trying to run bash.
 The performance of the internal vector library has been improved
 greatly and overflow is now handled correctly (Nir Soffer, Laszlo
 Ersek and Eric Blake).
+
+New "nbdkit-string.h" header file which defines a common string type
+(based on vector).  Existing places which defined a string based on
+vector have been updated to use it.
+
+C<MIN> and C<MAX> macros can be nested (thanks Eric Blake).
 
 =head1 SEE ALSO
 
