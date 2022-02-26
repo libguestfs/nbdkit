@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <errno.h>
 
 #include <caml/alloc.h>
@@ -842,23 +843,22 @@ NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_set_field (value fieldv, value fv)
 {
   CAMLparam2 (fieldv, fv);
-  value *root;
 
   /* This isn't very efficient because we string-compare the field
    * names.  However it is only called when the plugin is being loaded
    * for a handful of fields so it's not performance critical.
    */
-#define CB(name)                                        \
-  if (strcmp (String_val (fieldv), #name) == 0) {       \
-    plugin.name = name##_wrapper;                       \
-    name##_fn = fv;                                     \
-    root = &name##_fn;                                  \
+#define CB(name)                                         \
+  if (strcmp (String_val (fieldv), #name) == 0) {        \
+    plugin.name = name##_wrapper;                        \
+    assert (!name##_fn);                                 \
+    name##_fn = fv;                                      \
+    caml_register_generational_global_root (&name##_fn); \
   } else
 #include "callbacks.h"
 #undef CB
   /* else if the field is not known */ abort ();
 
-  caml_register_generational_global_root (root);
   CAMLreturn (Val_unit);
 }
 
