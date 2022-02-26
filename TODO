@@ -392,3 +392,20 @@ using ‘#define NBDKIT_API_VERSION <version>’.
   support this distinction.  We may also need a 'bool strict'
   parameter to specify whether the client requested block size
   information or not.  qemu-nbd can distinguish these two cases.
+
+* Renumber thread models.  Redefine existing thread models like this:
+
+   model                    existing value      new value
+  SERIALIZE_CONNECTIONS           0               1000
+  SERIALIZE_ALL_REQUESTS          1               2000
+  SERIALIZE_REQUESTS              2               3000
+  PARALLEL                        3               4000
+
+  This allows new thread models to be inserted before and between the
+  existing ones.  In particular SERIALIZE_RETIREMENT has been
+  suggested above (inserted between SERIALIZE_REQUESTS and PARALLEL).
+  We could also imagine a thread model more like the one VDDK really
+  wants which calls open and close from the main thread.
+
+  For backwards compatibility the old numbers 0-3 can be transparently
+  mapped to the new values.
