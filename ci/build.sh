@@ -155,21 +155,21 @@ $CONFIG_ARGS
 
     run_checks check
 
-    if test "$CHECK_VALGRIND" = "force"
-    then
-        run_checks check-valgrind
-    fi
+    # if test "$CHECK_VALGRIND" = "force"
+    # then
+    #     run_checks check-valgrind
+    # fi
 
-    if test "$DIST" != "skip"
-    then
-        $MAKE dist
-        $MAKE maintainer-check-extra-dist
-    fi
+    # if test "$DIST" != "skip"
+    # then
+    #     $MAKE dist
+    #     $MAKE maintainer-check-extra-dist
+    # fi
 
-    if test "$DISTCHECK" = "force"
-    then
-        $MAKE distcheck
-    fi
+    # if test "$DISTCHECK" = "force"
+    # then
+    #     $MAKE distcheck
+    # fi
 }
 
 main "$@"
