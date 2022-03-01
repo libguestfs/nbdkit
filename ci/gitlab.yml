@@ -81,11 +81,11 @@ x86_64-alpine-edge-container:
     NAME: alpine-edge
 
 
-x86_64-centos-8-container:
+x86_64-almalinux-8-container:
   extends: .container_job
   allow_failure: false
   variables:
-    NAME: centos-8
+    NAME: almalinux-8
 
 
 x86_64-centos-stream-8-container:
@@ -197,22 +197,22 @@ x86_64-alpine-edge:
     GOLANG: skip
 
 
-x86_64-centos-8:
+x86_64-almalinux-8:
   extends: .native_build_job
   needs:
-    - x86_64-centos-8-container
+    - x86_64-almalinux-8-container
   allow_failure: false
   variables:
-    NAME: centos-8
+    NAME: almalinux-8
 
 
-x86_64-centos-8-clang:
+x86_64-almalinux-8-clang:
   extends: .native_build_job
   needs:
-    - x86_64-centos-8-container
+    - x86_64-almalinux-8-container
   allow_failure: false
   variables:
-    NAME: centos-8
+    NAME: almalinux-8
     CC: clang
 
 
