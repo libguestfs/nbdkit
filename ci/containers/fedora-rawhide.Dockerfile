@@ -6,7 +6,9 @@
 
 FROM registry.fedoraproject.org/fedora:rawhide
 
-RUN dnf config-manager -y --add-repo=http://dl.fedoraproject.org/pub/alt/rawhide-kernel-nodebug/fedora-rawhide-kernel-nodebug.repo && \
+RUN dnf update -y && \
+    dnf install 'dnf-command(config-manager)' -y && \
+    dnf config-manager -y --add-repo=http://dl.fedoraproject.org/pub/alt/rawhide-kernel-nodebug/fedora-rawhide-kernel-nodebug.repo && \
     dnf update -y --nogpgcheck fedora-gpg-keys && \
     dnf install -y nosync && \
     echo -e '#!/bin/sh\n\
