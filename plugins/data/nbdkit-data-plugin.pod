@@ -266,7 +266,7 @@ pattern in groups of 4 bytes:
 
  nbdkit data ' <( i=0
                   while :; do
-                      printf "%04d" $((i++))
+                      printf "%04d" $i; i=$((i+1))
                   done )[:32768] '
 
 The script may contain C<(> and C<)> characters, but they must be in
@@ -278,6 +278,9 @@ Scripts must be idempotent, producing the same output each time they
 are run.  This is because optimizations might change the order of
 evaluation or number of times the script is called and you could get
 different output in a future version of nbdkit.
+
+Note that the script is passed to F</bin/sh>.  On some platforms like
+Debian this might not be a full-featured shell.
 
 =item B<">STRINGB<">
 
