@@ -96,6 +96,13 @@ main() {
 --with-ext2
 "
 
+    if test "$PERL" = "skip"
+    then
+        CONFIG_ARGS="$CONFIG_ARGS --disable-perl"
+    else
+        CONFIG_ARGS="$CONFIG_ARGS --enable-perl"
+    fi
+
     if test "$GOLANG" = "skip"
     then
         CONFIG_ARGS="$CONFIG_ARGS --disable-golang"
@@ -115,7 +122,6 @@ main() {
             CONFIG_ARGS="\
 $CONFIG_ARGS
 --disable-ocaml
---disable-perl
 --disable-vddk
 "
             ;;
@@ -123,7 +129,6 @@ $CONFIG_ARGS
             CONFIG_ARGS="\
 $CONFIG_ARGS
 --enable-ocaml
---enable-perl
 --enable-vddk
 "
             ;;

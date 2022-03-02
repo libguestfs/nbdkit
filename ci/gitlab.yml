@@ -214,6 +214,7 @@ x86_64-almalinux-8-clang:
   variables:
     NAME: almalinux-8
     CC: clang
+    PERL: skip
 
 
 x86_64-centos-stream-8:
@@ -288,6 +289,7 @@ x86_64-fedora-rawhide-clang:
   variables:
     NAME: fedora-rawhide
     CC: clang
+    PERL: skip
 
 
 x86_64-opensuse-leap-152:
@@ -328,6 +330,7 @@ mingw32-fedora-35:
   variables:
     NAME: fedora-35
     CROSS: mingw32
+    PERL: skip
     RUST: skip
     GOLANG: skip
 
@@ -340,6 +343,7 @@ mingw64-fedora-35:
   variables:
     NAME: fedora-35
     CROSS: mingw64
+    PERL: skip
     RUST: skip
     GOLANG: skip
 
