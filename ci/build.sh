@@ -111,15 +111,7 @@ main() {
     fi
 
     case $CROSS in
-        mingw64)
-            CONFIG_ARGS="\
-$CONFIG_ARGS
---disable-ocaml
---disable-perl
---disable-vddk
-"
-            ;;
-        mingw32)
+        mingw32|mingw64)
             CONFIG_ARGS="\
 $CONFIG_ARGS
 --disable-ocaml
