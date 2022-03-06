@@ -8,6 +8,15 @@ gitlab:
     check-dco: false
 
 targets:
+  almalinux-8:
+    jobs:
+      - arch: x86_64
+
+      - arch: x86_64
+        suffix: -clang
+        variables:
+          CC: clang
+
   alpine-314:
     jobs:
       - arch: x86_64
@@ -21,15 +30,6 @@ targets:
         variables:
           # cgo does not play well with musl: https://github.com/golang/go/issues/13492
           GOLANG: skip
-
-  centos-8:
-    jobs:
-      - arch: x86_64
-
-      - arch: x86_64
-        suffix: -clang
-        variables:
-          CC: clang
 
   centos-stream-8: x86_64
 
