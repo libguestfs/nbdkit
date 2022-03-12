@@ -40,9 +40,7 @@
 #include <nbdkit-plugin.h>
 
 #include "utils.h"
-#include "vector.h"
-
-DEFINE_VECTOR_TYPE(environ_t, char *);
+#include "string-vector.h"
 
 /* Copy an environ.  Also this allows you to add (key, value) pairs to
  * the environ through the varargs NULL-terminated list.  Returns NULL
@@ -51,7 +49,7 @@ DEFINE_VECTOR_TYPE(environ_t, char *);
 char **
 copy_environ (char **env, ...)
 {
-  environ_t ret = empty_vector;
+  string_vector ret = empty_vector;
   size_t i, len;
   char *s;
   va_list argp;
@@ -64,7 +62,7 @@ copy_environ (char **env, ...)
       nbdkit_error ("strdup: %m");
       goto error;
     }
-    if (environ_t_append (&ret, s) == -1) {
+    if (string_vector_append (&ret, s) == -1) {
       nbdkit_error ("realloc: %m");
       goto error;
     }
@@ -92,7 +90,7 @@ copy_environ (char **env, ...)
     }
 
     /* Else, append a new key. */
-    if (environ_t_append (&ret, s) == -1) {
+    if (string_vector_append (&ret, s) == -1) {
       nbdkit_error ("realloc: %m");
       va_end (argp);
       free (s);
@@ -104,7 +102,7 @@ copy_environ (char **env, ...)
   va_end (argp);
 
   /* Append a NULL pointer. */
-  if (environ_t_append (&ret, NULL) == -1) {
+  if (string_vector_append (&ret, NULL) == -1) {
     nbdkit_error ("realloc: %m");
     goto error;
   }
@@ -113,7 +111,7 @@ copy_environ (char **env, ...)
   return ret.ptr;
 
  error:
-  environ_t_iter (&ret, (void *) free);
+  string_vector_iter (&ret, (void *) free);
   free (ret.ptr);
   return NULL;
 }

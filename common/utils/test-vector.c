@@ -43,14 +43,15 @@
 #include <assert.h>
 
 #include "bench.h"
+#include "const-string-vector.h"
 #include "nbdkit-string.h"
+#include "string-vector.h"
 #include "vector.h"
 
 #define APPENDS 1000000
 
 DEFINE_VECTOR_TYPE(int64_vector, int64_t);
 DEFINE_VECTOR_TYPE(uint32_vector, uint32_t);
-DEFINE_VECTOR_TYPE(string_vector, char *);
 
 static int
 compare (const int64_t *a, const int64_t *b)
@@ -92,37 +93,6 @@ test_int64_vector (void)
 }
 
 static void
-test_string_vector (void)
-{
-  string_vector v = empty_vector;
-  size_t i;
-  int r;
-
-  for (i = 0; i < 10; ++i) {
-    char *s;
-
-    r = asprintf (&s, "number %zu", i);
-    assert (r >= 0);
-    r = string_vector_append (&v, s);
-    assert (r == 0);
-  }
-  /* NULL-terminate the strings. */
-  r = string_vector_append (&v, NULL);
-  assert (r == 0);
-
-  /* Now print them. */
-  for (i = 0; v.ptr[i] != NULL; ++i)
-    printf ("%s\n", v.ptr[i]);
-  assert (i == 10);
-
-  /* And free them.  We can use the generated iter function here
-   * even though it calls free on the final NULL pointer.
-   */
-  string_vector_iter (&v, (void*)free);
-  free (v.ptr);
-}
-
-static void
 test_string_concat (string *s, const char *append)
 {
   const size_t len = strlen (append);
@@ -156,6 +126,57 @@ test_string (void)
   assert (strcmp (s.ptr, "hello world") == 0);
   assert (s.len == 12); /* hello + space + world + \0 */
   free (s.ptr);
+}
+
+static void
+test_string_vector (void)
+{
+  CLEANUP_FREE_STRING_VECTOR string_vector v = empty_vector;
+  size_t i;
+  int r;
+
+  for (i = 0; i < 10; ++i) {
+    char *s;
+
+    r = asprintf (&s, "number %zu", i);
+    assert (r >= 0);
+    r = string_vector_append (&v, s);
+    assert (r == 0);
+  }
+  /* NULL-terminate the strings. */
+  r = string_vector_append (&v, NULL);
+  assert (r == 0);
+
+  /* Now print them. */
+  for (i = 0; v.ptr[i] != NULL; ++i)
+    printf ("%s\n", v.ptr[i]);
+  assert (i == 10);
+}
+
+static void
+test_const_string_vector (void)
+{
+  CLEANUP_FREE_CONST_STRING_VECTOR const_string_vector v = empty_vector;
+  size_t i;
+  int r;
+
+  r = const_string_vector_append (&v, "abc");
+  assert (r >= 0);
+  r = const_string_vector_append (&v, "def");
+  assert (r >= 0);
+  r = const_string_vector_append (&v, "ghi");
+  assert (r >= 0);
+  r = const_string_vector_append (&v, "jkl");
+  assert (r >= 0);
+
+  /* NULL-terminate the strings. */
+  r = const_string_vector_append (&v, NULL);
+  assert (r == 0);
+
+  /* Now print them. */
+  for (i = 0; v.ptr[i] != NULL; ++i)
+    printf ("%s\n", v.ptr[i]);
+  assert (i == 4);
 }
 
 /* Test size_t overflow. */
@@ -227,8 +248,9 @@ main (int argc, char *argv[])
   if (!bench) {
     /* Do normal tests. */
     test_int64_vector ();
-    test_string_vector ();
     test_string ();
+    test_string_vector ();
+    test_const_string_vector ();
     test_overflow ();
   }
 

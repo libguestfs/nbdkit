@@ -39,10 +39,12 @@ libutils_la_SOURCES = \
 	cleanup.c \
 	cleanup-nbdkit.c \
 	cleanup.h \
+	const-string-vector.h \
 	environ.c \
 	full-rw.c \
 	quote.c \
 	nbdkit-string.h \
+	string-vector.h \
 	utils.c \
 	utils.h \
 	vector.c \
