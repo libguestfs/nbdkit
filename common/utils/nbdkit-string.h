@@ -32,12 +32,12 @@
 
 /* Extensible string.  The implementation uses vector.h. */
 
-#ifndef NBDKIT_STRING_VECTOR_H
-#define NBDKIT_STRING_VECTOR_H
+#ifndef NBDKIT_STRING_H
+#define NBDKIT_STRING_H
 
 #include "vector.h"
 
 DEFINE_VECTOR_TYPE(string, char);
 #define CLEANUP_FREE_STRING __attribute__((cleanup (string_reset)))
 
-#endif /* NBDKIT_STRING_VECTOR_H */
+#endif /* NBDKIT_STRING_H */
