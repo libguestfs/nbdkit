@@ -45,25 +45,13 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "const-string-vector.h"
 #include "nbdkit-string.h"
-#include "vector.h"
 
 #include "vddk.h"
 
 bool noreexec = false;          /* hidden noreexec option */
 char *reexeced;                 /* orig LD_LIBRARY_PATH on reexec */
-
-/* List of strings. */
-DEFINE_VECTOR_TYPE(string_vector, char *);
-
-#define CLEANUP_FREE_STRING_VECTOR \
-  __attribute__((cleanup (cleanup_free_string_vector)))
-
-static void
-cleanup_free_string_vector (string_vector *v)
-{
-  free (v->ptr);
-}
 
 /* Perform a re-exec that temporarily modifies LD_LIBRARY_PATH.  Does
  * not return on success.  Some failures such as /proc/self/... not
@@ -78,7 +66,7 @@ perform_reexec (const char *env, const char *prepend)
   static const char exe_file[] = "/proc/self/exe";
   CLEANUP_FREE char *library = NULL;
   CLEANUP_FREE_STRING string buf = empty_vector;
-  CLEANUP_FREE_STRING_VECTOR string_vector argv = empty_vector;
+  CLEANUP_FREE_CONST_STRING_VECTOR const_string_vector argv = empty_vector;
   int fd;
   size_t len;
   bool seen_password = false;
@@ -125,7 +113,7 @@ perform_reexec (const char *env, const char *prepend)
     if (strncmp (arg, "password=", 9) == 0)
       seen_password = true;
     else {
-      if (string_vector_append (&argv, arg) == -1) {
+      if (const_string_vector_append (&argv, arg) == -1) {
       argv_realloc_fail:
         nbdkit_error ("argv: realloc: %m");
         exit (EXIT_FAILURE);
@@ -163,7 +151,7 @@ perform_reexec (const char *env, const char *prepend)
       nbdkit_error ("asprintf: %m");
       exit (EXIT_FAILURE);
     }
-    if (string_vector_append (&argv, password_fd) == -1)
+    if (const_string_vector_append (&argv, password_fd) == -1)
       goto argv_realloc_fail;
   }
 
@@ -172,9 +160,9 @@ perform_reexec (const char *env, const char *prepend)
   nbdkit_debug ("adding reexeced_=%s", env);
   if (asprintf (&reexeced, "reexeced_=%s", env) == -1)
     goto argv_realloc_fail;
-  if (string_vector_append (&argv, reexeced) == -1)
+  if (const_string_vector_append (&argv, reexeced) == -1)
     goto argv_realloc_fail;
-  if (string_vector_append (&argv, NULL) == -1)
+  if (const_string_vector_append (&argv, NULL) == -1)
     goto argv_realloc_fail;
 
   if (env[0]) {
@@ -190,7 +178,7 @@ perform_reexec (const char *env, const char *prepend)
 
   nbdkit_debug ("re-executing with updated LD_LIBRARY_PATH=%s", library);
   fflush (NULL);
-  execvp (exe_file, argv.ptr);
+  execvp (exe_file, (char **) argv.ptr);
   nbdkit_debug ("execvp: %s: %m", exe_file);
   /* Not an error. */
 }

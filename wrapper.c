@@ -71,10 +71,10 @@
 #include <limits.h>
 #include <time.h>
 
+#include "const-string-vector.h"
 #include "options.h"
 #include "windows-compat.h"
 #include "utils.h"
-#include "vector.h"
 
 /* Plugins written in scripting languages need to be rewritten on the
  * command line in a different way from plugins written in C.  So we
@@ -96,13 +96,12 @@ is_script_plugin (const char *name, const char **language)
 }
 
 /* Construct an array of parameters passed through to real nbdkit. */
-DEFINE_VECTOR_TYPE(string_vector, const char *)
-static string_vector cmd;
+static const_string_vector cmd;
 
 static void
 passthru (const char *s)
 {
-  if (string_vector_append (&cmd, s) == -1)
+  if (const_string_vector_append (&cmd, s) == -1)
     abort ();
 }
 

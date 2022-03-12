@@ -57,10 +57,8 @@
 #include "ascii-string.h"
 #include "byte-swapping.h"
 #include "cleanup.h"
+#include "const-string-vector.h"
 #include "utils.h"
-#include "vector.h"
-
-DEFINE_VECTOR_TYPE(string_vector, const char *);
 
 #if !defined AF_VSOCK || !LIBNBD_HAVE_NBD_CONNECT_VSOCK
 #define USE_VSOCK 0
@@ -104,7 +102,7 @@ static uint32_t cid;
 static uint32_t vport;
 
 /* Connect to a command. */
-static string_vector command = empty_vector;
+static const_string_vector command = empty_vector;
 
 /* Connect to a socket file descriptor. */
 static int socket_fd = -1;
@@ -169,7 +167,7 @@ nbdplug_config (const char *key, const char *value)
   else if (strcmp (key, "uri") == 0)
     uri = value;
   else if (strcmp (key, "command") == 0 || strcmp (key, "arg") == 0) {
-    if (string_vector_append (&command, value) == -1) {
+    if (const_string_vector_append (&command, value) == -1) {
       nbdkit_error ("realloc: %m");
       return -1;
     }
@@ -305,7 +303,7 @@ nbdplug_config_complete (void)
   }
   else if (command.len > 0) {
     /* Add NULL sentinel to the command. */
-    if (string_vector_append (&command, NULL) == -1) {
+    if (const_string_vector_append (&command, NULL) == -1) {
       nbdkit_error ("realloc: %m");
       return -1;
     }

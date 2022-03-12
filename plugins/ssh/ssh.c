@@ -50,10 +50,8 @@
 
 #include <nbdkit-plugin.h>
 
+#include "const-string-vector.h"
 #include "minmax.h"
-#include "vector.h"
-
-DEFINE_VECTOR_TYPE(const_string_vector, const char *);
 
 static const char *host = NULL;
 static const char *path = NULL;

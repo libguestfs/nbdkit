@@ -50,11 +50,10 @@
 #include "cleanup.h"
 #include "pread.h"
 #include "pwrite.h"
+#include "string-vector.h"
 #include "windows-compat.h"
-#include "vector.h"
 
 /* The files. */
-DEFINE_VECTOR_TYPE(string_vector, char *);
 static string_vector filenames = empty_vector;
 
 #ifdef SEEK_HOLE

@@ -48,6 +48,7 @@
 #include "nbdkit-filter.h"
 #include "cleanup.h"
 #include "nbd-protocol.h"
+#include "string-vector.h"
 #include "unix-path-max.h"
 #include "vector.h"
 #include "windows-compat.h"
@@ -231,7 +232,6 @@ struct context {
   int can_cache;
 };
 
-DEFINE_VECTOR_TYPE(string_vector, char *);
 struct connection {
   pthread_mutex_t request_lock;
   pthread_mutex_t read_lock;

@@ -42,11 +42,10 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
+#include "string-vector.h"
 #include "utils.h"
-#include "vector.h"
 
 /* List of directories parsed from the command line. */
-DEFINE_VECTOR_TYPE(string_vector, char *);
 static string_vector dirs = empty_vector;
 
 /* xorriso or genisoimage or mkisofs program, picked at compile time,
