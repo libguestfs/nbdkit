@@ -58,8 +58,8 @@ static const char *extra_cflags;
 
 /* List of parameters for the subplugin. */
 struct key_value { const char *key, *value; };
-DEFINE_VECTOR_TYPE(string_vector, struct key_value);
-static string_vector params = empty_vector;
+DEFINE_VECTOR_TYPE(params_vector, struct key_value);
+static params_vector params = empty_vector;
 
 /* The subplugin. */
 static void *dl;
@@ -168,7 +168,7 @@ cc_config (const char *key, const char *value)
       /* Anything else is saved for the subplugin. */
       struct key_value kv = { .key = key, .value = value };
 
-      if (string_vector_append (&params, kv) == -1) {
+      if (params_vector_append (&params, kv) == -1) {
         nbdkit_error ("realloc: %m");
         return -1;
       }
