@@ -16,6 +16,7 @@ targets:
         suffix: -clang
         variables:
           CC: clang
+          PERL: skip
 
   alpine-314:
     jobs:
@@ -52,11 +53,13 @@ targets:
 
       - arch: mingw32
         variables:
+          PERL: skip
           RUST: skip
           GOLANG: skip
 
       - arch: mingw64
         variables:
+          PERL: skip
           RUST: skip
           GOLANG: skip
 
@@ -68,6 +71,7 @@ targets:
         suffix: -clang
         variables:
           CC: clang
+          PERL: skip
 
   freebsd-12:
     jobs:
