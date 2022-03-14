@@ -44,6 +44,7 @@ RUN apk update && \
         ocaml \
         openssh-client \
         perl \
+        perl-dev \
         pkgconf \
         podman \
         py3-flake8 \
