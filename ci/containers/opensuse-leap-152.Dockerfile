@@ -28,6 +28,7 @@ RUN zypper update -y && \
            gzip \
            iproute2 \
            jq \
+           kernel-default \
            kernel-headers \
            libcom_err-devel \
            libcurl-devel \
@@ -47,6 +48,7 @@ RUN zypper update -y && \
            perl \
            perl-Pod-Simple \
            perl-base \
+           pkgconfig \
            podman \
            python3 \
            python3-boto3 \

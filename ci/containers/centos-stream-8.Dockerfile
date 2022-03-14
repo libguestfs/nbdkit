@@ -35,6 +35,7 @@ RUN dnf update -y && \
         gzip \
         iproute \
         jq \
+        kernel \
         kernel-headers \
         libcom_err-devel \
         libcurl-devel \
@@ -55,6 +56,7 @@ RUN dnf update -y && \
         perl-Pod-Simple \
         perl-devel \
         perl-podlators \
+        pkgconfig \
         podman \
         python3 \
         python3-boto3 \

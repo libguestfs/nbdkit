@@ -45,6 +45,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             libtorrent-dev \
             libvirt-dev \
             libzstd-dev \
+            linux-image-amd64 \
             linux-libc-dev \
             locales \
             lua5.3 \
@@ -54,6 +55,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
             openssh-client \
             perl \
             perl-base \
+            pkgconf \
             python3 \
             python3-boto3 \
             python3-dev \

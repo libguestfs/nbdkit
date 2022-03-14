@@ -45,6 +45,7 @@ exec "$@"' > /usr/bin/nosync && \
         gzip \
         iproute \
         jq \
+        kernel \
         kernel-headers \
         libcom_err-devel \
         libcurl-devel \
@@ -65,6 +66,7 @@ exec "$@"' > /usr/bin/nosync && \
         perl-base \
         perl-devel \
         perl-podlators \
+        pkgconfig \
         podman \
         python3 \
         python3-boto3 \

@@ -10,8 +10,7 @@
   stage: containers
   needs: []
   services:
-    - name: registry.gitlab.com/libvirt/libvirt-ci/docker-dind:master
-      alias: docker
+    - docker:dind
   before_script:
     - export TAG="$CI_REGISTRY_IMAGE/ci-$NAME:latest"
     - export COMMON_TAG="$CI_REGISTRY/nbdkit/nbdkit/ci-$NAME:latest"
@@ -67,6 +66,13 @@
 
 # Native container jobs
 
+x86_64-almalinux-8-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: almalinux-8
+
+
 x86_64-alpine-314-container:
   extends: .container_job
   allow_failure: false
@@ -79,13 +85,6 @@ x86_64-alpine-edge-container:
   allow_failure: false
   variables:
     NAME: alpine-edge
-
-
-x86_64-almalinux-8-container:
-  extends: .container_job
-  allow_failure: false
-  variables:
-    NAME: almalinux-8
 
 
 x86_64-centos-stream-8-container:
@@ -170,26 +169,6 @@ mingw64-fedora-35-container:
 
 # Native build jobs
 
-x86_64-alpine-314:
-  extends: .native_build_job
-  needs:
-    - x86_64-alpine-314-container
-  allow_failure: false
-  variables:
-    NAME: alpine-314
-    GOLANG: skip
-
-
-x86_64-alpine-edge:
-  extends: .native_build_job
-  needs:
-    - x86_64-alpine-edge-container
-  allow_failure: false
-  variables:
-    NAME: alpine-edge
-    GOLANG: skip
-
-
 x86_64-almalinux-8:
   extends: .native_build_job
   needs:
@@ -205,9 +184,29 @@ x86_64-almalinux-8-clang:
     - x86_64-almalinux-8-container
   allow_failure: false
   variables:
-    NAME: almalinux-8
     CC: clang
+    NAME: almalinux-8
     PERL: skip
+
+
+x86_64-alpine-314:
+  extends: .native_build_job
+  needs:
+    - x86_64-alpine-314-container
+  allow_failure: false
+  variables:
+    GOLANG: skip
+    NAME: alpine-314
+
+
+x86_64-alpine-edge:
+  extends: .native_build_job
+  needs:
+    - x86_64-alpine-edge-container
+  allow_failure: false
+  variables:
+    GOLANG: skip
+    NAME: alpine-edge
 
 
 x86_64-centos-stream-8:
@@ -271,8 +270,8 @@ x86_64-fedora-rawhide-clang:
     - x86_64-fedora-rawhide-container
   allow_failure: false
   variables:
-    NAME: fedora-rawhide
     CC: clang
+    NAME: fedora-rawhide
     PERL: skip
 
 
@@ -312,11 +311,11 @@ mingw32-fedora-35:
     - mingw32-fedora-35-container
   allow_failure: false
   variables:
-    NAME: fedora-35
     CROSS: mingw32
+    GOLANG: skip
+    NAME: fedora-35
     PERL: skip
     RUST: skip
-    GOLANG: skip
 
 
 mingw64-fedora-35:
@@ -325,11 +324,11 @@ mingw64-fedora-35:
     - mingw64-fedora-35-container
   allow_failure: false
   variables:
-    NAME: fedora-35
     CROSS: mingw64
+    GOLANG: skip
+    NAME: fedora-35
     PERL: skip
     RUST: skip
-    GOLANG: skip
 
 
 # Native cirrus build jobs
@@ -339,13 +338,13 @@ x86_64-freebsd-12:
   needs: []
   allow_failure: true
   variables:
-    NAME: freebsd-12
-    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
-    CIRRUS_VM_IMAGE_SELECTOR: image_family
     CIRRUS_VM_IMAGE_NAME: freebsd-12-2
+    CIRRUS_VM_IMAGE_SELECTOR: image_family
+    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
+    INSTALL_COMMAND: pkg install -y
+    NAME: freebsd-12
     UPDATE_COMMAND: pkg update
     UPGRADE_COMMAND: pkg upgrade -y
-    INSTALL_COMMAND: pkg install -y
 
 
 x86_64-freebsd-13:
@@ -353,13 +352,13 @@ x86_64-freebsd-13:
   needs: []
   allow_failure: true
   variables:
-    NAME: freebsd-13
-    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
-    CIRRUS_VM_IMAGE_SELECTOR: image_family
     CIRRUS_VM_IMAGE_NAME: freebsd-13-0
+    CIRRUS_VM_IMAGE_SELECTOR: image_family
+    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
+    INSTALL_COMMAND: pkg install -y
+    NAME: freebsd-13
     UPDATE_COMMAND: pkg update
     UPGRADE_COMMAND: pkg upgrade -y
-    INSTALL_COMMAND: pkg install -y
 
 
 x86_64-freebsd-current:
@@ -367,13 +366,13 @@ x86_64-freebsd-current:
   needs: []
   allow_failure: true
   variables:
-    NAME: freebsd-current
-    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
-    CIRRUS_VM_IMAGE_SELECTOR: image_family
     CIRRUS_VM_IMAGE_NAME: freebsd-13-0-snap
+    CIRRUS_VM_IMAGE_SELECTOR: image_family
+    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
+    INSTALL_COMMAND: pkg install -y
+    NAME: freebsd-current
     UPDATE_COMMAND: pkg update
     UPGRADE_COMMAND: pkg upgrade -y
-    INSTALL_COMMAND: pkg install -y
 
 
 x86_64-macos-11:
@@ -381,12 +380,12 @@ x86_64-macos-11:
   needs: []
   allow_failure: true
   variables:
-    NAME: macos-11
-    CIRRUS_VM_INSTANCE_TYPE: osx_instance
-    CIRRUS_VM_IMAGE_SELECTOR: image
     CIRRUS_VM_IMAGE_NAME: big-sur-base
-    UPDATE_COMMAND: brew update
-    UPGRADE_COMMAND: brew upgrade
+    CIRRUS_VM_IMAGE_SELECTOR: image
+    CIRRUS_VM_INSTANCE_TYPE: osx_instance
     INSTALL_COMMAND: brew install
+    NAME: macos-11
     PATH_EXTRA: /usr/local/opt/ccache/libexec:/usr/local/opt/gettext/bin:/usr/local/opt/libpcap/bin:/usr/local/opt/libxslt/bin:/usr/local/opt/rpcgen/bin
     PKG_CONFIG_PATH: /usr/local/opt/curl/lib/pkgconfig:/usr/local/opt/libpcap/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/ncurses/lib/pkgconfig:/usr/local/opt/readline/lib/pkgconfig
+    UPDATE_COMMAND: brew update
+    UPGRADE_COMMAND: brew upgrade

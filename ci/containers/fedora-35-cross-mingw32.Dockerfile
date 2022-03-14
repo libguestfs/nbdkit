@@ -36,7 +36,10 @@ exec "$@"' > /usr/bin/nosync && \
         gzip \
         iproute \
         jq \
+        kernel \
         kernel-headers \
+        libcom_err-devel \
+        libguestfs-devel \
         libnbd-devel \
         libtool \
         libtorrent-devel \
@@ -77,7 +80,8 @@ RUN nosync dnf install -y \
         mingw32-gcc-c++ \
         mingw32-gnutls \
         mingw32-headers \
-        mingw32-libvirt && \
+        mingw32-libvirt \
+        mingw32-pkg-config && \
     nosync dnf clean all -y && \
     rpm -qa | sort > /packages.txt && \
     mkdir -p /usr/libexec/ccache-wrappers && \

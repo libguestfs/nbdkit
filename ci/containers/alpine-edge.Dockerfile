@@ -37,13 +37,14 @@ RUN apk update && \
         libtorrent \
         libvirt-dev \
         linux-headers \
+        linux-virt \
         lua \
         make \
         musl-utils \
         ocaml \
         openssh-client \
         perl \
-        perl-dev \
+        pkgconf \
         podman \
         py3-flake8 \
         py3-pip \
@@ -69,8 +70,7 @@ RUN apk update && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/g++ && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/gcc
 
-RUN pip3 install \
-         boto3
+RUN pip3 install boto3
 
 ENV LANG "en_US.UTF-8"
 ENV MAKE "/usr/bin/make"
