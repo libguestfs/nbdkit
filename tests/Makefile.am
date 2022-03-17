@@ -231,6 +231,7 @@ TESTS += \
 	test-random-sock.sh \
 	test-tls.sh \
 	test-tls-psk.sh \
+	test-not-linked-to-libssl.sh \
 	test-ipv4-lo.sh \
 	test-ipv6-lo.sh \
 	test-foreground.sh \
@@ -267,6 +268,7 @@ EXTRA_DIST += \
 	test-ipv6-lo.sh \
 	test-long-name.sh \
 	test-nbdkit-backend-debug.sh \
+	test-not-linked-to-libssl.sh \
 	test-probe-filter.sh \
 	test-probe-plugin.sh \
 	test-random-sock.sh \
