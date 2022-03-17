@@ -52,4 +52,4 @@ cleanup_fn rm -f $out
 nbdkit -U - vddk libdir=.libs /dev/null --run 'nbdinfo $nbd' > $out
 cat $out
 
-grep 'export-size: 524288 ' $out
+grep -E 'export-size: 524288\b' $out

@@ -54,7 +54,7 @@ nbdkit -U - eval \
        --run 'nbdinfo $nbd; sleep 10' > eval.out
 
 cat eval.out
-grep ' 67108864 ' eval.out
+grep -E ' 67108864\b' eval.out
 
 # Check "missing" was called at least once.
 cat eval.missing

@@ -40,6 +40,10 @@ requires ip -V
 requires nbdinfo --version
 requires_ipv6_loopback
 
+# nbdinfo in RHEL 8 lacks a fix to libxml for parsing
+# "nbd://[::1]:$port" URIs (commit 17df436cea5 added in 1.7.7).
+requires_libnbd_version 1.8
+
 rm -f ip-filter.pid
 cleanup_fn rm -f ip-filter.pid
 
