@@ -37,7 +37,6 @@ set -e
 requires_plugin sh
 requires_filter cacheextents
 requires grep --version
-requires qemu-img --version
 requires qemu-io --version
 requires dd iflag=count_bytes </dev/null
 
