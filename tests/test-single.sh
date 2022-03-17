@@ -36,7 +36,7 @@ set -x
 
 requires_single_mode
 requires socat -h
-requires qemu-img --version
+requires nbdinfo --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock single.disk"
@@ -67,4 +67,4 @@ if ! test -S $sock; then
     exit 1
 fi
 
-qemu-img info nbd:unix:$sock
+nbdinfo "nbd+unix:///?socket=$sock"

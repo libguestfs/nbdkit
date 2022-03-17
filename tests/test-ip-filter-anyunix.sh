@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires qemu-img --version
+requires nbdinfo --version
 
 # Not supported on Windows.
 if is_windows; then
@@ -45,11 +45,11 @@ if is_windows; then
 fi
 
 nbdkit -U - -v -D ip.rules=1 --filter=ip null allow=anyunix deny=all \
-       --run 'qemu-img info $nbd'
+       --run 'nbdinfo $nbd'
 
 # This is expected to fail.
 if nbdkit -U - -v -D ip.rules=1 --filter=ip null deny=anyunix \
-          --run 'qemu-img info $nbd'; then
+          --run 'nbdinfo $nbd'; then
     echo "$0: expected test to fail"
     exit 1
 fi

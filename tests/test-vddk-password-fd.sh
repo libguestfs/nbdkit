@@ -46,7 +46,7 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-requires qemu-img --version
+requires nbdinfo --version
 
 f=test-vddk-password-fd.file
 out=test-vddk-password-fd.out
@@ -63,7 +63,7 @@ nbdkit -fv -U - vddk \
        server=noserver.example.com thumbprint=ab \
        vm=novm /nofile \
        user=root password=-3 \
-       --run 'qemu-img info $nbd' \
+       --run 'nbdinfo $nbd' \
        >&$out ||:
 exec 3<&-
 cat $out
@@ -78,7 +78,7 @@ nbdkit -fv -U - vddk \
        server=noserver.example.com thumbprint=ab \
        vm=novm /nofile \
        user=root password=-3 \
-       --run 'qemu-img info $nbd' \
+       --run 'nbdinfo $nbd' \
        >&$out ||:
 exec 3<&-
 cat $out

@@ -35,26 +35,26 @@ set -e
 set -x
 
 requires_plugin eval
-requires qemu-img --version
+requires nbdinfo --version
 requires dd iflag=count_bytes </dev/null
 
 files="eval.out eval.missing"
 rm -f $files
 cleanup_fn rm -f $files
 
-# The sleep after running qemu-img is to try and ensure that the close
+# The sleep after running nbdinfo is to try and ensure that the close
 # method really runs.  Otherwise there is a race where the connection
-# is dropped by qemu-img, the --run command exits, a signal is sent to
+# is dropped by nbdinfo, the --run command exits, a signal is sent to
 # nbdkit, and nbdkit shuts down before the .close callback is called.
 nbdkit -U - eval \
        get_size='echo 64M' \
        pread='dd if=/dev/zero count=$3 iflag=count_bytes' \
        missing='echo "in missing: $@" >> eval.missing; exit 2' \
        unload='' \
-       --run 'qemu-img info $nbd; sleep 10' > eval.out
+       --run 'nbdinfo $nbd; sleep 10' > eval.out
 
 cat eval.out
-grep '67108864 bytes' eval.out
+grep ' 67108864 ' eval.out
 
 # Check "missing" was called at least once.
 cat eval.missing

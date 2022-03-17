@@ -37,7 +37,7 @@ source ./functions.sh
 set -e
 
 requires ip -V
-requires qemu-img --version
+requires nbdinfo --version
 requires_ipv6_loopback
 
 rm -f ip-filter.pid
@@ -50,5 +50,5 @@ start_nbdkit -P ip-filter.pid -p $port --filter=ip null \
              -D ip.rules=1 \
              allow=allipv4,allipv6 deny=all
 
-qemu-img info "nbd:127.0.0.1:$port"
-qemu-img info "nbd:[::1]:$port"
+nbdinfo "nbd://127.0.0.1:$port"
+nbdinfo "nbd://[::1]:$port"

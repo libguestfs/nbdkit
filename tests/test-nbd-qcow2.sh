@@ -36,6 +36,7 @@ set -x
 
 requires test -f disk
 requires guestfish --version
+requires nbdinfo --version
 requires qemu-img --version
 requires qemu-nbd --version
 
@@ -55,7 +56,7 @@ start_nbdkit -P $pid -U $sock \
        nbd command=qemu-nbd arg=-f arg=qcow2 arg="$PWD/$disk" \
        partition=1
 
-qemu-img info "nbd:unix:$sock"
+nbdinfo "nbd+unix:///?socket=$sock"
 
 # See if we can open the disk which should be unpartitioned.
 guestfish -v -x --format=raw -a "nbd://?socket=$sock" -m /dev/sda <<EOF

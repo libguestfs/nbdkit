@@ -38,6 +38,6 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdinfo --version
 
-nbdkit -fv -U - --filter=cow null --run 'qemu-img info $nbd'
+nbdkit -fv -U - --filter=cow null --run 'nbdinfo $nbd'

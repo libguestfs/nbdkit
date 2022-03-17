@@ -43,14 +43,13 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-requires qemu-img --version
+requires nbdinfo --version
 
 out=test-vddk-run.out
 rm -f $out
 cleanup_fn rm -f $out
 
-nbdkit -U - vddk libdir=.libs /dev/null --run 'qemu-img info $nbd' > $out
+nbdkit -U - vddk libdir=.libs /dev/null --run 'nbdinfo $nbd' > $out
 cat $out
 
-grep 'file format: raw' $out
-grep 'virtual size:.*524288 bytes' $out
+grep 'export-size: 524288 ' $out

@@ -38,13 +38,13 @@ set -e
 set -x
 
 requires_run
-requires qemu-img --version
+requires nbdinfo --version
 requires_nbdsh_uri
 
 function do_test_info ()
 {
     nbdkit -U - --filter=offset --filter=truncate pattern size=1024 \
-           "$@" --run 'qemu-img info $nbd'
+           "$@" --run 'nbdinfo $nbd'
 }
 
 function do_test_read512 ()

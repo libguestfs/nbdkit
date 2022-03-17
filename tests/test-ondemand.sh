@@ -36,7 +36,11 @@ set -x
 
 requires_plugin ondemand
 requires guestfish --version
+
+# Note we test both qemu-img info and nbdinfo in order to exercise the
+# lesser-used exportname paths in both tools.
 requires qemu-img --version
+requires nbdinfo --version
 
 dir=$(mktemp -d /tmp/nbdkit-test-dir.XXXXXX)
 cleanup_fn rm -rf $dir
@@ -50,22 +54,26 @@ cleanup_fn rm -f $files
 start_nbdkit -P ondemand.pid -U $sock --log=stderr \
              ondemand dir=$dir size=100M wait=true
 
-# Simply querying an export will create the filesystem.
-qemu-img info nbd:unix:$sock
-qemu-img info nbd:unix:$sock:exportname=test
+# Simply querying an export will create the default and test
+# filesystems.
+nbdinfo "nbd+unix:///?socket=$sock"
+nbdinfo "nbd+unix:///test?socket=$sock"
 
+# Check the filesystems were created.
+ls -l $dir
 test -f $dir/default
 test -f $dir/test
 
 # These should fail because the exportname is invalid.
-if qemu-img info nbd:unix:$sock:exportname=/bad ||
-   qemu-img info nbd:unix:$sock:exportname=.bad ||
-   qemu-img info nbd:unix:$sock:exportname=bad. ||
-   qemu-img info nbd:unix:$sock:exportname=bad:bad
-then
-    echo "$0: expected failure trying to create bad exportname"
-    exit 1
-fi
+for e in /bad .bad bad. bad:bad ; do
+    if nbdinfo "nbd+unix:///$e?socket=$sock" ||
+       qemu-img info "nbd+unix:///$e?socket=$sock" ||
+       qemu-img info nbd:unix:$sock:exportname=$e
+    then
+        echo "$0: expected failure trying to create bad exportname"
+        exit 1
+    fi
+done
 
 # Check the filesystem is persistent.
 guestfish --format=raw -a "nbd://?socket=$sock" -m /dev/sda <<EOF

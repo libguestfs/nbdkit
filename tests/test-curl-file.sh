@@ -36,7 +36,7 @@ set -x
 
 requires test -f disk
 requires test -r /dev/null
-requires qemu-img --version
+requires nbdinfo --version
 
 # Write a dummy cookiefile/jar.
 cookiejar="cookiejar"
@@ -79,5 +79,5 @@ for opt in \
 do
     nbdkit -fv -D curl.verbose=1 -U - \
            curl file:$PWD/disk protocols=file "$opt" \
-           --run 'qemu-img info $nbd'
+           --run 'nbdinfo $nbd'
 done

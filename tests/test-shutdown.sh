@@ -40,7 +40,7 @@ if is_windows; then
     exit 77
 fi
 
-requires qemu-img --version
+requires nbdinfo --version
 requires qemu-io --version
 
 plugin=.libs/test-shutdown-plugin.$SOEXT
@@ -57,7 +57,7 @@ pid=`cat shutdown.pid`
 
 # Reads are fine, nbdkit should still be running afterwards.
 for i in 1 2 3; do
-    qemu-img info "nbd+unix:///?socket=$sock"
+    nbdinfo "nbd+unix:///?socket=$sock"
     sleep 2
     kill -s 0 $pid
 done

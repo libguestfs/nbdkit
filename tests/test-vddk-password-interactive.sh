@@ -47,7 +47,7 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-requires qemu-img --version
+requires nbdinfo --version
 requires expect -v
 
 out=test-vddk-password-interactive.out
@@ -65,7 +65,7 @@ expect -f - <<'EOF'
            server=noserver.example.com thumbprint=ab \
            vm=novm /nofile \
            user=root password=- \
-           --run 'qemu-img info \$nbd' \
+           --run 'nbdinfo \$nbd' \
            2>$env(out)"
   expect "ssword:"
   send "abc\r"

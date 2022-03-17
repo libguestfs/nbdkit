@@ -40,7 +40,7 @@ if is_windows; then
     exit 77
 fi
 
-requires qemu-img --version
+requires nbdinfo --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="exitlast.pid $sock"
@@ -58,7 +58,7 @@ if ! kill -s 0 $pid; then
 fi
 
 # Connect with a client.
-qemu-img info "nbd+unix:///?socket=$sock" || exit 1
+nbdinfo "nbd+unix:///?socket=$sock" || exit 1
 
 # Now nbdkit should exit.  Wait for it to do so.
 for i in {1..60}; do
