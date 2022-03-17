@@ -37,7 +37,6 @@ set -e
 set -x
 
 requires_plugin ondemand
-requires qemu-img --version
 requires nbdsh --version
 
 dir=$(mktemp -d /tmp/nbdkit-test-dir.XXXXXX)
