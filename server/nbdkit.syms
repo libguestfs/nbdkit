@@ -91,6 +91,9 @@
 
     nbdkit_debug_*;
 
+    # For AFL++ to work:
+    __afl_*;
+
   # Everything else is hidden.
   local: *;
 };
