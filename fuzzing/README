@@ -13,6 +13,12 @@ You will need to recompile nbdkit with AFL instrumentation:
   make clean
   make
 
+To use clang instead (recommended with AFL++):
+
+  ./configure CC=/usr/bin/afl-clang-lto CXX=/usr/bin/afl-clang-lto++
+  make clean
+  make
+
 The fuzzing/testcase_dir directory contains some initial testcases
 that AFL can use.
 
@@ -22,12 +28,14 @@ and as many slaves (-S) as you can.
 Master:
 
   mkdir -p fuzzing/sync_dir
+  export AFL_PRELOAD=./plugins/memory/.libs/nbdkit-memory-plugin.so
   afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -m 256 -M fuzz01 \
       ./server/nbdkit -s -t 1 ./plugins/memory/.libs/nbdkit-memory-plugin.so 1M
 
 Slaves:
 
   # replace fuzzNN with fuzz02, fuzz03, etc.
+  export AFL_PRELOAD=./plugins/memory/.libs/nbdkit-memory-plugin.so
   afl-fuzz -i fuzzing/testcase_dir -o fuzzing/sync_dir -m 256 -S fuzzNN \
       ./server/nbdkit -s -t 1 ./plugins/memory/.libs/nbdkit-memory-plugin.so 1M
 
