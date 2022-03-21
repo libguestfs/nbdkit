@@ -48,7 +48,7 @@ lazy_static! {
 
 mock!{
     pub Server {}
-    trait Server {
+    impl Server for Server {
         fn cache(&self, count: u32, offset: u64) -> Result<()>;
         fn can_cache(&self) -> Result<CacheFlags>;
         fn can_extents(&self) -> Result<bool>;
@@ -88,7 +88,7 @@ mock!{
 
 mock! {
     pub NbdkitAddExtent {
-        fn add(extents: *mut c_void, offset: u64, len: u64, ty: u32) -> c_int;
+        pub fn add(extents: *mut c_void, offset: u64, len: u64, ty: u32) -> c_int;
 
     }
 }
