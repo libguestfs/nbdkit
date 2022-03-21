@@ -26,7 +26,7 @@ nix = { version = "0.17.0", optional = true }
 [dev-dependencies]
 errno = "0.2.5"
 lazy_static = "1.2.0"
-mockall = "0.8.2"
+mockall = "0.11.0"
 
 [[example]]
 name = "ramdisk"
