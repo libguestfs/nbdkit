@@ -1239,6 +1239,7 @@ mod t {
     mod peername {
         use super::super::*;
         use lazy_static::lazy_static;
+        use memoffset::offset_of;
         use mockall::{mock, predicate::*};
         use std::sync::Mutex;
 
@@ -1300,7 +1301,7 @@ mod t {
                     }
                     0
                 });
-            assert_eq!("127.0.0.1:1234", peername().unwrap().to_str());
+            assert_eq!("127.0.0.1:1234", peername().unwrap().to_string());
             ctx.checkpoint();
         }
 
@@ -1329,7 +1330,7 @@ mod t {
                     }
                     0
                 });
-            assert_eq!("[::1]:1234", peername().unwrap().to_str());
+            assert_eq!("[::1]:1234", peername().unwrap().to_string());
             ctx.checkpoint();
         }
 
@@ -1350,12 +1351,12 @@ mod t {
                         ptr::copy_nonoverlapping(
                             b"/tmp/foo.sock\0".as_ptr() as *const i8,
                             (*sun).sun_path.as_mut_ptr(), 14);
-                        *sl = mem::size_of::<libc::sockaddr_un>()
-                            as libc::socklen_t;
+                        *sl = offset_of!(libc::sockaddr_un, sun_path)
+                            as libc::socklen_t + 14;
                     }
                     0
                 });
-            assert_eq!("/tmp/foo.sock", peername().unwrap().to_str());
+            assert_eq!("/tmp/foo.sock", peername().unwrap().to_string());
             ctx.checkpoint();
         }
     }
