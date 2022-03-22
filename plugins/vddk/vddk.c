@@ -855,6 +855,7 @@ vddk_block_size (void *handle,
 {
   struct vddk_handle *h = handle;
   VixDiskLibInfo *info;
+  uint32_t logicalSectorSize, physicalSectorSize;
   struct command info_cmd = { .type = INFO, .ptr = &info };
 
   if (send_command_and_wait (h, &info_cmd) == -1)
@@ -862,8 +863,20 @@ vddk_block_size (void *handle,
 
   /* VDDK can only serve whole 512 byte sectors. */
   *minimum = VIXDISKLIB_SECTOR_SIZE;
-  *preferred = MAX (MAX (info->logicalSectorSize, info->physicalSectorSize),
-                    4096);
+
+  /* The logicalSectorSize and physicalSectorSize fields are only
+   * present in VDDK >= 7.  In earlier versions they will not be
+   * initialized and contain random values (beyond the end of the
+   * returned structure).  So compute sector sizes with this in mind.
+   */
+  logicalSectorSize = physicalSectorSize = VIXDISKLIB_SECTOR_SIZE;
+  if (library_version >= 7) {
+    logicalSectorSize = info->logicalSectorSize;
+    physicalSectorSize = info->physicalSectorSize;
+  }
+
+  *preferred = MAX (MAX (logicalSectorSize, physicalSectorSize), 4096);
+
   *maximum = 0xffffffff;
 
   VDDK_CALL_START (VixDiskLib_FreeInfo, "info")
