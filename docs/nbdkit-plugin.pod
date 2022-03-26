@@ -1909,6 +1909,25 @@ plugin directory at compile time by doing:
 
  pkg-config nbdkit --variable=plugindir
 
+=head1 WRITING PLUGINS IN C++
+
+Plugins in C++ work almost exactly like those in C, but the way you
+define the C<nbdkit_plugin> struct is slightly different:
+
+ namespace {
+   nbdkit_plugin create_plugin() {
+     nbdkit_plugin plugin = nbdkit_plugin ();
+     plugin.name     = "myplugin";
+     plugin.open     = myplugin_open;
+     plugin.get_size = myplugin_get_size;
+     plugin.pread    = myplugin_pread;
+     plugin.pwrite   = myplugin_pwrite;
+     return plugin;
+   }
+ }
+ static struct nbdkit_plugin plugin = create_plugin ();
+ NBDKIT_REGISTER_PLUGIN(plugin)
+
 =head1 WRITING PLUGINS IN OTHER PROGRAMMING LANGUAGES
 
 You can also write nbdkit plugins in Go, Lua, OCaml, Perl, Python,

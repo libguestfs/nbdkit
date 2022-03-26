@@ -1159,6 +1159,26 @@ You can also substitute the filterdir variable by doing:
 
 which defines C<$(NBDKIT_FILTERDIR)> in automake-generated Makefiles.
 
+=head1 WRITING FILTERS IN C++
+
+Instead of using C, it is possible to write filters in C++.  However
+for inclusion in upstream nbdkit we would generally prefer filters
+written in C.
+
+Filters in C++ work almost exactly like those in C, but the way you
+define the C<nbdkit_filter> struct is slightly different:
+
+ namespace {
+   nbdkit_filter create_filter() {
+     nbdkit_filter filter = nbdkit_filter ();
+     filter.name   = "myfilter";
+     filter.config = myfilter_config;
+     return filter;
+   }
+ }
+ static struct nbdkit_filter filter = create_filter ();
+ NBDKIT_REGISTER_FILTER(filter)
+
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
