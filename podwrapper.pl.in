@@ -34,6 +34,9 @@
 use warnings;
 use strict;
 
+#use Carp;
+#$SIG{ __DIE__ } = sub { Carp::confess( @_ ) };
+
 use Pod::Usage;
 use Getopt::Long;
 use Pod::Man;
