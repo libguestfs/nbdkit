@@ -279,6 +279,9 @@ foreach (@verbatims) {
         if $content eq $oldcontent;
 }
 
+# Check the content is valid UTF8.
+die "$progname: $input: is not valid utf8" unless utf8::is_utf8 ($content);
+
 # There should be no =encoding line present in the content (we will add one).
 die "$progname: $input: =encoding must not be present in input\n"
     if $content =~ /^=encoding/m;
