@@ -337,10 +337,14 @@ visit (const char *dir, struct virtual_floppy *floppy)
   closedir (DIR);
  error1:
   err = errno;
+#if defined(__GNUC__) && __GNUC__ >= 5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
+#endif
   chdir (origdir);
+#if defined(__GNUC__) && __GNUC__ >= 5
 #pragma GCC diagnostic pop
+#endif
   errno = err;
  error0:
   return -1;

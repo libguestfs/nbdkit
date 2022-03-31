@@ -46,6 +46,18 @@ bool forked_into_background;
 
 #ifndef WIN32
 
+/* This is a separate function because RHEL 6-era gcc requires pragmas
+ * outside function scope.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+static void
+chdir_root (void)
+{
+  chdir ("/");
+}
+#pragma GCC diagnostic pop
+
 /* Run as a background process.  If foreground is set (ie. -f or
  * equivalent) then this does nothing.  Otherwise it forks into the
  * background and sets forked_into_background.
@@ -67,10 +79,7 @@ fork_into_background (void)
   if (pid > 0)                  /* Parent process exits. */
     exit (EXIT_SUCCESS);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-  chdir ("/");
-#pragma GCC diagnostic pop
+  chdir_root ();
 
   /* By this point, stdin/out have been redirected to /dev/null.
    * If not verbose, set stderr to the same as stdout as well.

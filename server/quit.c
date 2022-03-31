@@ -94,17 +94,20 @@ close_quit_pipe (void)
   close (write_quit_fd);
 }
 
+/* The pragma here is for the write() call below.  RHEL 6-era gcc requires
+ * pragmas outside the function scope.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
 static void
 set_quit (void)
 {
   char c = 0;
 
   quit = 1;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
   write (write_quit_fd, &c, 1);
-#pragma GCC diagnostic pop
 }
+#pragma GCC diagnostic pop
 
 #else /* WIN32 */
 
