@@ -240,10 +240,13 @@ requires_non_root ()
 }
 
 # Tests that use the vsock interface will fail if vsock is not
-# supported.
+# supported.  On Linux you have to load the kernel module
+# vsock_loopback.  See also
+# https://bugzilla.redhat.com/show_bug.cgi?id=2069558
 requires_vsock_support ()
 {
-    if ! grep -q ^AF_VSOCK /proc/net/protocols; then
+    if ! grep -q ^AF_VSOCK /proc/net/protocols ||
+       ! lsmod | grep -q ^vsock_loopback; then
         echo "$0: test skipped because AF_VSOCK is not supported."
         exit 77
     fi
