@@ -515,7 +515,8 @@ main (int argc, char *argv[])
       /* Incorrect use of --dump-plugin. */
       fprintf (stderr,
                "%s: use 'nbdkit plugin --dump-plugin' or\n"
-               "'nbdkit /path/to/plugin." SOEXT " --dump-plugin'\n",
+               "'nbdkit /path/to/plugin." SOEXT " --dump-plugin' or\n"
+               "if you want to find out about the server use --dump-config\n",
                program_name);
       exit (EXIT_FAILURE);
     }
