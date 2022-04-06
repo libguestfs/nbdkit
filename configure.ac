@@ -1417,6 +1417,8 @@ echo "Optional server features:"
 echo
 feature "bash-completion ........................ " \
         test "x$HAVE_BASH_COMPLETION_TRUE" = "x"
+feature "libfuzzer .............................. " \
+        test "x$ENABLE_LIBFUZZER_TRUE" = "x"
 feature "manual pages ........................... " \
         test "x$HAVE_POD_TRUE" = "x"
 feature "SELinux ................................ " \
