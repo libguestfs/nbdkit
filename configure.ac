@@ -700,6 +700,13 @@ AS_IF([test "x$enable_libfuzzer" = "xyes"],[
 ])
 AM_CONDITIONAL([ENABLE_LIBFUZZER],[test "x$enable_libfuzzer" = "xyes"])
 
+dnl Should we use the linker script with the server?  Note
+dnl some tests above may set this variable.
+AC_ARG_ENABLE([linker-script],
+    [AS_HELP_STRING([--disable-linker-script],
+                    [disable linker script for server (developers only)])],
+    [use_linker_script_for_server=$enableval],
+    [])
 AM_CONDITIONAL([USE_LINKER_SCRIPT_FOR_SERVER],
                [test "x$use_linker_script_for_server" = "xyes"])
 

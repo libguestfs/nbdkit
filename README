@@ -324,6 +324,19 @@ For further information, see:
 https://libguestfs.org/
 https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md
 
+Address sanitizer (ASAN)
+------------------------
+
+You can compile nbdkit with clang and ASAN with:
+
+    ./configure CC=clang CXX=clang++ \
+                CFLAGS="-O0 -g -fsanitize=address -fno-omit-frame-pointer" \
+                --disable-linker-script \
+                --disable-golang
+    make clean
+    make
+    ASAN_OPTIONS="allocator_may_return_null=1 detect_leaks=false" make check
+
 Test coverage
 -------------
 
