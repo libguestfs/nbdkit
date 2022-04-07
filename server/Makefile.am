@@ -108,12 +108,7 @@ nbdkit_LDFLAGS = \
 	$(NULL)
 EXTRA_nbdkit_DEPENDENCIES = nbdkit.syms
 if USE_LINKER_SCRIPT_FOR_SERVER
-# We have to disable the linker script for libFuzzer because Clang
-# adds loads of fuzzer and ASAN-related symbols that are required by
-# the plugins but which our linker script tries to hide.
-if !ENABLE_LIBFUZZER
 nbdkit_LDFLAGS += -Wl,--version-script=$(srcdir)/nbdkit.syms
-endif
 endif
 
 if IS_WINDOWS

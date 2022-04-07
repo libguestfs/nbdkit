@@ -693,6 +693,10 @@ AC_ARG_ENABLE([libfuzzer],
     [enable_libfuzzer=no])
 AS_IF([test "x$enable_libfuzzer" = "xyes"],[
     AC_DEFINE([ENABLE_LIBFUZZER],[1],[Enable special libFuzzer binary])
+    # We have to disable the linker script for libFuzzer because Clang
+    # adds loads of fuzzer and ASAN-related symbols that are required
+    # by the plugins but which our linker script tries to hide.
+    use_linker_script_for_server=no
 ])
 AM_CONDITIONAL([ENABLE_LIBFUZZER],[test "x$enable_libfuzzer" = "xyes"])
 
