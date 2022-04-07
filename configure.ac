@@ -502,17 +502,19 @@ main (int argc, char *argv[])
     ])
 AM_CONDITIONAL([HAVE_ICONV], [test "x$iconv_working" = "xyes"])
 
+use_linker_script_for_server=yes
+
 dnl Don't use linker script for the server on FreeBSD because
 dnl FreeBSD's linker is broken.  See eg:
 dnl https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=190851
-AC_MSG_CHECKING([if we should use a linker script for the server])
+AC_MSG_CHECKING([if we should disable the linker script (FreeBSD only)])
 AS_CASE([$host_os],
-  [freebsd*], [use_linker_script_for_server=no],
-  [use_linker_script_for_server=yes]
+  [freebsd*], [
+      use_linker_script_for_server=no
+      AC_MSG_RESULT([yes])
+  ],
+  [AC_MSG_RESULT([no])]
 )
-AC_MSG_RESULT([$use_linker_script_for_server])
-AM_CONDITIONAL([USE_LINKER_SCRIPT_FOR_SERVER],
-               [test "x$use_linker_script_for_server" = "xyes"])
 
 dnl Check if -rdynamic linker flag works.
 acx_nbdkit_save_LDFLAGS="${LDFLAGS}"
@@ -693,6 +695,9 @@ AS_IF([test "x$enable_libfuzzer" = "xyes"],[
     AC_DEFINE([ENABLE_LIBFUZZER],[1],[Enable special libFuzzer binary])
 ])
 AM_CONDITIONAL([ENABLE_LIBFUZZER],[test "x$enable_libfuzzer" = "xyes"])
+
+AM_CONDITIONAL([USE_LINKER_SCRIPT_FOR_SERVER],
+               [test "x$use_linker_script_for_server" = "xyes"])
 
 dnl Bash completion.
 PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0], [
@@ -1419,6 +1424,8 @@ feature "bash-completion ........................ " \
         test "x$HAVE_BASH_COMPLETION_TRUE" = "x"
 feature "libfuzzer .............................. " \
         test "x$ENABLE_LIBFUZZER_TRUE" = "x"
+feature "linker script .......................... " \
+        test "x$USE_LINKER_SCRIPT_FOR_SERVER_TRUE" = "x"
 feature "manual pages ........................... " \
         test "x$HAVE_POD_TRUE" = "x"
 feature "SELinux ................................ " \
