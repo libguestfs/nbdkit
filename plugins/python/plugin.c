@@ -364,6 +364,7 @@ py_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
       py_desc = PyTuple_GetItem (t, 1);
       name = python_to_string (py_name);
       desc = python_to_string (py_desc);
+      Py_DECREF (t);
       if (name == NULL || desc == NULL) {
         nbdkit_error ("list_exports method did not return an iterable of "
                       "string 2-tuples");
@@ -1039,6 +1040,7 @@ py_extents (void *handle, uint32_t count, uint64_t offset,
       extent_offset = PyLong_AsUnsignedLongLong (py_offset);
       extent_length = PyLong_AsUnsignedLongLong (py_length);
       extent_type = PyLong_AsUnsignedLong (py_type);
+      Py_DECREF (t);
       if (check_python_failure ("PyLong") == -1) {
         Py_DECREF (iter);
         Py_DECREF (r);
