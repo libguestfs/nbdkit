@@ -40,7 +40,7 @@ requires_run
 # access, simply that the code which coalesces ranges and turns them
 # into regions doesn't crash.
 
-cmd="nbdkit --filter=protect null size=1M --run true"
+cmd="nbdkit -U - --filter=protect null size=1M --run true"
 
 $cmd
 
