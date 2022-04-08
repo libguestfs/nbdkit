@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2021 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -358,6 +358,7 @@ py_list_exports (int readonly, int is_tls, struct nbdkit_exports *exports)
                       "2-tuples");
         Py_DECREF (iter);
         Py_DECREF (r);
+        Py_DECREF (t);
         return -1;
       }
       py_name = PyTuple_GetItem (t, 0);
@@ -1032,6 +1033,7 @@ py_extents (void *handle, uint32_t count, uint64_t offset,
         nbdkit_error ("extents method did not return an iterable of 3-tuples");
         Py_DECREF (iter);
         Py_DECREF (r);
+        Py_DECREF (t);
         return -1;
       }
       py_offset = PyTuple_GetItem (t, 0);
