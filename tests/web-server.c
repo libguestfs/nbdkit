@@ -174,7 +174,7 @@ start_web_server (void *arg)
   for (;;) {
     s = accept (listen_sock, NULL, NULL);
     if (s == -1) {
-      perror ("accept");
+      perror ("web server: accept");
       exit (EXIT_FAILURE);
     }
     handle_requests (s);
