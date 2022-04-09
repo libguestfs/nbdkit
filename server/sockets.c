@@ -401,7 +401,7 @@ accept_connection (int listen_sock)
   if (thread_data->sock == -1) {
     if (errno == EINTR || errno == EAGAIN)
       goto again;
-    perror ("accept");
+    nbdkit_error ("accept: %m");
     free (thread_data);
     return;
   }
@@ -420,7 +420,8 @@ accept_connection (int listen_sock)
   err = pthread_create (&thread, &attrs, start_thread, thread_data);
   pthread_attr_destroy (&attrs);
   if (unlikely (err != 0)) {
-    fprintf (stderr, "%s: pthread_create: %s\n", program_name, strerror (err));
+    errno = err;
+    nbdkit_error ("pthread_create: %m");
     closesocket (thread_data->sock);
     free (thread_data);
     return;
