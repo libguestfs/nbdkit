@@ -78,6 +78,7 @@ cleanup (void)
     close (fd);
   if (listen_sock >= 0)
     close (listen_sock);
+  listen_sock = -1;
   unlink (sockpath);
   rmdir (tmpdir);
 }
@@ -160,13 +161,17 @@ web_server (const char *filename, check_request_t _check_request)
 static void *
 start_web_server (void *arg)
 {
-  int s;
-
   fprintf (stderr, "web server: listening on %s\n", sockpath);
 
   for (;;) {
-    s = accept (listen_sock, NULL, NULL);
+    int s = accept (listen_sock, NULL, NULL);
     if (s == -1) {
+      /* This is not an error: The server has closed the socket in
+       * cleanup() because it is exiting, resulting in accept(2) above
+       * returning EBADF, so just exit the thread.
+       */
+      if (errno == EBADF)
+        return NULL;
       perror ("web server: accept");
       exit (EXIT_FAILURE);
     }
