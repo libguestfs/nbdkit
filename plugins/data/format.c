@@ -1942,8 +1942,8 @@ store_script (struct allocator *a,
     (*offset) += n;
   }
 
-  if (pclose (pp) == EOF) {
-    nbdkit_error ("pclose: %m");
+  if (pclose (pp) != 0) {
+    nbdkit_error ("pclose: external command failed");
     return -1;
   }
 
@@ -1985,7 +1985,14 @@ store_script_len (struct allocator *a,
     len -= n;
   }
 
-  if (pclose (pp) == EOF) {
+  /* Note for historical reasons we do not fail here if the external
+   * script returns an error.  That is because of existing documented
+   * usage of scripts that generate infinite output which is
+   * truncated.  These scripts will almost always generate an error
+   * (some kind of pipe fail), and because we didn't check that before
+   * we cannot start to fail those scripts now.
+   */
+  if (pclose (pp) == -1) {
     nbdkit_error ("pclose: %m");
     return -1;
   }
