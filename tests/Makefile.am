@@ -575,8 +575,15 @@ EXTRA_DIST += test-cdi.sh
 # curl plugin test.
 if HAVE_MKE2FS_WITH_D
 if HAVE_CURL
-TESTS += test-curl-file.sh
-EXTRA_DIST += test-curl-file.sh
+TESTS += \
+	test-curl-file.sh \
+	test-curl-header-script-fail.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-curl-file.sh \
+	test-curl-header-script-fail.script \
+	test-curl-header-script-fail.sh \
+	$(NULL)
 LIBGUESTFS_TESTS += test-curl
 LIBNBD_TESTS += \
 	test-curl-header-script \

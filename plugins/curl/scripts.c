@@ -82,6 +82,7 @@ scripts_unload (void)
 
 static int run_header_script (struct curl_handle *);
 static int run_cookie_script (struct curl_handle *);
+static void error_from_tmpfile (const char *what, const char *tmpfile);
 
 /* This is called from any thread just before we make a curl request.
  *
@@ -228,19 +229,8 @@ run_header_script (struct curl_handle *h)
     nr_headers++;
   }
 
-  /* If the command failed, this should return EOF and the error
-   * message should be in the temporary file (but we only read the
-   * first line).
-   */
-  if (pclose (fp) == EOF) {
-    fp = fopen (tmpfile, "r");
-    if ((len = getline (&line, &linelen, fp)) >= 0) {
-      if (len > 0 && line[len-1] == '\n')
-        line[len-1] = '\0';
-      nbdkit_error ("header-script failed: %s", line);
-    }
-    else
-      nbdkit_error ("header-script failed");
+  if (pclose (fp) != 0) {
+    error_from_tmpfile ("header-script", tmpfile);
     return -1;
   }
 
@@ -317,25 +307,38 @@ run_cookie_script (struct curl_handle *h)
     }
   }
 
-  /* If the command failed, this should return EOF and the error
-   * message should be in the temporary file (but we only read the
-   * first line).
-   */
-  if (pclose (fp) == EOF) {
-    fp = fopen (tmpfile, "r");
-    if ((len = getline (&line, &linelen, fp)) >= 0) {
-      if (len > 0 && line[len-1] == '\n')
-        line[len-1] = '\0';
-      nbdkit_error ("cookie-script failed: %s", line);
-    }
-    else
-      nbdkit_error ("cookie-script failed");
+  if (pclose (fp) != 0) {
+    error_from_tmpfile ("cookie-script", tmpfile);
     return -1;
   }
 
   nbdkit_debug ("cookie-script returned %scookies",
                 cookies_from_script ? "" : "no ");
   return 0;
+}
+
+/* If the command failed, the error message should be in the temporary
+ * file to which we redirected the script's stderr.  We only read the
+ * first line.
+ */
+static void
+error_from_tmpfile (const char *what, const char *tmpfile)
+{
+  FILE *fp;
+  CLEANUP_FREE char *line = NULL;
+  size_t len, linelen = 0;
+
+  fp = fopen (tmpfile, "r");
+
+  if (fp && (len = getline (&line, &linelen, fp)) >= 0) {
+    if (len > 0 && line[len-1] == '\n')
+      line[len-1] = '\0';
+    nbdkit_error ("%s failed: %s", what, line);
+  }
+  else
+    nbdkit_error ("%s failed", what);
+
+  if (fp) fclose (fp);
 }
 
 #else /* WIN32 */
