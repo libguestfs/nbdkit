@@ -1596,7 +1596,7 @@ static int store_script_len (struct allocator *a,
                              int64_t len, uint64_t *offset);
 
 /* This is the evaluator.  It takes the root (node_id) of the parsed
- * abstract syntax treea and evaulates it into the allocator.
+ * abstract syntax tree and evaulates it into the allocator.
  */
 static int
 evaluate (const dict_t *dict, node_id root,
