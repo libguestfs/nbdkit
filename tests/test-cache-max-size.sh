@@ -77,8 +77,8 @@ qemu-io -f raw "nbd+unix://?socket=$sock" \
 # deleted by the filter, and so is only accessible via /proc/$pid/fd.
 # Get the /proc link to the cache file, and the size of it in bytes.
 fddir="/proc/$( cat $d/cache-max-size.pid )/fd"
-ls -l $fddir ||:
-fd="$fddir/$( ls -l $fddir | grep $TMPDIR/ | head -1 |
+LANG=C ls -ln $fddir ||:
+fd="$fddir/$( LANG=C ls -ln $fddir | grep $TMPDIR/ | head -1 |
               tr -s ' ' | cut -d ' ' -f 9 )"
 stat -L $fd
 size=$(( $(stat -L -c '%b * %B' $fd) ))
