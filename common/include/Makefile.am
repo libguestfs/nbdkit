@@ -39,6 +39,7 @@ EXTRA_DIST = \
 	byte-swapping.h \
 	checked-overflow.h \
 	exit-with-parent.h \
+	hexdigit.h \
 	isaligned.h \
 	ispowerof2.h \
 	iszero.h \

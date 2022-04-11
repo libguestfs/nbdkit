@@ -48,6 +48,7 @@
 #include "ascii-ctype.h"
 #include "byte-swapping.h"
 #include "cleanup.h"
+#include "hexdigit.h"
 #include "ispowerof2.h"
 #include "minmax.h"
 #include "nbdkit-string.h"
@@ -357,7 +358,6 @@ debug_expr (node_id id, int level)
     break;
   case EXPR_STRING: {
     CLEANUP_FREE_STRING string s = empty_vector;
-    static const char hex[] = "0123456789abcdef";
 
     for (i = 0; i < e.string.len; ++i) {
       char c = e.string.ptr[i];
@@ -366,8 +366,8 @@ debug_expr (node_id id, int level)
       else {
         string_append (&s, '\\');
         string_append (&s, 'x');
-        string_append (&s, hex[(c & 0xf0) >> 4]);
-        string_append (&s, hex[c & 0xf]);
+        string_append (&s, hexchar (c >> 4));
+        string_append (&s, hexchar (c));
       }
     }
     string_append (&s, '\0');
@@ -903,17 +903,6 @@ get_script (const char *value, size_t i, size_t len)
  * vector.  When this is called we have already consumed the initial
  * double quote character.
  */
-static unsigned char
-hexdigit (const char c)
-{
-  if (c >= '0' && c <= '9')
-    return c - '0';
-  else if (c >= 'a' && c <= 'f')
-    return c - 'a' + 10;
-  else /* if (c >= 'A' && c <= 'F') */
-    return c - 'A' + 10;
-}
-
 static int
 parse_string (const char *value, size_t *start, size_t len, string *rtn)
 {
@@ -953,7 +942,7 @@ parse_string (const char *value, size_t *start, size_t len, string *rtn)
                         "two hexadecimal characters");
           return -1;
         }
-        c = hexdigit (x0) * 16 + hexdigit (x1);
+        c = hexbyte (x0, x1);
         break;
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':

@@ -43,6 +43,7 @@
 
 #include "ascii-ctype.h"
 #include "byte-swapping.h"
+#include "hexdigit.h"
 
 #include "efi-crc32.h"
 #include "gpt.h"
@@ -202,27 +203,6 @@ create_gpt_protective_mbr (unsigned char *out)
 }
 
 /* Try to parse a GPT GUID. */
-static unsigned char
-hexdigit (const char c)
-{
-  if (c >= '0' && c <= '9')
-    return c - '0';
-  else if (c >= 'a' && c <= 'f')
-    return c - 'a' + 10;
-  else /* if (c >= 'A' && c <= 'F') */
-    return c - 'A' + 10;
-}
-
-static unsigned char
-hexbyte (const char *p)
-{
-  unsigned char c0, c1;
-
-  c0 = hexdigit (p[0]);
-  c1 = hexdigit (p[1]);
-  return c0 << 4 | c1;
-}
-
 int
 parse_guid (const char *str, char *out)
 {
@@ -262,26 +242,26 @@ parse_guid (const char *str, char *out)
   /* The first, second and third blocks are parsed as little endian,
    * while the fourth and fifth blocks are big endian.
    */
-  *out++ = hexbyte (&str[6]);   /* first block */
-  *out++ = hexbyte (&str[4]);
-  *out++ = hexbyte (&str[2]);
-  *out++ = hexbyte (&str[0]);
+  *out++ = hexbyte (str[6], str[7]);   /* first block */
+  *out++ = hexbyte (str[4], str[5]);
+  *out++ = hexbyte (str[2], str[3]);
+  *out++ = hexbyte (str[0], str[1]);
 
-  *out++ = hexbyte (&str[11]);  /* second block */
-  *out++ = hexbyte (&str[9]);
+  *out++ = hexbyte (str[11], str[12]); /* second block */
+  *out++ = hexbyte (str[9], str[10]);
 
-  *out++ = hexbyte (&str[16]);  /* third block */
-  *out++ = hexbyte (&str[14]);
+  *out++ = hexbyte (str[16], str[17]); /* third block */
+  *out++ = hexbyte (str[14], str[15]);
 
-  *out++ = hexbyte (&str[19]);  /* fourth block */
-  *out++ = hexbyte (&str[21]);
+  *out++ = hexbyte (str[19], str[20]); /* fourth block */
+  *out++ = hexbyte (str[21], str[22]);
 
-  *out++ = hexbyte (&str[24]);  /* fifth block */
-  *out++ = hexbyte (&str[26]);
-  *out++ = hexbyte (&str[28]);
-  *out++ = hexbyte (&str[30]);
-  *out++ = hexbyte (&str[32]);
-  *out++ = hexbyte (&str[34]);
+  *out++ = hexbyte (str[24], str[25]); /* fifth block */
+  *out++ = hexbyte (str[26], str[27]);
+  *out++ = hexbyte (str[28], str[29]);
+  *out++ = hexbyte (str[30], str[31]);
+  *out++ = hexbyte (str[32], str[33]);
+  *out++ = hexbyte (str[34], str[35]);
 
   return 0;
 }
