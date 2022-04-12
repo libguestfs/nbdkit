@@ -69,6 +69,7 @@ libnbdkitocaml_la_SOURCES = \
 libnbdkitocaml_la_CPPFLAGS = \
 	-I$(OCAMLLIB) \
 	-I$(top_srcdir)/include \
+	-DCAML_NAME_SPACE \
 	$(NULL)
 
 libnbdkitocaml_la_CFLAGS = \
