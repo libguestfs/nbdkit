@@ -5,8 +5,10 @@ nbdkit-ssh-plugin - access disk images over the SSH protocol
 =head1 SYNOPSIS
 
  nbdkit ssh host=HOST [path=]PATH
-            [compression=true] [config=CONFIG_FILE] [identity=FILENAME]
-            [known-hosts=FILENAME] [password=PASSWORD|-|+FILENAME]
+            [compression=true] [config=CONFIG_FILE]
+            [create=true] [create-mode=MODE] [create-size=SIZE]
+            [identity=FILENAME] [known-hosts=FILENAME]
+            [password=PASSWORD|-|+FILENAME]
             [port=PORT] [timeout=SECS] [user=USER]
             [verify-remote-host=false]
 
@@ -61,6 +63,34 @@ Do not read any local SSH configuration.
 The C<config> parameter is optional.  If it is I<not> specified at all
 then F<~/.ssh/config> and F</etc/ssh/ssh_config> are both read.
 Missing or unreadable files are ignored.
+
+=item B<create=true>
+
+(nbdkit E<ge> 1.32)
+
+If set, the remote file will be created.  The remote file is created
+on the first NBD connection to nbdkit, not when nbdkit starts up.  If
+the file already exists, it will be replaced and any existing content
+lost.
+
+If using this option, you must use C<create-size>.  C<create-mode> can
+be used to control the permissions of the new file.
+
+=item B<create-mode=>MODE
+
+(nbdkit E<ge> 1.32)
+
+If using C<create=true> specify the default permissions of the new
+remote file.  You can use octal modes like C<create-mode=0777> or
+C<create-mode=0644>.  The default is C<0600>, ie. only readable and
+writable by the remote user.
+
+=item B<create-size=>SIZE
+
+(nbdkit E<ge> 1.32)
+
+If using C<create=true>, specify the virtual size of the new disk.
+C<SIZE> can use modifiers like C<100M> etc.
 
 =item B<host=>HOST
 
