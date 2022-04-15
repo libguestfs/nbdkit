@@ -44,12 +44,15 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <pthread.h>
+
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
 #include <libssh/callbacks.h>
 
 #include <nbdkit-plugin.h>
 
+#include "cleanup.h"
 #include "const-string-vector.h"
 #include "minmax.h"
 
@@ -63,6 +66,9 @@ static const char *known_hosts = NULL;
 static const_string_vector identities = empty_vector;
 static uint32_t timeout = 0;
 static bool compression = false;
+static bool create = false;
+static int64_t create_size = -1;
+static unsigned create_mode = S_IRUSR | S_IWUSR /* 0600 */;
 
 /* config can be:
  * NULL => parse options from default file
@@ -167,6 +173,27 @@ ssh_config (const char *key, const char *value)
       return -1;
     compression = r;
   }
+  else if (strcmp (key, "create") == 0) {
+    r = nbdkit_parse_bool (value);
+    if (r == -1)
+      return -1;
+    create = r;
+  }
+  else if (strcmp (key, "create-size") == 0) {
+    create_size = nbdkit_parse_size (value);
+    if (create_size == -1)
+      return -1;
+  }
+  else if (strcmp (key, "create-mode") == 0) {
+    r = nbdkit_parse_unsigned (key, value, &create_mode);
+    if (r == -1)
+      return -1;
+    /* OpenSSH checks this too. */
+    if (create_mode > 0777) {
+      nbdkit_error ("create-mode must be <= 0777");
+      return -1;
+    }
+  }
 
   else {
     nbdkit_error ("unknown parameter '%s'", key);
@@ -186,6 +213,13 @@ ssh_config_complete (void)
     return -1;
   }
 
+  /* If create=true, create-size must be supplied. */
+  if (create && create_size == -1) {
+    nbdkit_error ("if using create=true, you must specify the size "
+                  "of the new remote file using create-size=SIZE");
+    return -1;
+  }
+
   return 0;
 }
 
@@ -200,7 +234,10 @@ ssh_config_complete (void)
   "identity=<FILENAME>        Prepend private key (identity) file.\n" \
   "timeout=SECS               Set SSH connection timeout.\n" \
   "verify-remote-host=false   Ignore known_hosts.\n" \
-  "compression=true           Enable compression."
+  "compression=true           Enable compression.\n" \
+  "create=true                Create the remote file.\n" \
+  "create-mode=MODE           Set the permissions of the remote file.\n" \
+  "create-size=SIZE           Set the size of the remote file."
 
 /* Since we must simulate atomic pread and pwrite using seek +
  * read/write, calls on each handle must be serialized.
@@ -329,6 +366,65 @@ authenticate (struct ssh_handle *h)
   return -1;
 }
 
+/* This function opens or creates the remote file (depending on
+ * create=false|true).  Parallel connections might call this function
+ * at the same time, and so we must hold a lock to ensure that the
+ * file is created at most once.
+ */
+static pthread_mutex_t create_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static sftp_file
+open_or_create_path (ssh_session session, sftp_session sftp, int readonly)
+{
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&create_lock);
+  int access_type;
+  int r;
+  sftp_file file;
+
+  access_type = readonly ? O_RDONLY : O_RDWR;
+  if (create) access_type |= O_CREAT | O_TRUNC;
+
+  file = sftp_open (sftp, path, access_type, S_IRWXU);
+  if (!file) {
+    nbdkit_error ("cannot %s file for %s: %s",
+                  create ? "create" : "open",
+                  readonly ? "reading" : "writing",
+                  ssh_get_error (session));
+    return NULL;
+  }
+
+  if (create) {
+    /* There's no sftp_truncate call.  However OpenSSH lets you call
+     * SSH_FXP_SETSTAT + SSH_FILEXFER_ATTR_SIZE which invokes
+     * truncate(2) on the server.  Libssh doesn't provide a binding
+     * for SSH_FXP_FSETSTAT so we have to pass the session + path.
+     */
+    struct sftp_attributes_struct attrs = {
+      .flags = SSH_FILEXFER_ATTR_SIZE |
+               SSH_FILEXFER_ATTR_PERMISSIONS,
+      .size = create_size,
+      .permissions = create_mode,
+    };
+
+    r = sftp_setstat (sftp, path, &attrs);
+    if (r != SSH_OK) {
+      nbdkit_error ("setstat failed: %s", ssh_get_error (session));
+
+      /* Best-effort attempt to delete the remote file on failure. */
+      r = sftp_unlink (sftp, path);
+      if (r != SSH_OK)
+        nbdkit_debug ("unlink failed: %s", ssh_get_error (session));
+
+      return NULL;
+    }
+  }
+
+  /* On the next connection, don't create or truncate the file. */
+  create = false;
+
+  return file;
+}
+
 /* Create the per-connection handle. */
 static void *
 ssh_open (int readonly)
@@ -337,7 +433,6 @@ ssh_open (int readonly)
   const int set = 1;
   size_t i;
   int r;
-  int access_type;
 
   h = calloc (1, sizeof *h);
   if (h == NULL) {
@@ -471,7 +566,7 @@ ssh_open (int readonly)
   if (authenticate (h) == -1)
     goto err;
 
-  /* Open the SFTP connection and file. */
+  /* Open the SFTP connection. */
   h->sftp = sftp_new (h->session);
   if (!h->sftp) {
     nbdkit_error ("failed to allocate sftp session: %s",
@@ -484,14 +579,11 @@ ssh_open (int readonly)
                   ssh_get_error (h->session));
     goto err;
   }
-  access_type = readonly ? O_RDONLY : O_RDWR;
-  h->file = sftp_open (h->sftp, path, access_type, S_IRWXU);
-  if (!h->file) {
-    nbdkit_error ("cannot open file for %s: %s",
-                  readonly ? "reading" : "writing",
-                  ssh_get_error (h->session));
+
+  /* Open or create the remote file. */
+  h->file = open_or_create_path (h->session, h->sftp, readonly);
+  if (!h->file)
     goto err;
-  }
 
   nbdkit_debug ("opened libssh handle");
 
