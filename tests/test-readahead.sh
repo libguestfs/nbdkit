@@ -59,7 +59,7 @@ for i in range(0, 512*10, 512):
     echo $((end_t - start_t))
 }
 
-t1=$(test --filter=readahead)
+t1=$(test --filter=readahead --filter=cache)
 t2=$(test)
 
 # In the t1 case we should make only 1 request into the plugin,

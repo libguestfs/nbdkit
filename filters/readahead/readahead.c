@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019-2021 Red Hat Inc.
+ * Copyright (C) 2019-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -34,232 +34,218 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
-
 #include <pthread.h>
 
 #include <nbdkit-filter.h>
 
+#include "readahead.h"
+
 #include "cleanup.h"
 #include "minmax.h"
-
-/* Copied from server/plugins.c. */
-#define MAX_REQUEST_SIZE (64 * 1024 * 1024)
+#include "vector.h"
 
 /* These could be made configurable in future. */
-#define READAHEAD_MIN 65536
-#define READAHEAD_MAX MAX_REQUEST_SIZE
-
-/* This lock protects the global state. */
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
-/* The real size of the underlying plugin. */
-static uint64_t size;
+#define READAHEAD_MIN 32768
+#define READAHEAD_MAX (4*1024*1024)
 
 /* Size of the readahead window. */
+static pthread_mutex_t window_lock = PTHREAD_MUTEX_INITIALIZER;
 static uint64_t window = READAHEAD_MIN;
+static uint64_t last_offset = 0, last_readahead = 0;
 
-/* The single prefetch buffer shared by all threads, and its virtual
- * location in the virtual disk.  The prefetch buffer grows
- * dynamically as required, but never shrinks.
+static int thread_model = -1; /* Thread model of the underlying plugin. */
+
+/* Per-connection data. */
+struct readahead_handle {
+  int can_cache;      /* Can the underlying plugin cache? */
+  pthread_t thread;   /* The background thread, one per connection. */
+  struct bgthread_ctrl ctrl;
+};
+
+/* We have various requirements of the underlying filter(s) + plugin:
+ * - They must support NBDKIT_CACHE_NATIVE (otherwise our requests
+ *   would not do anything useful).
+ * - They must use the PARALLEL thread model (otherwise we could
+ *   violate their thread model).
  */
-static char *buffer = NULL;
-static size_t bufsize = 0;
-static uint64_t position;
-static uint32_t length = 0;
+static bool
+filter_working (struct readahead_handle *h)
+{
+  return
+    h->can_cache == NBDKIT_CACHE_NATIVE &&
+    thread_model == NBDKIT_THREAD_MODEL_PARALLEL;
+}
+
+static bool
+suggest_cache_filter (struct readahead_handle *h)
+{
+  return
+    h->can_cache != NBDKIT_CACHE_NATIVE &&
+    thread_model == NBDKIT_THREAD_MODEL_PARALLEL;
+}
+
+/* We need to hook into .get_ready() so we can read the final thread
+ * model (of the whole server).
+ */
+static int
+readahead_get_ready (int final_thread_model)
+{
+  thread_model = final_thread_model;
+  return 0;
+}
+
+static int
+send_command_to_background_thread (struct bgthread_ctrl *ctrl,
+                                   const struct command cmd)
+{
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&ctrl->lock);
+  if (command_queue_append (&ctrl->cmds, cmd) == -1)
+    return -1;
+  /* Signal the thread if it could be sleeping on an empty queue. */
+  if (ctrl->cmds.len == 1)
+    pthread_cond_signal (&ctrl->cond);
+  return 0;
+}
+
+static void *
+readahead_open (nbdkit_next_open *next, nbdkit_context *nxdata,
+                int readonly, const char *exportname, int is_tls)
+{
+  struct readahead_handle *h;
+  int err;
+
+  if (next (nxdata, readonly, exportname) == -1)
+    return NULL;
+
+  h = malloc (sizeof *h);
+  if (h == NULL) {
+    nbdkit_error ("malloc: %m");
+    return NULL;
+  }
+
+  h->ctrl.cmds = (command_queue) empty_vector;
+  pthread_mutex_init (&h->ctrl.lock, NULL);
+  pthread_cond_init (&h->ctrl.cond, NULL);
+
+  /* Create the background thread. */
+  err = pthread_create (&h->thread, NULL, readahead_thread, &h->ctrl);
+  if (err != 0) {
+    errno = err;
+    nbdkit_error ("pthread_create: %m");
+    pthread_cond_destroy (&h->ctrl.cond);
+    pthread_mutex_destroy (&h->ctrl.lock);
+    free (h);
+    return NULL;
+  }
+
+  return h;
+}
 
 static void
-readahead_unload (void)
+readahead_close (void *handle)
 {
-  free (buffer);
+  struct readahead_handle *h = handle;
+  const struct command quit_cmd = { .type = CMD_QUIT };
+
+  send_command_to_background_thread (&h->ctrl, quit_cmd);
+  pthread_join (h->thread, NULL);
+  pthread_cond_destroy (&h->ctrl.cond);
+  pthread_mutex_destroy (&h->ctrl.lock);
+  command_queue_reset (&h->ctrl.cmds);
+  free (h);
 }
 
-static int64_t readahead_get_size (nbdkit_next *next, void *handle);
-
-/* In prepare, force a call to get_size which sets the size global. */
 static int
-readahead_prepare (nbdkit_next *next, void *handle, int readonly)
+readahead_can_cache (nbdkit_next *next, void *handle)
 {
-  int64_t r;
+  struct readahead_handle *h = handle;
+  int r;
 
-  r = readahead_get_size (next, handle);
-  return r >= 0 ? 0 : -1;
-}
-
-/* Get the size. */
-static int64_t
-readahead_get_size (nbdkit_next *next, void *handle)
-{
-  int64_t r;
-
-  r = next->get_size (next);
+  /* Call next->can_cache to read the underlying 'can_cache'. */
+  r = next->can_cache (next);
   if (r == -1)
     return -1;
+  h->can_cache = r;
 
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  size = r;
+  if (!filter_working (h)) {
+    nbdkit_error ("readahead: warning: underlying plugin does not support "
+                  "NBD_CMD_CACHE or PARALLEL thread model, so the filter "
+                  "won't do anything");
+    if (suggest_cache_filter (h))
+      nbdkit_error ("readahead: try adding --filter=cache "
+                    "after this filter");
+    /* This is an error, but that's just to ensure that the warning
+     * above is seen.  We don't need to return -1 here.
+     */
+  }
 
   return r;
 }
 
-/* Cache */
-static int
-readahead_can_cache (nbdkit_next *next, void *handle)
-{
-  /* We are already operating as a cache regardless of the plugin's
-   * underlying .can_cache, but it's easiest to just rely on nbdkit's
-   * behavior of calling .pread for caching.
-   */
-  return NBDKIT_CACHE_EMULATE;
-}
-
 /* Read data. */
-
-static int
-fill_readahead (nbdkit_next *next,
-                uint32_t count, uint64_t offset, uint32_t flags, int *err)
-{
-  position = offset;
-
-  /* Read at least window bytes, but if count is larger read that.
-   * Note that the count cannot be bigger than the buffer size.
-   */
-  length = MAX (count, window);
-
-  /* Don't go beyond the end of the underlying file. */
-  length = MIN (length, size - position);
-
-  /* Grow the buffer if necessary. */
-  if (bufsize < length) {
-    char *new_buffer = realloc (buffer, length);
-    if (new_buffer == NULL) {
-      *err = errno;
-      nbdkit_error ("realloc: %m");
-      return -1;
-    }
-    buffer = new_buffer;
-    bufsize = length;
-  }
-
-  if (next->pread (next, buffer, length, offset, flags, err) == -1) {
-    length = 0;           /* failed to fill the prefetch buffer */
-    return -1;
-  }
-
-  return 0;
-}
-
 static int
 readahead_pread (nbdkit_next *next,
                  void *handle, void *buf, uint32_t count, uint64_t offset,
                  uint32_t flags, int *err)
 {
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+  struct readahead_handle *h = handle;
 
-  while (count > 0) {
-    if (length == 0) {
-      /* We don't have a prefetch buffer at all.  This could be the
-       * first request or reset after a miss.
+  /* If the underlying plugin doesn't support caching then skip that
+   * step completely.  The filter will do nothing.
+   */
+  if (filter_working (h)) {
+    struct command ra_cmd = { .type = CMD_CACHE, .next = NULL };
+    int64_t size;
+
+    size = next->get_size (next);
+    if (size >= 0) {
+      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&window_lock);
+
+      /* Generate the asynchronous (background) cache command for
+       * the readahead window.
        */
-      window = READAHEAD_MIN;
-      if (fill_readahead (next, count, offset, flags, err) == -1)
-        return -1;
+      ra_cmd.offset = offset + count;
+      if (ra_cmd.offset < size) {
+        ra_cmd.count = MIN (window, size - ra_cmd.offset);
+        ra_cmd.next = next; /* If .next is non-NULL, we'll send it below. */
+      }
+
+      /* Should we change the window size?
+       * If the last readahead < current offset, double the window.
+       * If not, but we're still making forward progress, keep the window.
+       * If we're not making forward progress, reduce the window to minimum.
+       */
+      if (last_readahead < offset)
+        window = MIN (window * 2, READAHEAD_MAX);
+      else if (last_offset < offset)
+        /* leave window unchanged */ ;
+      else
+        window = READAHEAD_MIN;
+      last_offset = offset;
+      last_readahead = ra_cmd.offset + ra_cmd.count;
     }
 
-    /* Can we satisfy this request partly or entirely from the prefetch
-     * buffer?
-     */
-    else if (position <= offset && offset < position + length) {
-      uint32_t n = MIN (position - offset + length, count);
-      memcpy (buf, &buffer[offset-position], n);
-      buf += n;
-      offset += n;
-      count -= n;
-    }
-
-    /* Does the request start immediately after the prefetch buffer?
-     * This is a “hit” allowing us to double the window size.
-     */
-    else if (offset == position + length) {
-      window = MIN (window * 2, READAHEAD_MAX);
-      if (fill_readahead (next, count, offset, flags, err) == -1)
-        return -1;
-    }
-
-    /* Else it's a “miss”.  Reset everything and start again. */
-    else
-      length = 0;
+    if (ra_cmd.next &&
+        send_command_to_background_thread (&h->ctrl, ra_cmd) == -1)
+      return -1;
   }
 
-  return 0;
-}
-
-/* Any writes or write-like operations kill the prefetch buffer.
- *
- * We could do better here, but for the current use case of this
- * filter it doesn't matter. XXX
- */
-
-static void
-kill_readahead (void)
-{
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-  window = READAHEAD_MIN;
-  length = 0;
-}
-
-static int
-readahead_pwrite (nbdkit_next *next,
-                  void *handle,
-                  const void *buf, uint32_t count, uint64_t offset,
-                  uint32_t flags, int *err)
-{
-  kill_readahead ();
-  return next->pwrite (next, buf, count, offset, flags, err);
-}
-
-static int
-readahead_trim (nbdkit_next *next,
-                void *handle,
-                uint32_t count, uint64_t offset, uint32_t flags,
-                int *err)
-{
-  kill_readahead ();
-  return next->trim (next, count, offset, flags, err);
-}
-
-static int
-readahead_zero (nbdkit_next *next,
-                void *handle,
-                uint32_t count, uint64_t offset, uint32_t flags,
-                int *err)
-{
-  kill_readahead ();
-  return next->zero (next, count, offset, flags, err);
-}
-
-static int
-readahead_flush (nbdkit_next *next,
-                 void *handle, uint32_t flags, int *err)
-{
-  kill_readahead ();
-  return next->flush (next, flags, err);
+  /* Issue the synchronous read. */
+  return next->pread (next, buf, count, offset, flags, err);
 }
 
 static struct nbdkit_filter filter = {
   .name              = "readahead",
   .longname          = "nbdkit readahead filter",
-  .unload            = readahead_unload,
-  .prepare           = readahead_prepare,
-  .get_size          = readahead_get_size,
+  .get_ready         = readahead_get_ready,
+  .open              = readahead_open,
+  .close             = readahead_close,
   .can_cache         = readahead_can_cache,
   .pread             = readahead_pread,
-  .pwrite            = readahead_pwrite,
-  .trim              = readahead_trim,
-  .zero              = readahead_zero,
-  .flush             = readahead_flush,
 };
 
 NBDKIT_REGISTER_FILTER(filter)
