@@ -285,7 +285,7 @@ serves as the opaque data that must be passed as the first parameter
 to those functions.  For example, calling the plugin's can_flush
 functionality would be done via
 
- next-E<gt>can_flush (next)
+ next->can_flush (next)
 
 Note that the semantics of the functions in C<struct nbdkit_next_ops>
 are slightly different from what a plugin implements: for example,
