@@ -37,6 +37,8 @@ filter_LTLIBRARIES = nbdkit-readahead-filter.la
 
 nbdkit_readahead_filter_la_SOURCES = \
 	readahead.c \
+	readahead.h \
+	bgthread.c \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
 

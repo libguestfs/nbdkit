@@ -62,16 +62,6 @@ General ideas for improvements
   continue to keep their non-standard handshake while utilizing nbdkit
   to prototype new behaviors in serving the kernel.
 
-* Background thread for filters.  Some filters (readahead, cache and
-  proposed scan filter - see below) could be more effective if they
-  were able to defer work to a background thread.  We finally have
-  nbdkit_next_context_open and friends for allowing a background
-  thread to have access into the plugin, but still need to worry about
-  thread-safety (how much must the filter do vs. nbdkit, to avoid
-  calling into the plugin too many times at once) and cleanup
-  (spawning the thread during .after_fork is viable, but cleaning it
-  up during .unload is too late).
-
 * "nbdkit.so": nbdkit as a loadable shared library.  The aim of nbdkit
   is to make it reusable from other programs (see nbdkit-captive(1)).
   If it was a loadable shared library it would be even more reusable.
@@ -228,6 +218,8 @@ Suggestions for filters
 * nbdkit-cache-filter should handle ENOSPC errors automatically by
   reclaiming blocks from the cache
 
+* nbdkit-cache-filter could use a background thread for reclaiming.
+
 * zstd filter was requested as a way to do what we currently do with
   xz but saving many hours on compression (at the cost of hundreds of
   MBs of extra data)
@@ -239,6 +231,16 @@ Suggestions for filters
 * nbdkit-pause-filter would probably be more useful if the filter
   could inject a flush after pausing.  However this requires that
   filter background threads have access to the plugin (see above).
+
+nbdkit-readahead-filter:
+
+* The filter should open a new connection to the plugin per background
+  thread so it is able to work with plugins that use the
+  serialize_requests thread model (like curl).  At the moment it makes
+  requests on the same connection, so it requires plugins to use the
+  parallel thread model.
+
+* It should combine (or avoid) overlapping cache requests.
 
 nbdkit-rate-filter:
 
