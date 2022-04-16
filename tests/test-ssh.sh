@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,11 +35,12 @@ set -e
 set -x
 
 requires test -f disk
-requires sshd -t -f ssh/sshd_config
 requires nbdcopy --version
-requires cut --version
 
 # Check that ssh to localhost will work without any passwords or phrases.
+#
+# Note this assumes that localhost is running an ssh server, but
+# should skip if not.
 requires ssh -V
 if ! ssh -o PreferredAuthentications=none,publickey -o StrictHostKeyChecking=no localhost echo </dev/null
 then
@@ -51,14 +52,7 @@ files="ssh.img"
 rm -f $files
 cleanup_fn rm -f $files
 
-`which sshd` -f ssh/sshd_config -D -e &
-sshd_pid=$!
-cleanup_fn kill $sshd_pid
-
-# Get the sshd port number which was randomly assigned.
-port="$(grep ^Port ssh/sshd_config | cut -f 2)"
-
-# Run nbdkit with the ssh plugin to copy a file.
+# Copy 'disk' from the "remote" ssh server to local file 'ssh.img'
 nbdkit -v -D ssh.log=2 -U - \
        ssh host=localhost $PWD/disk \
        --run 'nbdcopy "$uri" ssh.img'
