@@ -202,6 +202,11 @@ ssh_config_complete (void)
   "verify-remote-host=false   Ignore known_hosts.\n" \
   "compression=true           Enable compression."
 
+/* Since we must simulate atomic pread and pwrite using seek +
+ * read/write, calls on each handle must be serialized.
+ */
+#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
+
 /* The per-connection handle. */
 struct ssh_handle {
   ssh_session session;
@@ -521,8 +526,6 @@ ssh_close (void *handle)
   ssh_free (h->session);
   free (h);
 }
-
-#define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
 
 /* Get the file size. */
 static int64_t
