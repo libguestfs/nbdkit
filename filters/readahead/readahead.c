@@ -80,8 +80,7 @@ static int64_t readahead_get_size (nbdkit_next *next, void *handle);
 
 /* In prepare, force a call to get_size which sets the size global. */
 static int
-readahead_prepare (nbdkit_next *next,
-                   void *handle, int readonly)
+readahead_prepare (nbdkit_next *next, void *handle, int readonly)
 {
   int64_t r;
 
@@ -91,8 +90,7 @@ readahead_prepare (nbdkit_next *next,
 
 /* Get the size. */
 static int64_t
-readahead_get_size (nbdkit_next *next,
-                    void *handle)
+readahead_get_size (nbdkit_next *next, void *handle)
 {
   int64_t r;
 
@@ -108,8 +106,7 @@ readahead_get_size (nbdkit_next *next,
 
 /* Cache */
 static int
-readahead_can_cache (nbdkit_next *next,
-                     void *handle)
+readahead_can_cache (nbdkit_next *next, void *handle)
 {
   /* We are already operating as a cache regardless of the plugin's
    * underlying .can_cache, but it's easiest to just rely on nbdkit's
