@@ -1680,8 +1680,6 @@ TESTS += \
 EXTRA_DIST += \
 	test-readahead.sh \
 	test-readahead-copy.sh \
-	test-readahead-test-plugin.sh \
-	test-readahead-test-request.py \
 	$(NULL)
 
 # retry filter test.
