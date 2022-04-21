@@ -134,7 +134,7 @@ torrent_unload (void)
    * TMPDIR then it could break, but that's controlled by the person
    * running nbdkit.
    */
-  if (clean_cache_on_exit) {
+  if (clean_cache_on_exit && cache) {
     CLEANUP_FREE char *cmd;
     if (asprintf (&cmd, "rm -rf %s", cache) >= 0) {
 #pragma GCC diagnostic push
