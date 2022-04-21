@@ -30,43 +30,52 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Is the readahead filter faster?  Copy a blank disk with a custom
-# plugin that sleeps on every request.  Because the readahead filter
-# should result in fewer requests it should run faster.
-
 source ./functions.sh
 set -e
 set -x
 
-requires_filter delay
+requires_plugin sh
 requires nbdsh --version
 requires dd iflag=count_bytes </dev/null
 
-files="readahead.img"
+files="readahead.out"
 rm -f $files
 cleanup_fn rm -f $files
 
-test ()
-{
-    start_t=$SECONDS
-    nbdkit -fv -U - "$@" null size=1M --filter=delay rdelay=5 \
-           --run 'nbdsh --uri "$uri" -c "
+nbdkit -fv -U - "$@" sh - \
+       --filter=readahead \
+       --run 'nbdsh --uri "$uri" -c "
 for i in range(0, 512*10, 512):
     h.pread(512, i)
-"'
+"' <<'EOF'
+case "$1" in
+     thread_model)
+         echo parallel
+         ;;
+     can_cache)
+         echo native
+         ;;
+     get_size)
+         echo 1M
+         ;;
+     cache)
+         echo "$@" >> readahead.out
+         ;;
+     pread)
+         echo "$@" >> readahead.out
+         dd if=/dev/zero count=$3 iflag=count_bytes
+         ;;
+     *)
+         exit 2
+         ;;
+esac
+EOF
 
-    end_t=$SECONDS
-    echo $((end_t - start_t))
-}
+cat readahead.out
 
-t1=$(test --filter=readahead --filter=cache)
-t2=$(test)
-
-# In the t1 case we should make only 1 request into the plugin,
-# resulting in around 1 sleep period (5 seconds).  In the t2 case we
-# make 10 requests so sleep for around 50 seconds.  t1 should be < t2
-# is every reasonable scenario.
-if [ $t1 -ge $t2 ]; then
-    echo "$0: readahead filter took longer, should be shorter"
-    exit 1
-fi
+# We should see the pread requests, and additional cache requests for
+# the 32K region following each pread request.
+for i in `seq 0 512 $((512*10 - 512))` ; do
+    grep "pread  512 $i" readahead.out
+    grep "cache  32768 $((i+512))" readahead.out
+done
