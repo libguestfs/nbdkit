@@ -39,8 +39,7 @@ set -e
 set -x
 
 requires_plugin sh
-requires python3 --version
-requires python3 -c 'import nbd'
+requires nbdsh --version
 requires dd iflag=count_bytes </dev/null
 
 files="readahead.img"
@@ -50,8 +49,28 @@ cleanup_fn rm -f $files
 test ()
 {
     start_t=$SECONDS
-    nbdkit -fv -U - "$@" sh ./test-readahead-test-plugin.sh \
-           --run './test-readahead-test-request.py $unixsocket'
+    nbdkit -fv -U - "$@" sh - \
+           --run 'nbdsh --uri "$uri" -c "
+for i in range(0, 512*10, 512):
+    h.pread(512, i)
+"' <<'EOF'
+#!/usr/bin/env bash
+case "$1" in
+    get_size)
+        # The client will make 10 requests of 512
+        # bytes each, so this just has to be >= 512*10.
+        echo 1M
+        ;;
+    pread)
+        sleep 5
+        dd if=/dev/zero count=$3 iflag=count_bytes
+        ;;
+    *)
+        exit 2
+        ;;
+esac
+EOF
+
     end_t=$SECONDS
     echo $((end_t - start_t))
 }
