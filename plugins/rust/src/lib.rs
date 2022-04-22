@@ -1351,7 +1351,7 @@ mod t {
                         *sun = mem::zeroed();
                         (*sun).sun_family = libc::AF_UNIX as libc::sa_family_t;
                         ptr::copy_nonoverlapping(
-                            b"/tmp/foo.sock\0".as_ptr() as *const i8,
+                            b"/tmp/foo.sock\0".as_ptr() as *const c_char,
                             (*sun).sun_path.as_mut_ptr(), 14);
                         *sl = mem::size_of::<libc::sockaddr_un>()
                             as libc::socklen_t;
