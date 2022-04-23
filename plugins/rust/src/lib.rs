@@ -1354,7 +1354,7 @@ mod t {
                         *sun = mem::zeroed();
                         (*sun).sun_family = libc::AF_UNIX as libc::sa_family_t;
                         ptr::copy_nonoverlapping(
-                            b"/tmp/foo.sock\0".as_ptr() as *const c_char,
+                            b"rust-test.sock\0".as_ptr() as *const c_char,
                             (*sun).sun_path.as_mut_ptr(), 14);
                         let len = offset_of!(libc::sockaddr_un, sun_path) as u8
                             + 14;
@@ -1372,7 +1372,8 @@ mod t {
                     }
                     0
                 });
-            assert_eq!("/tmp/foo.sock", peername::<UnixAddr>().unwrap().to_string());
+            assert_eq!("rust-test.sock",
+                       peername::<UnixAddr>().unwrap().to_string());
             ctx.checkpoint();
         }
     }
