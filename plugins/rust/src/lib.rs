@@ -69,7 +69,7 @@
 
 use bitflags::bitflags;
 #[cfg(feature = "nix")]
-pub use nix::sys::socket::{SockAddr, sockaddr_storage_to_addr};
+pub use nix::sys::socket::SockaddrLike;
 use std::{
     ffi::{CStr, CString},
     error,
@@ -1082,18 +1082,22 @@ pub fn is_stdio_safe() -> bool {
 /// That is, it can only be called in the same thread as one of the `Server`
 /// callbacks.
 #[cfg(feature = "nix")]
-pub fn peername() -> std::result::Result<SockAddr, Box<dyn error::Error>> {
-    let mut ss = mem::MaybeUninit::<libc::sockaddr_storage>::uninit();
-    let mut len = mem::size_of_val(&ss) as libc::socklen_t;
+pub fn peername<T: SockaddrLike>() -> std::result::Result<T, Box<dyn error::Error>> {
+    let mut s = mem::MaybeUninit::<T>::uninit();
+    let mut len = T::size();
     unsafe {
-        let sa = ss.as_mut_ptr() as *mut libc::sockaddr;
+        let sa = s.as_mut_ptr() as *mut libc::sockaddr;
         let r = nbdkit_peer_name(sa, &mut len as *mut _);
         if r == -1 {
             // Note that nbdkit_peer_name does _not_ set errno
             return Err("No peer name available".into());
         }
-        sockaddr_storage_to_addr(&ss.assume_init(), len as usize)
-            .map_err(|e| Box::new(e) as Box<dyn error::Error>)
+        T::from_raw(s.assume_init().as_ptr(), Some(len)).ok_or_else(|| {
+            Box::new(Error::new(
+                libc::EINVAL,
+                "Invalid sockaddr returned by nbdkit_peer_name"
+            )) as Box<dyn error::Error>
+        })
     }
 }
 
@@ -1241,6 +1245,7 @@ mod t {
         use lazy_static::lazy_static;
         use memoffset::offset_of;
         use mockall::{mock, predicate::*};
+        use nix::sys::socket::{SockaddrIn, SockaddrIn6, UnixAddr};
         use std::sync::Mutex;
 
         lazy_static! {
@@ -1272,7 +1277,7 @@ mod t {
                 // Since nbdkit_peer_name does not set errno, all types of
                 // errors are indistinguishable to a plugin
                 .return_const(-1);
-            let e = peername().unwrap_err();
+            let e = peername::<SockaddrIn>().unwrap_err();
             ctx.checkpoint();
             assert_eq!("No peer name available", e.to_string());
         }
@@ -1284,7 +1289,7 @@ mod t {
             ctx.expect()
                 .withf(|_, len| {
                     let l = unsafe {**len as usize};
-                    l == mem::size_of::<libc::sockaddr_storage>()
+                    l == mem::size_of::<libc::sockaddr_in>()
                 }).returning(|sa, sl| {
                     let sin = sa as *mut libc::sockaddr_in;
                     unsafe {
@@ -1301,7 +1306,7 @@ mod t {
                     }
                     0
                 });
-            assert_eq!("127.0.0.1:1234", peername().unwrap().to_string());
+            assert_eq!("127.0.0.1:1234", peername::<SockaddrIn>().unwrap().to_string());
             ctx.checkpoint();
         }
 
@@ -1312,7 +1317,7 @@ mod t {
             ctx.expect()
                 .withf(|_, len| {
                        let l = unsafe {**len as usize};
-                       l == mem::size_of::<libc::sockaddr_storage>()
+                       l == mem::size_of::<libc::sockaddr_in6>()
                 }).returning(|sa, sl| {
                     let sin6 = sa as *mut libc::sockaddr_in6;
                     unsafe {
@@ -1330,7 +1335,7 @@ mod t {
                     }
                     0
                 });
-            assert_eq!("[::1]:1234", peername().unwrap().to_string());
+            assert_eq!("[::1]:1234", peername::<SockaddrIn6>().unwrap().to_string());
             ctx.checkpoint();
         }
 
@@ -1341,7 +1346,7 @@ mod t {
             ctx.expect()
                 .withf(|_, len| {
                        let l = unsafe {**len as usize};
-                       l == mem::size_of::<libc::sockaddr_storage>()
+                       l == mem::size_of::<libc::sockaddr_un>()
                 }).returning(|sa, sl| {
                     let sun = sa as *mut libc::sockaddr_un;
 
@@ -1349,14 +1354,26 @@ mod t {
                         *sun = mem::zeroed();
                         (*sun).sun_family = libc::AF_UNIX as libc::sa_family_t;
                         ptr::copy_nonoverlapping(
-                            b"/tmp/foo.sock\0".as_ptr() as *const c_char,
+                            b"rust-test.sock\0".as_ptr() as *const c_char,
                             (*sun).sun_path.as_mut_ptr(), 14);
-                        *sl = offset_of!(libc::sockaddr_un, sun_path)
-                            as libc::socklen_t + 14;
+                        let len = offset_of!(libc::sockaddr_un, sun_path) as u8
+                            + 14;
+                        #[cfg(any(target_os = "freebsd",
+                                  target_os = "netbsd",
+                                  target_os = "openbsd",
+                                  target_os = "macos",
+                                  target_os = "ios",
+                                  target_os = "dragonfly"
+                        ))]
+                        {
+                            (*sun).sun_len = len;
+                        }
+                        *sl = len as libc::socklen_t;
                     }
                     0
                 });
-            assert_eq!("/tmp/foo.sock", peername().unwrap().to_string());
+            assert_eq!("rust-test.sock",
+                       peername::<UnixAddr>().unwrap().to_string());
             ctx.checkpoint();
         }
     }
