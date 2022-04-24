@@ -58,9 +58,12 @@ static int sock = -1;
 static void
 pause_unload (void)
 {
-  free (sockfile);
   if (sock >= 0)
     close (sock);
+  if (sockfile) {
+    unlink (sockfile);
+    free (sockfile);
+  }
 }
 
 static int
