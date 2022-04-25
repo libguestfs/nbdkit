@@ -42,9 +42,6 @@ General ideas for improvements
   subset of the request in range and then NBD_REPLY_TYPE_ERROR_OFFSET
   for the tail, rather than erroring the entire request.
 
-* Test and document how to run nbdkit from inetd and xinetd in
-  nbdkit-service(1).
-
 * Audit the code base to get rid of strerror() usage (the function is
   not thread-safe); however, using geterror_r() can be tricky as it
   has a different signature in glibc than in POSIX.

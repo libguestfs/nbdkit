@@ -50,6 +50,23 @@ containing:
 For more information on systemd and socket activation, see
 L<http://0pointer.de/blog/projects/socket-activation.html>
 
+=head1 INETD AND XINETD
+
+You can run nbdkit from L<inetd(8)> or L<xinetd(8)>.  For inetd use:
+
+ nbd stream tcp nowait root /usr/sbin/nbdkit nbdkit -s file /tmp/disk.img
+
+For xinetd create a file F</etc/xinetd.d/nbdkit> containing:
+
+ service nbd
+ {
+     socket_type = stream
+     wait = no
+     user = root
+     server = /usr/sbin/nbdkit
+     server_args = -s file /tmp/disk.img
+ }
+
 =head1 LOGGING
 
 Error messages from nbdkit can be sent to standard error
@@ -150,6 +167,8 @@ L<nbdkit-ip-filter(1)>,
 L<nbdkit-limit-filter(1)>,
 L<systemd(1)>,
 L<systemd.socket(5)>,
+L<inetd(8)>,
+L<xinetd(8)>,
 L<syslog(3)>,
 L<rsyslogd(8)>,
 L<journalctl(1)>,
