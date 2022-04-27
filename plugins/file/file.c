@@ -403,6 +403,8 @@ file_open (int readonly)
   h = malloc (sizeof *h);
   if (h == NULL) {
     nbdkit_error ("malloc: %m");
+    if (dfd != -1)
+      close (dfd);
     return NULL;
   }
 
