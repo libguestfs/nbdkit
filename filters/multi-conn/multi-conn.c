@@ -172,6 +172,7 @@ multi_conn_open (nbdkit_next_open *next, nbdkit_context *nxdata,
     h->name = strdup (exportname);
     if (h->name == NULL) {
       nbdkit_error ("strdup: %m");
+      free (h);
       return NULL;
     }
   }
