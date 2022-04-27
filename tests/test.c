@@ -34,6 +34,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
@@ -136,6 +137,7 @@ test_start_nbdkit (const char *arg, ...)
 {
   size_t i, len;
   struct test_nbdkit *kit = malloc (sizeof *kit);
+  bool exists;
 
   if (!kit) {
     perror ("malloc");
@@ -217,10 +219,18 @@ test_start_nbdkit (const char *arg, ...)
       perror ("kill");
     }
 
-    if (access (kit->pidpath, F_OK) == 0)
+    exists = access (kit->pidpath, F_OK) == 0;
+    if (exists)
       break;
 
     sleep (1);
+  }
+
+  if (!exists) {
+    fprintf (stderr,
+             "%s: nbdkit did not create pidfile %s within "
+             "%d seconds, continuing anyway\n",
+             program_name, kit->pidpath, NBDKIT_START_TIMEOUT);
   }
 
   return 0;
