@@ -171,6 +171,7 @@ create_script (const char *method, const char *value)
   /* Special case for user override of missing */
   if (missing && strcmp (script, missing) == 0 && unlink (script) == -1) {
     nbdkit_error ("unlink: %m");
+    free (script);
     return NULL;
   }
 
