@@ -127,6 +127,7 @@ filters="\
         ip \
         limit \
         log \
+        luks \
         multi-conn \
         nocache \
         noextents \
@@ -614,8 +615,9 @@ PKG_CHECK_MODULES([GNUTLS], [gnutls >= 3.3.0], [
 ], [
     AC_MSG_WARN([gnutls not found or < 3.3.0, TLS support will be disabled.])
 ])
+AM_CONDITIONAL([HAVE_GNUTLS], [test "x$GNUTLS_LIBS" != "x"])
 
-AS_IF([test "$GNUTLS_LIBS" != ""],[
+AS_IF([test "x$GNUTLS_LIBS" != "x"],[
     AC_MSG_CHECKING([for default TLS session priority string])
     AC_ARG_WITH([tls-priority],
         [AS_HELP_STRING([--with-tls-priority=...],
@@ -1383,6 +1385,7 @@ AC_CONFIG_FILES([Makefile
                  filters/ip/Makefile
                  filters/limit/Makefile
                  filters/log/Makefile
+                 filters/luks/Makefile
                  filters/multi-conn/Makefile
                  filters/nocache/Makefile
                  filters/noextents/Makefile
@@ -1481,6 +1484,7 @@ echo "Optional filters:"
 echo
 feature "ext2"                test "x$HAVE_EXT2_TRUE" = "x"
 feature "gzip"                test "x$HAVE_ZLIB_TRUE" = "x"
+feature "LUKS"                test "x$HAVE_GNUTLS_TRUE" != "x"
 feature "xz"                  test "x$HAVE_LIBLZMA_TRUE" = "x"
 
 echo
