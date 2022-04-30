@@ -192,9 +192,6 @@ Suggestions for filters
   connections.  This may even allow a filter to offer a more parallel
   threading model than the underlying plugin.
 
-* LUKS encrypt/decrypt filter, bonus points if compatible with qemu
-  LUKS-encrypted disk images
-
 * CBT filter to track dirty blocks.  See these links for inspiration:
   https://www.cloudandheat.com/block-level-data-tracking-using-davice-mappers-dm-era/
   https://github.com/qemu/qemu/blob/master/docs/interop/bitmaps.rst
@@ -228,6 +225,14 @@ Suggestions for filters
 * nbdkit-pause-filter would probably be more useful if the filter
   could inject a flush after pausing.  However this requires that
   filter background threads have access to the plugin (see above).
+
+nbdkit-luks-filter:
+
+* This filter should also support LUKSv2 (and so should qemu).
+
+* There are some missing features: ESSIV, more ciphers.
+
+* Implement trim and zero if possible.
 
 nbdkit-readahead-filter:
 

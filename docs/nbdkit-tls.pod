@@ -364,6 +364,7 @@ More information can be found in L<gnutls_priority_init(3)>.
 =head1 SEE ALSO
 
 L<nbdkit(1)>,
+L<nbdkit-luks-filter(1)>,
 L<nbdkit-tls-fallback-filter(1)>,
 L<nbdcopy(1)>,
 L<nbdfuse(1)>,

@@ -1590,6 +1590,18 @@ EXTRA_DIST += \
 	test-log-script-info.sh \
 	$(NULL)
 
+# luks filter test.
+if HAVE_GNUTLS
+TESTS += \
+	test-luks-info.sh \
+	test-luks-copy.sh \
+	$(NULL)
+endif
+EXTRA_DIST += \
+	test-luks-info.sh \
+	test-luks-copy.sh \
+	$(NULL)
+
 # multi-conn filter test.
 TESTS += \
 	test-multi-conn.sh \

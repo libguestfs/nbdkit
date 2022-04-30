@@ -1,0 +1,120 @@
+=head1 NAME
+
+nbdkit-luks-filter - read and write LUKS-encrypted disks and partitions
+
+=head1 SYNOPSIS
+
+ nbdkit file encrypted-disk.img --filter=luks passphrase=+/tmp/secret
+
+=head1 DESCRIPTION
+
+C<nbdkit-luks-filter> is a filter for L<nbdkit(1)> which transparently
+opens a LUKS-encrypted disk image.  LUKS ("Linux Unified Key Setup")
+is the Full Disk Encryption (FDE) system commonly used by Linux
+systems.  This filter is compatible with LUKSv1 as implemented by the
+Linux kernel (dm_crypt), and by qemu.
+
+You can place this filter on top of L<nbdkit-file-plugin(1)> to
+decrypt a local file:
+
+ nbdkit file encrypted-disk.img --filter=luks passphrase=+/tmp/secret
+
+If LUKS is present inside a partition in the disk image then you will
+have to combine this filter with L<nbdkit-partition-filter(1)>.  The
+order of the filters is important:
+
+ nbdkit file encrypted-disk.img \
+             --filter=luks passphrase=+/tmp/secret \
+             --filter=partition partition=1
+
+This filter also works on top of other plugins such as
+L<nbdkit-curl-plugin(1)>:
+
+ nbdkit curl https://example.com/encrypted-disk.img \
+             --filter=luks passphrase=+/tmp/secret
+
+The web server sees only the encrypted data.  Without knowing the
+passphrase, the web server cannot access the decrypted disk.  Only
+encrypted data is sent over the HTTP connection.  nbdkit itself will
+serve I<unencrypted> disk data over the NBD connection (if this is a
+problem see L<nbdkit-tls(1)>, or use a Unix domain socket I<-U>).
+
+The passphrase can be stored in a file (as shown), passed directly on
+the command line (insecure), entered interactively, or passed to
+nbdkit over a file descriptor.
+
+This filter can read and write LUKSv1.  It cannot create disks, change
+passphrases, add keyslots, etc.  To do that, you can use ordinary
+Linux tools like L<cryptsetup(8)>.  Note you must force LUKSv1
+(eg. using cryptsetup I<--type luks1>).  L<qemu-img(1)> can also
+create compatible disk images:
+
+ qemu-img create -f luks \
+                 --object secret,data=SECRET,id=sec0 \
+                 -o key-secret=sec0 \
+                 encrypted-disk.img 1G
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<passphrase=>SECRET
+
+Use the secret passphrase when decrypting the disk.
+
+Note that passing this on the command line is not secure on shared
+machines.
+
+=item B<passphrase=->
+
+Ask for the passphrase (interactively) when nbdkit starts up.
+
+=item B<passphrase=+>FILENAME
+
+Read the passphrase from the named file.  This is a secure method to
+supply a passphrase, as long as you set the permissions on the file
+appropriately.
+
+=item B<passphrase=->FD
+
+Read the passphrase from file descriptor number C<FD>, inherited from
+the parent process when nbdkit starts up.  This is also a secure
+method to supply a passphrase.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-luks-filter.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-luks-filter> first appeared in nbdkit 1.32.
+
+=head1 SEE ALSO
+
+L<nbdkit-curl-plugin(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-ip-filter(1)>,
+L<nbdkit-partition-filter(1)>,
+L<nbdkit(1)>,
+L<nbdkit-tls(1)>,
+L<nbdkit-plugin(3)>,
+L<cryptsetup(8)>,
+L<qemu-img(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2013-2022 Red Hat Inc.
