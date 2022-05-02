@@ -33,6 +33,10 @@
 #ifndef NBDKIT_CLEANUP_H
 #define NBDKIT_CLEANUP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <pthread.h>
 #include <assert.h>
 
@@ -89,5 +93,9 @@ extern void cleanup_extents_free (struct nbdkit_extents **ptr);
 struct nbdkit_exports;
 extern void cleanup_exports_free (struct nbdkit_exports **ptr);
 #define CLEANUP_EXPORTS_FREE __attribute__((cleanup (cleanup_exports_free)))
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* NBDKIT_CLEANUP_H */

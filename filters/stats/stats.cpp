@@ -32,6 +32,10 @@
 
 #include <config.h>
 
+#include <map>
+#include <vector>
+#include <algorithm>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -47,6 +51,7 @@
 #include <nbdkit-filter.h>
 
 #include "cleanup.h"
+
 #include "tvdiff.h"
 #include "windows-compat.h"
 
@@ -62,6 +67,8 @@ typedef struct {
   uint64_t usecs;
 } nbdstat;
 
+typedef std::map<size_t, size_t> blksize_hist_t;
+
 /* This lock protects all the stats. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static nbdstat pread_st   = { "read" };
@@ -71,6 +78,10 @@ static nbdstat zero_st    = { "zero" };
 static nbdstat extents_st = { "extents" };
 static nbdstat cache_st   = { "cache" };
 static nbdstat flush_st   = { "flush" };
+static blksize_hist_t blksize_pread_st;
+static blksize_hist_t blksize_pwrite_st;
+static blksize_hist_t blksize_trim_st;
+static blksize_hist_t blksize_zero_st;
 
 #define KiB 1024
 #define MiB 1048576
@@ -143,6 +154,50 @@ print_totals (uint64_t usecs)
   free (rate);
 }
 
+static void
+print_histogram (const blksize_hist_t hist, int count)
+{
+  double total = 0;
+  for (auto el : hist) {
+    total += static_cast<double> (el.second);
+  }
+
+  // Sort
+  auto pairs = std::vector<std::pair<size_t, size_t>> (hist.begin(), hist.end());
+  std::sort(pairs.begin(), pairs.end(),
+    [](decltype(pairs[0]) a, decltype(pairs[0]) b) {
+      return a.second > b.second;
+    });
+
+  int i = 0;
+  for (auto el : pairs) {
+    if (++i >= count)
+      break;
+    fprintf (fp, "%13zu         %9zu (%.2f%%)\n",
+      el.first, el.second, static_cast<double>(el.second) / total * 100);
+  }
+}
+
+static void
+print_blocksize_stats (void)
+{
+  fprintf (fp, "\nREAD Request sizes (top 28):\n");
+  fprintf (fp, "    blocksize     request count\n");
+  print_histogram (blksize_pread_st, 28);
+  
+  fprintf (fp, "\nWRITE Request sizes (top 28):\n");
+  fprintf (fp, "    blocksize     request count\n");
+  print_histogram (blksize_pwrite_st, 28);
+
+  fprintf (fp, "\nTRIM Request sizes (top 28):\n");
+  fprintf (fp, "    blocksize     request count\n");
+  print_histogram (blksize_trim_st, 28);
+  
+  fprintf (fp, "\nZERO Request sizes (top 28):\n");
+  fprintf (fp, "    blocksize     request count\n");
+  print_histogram (blksize_zero_st, 28);
+}
+
 static inline void
 print_stats (int64_t usecs)
 {
@@ -154,6 +209,7 @@ print_stats (int64_t usecs)
   print_stat (&extents_st, usecs);
   print_stat (&cache_st,   usecs);
   print_stat (&flush_st,   usecs);
+  print_blocksize_stats();
   fflush (fp);
 }
 
@@ -268,6 +324,11 @@ stats_pread (nbdkit_next *next,
   struct timeval start;
   int r;
 
+  {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    blksize_pread_st[count]++;
+  }
+
   gettimeofday (&start, NULL);
   r = next->pread (next, buf, count, offset, flags, err);
   if (r == 0) record_stat (&pread_st, count, &start);
@@ -284,6 +345,11 @@ stats_pwrite (nbdkit_next *next,
   struct timeval start;
   int r;
 
+  {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    blksize_pwrite_st[count]++;
+  }
+  
   gettimeofday (&start, NULL);
   r = next->pwrite (next, buf, count, offset, flags, err);
   if (r == 0) record_stat (&pwrite_st, count, &start);
@@ -299,6 +365,11 @@ stats_trim (nbdkit_next *next,
 {
   struct timeval start;
   int r;
+
+  {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    blksize_trim_st[count]++;
+  }
 
   gettimeofday (&start, NULL);
   r = next->trim (next, count, offset, flags, err);
@@ -330,6 +401,11 @@ stats_zero (nbdkit_next *next,
 {
   struct timeval start;
   int r;
+
+  {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    blksize_zero_st[count]++;
+  }
 
   gettimeofday (&start, NULL);
   r = next->zero (next, count, offset, flags, err);
@@ -373,21 +449,24 @@ stats_cache (nbdkit_next *next,
   return r;
 }
 
-static struct nbdkit_filter filter = {
-  .name              = "stats",
-  .longname          = "nbdkit stats filter",
-  .unload            = stats_unload,
-  .config            = stats_config,
-  .config_complete   = stats_config_complete,
-  .config_help       = stats_config_help,
-  .get_ready         = stats_get_ready,
-  .pread             = stats_pread,
-  .pwrite            = stats_pwrite,
-  .trim              = stats_trim,
-  .flush             = stats_flush,
-  .zero              = stats_zero,
-  .extents           = stats_extents,
-  .cache             = stats_cache,
-};
+static struct nbdkit_filter filter = []() -> nbdkit_filter {
+	auto f = nbdkit_filter();
+  f.name = "stats";
+  f.longname = "nbdkit stats filter";
+  f.unload = stats_unload;
+  f.config = stats_config;
+  f.config_complete = stats_config_complete;
+  f.config_help = stats_config_help;
+  f.get_ready = stats_get_ready;
+  f.pread = stats_pread;
+  f.pwrite = stats_pwrite;
+  f.flush = stats_flush;
+  f.trim = stats_trim;
+  f.zero = stats_zero;
+  f.extents = stats_extents;
+  f.cache = stats_cache;
+
+    return f;
+}();
 
 NBDKIT_REGISTER_FILTER(filter)
