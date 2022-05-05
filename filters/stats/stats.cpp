@@ -33,6 +33,7 @@
 #include <config.h>
 
 #include <unordered_map>
+#include <map>
 #include <vector>
 #include <algorithm>
 
@@ -68,7 +69,15 @@ typedef struct {
   uint64_t usecs;
 } nbdstat;
 
-typedef std::unordered_map<size_t, size_t> blksize_hist_t;
+/* Keeps track of the number of requests with a given block size and alignment.
+ * Alignment is defined as the number of trailing zero-bytes in the offset.
+ *
+ * The outer map is indexed by block size. The inner map is indexed by
+ * alignment bits. The value is the number of requests with the given
+ *  block size and alignment. */
+typedef std::unordered_map<size_t,
+  std::unordered_map<int, size_t>> blksize_hist_t;
+
 
 /* This lock protects all the stats. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -88,7 +97,39 @@ static blksize_hist_t blksize_zero_st;
 #define MiB 1048576
 #define GiB 1073741824
 
-static char *
+static int
+get_alignment (size_t offset)
+{
+  /* Cache most common alignments */
+  static int powers[] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+  };
+  static size_t masks[] = {
+    0, (1 << 1) - 1, (1 << 2) - 1, (1 << 3) - 1, (1 << 4) - 1, (1 << 5) - 1, (1 << 6) - 1,
+    (1 << 7) - 1, (1 << 8) - 1, (1 << 9) - 1, (1 << 10) - 1, (1 << 11) - 1, (1 << 12) - 1,
+    (1 << 13) - 1, (1 << 14) - 1
+  };
+
+  // Can't determine an alignment for 0, so use a special flag value.
+  if (offset==0)
+    return -1;
+
+  int i = 0;
+  while(++i < sizeof (powers)/sizeof(powers[0])) {
+    if ((offset & masks[i]) != 0)
+      return i - 1;
+  }
+
+  // Larger alignments
+  while (1) {
+    size_t mask = (1ul << i) - 1;
+    if ((offset & mask) != 0)
+      return i - 1;
+    i++;
+  }
+}
+
+static char*
 humansize (uint64_t bytes)
 {
   int r;
@@ -156,7 +197,7 @@ print_totals (uint64_t usecs)
 }
 
 static void
-inc_blksize_ctr (blksize_hist_t &hist, size_t blksize)
+inc_blksize_ctr (blksize_hist_t &hist, size_t blksize, size_t offset)
 {
   static bool out_of_memory = false;
   if (out_of_memory || print_threshold == 0)
@@ -165,7 +206,7 @@ inc_blksize_ctr (blksize_hist_t &hist, size_t blksize)
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
 
   try {
-    hist[blksize]++;
+    hist[blksize][get_alignment (offset)]++;
   }
   catch (std::bad_alloc) {
     // Avoid reporting the same error over and over again
@@ -176,56 +217,118 @@ inc_blksize_ctr (blksize_hist_t &hist, size_t blksize)
 }
 
 static void
-print_histogram (const blksize_hist_t &hist)
-{
-  double total = 0;
-  for (auto el : hist) {
-    total += static_cast<double> (el.second);
+print_align_hist(const std::unordered_map<int, size_t>& align_map)
+{    
+  /* Convert to ordered map (convenient, since we need to mutate counts),
+   * find requests for offset zero (any alignment), and calculate total. */
+  std::map<int, size_t> align_hist;
+  size_t any_align_count = 0;
+  size_t total = 0;
+  for (auto &el : align_map) {
+    int bits = el.first;
+    size_t requests = el.second;
+    if (bits == -1) {
+      any_align_count = requests;
+    } else {
+      align_hist[bits] = requests;
+    }
+    total += requests;
   }
 
-  // Sort
-  auto pairs = std::vector<std::pair<size_t, size_t>> (hist.begin(), hist.end());
-  std::sort (pairs.begin(), pairs.end(),
-             [](decltype(pairs[0]) a, decltype(pairs[0]) b) {
-               return a.second > b.second;
-             });
+  /* "Fix-up" alignment counts (requests with 8-bit alignment also have
+   *  7-bit alignment, 6-bit alignment, etc) */
+  for (auto &el : align_hist) {
+    int bits = el.first;
+    size_t requests = el.second;
+    while (--bits >= 0) {
+      auto it = align_hist.find(bits);
+      if (it != align_hist.end())
+        it->second += requests;
+    } 
+    el.second += any_align_count;
+  }
+  
+  /* The smallest alignment must have the largest number of requests, so we
+   * can iterate in map-order, skipping over bits for which the number of
+   * requests does not change */
+  auto it = align_hist.begin();
+  auto cutoff = static_cast<size_t> ((1-print_threshold) * total);
+  while(it != align_hist.end()) {
+    auto bits = it->first;
+    auto requests = it->second;
 
-  // Print values until we have covered *print_threshold* percent of
-  // requests.
-  size_t to_print = static_cast<ssize_t>(print_threshold * total);
-  size_t printed = 0;
-  for (auto el : pairs) {
-    if (printed >= to_print) {
-      size_t requests = total - printed;
-      fprintf (fp, "     (others)         %9zu (%.2f%%)\n",
-               requests, static_cast<double>(requests) / total * 100);
+    if (requests < cutoff) {
+      fprintf (fp, "         %2zu+ bit-aligned: %4.1f%% (%zu)\n",
+               bits, static_cast<double> (requests) / total * 100, requests);
       break;
     }
-    size_t blocksize = el.first;
-    size_t requests = el.second;
-    fprintf (fp, "%13zu         %9zu (%.2f%%)\n",
-             blocksize, requests, static_cast<double>(requests) / total * 100);
+
+    // Only print if number of requests differs from the next alignment
+    it++; 
+    if (it == align_hist.end() || it->second != requests) {
+      fprintf (fp, "         %2zu bit aligned: %5.1f%% (%zu)\n",      
+              bits, static_cast<double>(requests*100) / total, requests);
+    }
+  }
+}
+
+static void
+print_histogram (const blksize_hist_t &hist)
+{
+  if (hist.size() == 0) {
+    fprintf (fp, "    (no such requests)\n");
+    return;
+  }
+
+  /* Aggregate per-(blocksize, alignment) request counts to per-blocksize counts
+   * and compute grand total */
+  double total = 0;
+  std::map<size_t, size_t> rq_blksize_m;
+  for (auto &el1 : hist) {
+    auto blocksize = el1.first;
+    auto &align_map = el1.second;
+    size_t requests = 0;
+    for (auto &el : align_map) {
+      requests += el.second;
+      total += static_cast<double> (el.second);
+    }
+    rq_blksize_m[requests] = blocksize;
+  }
+
+  /* Print block sizes until we have covered the *print_threshold* percentile */
+  size_t to_print = static_cast<size_t> (print_threshold * total);
+  size_t printed = 0;
+  for (auto it = rq_blksize_m.rbegin(); it != rq_blksize_m.rend(); it++) {
+    if (printed >= to_print) {
+      size_t requests = total - printed;
+      fprintf (fp, "    other sizes: %4.1f%% of requests (%zu)\n",
+               static_cast<double> (requests) / total * 100, requests);
+      break;
+    }
+
+    size_t blocksize = it->second;
+    size_t requests = it->first;
+    fprintf (fp, "%9zu bytes: %4.1f%% of requests (%zu)\n",
+             blocksize, static_cast<double> (requests) / total * 100, requests);
     printed += requests;
+
+    print_align_hist(hist.at(blocksize));
   }
 }
 
 static void
 print_blocksize_stats (void)
 {
-  fprintf (fp, "\nREAD Request sizes:\n");
-  fprintf (fp, "    blocksize     request count\n");
+  fprintf (fp, "\nREAD request sizes:\n");
   print_histogram (blksize_pread_st);
 
-  fprintf (fp, "\nWRITE Request sizes:\n");
-  fprintf (fp, "    blocksize     request count\n");
+  fprintf (fp, "\nWRITE request sizes:\n");
   print_histogram (blksize_pwrite_st);
 
-  fprintf (fp, "\nTRIM Request sizes:\n");
-  fprintf (fp, "    blocksize     request count\n");
+  fprintf (fp, "\nTRIM request sizes:\n");
   print_histogram (blksize_trim_st);
 
-  fprintf (fp, "\nZERO Request sizes:\n");
-  fprintf (fp, "    blocksize     request count\n");
+  fprintf (fp, "\nZERO request sizes:\n");
   print_histogram (blksize_zero_st);
 }
 
@@ -368,7 +471,7 @@ stats_pread (nbdkit_next *next,
   struct timeval start;
   int r;
 
-  inc_blksize_ctr (blksize_pread_st, count);
+  inc_blksize_ctr (blksize_pread_st, count, offset);
   gettimeofday (&start, NULL);
   r = next->pread (next, buf, count, offset, flags, err);
   if (r == 0) record_stat (&pread_st, count, &start);
@@ -385,7 +488,7 @@ stats_pwrite (nbdkit_next *next,
   struct timeval start;
   int r;
 
-  inc_blksize_ctr (blksize_pwrite_st, count);
+  inc_blksize_ctr (blksize_pwrite_st, count, offset);
   gettimeofday (&start, NULL);
   r = next->pwrite (next, buf, count, offset, flags, err);
   if (r == 0) record_stat (&pwrite_st, count, &start);
@@ -402,7 +505,7 @@ stats_trim (nbdkit_next *next,
   struct timeval start;
   int r;
 
-  inc_blksize_ctr (blksize_trim_st, count);
+  inc_blksize_ctr (blksize_trim_st, count, offset);
   gettimeofday (&start, NULL);
   r = next->trim (next, count, offset, flags, err);
   if (r == 0) record_stat (&trim_st, count, &start);
@@ -434,7 +537,7 @@ stats_zero (nbdkit_next *next,
   struct timeval start;
   int r;
 
-  inc_blksize_ctr (blksize_zero_st, count);
+  inc_blksize_ctr (blksize_zero_st, count, offset);
   gettimeofday (&start, NULL);
   r = next->zero (next, count, offset, flags, err);
   if (r == 0) record_stat (&zero_st, count, &start);
