@@ -52,9 +52,7 @@
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
 
-extern "C" {
 #include "cleanup.h"
-};
 
 static bool seen_torrent = false;
 

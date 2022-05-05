@@ -12,24 +12,55 @@ C<nbdkit-stats-filter> is a filter that displays statistics about NBD
 operations, such as the number of bytes read and written.  Statistics
 are written to a file once when nbdkit exits.
 
-=head1 EXAMPLE
+=head1 EXAMPLE OUTPUT
 
-In this example we run L<guestfish(1)> over nbdkit to create an ext4
-filesystem on a RAM disk, and use the stats filter to display the
-number of read, write and trim operations involved:
+ # nbdkit --filter=exitfirst --filter=stats memory 25G statsfile=example.txt
+ # nbd-client localhost /dev/nbd1 && mkfs.ext4 /dev/nbd1 && nbd-client -d /dev/nbd1
+ [....]
+ # cat example.txt
+ total: 1207 ops, 24.756059 s, 25.13 GiB, 1.02 GiB/s
+ read: 101 ops, 0.000322 s, 1.64 MiB, 4.99 GiB/s op, 68.02 KiB/s total
+ write: 1088 ops, 0.067040 s, 132.38 MiB, 1.93 GiB/s op, 5.35 MiB/s total
+ trim: 14 ops, 0.002605 s, 25.00 GiB, 9596.93 GiB/s op, 1.01 GiB/s total
+ flush: 4 ops, 0.000001 s, 0 bytes, 0 bytes/s op, 0 bytes/s total
 
- $ nbdkit -U - --filter=stats memory 1G statsfile=/dev/stderr \
-          --run '
-       guestfish add-drive "" protocol:nbd server:unix:$unixsocket \
-                              discard:enable format:raw : \
-                 run : \
-                 mkfs ext4 /dev/sda
- '
- total: 370 ops, 1.282993 s, 1.04 GiB, 827.29 MiB/s
- read: 250 ops, 0.000364 s, 4.76 MiB, 12.78 GiB/s op, 3.71 MiB/s total
- write: 78 ops, 0.175715 s, 32.64 MiB, 185.78 MiB/s op, 25.44 MiB/s total
- trim: 33 ops, 0.000252 s, 1.00 GiB, 3968.25 GiB/s op, 798.13 MiB/s total
- flush: 9 ops, 0.000002 s, 0 bytes, 0 bytes/s op, 0 bytes/s total
+ READ Request sizes (top 28):
+     blocksize     request count
+          4096                67 (66.34%)
+         16384                 7 (6.93%)
+          8192                 3 (2.97%)
+         24576                 3 (2.97%)
+         61440                 3 (2.97%)
+         20480                 2 (1.98%)
+         28672                 2 (1.98%)
+         36864                 2 (1.98%)
+         40960                 2 (1.98%)
+         57344                 2 (1.98%)
+         65536                 2 (1.98%)
+         69632                 2 (1.98%)
+         32768                 1 (0.99%)
+        122880                 1 (0.99%)
+        126976                 1 (0.99%)
+        131072                 1 (0.99%)
+
+ WRITE Request sizes (top 28):
+     blocksize     request count
+        131072              1056 (97.06%)
+          4096                18 (1.65%)
+         20480                10 (0.92%)
+         24576                 2 (0.18%)
+          8192                 1 (0.09%)
+         65536                 1 (0.09%)
+
+ TRIM Request sizes (top 28):
+     blocksize     request count
+    2147483648                12 (85.71%)
+      16777216                 1 (7.14%)
+    1056964608                 1 (7.14%)
+
+ ZERO Request sizes (top 28):
+     blocksize     request count
+
 
 =head1 PARAMETERS
 

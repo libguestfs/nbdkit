@@ -33,10 +33,12 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-stats-filter.pod
 
+if HAVE_CXX
+
 filter_LTLIBRARIES = nbdkit-stats-filter.la
 
 nbdkit_stats_filter_la_SOURCES = \
-	stats.c \
+	stats.cpp \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
 
@@ -68,3 +70,4 @@ nbdkit-stats-filter.1: nbdkit-stats-filter.pod \
 	    $<
 
 endif HAVE_POD
+endif HAVE_CXX
