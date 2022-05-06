@@ -32,7 +32,7 @@
 
 #include <config.h>
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <algorithm>
 
@@ -67,7 +67,7 @@ typedef struct {
   uint64_t usecs;
 } nbdstat;
 
-typedef std::map<size_t, size_t> blksize_hist_t;
+typedef std::unordered_map<size_t, size_t> blksize_hist_t;
 
 /* This lock protects all the stats. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
