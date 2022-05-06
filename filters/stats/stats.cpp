@@ -175,7 +175,7 @@ inc_blksize_ctr (blksize_hist_t &hist, size_t blksize)
 }
 
 static void
-print_histogram (const blksize_hist_t hist, int count)
+print_histogram (const blksize_hist_t& hist, int count)
 {
   double total = 0;
   for (auto el : hist) {
