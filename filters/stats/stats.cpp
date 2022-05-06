@@ -59,6 +59,7 @@ static char *filename;
 static bool append;
 static FILE *fp;
 static struct timeval start_t;
+static double print_threshold = 0.95;
 
 typedef struct {
   const char *name;
@@ -158,7 +159,7 @@ static void
 inc_blksize_ctr (blksize_hist_t &hist, size_t blksize)
 {
   static bool out_of_memory = false;
-  if (out_of_memory)
+  if (out_of_memory || print_threshold == 0)
     return;
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
@@ -175,7 +176,7 @@ inc_blksize_ctr (blksize_hist_t &hist, size_t blksize)
 }
 
 static void
-print_histogram (const blksize_hist_t& hist, int count)
+print_histogram (const blksize_hist_t &hist)
 {
   double total = 0;
   for (auto el : hist) {
@@ -184,38 +185,48 @@ print_histogram (const blksize_hist_t& hist, int count)
 
   // Sort
   auto pairs = std::vector<std::pair<size_t, size_t>> (hist.begin(), hist.end());
-  std::sort(pairs.begin(), pairs.end(),
-    [](decltype(pairs[0]) a, decltype(pairs[0]) b) {
-      return a.second > b.second;
-    });
+  std::sort (pairs.begin(), pairs.end(),
+             [](decltype(pairs[0]) a, decltype(pairs[0]) b) {
+               return a.second > b.second;
+             });
 
-  int i = 0;
+  // Print values until we have covered *print_threshold* percent of
+  // requests.
+  size_t to_print = static_cast<ssize_t>(print_threshold * total);
+  size_t printed = 0;
   for (auto el : pairs) {
-    if (++i >= count)
+    if (printed >= to_print) {
+      size_t requests = total - printed;
+      fprintf (fp, "     (others)         %9zu (%.2f%%)\n",
+               requests, static_cast<double>(requests) / total * 100);
       break;
+    }
+    size_t blocksize = el.first;
+    size_t requests = el.second;
     fprintf (fp, "%13zu         %9zu (%.2f%%)\n",
-      el.first, el.second, static_cast<double>(el.second) / total * 100);
+             blocksize, requests, static_cast<double>(requests) / total * 100);
+    printed += requests;
   }
 }
 
 static void
 print_blocksize_stats (void)
 {
-  fprintf (fp, "\nREAD Request sizes (top 28):\n");
+  fprintf (fp, "\nREAD Request sizes:\n");
   fprintf (fp, "    blocksize     request count\n");
-  print_histogram (blksize_pread_st, 28);
-  
-  fprintf (fp, "\nWRITE Request sizes (top 28):\n");
-  fprintf (fp, "    blocksize     request count\n");
-  print_histogram (blksize_pwrite_st, 28);
+  print_histogram (blksize_pread_st);
 
-  fprintf (fp, "\nTRIM Request sizes (top 28):\n");
+  fprintf (fp, "\nWRITE Request sizes:\n");
   fprintf (fp, "    blocksize     request count\n");
-  print_histogram (blksize_trim_st, 28);
-  
-  fprintf (fp, "\nZERO Request sizes (top 28):\n");
+  print_histogram (blksize_pwrite_st);
+
+  fprintf (fp, "\nTRIM Request sizes:\n");
   fprintf (fp, "    blocksize     request count\n");
-  print_histogram (blksize_zero_st, 28);
+  print_histogram (blksize_trim_st);
+
+  fprintf (fp, "\nZERO Request sizes:\n");
+  fprintf (fp, "    blocksize     request count\n");
+  print_histogram (blksize_zero_st);
 }
 
 static inline void
@@ -229,7 +240,8 @@ print_stats (int64_t usecs)
   print_stat (&extents_st, usecs);
   print_stat (&cache_st,   usecs);
   print_stat (&flush_st,   usecs);
-  print_blocksize_stats();
+  if (print_threshold != 0)
+    print_blocksize_stats ();
   fflush (fp);
 }
 
@@ -269,6 +281,18 @@ stats_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
     if (r == -1)
       return -1;
     append = r;
+    return 0;
+  }
+  else if (strcmp (key, "statsthreshold") == 0) {
+    int ival;
+    r = nbdkit_parse_int ("printing threshold", value, &ival);
+    if (r == -1)
+      return -1;
+    if (ival > 100 or ival < 0) {
+      nbdkit_error ("statsthreshold must be between 0 and 100 (percent)");
+      return -1;
+    }
+    print_threshold = static_cast<double>(ival) / 100;
     return 0;
   }
 

@@ -4,7 +4,8 @@ nbdkit-stats-filter - display statistics about operations
 
 =head1 SYNOPSIS
 
- nbdkit --filter=stats PLUGIN statsfile=FILE [statsappend=true]
+ nbdkit --filter=stats PLUGIN statsfile=FILE
+                       [statsappend=true] [statsthreshold=PERCENTILE]
 
 =head1 DESCRIPTION
 
@@ -15,7 +16,8 @@ are written to a file once when nbdkit exits.
 =head1 EXAMPLE OUTPUT
 
  # nbdkit --filter=exitfirst --filter=stats memory 25G statsfile=example.txt
- # nbd-client localhost /dev/nbd1 && mkfs.ext4 /dev/nbd1 && nbd-client -d /dev/nbd1
+ # nbd-client localhost /dev/nbd1 && mkfs.ext4 /dev/nbd1 &&
+   nbd-client -d /dev/nbd1
  [....]
  # cat example.txt
  total: 1207 ops, 24.756059 s, 25.13 GiB, 1.02 GiB/s
@@ -23,44 +25,37 @@ are written to a file once when nbdkit exits.
  write: 1088 ops, 0.067040 s, 132.38 MiB, 1.93 GiB/s op, 5.35 MiB/s total
  trim: 14 ops, 0.002605 s, 25.00 GiB, 9596.93 GiB/s op, 1.01 GiB/s total
  flush: 4 ops, 0.000001 s, 0 bytes, 0 bytes/s op, 0 bytes/s total
-
- READ Request sizes (top 28):
+ 
+ READ Request sizes:
      blocksize     request count
-          4096                67 (66.34%)
-         16384                 7 (6.93%)
-          8192                 3 (2.97%)
-         24576                 3 (2.97%)
-         61440                 3 (2.97%)
-         20480                 2 (1.98%)
-         28672                 2 (1.98%)
-         36864                 2 (1.98%)
-         40960                 2 (1.98%)
-         57344                 2 (1.98%)
-         65536                 2 (1.98%)
-         69632                 2 (1.98%)
-         32768                 1 (0.99%)
-        122880                 1 (0.99%)
-        126976                 1 (0.99%)
-        131072                 1 (0.99%)
-
- WRITE Request sizes (top 28):
+          4096                93 (68.38%)
+         61440                 5 (3.68%)
+         24576                 5 (3.68%)
+          8192                 5 (3.68%)
+         16384                 5 (3.68%)
+        126976                 3 (2.21%)
+        258048                 3 (2.21%)
+         57344                 2 (1.47%)
+        262144                 2 (1.47%)
+         20480                 2 (1.47%)
+         86016                 2 (1.47%)
+         40960                 2 (1.47%)
+      (others)                 7 (5.15%)
+ 
+ WRITE Request sizes:
      blocksize     request count
-        131072              1056 (97.06%)
-          4096                18 (1.65%)
-         20480                10 (0.92%)
-         24576                 2 (0.18%)
-          8192                 1 (0.09%)
-         65536                 1 (0.09%)
-
- TRIM Request sizes (top 28):
+        524288               264 (89.19%)
+          4096                18 (6.08%)
+      (others)                14 (4.73%)
+ 
+ TRIM Request sizes:
      blocksize     request count
     2147483648                12 (85.71%)
-      16777216                 1 (7.14%)
     1056964608                 1 (7.14%)
-
- ZERO Request sizes (top 28):
+      (others)                 1 (7.14%)
+ 
+ ZERO Request sizes:
      blocksize     request count
-
 
 =head1 PARAMETERS
 
@@ -75,6 +70,12 @@ This parameter is required.
 =item B<statsappend=true>
 
 If set then we append to the file instead of replacing it.
+
+=item B<statsthreshold=>PERCENTILE
+
+Percentile of requests for which block size histogram should be printed.
+Set to zero to disable collection of block size statistics. Set to 100
+to get a list of every block size encountered. Default: 95.
 
 =back
 
@@ -104,6 +105,8 @@ L<nbdkit-log-filter(1)>.
 
 Richard W.M. Jones
 
+Nikolaus Rath
+
 =head1 COPYRIGHT
 
-Copyright (C) 2019 Red Hat Inc.
+Copyright (C) 2019-2022 Red Hat Inc.
