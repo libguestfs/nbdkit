@@ -155,6 +155,26 @@ print_totals (uint64_t usecs)
 }
 
 static void
+inc_blksize_ctr (blksize_hist_t &hist, size_t blksize)
+{
+  static bool out_of_memory = false;
+  if (out_of_memory)
+    return;
+
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+
+  try {
+    hist[blksize]++;
+  }
+  catch (std::bad_alloc) {
+    // Avoid reporting the same error over and over again
+    nbdkit_error ("out of memory for blocksize statistics");
+    out_of_memory = true;
+    return;
+  }
+}
+
+static void
 print_histogram (const blksize_hist_t hist, int count)
 {
   double total = 0;
@@ -324,11 +344,7 @@ stats_pread (nbdkit_next *next,
   struct timeval start;
   int r;
 
-  {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    blksize_pread_st[count]++;
-  }
-
+  inc_blksize_ctr (blksize_pread_st, count);
   gettimeofday (&start, NULL);
   r = next->pread (next, buf, count, offset, flags, err);
   if (r == 0) record_stat (&pread_st, count, &start);
@@ -345,11 +361,7 @@ stats_pwrite (nbdkit_next *next,
   struct timeval start;
   int r;
 
-  {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    blksize_pwrite_st[count]++;
-  }
-  
+  inc_blksize_ctr (blksize_pwrite_st, count);
   gettimeofday (&start, NULL);
   r = next->pwrite (next, buf, count, offset, flags, err);
   if (r == 0) record_stat (&pwrite_st, count, &start);
@@ -366,11 +378,7 @@ stats_trim (nbdkit_next *next,
   struct timeval start;
   int r;
 
-  {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    blksize_trim_st[count]++;
-  }
-
+  inc_blksize_ctr (blksize_trim_st, count);
   gettimeofday (&start, NULL);
   r = next->trim (next, count, offset, flags, err);
   if (r == 0) record_stat (&trim_st, count, &start);
@@ -402,11 +410,7 @@ stats_zero (nbdkit_next *next,
   struct timeval start;
   int r;
 
-  {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-    blksize_zero_st[count]++;
-  }
-
+  inc_blksize_ctr (blksize_zero_st, count);
   gettimeofday (&start, NULL);
   r = next->zero (next, count, offset, flags, err);
   if (r == 0) record_stat (&zero_st, count, &start);
