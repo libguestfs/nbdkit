@@ -44,6 +44,8 @@ EXTRA_DIST = \
 	OTHER_PLUGINS \
 	scripts/git.orderfile \
 	SECURITY \
+	.vscode/settings.json \
+	.vscode/tasks.json \
 	$(NULL)
 
 CLEANFILES += html/*.html scripts/*~
