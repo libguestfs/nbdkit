@@ -46,11 +46,11 @@ rm -f $disk $info
 qemu-img create -f luks \
          --object secret,data=123456,id=sec0 \
          -o key-secret=sec0 \
-         $disk 10M
+         $disk 1M
 
 nbdkit -U - file $disk --filter=luks passphrase=123456 \
        --run 'nbdinfo $uri' > $info
 cat $info
 
-# Check the size is 10M (so it doesn't include the LUKS header).
-grep "10485760" $info
+# Check the size is 1M (so it doesn't include the LUKS header).
+grep "1048576" $info
