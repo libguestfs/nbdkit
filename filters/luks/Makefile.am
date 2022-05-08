@@ -38,6 +38,8 @@ if HAVE_GNUTLS_PBKDF2
 filter_LTLIBRARIES = nbdkit-luks-filter.la
 
 nbdkit_luks_filter_la_SOURCES = \
+	luks-encryption.c \
+	luks-encryption.h \
 	luks.c \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
