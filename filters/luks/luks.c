@@ -693,6 +693,10 @@ key_material_length_in_sectors (struct handle *h, size_t i)
 static int
 try_passphrase_in_keyslot (nbdkit_next *next, struct handle *h, size_t i)
 {
+  /* I believe this is supposed to be safe, looking at the GnuTLS
+   * header file.
+   */
+  const gnutls_mac_algorithm_t mac = (gnutls_mac_algorithm_t) h->hash_alg;
   struct luks_keyslot *ks = &h->phdr.keyslot[i];
   size_t split_key_len;
   CLEANUP_FREE uint8_t *split_key = NULL;
@@ -725,7 +729,7 @@ try_passphrase_in_keyslot (nbdkit_next *next, struct handle *h, size_t i)
   }
 
   /* Hash the passphrase to make a possible masterkey. */
-  r = gnutls_pbkdf2 (h->hash_alg, &key, &salt, ks->password_iterations,
+  r = gnutls_pbkdf2 (mac, &key, &salt, ks->password_iterations,
                      masterkey, h->phdr.master_key_len);
   if (r != 0) {
     nbdkit_error ("gnutls_pbkdf2: %s", gnutls_strerror (r));
@@ -761,7 +765,7 @@ try_passphrase_in_keyslot (nbdkit_next *next, struct handle *h, size_t i)
   /* Check if the masterkey is correct by comparing hash of the
    * masterkey with LUKS header.
    */
-  r = gnutls_pbkdf2 (h->hash_alg, &mkey, &msalt,
+  r = gnutls_pbkdf2 (mac, &mkey, &msalt,
                      h->phdr.master_key_digest_iterations,
                      key_digest, LUKS_DIGESTSIZE);
   if (r != 0) {
@@ -881,11 +885,6 @@ luks_prepare (nbdkit_next *next, void *handle, int readonly)
           (start + len) * LUKS_SECTOR_SIZE >= size) {
         nbdkit_error ("bad LUKSv1 header: key slot %zu key material offset "
                       "points beyond the end of the disk", i);
-        return -1;
-      }
-      if (ks->password_iterations > ULONG_MAX) {
-        nbdkit_error ("bad LUKSv1 header: key slot %zu "
-                      "iterations too large", i);
         return -1;
       }
       /*FALLTHROUGH*/
