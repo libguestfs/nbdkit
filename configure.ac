@@ -636,12 +636,15 @@ AS_IF([test "x$GNUTLS_LIBS" != "x"],[
         gnutls_certificate_set_known_dh_params \
         gnutls_group_get \
         gnutls_group_get_name \
+        gnutls_pbkdf2 \
         gnutls_session_set_verify_cert \
         gnutls_srp_server_get_username \
         gnutls_transport_is_ktls_enabled \
     ])
     LIBS="$old_LIBS"
 ])
+AM_CONDITIONAL([HAVE_GNUTLS_PBKDF2],
+    [test "x$GNUTLS_LIBS" != "x" && test "x$ac_cv_func_gnutls_pbkdf2" = xyes])
 
 AC_ARG_ENABLE([linuxdisk],
     [AS_HELP_STRING([--disable-linuxdisk],
@@ -1484,7 +1487,7 @@ echo "Optional filters:"
 echo
 feature "ext2"                test "x$HAVE_EXT2_TRUE" = "x"
 feature "gzip"                test "x$HAVE_ZLIB_TRUE" = "x"
-feature "LUKS"                test "x$HAVE_GNUTLS_TRUE" != "x"
+feature "luks"                test "x$HAVE_GNUTLS_PBKDF2_TRUE" = "x"
 feature "xz"                  test "x$HAVE_LIBLZMA_TRUE" = "x"
 
 echo
