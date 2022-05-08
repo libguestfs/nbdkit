@@ -60,8 +60,8 @@ rm -f $encrypt_disk $plain_disk $pid $sock
 qemu-img create -f luks \
          --object secret,data=123456,id=sec0 \
          -o key-secret=sec0 \
-         $encrypt_disk 10M
-truncate -s 10M $plain_disk
+         $encrypt_disk 1M
+truncate -s 1M $plain_disk
 qemu-img convert --target-image-opts -n \
          --object secret,data=123456,id=sec0 \
          $plain_disk \
@@ -74,11 +74,11 @@ start_nbdkit -P $pid -U $sock \
 uri="nbd+unix:///?socket=$sock"
 
 # Copy the whole disk out.  It should be empty.
-nbdcopy "$uri" $plain_disk
+nbdcopy -C 1 "$uri" $plain_disk
 
 if [ "$(hexdump -C $plain_disk)" != '00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 *
-00a00000' ]; then
+00100000' ]; then
     echo "$0: expected plaintext disk to be empty"
     exit 1
 fi
@@ -88,14 +88,14 @@ fi
 nbdsh -u "$uri" \
       -c 'h.pwrite(b"1"*65536, 0)' \
       -c 'h.pwrite(b"2"*65536, 128*1024)' \
-      -c 'h.pwrite(b"3"*65536, 9*1024*1024)' \
+      -c 'h.pwrite(b"3"*65536, 900*1024)' \
       -c 'buf = h.pread(65536, 0)' \
       -c 'assert buf == b"1"*65536' \
       -c 'buf = h.pread(65536, 65536)' \
       -c 'assert buf == bytearray(65536)' \
       -c 'buf = h.pread(65536, 128*1024)' \
       -c 'assert buf == b"2"*65536' \
-      -c 'buf = h.pread(65536, 9*1024*1024)' \
+      -c 'buf = h.pread(65536, 900*1024)' \
       -c 'assert buf == b"3"*65536' \
       -c 'h.flush()'
 
@@ -115,11 +115,11 @@ if [ "$(hexdump -C $plain_disk)" != '00000000  31 31 31 31 31 31 31 31  31 31 31
 *
 00030000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 *
-00900000  33 33 33 33 33 33 33 33  33 33 33 33 33 33 33 33  |3333333333333333|
+000e1000  33 33 33 33 33 33 33 33  33 33 33 33 33 33 33 33  |3333333333333333|
 *
-00910000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000f1000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 *
-00a00000' ]; then
+00100000' ]; then
     echo "$0: unexpected content"
     exit 1
 fi
