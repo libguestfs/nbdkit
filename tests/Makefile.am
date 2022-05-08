@@ -1591,7 +1591,7 @@ EXTRA_DIST += \
 	$(NULL)
 
 # luks filter test.
-if HAVE_GNUTLS
+if HAVE_GNUTLS_PBKDF2
 TESTS += \
 	test-luks-info.sh \
 	test-luks-copy.sh \

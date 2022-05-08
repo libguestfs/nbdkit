@@ -33,7 +33,7 @@ include $(top_srcdir)/common-rules.mk
 
 EXTRA_DIST = nbdkit-luks-filter.pod
 
-if HAVE_GNUTLS
+if HAVE_GNUTLS_PBKDF2
 
 filter_LTLIBRARIES = nbdkit-luks-filter.la
 
