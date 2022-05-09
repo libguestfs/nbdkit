@@ -3,5 +3,6 @@
     "C_Cpp.vcFormat.space.beforeFunctionOpenParenthesis": "insert",
     "C_Cpp.vcFormat.space.pointerReferenceAlignment": "right",
     "C_Cpp.formatting": "vcFormat",
-    "C_Cpp.vcFormat.indent.withinParentheses": "alignToParenthesis"
+    "C_Cpp.vcFormat.indent.withinParentheses": "alignToParenthesis",
+    "python.linting.flake8Enabled": true
 }
