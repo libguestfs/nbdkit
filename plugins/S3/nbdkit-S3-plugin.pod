@@ -1,27 +1,36 @@
 =head1 NAME
 
-nbdkit-S3-plugin - open disk images stored in Amazon S3 or Ceph
+nbdkit-S3-plugin - expose data in Amazon S3 or Ceph buckets as block device
 
 =head1 SYNOPSIS
 
  nbdkit S3 [access-key=...] [secret-key=...] [session-token=...]
            [endpoint-url=...]
-           bucket=BUCKET key=FILENAME
+           [size=NN object-size=NN]
+           bucket=BUCKET key=STRING
 
 =head1 DESCRIPTION
 
 C<nbdkit-S3-plugin> is a plugin for L<nbdkit(1)> which lets you open
-single files stored in Amazon S3 or Ceph as disk images.
-
-Currently it only allows read access, although write access may be
-added in future.
+objects stored in Amazon S3 or Ceph as disk images.
 
 This plugin uses the Python Amazon Web Services SDK called Boto3.
 
-=head1 EXAMPLE
+=head1 EXAMPLES
 
  nbdkit S3 endpoint-url=https://ceph.example.com \
            bucket=MY-BUCKET key=disk.img
+
+
+Provides read only block device holding the data contained in the "disk.img"
+object.
+
+ nbdkit S3 endpoint-url=https://ceph.example.com \
+           size=50G object-size=128k \
+           bucket=MY-BUCKET key=disk
+
+Provides a read-write block device with size 50G, whose contents are stored
+multiple in objects of size 128k, prefixed with I<disk/>
 
 =head1 PARAMETERS
 
@@ -44,13 +53,47 @@ endpoint URL through this parameter.
 
 =item B<bucket=>BUCKET
 
-The bucket containing the file.  This parameter is required.
+The bucket containing the object(s).  This parameter is required.
 
-=item B<key=>FILENAME
+=item B<key=>STRING
 
-The file name within the bucket.  This parameter is required.
+The object name (if C<size> is not specified) or object prefix (if
+C<size> is specified) to use within the bucket.  This parameter is
+required.
+
+=item B<size=>SIZE
+
+=item B<object-size=>SIZE
+
+These two parameters must always be specified together. If set, data
+will be split into blocks of C<object-size> and stored as separate
+objects. The block device will report a total size of C<size> and be
+writeable.
+
+Object names will have the form I<key/%16x>, where C<%16x> is the
+16-digit hexadecimal block number.
 
 =back
+
+=head1 PERFORMANCE CONSIDERATIONS
+
+It is highly recommended that clients do their utmost to issue
+requests that exactly match the object size: Smaller write requests
+will incur a performance penalty due to the need for read-modify-write
+cycles (thus also incurring latency from two network
+round-trips). Larger read and write requests will incur a performance
+penalty because of sequential execution.
+
+The L<nbdkit-blocksize-filter(1)> can be used to alleviate the impact
+of requests larger than the object size, but does not help if the
+client issues requests smaller than the block size.
+
+The L<nbdkit-stats-filter(1)> can be used to investigate what block
+sizes and alignments are used by the client.
+
+When connecting through the Linux kernel's NBD module, consider
+setting C</sys/block/nbdE<lt>XE<gt>/queue/max_sectors_kb> to match the
+object size.
 
 =head1 CREDENTIALS
 
@@ -75,12 +118,35 @@ the C<AWS_PROFILE> environment variable.
 There is much more information about credentials in
 L<the Boto3 documentation|https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html>.
 
-=head1 COMPARED TO S3FS-FUSE
+=head1 COMPARISON TO S3FS-FUSE AND S3BACKER
 
-s3fs-fuse (L<https://github.com/s3fs-fuse/s3fs-fuse>) presents a whole
-S3 bucket as a FUSE filesystem, with each object in the bucket
-corresponding to a single file.  It is therefore quite different from
-this plugin which turns a single S3 object into a block device.
+s3fs-fuse (L<https://github.com/s3fs-fuse/s3fs-fuse>) and s3backer
+(L<https://github.com/archiecobbs/s3backer>) provide similar
+functionality but are based on FUSE (rather than NBD). They provide a
+regular file (backed by S3) which can then be loopback-mounted to
+provide a block device. s3backer also supports to optionally encrypt
+and compress objects.
+
+In theory, NBD should provide better performance than FUSE, because:
+
+=over 4
+
+=item * The kernel no longer serializes write and read requests but
+issues them concurrently.
+
+=item * Read and write request size can exceed 128 kB
+
+=item * The system can still be reliably hibernated (a running FUSE
+daemon may prevent this)
+
+=item * Requests pass through the VFS only once, not twice
+
+=item * Data is present in the page cache only once, not twice
+
+=back
+
+However, for high-bandwith network connections s3backer and s3fs-fuse
+may be faster because they are written in C rather than Python.
 
 =head1 FILES
 
@@ -125,6 +191,8 @@ L<https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
 
 Richard W.M. Jones
 
+Nikolaus Rath
+
 =head1 COPYRIGHT
 
-Copyright (C) 2020 Red Hat Inc.
+Copyright (C) 2020-2022 Red Hat Inc.

@@ -82,8 +82,11 @@ class StreamingBody(object):
     def __init__(self, data):
         self._data = data
 
-    def read(self, size):
-        return self._data[:size]
+    def read(self, size=None):
+        if size:
+            return self._data[:size]
+        else:
+            return self._data
 
     def close(self):
         pass
