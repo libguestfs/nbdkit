@@ -77,8 +77,6 @@ def config_complete():
 
 
 def open(readonly):
-    global access_key, secret_key, session_token, endpoint_url
-
     s3 = boto3.client("s3",
                       aws_access_key_id=access_key,
                       aws_secret_access_key=secret_key,
@@ -88,16 +86,12 @@ def open(readonly):
 
 
 def get_size(s3):
-    global bucket_name, key_name
-
     resp = s3.get_object(Bucket=bucket_name, Key=key_name)
     size = resp['ResponseMetadata']['HTTPHeaders']['content-length']
     return int(size)
 
 
 def pread(s3, buf, offset, flags):
-    global bucket_name, key_name
-
     size = len(buf)
     rnge = 'bytes=%d-%d' % (offset, offset+size-1)
     resp = s3.get_object(Bucket=bucket_name, Key=key_name, Range=rnge)
