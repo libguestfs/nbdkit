@@ -84,8 +84,6 @@ def open(readonly):
                       aws_secret_access_key=secret_key,
                       aws_session_token=session_token,
                       endpoint_url=endpoint_url)
-    if s3 is None:
-        raise Exception("could not connect to S3")
     return s3
 
 
