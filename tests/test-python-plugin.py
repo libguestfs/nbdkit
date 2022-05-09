@@ -34,10 +34,29 @@
 import nbdkit
 import pickle
 import base64
+import unittest
 
 API_VERSION = 2
 
 cfg = {}
+
+
+# Not nice, but there doesn't seem to be a better way of putting this
+class TestAPI(unittest.TestCase):
+
+    def test_parse_size(self):
+        self.assertEqual(nbdkit.parse_size('511'), 511)
+        self.assertEqual(nbdkit.parse_size('7k'), 7*1024)
+        self.assertEqual(nbdkit.parse_size('17M'), 17*1024*1024)
+
+        with self.assertRaises(TypeError):
+            nbdkit.parse_size(17)
+
+        with self.assertRaises(ValueError):
+            nbdkit.parse_size('foo')
+
+
+TestAPI().test_parse_size()
 
 
 def config(k, v):

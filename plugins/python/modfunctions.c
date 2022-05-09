@@ -93,11 +93,32 @@ do_shutdown (PyObject *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
+/* nbdkit.parse_size */
+static PyObject *
+parse_size (PyObject *self, PyObject *args)
+{
+  const char *s;
+  if (!PyArg_ParseTuple (args, "s", &s)) {
+    PyErr_SetString (PyExc_TypeError, "Expected string, got something else");
+    return NULL;
+  }
+
+  int64_t size = nbdkit_parse_size(s);
+  if (size == -1) {
+    PyErr_SetString (PyExc_ValueError, "Unable to parse string as size");
+    return NULL;
+  }
+
+  return PyLong_FromSize_t((size_t)size);
+}
+
 static PyMethodDef NbdkitMethods[] = {
   { "debug", debug, METH_VARARGS,
     "Print a debug message" },
   { "export_name", export_name, METH_VARARGS,
     "Return the optional export name negotiated with the client" },
+  { "parse_size", parse_size, METH_VARARGS,
+    "Parse human-readable size strings into bytes" },
   { "set_error", set_error, METH_VARARGS,
     "Store an errno value prior to throwing an exception" },
   { "shutdown", do_shutdown, METH_VARARGS,
