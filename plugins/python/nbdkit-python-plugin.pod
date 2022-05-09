@@ -131,6 +131,11 @@ Record C<err> as the reason you are about to throw an exception. C<err>
 should correspond to usual errno values, where it may help to
 C<import errno>.
 
+=head3 C<nbdkit.parse_size(str)>
+
+Parse a string (such as "100M") into a size in bytes. Wraps the
+C<nbdkit_parse_size()> C function.
+
 =head3 C<nbdkit.shutdown()>
 
 Request asynchronous server shutdown.
