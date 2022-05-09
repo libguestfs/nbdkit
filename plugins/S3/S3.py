@@ -66,14 +66,14 @@ def config(key, value):
     elif key == "key":
         key_name = value
     else:
-        raise Exception("unknown parameter %s" % key)
+        raise RuntimeError("unknown parameter %s" % key)
 
 
 def config_complete():
     if bucket_name is None:
-        raise Exception("bucket parameter missing")
+        raise RuntimeError("bucket parameter missing")
     if key_name is None:
-        raise Exception("key parameter missing")
+        raise RuntimeError("key parameter missing")
 
 
 def open(readonly):
