@@ -86,7 +86,10 @@ def open(readonly):
 
 
 def get_size(s3):
-    resp = s3.head_object(Bucket=bucket_name, Key=key_name)
+    try:
+        resp = s3.head_object(Bucket=bucket_name, Key=key_name)
+    except AttributeError:
+        resp = s3.get_object(Bucket=bucket_name, Key=key_name)
     size = resp['ResponseMetadata']['HTTPHeaders']['content-length']
     return int(size)
 
