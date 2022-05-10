@@ -513,11 +513,15 @@ error_function (const char *fs, va_list args)
 
   trim (str);
 
-  /* VDDK 7 added a useless error message about their "phone home"
-   * system called CEIP which only panics users.  Demote it to a debug
-   * statement.  https://bugzilla.redhat.com/show_bug.cgi?id=1834267
+  /* VDDK 7 added some useless error messages about their "phone home"
+   * system called CEIP which only panics users.  Demote to a debug
+   * statement.
+   * https://bugzilla.redhat.com/show_bug.cgi?id=1834267
+   * https://bugzilla.redhat.com/show_bug.cgi?id=2083617
    */
-  if (strstr (str, "Get CEIP status failed") != NULL) {
+  if (strstr (str, "Get CEIP status failed") != NULL ||
+      strstr (str, "VDDK_PhoneHome: Unable to load configuration "
+                   "options from ") != NULL) {
     nbdkit_debug ("%s", str);
     return;
   }
