@@ -66,6 +66,9 @@
 #define USE_VSOCK 1
 #endif
 
+/* Use '-D nbd.verbose=1' for verbose messages about the state machine. */
+NBDKIT_DLL_PUBLIC int nbd_debug_verbose = 0;
+
 /* The per-transaction details */
 struct transaction {
   int64_t cookie;
@@ -421,7 +424,8 @@ nbdplug_reader (void *handle)
 {
   struct handle *h = handle;
 
-  nbdkit_debug ("nbd: started reader thread");
+  if (nbd_debug_verbose)
+    nbdkit_debug ("nbd: started reader thread");
 
   while (!nbd_aio_is_dead (h->nbd) && !nbd_aio_is_closed (h->nbd)) {
     int r;
@@ -433,7 +437,8 @@ nbdplug_reader (void *handle)
     unsigned dir;
 
     dir = nbd_aio_get_direction (h->nbd);
-    nbdkit_debug ("polling, dir=%d", dir);
+    if (nbd_debug_verbose)
+      nbdkit_debug ("polling, dir=%d", dir);
     if (dir & LIBNBD_AIO_DIRECTION_READ)
       fds[0].events |= POLLIN;
     if (dir & LIBNBD_AIO_DIRECTION_WRITE)
@@ -466,8 +471,11 @@ nbdplug_reader (void *handle)
     }
   }
 
-  nbdkit_debug ("state machine changed to %s", nbd_connection_state (h->nbd));
-  nbdkit_debug ("exiting reader thread");
+  if (nbd_debug_verbose) {
+    nbdkit_debug ("state machine changed to %s",
+                  nbd_connection_state (h->nbd));
+    nbdkit_debug ("exiting reader thread");
+  }
   return NULL;
 }
 
@@ -481,8 +489,9 @@ nbdplug_notify (void *opaque, int *error)
    * updated by nbdplug_register, but it's only an informational
    * message.
    */
-  nbdkit_debug ("cookie %" PRId64 " completed state machine, status %d",
-                trans->cookie, *error);
+  if (nbd_debug_verbose)
+    nbdkit_debug ("cookie %" PRId64 " completed state machine, status %d",
+                  trans->cookie, *error);
   trans->err = *error;
   if (sem_post (&trans->sem)) {
     nbdkit_error ("failed to post semaphore: %m");
@@ -514,7 +523,8 @@ nbdplug_register (struct handle *h, struct transaction *trans, int64_t cookie)
     return;
   }
 
-  nbdkit_debug ("cookie %" PRId64 " started by state machine", cookie);
+  if (nbd_debug_verbose)
+    nbdkit_debug ("cookie %" PRId64 " started by state machine", cookie);
   trans->cookie = cookie;
 
   if (write (h->fds[1], &c, 1) == -1 && errno != EAGAIN)
