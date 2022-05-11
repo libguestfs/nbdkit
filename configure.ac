@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2021 Red Hat Inc.
+# Copyright (C) 2013-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -1503,6 +1503,8 @@ feature "gzip ................................... " \
         test "x$HAVE_ZLIB_TRUE" = "x"
 feature "luks ................................... " \
         test "x$HAVE_GNUTLS_PBKDF2_TRUE" = "x"
+feature "stats .................................. " \
+        test "x$HAVE_CXX_TRUE" = "x"
 feature "xz ..................................... " \
         test "x$HAVE_LIBLZMA_TRUE" = "x"
 
