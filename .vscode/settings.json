@@ -4,5 +4,6 @@
     "C_Cpp.vcFormat.space.pointerReferenceAlignment": "right",
     "C_Cpp.formatting": "vcFormat",
     "C_Cpp.vcFormat.indent.withinParentheses": "alignToParenthesis",
-    "python.linting.flake8Enabled": true
+    "python.linting.flake8Enabled": true,
+    "rewrap.wrappingColumn": 79
 }
