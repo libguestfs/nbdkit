@@ -30,13 +30,19 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-import nbdkit
-import boto3
+import base64
 import os
+import re
+import tempfile
 import unittest
 from contextlib import closing
+from io import BytesIO
+
+import boto3
+import builtins
 from botocore.exceptions import ClientError
 
+import nbdkit
 
 API_VERSION = 2
 
@@ -141,6 +147,9 @@ def config_complete():
         raise RuntimeError(
             "`size` and `object-size` parameters must always be "
             "specified together")
+
+    if dev_size and dev_size % obj_size != 0:
+        raise RuntimeError('`size` must be a multiple of `object-size`')
 
 
 def open(readonly):
@@ -301,96 +310,158 @@ def put_object(s3, obj_name, buf):
     s3.put_object(Bucket=bucket_name, Key=obj_name, Body=buf)
 
 
-#
-# To run unit tests, set the TEST_BUCKET, AWS_ACCESS_KEY_ID,
-# and AWS_SECRET_ACCESS_KEY environment variables and execute
-# `python3 -m unittest S3.py`
-#
-@unittest.skipIf('TEST_BUCKET' not in os.environ,
-                 'TEST_BUCKET environment variable not defined.')
+def delete_object(s3, obj_name, force=False):
+    '''Delete *obj_name.
+
+    If *force* is true, do not raise exception if object does not
+    exist.
+    '''
+
+    try:
+        s3.delete_object(Bucket=bucket_name, Key=obj_name)
+    except ClientError as exc:
+        if force and exc.response['Error']['Code'] == 'NoSuchKey':
+            return
+        raise
+
+
+def make_client_error(errcode):
+    return ClientError(
+        error_response={'Error': {'Code': errcode}},
+        operation_name='unspecified')
+
+
+class MockS3Client:
+    def __init__(self):
+        self.keys = {}
+
+    def put_object(self, Bucket: str, Key: str, Body):
+        self.keys[(Bucket, Key)] = bytes(Body)
+
+    def get_object(self, Bucket: str, Key: str, Range=None):
+        key = (Bucket, Key)
+        if key not in self.keys:
+            raise make_client_error('NoSuchKey')
+
+        if Range:
+            hit = re.match(r'^bytes=(\d+)-(\d+)$', Range)
+            assert hit
+            (a, b) = [int(x) for x in hit.groups()]
+            buf = self.keys[key][a:b+1]
+        else:
+            buf = self.keys[key]
+        return {'Body': BytesIO(buf)}
+
+    def delete_object(self, Bucket: str, Key: str):
+        key = (Bucket, Key)
+        if key not in self.keys:
+            raise make_client_error('NoSuchKey')
+        del self.keys[key]
+
+
 class Test(unittest.TestCase):
     def setUp(self):
-        self.s3 = open(False)
+        super().setUp()
+        self.s3 = MockS3Client()
         self.obj_size = 64
-        config('bucket', os.environ['TEST_BUCKET'])
+        self.dev_size = 100*self.obj_size
+        self.ref_fh = tempfile.TemporaryFile()
+        self.ref_fh.truncate(dev_size)
+        self.rnd_fh = builtins.open('/dev/urandom', 'rb')
+        config('bucket', 'mybucket')
         config('key', 'nbdkit_test')
         config('object-size', str(self.obj_size))
-        config('size', str(self.obj_size*100))
+        config('size', str(self.dev_size))
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.ref_fh.close()
+        self.rnd_fh.close()
+
+    def get_data(self, len):
+        buf = self.rnd_fh.read(len // 2 + 1)
+        return base64.b16encode(buf)[:len]
+
+    def compare_to_ref(self):
+        fh = self.ref_fh
+        bl = self.obj_size
+        buf = bytearray(bl)
+        fh.seek(0)
+        for off in range(0, self.dev_size, self.obj_size):
+            ref = fh.read(bl)
+            pread(self.s3, buf, off, flags=0)
+            self.assertEqual(ref, buf)
 
     def test_read_hole(self):
-        self.s3.delete_object(Bucket=bucket_name, Key=f"{key_name}/{5:016x}")
+        delete_object(self.s3, f"{key_name}/{5:016x}", force=True)
         buf = bytearray(self.obj_size)
         pread(self.s3, buf, 5*self.obj_size, 0)
         self.assertEqual(buf, bytearray(self.obj_size))
-
-    def test_readwrite(self):
-        buf1 = bytearray(b'x' * self.obj_size)
-        pwrite(self.s3, buf1, self.obj_size, 0)
-        buf2 = bytearray(self.obj_size)
-        pread(self.s3, buf2, self.obj_size, 0)
-        self.assertEqual(buf1, buf2)
-
-        buf1 = bytearray(b'y' * self.obj_size)
-        pwrite(self.s3, buf1, self.obj_size, 0)
-        buf2 = bytearray(self.obj_size)
-        pread(self.s3, buf2, self.obj_size, 0)
-        self.assertEqual(buf1, buf2)
-
-    def test_partial_read(self):
-        buf1 = bytearray(b'x' * self.obj_size)
-        buf2 = bytearray(b'y' * self.obj_size)
-        pwrite(self.s3, buf1, 0, 0)
-        pwrite(self.s3, buf2, self.obj_size, 0)
-
-        hl = self.obj_size//2
-        buf = bytearray(self.obj_size)
-        pread(self.s3, buf, hl, 0)
-
-        self.assertEqual(buf[:hl], buf1[hl:])
-        self.assertEqual(buf[hl:], buf2[:hl])
-
-    def test_partial_write(self):
-        buf1 = bytearray(b'x' * self.obj_size)
-        pwrite(self.s3, buf1, 0, 0)
-
-        hl = self.obj_size//4
-        buf2 = bytearray(b'y' * hl)
-        pwrite(self.s3, buf2, hl, 0)
-        buf1[hl:hl+len(buf2)] = buf2
-
-        buf = bytearray(self.obj_size)
-        pread(self.s3, buf, 0, 0)
-        self.assertEqual(buf1, buf)
 
     def test_write_memoryview(self):
         buf = memoryview(bytearray(obj_size))
         pwrite(self.s3, buf, 0, 0)
         pwrite(self.s3, buf[10:], 42, 0)
 
-    def test_read_multi(self):
-        b1 = b'x' * self.obj_size
-        b2 = b'y' * self.obj_size
-        b3 = b'z' * self.obj_size
-        pwrite(self.s3, b1, 0, flags=0)
-        pwrite(self.s3, b2, self.obj_size, flags=0)
-        pwrite(self.s3, b3, 2*self.obj_size, flags=0)
+    def test_read(self):
+        fh = self.ref_fh
+        bl = self.obj_size
 
-        buf = bytearray(3*self.obj_size)
-        pread(self.s3, buf, 0, flags=0)
+        # Fill disk
+        fh.seek(0)
+        for off in range(0, self.dev_size, self.obj_size):
+            buf = self.get_data(bl)
+            pwrite(self.s3, buf, offset=off, flags=0)
+            fh.write(buf)
+        self.compare_to_ref()
 
-        self.assertEqual(buf, b1+b2+b3)
+        # Test different kinds of read requests
+        corner_cases = (
+            1, 2,
+            bl-2, bl-1, bl+2,
+            2*bl-1, 2*bl, 2*bl+1,
+            5*bl-5, 5*bl, 5*bl+5)
+        for off in (0,) + corner_cases:
+            for len_ in corner_cases:
+                buf = bytearray(len_)
+                pread(self.s3, buf, off, flags=0)
+                fh.seek(off)
+                ref = fh.read(len_)
+                self.assertEqual(buf, ref)
 
-    def test_write_multi(self):
-        buf = (b'x' * self.obj_size
-               + b'y' * self.obj_size
-               + b'z' * self.obj_size)
-        pwrite(self.s3, buf, 0, flags=0)
+    def test_write(self):
+        fh = self.ref_fh
+        bl = self.obj_size
 
-        b1 = bytearray(self.obj_size)
-        pread(self.s3, b1, 0, flags=0)
-        b2 = bytearray(self.obj_size)
-        pread(self.s3, b2, self.obj_size, flags=0)
-        b3 = bytearray(self.obj_size)
-        pread(self.s3, b3, 2*self.obj_size, flags=0)
+        # Fill disk
+        fh.seek(0)
+        for off in range(0, self.dev_size, self.obj_size):
+            buf = self.get_data(bl)
+            pwrite(self.s3, buf, offset=off, flags=0)
+            fh.write(buf)
+        self.compare_to_ref()
 
-        self.assertEqual(buf, b1+b2+b3)
+        # Test different kinds of write requests
+        corner_cases = (
+            1, 2,
+            bl-2, bl-1, bl+2,
+            2*bl-1, 2*bl, 2*bl+1,
+            5*bl-5, 5*bl, 5*bl+5)
+        for off in (0,) + corner_cases:
+            for len_ in corner_cases:
+                buf = self.get_data(len_)
+                pwrite(self.s3, buf, off, flags=0)
+                fh.seek(off)
+                fh.write(buf)
+                self.compare_to_ref()
+
+
+# To run unit tests against a real S3 bucket, set the TEST_BUCKET
+# environment variable.
+@unittest.skipIf('TEST_BUCKET' not in os.environ,
+                 'TEST_BUCKET environment variable not defined.')
+class RemoteTest(Test):
+    def setUp(self):
+        super().setUp()
+        self.s3 = open(False)
+        config('bucket', os.environ['TEST_BUCKET'])

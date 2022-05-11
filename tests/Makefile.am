@@ -910,9 +910,12 @@ test_random_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
 test_random_LDADD = $(LIBNBD_LIBS)
 
 # S3 plugin test.
-TESTS += test-S3.sh
+TESTS += \
+	test-S3.sh \
+	test-S3-unit.sh
 EXTRA_DIST += \
 	test-S3.sh \
+	test-S3-unit.sh \
 	test-S3/boto3/__init__.py \
 	$(NULL)
 
