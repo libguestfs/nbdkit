@@ -16,6 +16,7 @@
 .libs
 Makefile
 Makefile.in
+__pycache__
 
 /local*
 /nbdkit-*.tar.gz
@@ -99,7 +100,6 @@ plugins/*/*.3
 /server/synopsis.c
 /server/test-public
 /stamp-h1
-/tests/__pycache__/
 /tests/disk
 /tests/disk.gz
 /tests/disk.tar
@@ -153,7 +153,6 @@ plugins/*/*.3
 /tests/test-readahead
 /tests/test-retry-request-mirror
 /tests/test-ruby
-/tests/test-S3/boto3/__pycache__/
 /tests/test-shell
 /tests/test-shell.img
 /tests/test-socket-activation
