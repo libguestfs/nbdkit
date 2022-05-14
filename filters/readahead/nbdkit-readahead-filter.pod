@@ -27,6 +27,10 @@ option.
 The filter uses a simple adaptive algorithm which accelerates
 sequential reads and requires no further configuration.
 
+A similar filter is L<nbdkit-scan-filter(1)> which reads ahead over
+the whole disk, useful if you know that the client will be reading
+sequentially across most or all of the disk.
+
 =head2 Limitations
 
 In a number of significant cases this filter will do nothing.  The
@@ -91,6 +95,7 @@ L<nbdkit-cache-filter(1)>,
 L<nbdkit-cow-filter(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-retry-filter(1)>,
+L<nbdkit-scan-filter(1)>,
 L<nbdkit-torrent-plugin(1)>,
 L<nbdkit-vddk-plugin(1)>,
 L<nbdkit-filter(3)>,

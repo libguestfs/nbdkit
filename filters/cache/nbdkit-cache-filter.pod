@@ -28,8 +28,8 @@ loss, as the name suggests).
 
 This filter only caches image contents.  To cache image metadata, use
 L<nbdkit-cacheextents-filter(1)> between this filter and the plugin.
-To accelerate sequential reads, use L<nbdkit-readahead-filter(1)> on
-top of this filter.
+To accelerate sequential reads, use L<nbdkit-readahead-filter(1)> or
+L<nbdkit-scan-filter(1)> on top of this filter.
 
 =head1 PARAMETERS
 

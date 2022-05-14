@@ -1754,6 +1754,16 @@ test_retry_request_mirror_LDADD = \
 	$(LIBNBD_LIBS) \
 	$(NULL)
 
+# scan filter test.
+TESTS += \
+	test-scan-copy.sh \
+	test-scan-info.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-scan-copy.sh \
+	test-scan-info.sh \
+	$(NULL)
+
 # swab filter test.
 TESTS += \
 	test-swab-8.sh \

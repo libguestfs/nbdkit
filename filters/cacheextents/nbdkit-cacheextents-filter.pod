@@ -54,6 +54,7 @@ L<nbdkit(1)>,
 L<nbdkit-cache-filter(1)>,
 L<nbdkit-extentlist-filter(1)>,
 L<nbdkit-readahead-filter(1)>,
+L<nbdkit-scan-filter(1)>,
 L<nbdkit-vddk-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<qemu-img(1)>.

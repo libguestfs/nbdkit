@@ -182,14 +182,6 @@ Python:
 Suggestions for filters
 -----------------------
 
-* Add scan filter.  This would be placed on top of cache filters and
-  would scan (read) the whole disk in the background, ensuring it is
-  copied into the cache.  Useful if you have a slow plugin, limited
-  size device, and lots of local disk space, especially if you know
-  that the NBD clients will eventually read all of the device.  RWMJ
-  wrote an implementation of this but it doesn't work well without a
-  background thread.
-
 * Add shared filter.  Take advantage of filter context APIs to open a
   single context into the backend shared among multiple client
   connections.  This may even allow a filter to offer a more parallel
