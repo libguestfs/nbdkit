@@ -136,9 +136,6 @@ send_command_to_background_thread (struct bgthread_ctrl *ctrl,
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&ctrl->lock);
   if (command_queue_append (&ctrl->cmds, cmd) == -1)
     return -1;
-  /* Signal the thread if it could be sleeping on an empty queue. */
-  if (ctrl->cmds.len == 1)
-    pthread_cond_signal (&ctrl->cond);
   return 0;
 }
 
@@ -199,13 +196,11 @@ scan_prepare (nbdkit_next *next, void *handle, int readonly)
   /* Create the background thread. */
   h->ctrl.cmds = (command_queue) empty_vector;
   pthread_mutex_init (&h->ctrl.lock, NULL);
-  pthread_cond_init (&h->ctrl.cond, NULL);
 
   err = pthread_create (&h->thread, NULL, scan_thread, &h->ctrl);
   if (err != 0) {
     errno = err;
     nbdkit_error ("pthread_create: %m");
-    pthread_cond_destroy (&h->ctrl.cond);
     pthread_mutex_destroy (&h->ctrl.lock);
     return -1;
   }
@@ -227,7 +222,6 @@ scan_finalize (nbdkit_next *next, void *handle)
 
   send_command_to_background_thread (&h->ctrl, quit_cmd);
   pthread_join (h->thread, NULL);
-  pthread_cond_destroy (&h->ctrl.cond);
   pthread_mutex_destroy (&h->ctrl.lock);
   command_queue_reset (&h->ctrl.cmds);
   h->running = false;

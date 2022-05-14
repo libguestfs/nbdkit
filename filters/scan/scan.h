@@ -54,7 +54,6 @@ DEFINE_VECTOR_TYPE(command_queue, struct command);
 struct bgthread_ctrl {
   command_queue cmds;           /* Command queue. */
   pthread_mutex_t lock;         /* Lock for queue. */
-  pthread_cond_t cond;          /* Condition queue size 0 -> 1. */
   nbdkit_next *next;            /* For sending cache operations. */
 };
 
