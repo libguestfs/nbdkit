@@ -114,7 +114,7 @@ get_alignment (size_t offset)
   if (offset==0)
     return -1;
 
-  int i = 0;
+  size_t i = 0;
   while(++i < sizeof (powers)/sizeof(powers[0])) {
     if ((offset & masks[i]) != 0)
       return i - 1;
@@ -208,7 +208,7 @@ inc_blksize_ctr (blksize_hist_t &hist, size_t blksize, size_t offset)
   try {
     hist[blksize][get_alignment (offset)]++;
   }
-  catch (std::bad_alloc) {
+  catch (std::bad_alloc const&) {
     // Avoid reporting the same error over and over again
     nbdkit_error ("out of memory for blocksize statistics");
     out_of_memory = true;
@@ -258,7 +258,7 @@ print_align_hist(const std::unordered_map<int, size_t>& align_map)
     auto requests = it->second;
 
     if (requests < cutoff) {
-      fprintf (fp, "         %2zu+ bit-aligned: %4.1f%% (%zu)\n",
+      fprintf (fp, "         %2d+ bit-aligned: %4.1f%% (%zu)\n",
                bits, static_cast<double> (requests) / total * 100, requests);
       break;
     }
@@ -266,7 +266,7 @@ print_align_hist(const std::unordered_map<int, size_t>& align_map)
     // Only print if number of requests differs from the next alignment
     it++; 
     if (it == align_hist.end() || it->second != requests) {
-      fprintf (fp, "         %2zu bit aligned: %5.1f%% (%zu)\n",      
+      fprintf (fp, "         %2d bit aligned: %5.1f%% (%zu)\n",      
               bits, static_cast<double>(requests*100) / total, requests);
     }
   }
