@@ -1278,9 +1278,9 @@ AC_ARG_ENABLE([vddk],
                     [disable VMware VDDK plugin])],
     [],
     [
-     dnl While VDDK was available on i686 in 5.1.1, we only support 5.5.5
-     dnl and newer, which is supported only on x86-64.  Don't compile on
-     dnl other platforms.
+     dnl While VDDK was available on i686 in 5.1.1, we only support
+     dnl newer versions which are supported only on x86-64.  Don't
+     dnl compile on other platforms.
      AC_MSG_CHECKING([if the host CPU is compatible with VDDK])
      AS_IF([test "$host_cpu" = "x86_64"],[
         AC_MSG_RESULT([yes ($host_cpu)])
