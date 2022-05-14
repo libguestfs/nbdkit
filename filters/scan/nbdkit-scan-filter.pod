@@ -1,0 +1,159 @@
+=head1 NAME
+
+nbdkit-scan-filter - scan disk prefetching data ahead of sequential reads
+
+=head1 SYNOPSIS
+
+ nbdkit --filter=scan PLUGIN [scan-ahead=false] [scan-clock=false]
+                             [scan-forever=true] [scan-size=]NN
+
+ nbdkit --filter=scan --filter=cache PLUGIN
+
+ nbdkit --filter=scan --filter=cow PLUGIN cow-on-cache=true
+
+=head1 DESCRIPTION
+
+C<nbdkit-scan-filter> is a filter that scans the disk prefetching
+data.  It is sometimes useful if you expect that the client will read
+the disk sequentially.
+
+The basic operation of the filter is that when a client connects, the
+filter will start issuing C<.cache> (prefetch) requests to the plugin
+across the whole disk.  Plugins which support this command will
+prefetch the data, making subsequent reads faster.  For plugins which
+do not support this command, you can inject L<nbdkit-cache-filter(1)>
+below (after) this filter, giving approximately the same effect.
+L<nbdkit-cow-filter(1)> can be used instead of nbdkit-cache-filter, if
+you add the C<cow-on-cache=true> option.
+
+Various C<scan-*> parameters can be used to tune scanning, although
+the defaults should be suitable in most cases.
+
+A similar filter is L<nbdkit-readahead-filter(1)>.
+
+=head2 Limitations
+
+In a number of significant cases this filter will do nothing.  The
+filter will print a warning message if this happens.
+
+=over 4
+
+=item Thread model must be parallel *
+
+For example L<nbdkit-curl-plugin(1)> only supports
+C<serialize_requests>, and so this filter cannot perform prefetches in
+parallel with the read requests.
+
+=item Only scans while clients are connected *
+
+The current filter only scans while there is at least one client
+connected.
+
+=item Only scans the default export *
+
+The current filter only scans the default export and ignores all
+clients connecting to the non-default export name.
+
+* We may be able to lift these restrictions in future.
+
+=item Underlying filters or plugin must support C<.cache> (prefetch)
+
+Very many plugins do not have the concept of prefetching and/or
+do not implement the C<.cache> callback, and so there is no
+way for this filter to issue prefetches.
+
+You can usually get around this by adding I<--filter=cache> after this
+filter as explained above.
+
+=item Prefetching the whole disk may load it all into cache
+
+In particular if you use this filter together with
+L<nbdkit-cache-filter(1)> or L<nbdkit-cow-filter(1)>, they will cache
+the whole content of the plugin into a temporary file.  This may be
+many gigabytes of data, consuming all space in F</var/tmp>.  Of course
+this is the whole point of using this filter, but you should be aware
+of it.
+
+If using the cache filter, the total size of the cache can be limited
+(see L<nbdkit-cache-filter(1)/CACHE MAXIMUM SIZE>).
+
+=back
+
+=head1 PARAMETERS
+
+=over 4
+
+=item B<scan-ahead=false>
+
+By default the filter tries to stay ahead of incoming read requests.
+That is to say, it starts prefetching at the beginning of the disk and
+continues incrementally, but if the client issues a read beyond the
+current prefetch point then the filter skips forward and begins
+prefetching after the read.
+
+However if you set this parameter to false, then this behaviour is
+disabled.  The filter simply prefetches sequentially regardless of
+client requests.
+
+=item B<scan-clock=false>
+
+By default, if all clients disconnect and then another client
+connects, prefetching resumes at the same place in the disk.  (Like
+stopping and starting a clock.)
+
+If you set this parameter to false, then the filter starts prefetching
+from the beginning of the disk again.
+
+=item B<scan-forever=true>
+
+By default the filter scans over the disk once and then stops.
+
+If you set this parameter to true, then after the disk has been
+prefetched completely, the filter goes back to the beginning and
+starts over, repeating this for as long as nbdkit is running and there
+are clients connected.
+
+=item B<scan-size=>NN
+
+This parameter controls the prefetch block size.  The default is
+C<2M>.  This must be a power of 2 and most plugins will have their own
+limits on the amount of data they can prefetch in a single request.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$filterdir/nbdkit-scan-filter.so>
+
+The filter.
+
+Use C<nbdkit --dump-config> to find the location of C<$filterdir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-scan-filter> first appeared in nbdkit 1.32.
+
+=head1 SEE ALSO
+
+L<nbdkit(1)>,
+L<nbdkit-cache-filter(1)>,
+L<nbdkit-cow-filter(1)>,
+L<nbdkit-file-plugin(1)>,
+L<nbdkit-readahead-filter(1)>,
+L<nbdkit-retry-filter(1)>,
+L<nbdkit-torrent-plugin(1)>,
+L<nbdkit-vddk-plugin(1)>,
+L<nbdkit-filter(3)>,
+L<qemu-img(1)>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2019-2022 Red Hat Inc.

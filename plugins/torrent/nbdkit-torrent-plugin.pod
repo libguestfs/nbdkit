@@ -175,6 +175,7 @@ L<nbdkit-curl-plugin(1)>,
 L<nbdkit-file-plugin(1)>,
 L<nbdkit-iso-plugin(1)>,
 L<nbdkit-readahead-filter(1)>,
+L<nbdkit-scan-filter(1)>,
 L<transmission-show(1)>,
 L<https://en.wikipedia.org/wiki/BitTorrent>,
 L<http://libtorrent.org/>.
