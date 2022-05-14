@@ -26,8 +26,8 @@ below (after) this filter, giving approximately the same effect.
 L<nbdkit-cow-filter(1)> can be used instead of nbdkit-cache-filter, if
 you add the C<cow-on-cache=true> option.
 
-Various C<scan-*> parameters can be used to tune scanning, although
-the defaults should be suitable in most cases.
+Various parameters can be used to tune scanning, although the defaults
+should be suitable in most cases.
 
 A similar filter is L<nbdkit-readahead-filter(1)>.
 
@@ -38,23 +38,23 @@ filter will print a warning message if this happens.
 
 =over 4
 
-=item Thread model must be parallel *
+=item Thread model must be parallel*
 
 For example L<nbdkit-curl-plugin(1)> only supports
 C<serialize_requests>, and so this filter cannot perform prefetches in
 parallel with the read requests.
 
-=item Only scans while clients are connected *
+=item Only scans while clients are connected*
 
 The current filter only scans while there is at least one client
 connected.
 
-=item Only scans the default export *
+=item Only scans the default export*
 
 The current filter only scans the default export and ignores all
 clients connecting to the non-default export name.
 
-* We may be able to lift these restrictions in future.
+*We may be able to lift these restrictions in future.
 
 =item Underlying filters or plugin must support C<.cache> (prefetch)
 
