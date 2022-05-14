@@ -150,18 +150,6 @@ nbdkit-data-plugin:
 
 * Like $VAR but the variable is either binary or base64.
 
-nbdkit-S3-plugin:
-
-* Allow concatenation of multiple objects.  There is a FUSE filesystem
-  (s3backer) which does this, but IMHO that would have been better if
-  it was an nbdkit plugin.
-
-* Write support (using PUT).
-
-* Mock testing, see these links for some ideas:
-  https://danwilson.co/2018-11-01/mocking-aws-api-in-python-unittests
-  https://pypi.org/project/moto/
-
 nbdkit-cdi-plugin:
 
 * Look at using skopeo instead of podman pull
