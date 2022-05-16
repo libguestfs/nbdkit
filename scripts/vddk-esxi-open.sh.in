@@ -1,6 +1,6 @@
 #!/bin/bash -
 # @configure_input@
-# Copyright (C) 2013-2021 Red Hat Inc.
+# Copyright (C) 2013-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,8 +35,10 @@
 # getting the disk name, moref, etc.  However please read the
 # nbdkit-vddk-plugin documentation as well.
 #
+# For VMware vCenter, see scripts/vddk-vcenter-open.sh{,.in}
+#
 # Usage:
-#   scripts/vddk-open.sh SERVER GUEST -r -f -v libdir=/path/to/vmware-vix-disklib-distrib [...]
+#   scripts/vddk-esxi-open.sh SERVER GUEST -r -f -v libdir=/path/to/vmware-vix-disklib-distrib [...]
 #
 # where SERVER is the hostname or IP address of the ESXi server and
 # GUEST is the name of the guest.
@@ -54,6 +56,7 @@ guest="$2"
 shift 2
 
 # Get the libvirt XML, filename and moref.
+echo "Fetching metadata using libvirt ..."
 echo -n "root password? "
 xml="$( virsh -c "esx://root@$server/?no_verify=1" dumpxml "$guest" )"
 echo
@@ -63,16 +66,17 @@ file="$( echo "$xml" | grep '<source file=' | head -1 |
 moref="$( echo "$xml" | grep '<vmware:moref' |
           sed -e 's,.*>\(.*\)<.*,\1,' )"
 
-#echo file="$file"
-#echo moref="$moref"
+echo file="$file"
+echo moref="$moref"
 
 # Get the thumbprint.
+echo "Getting the thumbprint ..."
 thumbprint="$( openssl s_client -connect "$server:443" </dev/null 2>/dev/null |
                openssl x509 -in /dev/stdin -fingerprint -sha1 -noout 2>/dev/null |
                grep '^sha1 Fingerprint=' |
                sed 's/.*Fingerprint=\([A-F0-9:]\+\)/\1/' )"
 
-#echo thumbprint="$thumbprint"
+echo thumbprint="$thumbprint"
 
 # Construct the nbdkit command line.
 declare -a args
@@ -85,5 +89,6 @@ args[${#args[@]}]="server=$server"
 args[${#args[@]}]="thumbprint=$thumbprint"
 args[${#args[@]}]="user=root"
 
+echo "Running nbdkit ..."
 echo "${args[@]}" "$@"
 "${args[@]}" "$@"
