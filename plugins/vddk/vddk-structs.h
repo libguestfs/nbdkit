@@ -43,6 +43,7 @@
 
 typedef uint64_t VixError;
 #define VIX_OK 0
+#define VIX_E_FAIL 1
 #define VIX_E_NOT_SUPPORTED 6
 #define VIX_ASYNC 25000
 
