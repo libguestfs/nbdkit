@@ -769,6 +769,26 @@ vddk_open (int readonly)
   VDDK_CALL_END (VixDiskLib_Open, 0);
   if (err != VIX_OK) {
     VDDK_ERROR (err, "VixDiskLib_Open: %s", filename);
+
+    /* Attempt to advise the user on the extremely helpful "Unknown error"
+     * result of VixDiskLib_Open().  The one reason we've seen for this error
+     * mode is a thumbprint mismatch (RHBZ#1905772).  Note that:
+     *
+     * (1) The thumbprint (as a part of "h->params") is passed to
+     *     VixDiskLib_ConnectEx() above, but the fingerprint mismatch is
+     *     detected only inside VixDiskLib_Open().
+     *
+     * (2) "thumb_print" may be NULL -- vddk_config_complete() is correct not to
+     *     require a non-NULL "thumb_print" for a remote connection; the sample
+     *     program "vixDiskLibSample.cpp" in vddk-7.0.3 explicitly permits
+     *     "-thumb" to be absent.
+     */
+    if (is_remote && err == VIX_E_FAIL)
+      nbdkit_error ("Please verify whether the \"thumbprint\" parameter (%s) "
+                    "matches the SHA1 fingerprint of the remote VMware "
+                    "server.  Refer to nbdkit-vddk-plugin(1) section "
+                    "\"THUMBPRINTS\" for details.",
+                    thumb_print == NULL ? "not specified" : thumb_print);
     goto err2;
   }
 
