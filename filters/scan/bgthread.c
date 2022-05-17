@@ -113,12 +113,12 @@ scan_thread (void *vp)
     }
 
     adjust_clock (offset);
-    if (offset > size)
-      continue;
 
-    /* Issue the next prefetch. */
-    n = MIN (scan_size, size - offset);
-    ctrl->next->cache (ctrl->next, n, offset, 0, NULL);
+    if (offset < size) {
+      /* Issue the next prefetch. */
+      n = MIN (scan_size, size - offset);
+      ctrl->next->cache (ctrl->next, n, offset, 0, NULL);
+    }
   }
 
   if (scan_forever) {
