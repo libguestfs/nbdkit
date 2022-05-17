@@ -44,6 +44,6 @@ if [ "$NBDKIT_VALGRIND" = "1" ]; then
     exit 77
 fi
 
-export PYTHONPATH=$srcdir/../plugins/S3:$PYTHONPATH
+export PYTHONPATH=$srcdir/../plugins/S3:$srcdir/test-S3:$PYTHONPATH
 
 $PYTHON -m unittest S3
