@@ -10,6 +10,7 @@ RUN dnf update -y && \
     dnf install 'dnf-command(config-manager)' -y && \
     dnf config-manager -y --add-repo=http://dl.fedoraproject.org/pub/alt/rawhide-kernel-nodebug/fedora-rawhide-kernel-nodebug.repo && \
     dnf update -y --nogpgcheck fedora-gpg-keys && \
+    dnf install -y --nogpgcheck --enablerepo=fedora-rawhide-nodebug kernel kernel-headers && \
     dnf install -y nosync && \
     echo -e '#!/bin/sh\n\
 if test -d /usr/lib64\n\
@@ -20,8 +21,8 @@ else\n\
 fi\n\
 exec "$@"' > /usr/bin/nosync && \
     chmod +x /usr/bin/nosync && \
-    nosync dnf distro-sync -y && \
-    nosync dnf install -y \
+    nosync dnf distro-sync -y --exclude=kernel\* && \
+    nosync dnf install -y --exclude=kernel\* \
         autoconf \
         automake \
         bash \
@@ -45,8 +46,6 @@ exec "$@"' > /usr/bin/nosync && \
         gzip \
         iproute \
         jq \
-        kernel \
-        kernel-headers \
         libcom_err-devel \
         libcurl-devel \
         libguestfs-devel \
