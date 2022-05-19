@@ -28,6 +28,10 @@ and other sources.
 It requires VMware's proprietary VDDK library that you must download
 yourself (see L</LIBRARY LOCATION> below).
 
+For an easy-to-use wrapper around this plugin which automates setting
+things up to connect to a remote VMware server, see:
+L<https://gitlab.com/nbdkit/vddk-remote>
+
 =head1 EXAMPLES
 
 =head2 Open an existing local VMDK file
@@ -735,6 +739,7 @@ L<nbdkit-readahead-filter(1)>,
 L<nbdkit-retry-filter(1)>,
 L<nbdkit-scan-filter(1)>,
 L<virsh(1)>,
+L<https://gitlab.com/nbdkit/vddk-remote>,
 L<https://libvirt.org/drvesx.html>,
 L<https://www.vmware.com/support/developer/vddk/>,
 VMware document “Best Practices for NBD Transport”.
