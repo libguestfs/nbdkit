@@ -286,6 +286,10 @@ die "$progname: $input: is not valid utf8" unless utf8::is_utf8 ($content);
 die "$progname: $input: =encoding must not be present in input\n"
     if $content =~ /^=encoding/m;
 
+# Don't permit trailing whitespace.
+die "$progname: $input: trailing whitespace in input\n"
+    if $content =~ /[ \t]$/m;
+
 # We may add an encoding line, but this breaks RHEL 6-era Pod::Simple
 # with the error "Cannot decode string with wide characters".
 $content =~ s/^=(.*)/\n=encoding utf8\n\n=$1/m
@@ -576,14 +580,15 @@ sub read_whole_file
 sub read_verbatim_file
 {
     my $input = shift;
-    my $r = "";
+    my @r = ();
 
     open FILE, "<:encoding(UTF-8)", $input or die "$progname: $input: $!";
     while (<FILE>) {
-        $r .= " $_";
+        chomp;
+        if (length) { push @r, " $_" } else { push @r, "" }
     }
     close FILE;
-    $r;
+    return join ("\n", @r) . "\n";
 }
 
 =head1 SEE ALSO
