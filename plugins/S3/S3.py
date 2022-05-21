@@ -35,16 +35,19 @@ import os
 import re
 import tempfile
 import threading
+from typing import Union
 import unittest
 from contextlib import closing, contextmanager
 from io import BytesIO
 import builtins
+from unittest.mock import patch
 
 import boto3
 from botocore.exceptions import ClientError
 import nbdkit
 
 API_VERSION = 2
+BinaryData = Union[bytes, bytearray, memoryview]
 
 
 class Config:
@@ -104,31 +107,32 @@ def thread_model():
     return nbdkit.THREAD_MODEL_PARALLEL
 
 
-def can_write(s3):
+def can_write(server):
     return cfg.obj_size is not None
 
 
-def can_multi_conn(s3):
+def can_multi_conn(server):
     return True
 
 
-def can_trim(s3):
+def can_trim(server):
     return False
 
 
-def can_zero(s3):
+def can_zero(server):
     return False
 
 
-def can_fast_zero(s3):
+def can_fast_zero(server):
     return False
 
 
-def can_cache(s3):
+def can_cache(server):
     return nbdkit.CACHE_NONE
 
 
-def block_size(s3):
+def block_size(server):
+
     if not cfg.obj_size:
         # More or less arbitrary.
         return (1, 512*1024, 0xffffffff)
@@ -140,19 +144,19 @@ def block_size(s3):
     return (cfg.obj_size, cfg.obj_size, cfg.obj_size)
 
 
-def is_rotational(s3):
+def is_rotational(server):
     return False
 
 
-def can_fua(s3):
+def can_fua(server):
     return nbdkit.FUA_NATIVE
 
 
-def can_extents(s3):
+def can_extents(server):
     return False
 
 
-def can_flush(s3):
+def can_flush(server):
     return True
 
 
@@ -165,84 +169,168 @@ def config_complete():
 
 
 def open(readonly):
-    s3 = boto3.client("s3",
-                      aws_access_key_id=cfg.access_key,
-                      aws_secret_access_key=cfg.secret_key,
-                      aws_session_token=cfg.session_token,
-                      endpoint_url=cfg.endpoint_url)
-    return s3
+    return Server()
 
 
-def get_size(s3):
-    if cfg.dev_size:
-        return cfg.dev_size
-
-    try:
-        resp = s3.head_object(Bucket=cfg.bucket_name, Key=cfg.key_name)
-    except AttributeError:
-        resp = s3.get_object(Bucket=cfg.bucket_name, Key=cfg.key_name)
-
-    size = resp['ResponseMetadata']['HTTPHeaders']['content-length']
-    return int(size)
+def get_size(server):
+    return server.get_size()
 
 
-def pread(s3, buf, offset, flags):
-    if cfg.obj_size:
-        return pread_multi(s3, buf, offset, flags)
-
-    size = len(buf)
-    buf[:] = get_object(s3, cfg.key_name, size=size, off=offset)
+def pread(server, buf, offset, flags):
+    return server.pread(buf, offset, flags)
 
 
-def pwrite(s3, buf, offset, flags):
-    # We can ignore FUA flags, because every write is always flushed
-    if cfg.obj_size:
-        return pwrite_multi(s3, buf, offset, flags)
-
-    raise RuntimeError('Unable to write in single-object mode')
+def pwrite(server, buf, offset, flags):
+    return server.pwrite(buf, offset, flags)
 
 
-def flush(s3, flags):
+def flush(server, flags):
     # Flush is implicitly done on every request.
     return
 
 
-def pread_multi(s3, buf, offset, flags):
-    "Read data from objects"
+class Server:
+    """Handles NBD requests for one connection."""
 
-    to_read = len(buf)
-    read = 0
+    def __init__(self) -> None:
+        self.s3 = boto3.client(
+            "s3", aws_access_key_id=cfg.access_key,
+            aws_secret_access_key=cfg.secret_key,
+            aws_session_token=cfg.session_token,
+            endpoint_url=cfg.endpoint_url)
 
-    (blockno, block_offset) = divmod(offset, cfg.obj_size)
-    while to_read > 0:
-        key = f"{cfg.key_name}/{blockno:016x}"
-        len_ = min(to_read, cfg.obj_size - block_offset)
-        buf[read:read + len_] = get_object(
-            s3, key, size=len_, off=block_offset
-        )
-        to_read -= len_
-        read += len_
-        blockno += 1
-        block_offset = 0
+    def get_size(self) -> int:
+        if cfg.dev_size:
+            return cfg.dev_size
 
+        try:
+            resp = self.s3.head_object(
+                Bucket=cfg.bucket_name, Key=cfg.key_name)
+        except AttributeError:
+            resp = self.s3.get_object(
+                Bucket=cfg.bucket_name, Key=cfg.key_name)
 
-def get_object(s3, obj_name, size, off):
-    """Read *size* bytes from *obj_name*, starting at *off*."""
+        size = resp['ResponseMetadata']['HTTPHeaders']['content-length']
+        return int(size)
 
-    try:
-        resp = s3.get_object(Bucket=cfg.bucket_name, Key=obj_name,
-                             Range=f'bytes={off}-{off+size-1}')
-    except ClientError as exc:
-        if exc.response['Error']['Code'] == 'NoSuchKey':
-            return bytearray(size)
-        raise
+    def pread(self, buf: Union[bytearray, memoryview],
+              offset: int, flags: int) -> None:
+        to_read = len(buf)
+        if not cfg.obj_size:
+            buf[:] = self._get_object(cfg.key_name, size=to_read, off=offset)
+            return
 
-    body = resp['Body']
-    with closing(body):
-        buf = body.read()
+        read = 0
 
-    assert len(buf) == size, f'requested {size} bytes, got {len(buf)}'
-    return buf
+        (blockno, block_offset) = divmod(offset, cfg.obj_size)
+        while to_read > 0:
+            key = f"{cfg.key_name}/{blockno:016x}"
+            len_ = min(to_read, cfg.obj_size - block_offset)
+            buf[read:read + len_] = self._get_object(
+                key, size=len_, off=block_offset
+            )
+            to_read -= len_
+            read += len_
+            blockno += 1
+            block_offset = 0
+
+    def _get_object(self, obj_name: str, size: int, off: int) -> bytes:
+        """Read *size* bytes from *obj_name*, starting at *off*."""
+
+        try:
+            resp = self.s3.get_object(Bucket=cfg.bucket_name, Key=obj_name,
+                                      Range=f'bytes={off}-{off+size-1}')
+        except ClientError as exc:
+            if exc.response['Error']['Code'] == 'NoSuchKey':
+                return bytearray(size)
+            raise
+
+        body = resp['Body']
+        with closing(body):
+            buf = body.read()
+
+        assert len(buf) == size, f'requested {size} bytes, got {len(buf)}'
+        return buf
+
+    def pwrite(self, buf: BinaryData, offset: int, flags: int) -> None:
+        # We can ignore FUA flags, because every write is always flushed
+
+        if not cfg.obj_size:
+            raise RuntimeError('Unable to write in single-object mode')
+
+        # memoryviews can be sliced without copying the data
+        if not isinstance(buf, memoryview):
+            buf = memoryview(buf)
+
+        # Calculate block number and offset within the block for the
+        # first byte that we need to write.
+        (blockno1, block_offset1) = divmod(offset, cfg.obj_size)
+
+        # Calculate block number of the last block that we have to
+        # write to, and how many bytes we need to write into it.
+        (blockno2, block_len2) = divmod(offset + len(buf), cfg.obj_size)
+
+        # Special case: start and end is within the same one block
+        if blockno1 == blockno2 and (block_offset1 != 0 or block_len2 != 0):
+            nbdkit.debug(f"pwrite(): write at offset {offset} not aligned, "
+                         f"covers bytes {block_offset1} to {block_len2} of "
+                         f"block {blockno1}. Rewriting full block...")
+
+            # We could separately fetch the prefix and suffix, but give that
+            # we're always writing full blocks, it's likely that the latency of
+            # two separate read requests would be much bigger than the savings
+            # in volume.
+            key = f'{cfg.key_name}/{blockno1:016x}'
+            with obj_lock(key):
+                fbuf = bytearray(self._get_object(
+                    key, size=cfg.obj_size, off=0))
+                fbuf[block_offset1:block_len2] = buf
+                self._put_object(key, fbuf)
+                return
+
+        # First write is not aligned to first block
+        if block_offset1:
+            nbdkit.debug(
+                f"pwrite(): write at offset {offset} not aligned, "
+                f"starts {block_offset1} bytes after block {blockno1}. "
+                "Rewriting full block...")
+            key = f'{cfg.key_name}/{blockno1:016x}'
+            with obj_lock(key):
+                pre = self.get_object(key, size=block_offset1, off=0)
+                len_ = cfg.obj_size - block_offset1
+                self._put_object(key, pre + buf[:len_])
+                buf = buf[len_:]
+                blockno1 += 1
+
+        # Last write is not a full block
+        if block_len2:
+            nbdkit.debug(f"pwrite(): write at offset {offset} not aligned, "
+                         f"ends {cfg.obj_size-block_len2} bytes before block "
+                         f"{blockno2+1}. Rewriting full block...")
+            key = f'{cfg.key_name}/{blockno2:016x}'
+            with obj_lock(key):
+                len_ = cfg.obj_size - block_len2
+                post = self.get_object(key, size=len_, off=block_len2)
+                self._put_object(key, concat(buf[-block_len2:], post))
+                buf = buf[:-block_len2]
+
+        off = 0
+        for blockno in range(blockno1, blockno2):
+            key = f"{cfg.key_name}/{blockno:016x}"
+            with obj_lock(key):
+                nbdkit.debug(f"pwrite(): writing block {blockno}...")
+                self._put_object(key, buf[off:off + cfg.obj_size])
+                off += cfg.obj_size
+
+    def _put_object(self, obj_name: str, buf: BinaryData) -> None:
+        "Write *buf* into *obj_name"
+
+        assert len(buf) == cfg.obj_size
+
+        # Boto does not support reading from memoryviews :-(
+        if isinstance(buf, memoryview):
+            buf = buf.tobytes()
+        self.s3.put_object(Bucket=cfg.bucket_name, Key=obj_name, Body=buf)
 
 
 def concat(b1, b2):
@@ -256,72 +344,6 @@ def concat(b1, b2):
     return b3
 
 
-def pwrite_multi(s3, buf, offset, flags):
-    "Write data to objects"
-
-    # memoryviews can be sliced without copying the data
-    if not isinstance(buf, memoryview):
-        buf = memoryview(buf)
-
-    # Calculate block number and offset within the block for the
-    # first byte that we need to write.
-    (blockno1, block_offset1) = divmod(offset, cfg.obj_size)
-
-    # Calculate block number of the last block that we have to
-    # write to, and how many bytes we need to write into it.
-    (blockno2, block_len2) = divmod(offset + len(buf), cfg.obj_size)
-
-    # Special case: start and end is within the same one block
-    if blockno1 == blockno2 and (block_offset1 != 0 or block_len2 != 0):
-        nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
-                     f"covers bytes {block_offset1} to {block_len2} of "
-                     f"block {blockno1}. Rewriting full block...")
-
-        # We could separately fetch the prefix and suffix, but give that we're
-        # always writing full blocks, it's likely that the latency of two
-        # separate read requests would be much bigger than the savings in
-        # volume.
-        key = f'{cfg.key_name}/{blockno1:016x}'
-        with obj_lock(key):
-            fbuf = bytearray(get_object(s3, key, size=cfg.obj_size, off=0))
-            fbuf[block_offset1:block_len2] = buf
-            put_object(s3, key, fbuf)
-            return
-
-    # First write is not aligned to first block
-    if block_offset1:
-        nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
-                     f"starts {block_offset1} bytes after block {blockno1}. "
-                     "Rewriting full block...")
-        key = f'{cfg.key_name}/{blockno1:016x}'
-        with obj_lock(key):
-            pre = get_object(s3, key, size=block_offset1, off=0)
-            len_ = cfg.obj_size - block_offset1
-            put_object(s3, key, pre + buf[:len_])
-            buf = buf[len_:]
-            blockno1 += 1
-
-    # Last write is not a full block
-    if block_len2:
-        nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
-                     f"ends {cfg.obj_size-block_len2} bytes before block "
-                     f"{blockno2+1}. Rewriting full block...")
-        key = f'{cfg.key_name}/{blockno2:016x}'
-        with obj_lock(key):
-            len_ = cfg.obj_size - block_len2
-            post = get_object(s3, key, size=len_, off=block_len2)
-            put_object(s3, key, concat(buf[-block_len2:], post))
-            buf = buf[:-block_len2]
-
-    off = 0
-    for blockno in range(blockno1, blockno2):
-        key = f"{cfg.key_name}/{blockno:016x}"
-        with obj_lock(key):
-            nbdkit.debug(f"pwrite_multi(): writing block {blockno}...")
-            put_object(s3, key, buf[off:off + cfg.obj_size])
-            off += cfg.obj_size
-
-
 def put_object(s3, obj_name, buf):
     "Write *buf* into *obj_name"
 
@@ -331,21 +353,6 @@ def put_object(s3, obj_name, buf):
     if isinstance(buf, memoryview):
         buf = buf.tobytes()
     s3.put_object(Bucket=cfg.bucket_name, Key=obj_name, Body=buf)
-
-
-def delete_object(s3, obj_name, force=False):
-    '''Delete *obj_name.
-
-    If *force* is true, do not raise exception if object does not
-    exist.
-    '''
-
-    try:
-        s3.delete_object(Bucket=cfg.bucket_name, Key=obj_name)
-    except ClientError as exc:
-        if force and exc.response['Error']['Code'] == 'NoSuchKey':
-            return
-        raise
 
 
 def make_client_error(errcode):
@@ -398,7 +405,7 @@ class MultiLock:
 # Global state    #
 ###################
 cfg = Config()
-obj_lock = None
+obj_lock = MultiLock()
 
 
 ######################
@@ -433,6 +440,21 @@ class MockS3Client:
         del self.keys[key]
 
 
+def delete_object(s3, obj_name: str, force=False):
+    '''Delete *obj_name.
+
+    If *force* is true, do not raise exception if object does not
+    exist.
+    '''
+
+    try:
+        s3.delete_object(Bucket=cfg.bucket_name, Key=obj_name)
+    except ClientError as exc:
+        if force and exc.response['Error']['Code'] == 'NoSuchKey':
+            return
+        raise
+
+
 class BaseTest:
     def setUp(self, bucket):
         super().setUp()
@@ -448,6 +470,7 @@ class BaseTest:
         config('size', str(self.dev_size))
 
         config_complete()
+        self.s3 = open(False)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -469,7 +492,7 @@ class BaseTest:
             self.assertEqual(ref, buf)
 
     def test_read_hole(self):
-        delete_object(self.s3, f"{cfg.key_name}/{5:016x}", force=True)
+        delete_object(self.s3.s3, f"{cfg.key_name}/{5:016x}", force=True)
         buf = bytearray(self.obj_size)
         pread(self.s3, buf, 5*self.obj_size, 0)
         self.assertEqual(buf, bytearray(self.obj_size))
@@ -534,8 +557,9 @@ class BaseTest:
 
 class LocalTest(BaseTest, unittest.TestCase):
     def setUp(self):
-        super().setUp(bucket='nbdkit_test')
-        self.s3 = MockS3Client()
+        with patch.object(boto3, 'client') as mock_client:
+            mock_client.return_value = MockS3Client()
+            super().setUp(bucket='nbdkit_test')
 
 
 # To run unit tests against a real S3 bucket, set the TEST_BUCKET
@@ -545,4 +569,3 @@ class LocalTest(BaseTest, unittest.TestCase):
 class RemoteTest(BaseTest, unittest.TestCase):
     def setUp(self):
         super().setUp(bucket=os.environ['TEST_BUCKET'])
-        self.s3 = open(False)
