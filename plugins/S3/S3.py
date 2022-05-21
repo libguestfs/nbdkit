@@ -38,24 +38,66 @@ import threading
 import unittest
 from contextlib import closing, contextmanager
 from io import BytesIO
+import builtins
 
 import boto3
-import builtins
 from botocore.exceptions import ClientError
-
 import nbdkit
 
 API_VERSION = 2
 
-access_key = None
-secret_key = None
-session_token = None
-endpoint_url = None
-bucket_name = None
-key_name = None
-dev_size = None
-obj_size = None
-obj_lock = None
+
+class Config:
+    """Holds configuration data passed in by the user."""
+
+    def __init__(self) -> None:
+        self.access_key = None
+        self.secret_key = None
+        self.session_token = None
+        self.endpoint_url = None
+        self.bucket_name = None
+        self.key_name = None
+        self.dev_size = None
+        self.obj_size = None
+
+    def set(self, key: str, value: str) -> None:
+        """Set a configuration value."""
+
+        if key == "access-key" or key == "access_key":
+            self.access_key = value
+        elif key == "secret-key" or key == "secret_key":
+            self.secret_key = value
+        elif key == "session-token" or key == "session_token":
+            self.session_token = value
+        elif key == "endpoint-url" or key == "endpoint_url":
+            self.endpoint_url = value
+        elif key == "bucket":
+            self.bucket_name = value
+        elif key == "key":
+            self.key_name = value
+        elif key == 'size':
+            self.dev_size = nbdkit.parse_size(value)
+        elif key == 'object-size':
+            self.obj_size = nbdkit.parse_size(value)
+        else:
+            raise RuntimeError("unknown parameter %s" % key)
+
+    def validate(self) -> None:
+        """Validate configuration settings."""
+
+        if self.bucket_name is None:
+            raise RuntimeError("bucket parameter missing")
+        if self.key_name is None:
+            raise RuntimeError("key parameter missing")
+
+        if (self.dev_size and not self.obj_size or
+                self.obj_size and not self.dev_size):
+            raise RuntimeError(
+                "`size` and `object-size` parameters must always be "
+                "specified together")
+
+        if self.dev_size and self.dev_size % self.obj_size != 0:
+            raise RuntimeError('`size` must be a multiple of `object-size`')
 
 
 def thread_model():
@@ -63,7 +105,7 @@ def thread_model():
 
 
 def can_write(s3):
-    return obj_size is not None
+    return cfg.obj_size is not None
 
 
 def can_multi_conn(s3):
@@ -87,7 +129,7 @@ def can_cache(s3):
 
 
 def block_size(s3):
-    if not obj_size:
+    if not cfg.obj_size:
         # More or less arbitrary.
         return (1, 512*1024, 0xffffffff)
 
@@ -95,7 +137,7 @@ def block_size(s3):
     # same value for all three because even though the plugin can handle
     # arbitrary large and small blocks, the performance penalty is huge and it
     # is always preferable for the client to split up requests as needed.
-    return (obj_size, obj_size, obj_size)
+    return (cfg.obj_size, cfg.obj_size, cfg.obj_size)
 
 
 def is_rotational(s3):
@@ -115,81 +157,46 @@ def can_flush(s3):
 
 
 def config(key, value):
-    global access_key, secret_key, session_token, endpoint_url, \
-        bucket_name, key_name, dev_size, obj_size
-
-    if key == "access-key" or key == "access_key":
-        access_key = value
-    elif key == "secret-key" or key == "secret_key":
-        secret_key = value
-    elif key == "session-token" or key == "session_token":
-        session_token = value
-    elif key == "endpoint-url" or key == "endpoint_url":
-        endpoint_url = value
-    elif key == "bucket":
-        bucket_name = value
-    elif key == "key":
-        key_name = value
-    elif key == 'size':
-        dev_size = nbdkit.parse_size(value)
-    elif key == 'object-size':
-        obj_size = nbdkit.parse_size(value)
-    else:
-        raise RuntimeError("unknown parameter %s" % key)
+    cfg.set(key, value)
 
 
 def config_complete():
-    if bucket_name is None:
-        raise RuntimeError("bucket parameter missing")
-    if key_name is None:
-        raise RuntimeError("key parameter missing")
-
-    if (dev_size and not obj_size or
-            obj_size and not dev_size):
-        raise RuntimeError(
-            "`size` and `object-size` parameters must always be "
-            "specified together")
-
-    if dev_size and dev_size % obj_size != 0:
-        raise RuntimeError('`size` must be a multiple of `object-size`')
-
-    global obj_lock
-    obj_lock = MultiLock()
+    cfg.validate()
 
 
 def open(readonly):
     s3 = boto3.client("s3",
-                      aws_access_key_id=access_key,
-                      aws_secret_access_key=secret_key,
-                      aws_session_token=session_token,
-                      endpoint_url=endpoint_url)
+                      aws_access_key_id=cfg.access_key,
+                      aws_secret_access_key=cfg.secret_key,
+                      aws_session_token=cfg.session_token,
+                      endpoint_url=cfg.endpoint_url)
     return s3
 
 
 def get_size(s3):
-    if dev_size:
-        return dev_size
+    if cfg.dev_size:
+        return cfg.dev_size
 
     try:
-        resp = s3.head_object(Bucket=bucket_name, Key=key_name)
+        resp = s3.head_object(Bucket=cfg.bucket_name, Key=cfg.key_name)
     except AttributeError:
-        resp = s3.get_object(Bucket=bucket_name, Key=key_name)
+        resp = s3.get_object(Bucket=cfg.bucket_name, Key=cfg.key_name)
 
     size = resp['ResponseMetadata']['HTTPHeaders']['content-length']
     return int(size)
 
 
 def pread(s3, buf, offset, flags):
-    if obj_size:
+    if cfg.obj_size:
         return pread_multi(s3, buf, offset, flags)
 
     size = len(buf)
-    buf[:] = get_object(s3, key_name, size=size, off=offset)
+    buf[:] = get_object(s3, cfg.key_name, size=size, off=offset)
 
 
 def pwrite(s3, buf, offset, flags):
     # We can ignore FUA flags, because every write is always flushed
-    if obj_size:
+    if cfg.obj_size:
         return pwrite_multi(s3, buf, offset, flags)
 
     raise RuntimeError('Unable to write in single-object mode')
@@ -206,10 +213,10 @@ def pread_multi(s3, buf, offset, flags):
     to_read = len(buf)
     read = 0
 
-    (blockno, block_offset) = divmod(offset, obj_size)
+    (blockno, block_offset) = divmod(offset, cfg.obj_size)
     while to_read > 0:
-        key = f"{key_name}/{blockno:016x}"
-        len_ = min(to_read, obj_size - block_offset)
+        key = f"{cfg.key_name}/{blockno:016x}"
+        len_ = min(to_read, cfg.obj_size - block_offset)
         buf[read:read + len_] = get_object(
             s3, key, size=len_, off=block_offset
         )
@@ -223,7 +230,7 @@ def get_object(s3, obj_name, size, off):
     """Read *size* bytes from *obj_name*, starting at *off*."""
 
     try:
-        resp = s3.get_object(Bucket=bucket_name, Key=obj_name,
+        resp = s3.get_object(Bucket=cfg.bucket_name, Key=obj_name,
                              Range=f'bytes={off}-{off+size-1}')
     except ClientError as exc:
         if exc.response['Error']['Code'] == 'NoSuchKey':
@@ -258,11 +265,11 @@ def pwrite_multi(s3, buf, offset, flags):
 
     # Calculate block number and offset within the block for the
     # first byte that we need to write.
-    (blockno1, block_offset1) = divmod(offset, obj_size)
+    (blockno1, block_offset1) = divmod(offset, cfg.obj_size)
 
     # Calculate block number of the last block that we have to
     # write to, and how many bytes we need to write into it.
-    (blockno2, block_len2) = divmod(offset + len(buf), obj_size)
+    (blockno2, block_len2) = divmod(offset + len(buf), cfg.obj_size)
 
     # Special case: start and end is within the same one block
     if blockno1 == blockno2 and (block_offset1 != 0 or block_len2 != 0):
@@ -274,9 +281,9 @@ def pwrite_multi(s3, buf, offset, flags):
         # always writing full blocks, it's likely that the latency of two
         # separate read requests would be much bigger than the savings in
         # volume.
-        key = f'{key_name}/{blockno1:016x}'
+        key = f'{cfg.key_name}/{blockno1:016x}'
         with obj_lock(key):
-            fbuf = bytearray(get_object(s3, key, size=obj_size, off=0))
+            fbuf = bytearray(get_object(s3, key, size=cfg.obj_size, off=0))
             fbuf[block_offset1:block_len2] = buf
             put_object(s3, key, fbuf)
             return
@@ -286,10 +293,10 @@ def pwrite_multi(s3, buf, offset, flags):
         nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
                      f"starts {block_offset1} bytes after block {blockno1}. "
                      "Rewriting full block...")
-        key = f'{key_name}/{blockno1:016x}'
+        key = f'{cfg.key_name}/{blockno1:016x}'
         with obj_lock(key):
             pre = get_object(s3, key, size=block_offset1, off=0)
-            len_ = obj_size - block_offset1
+            len_ = cfg.obj_size - block_offset1
             put_object(s3, key, pre + buf[:len_])
             buf = buf[len_:]
             blockno1 += 1
@@ -297,33 +304,33 @@ def pwrite_multi(s3, buf, offset, flags):
     # Last write is not a full block
     if block_len2:
         nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
-                     f"ends {obj_size-block_len2} bytes before block "
+                     f"ends {cfg.obj_size-block_len2} bytes before block "
                      f"{blockno2+1}. Rewriting full block...")
-        key = f'{key_name}/{blockno2:016x}'
+        key = f'{cfg.key_name}/{blockno2:016x}'
         with obj_lock(key):
-            len_ = obj_size - block_len2
+            len_ = cfg.obj_size - block_len2
             post = get_object(s3, key, size=len_, off=block_len2)
             put_object(s3, key, concat(buf[-block_len2:], post))
             buf = buf[:-block_len2]
 
     off = 0
     for blockno in range(blockno1, blockno2):
-        key = f"{key_name}/{blockno:016x}"
+        key = f"{cfg.key_name}/{blockno:016x}"
         with obj_lock(key):
             nbdkit.debug(f"pwrite_multi(): writing block {blockno}...")
-            put_object(s3, key, buf[off:off + obj_size])
-            off += obj_size
+            put_object(s3, key, buf[off:off + cfg.obj_size])
+            off += cfg.obj_size
 
 
 def put_object(s3, obj_name, buf):
     "Write *buf* into *obj_name"
 
-    assert len(buf) == obj_size
+    assert len(buf) == cfg.obj_size
 
     # Boto does not support reading from memoryviews :-(
     if isinstance(buf, memoryview):
         buf = buf.tobytes()
-    s3.put_object(Bucket=bucket_name, Key=obj_name, Body=buf)
+    s3.put_object(Bucket=cfg.bucket_name, Key=obj_name, Body=buf)
 
 
 def delete_object(s3, obj_name, force=False):
@@ -334,7 +341,7 @@ def delete_object(s3, obj_name, force=False):
     '''
 
     try:
-        s3.delete_object(Bucket=bucket_name, Key=obj_name)
+        s3.delete_object(Bucket=cfg.bucket_name, Key=obj_name)
     except ClientError as exc:
         if force and exc.response['Error']['Code'] == 'NoSuchKey':
             return
@@ -387,6 +394,17 @@ class MultiLock:
             self.cond.notify_all()
 
 
+###################
+# Global state    #
+###################
+cfg = Config()
+obj_lock = None
+
+
+######################
+# Unit Tests         #
+######################
+
 class MockS3Client:
     def __init__(self):
         self.keys = {}
@@ -421,7 +439,7 @@ class BaseTest:
         self.obj_size = 64
         self.dev_size = 100*self.obj_size
         self.ref_fh = tempfile.TemporaryFile()
-        self.ref_fh.truncate(dev_size)
+        self.ref_fh.truncate(cfg.dev_size)
         self.rnd_fh = builtins.open('/dev/urandom', 'rb')
 
         config('bucket', bucket)
@@ -451,13 +469,13 @@ class BaseTest:
             self.assertEqual(ref, buf)
 
     def test_read_hole(self):
-        delete_object(self.s3, f"{key_name}/{5:016x}", force=True)
+        delete_object(self.s3, f"{cfg.key_name}/{5:016x}", force=True)
         buf = bytearray(self.obj_size)
         pread(self.s3, buf, 5*self.obj_size, 0)
         self.assertEqual(buf, bytearray(self.obj_size))
 
     def test_write_memoryview(self):
-        buf = memoryview(bytearray(obj_size))
+        buf = memoryview(bytearray(cfg.obj_size))
         pwrite(self.s3, buf, 0, 0)
         pwrite(self.s3, buf[10:], 42, 0)
 
