@@ -298,10 +298,10 @@ careful with shell quoting around the whole data parameter.
 
 Group a set of expressions into a single expression.
 
-S<C<( ... )>> recursively creates a new data parser so any of the
-above operators can appear inside, including nested S<C<( ... )>>.
-Note that offsets and alignments within the subpattern are relative to
-the start of the subpattern, not relative to the final disk image.
+S<C<( ... )>> recursively creates a new data parser so any expression
+can appear inside, including nested S<C<( ... )>>.  Note that offsets
+and alignments within the subpattern are relative to the start of the
+subpattern, not relative to the final disk image.
 
 =item expression B<*> N
 
