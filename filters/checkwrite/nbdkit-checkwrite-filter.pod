@@ -31,6 +31,8 @@ filter, and copying from and to nbdkit at the same time:
  nbdkit -U - --filter=checkwrite data "@32768 1" \
         --run 'nbdcopy "$uri" "$uri"'
 
+=for paragraph
+
  nbdkit -U - --filter=checkwrite file disk.img \
         --run 'nbdcopy "$uri" "$uri"'
 

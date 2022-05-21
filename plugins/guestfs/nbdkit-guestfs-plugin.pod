@@ -138,6 +138,8 @@ needed.
 
  nbdkit guestfs disk=disk.img export=/dev/sda1
 
+=for paragraph
+
  nbdkit guestfs disk=disk.img export=/dev/VG/LV
 
 Use L<virt-filesystems(1)> to find out what devices, partitions, LVs,
@@ -151,6 +153,8 @@ you don't want to access filesystem contents, C<mount=...> is not
 needed.
 
  nbdkit -r guestfs domain=Guest export=/dev/sda1
+
+=for paragraph
 
  nbdkit -r guestfs domain=Guest export=/dev/VG/LV
 

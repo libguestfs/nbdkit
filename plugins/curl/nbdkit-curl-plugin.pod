@@ -403,7 +403,7 @@ I<--insecure> and C<sslverify=false>.
  DS=datastore1
  GUEST=guest-name
  URL="https://$SERVER/folder/$GUEST/$GUEST-flat.vmdk?dcPath=$DCPATH&dsName=$DS"
- 
+
  nbdkit curl "$URL" \
         cookie-script='
             curl --head -s --insecure -u root:password "$url" |
@@ -442,7 +442,7 @@ check they are working.  To run nbdkit:
  IMAGE=library/fedora
  BLOBSUM=`/tmp/blobsum.sh`
  URL="https://registry-1.docker.io/v2/$IMAGE/blobs/$BLOBSUM"
- 
+
  nbdkit curl "$URL" \
         header-script=' printf "Authorization: Bearer "; /tmp/auth.sh ' \
         header-script-renew=200 \

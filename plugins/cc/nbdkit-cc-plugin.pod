@@ -136,26 +136,26 @@ All other parameters on the command line are passed to the plugin.
  $ nbdkit cc - <<'EOF'
  #include <stdint.h>
  #include <string.h>
- 
+
  #define NBDKIT_API_VERSION 2
  #include <nbdkit-plugin.h>
- 
+
  char data[10*1024*1024];
- 
+
  #define THREAD_MODEL NBDKIT_THREAD_MODEL_PARALLEL
- 
+
  static void *
  my_open (int readonly)
  {
    return NBDKIT_HANDLE_NOT_NEEDED;
  }
- 
+
  static int64_t
  my_get_size (void *handle)
  {
    return (int64_t) sizeof (data);
  }
- 
+
  static int
  my_pread (void *handle, void *buf,
            uint32_t count, uint64_t offset,
@@ -164,7 +164,7 @@ All other parameters on the command line are passed to the plugin.
    memcpy (buf, data+offset, count);
    return 0;
  }
- 
+
  static int
  my_pwrite (void *handle, const void *buf,
             uint32_t count, uint64_t offset,
@@ -173,7 +173,7 @@ All other parameters on the command line are passed to the plugin.
    memcpy (data+offset, buf, count);
    return 0;
  }
- 
+
  static struct nbdkit_plugin plugin = {
    .name              = "myplugin",
    .open              = my_open,
@@ -181,7 +181,7 @@ All other parameters on the command line are passed to the plugin.
    .pread             = my_pread,
    .pwrite            = my_pwrite,
  };
- 
+
  NBDKIT_REGISTER_PLUGIN(plugin)
  EOF
 

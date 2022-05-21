@@ -107,7 +107,7 @@ F<~/.aws/credentials> file.  This takes the form:
  [default]
  aws_access_key_id = XXX
  aws_secret_access_key = YYY
- 
+
  [profile]
  aws_access_key_id = XXX
  aws_secret_access_key = YYY

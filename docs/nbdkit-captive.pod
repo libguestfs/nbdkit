@@ -7,6 +7,8 @@ reliably cleaned up
 
  nbdkit PLUGIN [...] [-e|--exportname EXPORTNAME] --run "CMD ARGS ..."
 
+=for paragraph
+
  nbdkit --exit-with-parent PLUGIN [...]
 
 =head1 DESCRIPTION

@@ -5,7 +5,7 @@ nbdkit-filter - how to write nbdkit filters
 =head1 SYNOPSIS
 
  #include <nbdkit-filter.h>
- 
+
  static int
  myfilter_config (nbdkit_next_config *next, void *nxdata,
                   const char *key, const char *value)
@@ -19,13 +19,13 @@ nbdkit-filter - how to write nbdkit filters
      return next (nxdata, key, value);
    }
  }
- 
+
  static struct nbdkit_filter filter = {
    .name              = "filter",
    .config            = myfilter_config,
    /* etc */
  };
- 
+
  NBDKIT_REGISTER_FILTER(filter)
 
 When this has been compiled to a shared library, do:
@@ -72,7 +72,7 @@ parameters the filter can intercept the C<.config> method:
      return next (nxdata, key, value);
    }
  }
- 
+
  static struct nbdkit_filter filter = {
    // ...
    .config            = myfilter_config,
@@ -118,7 +118,7 @@ that the filter wants to intercept.
    .config            = myfilter_config,
    /* etc */
  };
- 
+
  NBDKIT_REGISTER_FILTER(filter)
 
 The C<.name> field is the name of the filter.  This is the only field
@@ -500,7 +500,7 @@ from the layer below.  Without error checking it would look like this:
    struct nbdkit_exports *exports2;
    struct nbdkit_export e;
    char *name, *desc;
- 
+
    exports2 = nbdkit_exports_new ();
    next_list_exports (nxdata, readonly, exports);
    for (i = 0; i < nbdkit_exports_count (exports2); ++i) {
@@ -947,7 +947,7 @@ from the layer below.  Without error checking it would look like this:
    struct nbdkit_extents *extents2;
    struct nbdkit_extent e;
    int64_t size;
- 
+
    size = next->get_size (next);
    extents2 = nbdkit_extents_new (offset + shift, size);
    next->extents (next, count, offset + shift, flags, extents2, err);

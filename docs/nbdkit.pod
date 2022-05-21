@@ -74,6 +74,8 @@ L<nbdkit-curl-plugin(1)> or L<nbdkit-ssh-plugin(1)>:
 
  nbdkit -r curl https://example.com/disk.img
 
+=for paragraph
+
  nbdkit ssh host=example.com /var/tmp/disk.img
 
 =item *

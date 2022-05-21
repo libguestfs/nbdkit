@@ -6,6 +6,8 @@ nbdkit-xz-filter - nbdkit xz filter
 
  nbdkit --filter=xz file FILENAME.xz
 
+=for paragraph
+
  nbdkit --filter=xz curl https://example.com/FILENAME.xz
 
 =head1 DESCRIPTION

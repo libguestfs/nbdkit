@@ -7,6 +7,8 @@ ext4 filesystems
 
  nbdkit --filter=ext2 file fs.img ext2file=/disks/disk.raw
 
+=for paragraph
+
  nbdkit --filter=ext2 --filter=partition file fs.img \
     partition=1 ext2file=exportname
 

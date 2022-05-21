@@ -6,6 +6,8 @@ nbdkit-ocaml-plugin - writing nbdkit plugins in OCaml
 
  nbdkit /path/to/plugin.so [arguments...]
 
+=for paragraph
+
  nbdkit plugin [arguments...]
 
 =head1 DESCRIPTION
@@ -77,13 +79,13 @@ handle struct in your plugin:
    h_id : int; (* this is just an example field *)
    h_readonly : bool;
  }
- 
+
  let id = ref 0
  let myplugin_open readonly =
    (* return a newly allocated handle *)
    incr id;
    { h_id = !id; h_readonly = readonly }
- 
+
  let myplugin_get_size handle =
    printf "handle ID = %d\n" handle.h_id;
    (* ... *)

@@ -7,6 +7,8 @@ nbdkit-file-plugin - nbdkit file plugin
  nbdkit file [file=]FILENAME
              [cache=default|none] [fadvise=normal|random|sequential]
 
+=for paragraph
+
  nbdkit file dir=DIRECTORY
 
 =head1 DESCRIPTION

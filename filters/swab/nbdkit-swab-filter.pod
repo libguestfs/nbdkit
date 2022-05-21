@@ -58,6 +58,8 @@ This swaps the endianness of each 4 byte word in the disk, ie:
 
   input    0   1   2   3   4   5   6   7
 
+=for paragraph
+
  output    3   2   1   0   7   6   5   4
 
 =item B<swab-bits=64>
@@ -65,6 +67,8 @@ This swaps the endianness of each 4 byte word in the disk, ie:
 This swaps the endianness of each 8 byte word in the disk, ie:
 
   input    0   1   2   3   4   5   6   7
+
+=for paragraph
 
  output    7   6   5   4   3   2   1   0
 

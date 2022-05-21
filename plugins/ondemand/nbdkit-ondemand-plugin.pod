@@ -96,7 +96,11 @@ commands such as these (note the different export names):
  nbd-client server /dev/nbd0 -N export1
  mount /dev/nbd0 /mnt
 
+=for paragraph
+
  guestfish --format=raw -a nbd://localhost/export2 -m /dev/sda
+
+=for paragraph
 
  qemu-img info nbd:localhost:10809:exportname=export2
 

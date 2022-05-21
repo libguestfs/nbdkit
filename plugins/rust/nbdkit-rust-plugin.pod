@@ -28,16 +28,16 @@ Your Rust code should define a public implementation of the C<Server> trait,
 and register it using the C<plugin!> macro.
 
  use nbdkit::*;
- 
+
  #[derive(Default)]
  struct MyPlugin {
      // ...
  }
- 
+
  impl Server for MyPlugin {
      // ...
  }
- 
+
  plugin!(MyPlugin {write_at, trim, ...});
 
 =head2 Compiling a Rust nbdkit plugin

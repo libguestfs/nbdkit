@@ -7,6 +7,8 @@ nbdkit-ddrescue-filter - nbdkit filter for serving from ddrescue dump
  nbdkit --filter=ddrescue plugin [plugin-args...]
                                  ddrescue-mapfile=file.map
 
+=for paragraph
+
  nbdkit --filter=ddrescue file file=file.img ddrescue-mapfile=file.map
                                [plugin-args...]
 

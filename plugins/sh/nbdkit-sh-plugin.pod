@@ -6,6 +6,8 @@ nbdkit-sh-plugin - nbdkit shell, script or executable plugin
 
  nbdkit sh /path/to/script [arguments...]
 
+=for paragraph
+
  nbdkit sh - <<'EOF'
  ... shell script ...
  EOF
@@ -72,6 +74,8 @@ parameter is always the method name.  For example:
                    │      │   └─ value ($3)
                    │      └── key ($2)
                method ($1)
+
+=for paragraph
 
  /path/to/script pread <handle> <count> <offset>
                    │       │       │       │

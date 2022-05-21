@@ -260,6 +260,8 @@ that the old server exits.
    nbdkit --exit-with-parent --tls=require nbd socket=$sock &
    exec /path/to/oldserver --socket=$sock )
 
+=for paragraph
+
  ┌────────────┐   TLS    ┌────────┐  plaintext  ┌────────────┐
  │ new client │ ────────▶│ nbdkit │ ───────────▶│ old server │
  └────────────┘   TCP    └────────┘    Unix     └────────────┘
@@ -297,6 +299,8 @@ limited to a Unix socket on the local machine.
 
  nbdkit -U - -o --tls=off nbd hostname=example.com export=foo tls=require \
   --run '/path/to/oldclient --socket=$unixsocket'
+
+=for paragraph
 
  ┌────────────┐  plaintext  ┌────────┐   TLS    ┌────────────┐
  │ old client │ ───────────▶│ nbdkit │ ────────▶│ new server │

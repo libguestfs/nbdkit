@@ -50,7 +50,7 @@ C<nbdkit.Connection> structs respectively:
  type MyPlugin struct {
          nbdkit.Plugin
  }
- 
+
  type MyConnection struct {
          nbdkit.Connection
  }
@@ -65,12 +65,12 @@ should return a new instance of your connection struct.  For example:
  func (p *MyPlugin) Load() {
          // global callback used for initializing the plugin
  }
- 
+
  func (p *MyPlugin) Open(readonly bool) (nbdkit.ConnectionInterface, error) {
          // new client has connected
          return &MyConnection{}, nil
  }
- 
+
  func (c *MyConnection) GetSize() (uint64, error) {
          // called per-client
          return virtual_size, nil
@@ -109,7 +109,7 @@ C<Zero> (C<CanZero>).
  func (c *MyConnection) CanWrite() (bool, error) {
          return true, nil
  }
- 
+
  func (c *MyConnection) PWrite(buf []byte, offset uint64,
         flags uint32) error {
          // ...

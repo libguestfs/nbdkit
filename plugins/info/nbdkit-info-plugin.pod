@@ -43,6 +43,8 @@ characters is created.  We then display the contents:
  print("buf = %r" % buf)
  EOF
 
+=for paragraph
+
  size = 5
  buf = b"hello"
 

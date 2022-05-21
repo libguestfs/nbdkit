@@ -25,7 +25,7 @@ are written to a file once when nbdkit exits.
  write: 1088 ops, 0.065065 s, 132.38 MiB, 1.99 GiB/s op, 38.98 MiB/s total
  trim: 14 ops, 0.002037 s, 25.00 GiB, 12272.95 GiB/s op, 7.36 GiB/s total
  flush: 5 ops, 0.000002 s, 0 bytes, 0 bytes/s op, 0 bytes/s total
- 
+
  READ request sizes:
       4096 bytes: 66.2% of requests (96)
           12 bit aligned: 100.0% (96)
@@ -41,19 +41,19 @@ are written to a file once when nbdkit exits.
           17 bit aligned:  71.4% (5)
           19 bit aligned:  42.9% (3)
      other sizes: 29.0% of requests (42)
- 
+
  WRITE request sizes:
     131072 bytes: 97.1% of requests (1056)
           17 bit aligned: 100.0% (1056)
           18 bit aligned:  50.0% (528)
           19+ bit-aligned: 25.0% (264)
      other sizes:  2.9% of requests (32)
- 
+
  TRIM request sizes:
  2147483648 bytes: 85.7% of requests (12)
           24 bit aligned: 100.0% (12)
      other sizes: 14.3% of requests (2)
- 
+
  ZERO request sizes:
      (no such requests)
 

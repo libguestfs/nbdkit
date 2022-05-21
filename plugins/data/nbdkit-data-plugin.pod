@@ -7,8 +7,12 @@ nbdkit-data-plugin - nbdkit plugin for serving data from the command line
  nbdkit data [data=]'0 1 2 3 @0x1fe 0x55 0xaa'
              [size=SIZE] [allocator=sparse|malloc|zstd]
 
+=for paragraph
+
  nbdkit data base64='aGVsbG8gbmJka2l0IHVzZXI='
              [size=SIZE] [allocator=sparse|malloc|zstd]
+
+=for paragraph
 
  nbdkit data raw='binary_data'
              [size=SIZE] [allocator=sparse|malloc|zstd]
@@ -351,8 +355,12 @@ expressions.  These are all equivalent:
 
  nbdkit data '$pattern*16' pattern='0x55 0xAA'
 
+=for paragraph
+
  export pattern='0x55 0xAA'
  nbdkit data '$pattern*16'
+
+=for paragraph
 
  nbdkit data '( 0x55 0xAA )*16'
 

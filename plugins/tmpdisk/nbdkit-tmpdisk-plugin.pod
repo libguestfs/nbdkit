@@ -6,6 +6,8 @@ nbdkit-tmpdisk-plugin - create a fresh temporary filesystem for each client
 
  nbdkit tmpdisk [size=]SIZE [type=ext4|xfs|vfat|...] [label=LABEL]
 
+=for paragraph
+
  nbdkit tmpdisk [size=]SIZE command=COMMAND [VAR=VALUE ...]
 
 =head1 DESCRIPTION

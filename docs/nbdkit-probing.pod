@@ -6,11 +6,19 @@ nbdkit-probing - how to probe for nbdkit configuration and plugins
 
  nbdkit --dump-config
 
+=for paragraph
+
  nbdkit PLUGIN --dump-plugin
+
+=for paragraph
 
  nbdkit --version
 
+=for paragraph
+
  nbdkit PLUGIN --version
+
+=for paragraph
 
  nbdkit --filter=FILTER null --version
 

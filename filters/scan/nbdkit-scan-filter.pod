@@ -7,7 +7,11 @@ nbdkit-scan-filter - scan disk prefetching data ahead of sequential reads
  nbdkit --filter=scan PLUGIN [scan-ahead=false] [scan-clock=false]
                              [scan-forever=true] [scan-size=]NN
 
+=for paragraph
+
  nbdkit --filter=scan --filter=cache PLUGIN
+
+=for paragraph
 
  nbdkit --filter=scan --filter=cow PLUGIN cow-on-cache=true
 

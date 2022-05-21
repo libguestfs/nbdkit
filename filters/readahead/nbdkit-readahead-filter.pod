@@ -6,7 +6,11 @@ nbdkit-readahead-filter - prefetch data ahead of sequential reads
 
  nbdkit --filter=readahead PLUGIN
 
+=for paragraph
+
  nbdkit --filter=readahead --filter=cache PLUGIN
+
+=for paragraph
 
  nbdkit --filter=readahead --filter=cow PLUGIN cow-on-cache=true
 

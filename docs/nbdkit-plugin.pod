@@ -6,16 +6,16 @@ nbdkit-plugin - how to write nbdkit plugins
 
  #define NBDKIT_API_VERSION 2
  #include <nbdkit-plugin.h>
- 
+
  #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_ALL_REQUESTS
- 
+
  static void *
  myplugin_open (void)
  {
    /* create a handle ... */
    return handle;
  }
- 
+
  static struct nbdkit_plugin plugin = {
    .name              = "myplugin",
    .open              = myplugin_open,
@@ -172,7 +172,7 @@ the plugin:
  ┌──────┴─────┐           │ close      │
  │ close      │           └────────────┘
  └────────────┘
- 
+
                    │           before nbdkit exits
                    │
          ┌─────────┴────────┐
@@ -1471,7 +1471,7 @@ passwords from config parameters:
 For example:
 
  char *password = NULL;
- 
+
  static int
  myplugin_config (const char *key, const char *value)
  {
@@ -1945,6 +1945,8 @@ written in Perl called C<foo.pl> might be installed like this:
 
  $ head -1 foo.pl
  #!/usr/sbin/nbdkit perl
+
+=for paragraph
 
  $ sudo install -m 0755 foo.pl $plugindir/nbdkit-foo-plugin
 

@@ -6,7 +6,11 @@ nbdkit-delay-filter - nbdkit delay filter
 
  nbdkit --filter=delay plugin rdelay=SECS wdelay=SECS [plugin-args...]
 
+=for paragraph
+
  nbdkit --filter=delay plugin rdelay=NNms wdelay=NNms [plugin-args...]
+
+=for paragraph
 
  nbdkit --filter=delay plugin [plugin-args ...]
           delay-read=(SECS|NNms)

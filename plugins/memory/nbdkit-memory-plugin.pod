@@ -85,11 +85,11 @@ the memory plugin, use L<qemu-img(1)> or L<nbdcopy(1)>:
 
  $ rm -f pid
  $ nbdkit -P pid memory 10G
- 
+
 Wait for nbdkit to become ready to accept connections:
 
  $ while [ ! -f pid ]; do sleep 1; done
- 
+
 Preload Fedora disk image using qemu-img:
 
  $ virt-builder fedora-28 --size=10G
