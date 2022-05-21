@@ -34,8 +34,9 @@ import base64
 import os
 import re
 import tempfile
+import threading
 import unittest
-from contextlib import closing
+from contextlib import closing, contextmanager
 from io import BytesIO
 
 import boto3
@@ -54,6 +55,7 @@ bucket_name = None
 key_name = None
 dev_size = None
 obj_size = None
+obj_lock = None
 
 
 def thread_model():
@@ -151,6 +153,9 @@ def config_complete():
     if dev_size and dev_size % obj_size != 0:
         raise RuntimeError('`size` must be a multiple of `object-size`')
 
+    global obj_lock
+    obj_lock = MultiLock()
+
 
 def open(readonly):
     s3 = boto3.client("s3",
@@ -247,56 +252,67 @@ def concat(b1, b2):
 def pwrite_multi(s3, buf, offset, flags):
     "Write data to objects"
 
-    to_write = len(buf)
-
     # memoryviews can be sliced without copying the data
     if not isinstance(buf, memoryview):
         buf = memoryview(buf)
 
-    (blockno1, block_offset) = divmod(offset, obj_size)
-    if block_offset:
-        nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
-                     f"starts {block_offset} bytes after block {blockno1}. "
-                     "Fetching preceding data...")
-        key = f'{key_name}/{blockno1:016x}'
-        pre = get_object(s3, key, size=block_offset, off=0)
-        len_ = obj_size - block_offset
+    # Calculate block number and offset within the block for the
+    # first byte that we need to write.
+    (blockno1, block_offset1) = divmod(offset, obj_size)
 
-        if to_write + block_offset < obj_size:
-            # Still no full object, need to append at the end
-            buf = concat(pre, buf)
-            to_write += block_offset
-            offset -= block_offset
-        else:
-            nbdkit.debug(f"pwrite_multi(): writing block {blockno1}...")
+    # Calculate block number of the last block that we have to
+    # write to, and how many bytes we need to write into it.
+    (blockno2, block_len2) = divmod(offset + len(buf), obj_size)
+
+    # Special case: start and end is within the same one block
+    if blockno1 == blockno2 and (block_offset1 != 0 or block_len2 != 0):
+        nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
+                     f"covers bytes {block_offset1} to {block_len2} of "
+                     f"block {blockno1}. Rewriting full block...")
+
+        # We could separately fetch the prefix and suffix, but give that we're
+        # always writing full blocks, it's likely that the latency of two
+        # separate read requests would be much bigger than the savings in
+        # volume.
+        key = f'{key_name}/{blockno1:016x}'
+        with obj_lock(key):
+            fbuf = bytearray(get_object(s3, key, size=obj_size, off=0))
+            fbuf[block_offset1:block_len2] = buf
+            put_object(s3, key, fbuf)
+            return
+
+    # First write is not aligned to first block
+    if block_offset1:
+        nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
+                     f"starts {block_offset1} bytes after block {blockno1}. "
+                     "Rewriting full block...")
+        key = f'{key_name}/{blockno1:016x}'
+        with obj_lock(key):
+            pre = get_object(s3, key, size=block_offset1, off=0)
+            len_ = obj_size - block_offset1
             put_object(s3, key, pre + buf[:len_])
             buf = buf[len_:]
-            to_write -= len_
-            offset += len_
+            blockno1 += 1
 
-        (blockno1, block_offset) = divmod(offset, obj_size)
-        assert block_offset == 0
-
-    (blockno2, block_offset) = divmod(offset + to_write, obj_size)
-    if block_offset:
+    # Last write is not a full block
+    if block_len2:
         nbdkit.debug(f"pwrite_multi(): write at offset {offset} not aligned, "
-                     f"ends {obj_size-block_offset} bytes before block "
-                     f"{blockno2+1}. Fetching following data...")
+                     f"ends {obj_size-block_len2} bytes before block "
+                     f"{blockno2+1}. Rewriting full block...")
         key = f'{key_name}/{blockno2:016x}'
-        post = get_object(
-            s3, key, size=obj_size-block_offset, off=block_offset)
-        len_ = obj_size - block_offset
-        post = get_object(s3, key, size=len_, off=block_offset)
-        nbdkit.debug(f"pwrite_multi(): writing block {blockno2}...")
-        put_object(s3, key, concat(buf[-block_offset:], post))
-        buf = buf[:-block_offset]
+        with obj_lock(key):
+            len_ = obj_size - block_len2
+            post = get_object(s3, key, size=len_, off=block_len2)
+            put_object(s3, key, concat(buf[-block_len2:], post))
+            buf = buf[:-block_len2]
 
     off = 0
     for blockno in range(blockno1, blockno2):
-        nbdkit.debug(f"pwrite_multi(): writing block {blockno}...")
         key = f"{key_name}/{blockno:016x}"
-        put_object(s3, key, buf[off:off + obj_size])
-        off += obj_size
+        with obj_lock(key):
+            nbdkit.debug(f"pwrite_multi(): writing block {blockno}...")
+            put_object(s3, key, buf[off:off + obj_size])
+            off += obj_size
 
 
 def put_object(s3, obj_name, buf):
@@ -331,6 +347,46 @@ def make_client_error(errcode):
         operation_name='unspecified')
 
 
+class MultiLock:
+    """Provides locking for large amounts of entities.
+
+    This class provides locking for a dynamically changing  and potentially
+    large set of entities, avoiding the need to allocate a separate lock for
+    each entity. The `acquire` and `release` methods have an additional
+    argument, the locking key, and only locks with the same key can see each
+    other (ie, several threads can hold locks with different locking keys at
+    the same time).
+    """
+
+    def __init__(self):
+        self.locked_keys = set()
+        self.cond = threading.Condition()
+
+    @contextmanager
+    def __call__(self, key):
+        self.acquire(key)
+        try:
+            yield
+        finally:
+            self.release(key)
+
+    def acquire(self, key):
+        '''Acquire lock for given key.'''
+
+        with self.cond:
+            while key in self.locked_keys:
+                self.cond.wait()
+
+            self.locked_keys.add(key)
+
+    def release(self, key):
+        """Release lock on given key"""
+
+        with self.cond:
+            self.locked_keys.remove(key)
+            self.cond.notify_all()
+
+
 class MockS3Client:
     def __init__(self):
         self.keys = {}
@@ -359,19 +415,21 @@ class MockS3Client:
         del self.keys[key]
 
 
-class Test(unittest.TestCase):
-    def setUp(self):
+class BaseTest:
+    def setUp(self, bucket):
         super().setUp()
-        self.s3 = MockS3Client()
         self.obj_size = 64
         self.dev_size = 100*self.obj_size
         self.ref_fh = tempfile.TemporaryFile()
         self.ref_fh.truncate(dev_size)
         self.rnd_fh = builtins.open('/dev/urandom', 'rb')
-        config('bucket', 'mybucket')
+
+        config('bucket', bucket)
         config('key', 'nbdkit_test')
         config('object-size', str(self.obj_size))
         config('size', str(self.dev_size))
+
+        config_complete()
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -456,12 +514,17 @@ class Test(unittest.TestCase):
                 self.compare_to_ref()
 
 
+class LocalTest(BaseTest, unittest.TestCase):
+    def setUp(self):
+        super().setUp(bucket='nbdkit_test')
+        self.s3 = MockS3Client()
+
+
 # To run unit tests against a real S3 bucket, set the TEST_BUCKET
 # environment variable.
 @unittest.skipIf('TEST_BUCKET' not in os.environ,
                  'TEST_BUCKET environment variable not defined.')
-class RemoteTest(Test):
+class RemoteTest(BaseTest, unittest.TestCase):
     def setUp(self):
-        super().setUp()
+        super().setUp(bucket=os.environ['TEST_BUCKET'])
         self.s3 = open(False)
-        config('bucket', os.environ['TEST_BUCKET'])
