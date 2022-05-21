@@ -35,7 +35,7 @@ import os
 import re
 import tempfile
 import threading
-from typing import Union
+from typing import Any, Dict, Optional, Union, List
 import unittest
 from contextlib import closing, contextmanager
 from io import BytesIO
@@ -116,15 +116,15 @@ def can_multi_conn(server):
 
 
 def can_trim(server):
-    return False
+    return True
 
 
 def can_zero(server):
-    return False
+    return True
 
 
 def can_fast_zero(server):
-    return False
+    return True
 
 
 def can_cache(server):
@@ -182,6 +182,14 @@ def pread(server, buf, offset, flags):
 
 def pwrite(server, buf, offset, flags):
     return server.pwrite(buf, offset, flags)
+
+
+def trim(server, size, offset, flags):
+    return server.trim(size, offset, flags)
+
+
+def zero(server, size, offset, flags):
+    return server.zero(size, offset, flags)
 
 
 def flush(server, flags):
@@ -292,11 +300,11 @@ class Server:
         if block_offset1:
             nbdkit.debug(
                 f"pwrite(): write at offset {offset} not aligned, "
-                f"starts {block_offset1} bytes after block {blockno1}. "
+                f"starts {block_offset1} bytes into block {blockno1}. "
                 "Rewriting full block...")
             key = f'{cfg.key_name}/{blockno1:016x}'
             with obj_lock(key):
-                pre = self.get_object(key, size=block_offset1, off=0)
+                pre = self._get_object(key, size=block_offset1, off=0)
                 len_ = cfg.obj_size - block_offset1
                 self._put_object(key, pre + buf[:len_])
                 buf = buf[len_:]
@@ -310,7 +318,7 @@ class Server:
             key = f'{cfg.key_name}/{blockno2:016x}'
             with obj_lock(key):
                 len_ = cfg.obj_size - block_len2
-                post = self.get_object(key, size=len_, off=block_len2)
+                post = self._get_object(key, size=len_, off=block_len2)
                 self._put_object(key, concat(buf[-block_len2:], post))
                 buf = buf[:-block_len2]
 
@@ -331,6 +339,116 @@ class Server:
         if isinstance(buf, memoryview):
             buf = buf.tobytes()
         self.s3.put_object(Bucket=cfg.bucket_name, Key=obj_name, Body=buf)
+
+    def zero(self, size: int, offset: int, flags: int) -> None:
+        nbdkit.debug(f'Processing zero(size={size}, off={offset})')
+        if size == 0:
+            return
+
+        if flags & nbdkit.FLAG_MAY_TRIM:
+            return self.trim(size, offset, 0)
+
+        (blockno1, block_offset1) = divmod(offset, cfg.obj_size)
+        (blockno2, block_offset2) = divmod(offset + size, cfg.obj_size)
+
+        if blockno1 == blockno2:
+            nbdkit.debug(f'Zeroing {size} bytes in block {blockno1} '
+                         f'(offset {offset})')
+            self.pwrite(bytearray(size), offset=offset, flags=0)
+            return
+
+        if block_offset1:
+            len_ = cfg.obj_size - block_offset1
+            nbdkit.debug(f'Zeroing last {len_} bytes of block {blockno1} '
+                         f'(offset {offset})')
+            self.pwrite(bytearray(len_), offset=offset, flags=0)
+            blockno1 += 1
+
+        if block_offset2:
+            off = cfg.obj_size * blockno2
+            nbdkit.debug(f'Zeroing first {block_offset2-1} bytes of block '
+                         f'{blockno2} (offset {off})')
+            self.pwrite(bytearray(block_offset2), offset=off, flags=0)
+
+        self._delete_objects(blockno1, blockno2)
+
+    def trim(self, size: int, offset: int, flags: int) -> None:
+        nbdkit.debug(f'Processing trim(size={size}, off={offset})')
+        if size == 0:
+            return
+
+        (blockno1, block_offset1) = divmod(offset, cfg.obj_size)
+        (blockno2, block_offset2) = divmod(offset + size, cfg.obj_size)
+
+        if block_offset1 != 0:
+            blockno1 += 1
+
+        if blockno1 == blockno2:
+            nbdkit.debug('nothing to delete')
+            return
+
+        self._delete_objects(blockno1, blockno2)
+
+    def _delete_objects(self, first: int, last: int) -> None:
+        """Delete objects *first* (inclusive) to *last* (exclusive)"""
+        nbdkit.debug(f'Deleting objects {first} to {last}...')
+
+        if first >= last:
+            return
+
+        if first == 0:
+            start_after = ''
+        else:
+            start_after = f"{cfg.key_name}/{first-1:016x}"
+        last_key = f"{cfg.key_name}/{last:016x}"
+
+        to_delete = []
+        for key in self._list_objects(f"{cfg.key_name}/",
+                                      start_after=start_after):
+            if key >= last_key:
+                break
+            to_delete.append({'Key': key})
+            nbdkit.debug(f'Marking object {key} for removal')
+            if len(to_delete) >= 1000:
+                resp = self.s3.delete_objects(Bucket=cfg.bucket_name, Delete={
+                    'Objects': to_delete, 'Quiet': True})
+                if resp.get('Errors', None):
+                    raise RuntimeError(
+                        'Failed to delete objects: %s' % resp['Errors'])
+                del to_delete[:]
+
+        if not to_delete:
+            return
+
+        resp = self.s3.delete_objects(Bucket=cfg.bucket_name, Delete={
+            'Objects': to_delete, 'Quiet': True})
+        if resp.get('Errors', None):
+            raise RuntimeError(
+                'Failed to delete objects: %s' % resp['Errors'])
+
+    def _list_objects(self, prefix: str,
+                      start_after: Optional[str] = None) -> List[str]:
+        """Return keys for objects in  bucket.
+
+        Lists all keys starting with *prefix* in lexicographic order, starting
+        with the key following *start_after*.
+        """
+
+        args = {
+            'Bucket': cfg.bucket_name,
+            'Prefix': prefix,
+        }
+
+        if start_after is not None:
+            args['StartAfter'] = start_after
+
+        while True:
+            resp = self.s3.list_objects_v2(**args)
+            for el in resp['Contents']:
+                yield el['Key']
+            if not resp['IsTruncated']:
+                return
+            args['ContinuationToken'] = resp['NextContinuationToken']
 
 
 def concat(b1, b2):
@@ -433,44 +551,49 @@ class MockS3Client:
             buf = self.keys[key]
         return {'Body': BytesIO(buf)}
 
-    def delete_object(self, Bucket: str, Key: str):
-        key = (Bucket, Key)
-        if key not in self.keys:
-            raise make_client_error('NoSuchKey')
-        del self.keys[key]
+    def delete_objects(self, Bucket: str, Delete: Dict[str, Any]):
+        for el in Delete['Objects']:
+            key = (Bucket, el['Key'])
+            if key not in self.keys:
+                raise make_client_error('NoSuchKey')
+            del self.keys[key]
+
+        return {'Errors': []}
+
+    def list_objects_v2(self, Bucket: str, ContinuationToken: str = '',
+                        Prefix: str = '', StartAfter: str = ''):
+        assert not ContinuationToken
+        all_keys = sorted(x[1] for x in self.keys
+                          if x[0] == Bucket and x[1].startswith(Prefix))
+        contents = []
+        for k in all_keys:
+            if k <= StartAfter:
+                continue
+            contents.append({'Key': k})
+        return {'IsTruncated': False,
+                'Contents': contents,
+                'NextContinuationToken': ''}
 
 
-def delete_object(s3, obj_name: str, force=False):
-    '''Delete *obj_name.
-
-    If *force* is true, do not raise exception if object does not
-    exist.
-    '''
-
-    try:
-        s3.delete_object(Bucket=cfg.bucket_name, Key=obj_name)
-    except ClientError as exc:
-        if force and exc.response['Error']['Code'] == 'NoSuchKey':
-            return
-        raise
-
-
-class BaseTest:
-    def setUp(self, bucket):
+class LocalTest(unittest.TestCase):
+    def setUp(self):
         super().setUp()
-        self.obj_size = 64
-        self.dev_size = 100*self.obj_size
+
+        self.obj_size = 16
+        self.dev_size = 20*self.obj_size
         self.ref_fh = tempfile.TemporaryFile()
         self.ref_fh.truncate(cfg.dev_size)
         self.rnd_fh = builtins.open('/dev/urandom', 'rb')
 
-        config('bucket', bucket)
+        config('bucket', 'testbucket')
         config('key', 'nbdkit_test')
         config('object-size', str(self.obj_size))
         config('size', str(self.dev_size))
 
         config_complete()
-        self.s3 = open(False)
+        with patch.object(boto3, 'client') as mock_client:
+            mock_client.return_value = MockS3Client()
+            self.s3 = open(False)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -489,13 +612,8 @@ class BaseTest:
         for off in range(0, self.dev_size, self.obj_size):
             ref = fh.read(bl)
             pread(self.s3, buf, off, flags=0)
-            self.assertEqual(ref, buf)
-
-    def test_read_hole(self):
-        delete_object(self.s3.s3, f"{cfg.key_name}/{5:016x}", force=True)
-        buf = bytearray(self.obj_size)
-        pread(self.s3, buf, 5*self.obj_size, 0)
-        self.assertEqual(buf, bytearray(self.obj_size))
+            self.assertEqual(
+                ref, buf, f'mismatch at off={off} (blk {off//self.obj_size})')
 
     def test_write_memoryview(self):
         buf = memoryview(bytearray(cfg.obj_size))
@@ -554,18 +672,129 @@ class BaseTest:
                 fh.write(buf)
                 self.compare_to_ref()
 
+    def test_zero(self):
+        fh = self.ref_fh
+        bl = self.obj_size
 
-class LocalTest(BaseTest, unittest.TestCase):
-    def setUp(self):
-        with patch.object(boto3, 'client') as mock_client:
-            mock_client.return_value = MockS3Client()
-            super().setUp(bucket='nbdkit_test')
+        # Fill disk
+        fh.seek(0)
+        for off in range(0, self.dev_size, self.obj_size):
+            buf = self.get_data(bl)
+            pwrite(self.s3, buf, offset=off, flags=0)
+            fh.write(buf)
+        self.compare_to_ref()
+
+        # Test different kinds of zero requests
+        corner_cases = (
+            1, 2,
+            bl-2, bl-1, bl+2,
+            2*bl-1, 2*bl, 2*bl+1,
+            5*bl-5, 5*bl, 5*bl+5)
+        for off in (0,) + corner_cases:
+            for len_ in corner_cases:
+                zero(self.s3, len_, off, flags=0)
+                fh.seek(off)
+                fh.write(bytearray(len_))
+                self.compare_to_ref()
+
+                # Re-fill with data
+                buf = self.get_data(len_)
+                pwrite(self.s3, buf, off, flags=0)
+                fh.seek(off)
+                fh.write(buf)
+
+    def test_trim(self):
+        bl = self.obj_size
+
+        # Fill disk
+        for off in range(0, self.dev_size, self.obj_size):
+            pwrite(self.s3, self.get_data(bl), offset=off, flags=0)
+
+        # Test different kinds of trim requests
+        corner_cases = (
+            1, 2,
+            bl-2, bl-1, bl+2,
+            2*bl-1, 2*bl, 2*bl+1,
+            5*bl-5, 5*bl, 5*bl+5)
+        for off in (0,) + corner_cases:
+            for len_ in corner_cases:
+                (b1, o1) = divmod(off, bl)
+                (b2, o2) = divmod(off + len_, bl)
+
+                obj_count1 = len(list(self.s3._list_objects(cfg.key_name)))
+                trim(self.s3, len_, off, flags=0)
+                obj_count2 = len(list(self.s3._list_objects(cfg.key_name)))
+
+                blocks_to_delete = b2-b1
+                if o1 != 0 and blocks_to_delete >= 1:
+                    blocks_to_delete -= 1
+
+                self.assertEqual(obj_count1 - blocks_to_delete, obj_count2)
+
+                # Re-fill with data
+                pwrite(self.s3, self.get_data(len_), off, flags=0)
 
 
-# To run unit tests against a real S3 bucket, set the TEST_BUCKET
-# environment variable.
+# To run unit tests against a real S3 bucket, set the TEST_BUCKET and
+# (optionally) TEST_ENDPOINT environment variables. The point of these tests is
+# to make sure we're calling boto correctly, not to test any plugin code.
 @unittest.skipIf('TEST_BUCKET' not in os.environ,
                  'TEST_BUCKET environment variable not defined.')
-class RemoteTest(BaseTest, unittest.TestCase):
+class RemoteTest(unittest.TestCase):
     def setUp(self):
-        super().setUp(bucket=os.environ['TEST_BUCKET'])
+        super().setUp()
+
+        self.obj_size = 64
+        self.dev_size = 20*self.obj_size
+
+        config('bucket', os.environ['TEST_BUCKET'])
+        if 'TEST_ENDPOINT' in os.environ:
+            config('endpoint-url', os.environ['TEST_ENDPOINT'])
+        config('key', 'nbdkit_test')
+        config('object-size', str(self.obj_size))
+        config('size', str(self.dev_size))
+
+        config_complete()
+        self.s3 = open(False)
+        self.rnd_fh = builtins.open('/dev/urandom', 'rb')
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.rnd_fh.close()
+
+    def get_data(self, len):
+        buf = self.rnd_fh.read(len // 2 + 1)
+        return base64.b16encode(buf)[:len]
+
+    def test_zero(self):
+        bs = self.obj_size
+        ref_buf = bytearray(self.get_data(3*bs))
+        pwrite(self.s3, ref_buf, 0, 0)
+
+        zero_start = bs//2
+        zero(self.s3, 2*bs, zero_start, 0)
+        ref_buf[zero_start:zero_start + 2*bs] = bytearray(2*bs)
+
+        buf = bytearray(len(ref_buf))
+        pread(self.s3, buf, 0, 0)
+        self.assertEqual(buf, ref_buf)
+
+    def test_trim(self):
+        ref_buf = bytearray(self.get_data(3*self.obj_size))
+        pwrite(self.s3, ref_buf, 0, 0)
+
+        obj_count1 = len(list(self.s3._list_objects(cfg.key_name)))
+
+        trim_start = self.obj_size//2
+        trim(self.s3, 2*self.obj_size, trim_start, 0)
+
+        obj_count2 = len(list(self.s3._list_objects(cfg.key_name)))
+        self.assertEqual(obj_count1-1, obj_count2)
+
+    def test_readwrite(self):
+        ref_buf = self.get_data(2*self.obj_size)
+        start_off = self.obj_size//2
+        pwrite(self.s3, ref_buf, start_off, 0)
+        buf = bytearray(len(ref_buf))
+        pread(self.s3, buf, start_off, 0)
+        self.assertEqual(buf, ref_buf)

@@ -6,7 +6,12 @@ runs inside the nbdkit binary. To get unit tests to pass, we provide this
 unit testing.
 """
 
-import sys
+import logging
+
+log = logging.getLogger(__name__)
+
+
+FLAG_MAY_TRIM = 1
 
 
 def parse_size(v):
@@ -14,7 +19,7 @@ def parse_size(v):
 
 
 def debug(msg):
-    print(msg, file=sys.stderr)
+    log.debug(msg)
 
 
 def set_error(err):
