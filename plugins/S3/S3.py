@@ -31,6 +31,7 @@
 # SUCH DAMAGE.
 
 import base64
+import errno
 import os
 import re
 import tempfile
@@ -43,7 +44,8 @@ import builtins
 from unittest.mock import patch
 
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import (
+    ClientError, ReadTimeoutError, ConnectTimeoutError, ConnectionClosedError)
 import nbdkit
 
 API_VERSION = 2
@@ -177,19 +179,35 @@ def get_size(server):
 
 
 def pread(server, buf, offset, flags):
-    return server.pread(buf, offset, flags)
+    try:
+        return server.pread(buf, offset, flags)
+    except (ReadTimeoutError, ConnectTimeoutError, ConnectionClosedError):
+        nbdkit.debug('S3 connection timed out on pread()')
+        nbdkit.set_error(errno.ETIMEDOUT)
 
 
 def pwrite(server, buf, offset, flags):
-    return server.pwrite(buf, offset, flags)
+    try:
+        return server.pwrite(buf, offset, flags)
+    except (ReadTimeoutError, ConnectTimeoutError, ConnectionClosedError):
+        nbdkit.debug('S3 connection timed out on write()')
+        nbdkit.set_error(errno.ETIMEDOUT)
 
 
 def trim(server, size, offset, flags):
-    return server.trim(size, offset, flags)
+    try:
+        return server.trim(size, offset, flags)
+    except (ReadTimeoutError, ConnectTimeoutError, ConnectionClosedError):
+        nbdkit.debug('S3 connection timed out on trim()')
+        nbdkit.set_error(errno.ETIMEDOUT)
 
 
 def zero(server, size, offset, flags):
-    return server.zero(size, offset, flags)
+    try:
+        return server.zero(size, offset, flags)
+    except (ReadTimeoutError, ConnectTimeoutError, ConnectionClosedError):
+        nbdkit.debug('S3 connection timed out on trim()')
+        nbdkit.set_error(errno.ETIMEDOUT)
 
 
 def flush(server, flags):
@@ -348,8 +366,13 @@ class Server:
         if flags & nbdkit.FLAG_MAY_TRIM:
             return self.trim(size, offset, 0)
 
+        # Calculate block number and offset within the block for the
+        # first byte that we need to write.
         (blockno1, block_offset1) = divmod(offset, cfg.obj_size)
-        (blockno2, block_offset2) = divmod(offset + size, cfg.obj_size)
+
+        # Calculate block number of the last block that we have to
+        # write to, and how many bytes we need to write into it.
+        (blockno2, block_len2) = divmod(offset + size, cfg.obj_size)
 
         if blockno1 == blockno2:
             nbdkit.debug(f'Zeroing {size} bytes in block {blockno1} '
@@ -364,11 +387,11 @@ class Server:
             self.pwrite(bytearray(len_), offset=offset, flags=0)
             blockno1 += 1
 
-        if block_offset2:
+        if block_len2:
             off = cfg.obj_size * blockno2
-            nbdkit.debug(f'Zeroing first {block_offset2-1} bytes of block '
+            nbdkit.debug(f'Zeroing first {block_len2-1} bytes of block '
                          f'{blockno2} (offset {off})')
-            self.pwrite(bytearray(block_offset2), offset=off, flags=0)
+            self.pwrite(bytearray(block_len2), offset=off, flags=0)
 
         self._delete_objects(blockno1, blockno2)
 
@@ -377,8 +400,13 @@ class Server:
         if size == 0:
             return
 
+        # Calculate block number and offset within the block for the
+        # first byte that we need to trim.
         (blockno1, block_offset1) = divmod(offset, cfg.obj_size)
-        (blockno2, block_offset2) = divmod(offset + size, cfg.obj_size)
+
+        # Calculate block number of the last block that we have to
+        # trim fully.
+        (blockno2, _) = divmod(offset + size, cfg.obj_size)
 
         if block_offset1 != 0:
             blockno1 += 1
