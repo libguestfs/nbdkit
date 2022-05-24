@@ -17,7 +17,7 @@ to the fixed versions is highly recommended.  The new
 L<nbdkit-security(1)> man page contains an up to date list of past
 security issues.
 
-=head3 CVE-2019-14850 
+=head3 CVE-2019-14850
 denial of service due to premature opening of back-end connection
 
 See the full announcement and links to mitigation, tests and fixes
