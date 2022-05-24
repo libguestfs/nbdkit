@@ -37,7 +37,7 @@ and register it using the C<plugin!> macro.
  impl Server for MyPlugin {
      // ...
  }
-
+ 
  plugin!(MyPlugin {write_at, trim, ...});
 
 =head2 Compiling a Rust nbdkit plugin
