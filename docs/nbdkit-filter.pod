@@ -500,7 +500,7 @@ from the layer below.  Without error checking it would look like this:
    struct nbdkit_exports *exports2;
    struct nbdkit_export e;
    char *name, *desc;
-
+ 
    exports2 = nbdkit_exports_new ();
    next_list_exports (nxdata, readonly, exports);
    for (i = 0; i < nbdkit_exports_count (exports2); ++i) {
@@ -947,7 +947,7 @@ from the layer below.  Without error checking it would look like this:
    struct nbdkit_extents *extents2;
    struct nbdkit_extent e;
    int64_t size;
-
+ 
    size = next->get_size (next);
    extents2 = nbdkit_extents_new (offset + shift, size);
    next->extents (next, count, offset + shift, flags, extents2, err);
