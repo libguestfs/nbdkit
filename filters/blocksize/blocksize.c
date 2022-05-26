@@ -51,10 +51,15 @@
 
 #define BLOCKSIZE_MIN_LIMIT (64U * 1024)
 
-/* In order to handle parallel requests safely, this lock must be held
- * when using the bounce buffer.
+/* Lock in order to handle overlapping requests safely.
+ *
+ * Grabbed for exclusive access (wrlock) when using the bounce buffer.
+ *
+ * Grabbed for shared access (rdlock) when doing aligned writes.
+ * These can happen in parallel with one another, but must not land in
+ * between the read and write of an unaligned RMW operation.
  */
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
 
 /* A single bounce buffer for alignment purposes, guarded by the lock.
  * Size it to the maximum we allow for minblock.
@@ -255,7 +260,7 @@ blocksize_pread (nbdkit_next *next,
 
   /* Unaligned head */
   if (offs & (h->minblock - 1)) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (h->minblock - 1);
     keep = MIN (h->minblock - drop, count);
     if (next->pread (next, bounce, h->minblock, offs - drop, flags, err) == -1)
@@ -278,7 +283,7 @@ blocksize_pread (nbdkit_next *next,
 
   /* Unaligned tail */
   if (count) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE (&lock);
     if (next->pread (next, bounce, h->minblock, offs, flags, err) == -1)
       return -1;
     memcpy (buf, bounce, count);
@@ -306,7 +311,7 @@ blocksize_pwrite (nbdkit_next *next,
 
   /* Unaligned head */
   if (offs & (h->minblock - 1)) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (h->minblock - 1);
     keep = MIN (h->minblock - drop, count);
     if (next->pread (next, bounce, h->minblock, offs - drop, 0, err) == -1)
@@ -321,6 +326,7 @@ blocksize_pwrite (nbdkit_next *next,
 
   /* Aligned body */
   while (count >= h->minblock) {
+    ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE (&lock);
     keep = MIN (h->maxdata, ROUND_DOWN (count, h->minblock));
     if (next->pwrite (next, buf, keep, offs, flags, err) == -1)
       return -1;
@@ -331,7 +337,7 @@ blocksize_pwrite (nbdkit_next *next,
 
   /* Unaligned tail */
   if (count) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE (&lock);
     if (next->pread (next, bounce, h->minblock, offs, 0, err) == -1)
       return -1;
     memcpy (bounce, buf, count);
@@ -371,6 +377,7 @@ blocksize_trim (nbdkit_next *next,
 
   /* Aligned body */
   while (count) {
+    ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE (&lock);
     keep = MIN (h->maxlen, count);
     if (next->trim (next, keep, offs, flags, err) == -1)
       return -1;
@@ -413,7 +420,7 @@ blocksize_zero (nbdkit_next *next,
 
   /* Unaligned head */
   if (offs & (h->minblock - 1)) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE (&lock);
     drop = offs & (h->minblock - 1);
     keep = MIN (h->minblock - drop, count);
     if (next->pread (next, bounce, h->minblock, offs - drop, 0, err) == -1)
@@ -428,6 +435,7 @@ blocksize_zero (nbdkit_next *next,
 
   /* Aligned body */
   while (count >= h->minblock) {
+    ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE (&lock);
     keep = MIN (h->maxlen, ROUND_DOWN (count, h->minblock));
     if (next->zero (next, keep, offs, flags, err) == -1)
       return -1;
@@ -437,7 +445,7 @@ blocksize_zero (nbdkit_next *next,
 
   /* Unaligned tail */
   if (count) {
-    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+    ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE (&lock);
     if (next->pread (next, bounce, h->minblock, offs, 0, err) == -1)
       return -1;
     memset (bounce, 0, count);
