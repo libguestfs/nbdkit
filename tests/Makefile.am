@@ -1376,11 +1376,13 @@ TESTS += \
 	test-blocksize.sh \
 	test-blocksize-extents.sh \
 	test-blocksize-default.sh \
+	test-blocksize-sharding.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-blocksize.sh \
 	test-blocksize-extents.sh \
 	test-blocksize-default.sh \
+	test-blocksize-sharding.sh \
 	$(NULL)
 
 # blocksize-policy filter test.
