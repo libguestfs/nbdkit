@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2021 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -63,8 +63,8 @@ h["a1"].pread(1, 0)
 h["a2"].pwrite(b"A", 0)
 h["b1"].pread(1, 0)
 h["b2"].pwrite(b"B", 0, nbd.CMD_FLAG_FUA)
-print(h["a1"].pread(1, 0))
-print(h["b1"].pread(1, 0))
+print(bytes(h["a1"].pread(1, 0)))
+print(bytes(h["b1"].pread(1, 0)))
 '
 
 # Without the knob we flush all exports

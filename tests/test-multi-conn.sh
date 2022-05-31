@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2021 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -65,27 +65,27 @@ for filter in '' '--filter=multi-conn multi-conn-mode=plugin'; do
   nbdkit -vf -U - sh test-multi-conn-plugin.sh $filter \
     --run 'handles=4 nbdsh -c "$preamble" -c "
 # Without flush, reads cache, and writes do not affect persistent data
-print(h[0].pread(4, 0))
+print(bytes(h[0].pread(4, 0)))
 h[1].pwrite(b'\''next '\'', 0)
-print(h[0].pread(4, 0))
-print(h[1].pread(4, 0))
-print(h[2].pread(4, 0))
+print(bytes(h[0].pread(4, 0)))
+print(bytes(h[1].pread(4, 0)))
+print(bytes(h[2].pread(4, 0)))
 # Flushing an unrelated connection does not make writes persistent
 h[2].flush()
-print(h[0].pread(4, 0))
-print(h[1].pread(4, 0))
-print(h[2].pread(4, 0))
+print(bytes(h[0].pread(4, 0)))
+print(bytes(h[1].pread(4, 0)))
+print(bytes(h[2].pread(4, 0)))
 # After write is flushed, only connections without cache see new data
 h[1].flush()
-print(h[0].pread(4, 0))
-print(h[1].pread(4, 0))
-print(h[2].pread(4, 0))
-print(h[3].pread(4, 0))
+print(bytes(h[0].pread(4, 0)))
+print(bytes(h[1].pread(4, 0)))
+print(bytes(h[2].pread(4, 0)))
+print(bytes(h[3].pread(4, 0)))
 # Flushing before reads clears the cache
 h[0].flush()
 h[2].flush()
-print(h[0].pread(4, 0))
-print(h[2].pread(4, 0))
+print(bytes(h[0].pread(4, 0)))
+print(bytes(h[2].pread(4, 0)))
 "' > test-multi-conn.out || fail=1
   diff -u <(cat <<\EOF
 False
@@ -113,7 +113,7 @@ for filter in '' '--filter=multi-conn multi-conn-mode=plugin'; do
 # Some servers let FUA flush all outstanding requests
 h[0].pwrite(b'\''hello '\'', 0)
 h[0].pwrite(b'\''world.'\'', 6, nbd.CMD_FLAG_FUA)
-print(h[1].pread(12, 0))
+print(bytes(h[1].pread(12, 0)))
 "' > test-multi-conn.out || fail=1
   diff -u <(cat <<\EOF
 False
@@ -127,18 +127,18 @@ for filter in '' '--filter=multi-conn multi-conn-mode=plugin'; do
 # But it is also compliant for a server that only flushes the exact request
 h[0].pwrite(b'\''hello '\'', 0)
 h[0].pwrite(b'\''world.'\'', 6, nbd.CMD_FLAG_FUA)
-print(h[1].pread(12, 0))
+print(bytes(h[1].pread(12, 0)))
 # Without multi-conn, data flushed in one connection can later be reverted
 # by a flush of earlier data in another connection
 h[1].pwrite(b'\''H'\'', 0, nbd.CMD_FLAG_FUA)
 h[2].flush()
-print(h[2].pread(12, 0))
+print(bytes(h[2].pread(12, 0)))
 h[0].flush()
 h[2].flush()
-print(h[2].pread(12, 0))
+print(bytes(h[2].pread(12, 0)))
 h[1].flush()
 h[2].flush()
-print(h[2].pread(12, 0))
+print(bytes(h[2].pread(12, 0)))
 "' > test-multi-conn.out || fail=1
   diff -u <(cat <<\EOF
 False
@@ -159,11 +159,11 @@ for filter in '--filter=multi-conn' 'strictfua=1 --filter=multi-conn' \
 # FUA writes are immediately visible on all connections
 h[0].cache(12, 0)
 h[1].pwrite(b'\''Hello '\'', 0, nbd.CMD_FLAG_FUA)
-print(h[0].pread(12, 0))
+print(bytes(h[0].pread(12, 0)))
 # A flush on an unrelated connection makes all other connections consistent
 h[1].pwrite(b'\''world.'\'', 6)
 h[2].flush()
-print(h[0].pread(12, 0))
+print(bytes(h[0].pread(12, 0)))
 "' > test-multi-conn.out || fail=1
   diff -u <(cat <<\EOF
 True
@@ -179,10 +179,10 @@ nbdkit -vf -U - sh test-multi-conn-plugin.sh \
   --run 'nbdsh -c "$preamble" -c "
 h[0].cache(12, 0)
 h[1].pwrite(b'\''Hello '\'', 0, nbd.CMD_FLAG_FUA)
-print(h[0].pread(12, 0))
+print(bytes(h[0].pread(12, 0)))
 h[1].pwrite(b'\''world.'\'', 6)
 h[2].flush()
-print(h[0].pread(12, 0))
+print(bytes(h[0].pread(12, 0)))
 "' > test-multi-conn.out || fail=1
 diff -u <(cat <<\EOF
 True
