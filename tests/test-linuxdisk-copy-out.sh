@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -49,25 +49,25 @@ cleanup_fn rm -f $files
 
 nbdkit -f -v -U - \
        --filter=partition \
-       linuxdisk $srcdir/../plugins partition=1 label=ROOT \
+       linuxdisk $srcdir/../plugins/linuxdisk partition=1 label=ROOT \
        --run 'nbdcopy "$uri" linuxdisk-copy-out.img'
 
 # Check the disk content.
 guestfish --ro -a linuxdisk-copy-out.img -m /dev/sda <<EOF
 # Check some known files and directories exist.
   ll /
-  ll /linuxdisk
-  is-dir /linuxdisk
-  is-file /linuxdisk/Makefile.am
+  ll /subdir
+  is-dir /subdir
+  is-file /Makefile.am
 
 # This reads out all the directory entries and all file contents.
   tar-out / - | cat >/dev/null
 
 # Download some files and compare to local copies.
-  download /linuxdisk/Makefile linuxdisk-copy-out.test1
-  download /linuxdisk/Makefile.am linuxdisk-copy-out.test2
-  download /linuxdisk/nbdkit-linuxdisk-plugin.pod linuxdisk-copy-out.test3
-  download /linuxdisk/filesystem.c linuxdisk-copy-out.test4
+  download /Makefile linuxdisk-copy-out.test1
+  download /Makefile.am linuxdisk-copy-out.test2
+  download /nbdkit-linuxdisk-plugin.pod linuxdisk-copy-out.test3
+  download /filesystem.c linuxdisk-copy-out.test4
 EOF
 
 # Compare downloaded files to local versions.
