@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2020 Red Hat Inc.
+# Copyright (C) 2020-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -45,8 +45,7 @@ set -x
 
 requires_run
 requires perl --version
-requires python3 --version
-requires python3 -c 'import random'
+requires $PYTHON -c 'import random'
 requires_nbdsh_uri
 requires nbdcopy --version
 requires hexdump --version
@@ -61,7 +60,7 @@ cleanup_fn rm -f $disk $cmd $out
 rm -f $disk $cmd $out
 
 export disk=$disk
-python3 -c '
+$PYTHON -c '
 import os
 import random
 
