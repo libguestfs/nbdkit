@@ -42,6 +42,7 @@ EXTRA_DIST = \
 	LICENSE \
 	m4/.gitignore \
 	OTHER_PLUGINS \
+	README.md \
 	scripts/git.orderfile \
 	SECURITY \
 	.vscode/settings.json \

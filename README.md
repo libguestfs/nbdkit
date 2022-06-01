@@ -1,236 +1,211 @@
+## NBD server with stable plugin ABI and permissive license
+
 nbdkit is an NBD server.  NBD — Network Block Device — is a protocol
 for accessing Block Devices (hard disks and disk-like things) over a
 Network.
 
 The key features of nbdkit are:
 
- * Multithreaded NBD server written in C with good performance.
+* Multithreaded NBD server written in C with good performance.
+* Minimal dependencies for the basic server.
+* Liberal license (BSD) allows nbdkit to be linked to proprietary
+  libraries or included in proprietary code.
+* Well-documented, simple plugin API with a stable ABI guarantee.
+  Lets you export “unconventional” block devices easily.
+* You can write plugins in C/C++, Go, Lua, Perl, Python, OCaml, Ruby,
+  Rust, shell script or Tcl.
+* Filters can be stacked in front of plugins to transform the output.
 
- * Minimal dependencies for the basic server.
+For documentation, see the [docs directory](docs/).
 
- * Liberal license (BSD) allows nbdkit to be linked to proprietary
-   libraries or included in proprietary code.
-
- * Well-documented, simple plugin API with a stable ABI guarantee.
-   Lets you export “unconventional” block devices easily.
-
- * You can write plugins in C/C++, Go, Lua, Perl, Python, OCaml, Ruby,
-   Rust, shell script or Tcl.
-
- * Filters can be stacked in front of plugins to transform the output.
-
-For documentation, see the ‘docs/’ directory.
-
-For plugins and filters, see the ‘plugins/’ and ‘filters/’
-directories.  Example plugins can be found in ‘plugins/example*’.
+For plugins and filters, see the [plugins](plugins/) and
+[filters](filters/) directories.  Example plugins can be found in
+`plugins/example*`.
 
 There are many NBD clients, but the nbdkit project has a companion
 client library called https://gitlab.com/nbdkit/libnbd
 
 https://gitlab.com/nbdkit/nbdkit
 
-LICENSE
-=======
+## License
 
 This software is copyright (C) Red Hat Inc. and licensed under a BSD
-license.  See ‘LICENSE’ for details.
+license.  See [LICENSE](LICENSE) for details.
 
-BUILDING FROM SOURCE
-====================
+## Building from source
 
-Requirements
-------------
+### Requirements
 
- - Linux, FreeBSD, OpenBSD or Haiku
-
- - GCC or Clang
-
- - bash
-
- - GNU make
+* Linux, FreeBSD, OpenBSD or Haiku
+* GCC or Clang
+* bash
+* GNU make
 
 Recommended for TLS (authentication and encryption) support, but it is
 possible to build without it:
 
- - gnutls >= 3.3.0
+* gnutls >= 3.3.0
 
 nbdkit also works on Windows, but dependencies are more complicated.
 See the separate section at the end of this document.
 
-Optional dependencies
----------------------
+### Optional dependencies
 
 To build the man pages, you will optionally need to install:
 
- - Perl
-
- - Pod::Man and Pod::Simple (Perl libraries)
+* Perl
+* Pod::Man and Pod::Simple (Perl libraries)
 
 For SELinux socket labelling support:
 
- - libselinux
+* libselinux
 
 For the gzip filter:
 
- - zlib
+* zlib
 
 For the xz filter:
 
- - liblzma
+* liblzma
 
 For the memory plugin with allocator=zstd:
 
- - zstd
+* zstd
 
 For the curl (HTTP/FTP) plugin:
 
- - libcurl
+* libcurl
 
 For the ssh plugin:
 
- - libssh >= 0.8.0
-   (this is a different library from libssh2 - that will not work)
+* libssh >= 0.8.0
+  (this is a different library from libssh2 - that will not work)
 
 For the iso plugin:
 
- - xorriso or genisoimage or mkisofs
+* xorriso or genisoimage or mkisofs
 
 For the floppy plugin:
 
- - iconv (on Linux this is built into glibc, on other systems
-   it may be a separate library)
+* iconv (on Linux this is built into glibc, on other systems
+  it may be a separate library)
 
 For the libvirt plugin:
 
- - libvirt
+* libvirt
 
 For the libguestfs plugin, and to run parts of the test suite:
 
- - libguestfs
-
- - guestfish (from libguestfs)
+* libguestfs
+* guestfish (from libguestfs)
 
 For the ext2 filter:
 
- - ext2fs
-
- - com_err
+* ext2fs
+* com_err
 
 For the linuxdisk plugin:
 
- - mke2fs >= 1.42.10 (from e2fsprogs)
+* mke2fs >= 1.42.10 (from e2fsprogs)
 
 For the nbd plugin, to get URI and TLS support, and also to run parts
 of the test suite:
 
- - libnbd >= 0.9.8
+* libnbd >= 0.9.8
 
 For the bittorrent plugin:
 
- - libtorrent-rasterbar (https://www.libtorrent.org)
+* [libtorrent-rasterbar](https://www.libtorrent.org)
 
 For the containerized data importer (CDI) plugin:
 
- - podman
-
- - jq
+* podman
+* jq
 
 For the Perl and example4 plugins:
 
- - perl interpreter
-
- - perl development libraries
-
- - perl modules ExtUtils::Embed
+* perl interpreter
+* perl development libraries
+* perl modules ExtUtils::Embed
 
 For the Python plugin:
 
- - python interpreter (version 3 only)
-
- - python development libraries
-
- - python unittest to run the test suite
-
- - boto3 is required to run the S3 plugin written in Python
+* python interpreter (version 3 only)
+* python development libraries
+* python unittest to run the test suite
+* boto3 is required to run the S3 plugin written in Python
 
 For the OCaml plugin:
 
- - OCaml >= 4.03
+* OCaml >= 4.03
 
 For the Tcl plugin:
 
- - Tcl development library and headers
+* Tcl development library and headers
 
 For the Lua plugin:
 
- - Lua development library and headers
+* Lua development library and headers
 
 For the Rust plugin:
 
- - cargo (other dependencies will be downloaded at build time)
+* cargo (other dependencies will be downloaded at build time)
 
 To be able to write plugins in golang:
 
- - go >= 1.13
+* go >= 1.13
 
 For bash tab completion:
 
- - bash-completion >= 1.99
+* bash-completion >= 1.99
 
-To test for memory leaks (‘make check-valgrind’):
+To test for memory leaks (`make check-valgrind`):
 
- - valgrind program and development headers
+* valgrind program and development headers
 
 For non-essential enhancements to the test suite:
 
- - expect
+* expect
+* flake8
+* hexdump
+* ip, ss (from iproute package)
+* jq
+* losetup (from util-linux package)
+* mke2fs (from e2fsprogs)
+* nbdcopy, nbdinfo, nbdsh (from libnbd)
+* qemu-img, qemu-io, qemu-nbd (usually shipped with qemu)
+* sfdisk (from util-linux)
+* socat
+* stat (from coreutils)
 
- - flake8
+### Building
 
- - hexdump
+```
+To build from tarball:         To build from git:
 
- - ip, ss (from iproute package)
-
- - jq
-
- - losetup (from util-linux package)
-
- - mke2fs (from e2fsprogs)
-
- - nbdcopy, nbdsh (from libnbd)
-
- - qemu-img, qemu-io, qemu-nbd (usually shipped with qemu)
-
- - sfdisk (from util-linux)
-
- - socat
-
- - stat (from coreutils)
-
-Building
---------
-
-    To build from tarball:         To build from git:
-    ----------------------         ------------------
-                                   autoreconf -i
-    ./configure                    ./configure
-    make                           make
-    make check                     make check
+                               autoreconf -i
+./configure                    ./configure
+make                           make
+make check                     make check
+```
 
 To run nbdkit from the source directory, use the top level ./nbdkit
 wrapper.  It will run nbdkit and plugins from the locally compiled
 directory:
 
-    $ ./nbdkit example1 -f -v
-    ./server/nbdkit ./plugins/example1/.libs/nbdkit-example1-plugin.so -f -v
-    [etc]
+```
+$ ./nbdkit example1 -f -v
+./server/nbdkit ./plugins/example1/.libs/nbdkit-example1-plugin.so -f -v
+[etc]
+```
 
 Optionally run this command as root to install everything:
 
-    make install
+```
+make install
+```
 
-Python
-------
+### Python
 
 Since nbdkit >= 1.16, only Python >= 3.6 is supported.
 
@@ -239,10 +214,11 @@ called “python” on the current $PATH.  If you have parallel versions
 of Python installed then you can choose a different version by setting
 the PYTHON variable when configuring.  For example:
 
-    ./configure PYTHON=/usr/bin/python3.8
+```
+./configure PYTHON=/usr/bin/python3.8
+```
 
-OCaml
------
+### OCaml
 
 Most recent (less than, say, 8 years old) versions of the OCaml
 compiler should work.  By default the configure script should detect
@@ -250,67 +226,78 @@ the bytecode and native code compilers and enable either one or both.
 
 To enable OCaml warnings and turn them into hard errors (developers only):
 
-    ./configure OCAMLOPTFLAGS="-warn-error +A-3"
+```
+./configure OCAMLOPTFLAGS="-warn-error +A-3"
+```
 
-Running the tests
------------------
+### Running the tests
 
 To run the test suite:
 
-    make check
+```
+make check
+```
 
-If there is a failure, look at the corresponding ‘tests/*.log’ file
+If there is a failure, look at the corresponding `tests/*.log` file
 for debug information.
 
 A few tests require root privileges, and are skipped by default.  To
 run them you must do:
 
-    sudo make check-root
+```
+make check-root
+```
 
 If you have the proprietary VDDK library, you can test
-nbdkit-vddk-plugin against the library like this:
+[nbdkit-vddk-plugin](plugins/vddk/) against the library like this:
 
-    make check-vddk vddkdir=vmware-vix-disklib-distrib
+```
+make check-vddk vddkdir=vmware-vix-disklib-distrib
+```
 
-Running the benchmarks
-----------------------
+### Running the benchmarks
 
 To run benchmarks:
 
-    make bench
+```
+make bench
+```
 
-DOWNLOAD TARBALLS
-=================
+## Download tarballs
 
 Tarballs are available from:
 http://libguestfs.org/download/nbdkit
 
-DOWNSTREAM PACKAGERS
-====================
+## Downstream packagers
 
 If you are packaging nbdkit, use:
 
-    ./configure --with-extra='...'
+```
+./configure --with-extra='...'
+```
 
 providing extra information about the distribution, and/or
 distro-specific versions.  It helps us with troubleshooting bug
 reports.  (Also, talk to us!)
 
-DEVELOPERS
-==========
+## Developers
 
 Install the valgrind program and development headers.
 
 Use:
 
-    ./configure --enable-gcc-warnings --enable-valgrind
+```
+./configure --enable-gcc-warnings --enable-valgrind
+```
 
 When testing use:
 
-    make check
-    make check-valgrind
+```
+make check
+make check-valgrind
+```
 
-For development ideas, see the TODO file.
+For development ideas, see the [TODO](TODO) file.
 
 The upstream git repository is:
 https://gitlab.com/nbdkit/nbdkit
@@ -322,36 +309,37 @@ For further information, see:
 https://libguestfs.org/
 https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md
 
-Address sanitizer (ASAN)
-------------------------
+## Address sanitizer (ASAN)
 
 You can compile nbdkit with clang and ASAN with:
 
-    ./configure CC=clang CXX=clang++ \
-                CFLAGS="-O0 -g -fsanitize=address -fno-omit-frame-pointer" \
-                --disable-linker-script \
-                --disable-golang
-    make clean
-    make
-    ASAN_OPTIONS="allocator_may_return_null=1 detect_leaks=false" make check
+```
+./configure CC=clang CXX=clang++ \
+            CFLAGS="-O0 -g -fsanitize=address -fno-omit-frame-pointer" \
+            --disable-linker-script \
+            --disable-golang
+make clean
+make
+ASAN_OPTIONS="allocator_may_return_null=1 detect_leaks=false" make check
+```
 
-Test coverage
--------------
+## Test coverage
 
-    ./configure CFLAGS="--coverage -g" LDFLAGS="--coverage -g"
-    make clean
-    make
-    make check
+```
+./configure CFLAGS="--coverage -g" LDFLAGS="--coverage -g"
+make clean
+make
+make check
 
-    lcov -c -d . -o gcov.info
-    genhtml -o coverage gcov.info
+lcov -c -d . -o gcov.info
+genhtml -o coverage gcov.info
+```
 
-Open your browser and examine the coverage/ directory.  At the time of
-writing (2020-04) test coverage of the server is reasonable, but
+Open your browser and examine the `coverage/` directory.  At the time
+of writing (2020-04) test coverage of the server is reasonable, but
 things are much worse for certain plugins and filters.
 
-WINDOWS
-=======
+## Windows
 
 Experimentally, the server can be compiled on Windows or
 cross-compiled from Linux using mingw-w64.  Only a small subset of
@@ -362,17 +350,16 @@ Note that GCC or Clang is required even if you are compiling on
 Windows because of some C language extensions we use.  MSVC will not
 work.
 
-Cross-compiling from Linux to Windows
--------------------------------------
+### Cross-compiling from Linux to Windows
 
 For the rest of this section we talk about cross-compiling for Windows
 using Linux and mingw-w64.  At a minimum you will need:
 
-    mingw-w64 GCC
-    mingw-w64 dlfcn
-    mingw-w64 winpthreads
-    mingw-w64 gnutls  (optional, but highly recommended)
-    wine              (if you want to run it on Linux)
+* mingw-w64 GCC
+* mingw-w64 dlfcn
+* mingw-w64 winpthreads
+* mingw-w64 gnutls  (optional, but highly recommended)
+* wine              (if you want to run it on Linux)
 
 You may want to patch Wine with this patch which adds support for
 AF_UNIX sockets.  It is needed to get most of the test suite to work,
@@ -385,53 +372,64 @@ up hitting areas we have not compiled or tested before.
 
 To cross compile do:
 
-    mingw64-configure --disable-ocaml --disable-perl --disable-vddk
-    mingw64-make
+```
+mingw64-configure --disable-ocaml --disable-perl --disable-vddk
+mingw64-make
+```
 
 You can test if the server is working by doing:
 
-    ./nbdkit.exe --dump-config
+```
+./nbdkit.exe --dump-config
+```
 
 (This usually runs wine automatically.  If not, you may need to prefix
 the command "wine nbdkit.exe ...")
 
 To see which plugins and filters were compiled:
 
-    find plugins filters -name '*.dll'
+```
+find plugins filters -name '*.dll'
+```
 
 You can run them under Wine without installing using eg:
 
-    ./nbdkit.exe -f -v memory 1G
+```
+./nbdkit.exe -f -v memory 1G
+```
 
 You can run the test suite in the usual way:
 
-    mingw64-make check
+```
+mingw64-make check
+```
 
-Running the cross-compiled binary on Windows
---------------------------------------------
+### Running the cross-compiled binary on Windows
 
 To test the binary on a real Windows system you will need to copy
 server/.libs/nbdkit.exe, any plugins and filters you need
-(plugins/*/.libs/*.dll and filters/*/.libs/*.dll), and many mingw DLLs
-(libdl.dll, libgnutls.dll, libwinpthread.dll, etc.).
+(`plugins/*/.libs/*.dll` and `filters/*/.libs/*.dll`), and many mingw
+DLLs (`libdl.dll`, `libgnutls.dll`, `libwinpthread.dll`, etc.).
 
 Notes:
 
-(1) libtool creates files called nbdkit.exe in the top level directory
-and in server/.  These are the stripped binaries.  The "real" binaries
-are located in hidden .libs/ subdirectories.
+1. libtool creates files called nbdkit.exe in the top level directory
+and in [server](server/).  These are the stripped binaries.  The
+"real" binaries are located in hidden `.libs/` subdirectories.
 
-(2) The top level .libs/nbdkit.exe is the wrapper used to run nbdkit
+2. The top level `.libs/nbdkit.exe` is the wrapper used to run nbdkit
 from the build directory, not the server binary.  You need
-server/.libs/nbdkit.exe instead.
+`server/.libs/nbdkit.exe` instead.
 
-(3) To find the list of mingw DLLs I ran nbdkit.exe iteratively until
+3. To find the list of mingw DLLs I ran nbdkit.exe iteratively until
 Windows stopped complaining about missing libraries.  You could also
 use a tool like Dependency Walker.
 
 If you copy everything into a single directory on the Windows server
 then you should be able to run nbdkit normally, eg:
 
-    nbdkit.exe -f -v nbdkit-memory-plugin.dll 1G
+```
+nbdkit.exe -f -v nbdkit-memory-plugin.dll 1G
+```
 
 You will probably need to open port 10809 on the Windows Firewall.
