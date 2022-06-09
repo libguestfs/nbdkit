@@ -31,7 +31,10 @@
 
 include $(top_srcdir)/common-rules.mk
 
-EXTRA_DIST = nbdkit-linuxdisk-plugin.pod
+EXTRA_DIST = \
+	nbdkit-linuxdisk-plugin.pod \
+	subdir/.gitignore \
+	$(NULL)
 
 if HAVE_MKE2FS_WITH_D
 if !IS_WINDOWS
