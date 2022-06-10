@@ -1101,7 +1101,8 @@ result.
 
 =item C<NBDKIT_CACHE_NATIVE>
 
-The C<.cache> callback will be called.
+Cache support is advertised to the client.  The C<.cache> callback will
+be called if it exists, otherwise all cache requests instantly succeed.
 
 =back
 

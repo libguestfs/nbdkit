@@ -1054,8 +1054,8 @@ cache requests.
 
 This function will not be called if C<.can_cache> returned
 C<NBDKIT_CACHE_NONE> or C<NBDKIT_CACHE_EMULATE>; in turn, the filter
-should not call C<next-E<gt>cache> unless
-C<next-E<gt>can_cache> returned C<NBDKIT_CACHE_NATIVE>.
+should not call C<next-E<gt>cache> if
+C<next-E<gt>can_cache> returned C<NBDKIT_CACHE_NONE>.
 
 The parameter C<flags> exists in case of future NBD protocol
 extensions; at this time, it will be 0 on input, and the filter should
