@@ -828,6 +828,7 @@ backend_cache (struct context *c,
       if (backend_pread (c, buf, limit, offset, flags, err) == -1)
         return -1;
       count -= limit;
+      offset += limit;
     }
     return 0;
   }
