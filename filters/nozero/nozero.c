@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -48,8 +48,6 @@
 #ifdef IGNORE
 #undef IGNORE
 #endif
-
-#define MAX_WRITE (64 * 1024 * 1024)
 
 static enum ZeroMode {
   NONE,
@@ -159,14 +157,10 @@ nozero_zero (nbdkit_next *next,
              void *handle, uint32_t count, uint64_t offs, uint32_t flags,
              int *err)
 {
-  int writeflags = 0;
-  bool need_flush = false;
-
-  assert (zeromode != NONE);
+  assert (zeromode != NONE && zeromode != EMULATE);
   if (flags & NBDKIT_FLAG_FAST_ZERO) {
     assert (fastzeromode != NOFAST);
-    if (fastzeromode == SLOW ||
-        (fastzeromode == DEFAULT && zeromode == EMULATE)) {
+    if (fastzeromode == SLOW) {
       *err = ENOTSUP;
       return -1;
     }
@@ -177,32 +171,7 @@ nozero_zero (nbdkit_next *next,
   if (zeromode == NOTRIM)
     flags &= ~NBDKIT_FLAG_MAY_TRIM;
 
-  if (zeromode != EMULATE)
-    return next->zero (next, count, offs, flags, err);
-
-  if (flags & NBDKIT_FLAG_FUA) {
-    if (next->can_fua (next) == NBDKIT_FUA_EMULATE)
-      need_flush = true;
-    else
-      writeflags = NBDKIT_FLAG_FUA;
-  }
-
-  while (count) {
-    /* Always contains zeroes, but we can't use const or else gcc 9
-     * will use .rodata instead of .bss and inflate the binary size.
-     */
-    static /* const */ char buffer[MAX_WRITE];
-    uint32_t size = MIN (count, MAX_WRITE);
-
-    if (size == count && need_flush)
-      writeflags = NBDKIT_FLAG_FUA;
-
-    if (next->pwrite (next, buffer, size, offs, writeflags, err) == -1)
-      return -1;
-    offs += size;
-    count -= size;
-  }
-  return 0;
+  return next->zero (next, count, offs, flags, err);
 }
 
 static struct nbdkit_filter filter = {

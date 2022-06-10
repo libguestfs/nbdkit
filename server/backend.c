@@ -728,7 +728,42 @@ backend_zero (struct context *c,
                   b->name, count, offset,
                   !!(flags & NBDKIT_FLAG_MAY_TRIM), fua, fast);
 
-  r = b->zero (c, count, offset, flags, err);
+  if (c->can_zero == NBDKIT_ZERO_NATIVE)
+    r = b->zero (c, count, offset, flags, err);
+  else { /* NBDKIT_ZERO_EMULATE */
+    int writeflags = 0;
+    bool need_flush = false;
+
+    if (fast) {
+      *err = ENOTSUP;
+      return -1;
+    }
+
+    if (fua) {
+      if (c->can_fua == NBDKIT_FUA_EMULATE)
+        need_flush = true;
+      else
+        writeflags = NBDKIT_FLAG_FUA;
+    }
+
+    while (count) {
+      /* Always contains zeroes, but we can't use const or else gcc 9
+       * will use .rodata instead of .bss and inflate the binary size.
+       */
+      static /* const */ char buffer[MAX_REQUEST_SIZE];
+      uint32_t limit = MIN (count, MAX_REQUEST_SIZE);
+
+      if (limit == count && need_flush)
+        writeflags = NBDKIT_FLAG_FUA;
+
+      if (backend_pwrite (c, buffer, limit, offset, writeflags, err) == -1)
+        return -1;
+      offset += limit;
+      count -= limit;
+    }
+    r = 0;
+  }
+
   if (r == -1) {
     assert (*err);
     if (!fast)
