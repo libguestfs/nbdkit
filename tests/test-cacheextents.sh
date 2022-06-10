@@ -40,7 +40,7 @@ requires grep --version
 requires qemu-io --version
 requires dd iflag=count_bytes </dev/null
 
-sock="$(mktemp -u)"
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 sockurl="nbd+unix:///?socket=$sock"
 pidfile="test-cacheextents.pid"
 accessfile="test-cacheextents-access.log"
