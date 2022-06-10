@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2017-2021 Red Hat Inc.
+ * Copyright (C) 2017-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -330,14 +330,15 @@ ext2_can_flush (nbdkit_next *next, void *handle)
 }
 
 /* XXX It seems as if we should be able to support trim and zero, if
- * we could work out how those are implemented in the ext2fs API which
- * is very obscure.
+ * the ext2fs API were to ever add something like ext2fs_file_fallocate.
  */
 static int
 ext2_can_zero (nbdkit_next *next, void *handle)
 {
   /* For now, tell nbdkit to call .pwrite instead of any optimization.
-   * However, we also want to cache the underlying plugin support.
+   * However, we also want to cache the underlying plugin support - even
+   * though we don't implement .zero, the file system wants to know if
+   * it can use next->zero() during io_zeroout.
    */
   if (next->can_zero (next) == -1)
     return -1;
@@ -348,7 +349,9 @@ static int
 ext2_can_trim (nbdkit_next *next, void *handle)
 {
   /* For now, tell nbdkit to never call .trim.  However, we also want
-   * to cache the underlying plugin support.
+   * to cache the underlying plugin support - even though we don't
+   * implement .trim, the file system wants to know if it can use
+   * next->trim() during io_discard.
    */
   if (next->can_trim (next) == -1)
     return -1;
