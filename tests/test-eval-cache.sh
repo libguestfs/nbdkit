@@ -30,7 +30,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Check that NBDKIT_CACHE_EMULATE works on large requests.
+# Check various .cache scenarios using eval
 
 source ./functions.sh
 set -e
@@ -82,3 +82,9 @@ nbdkit -U - -v eval \
       fi
       dd if=/dev/zero count=$3 iflag=count_bytes
     ' --run 'nbdsh -u "$uri" -c "$script"'
+
+# This plugin provides .cache but not .can_cache; eval should synthesize one.
+nbdkit -U - -v eval \
+    get_size='echo 1M' cache='exit 0' pread='echo EIO >&2; exit 1' \
+    --run 'nbdsh -u "$uri" -c "assert h.can_cache()" \
+      -c "h.cache(1024*1024, 0)"'

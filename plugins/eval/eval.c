@@ -321,13 +321,14 @@ eval_config (const char *key, const char *value)
 }
 
 static int
-create_can_wrapper (const char *test_method, const char *can_method)
+create_can_wrapper (const char *test_method, const char *can_method,
+                    const char *content)
 {
   char *can_script;
 
   if (get_script (test_method) != missing &&
       get_script (can_method) == missing) {
-    can_script = create_script (can_method, "exit 0");
+    can_script = create_script (can_method, content);
     if (!can_script)
       return -1;
     return insert_method_script (can_method, can_script);
@@ -346,11 +347,12 @@ eval_config_complete (void)
   /* Synthesize can_* scripts as the core nbdkit server would for C
    * plugins.
    */
-  if (create_can_wrapper ("pwrite",  "can_write") == -1 ||
-      create_can_wrapper ("flush",   "can_flush") == -1 ||
-      create_can_wrapper ("trim",    "can_trim") == -1 ||
-      create_can_wrapper ("zero",    "can_zero") == -1 ||
-      create_can_wrapper ("extents", "can_extents") == -1)
+  if (create_can_wrapper ("pwrite",  "can_write",   "exit 0") == -1 ||
+      create_can_wrapper ("flush",   "can_flush",   "exit 0") == -1 ||
+      create_can_wrapper ("trim",    "can_trim",    "exit 0") == -1 ||
+      create_can_wrapper ("zero",    "can_zero",    "exit 0") == -1 ||
+      create_can_wrapper ("extents", "can_extents", "exit 0") == -1 ||
+      create_can_wrapper ("cache",   "can_cache",   "echo native") == -1)
     return -1;
 
   /* Call config_complete. */
