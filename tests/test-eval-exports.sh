@@ -43,7 +43,7 @@ requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
 requires jq --version
 
-sock=$(mktemp -u)
+sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="eval-exports.list eval-exports.out eval-exports.pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
