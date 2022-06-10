@@ -898,8 +898,8 @@ This intercepts the plugin C<.zero> method and can be used to modify
 zero requests.
 
 This function will not be called if C<.can_zero> returned
-C<NBDKIT_ZERO_NONE>; in turn, the filter should not call
-C<next-E<gt>zero> if C<next-E<gt>can_zero> returned
+C<NBDKIT_ZERO_NONE> or C<NBDKIT_ZERO_EMULATE>; in turn, the filter
+should not call C<next-E<gt>zero> if C<next-E<gt>can_zero> returned
 C<NBDKIT_ZERO_NONE>.
 
 On input, the parameter C<flags> may include C<NBDKIT_FLAG_MAY_TRIM>
