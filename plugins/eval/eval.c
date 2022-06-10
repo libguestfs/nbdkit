@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -183,7 +183,8 @@ create_script (const char *method, const char *value)
   }
   len = strlen (value);
   if (len > 0) {
-    if (fwrite (value, strlen (value), 1, fp) != 1) {
+    if (fwrite (value, len, 1, fp) != 1 ||
+        (value[len - 1] != '\n' && fputc ('\n', fp) == EOF)) {
       nbdkit_error ("fwrite: %s: %m", script);
       fclose (fp);
       free (script);
@@ -216,7 +217,7 @@ eval_load (void)
    * exits with code 2.  If a method is missing we call this script
    * instead.  It can even be overridden by the user.
    */
-  missing = create_script ("missing", "exit 2\n");
+  missing = create_script ("missing", "exit 2");
   if (!missing)
     exit (EXIT_FAILURE);
 }
@@ -326,7 +327,7 @@ create_can_wrapper (const char *test_method, const char *can_method)
 
   if (get_script (test_method) != missing &&
       get_script (can_method) == missing) {
-    can_script = create_script (can_method, "exit 0\n");
+    can_script = create_script (can_method, "exit 0");
     if (!can_script)
       return -1;
     return insert_method_script (can_method, can_script);
