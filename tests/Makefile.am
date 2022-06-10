@@ -712,11 +712,13 @@ TESTS += \
 	test-eval.sh \
 	test-eval-file.sh \
 	test-eval-exports.sh \
+	test-eval-cache.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-eval.sh \
 	test-eval-file.sh \
 	test-eval-exports.sh \
+	test-eval-cache.sh \
 	$(NULL)
 
 # file plugin test.
