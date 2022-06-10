@@ -1601,11 +1601,13 @@ if HAVE_GNUTLS_PBKDF2
 TESTS += \
 	test-luks-info.sh \
 	test-luks-copy.sh \
+	test-luks-copy-zero.sh \
 	$(NULL)
 endif
 EXTRA_DIST += \
 	test-luks-info.sh \
 	test-luks-copy.sh \
+	test-luks-copy-zero.sh \
 	$(NULL)
 
 # multi-conn filter test.
