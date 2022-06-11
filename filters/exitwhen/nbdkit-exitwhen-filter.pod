@@ -62,6 +62,9 @@ The read end of a L<pipe(2)> is passed to nbdkit in the given file
 descriptor number.  Exit when the pipe is closed.  The filter does not
 read any data from the pipe.
 
+For an example of how to use this parameter, see:
+L<https://gitlab.com/nbdkit/nbdkit/-/blob/master/tests/test-exitwhen-pipe-closed.c>
+
 =item B<exit-when-process-exits=>PID
 
 Exit when process ID C<PID> exits.
