@@ -197,6 +197,7 @@ rate_close (void *handle)
   free (h);
 }
 
+/* Check rate files and adjust rates if necessary. */
 static void
 maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
 {
@@ -245,9 +246,11 @@ maybe_adjust (const char *file, struct bucket *bucket, pthread_mutex_t *lock)
                   old_rate, new_rate);
 }
 
+/* Wait for sufficient tokens to be available in the bucket. */
 static inline int
-maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count,
-             int *err)
+maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock,
+             const char *bucket_name,
+             uint32_t count, int *err)
 {
   struct timespec ts;
   uint64_t bits;
@@ -262,7 +265,7 @@ maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock, uint32_t count,
     /* Run the token bucket algorithm. */
     {
       ACQUIRE_LOCK_FOR_CURRENT_SCOPE (lock);
-      bits = bucket_run (bucket, bits, &ts);
+      bits = bucket_run (bucket, bucket_name, bits, &ts);
     }
 
     if (bits > 0 && nbdkit_nanosleep (ts.tv_sec, ts.tv_nsec) == -1) {
@@ -282,10 +285,12 @@ rate_pread (nbdkit_next *next,
   struct rate_handle *h = handle;
 
   maybe_adjust (rate_file, &read_bucket, &read_bucket_lock);
-  if (maybe_sleep (&read_bucket, &read_bucket_lock, count, err))
+  if (maybe_sleep (&read_bucket, &read_bucket_lock,
+                   "read (global limit)", count, err))
     return -1;
   maybe_adjust (connection_rate_file, &h->read_bucket, &h->read_bucket_lock);
-  if (maybe_sleep (&h->read_bucket, &h->read_bucket_lock, count, err))
+  if (maybe_sleep (&h->read_bucket, &h->read_bucket_lock,
+                   "read (connection limit)", count, err))
     return -1;
 
   return next->pread (next, buf, count, offset, flags, err);
@@ -301,10 +306,12 @@ rate_pwrite (nbdkit_next *next,
   struct rate_handle *h = handle;
 
   maybe_adjust (rate_file, &write_bucket, &write_bucket_lock);
-  if (maybe_sleep (&write_bucket, &write_bucket_lock, count, err))
+  if (maybe_sleep (&write_bucket, &write_bucket_lock,
+                   "write (global limit)", count, err))
     return -1;
   maybe_adjust (connection_rate_file, &h->write_bucket, &h->write_bucket_lock);
-  if (maybe_sleep (&h->write_bucket, &h->write_bucket_lock, count, err))
+  if (maybe_sleep (&h->write_bucket, &h->write_bucket_lock,
+                   "write (connection limit)", count, err))
     return -1;
 
   return next->pwrite (next, buf, count, offset, flags, err);

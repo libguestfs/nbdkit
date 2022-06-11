@@ -59,20 +59,19 @@ extern uint64_t bucket_adjust_rate (struct bucket *bucket, uint64_t rate);
  *
  * If the bucket has >= N tokens (ie. we can send the packet now) then
  * the number of tokens in the bucket is reduced by N and this
- * function returns 0.
+ * function returns 0.  (Note: *TS is _not_ initialized in this case
+ * because the caller should not sleep).
  *
  * If the bucket has fewer than N tokens then the bucket is emptied
  * and the number of tokens we still need to take is returned as a
  * positive number > 0.  In this case, *TS is initialized with the
- * estimated length of time you should sleep.  (Note that *TS is _NOT_
- * initialized if the return value == 0, because the caller should not
- * sleep in that case.)
+ * estimated length of time you should sleep.
  *
  * In the case where the caller needs to sleep, it must make a further
  * call to bucket_run before proceeding, since another thread may have
  * "stolen" the tokens while you were sleeping.
  */
-extern uint64_t bucket_run (struct bucket *bucket, uint64_t n,
-                            struct timespec *ts);
+extern uint64_t bucket_run (struct bucket *bucket, const char *bucket_name,
+                            uint64_t n, struct timespec *ts);
 
 #endif /* NBDKIT_BUCKET_H */
