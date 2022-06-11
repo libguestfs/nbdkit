@@ -35,6 +35,13 @@
  * buckets per connection (one each for reading and writing) and two
  * global buckets (also for reading and writing).
  *
+ *      │       │ ← bucket->capacity
+ *      │       │
+ *      │░░░░░░░│ ← bucket->level
+ *      │░░░░░░░│
+ *      │░░░░░░░│
+ *      └───────┘
+ *
  * We add tokens at the desired rate (the per-connection rate for the
  * connection buckets, and the global rate for the global buckets).
  * Note that we don't actually keep the buckets updated in real time
@@ -110,7 +117,8 @@ bucket_adjust_rate (struct bucket *bucket, uint64_t rate)
 }
 
 uint64_t
-bucket_run (struct bucket *bucket, uint64_t n, struct timespec *ts)
+bucket_run (struct bucket *bucket, const char *bucket_name,
+            uint64_t n, struct timespec *ts)
 {
   struct timeval now;
   int64_t usec;
@@ -134,8 +142,8 @@ bucket_run (struct bucket *bucket, uint64_t n, struct timespec *ts)
   add = bucket->rate * usec / 1000000;
   add = MIN (add, bucket->capacity - bucket->level);
   if (rate_debug_bucket)
-    nbdkit_debug ("bucket %p: adding %" PRIu64 " tokens, new level %" PRIu64,
-                  bucket, add, bucket->level + add);
+    nbdkit_debug ("bucket %s: adding %" PRIu64 " tokens, new level %" PRIu64,
+                  bucket_name, add, bucket->level + add);
   bucket->level += add;
   bucket->tv = now;
 
@@ -144,15 +152,15 @@ bucket_run (struct bucket *bucket, uint64_t n, struct timespec *ts)
    */
   if (bucket->level >= n) {
     if (rate_debug_bucket)
-      nbdkit_debug ("bucket %p: deducting %" PRIu64 " tokens", bucket, n);
+      nbdkit_debug ("bucket %s: deducting %" PRIu64 " tokens", bucket_name, n);
     bucket->level -= n;
     return 0;
   }
 
   if (rate_debug_bucket)
-    nbdkit_debug ("bucket %p: deducting %" PRIu64 " tokens, bucket empty, "
+    nbdkit_debug ("bucket %s: deducting %" PRIu64 " tokens, bucket empty, "
                   "need another %" PRIu64 " tokens",
-                  bucket, bucket->level, n - bucket->level);
+                  bucket_name, bucket->level, n - bucket->level);
 
   n -= bucket->level;
   bucket->level = 0;
