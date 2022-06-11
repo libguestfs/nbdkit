@@ -56,7 +56,7 @@ nbdkit -U - \
        --filter=blocksize --filter=rate \
        pattern 25M \
        maxdata=65536 \
-       rate=10M \
+       rate=10M burstiness=2.0 \
        --run 'nbdcopy "$uri" rate.img'
 end_t=$SECONDS
 

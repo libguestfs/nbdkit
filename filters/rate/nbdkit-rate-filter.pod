@@ -9,6 +9,7 @@ nbdkit-rate-filter - limit bandwidth by connection or server
                       [connection-rate=BITSPERSEC]
                       [rate-file=FILENAME]
                       [connection-rate-file=FILENAME]
+                      [burstiness=SECS]
 
 =head1 DESCRIPTION
 
@@ -63,6 +64,13 @@ Limit total bandwidth across all connections to C<BITSPERSEC>.
 Adjust the per-connection or total bandwidth dynamically by writing
 C<BITSPERSEC> into C<FILENAME>.  See L</DYNAMIC ADJUSTMENT> below.
 
+=item B<burstiness=>SECS
+
+Control the bucket capacity, expressed as a length of time in
+"rate-equivalent seconds" that the client is allowed to burst for
+after a period of inactivity.  The default is 2.0 seconds.  It's not
+recommended to set this smaller than the default.
+
 =back
 
 C<BITSPERSEC> can be specified as a simple number, or you can use a
@@ -105,8 +113,8 @@ If the size of requests made by your client is much larger than the
 rate limit then you can see long, lumpy sleeps in this filter.  In the
 future we may modify the filter to break up large requests
 automatically in order to limit the length of sleeps.  Placing the
-L<nbdkit-blocksize-filter(1)> in front of this filter may help in the
-meantime.
+L<nbdkit-blocksize-filter(1)> in front of this filter, or adjusting
+C<burstiness> upwards may help.
 
 =head1 FILES
 
