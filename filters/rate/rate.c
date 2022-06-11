@@ -68,10 +68,9 @@ static char *rate_file = NULL;
 
 /* Bucket capacity controls the burst rate.  It is expressed as the
  * length of time in "rate-equivalent seconds" that the client can
- * burst for after a period of inactivity.  This could be adjustable
- * in future.
+ * burst for after a period of inactivity.
  */
-#define BUCKET_CAPACITY 2.0
+static double bucket_capacity = 2.0 /* seconds */;
 
 /* Global read and write buckets. */
 static struct bucket read_bucket;
@@ -142,6 +141,13 @@ rate_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
       return -1;
     return 0;
   }
+  else if (strcmp (key, "burstiness") == 0) {
+    if (sscanf (value, "%lg", &bucket_capacity) != 1) {
+      nbdkit_error ("burstiness must be a floating point number (seconds)");
+      return -1;
+    }
+    return 0;
+  }
   else
     return next (nxdata, key, value);
 }
@@ -150,8 +156,8 @@ static int
 rate_get_ready (int thread_model)
 {
   /* Initialize the global buckets. */
-  bucket_init (&read_bucket, rate, BUCKET_CAPACITY);
-  bucket_init (&write_bucket, rate, BUCKET_CAPACITY);
+  bucket_init (&read_bucket, rate, bucket_capacity);
+  bucket_init (&write_bucket, rate, bucket_capacity);
 
   return 0;
 }
@@ -178,8 +184,8 @@ rate_open (nbdkit_next_open *next, nbdkit_context *nxdata,
     return NULL;
   }
 
-  bucket_init (&h->read_bucket, connection_rate, BUCKET_CAPACITY);
-  bucket_init (&h->write_bucket, connection_rate, BUCKET_CAPACITY);
+  bucket_init (&h->read_bucket, connection_rate, bucket_capacity);
+  bucket_init (&h->write_bucket, connection_rate, bucket_capacity);
   pthread_mutex_init (&h->read_bucket_lock, NULL);
   pthread_mutex_init (&h->write_bucket_lock, NULL);
 
