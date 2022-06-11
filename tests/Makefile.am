@@ -919,6 +919,7 @@ EXTRA_DIST += \
 	test-S3.sh \
 	test-S3-unit.sh \
 	test-S3/boto3/__init__.py \
+	test-S3/botocore/exceptions.py \
 	$(NULL)
 
 # sparse-random plugin test.
