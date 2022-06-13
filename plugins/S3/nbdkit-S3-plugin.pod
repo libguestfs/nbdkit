@@ -68,10 +68,12 @@ required.
 These two parameters must always be specified together. If set, data
 will be split into blocks of C<object-size> and stored as separate
 objects. The block device will report a total size of C<size> and be
-writeable.
+writeable and trim-able.
 
 Object names will have the form I<key/%16x>, where C<%16x> is the
-16-digit hexadecimal block number.
+16-digit hexadecimal block number. If there are existing objects
+under such name that do not have the expected size, the plugin
+will crash.
 
 =back
 

@@ -38,3 +38,15 @@ class ClientError(Exception):
         super(ClientError, self).__init__("")
         self.response = error_response
         self.operation_name = operation_name
+
+
+class ReadTimeoutError(RuntimeError):
+    pass
+
+
+class ConnectTimeoutError(RuntimeError):
+    pass
+
+
+class ConnectionClosedError(RuntimeError):
+    pass
