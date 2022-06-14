@@ -212,7 +212,7 @@ a client more details about the export.
 
 =item C<NBD_INFO_BLOCK_SIZE>
 
-I<Not supported>.
+Supported in nbdkit E<ge> 1.30.
 
 =item Resize Extension
 
