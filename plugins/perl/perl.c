@@ -42,6 +42,9 @@
 #include <assert.h>
 #include <errno.h>
 
+/* perl.h contains multiple variable shadowing */
+#pragma GCC diagnostic ignored "-Wshadow"
+
 #include <XSUB.h>
 #include <EXTERN.h>
 #include <perl.h>
@@ -50,9 +53,6 @@
 #include <nbdkit-plugin.h>
 
 #include "cleanup.h"
-
-/* Use of perl.h insists on shadowing my_perl during XS(). */
-#pragma GCC diagnostic ignored "-Wshadow"
 
 static PerlInterpreter *my_perl;
 static const char *script;
