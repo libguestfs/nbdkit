@@ -47,8 +47,8 @@
    fun:caml_setup_stack_overflow_detection
 }
 
-# Potential bug in OCaml 4.14
-# https://github.com/ocaml/ocaml/issues/11335
+# Valgrind bug affecting OCaml 4.14
+# https://bugs.kde.org/show_bug.cgi?id=455711
 {
   caml_terminate_signals_uninitialized_sigaltstack
   Memcheck:Param
