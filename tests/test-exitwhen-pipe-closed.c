@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 int
 main (int argc, char *argv[])
@@ -74,13 +75,23 @@ main (int argc, char *argv[])
     perror ("execvp");
     _exit (EXIT_FAILURE);
   }
+  free (param);
 
-  /* Close the read side of the pipe. */
+  /* Close the read side of the pipe (this does NOT cause nbdkit to exit). */
   close (fd[0]);
+
+  /* Wait a bit. */
+  sleep (2);
+
+  /* nbdkit should still be running. */
+  if (kill (pid, 0) != 0) {
+    fprintf (stderr, "FAIL: %s: nbdkit exited before pipe was closed\n",
+             argv[0]);
+    exit (EXIT_FAILURE);
+  }
 
   /* The test here is simply that nbdkit exits because we exit and our
    * side of the pipe is closed.
    */
-  free (param);
   exit (EXIT_SUCCESS);
 }
