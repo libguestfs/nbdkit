@@ -33,6 +33,7 @@
 # This fake botocore module is used to test the S3 plugin.  See also
 # tests/test-S3.sh
 
+
 class ClientError(Exception):
     def __init__(self, error_response, operation_name):
         super(ClientError, self).__init__("")
