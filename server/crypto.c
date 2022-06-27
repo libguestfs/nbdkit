@@ -53,6 +53,7 @@
 #ifdef HAVE_GNUTLS
 
 #include <gnutls/gnutls.h>
+#include <gnutls/socket.h>
 #include <gnutls/x509.h>
 
 static int crypto_auth;
@@ -531,12 +532,33 @@ debug_session (gnutls_session_t session)
   bool dhe = false, ecdh = false;
   int grp;
   const char *desc, *username, *hint;
+#ifdef HAVE_GNUTLS_TRANSPORT_IS_KTLS_ENABLED
+  gnutls_transport_ktls_enable_flags_t ktls_enabled;
+#endif
 
   if (nbdkit_debug_tls_session <= 0)
     return;
 
   desc = gnutls_session_get_desc (session);
   if (desc) nbdkit_debug ("TLS session: %s", desc);
+
+#ifdef HAVE_GNUTLS_TRANSPORT_IS_KTLS_ENABLED
+  ktls_enabled = gnutls_transport_is_ktls_enabled (session);
+  switch (ktls_enabled) {
+  case GNUTLS_KTLS_RECV:
+    nbdkit_debug ("TLS: kTLS enabled for receive only"); break;
+  case GNUTLS_KTLS_SEND:
+    nbdkit_debug ("TLS: kTLS enabled for send only"); break;
+  case GNUTLS_KTLS_DUPLEX:
+    nbdkit_debug ("TLS: kTLS enabled full duplex"); break;
+  default:
+    if ((int) ktls_enabled == 0)
+      nbdkit_debug ("TLS: kTLS disabled");
+    else
+      nbdkit_debug ("TLS: kTLS enabled unknown setting: %d",
+                    (int) ktls_enabled);
+  }
+#endif
 
   kx = gnutls_kx_get (session);
   cred = gnutls_auth_get_type (session);
