@@ -53,8 +53,11 @@
 #ifdef HAVE_GNUTLS
 
 #include <gnutls/gnutls.h>
-#include <gnutls/socket.h>
 #include <gnutls/x509.h>
+
+#ifdef HAVE_GNUTLS_TRANSPORT_IS_KTLS_ENABLED
+#include <gnutls/socket.h>
+#endif
 
 static int crypto_auth;
 #define CRYPTO_AUTH_CERTIFICATES 1
