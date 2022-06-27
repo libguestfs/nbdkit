@@ -65,30 +65,34 @@ timeout 30s </dev/null qemu-io -f raw -c "aio_write -P 1 0 512" \
 
 curr_fds=
 if test -d /proc/$$/fd; then
+    echo "parent fds:" >&2
+    ls -l /proc/$$/fd >&2
     curr_fds=$(/usr/bin/env bash -c '(ls /proc/$$/fd)' | wc -w)
 fi
+export curr_fds
 echo "using curr_fds=$curr_fds"
 
-cat > test-parallel-sh.script <<EOF
+cat > test-parallel-sh.script <<'EOF'
 #!/usr/bin/env bash
 f=test-parallel-sh.data
-if ! test -f \$f; then
+if ! test -f $f; then
   echo "can't locate test-parallel-sh.data" >&2; exit 5
 fi
-if test -d /proc/\$\$/fd; then
+if test -n "$curr_fds"; then
   (
-    if test \$( ls /proc/\$\$/fd | wc -w ) -ne \$(($curr_fds + 1)); then
+    if test $( ls /proc/$$/fd | wc -w ) -ne $(($curr_fds + 1)); then
+      echo "nbdkit script fds:" >&2
+      ls -l /proc/$$/fd >&2
       echo "there seem to be leaked fds, curr_fds=$curr_fds" >&2
-      ls -l /proc/\$\$/fd >&2
       exit 1
     fi
   ) || exit 5
 fi
-case \$1 in
+case $1 in
   thread_model) echo parallel ;;
-  get_size) stat -L -c %s \$f || exit 1 ;;
-  pread) dd iflag=skip_bytes,count_bytes skip=\$4 count=\$3 if=\$f || exit 1 ;;
-  pwrite) dd oflag=seek_bytes conv=notrunc seek=\$4 of=\$f || exit 1 ;;
+  get_size) stat -L -c %s $f || exit 1 ;;
+  pread) dd iflag=skip_bytes,count_bytes skip=$4 count=$3 if=$f || exit 1 ;;
+  pwrite) dd oflag=seek_bytes conv=notrunc seek=$4 of=$f || exit 1 ;;
   can_write) ;;
   *) exit 2 ;;
 esac
