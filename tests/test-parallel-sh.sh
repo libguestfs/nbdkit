@@ -41,6 +41,13 @@ requires dd iflag=count_bytes </dev/null
 nbdkit --dump-plugin sh | grep -q ^thread_model=parallel ||
     { echo "nbdkit lacks support for parallel requests"; exit 77; }
 
+# debuginfod breaks valgrinding of this test because it creates about
+# a dozen pipe file descriptors, which breaks the leaked fd
+# assumptions in the test below.
+if [ "$NBDKIT_VALGRIND" = "1" ]; then
+    requires test -z "$DEBUGINFOD_URLS"
+fi
+
 cleanup_fn rm -f test-parallel-sh.data test-parallel-sh.out test-parallel-sh.script
 
 # Populate file, and sanity check that qemu-io can issue parallel requests
