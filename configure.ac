@@ -640,6 +640,7 @@ AS_IF([test "x$GNUTLS_LIBS" != "x"],[
         gnutls_pbkdf2 \
         gnutls_session_set_verify_cert \
         gnutls_srp_server_get_username \
+        gnutls_transport_is_ktls_enabled \
     ])
     LIBS="$old_LIBS"
 ])
