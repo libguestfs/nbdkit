@@ -45,6 +45,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "array-size.h"
 #include "bitmap.h"
 
 static void
@@ -71,7 +72,7 @@ test (int bpb, int blksize)
     exit (EXIT_FAILURE);
 
   /* Set some bits at known block numbers. */
-  for (j = 0; j < sizeof blks / sizeof blks[0]; ++j) {
+  for (j = 0; j < ARRAY_SIZE (blks); ++j) {
     v = (j & 1) == 0 ? 1 : (1<<bpb) - 1;
     bitmap_set_blk (&bm, blks[j], v);
   }

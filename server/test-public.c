@@ -43,6 +43,8 @@
 
 #include "internal.h"
 
+#include "array-size.h"
+
 static bool error_flagged;
 
 /* Stubs for linking against minimal source files, and for proving
@@ -167,7 +169,7 @@ test_nbdkit_parse_size (void)
     { "1E", 1024LL * 1024 * 1024 * 1024 * 1024 * 1024 },
   };
 
-  for (i = 0; i < sizeof pairs / sizeof pairs[0]; i++) {
+  for (i = 0; i < ARRAY_SIZE (pairs); i++) {
     int64_t r;
 
     error_flagged = false;

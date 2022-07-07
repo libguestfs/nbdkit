@@ -41,6 +41,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "array-size.h"
 #include "utils.h"
 
 #ifdef HAVE_OPEN_MEMSTREAM
@@ -93,7 +94,7 @@ main (void)
   size_t i;
   bool fail = false;
 
-  for (i = 0; i < sizeof tests / sizeof tests[0]; i++) {
+  for (i = 0; i < ARRAY_SIZE (tests); i++) {
     fail |= test (tests[i].orig, "shell_quote", shell_quote, tests[i].shell);
     fail |= test (tests[i].orig, "uri_quote", uri_quote, tests[i].uri);
   }
