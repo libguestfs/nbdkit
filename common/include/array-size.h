@@ -36,6 +36,6 @@
 #include "compiler-macros.h"
 
 #define ARRAY_SIZE(a) \
-  ((sizeof (a) / sizeof ((a)[0])) + BUILD_BUG_ON_ZERO (!TYPE_IS_ARRAY(a)))
+  ((sizeof (a) / sizeof ((a)[0])) + BUILD_BUG_UNLESS_TRUE (TYPE_IS_ARRAY(a)))
 
 #endif /* NBDKIT_ARRAY_SIZE_H */
