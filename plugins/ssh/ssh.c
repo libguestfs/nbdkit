@@ -50,6 +50,7 @@
 
 #include <nbdkit-plugin.h>
 
+#include "array-size.h"
 #include "const-string-vector.h"
 #include "minmax.h"
 
@@ -82,10 +83,9 @@ log_callback (int priority, const char *function, const char *message, void *vp)
 {
   const char *levels[] =
     { "none", "warning", "protocol", "packet", "function" };
-  const size_t nr_levels = sizeof levels / sizeof levels[0];
   const char *level;
 
-  if (priority >= 0 && priority < nr_levels)
+  if (priority >= 0 && priority < ARRAY_SIZE (levels))
     level = levels[priority];
   else
     level = "unknown";

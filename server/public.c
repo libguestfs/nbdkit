@@ -70,6 +70,7 @@
 #include <pthread_time.h>
 #endif
 
+#include "array-size.h"
 #include "ascii-ctype.h"
 #include "ascii-string.h"
 #include "get_current_dir_name.h"
@@ -712,7 +713,7 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
    */
   if (sigfillset(&all))
     abort ();
-  switch (ppoll (fds, sizeof fds / sizeof fds[0], &ts, &all)) {
+  switch (ppoll (fds, ARRAY_SIZE (fds), &ts, &all)) {
   case -1:
     assert (errno != EINTR);
     nbdkit_error ("poll: %m");

@@ -105,6 +105,7 @@ test_quotes_SOURCES = test-quotes.c quote.c utils.h
 test_quotes_CPPFLAGS = \
 	-I$(srcdir) \
 	-I$(top_srcdir)/common/replacements \
+	-I$(top_srcdir)/common/include \
 	$(NULL)
 test_quotes_CFLAGS = $(WARNINGS_CFLAGS)
 test_quotes_LDADD = \

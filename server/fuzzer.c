@@ -43,6 +43,8 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 
+#include "array-size.h"
+
 #include "internal.h"
 
 #ifndef ENABLE_LIBFUZZER
@@ -122,7 +124,7 @@ server (int sock)
     "plugins/memory/.libs/nbdkit-memory-plugin." SOEXT, "1M",
     NULL
   };
-  const int argc = sizeof argv / sizeof argv[0] - 1;
+  const int argc = ARRAY_SIZE (argv) - 1;
   int saved_stdin, saved_stdout;
 
   /* Make the socket appear as stdin and stdout of the process, saving

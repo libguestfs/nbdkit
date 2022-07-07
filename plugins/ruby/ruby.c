@@ -44,6 +44,8 @@
 #include <ruby/version.h>
 #endif
 
+#include "array-size.h"
+
 static VALUE nbdkit_module = Qnil;
 static int last_error;
 
@@ -206,8 +208,7 @@ plugin_rb_config (const char *key, const char *value)
 
     /* Load the Ruby script into the interpreter. */
     const char *options[] = { "--", script };
-    code = ruby_options (sizeof options / sizeof options[0],
-                         (char **) options);
+    code = ruby_options (ARRAY_SIZE (options), (char **) options);
 
     /* Check if we managed to compile the Ruby script to code. */
     if (!ruby_executable_node (code, &state)) {

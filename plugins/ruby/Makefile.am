@@ -47,6 +47,7 @@ nbdkit_ruby_plugin_la_SOURCES = \
 
 nbdkit_ruby_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/common/include \
 	$(NULL)
 nbdkit_ruby_plugin_la_CFLAGS = \
 	$(WARNINGS_CFLAGS) \

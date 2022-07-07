@@ -52,6 +52,7 @@
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/version.hpp>
 
+#include "array-size.h"
 extern "C" {
 #include "cleanup.h"
 };
@@ -101,8 +102,6 @@ static struct setting settings[] = {
   { "user-agent",          "user_agent",          pack.user_agent,
     STRING },
 };
-static const size_t nr_settings = sizeof settings / sizeof settings[0];
-
 static libtorrent::alert_category_t alerts =
     libtorrent::alert_category::error
   | libtorrent::alert_category::piece_progress
@@ -221,7 +220,7 @@ torrent_config (const char *key, const char *value)
 
   /* Settings. */
   else {
-    for (size_t i = 0; i < nr_settings; ++i) {
+    for (size_t i = 0; i < ARRAY_SIZE (settings); ++i) {
       if (strcmp (key, settings[i].name) == 0 ||
           (settings[i].altname && strcmp (key, settings[i].altname) == 0)) {
         switch (settings[i].type) {

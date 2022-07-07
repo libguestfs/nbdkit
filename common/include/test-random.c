@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
+#include "array-size.h"
 #include "random.h"
 
 /* This works by comparing the result to some known test vectors.  It
@@ -160,8 +161,6 @@ UINT64_C(0xc6ca62fc772728b0),
 } },
 };
 
-#define nr_tests (sizeof tests / sizeof tests[0])
-
 int
 main (void)
 {
@@ -169,7 +168,7 @@ main (void)
   uint64_t r;
   unsigned errors = 0;
 
-  for (i = 0; i < nr_tests; ++i) {
+  for (i = 0; i < ARRAY_SIZE (tests); ++i) {
     struct random_state state;
 
     printf ("seed: %" PRIu64 "\n", tests[i].seed);

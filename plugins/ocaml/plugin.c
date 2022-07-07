@@ -49,6 +49,8 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
+#include "array-size.h"
+
 #include "plugin.h"
 
 /* This constructor runs when the plugin loads, and initializes the
@@ -637,7 +639,7 @@ pread_wrapper (void *h, void *buf, uint32_t count, uint64_t offset,
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
-  rv = caml_callbackN_exn (pread_fn, sizeof args / sizeof args[0], args);
+  rv = caml_callbackN_exn (pread_fn, ARRAY_SIZE (args), args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -666,7 +668,7 @@ pwrite_wrapper (void *h, const void *buf, uint32_t count, uint64_t offset,
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, strv, offsetv, flagsv };
-  rv = caml_callbackN_exn (pwrite_fn, sizeof args / sizeof args[0], args);
+  rv = caml_callbackN_exn (pwrite_fn, ARRAY_SIZE (args), args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -705,7 +707,7 @@ trim_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
-  rv = caml_callbackN_exn (trim_fn, sizeof args / sizeof args[0], args);
+  rv = caml_callbackN_exn (trim_fn, ARRAY_SIZE (args), args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -726,7 +728,7 @@ zero_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
-  rv = caml_callbackN_exn (zero_fn, sizeof args / sizeof args[0], args);
+  rv = caml_callbackN_exn (zero_fn, ARRAY_SIZE (args), args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -748,7 +750,7 @@ extents_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags,
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
-  rv = caml_callbackN_exn (extents_fn, sizeof args / sizeof args[0], args);
+  rv = caml_callbackN_exn (extents_fn, ARRAY_SIZE (args), args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
@@ -788,7 +790,7 @@ cache_wrapper (void *h, uint32_t count, uint64_t offset, uint32_t flags)
   flagsv = Val_flags (flags);
 
   value args[] = { *(value *) h, countv, offsetv, flagsv };
-  rv = caml_callbackN_exn (cache_fn, sizeof args / sizeof args[0], args);
+  rv = caml_callbackN_exn (cache_fn, ARRAY_SIZE (args), args);
   if (Is_exception_result (rv)) {
     nbdkit_error ("%s", caml_format_exception (Extract_exception (rv)));
     CAMLreturnT (int, -1);
