@@ -41,19 +41,21 @@
 
 struct st { const char *s; int i; };
 
-static const char *s0[] = { };
-static const char *s1[] = { "a" };
-static const char *s3[] = { "a", "b", "c" };
-static const char *s4[4] = { "a", "b", "c", "d" };
-static int i0[] = { };
-static int i1[] = { 1 };
-static int i3[] = { 1, 2, 3 };
-static int i4[4] = { 1, 2, 3, 4 };
-static struct st st0[] = { };
-static struct st st1[] = { { "a", 1 } };
-static struct st st3[] = { { "a", 1 }, { "b", 2 }, { "c", 3 } };
-static struct st st4[4] = { { "a", 1 }, { "b", 2 }, { "c", 3 }, { "d", 4 } };
-static struct st st4_0[4];
+static const char *s0[] __attribute__((__unused__)) = { };
+static const char *s1[] __attribute__((__unused__)) = { "a" };
+static const char *s3[] __attribute__((__unused__)) = { "a", "b", "c" };
+static const char *s4[4] __attribute__((__unused__)) = { "a", "b", "c", "d" };
+static int i0[] __attribute__((__unused__)) = { };
+static int i1[] __attribute__((__unused__)) = { 1 };
+static int i3[] __attribute__((__unused__)) = { 1, 2, 3 };
+static int i4[4] __attribute__((__unused__)) = { 1, 2, 3, 4 };
+static struct st st0[] __attribute__((__unused__)) = { };
+static struct st st1[] __attribute__((__unused__)) = { { "a", 1 } };
+static struct st st3[] __attribute__((__unused__)) =
+  { { "a", 1 }, { "b", 2 }, { "c", 3 } };
+static struct st st4[4] __attribute__((__unused__)) =
+  { { "a", 1 }, { "b", 2 }, { "c", 3 }, { "d", 4 } };
+static struct st st4_0[4] __attribute__((__unused__));
 
 int
 main (void)
