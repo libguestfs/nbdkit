@@ -35,24 +35,27 @@
 
 #ifndef __cplusplus
 
-/* This expression fails at compile time if 'expr' is true.  It does
- * this by constructing a struct which has an impossible
- * (negative-sized) array.
+/* BUILD_BUG_UNLESS_TRUE(1) => 0
+ * BUILD_BUG_UNLESS_TRUE(0) => compile-time failure
  *
- * If 'expr' is false then we subtract the sizes of the two identical
- * structures, returning zero.
+ * It works by constructing a struct which has an impossible
+ * (negative-sized) bitfield in the false case.  Anonymous bitfields
+ * are permitted in C99 and above.
+ *
+ * The Linux kernel calls this BUILD_BUG_ON_ZERO(!cond) which is a
+ * confusing name.  It has the same semantics except cond is negated.
  */
-#define BUILD_BUG_ON_ZERO_SIZEOF(expr) \
-  (sizeof (struct { int _array_size_failed[(expr) ? -1 : 1]; }))
-#define BUILD_BUG_ON_ZERO(expr) \
-  (BUILD_BUG_ON_ZERO_SIZEOF(expr) - BUILD_BUG_ON_ZERO_SIZEOF(expr))
+#define BUILD_BUG_STRUCT_SIZE(cond) \
+  (sizeof (struct { int: (cond) ? 1 : -1; }))
+#define BUILD_BUG_UNLESS_TRUE(cond) \
+  (BUILD_BUG_STRUCT_SIZE(cond) - BUILD_BUG_STRUCT_SIZE(cond))
 
 #define TYPE_IS_ARRAY(a) \
   (!__builtin_types_compatible_p (typeof (a), typeof (&(a)[0])))
 
 #else /* __cplusplus */
 
-#define BUILD_BUG_ON_ZERO(expr) 0
+#define BUILD_BUG_UNLESS_TRUE(cond) 0
 #define TYPE_IS_ARRAY(a) 1
 
 #endif /* __cplusplus */
