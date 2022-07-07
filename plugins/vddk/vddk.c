@@ -49,6 +49,7 @@
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
 
+#include "array-size.h"
 #include "cleanup.h"
 #include "minmax.h"
 #include "vector.h"
@@ -495,11 +496,25 @@ debug_function (const char *fs, va_list args)
   nbdkit_debug ("%s", str);
 }
 
+/* VDDK 7 added some useless error messages about their "phone home"
+ * system called CEIP which only panics users.  Demote these to debug
+ * statements below.
+ *
+ * https://bugzilla.redhat.com/show_bug.cgi?id=1834267
+ * https://bugzilla.redhat.com/show_bug.cgi?id=2083617
+ * https://bugzilla.redhat.com/show_bug.cgi?id=2104720
+ */
+static const char * const demoted_errors[] = {
+  "Get CEIP status failed",
+  "VDDK_PhoneHome:",
+};
+
 /* Turn error messages from the library into nbdkit_error. */
 static void
 error_function (const char *fs, va_list args)
 {
   CLEANUP_FREE char *str = NULL;
+  size_t i;
 
   /* If the thread-local error_suppression flag is non-zero then we
    * will suppress error messages from VDDK in this thread.
@@ -513,17 +528,12 @@ error_function (const char *fs, va_list args)
 
   trim (str);
 
-  /* VDDK 7 added some useless error messages about their "phone home"
-   * system called CEIP which only panics users.  Demote to a debug
-   * statement.
-   * https://bugzilla.redhat.com/show_bug.cgi?id=1834267
-   * https://bugzilla.redhat.com/show_bug.cgi?id=2083617
-   */
-  if (strstr (str, "Get CEIP status failed") != NULL ||
-      strstr (str, "VDDK_PhoneHome: Unable to load configuration "
-                   "options from ") != NULL) {
-    nbdkit_debug ("%s", str);
-    return;
+  /* See comment above about demoted errors. */
+  for (i = 0; i < ARRAY_SIZE (demoted_errors); ++i) {
+    if (strstr (str, demoted_errors[i]) != NULL) {
+      nbdkit_debug ("%s", str);
+      return;
+    }
   }
 
   nbdkit_error ("%s", str);
