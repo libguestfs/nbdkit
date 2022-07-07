@@ -35,6 +35,7 @@ plugins/*/*.3
 /aclocal.m4
 /autom4te.cache
 /common/bitmap/test-bitmap
+/common/include/test-array-size
 /common/include/test-ascii-ctype
 /common/include/test-ascii-string
 /common/include/test-byte-swapping

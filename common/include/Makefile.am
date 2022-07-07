@@ -34,10 +34,12 @@ include $(top_srcdir)/common-rules.mk
 # These headers contain only common code shared by the core server,
 # plugins and/or filters.  They are not installed.
 EXTRA_DIST = \
+	array-size.h \
 	ascii-ctype.h \
 	ascii-string.h \
 	byte-swapping.h \
 	checked-overflow.h \
+	compiler-macros.h \
 	exit-with-parent.h \
 	hexdigit.h \
 	isaligned.h \
@@ -55,6 +57,7 @@ EXTRA_DIST = \
 # Unit tests.
 
 TESTS = \
+	test-array-size \
 	test-ascii-ctype \
 	test-ascii-string \
 	test-byte-swapping \
@@ -68,6 +71,10 @@ TESTS = \
 	test-tvdiff \
 	$(NULL)
 check_PROGRAMS = $(TESTS)
+
+test_array_size_SOURCES = test-array-size.c array-size.h
+test_array_size_CPPFLAGS = -I$(srcdir)
+test_array_size_CFLAGS = $(WARNINGS_CFLAGS)
 
 test_ascii_ctype_SOURCES = test-ascii-ctype.c ascii-ctype.h
 test_ascii_ctype_CPPFLAGS = -I$(srcdir)
