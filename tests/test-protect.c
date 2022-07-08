@@ -37,6 +37,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include <libnbd.h>
@@ -47,6 +48,12 @@ main (int argc, char *argv[])
   struct nbd_handle *nbd;
   char buf[1024];
   int r;
+
+  /* Check "disk" was created before running the test. */
+  if (access ("disk", R_OK) == -1 && errno == ENOENT) {
+    printf ("%s: test skipped before \"disk\" was not created\n", argv[0]);
+    exit (77);
+  }
 
   nbd = nbd_create ();
   if (nbd == NULL) {
