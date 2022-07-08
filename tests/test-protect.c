@@ -51,7 +51,7 @@ main (int argc, char *argv[])
 
   /* Check "disk" was created before running the test. */
   if (access ("disk", R_OK) == -1 && errno == ENOENT) {
-    printf ("%s: test skipped before \"disk\" was not created\n", argv[0]);
+    printf ("%s: test skipped because \"disk\" was not created\n", argv[0]);
     exit (77);
   }
 
