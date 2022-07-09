@@ -1425,98 +1425,76 @@ echo
 echo "This is how we have configured the optional components for you today:"
 echo
 
+print ()
+{
+    printf '    %.40s %s\n' \
+        "$1 ........................................" "$2"
+}
+
 feature ()
 {
-    printf %s "    $1"
+    feat="$1"
     shift
-    if "$@"; then echo "yes"; else echo "no"; fi
+    if "$@"; then
+        print "$feat" "yes"
+    else
+        print "$feat" "no"
+    fi
 }
 
 echo "Optional server features:"
 echo
-feature "bash-completion ........................ " \
-        test "x$HAVE_BASH_COMPLETION_TRUE" = "x"
-feature "libfuzzer .............................. " \
-        test "x$ENABLE_LIBFUZZER_TRUE" = "x"
-feature "linker script .......................... " \
-        test "x$USE_LINKER_SCRIPT_FOR_SERVER_TRUE" = "x"
-feature "manual pages ........................... " \
-        test "x$HAVE_POD_TRUE" = "x"
-feature "SELinux ................................ " \
-        test "x$LIBSELINUX_LIBS" != "x"
-feature "TLS .................................... " \
-        test "x$GNUTLS_LIBS" != "x"
+feature "bash-completion"     test "x$HAVE_BASH_COMPLETION_TRUE" = "x"
+feature "libfuzzer"           test "x$ENABLE_LIBFUZZER_TRUE" = "x"
+feature "linker script"       test "x$USE_LINKER_SCRIPT_FOR_SERVER_TRUE" = "x"
+feature "manual pages"        test "x$HAVE_POD_TRUE" = "x"
+feature "SELinux"             test "x$LIBSELINUX_LIBS" != "x"
+feature "TLS"                 test "x$GNUTLS_LIBS" != "x"
 
 echo
 echo "Optional plugins:"
 echo
-feature "curl ................................... " \
-        test "x$HAVE_CURL_TRUE" = "x"
-feature "example4 ............................... " \
-        test "x$HAVE_PERL_TRUE" = "x"
-feature "floppy ................................. " \
-        test "x$HAVE_ICONV_TRUE" = "x"
-feature "guestfs ................................ " \
-        test "x$HAVE_LIBGUESTFS_TRUE" = "x"
-feature "iso .................................... " \
-        test "x$HAVE_ISO_TRUE" = "x"
-feature "libvirt ................................ " \
-        test "x$HAVE_LIBVIRT_TRUE" = "x"
-feature "linuxdisk .............................. " \
-        test "x$HAVE_MKE2FS_WITH_D_TRUE" = "x"
-feature "nbd .................................... " \
-        test "x$HAVE_LIBNBD_TRUE" = "x"
-feature "S3 ..................................... " \
-        test "x$HAVE_PYTHON_TRUE" = "x"
-feature "ssh .................................... " \
-        test "x$HAVE_SSH_TRUE" = "x"
-feature "torrent ................................ " \
-        test "x$HAVE_TORRENT_TRUE" = "x"
-feature "vddk ................................... " \
-        test "x$HAVE_VDDK_TRUE" = "x"
+feature "curl"                test "x$HAVE_CURL_TRUE" = "x"
+feature "example4"            test "x$HAVE_PERL_TRUE" = "x"
+feature "floppy"              test "x$HAVE_ICONV_TRUE" = "x"
+feature "guestfs"             test "x$HAVE_LIBGUESTFS_TRUE" = "x"
+feature "iso"                 test "x$HAVE_ISO_TRUE" = "x"
+feature "libvirt"             test "x$HAVE_LIBVIRT_TRUE" = "x"
+feature "linuxdisk"           test "x$HAVE_MKE2FS_WITH_D_TRUE" = "x"
+feature "nbd"                 test "x$HAVE_LIBNBD_TRUE" = "x"
+feature "S3"                  test "x$HAVE_PYTHON_TRUE" = "x"
+feature "ssh"                 test "x$HAVE_SSH_TRUE" = "x"
+feature "torrent"             test "x$HAVE_TORRENT_TRUE" = "x"
+feature "vddk"                test "x$HAVE_VDDK_TRUE" = "x"
 
 echo
 echo "Languages:"
 echo
-feature "go ..................................... " \
-        test "x$HAVE_GOLANG_TRUE" = "x"
-feature "lua .................................... " \
-        test "x$HAVE_LUA_TRUE" = "x"
-feature "ocaml .................................. " \
-        test "x$HAVE_OCAML_TRUE" = "x"
-feature "perl ................................... " \
-        test "x$HAVE_PERL_TRUE" = "x"
-feature "python ................................. " \
-        test "x$HAVE_PYTHON_TRUE" = "x"
-feature "ruby ................................... " \
-        test "x$HAVE_RUBY_TRUE" = "x"
-feature "rust ................................... " \
-        test "x$HAVE_RUST_TRUE" = "x"
-feature "tcl .................................... " \
-        test "x$HAVE_TCL_TRUE" = "x"
+feature "go"                  test "x$HAVE_GOLANG_TRUE" = "x"
+feature "lua"                 test "x$HAVE_LUA_TRUE" = "x"
+feature "ocaml"               test "x$HAVE_OCAML_TRUE" = "x"
+feature "perl"                test "x$HAVE_PERL_TRUE" = "x"
+feature "python"              test "x$HAVE_PYTHON_TRUE" = "x"
+feature "ruby"                test "x$HAVE_RUBY_TRUE" = "x"
+feature "rust"                test "x$HAVE_RUST_TRUE" = "x"
+feature "tcl"                 test "x$HAVE_TCL_TRUE" = "x"
 
 echo
 echo "Optional filters:"
 echo
-feature "ext2 ................................... " \
-        test "x$HAVE_EXT2_TRUE" = "x"
-feature "gzip ................................... " \
-        test "x$HAVE_ZLIB_TRUE" = "x"
-feature "luks ................................... " \
-        test "x$HAVE_GNUTLS_PBKDF2_TRUE" = "x"
-feature "stats .................................. " \
-        test "x$HAVE_CXX_TRUE" = "x"
-feature "xz ..................................... " \
-        test "x$HAVE_LIBLZMA_TRUE" = "x"
+feature "ext2"                test "x$HAVE_EXT2_TRUE" = "x"
+feature "gzip"                test "x$HAVE_ZLIB_TRUE" = "x"
+feature "luks"                test "x$HAVE_GNUTLS_PBKDF2_TRUE" = "x"
+feature "stats"               test "x$HAVE_CXX_TRUE" = "x"
+feature "xz"                  test "x$HAVE_LIBLZMA_TRUE" = "x"
 
 echo
 echo "Other optional features:"
 echo
-feature "allocator=zstd ......................... " \
-        test "x$HAVE_LIBZSTD_TRUE" = "x"
-feature "tests using libguestfs ................. " \
-        test "x$HAVE_LIBGUESTFS_TRUE" = "x" -a      \
-             "x$USE_LIBGUESTFS_FOR_TESTS_TRUE" = "x"
+feature "allocator=zstd"      test "x$HAVE_LIBZSTD_TRUE" = "x"
+feature "tests using libguestfs" \
+                              test "x$HAVE_LIBGUESTFS_TRUE" = "x" -a \
+                                   "x$USE_LIBGUESTFS_FOR_TESTS_TRUE" = "x"
 
 echo
 echo "If any optional component is configured ‘no’ when you expected ‘yes’"
