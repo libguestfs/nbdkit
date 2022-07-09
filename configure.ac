@@ -1028,6 +1028,7 @@ AC_ARG_WITH([curl],
     [with_curl=check])
 AS_IF([test "$with_curl" != "no"],[
     PKG_CHECK_MODULES([CURL], [libcurl],[
+        printf "libcurl version is "; $PKG_CONFIG --modversion libcurl
         AC_SUBST([CURL_CFLAGS])
         AC_SUBST([CURL_LIBS])
         AC_DEFINE([HAVE_CURL],[1],[curl found at compile time.])
@@ -1048,6 +1049,7 @@ AC_ARG_WITH([ssh],
     [with_ssh=check])
 AS_IF([test "$with_ssh" != "no"],[
     PKG_CHECK_MODULES([SSH], [libssh >= 0.8.0],[
+        printf "libssh version is "; $PKG_CONFIG --modversion libssh
         # Ubuntu 18.04 shipped prerelease of libssh-0.8.0 without
         # SSH_OPTIONS_NODELAY
         old_CFLAGS="$CFLAGS"
@@ -1144,6 +1146,7 @@ AC_ARG_WITH([libnbd],
     [with_libnbd=check])
 AS_IF([test "$with_libnbd" != "no"],[
     PKG_CHECK_MODULES([LIBNBD], [libnbd >= 0.9.8],[
+        printf "libnbd version is "; $PKG_CONFIG --modversion libnbd
         AC_SUBST([LIBNBD_CFLAGS])
         AC_SUBST([LIBNBD_LIBS])
         AC_DEFINE([HAVE_LIBNBD],[1],[libnbd found at compile time.])
