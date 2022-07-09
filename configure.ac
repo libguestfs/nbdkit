@@ -1088,7 +1088,7 @@ AS_IF([test "$with_iso" != "no"],[
         ])
     ])
     AS_IF([test "x$ISOPROG" != "xno"],[
-        AC_MSG_RESULT([Picked $ISOPROG for nbdkit-iso-plugin])
+        printf "picked %s for nbdkit-iso-plugin\n" "$ISOPROG"
         AC_DEFINE_UNQUOTED([ISOPROG],["$ISOPROG"],
                            [Program used by iso plugin to make ISOs.])
         AS_IF([test "x$is_xorriso" = "x1"], [
