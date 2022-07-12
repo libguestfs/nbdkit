@@ -561,7 +561,7 @@ key_material_length_in_sectors (struct luks_data *h, size_t i)
 {
   uint64_t len, r;
 
-  len = h->phdr.master_key_len * h->phdr.keyslot[i].stripes;
+  len = (uint64_t) h->phdr.master_key_len * h->phdr.keyslot[i].stripes;
   r = DIV_ROUND_UP (len, LUKS_SECTOR_SIZE);
   r = ROUND_UP (r, LUKS_ALIGN_KEYSLOTS / LUKS_SECTOR_SIZE);
   return r;
@@ -619,7 +619,7 @@ try_passphrase_in_keyslot (nbdkit_next *next, struct luks_data *h,
   }
 
   /* Read master key material from plugin. */
-  start = ks->key_material_offset * LUKS_SECTOR_SIZE;
+  start = (uint64_t) ks->key_material_offset * LUKS_SECTOR_SIZE;
   if (next->pread (next, split_key, split_key_len, start, 0, &err) == -1) {
     errno = err;
     return -1;
