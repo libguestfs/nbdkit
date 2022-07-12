@@ -495,9 +495,15 @@ af_hash (gnutls_digest_algorithm_t hash_alg, uint8_t *block, size_t len)
   size_t digest_bytes = gnutls_hash_get_len (hash_alg);
   size_t nr_blocks, last_block_len;
   size_t i;
-  CLEANUP_FREE uint8_t *temp = malloc (digest_bytes);
   int r;
   gnutls_hash_hd_t hash;
+  CLEANUP_FREE uint8_t *temp;
+
+  temp = malloc (digest_bytes);
+  if (!temp) {
+    nbdkit_error ("malloc: %m");
+    return -1;
+  }
 
   nr_blocks = len / digest_bytes;
   last_block_len = len % digest_bytes;
@@ -874,9 +880,15 @@ int
 do_decrypt (struct luks_data *h, gnutls_cipher_hd_t cipher,
             uint64_t sector, uint8_t *buf, size_t nr_sectors)
 {
-  const size_t ivlen = cipher_alg_iv_len (h->cipher_alg, h->cipher_mode);
-  CLEANUP_FREE uint8_t *iv = malloc (ivlen);
   int r;
+  const size_t ivlen = cipher_alg_iv_len (h->cipher_alg, h->cipher_mode);
+  CLEANUP_FREE uint8_t *iv;
+
+  iv = malloc (ivlen);
+  if (!iv) {
+    nbdkit_error ("malloc: %m");
+    return -1;
+  }
 
   while (nr_sectors) {
     calculate_iv (h->ivgen_alg, iv, ivlen, sector);
@@ -902,9 +914,15 @@ int
 do_encrypt (struct luks_data *h, gnutls_cipher_hd_t cipher,
             uint64_t sector, uint8_t *buf, size_t nr_sectors)
 {
-  const size_t ivlen = cipher_alg_iv_len (h->cipher_alg, h->cipher_mode);
-  CLEANUP_FREE uint8_t *iv = malloc (ivlen);
   int r;
+  const size_t ivlen = cipher_alg_iv_len (h->cipher_alg, h->cipher_mode);
+  CLEANUP_FREE uint8_t *iv;
+
+  iv = malloc (ivlen);
+  if (!iv) {
+    nbdkit_error ("malloc: %m");
+    return -1;
+  }
 
   while (nr_sectors) {
     calculate_iv (h->ivgen_alg, iv, ivlen, sector);
