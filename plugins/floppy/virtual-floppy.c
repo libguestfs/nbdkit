@@ -430,6 +430,7 @@ visit_file (const char *dir, const char *name,
   fi = floppy->files.len;
   if (files_append (&floppy->files, new_file) == -1) {
     nbdkit_error ("realloc: %m");
+    free (new_file.name);
     free (host_path);
     return -1;
   }
