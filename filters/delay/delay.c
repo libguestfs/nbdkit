@@ -74,7 +74,7 @@ parse_delay (const char *key, const char *value, unsigned *r)
   else {
     if (nbdkit_parse_unsigned (key, value, r) == -1)
       return -1;
-    if (*r * 1000U > UINT_MAX) {
+    if (*r * UINT64_C(1000) > UINT_MAX) {
       nbdkit_error ("seconds parameter %s is too large: %s", key, value);
       return -1;
     }
