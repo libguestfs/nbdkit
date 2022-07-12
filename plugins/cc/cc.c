@@ -243,7 +243,7 @@ cc_config_complete (void)
   dlerror ();
   *(void **) (&plugin_init) = dlsym (dl, "plugin_init");
   if ((error = dlerror ()) != NULL) {
-    nbdkit_error ("no plugin_init symbol found: %s", dlerror ());
+    nbdkit_error ("no plugin_init symbol found: %s", error);
     return -1;
   }
   if (!plugin_init) {
