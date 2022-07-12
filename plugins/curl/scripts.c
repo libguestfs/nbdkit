@@ -169,6 +169,7 @@ run_header_script (struct curl_handle *h)
   char tmpfile[] = "/tmp/errorsXXXXXX";
   FILE *fp;
   CLEANUP_FREE char *cmd = NULL, *line = NULL;
+  ssize_t n;
   size_t len = 0, linelen = 0, nr_headers = 0;
 
   assert (header_script != NULL); /* checked by caller */
@@ -213,11 +214,11 @@ run_header_script (struct curl_handle *h)
     nbdkit_error ("popen: %m");
     return -1;
   }
-  while ((len = getline (&line, &linelen, fp)) != -1) {
+  while ((n = getline (&line, &linelen, fp)) != -1) {
     /* Remove trailing \n and whitespace. */
-    while (len > 0 && ascii_isspace (line[len-1]))
-      line[--len] = '\0';
-    if (len == 0)
+    while (n > 0 && ascii_isspace (line[n-1]))
+      line[--n] = '\0';
+    if (n == 0)
       continue;
 
     headers_from_script = curl_slist_append (headers_from_script, line);
@@ -248,6 +249,7 @@ run_cookie_script (struct curl_handle *h)
   char tmpfile[] = "/tmp/errorsXXXXXX";
   FILE *fp;
   CLEANUP_FREE char *cmd = NULL, *line = NULL;
+  ssize_t n;
   size_t len = 0, linelen = 0;
 
   assert (cookie_script != NULL); /* checked by caller */
@@ -292,12 +294,12 @@ run_cookie_script (struct curl_handle *h)
     nbdkit_error ("popen: %m");
     return -1;
   }
-  len = getline (&line, &linelen, fp);
-  if (len > 0) {
+  n = getline (&line, &linelen, fp);
+  if (n > 0) {
     /* Remove trailing \n and whitespace. */
-    while (len > 0 && ascii_isspace (line[len-1]))
-      line[--len] = '\0';
-    if (len > 0) {
+    while (n > 0 && ascii_isspace (line[n-1]))
+      line[--n] = '\0';
+    if (n > 0) {
       cookies_from_script = strdup (line);
       if (cookies_from_script == NULL) {
         nbdkit_error ("strdup");
@@ -326,13 +328,14 @@ error_from_tmpfile (const char *what, const char *tmpfile)
 {
   FILE *fp;
   CLEANUP_FREE char *line = NULL;
-  size_t len, linelen = 0;
+  ssize_t n;
+  size_t linelen = 0;
 
   fp = fopen (tmpfile, "r");
 
-  if (fp && (len = getline (&line, &linelen, fp)) >= 0) {
-    if (len > 0 && line[len-1] == '\n')
-      line[len-1] = '\0';
+  if (fp && (n = getline (&line, &linelen, fp)) >= 0) {
+    if (n > 0 && line[n-1] == '\n')
+      line[n-1] = '\0';
     nbdkit_error ("%s failed: %s", what, line);
   }
   else
