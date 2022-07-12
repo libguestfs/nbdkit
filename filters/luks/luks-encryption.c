@@ -710,6 +710,7 @@ load_header (nbdkit_next *next, const char *passphrase)
 
   if (memcmp (h->phdr.magic, expected_magic, LUKS_MAGIC_LEN) != 0) {
     nbdkit_error ("this disk does not contain a LUKS header");
+    free (h);
     return NULL;
   }
   h->phdr.version = be16toh (h->phdr.version);
