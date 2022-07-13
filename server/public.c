@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2021 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -725,11 +725,12 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
   /* We don't have to read the pipe-to-self; if poll returned an
    * event, we know the connection should be shutting down.
    */
-  assert (quit ||
+  bool has_quit = quit;
+  assert (has_quit ||
           (conn && conn->nworkers > 0 && connection_get_status () < 1) ||
           (conn && (fds[2].revents & (POLLRDHUP | POLLHUP | POLLERR |
                                       POLLNVAL))));
-  if (quit)
+  if (has_quit)
     nbdkit_error ("aborting sleep because of server shut down");
   else
     nbdkit_error ("aborting sleep because of connection close or error");
