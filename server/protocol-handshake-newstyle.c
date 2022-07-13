@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2021 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -615,6 +615,7 @@ negotiate_handshake_newstyle_options (void)
           continue;
         }
 
+        assert (conn->top_context);
         if (send_newstyle_option_reply_info_export (option,
                                                     NBD_REP_INFO,
                                                     NBD_INFO_EXPORT,
