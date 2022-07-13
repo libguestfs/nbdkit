@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2021 Red Hat Inc.
+ * Copyright (C) 2021-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -153,6 +153,13 @@ multi_conn_get_ready (int thread_model)
   return 0;
 }
 
+static void
+multi_conn_unload (void)
+{
+  assert (groups.len == 0);
+  group_vector_reset (&groups);
+}
+
 static void *
 multi_conn_open (nbdkit_next_open *next, nbdkit_context *nxdata,
                  int readonly, const char *exportname, int is_tls)
@@ -223,8 +230,10 @@ multi_conn_prepare (nbdkit_next *next, void *handle, int readonly)
       nbdkit_error ("calloc: %m");
       return -1;
     }
-    if (group_vector_append (&groups, g) == -1)
+    if (group_vector_append (&groups, g) == -1) {
+      free (g);
       return -1;
+    }
     g->name = h->name;
     h->name = NULL;
     new_group = true;
@@ -500,6 +509,7 @@ static struct nbdkit_filter filter = {
   .config            = multi_conn_config,
   .config_help       = multi_conn_config_help,
   .get_ready         = multi_conn_get_ready,
+  .unload            = multi_conn_unload,
   .open              = multi_conn_open,
   .prepare           = multi_conn_prepare,
   .finalize          = multi_conn_finalize,
