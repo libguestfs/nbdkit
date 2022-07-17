@@ -50,7 +50,7 @@ dnl Extra string, a freeform string defined by downstream packagers.
 dnl eg. If you are packaging nbdkit for Linux distro X 1.1, you could
 dnl   ./configure --with-extra="X release 1.1"
 AC_ARG_WITH([extra],
-    [AS_HELP_STRING([--with-extra],
+    [AS_HELP_STRING([--with-extra=...],
                     [extra version information (for use by packagers)])],
     [NBDKIT_VERSION_EXTRA="$withval"],
     [NBDKIT_VERSION_EXTRA=]
@@ -621,7 +621,7 @@ AM_CONDITIONAL([HAVE_GNUTLS], [test "x$GNUTLS_LIBS" != "x"])
 AS_IF([test "x$GNUTLS_LIBS" != "x"],[
     AC_MSG_CHECKING([for default TLS session priority string])
     AC_ARG_WITH([tls-priority],
-        [AS_HELP_STRING([--with-tls-priority],
+        [AS_HELP_STRING([--with-tls-priority=...],
                         [default TLS session priority string @<:@default=NORMAL@:>@])],
         [tls_priority=$withval],
         [tls_priority=NORMAL])
