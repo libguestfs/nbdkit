@@ -472,7 +472,7 @@ class Server:
 
         while True:
             resp = self.s3.list_objects_v2(**args)
-            if not 'Contents' in resp:
+            if 'Contents' not in resp:
                 return
             for el in resp['Contents']:
                 yield el['Key']
