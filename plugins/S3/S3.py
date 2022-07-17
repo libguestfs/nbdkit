@@ -472,6 +472,8 @@ class Server:
 
         while True:
             resp = self.s3.list_objects_v2(**args)
+            if not 'Contents' in resp:
+                return
             for el in resp['Contents']:
                 yield el['Key']
             if not resp['IsTruncated']:
