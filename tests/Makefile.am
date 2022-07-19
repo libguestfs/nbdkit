@@ -1207,10 +1207,11 @@ EXTRA_DIST += \
 	$(NULL)
 
 # Tcl plugin test.
+EXTRA_DIST += test.tcl
+
 if HAVE_TCL
 
 LIBGUESTFS_TESTS += test-tcl
-EXTRA_DIST += test.tcl
 
 test_tcl_SOURCES = test-lang-plugins.c test.h
 test_tcl_CFLAGS = \
@@ -1223,10 +1224,11 @@ test_tcl_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 endif HAVE_TCL
 
 # Lua plugin test.
+EXTRA_DIST += test.lua
+
 if HAVE_LUA
 
 LIBGUESTFS_TESTS += test-lua
-EXTRA_DIST += test.lua
 
 test_lua_SOURCES = test-lang-plugins.c test.h
 test_lua_CFLAGS = \
