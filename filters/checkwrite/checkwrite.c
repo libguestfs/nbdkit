@@ -212,6 +212,13 @@ checkwrite_trim_zero (nbdkit_next *next,
         offset += buflen;
       }
     } /* for extent */
+
+    /* Assert that the loop above has actually checked the whole
+     * region.  If this fires then it could be because
+     * nbdkit_extents_full isn't returning a full range of extents for
+     * the whole region ... or maybe the loop above is wrong.
+     */
+    assert (count == 0);
   }
 
   /* Otherwise the plugin does not support extents, so do this the
