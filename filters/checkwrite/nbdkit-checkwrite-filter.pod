@@ -34,6 +34,11 @@ filter, and copying from and to nbdkit at the same time:
  nbdkit -U - --filter=checkwrite file disk.img \
         --run 'nbdcopy "$uri" "$uri"'
 
+=for paragraph
+
+ nbdkit -U - --filter=checkwrite linuxdisk testdir/ \
+        --run 'qemu-img convert -n "$uri" "$uri"'
+
 If the copying program is buggy then you will see EIO errors and (if
 the copying program also handles errors correctly) it should exit with
 an error.
@@ -75,7 +80,8 @@ L<nbdkit-random-plugin(1)>,
 L<nbdkit-sparse-random-plugin(1)>,
 L<nbdkit-filter(3)>,
 L<nbdkit-plugin(3)>,
-L<nbdcopy(1)>.
+L<nbdcopy(1)>,
+L<qemu-img(1)>.
 
 =head1 AUTHORS
 
@@ -83,4 +89,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2020 Red Hat Inc.
+Copyright (C) 2020-2022 Red Hat Inc.
