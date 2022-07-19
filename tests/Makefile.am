@@ -1417,10 +1417,12 @@ EXTRA_DIST += test-cacheextents.sh
 # checkwrite filter test.
 TESTS += \
 	test-checkwrite.sh \
+	test-checkwrite-bounds.sh \
 	test-checkwrite-fail.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-checkwrite.sh \
+	test-checkwrite-bounds.sh \
 	test-checkwrite-fail.sh \
 	$(NULL)
 
