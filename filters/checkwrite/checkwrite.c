@@ -192,7 +192,7 @@ checkwrite_trim_zero (nbdkit_next *next,
         *err = ENOTSUP;
         return -1;
       }
-      while (count > 0) {
+      while (offset < next_extent_offset && count > 0) {
         size_t buflen = MIN (MAX_REQUEST_SIZE, count);
         buflen = MIN (buflen, next_extent_offset - offset);
 
