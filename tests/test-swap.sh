@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires test `id -u` -eq 0
+requires_root
 requires_caps cap_sys_resource
 requires nbdsh --version
 

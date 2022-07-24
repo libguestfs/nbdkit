@@ -1,6 +1,6 @@
 # nbdkit
 # @configure_input@
-# Copyright (C) 2017-2020 Red Hat Inc.
+# Copyright (C) 2017-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -105,6 +105,15 @@ requires ()
         echo "$0: test prerequisite is missing or not working"
         exit 77
     }
+}
+
+# Opposite of requires - the test must not succeed.
+requires_not ()
+{
+    if ( "$@" ) </dev/null >/dev/null 2>&1 ; then
+        echo "$0: test prerequisite is missing or not working"
+        exit 77
+    fi
 }
 
 # qemu cannot connect to ::1 if IPv6 is disabled because of the way it
@@ -369,6 +378,16 @@ foreach_plugin ()
             "$f" "$p" "$@"
         fi
     done
+}
+
+# Tests that run under check-root should use this.
+requires_root ()
+{
+    if test $(id -u) -ne 0; then
+        echo "$0: test skipped because not running as root"
+        echo "$0: use ‘sudo make check-root’ to run these tests"
+        exit 77
+    fi
 }
 
 # pick_unused_port
