@@ -80,14 +80,14 @@ cleanup_fn nbd-client -d $nbddev
 
 # Start an nbdkit instance serving known data and allowing writes.
 start_nbdkit -P $pid -U $sock \
-             --tls=require --tls-certificates="$pkidir" \
+             --tls=require --tls-certificates="$pkidir" --tls-verify-peer \
              pattern 10M --filter=cow
 
 # Open a connection with nbd-client.
 nbd-client -unix $sock $nbddev \
            -cacertfile $pkidir/ca-cert.pem \
-           -certfile $pkidir/server-cert.pem \
-           -keyfile $pkidir/server-key.pem
+           -certfile $pkidir/client-cert.pem \
+           -keyfile $pkidir/client-key.pem
 
 # Check the device exists.
 nbd-client -c $nbddev

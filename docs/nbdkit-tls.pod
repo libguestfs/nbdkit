@@ -178,6 +178,22 @@ denied.  Also denied are clients which present a valid certificate
 signed by another CA.  Also denied are clients with certificates added
 to the certificate revocation list (F<ca-crl.pem>).
 
+=head2 Connecting nbd-client to nbdkit with TLS certificates
+
+With the TLS certificates files generated above in the current
+directory (C<.>) you can use:
+
+ nbdkit --tls=require --tls-certificates=. --tls-verify-peer memory 1G
+
+ nbd-client /dev/nbd0 \
+           -cacertfile ca-cert.pem \
+           -certfile client-cert.pem \
+           -keyfile client-key.pem
+
+I<--tls-verify-peer> is only required if you want to check the client
+certificate.  If you want to allow any client to connect then you can
+omit it.
+
 =head2 TLS with Pre-Shared Keys (PSK)
 
 As a simpler alternative to TLS certificates, you may used pre-shared
