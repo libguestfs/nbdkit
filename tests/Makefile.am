@@ -168,12 +168,6 @@ root_tests = \
 	test-nbd-client-tls.sh \
 	test-swap.sh \
 	$(NULL)
-TESTS += $(root_tests)
-EXTRA_DIST += \
-	test-nbd-client.sh \
-	test-nbd-client-tls.sh \
-	test-swap.sh \
-	$(NULL)
 check-root:
 	$(MAKE) check TESTS="$(root_tests)"
 
@@ -250,10 +244,13 @@ TESTS += \
 	test-debug-flags.sh \
 	test-long-name.sh \
 	test-flush.sh \
+	test-swap.sh \
 	test-shutdown.sh \
 	test-nbdkit-backend-debug.sh \
 	test-read-password.sh \
 	test-read-password-interactive.sh \
+	test-nbd-client.sh \
+	test-nbd-client-tls.sh \
 	$(NULL)
 if !IS_WINDOWS
 TESTS += \
@@ -278,6 +275,8 @@ EXTRA_DIST += \
 	test-ipv4-lo.sh \
 	test-ipv6-lo.sh \
 	test-long-name.sh \
+	test-nbd-client.sh \
+	test-nbd-client-tls.sh \
 	test-nbdkit-backend-debug.sh \
 	test-not-linked-to-libssl.sh \
 	test-probe-filter.sh \
@@ -292,6 +291,7 @@ EXTRA_DIST += \
 	test-single.sh \
 	test-start.sh \
 	test-stdio.sh \
+	test-swap.sh \
 	test-tls-psk.sh \
 	test-tls.sh \
 	test-version-example1.sh \
