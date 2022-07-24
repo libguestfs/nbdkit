@@ -161,9 +161,21 @@ endif !IS_WINDOWS
 check-valgrind:
 	NBDKIT_VALGRIND=1 $(MAKE) check
 
-# To run only tests which require root, use:
+# To run only tests which require root, use 'make check-root':
+root_tests = \
+	test-file-block \
+	test-nbd-client.sh \
+	test-nbd-client-tls.sh \
+	test-swap.sh \
+	$(NULL)
+TESTS += $(root_tests)
+EXTRA_DIST += \
+	test-nbd-client.sh \
+	test-nbd-client-tls.sh \
+	test-swap.sh \
+	$(NULL)
 check-root:
-	$(MAKE) check TESTS="test-file-block test-swap.sh"
+	$(MAKE) check TESTS="$(root_tests)"
 
 if HAVE_VDDK
 # Run a basic check against a real copy of VDDK.  You must set
@@ -238,7 +250,6 @@ TESTS += \
 	test-debug-flags.sh \
 	test-long-name.sh \
 	test-flush.sh \
-	test-swap.sh \
 	test-shutdown.sh \
 	test-nbdkit-backend-debug.sh \
 	test-read-password.sh \
@@ -281,7 +292,6 @@ EXTRA_DIST += \
 	test-single.sh \
 	test-start.sh \
 	test-stdio.sh \
-	test-swap.sh \
 	test-tls-psk.sh \
 	test-tls.sh \
 	test-version-example1.sh \
