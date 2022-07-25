@@ -65,15 +65,18 @@ largest_qemu_disk=9223372035781033984
 #
 # Run the command ‘cmd [args]’ when the test script exits.  This is
 # run in all cases when the script exits, so is a reliable way to
-# clean up test files, external processes etc.
+# clean up test files, external processes etc.  Cleanup hooks are run
+# in the order of registration.
 #
 # Examples:
 #   cleanup_fn rm -f test.out
 #   cleanup_fn kill $pid
-declare -a _cleanup_hook
+_cleanup_hook_count=0
 cleanup_fn ()
 {
-    _cleanup_hook[${#_cleanup_hook[@]}]="$@"
+    local _hook=_cleanup_hook$((_cleanup_hook_count++))
+    declare -ag $_hook
+    eval "$_hook=(\"\$@\")"
 }
 
 _run_cleanup_hooks ()
@@ -84,8 +87,9 @@ _run_cleanup_hooks ()
     trap '' INT QUIT TERM EXIT ERR
     echo $0: run cleanup hooks: exit code $_status
 
-    for (( _i = 0; _i < ${#_cleanup_hook[@]}; ++_i )); do
-        ${_cleanup_hook[_i]}
+    for (( _i = 0; _i < $_cleanup_hook_count; ++_i )); do
+        local -n _hook=_cleanup_hook$_i
+        "${_hook[@]}"
     done
 
     exit $_status
