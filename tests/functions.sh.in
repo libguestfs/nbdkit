@@ -76,7 +76,7 @@ cleanup_fn ()
 {
     local _hook=_cleanup_hook$((_cleanup_hook_count++))
     declare -ag $_hook
-    eval "$_hook=(\"\$@\")"
+    eval $_hook'=("$@")'
 }
 
 _run_cleanup_hooks ()
@@ -88,8 +88,7 @@ _run_cleanup_hooks ()
     echo $0: run cleanup hooks: exit code $_status
 
     for (( _i = 0; _i < $_cleanup_hook_count; ++_i )); do
-        local -n _hook=_cleanup_hook$_i
-        "${_hook[@]}"
+        eval '"${_cleanup_hook'$_i'[@]}"'
     done
 
     exit $_status
