@@ -675,9 +675,7 @@ crypto_negotiate_tls (int sockin, int sockout)
       gnutls_certificate_server_set_request (session, GNUTLS_CERT_REQUEST);
       gnutls_session_set_verify_cert (session, NULL, 0);
 #else
-      nbdkit_error ("--tls-verify-peer: "
-                    "GnuTLS >= 3.4.6 is required for this feature");
-      goto error;
+      abort (); /* Checked when we set the flag in main() */
 #endif
     }
 
