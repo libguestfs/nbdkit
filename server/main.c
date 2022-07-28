@@ -357,7 +357,13 @@ main (int argc, char *argv[])
       break;
 
     case TLS_VERIFY_PEER_OPTION:
+#ifdef HAVE_GNUTLS_SESSION_SET_VERIFY_CERT
       tls_verify_peer = true;
+#else
+      nbdkit_error ("--tls-verify-peer: "
+                    "GnuTLS >= 3.4.6 is required for this feature");
+      exit (EXIT_FAILURE);
+#endif
       break;
 
     case VSOCK_OPTION:
