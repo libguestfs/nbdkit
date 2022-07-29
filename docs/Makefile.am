@@ -53,6 +53,7 @@ EXTRA_DIST = \
 	nbdkit-release-notes-1.26.pod \
 	nbdkit-release-notes-1.28.pod \
 	nbdkit-release-notes-1.30.pod \
+	nbdkit-release-notes-1.32.pod \
 	nbdkit-security.pod \
 	nbdkit-service.pod \
 	nbdkit-tls.pod \
@@ -84,6 +85,7 @@ man_MANS = \
 	nbdkit-release-notes-1.26.1 \
 	nbdkit-release-notes-1.28.1 \
 	nbdkit-release-notes-1.30.1 \
+	nbdkit-release-notes-1.32.1 \
 	nbdkit-security.1 \
 	nbdkit-service.1 \
 	nbdkit-tls.1 \
@@ -127,85 +129,7 @@ nbdkit-protocol.1: nbdkit-protocol.pod $(top_builddir)/podwrapper.pl
 	    --html $(top_builddir)/html/$@.html \
 	    $<
 
-nbdkit-release-notes-1.4.1: nbdkit-release-notes-1.4.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.6.1: nbdkit-release-notes-1.6.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.8.1: nbdkit-release-notes-1.8.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.10.1: nbdkit-release-notes-1.10.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.12.1: nbdkit-release-notes-1.12.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.14.1: nbdkit-release-notes-1.14.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.16.1: nbdkit-release-notes-1.16.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.18.1: nbdkit-release-notes-1.18.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.20.1: nbdkit-release-notes-1.20.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.22.1: nbdkit-release-notes-1.22.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.24.1: nbdkit-release-notes-1.24.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.26.1: nbdkit-release-notes-1.26.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.28.1: nbdkit-release-notes-1.28.pod \
-		$(top_builddir)/podwrapper.pl
-	$(PODWRAPPER) --section=1 --man $@ \
-	    --html $(top_builddir)/html/$@.html \
-	    $<
-
-nbdkit-release-notes-1.30.1: nbdkit-release-notes-1.30.pod \
+nbdkit-release-notes-%.1: nbdkit-release-notes-%.pod \
 		$(top_builddir)/podwrapper.pl
 	$(PODWRAPPER) --section=1 --man $@ \
 	    --html $(top_builddir)/html/$@.html \
