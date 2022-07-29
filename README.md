@@ -189,6 +189,9 @@ make                           make
 make check                     make check
 ```
 
+On FreeBSD, OpenBSD and macOS which do not have GNU make by default
+you must use `gmake` instead of `make`.
+
 To run nbdkit from the source directory, use the top level ./nbdkit
 wrapper.  It will run nbdkit and plugins from the locally compiled
 directory:
