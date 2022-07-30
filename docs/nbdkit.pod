@@ -760,11 +760,19 @@ L<systemd.socket(5)>.
 
 Eric Blake
 
+Laszlo Ersek
+
 Richard W.M. Jones
 
 Yann E. MORIN
 
+Nikolaus Rath
+
+François Revol
+
 Nir Soffer
+
+Alan Somers
 
 Pino Toscano
 
