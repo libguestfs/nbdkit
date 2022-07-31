@@ -182,47 +182,33 @@ the plugin:
          │ unload           │
          └──────────────────┘
 
+=head3 Notes
+
 =over 4
 
-=item C<.load>
+=item C<nbdkit --dump-plugin>
 
-is called once just after the plugin is loaded into memory.
-
-=item C<.config> and C<.config_complete>
-
-C<.config> is called zero or more times during command line parsing.
-C<.config_complete> is called once after all configuration information
-has been passed to the plugin (but not during C<nbdkit --dump-plugin>).
-
-Both are called after loading the plugin but before any connections
-are accepted.
-
-=item C<.thread_model>
-
-In normal operation, C<.thread_model> is called once after
-C<.config_complete> has validated all configuration information, and
-before any connections are accepted.  However, during C<nbdkit
---dump-plugin>, it is called after any C<.config> calls but without
-C<.config_complete> (so a plugin which determines the results from a
-script must be prepared for a missing script).
+The order of calls when the user queries the plugin is slightly
+different: C<.config> is called once for each parameter.
+C<.config_complete> is I<not> called.  C<.thread_model> is called
+after C<.config>.
 
 =item C<.get_ready>
 
-In normal operation, C<.get_ready> is called before the server starts
-serving.  It is called before the server forks or changes directory.
-It is normally the last chance to do any global preparation that is
-needed to serve connections.
+This is the last chance to do any global preparation that is needed to
+serve connections.  In particular, error messages here will be visible
+to the user, but they might not be in C<.after_fork> (see below).
 
 Plugins should not create background threads here.  Use C<.after_fork>
 instead.
 
 =item C<.after_fork>
 
-In normal operation, C<.after_fork> is called after the server has
-forked into the background and changed UID and directory.  If a plugin
-needs to create background threads (or uses an external library that
-creates threads) it should do so here, because background threads are
-invalidated by fork.
+C<.after_fork> is called after the server has forked into the
+background and changed UID and directory.  If a plugin needs to create
+background threads (or uses an external library that creates threads)
+it should do so here, because background threads are invalidated by
+fork.
 
 Because the server may have forked into the background, error messages
 and failures from C<.after_fork> cannot be seen by the user unless
@@ -237,27 +223,14 @@ even so this callback will be called.  If you want to find out if the
 server forked between C<.get_ready> and C<.after_fork> use
 L<getpid(2)>.
 
-=item C<.preconnect>
+=item C<.preconnect> and C<.open>
 
-Called when a TCP connection has been made to the server.  This
-happens early, before NBD or TLS negotiation.
+C<.preconnect> is called when a TCP connection has been made to the
+server.  This happens early, before NBD or TLS negotiation.
 
-=item C<.list_exports>
-
-Early in option negotiation the client may try to list the exports
-served by the plugin, and plugins can optionally implement this
-callback to answer the client.  See L</EXPORT NAME> below.
-
-=item C<.default_export>
-
-During option negotiation, if the client requests the default export
-name (C<"">), this optional callback provides a canonical name to
-use in its place prior to calling C<.open>.
-
-=item C<.open>
-
-A new client has connected and finished the NBD handshake.  TLS
-negotiation (if required) has been completed successfully.
+C<.open> is called when a new client has connected and finished the
+NBD handshake.  TLS negotiation (if used) has been completed
+successfully.
 
 =item C<.can_write>, C<.get_size> and other option negotiation callbacks
 
@@ -274,30 +247,13 @@ parallel from multiple threads.  The data serving callbacks include a
 flags argument; the results of the negotiation callbacks influence
 whether particular flags will ever be passed to a data callback.
 
-=item C<.close>
+=item C<.cleanup> and C<.unload>
 
-The client has disconnected.
-
-=item C<.preconnect>, C<.open> ... C<.close>
-
-The sequence C<.preconnect>, C<.open> ... C<.close> can be called
-repeatedly over the lifetime of the plugin, and can be called in
-parallel (depending on the thread model).
-
-=item C<.cleanup>
-
-is called once after all connections have been closed, prior to
-unloading the plugin from memory.  This is only called if
-C<.after_fork> succeeded earlier (even in cases where nbdkit did not
-fork but is running in the foreground), which makes it a good place to
-gracefully end any background threads.
-
-=item C<.unload>
-
-is called once just before the plugin is unloaded from memory.  This
-is called even when nbdkit did not need to use C<.after_fork> (such as
-when using I<--dump-plugin> to display documentation about the
-plugin).
+The difference between these two methods is that C<.cleanup> is called
+before any filter has been removed from memory with L<dlclose(3)>.
+When C<.unload> is called, nbdkit is in the middle of calling
+L<dlclose(3)>.  Most plugins do not need to worry about this
+difference.
 
 =back
 
@@ -1434,7 +1390,7 @@ The C<what> parameter is printed in error messages to provide context.
 It should usually be a short descriptive string of what you are trying
 to parse, eg:
 
- if (nbdkit_parse_int ("random seed", argv[1], &seed) == -1)
+ if (nbdkit_parse_int ("random seed", value, &seed) == -1)
    return -1;
 
 might print an error:
@@ -1976,4 +1932,4 @@ Pino Toscano
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2020 Red Hat Inc.
+Copyright (C) 2013-2022 Red Hat Inc.
