@@ -7,7 +7,7 @@ nbdkit-release-notes-1.32 - release notes for nbdkit 1.32
 These are the release notes for nbdkit stable release 1.32.
 This describes the major changes since 1.30.
 
-nbdkit 1.32.0 was released on B<XX XXXX 2022>.
+nbdkit 1.32.0 was released on B<1 August 2022>.
 
 =head2 Security
 
