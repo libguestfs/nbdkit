@@ -34,6 +34,7 @@ include $(top_srcdir)/common-rules.mk
 # These headers contain only common code shared by the core server,
 # plugins and/or filters.  They are not installed.
 EXTRA_DIST = \
+	ansi-colours.h \
 	array-size.h \
 	ascii-ctype.h \
 	ascii-string.h \
