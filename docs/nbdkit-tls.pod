@@ -110,12 +110,19 @@ Each nbdkit server (or host) needs a secret key and certificate.
 The server key file is sensitive.  Setting the mode to C<0600> helps
 to prevent other users on the same machine from reading it.
 
-The server DNS name (C<cn> below) must be the fully qualified hostname
-— and the only hostname — that the client connects to.
+The common name (C<cn> below) field must be the fully qualified
+hostname that the client connects to.  However most clients and
+servers including nbdkit support the Subject Alternative Name
+extension (S<RFC 2818>) which uses the C<dns_name> and C<ip_address>
+fields and deprecates C<cn>.
 
  $ cat > server.info <<EOF
  organization = Name of your organization
  cn = nbd-server.example.com
+ dns_name = nbd-server
+ dns_name = nbd-server.example.com
+ ip_address = 10.0.1.2
+ ip_address = 2001:24::92
  tls_www_server
  encryption_key
  signing_key
