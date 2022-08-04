@@ -73,6 +73,9 @@ chmod 0600 pki-t/server-key.pem
 cat > pki-t/server.info <<EOF
 organization = Test
 cn = localhost
+dns_name = localhost
+ip_address = 127.0.0.1
+ip_address = ::1
 tls_www_server
 encryption_key
 signing_key
