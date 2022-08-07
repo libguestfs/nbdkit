@@ -39,6 +39,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "ansi-colours.h"
+
 #include "internal.h"
 
 /* Note: preserves the previous value of errno. */
@@ -55,7 +57,7 @@ log_stderr_verror (const char *fs, va_list args)
   flockfile (stderr);
 #endif
   tty = isatty (fileno (stderr));
-  if (tty) fputs ("\033[1;31m", stderr);
+  if (tty) ansi_force_colour (ANSI_FG_BRIGHT_RED, stderr);
 
   fprintf (stderr, "%s: ", program_name);
 
@@ -71,7 +73,7 @@ log_stderr_verror (const char *fs, va_list args)
   vfprintf (stderr, fs, args);
   fprintf (stderr, "\n");
 
-  if (tty) fputs ("\033[0m", stderr);
+  if (tty) ansi_force_restore (stderr);
 
 #ifdef HAVE_FUNLOCKFILE
   funlockfile (stderr);
