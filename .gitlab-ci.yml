@@ -31,6 +31,7 @@ include: '/ci/gitlab.yml'
       - "**/test-suite.log"
     public: true
     when: always
+    expire_in: 1 week
 
 .native_build_job:
   extends:
