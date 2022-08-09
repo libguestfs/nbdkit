@@ -84,8 +84,8 @@ windows-errors.c: windows-errors.txt
 	@echo '    switch (err) {' >> $@-t
 	@$(SED) -e '/^#/d' \
 	       -e '/^$$/d' \
-	       -e 's/\(.*\)[[:space:]][[:space:]]*\(.*\)/#if defined(\1) \&\& defined(\2)\
-    case \1: return \2;\
+	       -e 's/\(.*\)[[:space:]][[:space:]]*\(.*\)/#if defined(\1) \&\& defined(\2)\n\
+    case \1: return \2;\n\
 \#endif/' \
 	< $< >> $@-t
 	@echo '    default:' >> $@-t
