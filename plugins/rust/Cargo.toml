@@ -1,3 +1,5 @@
+cargo-features = ["resolver"]
+
 [package]
 name = "nbdkit"
 version = "0.2.0"
