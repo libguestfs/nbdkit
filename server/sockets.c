@@ -175,7 +175,7 @@ bind_tcpip_socket (sockets *socks)
   struct addrinfo hints;
   struct addrinfo *a;
   int err, opt;
-  bool addr_in_use = false;
+  int saved_errno = 0;
 
   if (port == NULL)
     port = "10809";
@@ -226,7 +226,8 @@ bind_tcpip_socket (sockets *socks)
 
     if (bind (sock, a->ai_addr, a->ai_addrlen) == -1) {
       if (errno == EADDRINUSE) {
-        addr_in_use = true;
+        saved_errno = errno;
+        debug ("bind_tcpip_socket: bind: %m (ignored)");
         closesocket (sock);
         continue;
       }
@@ -249,9 +250,12 @@ bind_tcpip_socket (sockets *socks)
 
   freeaddrinfo (ai);
 
-  if (socks->len == 0 && addr_in_use) {
-    fprintf (stderr, "%s: unable to bind to any sockets: %s\n",
-             program_name, strerror (EADDRINUSE));
+  if (socks->len == 0) {
+    fprintf (stderr, "%s: unable to bind to any TCP/IP sockets\n",
+             program_name);
+    if (saved_errno)
+      fprintf (stderr, "%s: socket error: %s\n",
+               program_name, strerror (saved_errno));
     exit (EXIT_FAILURE);
   }
 
