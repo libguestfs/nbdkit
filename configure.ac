@@ -157,6 +157,7 @@ AC_SUBST([filters])
 
 dnl Some very basic tools.
 AC_PROG_SED
+AC_PROG_RANLIB
 
 dnl Check for basic C environment.
 AC_PROG_CC
