@@ -209,8 +209,20 @@ bind_tcpip_socket (sockets *socks)
     sock = set_cloexec (socket (a->ai_family, a->ai_socktype, a->ai_protocol));
 #endif
     if (sock == -1) {
-      perror ("bind_tcpip_socket: socket");
-      exit (EXIT_FAILURE);
+      if (errno == EAFNOSUPPORT) {
+        /* If ipv6.disable=1 was specified to the Linux kernel then
+         * getaddrinfo may still return AF_INET6 sockets but socket(2)
+         * will return this error.  I think it's safe to basically
+         * ignore this error.
+         */
+        saved_errno = errno;
+        debug ("bind_tcpip_socket: socket: %m (ignored)");
+        continue;
+      }
+      else {
+        perror ("bind_tcpip_socket: socket");
+        exit (EXIT_FAILURE);
+      }
     }
 
     opt = 1;
