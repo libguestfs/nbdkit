@@ -39,6 +39,9 @@ requires_plugin cc
 plugin=$SRCDIR/test-read-password-plugin.c
 requires test -x $plugin
 
+# expect on macOS does not work for unclear reasons, skip it.
+requires_not test "$(uname)" = "Darwin"
+
 requires expect -v
 
 # Since we are matching on error messages.
