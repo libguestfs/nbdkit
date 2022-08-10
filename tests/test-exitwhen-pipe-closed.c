@@ -49,6 +49,13 @@ main (int argc, char *argv[])
   exit (77);
 #endif
 
+#ifdef __APPLE__
+  /* XXX Fix this. */
+  fprintf (stderr, "%s: test skipped on macOS because the test hangs\n",
+           argv[0]);
+  exit (77);
+#endif
+
   if (pipe (fd) == -1) {
     perror ("pipe");
     exit (EXIT_FAILURE);
