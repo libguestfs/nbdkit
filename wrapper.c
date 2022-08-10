@@ -233,10 +233,12 @@ main (int argc, char *argv[])
 #endif
 
   /* Needed for plugins written in OCaml. */
-#ifndef WIN32
-#define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
-#else
+#if defined(WIN32)
 #define LD_LIBRARY_PATH "PATH"
+#elif defined(__APPLE__)
+#define LD_LIBRARY_PATH "DYLD_LIBRARY_PATH"
+#else
+#define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
 #endif
   s = getenv (LD_LIBRARY_PATH);
   if (s)
