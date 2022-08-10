@@ -46,9 +46,9 @@ possible to build without it:
 
 * gnutls >= 3.3.0
 
-For Windows support see [the Windows section below](#Windows).
+For Windows support see [the Windows section below](README.md#Windows).
 
-For macOS support see [the macOS section below](#macOS).
+For macOS support see [the macOS section below](README.md#macOS).
 
 ### Optional dependencies
 
