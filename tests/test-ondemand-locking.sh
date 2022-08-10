@@ -39,6 +39,9 @@ set -x
 requires_plugin ondemand
 requires nbdsh --version
 
+# This plugin requires a mkfs command of some sort.
+requires mkfs --version
+
 dir=$(mktemp -d /tmp/nbdkit-test-dir.XXXXXX)
 cleanup_fn rm -rf $dir
 

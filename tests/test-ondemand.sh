@@ -37,6 +37,9 @@ set -x
 requires_plugin ondemand
 requires guestfish --version
 
+# This plugin requires a mkfs command of some sort.
+requires mkfs --version
+
 # Note we test both qemu-img info and nbdinfo in order to exercise the
 # lesser-used exportname paths in both tools.
 requires qemu-img --version

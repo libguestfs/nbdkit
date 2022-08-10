@@ -38,6 +38,9 @@ requires_plugin ondemand
 requires qemu-nbd --version
 requires bash -c 'qemu-nbd --help | grep -- --list'
 
+# This plugin requires a mkfs command of some sort.
+requires mkfs --version
+
 dir=$(mktemp -d /tmp/nbdkit-test-dir.XXXXXX)
 cleanup_fn rm -rf $dir
 

@@ -47,7 +47,11 @@ BUILT_SOURCES = default-command.c
 default-command.c: default-command.sh.in Makefile
 	rm -f $@ $@-t
 	echo 'const char *command =' > $@-t
-	$(SED) -e '/^#/d' -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/' < $< >> $@-t
+	$(SED) -e '/^#/d' \
+	       -e 's/"/\\"/g' \
+	       -e 's/\(.*\)/"\1\\n"/' \
+	       -e 's/__TRUNCATE__/$(TRUNCATE)/' \
+	       < $< >> $@-t
 	echo ';' >> $@-t
 	mv $@-t $@
 

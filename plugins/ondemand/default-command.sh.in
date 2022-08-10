@@ -48,7 +48,7 @@ case "$type" in
 esac
 
 # Create the output disk.
-truncate -s $size "$disk"
+__TRUNCATE__ -s $size "$disk"
 
 if [ "x$label" = "x" ]; then
     mkfs -t "$type" $extra "$disk"
