@@ -908,16 +908,24 @@ get_peercred (int s, int64_t *pid, int64_t *uid, int64_t *gid)
   if (pid)
     nbdkit_error ("nbdkit_peer_pid is not supported on this platform");
   if (uid && xucred.cr_uid >= 0) {
+#if SIZEOF_UID_T >= 8
     if (xucred.cr_uid <= INT64_MAX)
+#endif
       *uid = xucred.cr_uid;
+#if SIZEOF_UID_T >= 8
     else
       nbdkit_error ("uid out of range: cannot be mapped to int64_t");
+#endif
   }
   if (gid && xucred.cr_ngroups > 0) {
+#if SIZEOF_GID_T >= 8
     if (xucred.cr_gid <= INT64_MAX)
+#endif
       *gid = xucred.cr_gid;
+#if SIZEOF_GID_T >= 8
     else
       nbdkit_error ("gid out of range: cannot be mapped to int64_t");
+#endif
   }
 
   return 0;
