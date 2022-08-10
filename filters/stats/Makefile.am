@@ -47,7 +47,7 @@ nbdkit_stats_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	$(NULL)
-nbdkit_stats_filter_la_CXXFLAGS = $(WARNINGS_CFLAGS)
+nbdkit_stats_filter_la_CXXFLAGS = $(WARNINGS_CFLAGS) -std=c++11
 nbdkit_stats_filter_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
 	$(NULL)
