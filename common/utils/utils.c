@@ -115,7 +115,8 @@ set_cloexec (int fd)
   errno = EBADF;
   return -1;
 #else
-# if (defined SOCK_CLOEXEC || defined HAVE_MKOSTEMP || defined HAVE_PIPE2 || \
+# if !defined __APPLE__ && \
+     (defined SOCK_CLOEXEC || defined HAVE_MKOSTEMP || defined HAVE_PIPE2 || \
       defined HAVE_ACCEPT4)
 # error "Unexpected: your system has incomplete atomic CLOEXEC support"
 # endif
