@@ -76,7 +76,7 @@ typedef struct {
  * alignment bits. The value is the number of requests with the given
  *  block size and alignment. */
 typedef std::unordered_map<size_t,
-  std::unordered_map<int, size_t>> blksize_hist_t;
+  std::unordered_map<int, size_t> > blksize_hist_t;
 
 
 /* This lock protects all the stats. */
