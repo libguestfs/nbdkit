@@ -215,9 +215,9 @@ check_for_event_file_deleted (const struct event *event)
 static void
 check_for_event_process_exits (const struct event *event)
 {
+#ifdef __linux__
   char c;
 
-#ifdef __linux__
   /* https://gitlab.freedesktop.org/polkit/polkit/-/issues/75
    *
    * event->u.fd holds /proc/PID/stat of the original process open.
@@ -390,7 +390,9 @@ exitwhen_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   else if (strcmp (key, "exit-when-process-exits") == 0 ||
            strcmp (key, "exit-when-pid-exits") == 0) {
     uint64_t pid;
+#ifdef __linux__
     CLEANUP_FREE char *str = NULL;
+#endif
 
     event.type = EVENT_PROCESS_EXITS;
     if (nbdkit_parse_uint64_t ("exit-when-process-exits", value, &pid) == -1)
