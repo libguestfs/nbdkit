@@ -46,9 +46,9 @@ possible to build without it:
 
 * gnutls >= 3.3.0
 
-For Windows support see [the Windows section below](README.md#Windows).
+For Windows support see [the Windows section below](README.md#windows).
 
-For macOS support see [the macOS section below](README.md#macOS).
+For macOS support see [the macOS section below](README.md#macos).
 
 ### Optional dependencies
 
@@ -190,8 +190,8 @@ make                           make
 make check                     make check
 ```
 
-On FreeBSD, OpenBSD and macOS which do not have GNU make by default
-you must use `gmake` instead of `make`.
+On FreeBSD and OpenBSD which do not have GNU make by default you must
+use `gmake` instead of `make`.
 
 To run nbdkit from the source directory, use the top level ./nbdkit
 wrapper.  It will run nbdkit and plugins from the locally compiled
