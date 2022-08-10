@@ -49,7 +49,7 @@ rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on
 # doing.  We can't test trim+FUA, since qemu-io won't expose that.
-truncate -s 1M fua.img
+$TRUNCATE -s 1M fua.img
 if ! qemu-io -f raw -t none -c flush -c 'w -f -z 0 64k' fua.img; then
     echo "$0: missing or broken qemu-io"
     rm fua.img

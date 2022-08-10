@@ -44,7 +44,7 @@ file=swab-64w.img
 rm -f $file
 cleanup_fn rm -f $file
 
-truncate -s 512 $file
+$TRUNCATE -s 512 $file
 
 # Write to the file through the filter.
 nbdkit -U - --filter=swab file $file swab-bits=64 --run '

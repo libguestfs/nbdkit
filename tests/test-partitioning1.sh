@@ -47,12 +47,12 @@ cleanup_fn rm -f $files
 
 # Create some odd-sized partitions.  These exist to test alignment and
 # padding.
-truncate -s 1 partitioning1-p1
-truncate -s 511 partitioning1-p2
-truncate -s 10M partitioning1-p3
-truncate -s 1023 partitioning1-p4
-truncate -s 1 partitioning1-p5
-truncate -s 511 partitioning1-p6
+$TRUNCATE -s 1 partitioning1-p1
+$TRUNCATE -s 511 partitioning1-p2
+$TRUNCATE -s 10M partitioning1-p3
+$TRUNCATE -s 1023 partitioning1-p4
+$TRUNCATE -s 1 partitioning1-p5
+$TRUNCATE -s 511 partitioning1-p6
 
 # Run nbdkit with partitioning plugin and partition filter.
 nbdkit -f -v -D partitioning.regions=1 -U - \

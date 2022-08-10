@@ -69,7 +69,7 @@ rm $d/part.0250
 for i in {0..1000}; do
     printf "hello " >> $d/part.0250
 done
-truncate -s 6144 $d/part.0250
+$TRUNCATE -s 6144 $d/part.0250
 
 # Run nbdkit.
 nbdkit -f -v -D partitioning.regions=1 -U - \

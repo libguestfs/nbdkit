@@ -56,7 +56,7 @@ TMPDIR=$d/cache
 export TMPDIR
 
 # Create an empty base image.
-truncate -s 1G $d/cache-max-size.img
+$TRUNCATE -s 1G $d/cache-max-size.img
 
 # Run nbdkit with the caching filter and a low size limit to ensure
 # that the reclaim code is exercised.

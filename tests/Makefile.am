@@ -68,6 +68,7 @@ TESTS_ENVIRONMENT = \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
 	LIBNBD_DEBUG=1 \
+	TRUNCATE="$(TRUNCATE)" \
 	$(NULL)
 
 # Enable malloc-check as a cheap way to find some use-after-free and
@@ -1203,7 +1204,7 @@ test_shell_CFLAGS = \
 test_shell_LDADD = libtest.la $(LIBGUESTFS_LIBS)
 
 test-shell.img:
-	truncate -s 1048576 $@
+	$(TRUNCATE) -s 1048576 $@
 
 TESTS += \
 	test-sh-errors.sh \
@@ -1551,7 +1552,7 @@ ext2.img: disk test-ext2-exportname.sh
 	mkdir -p ext2.img.d/disks
 	cp $< ext2.img.d/disks/disk.img
 	echo /disks/disk.img > ext2.img.d/manifest
-	truncate -s 2147483648 $@-t
+	$(TRUNCATE) -s 2147483648 $@-t
 	mke2fs -q -F -t ext4 -d ext2.img.d $@-t 2147483648
 	rm -r ext2.img.d
 	mv $@-t $@

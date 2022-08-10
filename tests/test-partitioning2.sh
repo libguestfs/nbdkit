@@ -48,11 +48,11 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create partitions before and after.
-truncate -s 1 partitioning2.p1
-truncate -s 10M partitioning2.p3
+$TRUNCATE -s 1 partitioning2.p1
+$TRUNCATE -s 10M partitioning2.p3
 
 # Create the naked filesystem.
-truncate -s 20M partitioning2.fs
+$TRUNCATE -s 20M partitioning2.fs
 mke2fs -F -t ext2 partitioning2.fs
 
 # Run nbdkit.

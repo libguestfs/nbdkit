@@ -46,7 +46,7 @@ files="file-readonly.pid file-readonly.img $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
-truncate -s 16384 file-readonly.img
+$TRUNCATE -s 16384 file-readonly.img
 chmod a-w file-readonly.img
 start_nbdkit -P file-readonly.pid -U $sock file file-readonly.img
 

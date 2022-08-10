@@ -42,7 +42,7 @@ sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock single.disk"
 rm -f $files
 
-truncate -s 1G single.disk
+$TRUNCATE -s 1G single.disk
 
 socat unix-listen:$sock,reuseaddr,fork \
     exec:'nbdkit -r -s file single.disk' &

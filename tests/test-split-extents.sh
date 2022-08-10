@@ -47,14 +47,14 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create two files, each half data and half sparse
-truncate --size=512k test-split-extents.1
+$TRUNCATE -s 512k test-split-extents.1
 if test "$(stat -c %b test-split-extents.1)" != 0; then
     echo "$0: unable to create sparse file, skipping this test"
     exit 77
 fi
 printf %$((512*1024))d 1 >> test-split-extents.1
 printf %$((512*1024))d 1 >> test-split-extents.2
-truncate --size=1M test-split-extents.2
+$TRUNCATE -s 1M test-split-extents.2
 
 # Test the split plugin
 nbdkit -v -U - split test-split-extents.1 test-split-extents.2 \

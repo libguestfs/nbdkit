@@ -46,9 +46,9 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create the partitions.
-truncate -s 1 partitioning3.p1
-truncate -s 10M partitioning3.p2
-truncate -s 100M partitioning3.p3
+$TRUNCATE -s 1 partitioning3.p1
+$TRUNCATE -s 10M partitioning3.p2
+$TRUNCATE -s 100M partitioning3.p3
 
 # Run nbdkit.
 start_nbdkit -P partitioning3.pid -U $sock \

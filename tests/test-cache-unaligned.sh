@@ -43,7 +43,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create an empty base image which is not a multiple of 4K.
-truncate -s 130000 cache-unaligned.img
+$TRUNCATE -s 130000 cache-unaligned.img
 
 # Run nbdkit with the caching filter.
 start_nbdkit -P cache-unaligned.pid -U $sock --filter=cache \

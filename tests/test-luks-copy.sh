@@ -61,7 +61,7 @@ qemu-img create -f luks \
          --object secret,data=123456,id=sec0 \
          -o key-secret=sec0 \
          $encrypt_disk 1M
-truncate -s 1M $plain_disk
+$TRUNCATE -s 1M $plain_disk
 qemu-img convert --target-image-opts -n \
          --object secret,data=123456,id=sec0 \
          $plain_disk \

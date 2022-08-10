@@ -51,22 +51,22 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create partitions before and after.
-truncate -s 1 partitioning5.p1
-truncate -s 10M partitioning5.p2
-truncate -s 512 partitioning5.p3
+$TRUNCATE -s 1 partitioning5.p1
+$TRUNCATE -s 10M partitioning5.p2
+$TRUNCATE -s 512 partitioning5.p3
 # partition 4 = extended partition
-truncate -s 1 partitioning5.p5
-truncate -s 512 partitioning5.p6
-truncate -s 1 partitioning5.p7
-truncate -s 1 partitioning5.p8
-truncate -s 10M partitioning5.p9
-truncate -s 512 partitioning5.p10
-truncate -s 1 partitioning5.p11
+$TRUNCATE -s 1 partitioning5.p5
+$TRUNCATE -s 512 partitioning5.p6
+$TRUNCATE -s 1 partitioning5.p7
+$TRUNCATE -s 1 partitioning5.p8
+$TRUNCATE -s 10M partitioning5.p9
+$TRUNCATE -s 512 partitioning5.p10
+$TRUNCATE -s 1 partitioning5.p11
 # partition 12 = naked filesystem
-truncate -s 10M partitioning5.p13
+$TRUNCATE -s 10M partitioning5.p13
 
 # Create the naked filesystem.
-truncate -s 20M partitioning5.fs
+$TRUNCATE -s 20M partitioning5.fs
 mke2fs -F -t ext2 partitioning5.fs
 
 # Run nbdkit.

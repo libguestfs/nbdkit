@@ -55,7 +55,7 @@ qemu-img create -f luks \
          $encrypt_disk 100M
 
 # Create an all zeroes disk of the same size.
-truncate -s 100M $zero_disk
+$TRUNCATE -s 100M $zero_disk
 
 # Using nbdkit-luks-filter, write the zero disk into the encrypted
 # disk.  nbdcopy will do this using NBD_CMD_ZERO operations.

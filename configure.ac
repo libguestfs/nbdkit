@@ -651,6 +651,10 @@ AS_IF([test "x$GNUTLS_LIBS" != "x"],[
 AM_CONDITIONAL([HAVE_GNUTLS_PBKDF2],
     [test "x$GNUTLS_LIBS" != "x" && test "x$ac_cv_func_gnutls_pbkdf2" = xyes])
 
+dnl Check for a truncate command.  If no truncate command is available
+dnl then some tests will fail.
+AC_CHECK_PROGS([TRUNCATE],[gtruncate truncate],[truncate])
+
 AC_ARG_ENABLE([linuxdisk],
     [AS_HELP_STRING([--disable-linuxdisk],
                     [disable linuxdisk plugin @<:@default=check@:>@])],

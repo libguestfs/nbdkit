@@ -43,14 +43,14 @@ files="blocksize1.img blocksize1.log $sock1 blocksize1.pid
 rm -f $files
 
 # Prep images, and check that qemu-io understands the actions we plan on doing.
-truncate -s 10M blocksize1.img
+$TRUNCATE -s 10M blocksize1.img
 if ! qemu-io -f raw -c 'r 0 1' -c 'w -z 1000 2000' \
      -c 'w -P 0 1M 2M' -c 'discard 3M 4M' blocksize1.img; then
     echo "$0: missing or broken qemu-io"
     rm blocksize1.img
     exit 77
 fi
-truncate -s 10M blocksize2.img
+$TRUNCATE -s 10M blocksize2.img
 
 # For easier debugging, dump the final log files before removing them
 # on exit.

@@ -70,7 +70,7 @@ cleanup_fn rm -f $files
 
 # Create a base file which is half allocated, half sparse.
 dd if=/dev/urandom of=$base count=128 bs=1K
-truncate -s 4M $base
+$TRUNCATE -s 4M $base
 lastmod="$(stat -c "%y" $base)"
 
 # Run nbdkit with a COW overlay.

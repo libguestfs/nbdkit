@@ -43,7 +43,7 @@ rm -f $files
 cleanup_fn rm -f $files
 
 # Create an empty base image.
-truncate -s 128K cache.img
+$TRUNCATE -s 128K cache.img
 
 # Run nbdkit with the caching filter.
 start_nbdkit -P cache.pid -U $sock --filter=cache file cache.img

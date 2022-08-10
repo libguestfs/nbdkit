@@ -98,7 +98,7 @@ if nbdinfo --can flush "$uri"; then flush="--flush"; else flush=""; fi
 # Copy in and out some data.  This should exercise read, write,
 # extents and flushing.
 dd if=/dev/urandom of=$raw count=5 bs=$((1024*1024))
-truncate -s 10M $raw
+$TRUNCATE -s 10M $raw
 
 nbdcopy $flush $raw "$uri"
 nbdcopy "$uri" $raw2

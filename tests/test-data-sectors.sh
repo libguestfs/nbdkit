@@ -48,9 +48,9 @@ cleanup_fn rm -f $files
 
 printf "1" > sector1
 printf "2" > sector2
-truncate -s 1024 sector2
+$TRUNCATE -s 1024 sector2
 printf "3" > sector3
-truncate -s 513 sector3
+$TRUNCATE -s 513 sector3
 
 # Run nbdkit.
 start_nbdkit -P data-sectors.pid -U $sock \

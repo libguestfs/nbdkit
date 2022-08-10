@@ -152,7 +152,7 @@ assert t >= 8
 '
 
 # Now run everything
-truncate --size=16 blocksize-sharding.img
+$TRUNCATE -s 16 blocksize-sharding.img
 export witness="$PWD/blocksize-sharding.tmp"
 nbdkit -U - --filter=blocksize --filter=delay eval delay-write=2 \
     config='ln -sf "$(realpath "$3")" $tmpdir/$2' \

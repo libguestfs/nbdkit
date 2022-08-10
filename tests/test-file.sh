@@ -45,7 +45,7 @@ files="file.pid file.img $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
-truncate -s 16384 file.img
+$TRUNCATE -s 16384 file.img
 start_nbdkit -P file.pid -U $sock file file.img
 
 # Try to test all the major functions supported by both

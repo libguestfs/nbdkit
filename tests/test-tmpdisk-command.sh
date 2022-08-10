@@ -46,7 +46,7 @@ set -x
 set -e
 if [ $a -ne 1 ]; then exit 1; fi
 if [ "$c" != "a '\'' b '\'' c" ]; then exit 1; fi
-truncate -s $b "$disk"
+$TRUNCATE -s $b "$disk"
 ' \
        --run '
 nbdsh -u "$uri" -c "assert h.get_size() == 1024"
