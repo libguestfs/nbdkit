@@ -53,7 +53,13 @@ static bool unlink_on_exit = false;
 
 /* C compiler and flags. */
 static const char *cc = CC;
-static const char *cflags = CFLAGS;
+static const char *cflags =
+  CFLAGS
+  " -fPIC -shared"
+#ifdef __APPLE__
+  " -Wl,-undefined,dynamic_lookup"
+#endif
+  ;
 static const char *extra_cflags;
 
 /* List of parameters for the subplugin. */

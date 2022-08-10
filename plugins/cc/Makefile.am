@@ -46,7 +46,7 @@ nbdkit_cc_plugin_la_SOURCES = \
 
 nbdkit_cc_plugin_la_CPPFLAGS = \
 	-DCC="\"$(CC)\"" \
-	-DCFLAGS="\"$(CFLAGS) -fPIC -shared\"" \
+	-DCFLAGS="\"$(CFLAGS)\"" \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	-I$(top_srcdir)/include \
