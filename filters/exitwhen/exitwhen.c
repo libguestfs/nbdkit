@@ -38,6 +38,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <assert.h>
 #include <errno.h>
