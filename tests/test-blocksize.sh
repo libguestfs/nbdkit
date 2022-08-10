@@ -34,6 +34,7 @@ source ./functions.sh
 set -e
 
 requires_filter log
+requires qemu-io --version
 
 sock1=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
