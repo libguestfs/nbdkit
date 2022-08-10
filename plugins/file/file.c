@@ -154,7 +154,7 @@ static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
 /* to enable: -D file.zero=1 */
 NBDKIT_DLL_PUBLIC int file_debug_zero;
 
-static bool
+static bool __attribute__((unused))
 is_enotsup (int err)
 {
   return err == ENOTSUP || err == EOPNOTSUPP;
@@ -696,11 +696,12 @@ do_fallocate (int fd, int mode, off_t offset, off_t len)
 static int
 file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 {
-  struct handle *h = handle;
-  int r;
+  struct handle *h __attribute__((unused)) = handle;
 
 #ifdef FALLOC_FL_PUNCH_HOLE
   if (h->can_punch_hole && (flags & NBDKIT_FLAG_MAY_TRIM)) {
+    int r;
+
     r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
                       offset, count);
     if (r == 0) {
@@ -721,6 +722,8 @@ file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 
 #ifdef FALLOC_FL_ZERO_RANGE
   if (h->can_zero_range) {
+    int r;
+
     r = do_fallocate (h->fd, FALLOC_FL_ZERO_RANGE, offset, count);
     if (r == 0) {
       if (file_debug_zero)
@@ -743,6 +746,8 @@ file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
    * fallocate to zero a range. This is expected to be more efficient than
    * writing zeroes manually. */
   if (h->can_punch_hole && h->can_fallocate) {
+    int r;
+
     r = do_fallocate (h->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
                       offset, count);
     if (r == 0) {
@@ -774,6 +779,7 @@ file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
 #ifdef BLKZEROOUT
   /* For aligned range and block device, we can use BLKZEROOUT. */
   if (h->can_zeroout && IS_ALIGNED (offset | count, h->sector_size)) {
+    int r;
     uint64_t range[2] = {offset, count};
 
     r = ioctl (h->fd, BLKZEROOUT, &range);
@@ -799,7 +805,10 @@ file_zero (void *handle, uint32_t count, uint64_t offset, uint32_t flags)
   errno = EOPNOTSUPP;
   return -1;
 
- out:
+#ifdef __clang__
+  __attribute__((unused))
+#endif
+    out:
   if ((flags & NBDKIT_FLAG_FUA) && file_flush (handle, 0) == -1)
     return -1;
   return 0;
