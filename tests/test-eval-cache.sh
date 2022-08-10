@@ -38,6 +38,7 @@ set -x
 
 requires_plugin eval
 requires_nbdsh_uri
+requires dd iflag=count_bytes </dev/null
 
 files="eval-cache.witness eval-cache.cache"
 rm -f $files

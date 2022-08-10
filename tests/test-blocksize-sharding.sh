@@ -39,6 +39,7 @@ set -x
 
 requires_plugin eval
 requires_nbdsh_uri
+requires dd oflag=seek_bytes </dev/null
 
 files='blocksize-sharding.img blocksize-sharding.tmp'
 rm -f $files

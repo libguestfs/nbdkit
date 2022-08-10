@@ -36,6 +36,8 @@ set -x
 
 requires_plugin sh
 requires nbdsh -c 'print(h.set_full_info)' -c 'exit(not h.supports_tls())'
+requires dd iflag=count_bytes </dev/null
+requires dd iflag=skip_bytes </dev/null
 
 # Does the nbdkit binary support TLS?
 if ! nbdkit --dump-config | grep -sq tls=yes; then

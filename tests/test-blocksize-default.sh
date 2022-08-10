@@ -36,6 +36,7 @@ set -x
 
 requires_plugin eval
 requires nbdsh -c 'print(h.get_block_size)'
+requires dd iflag=count_bytes </dev/null
 
 # Create an nbdkit eval plugin which presents per-export block size
 # constraints based on the export name.

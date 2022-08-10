@@ -41,6 +41,7 @@ requires_run
 requires_filter checkwrite
 requires nbdsh --version
 requires_nbdsh_uri
+requires dd iflag=count_bytes </dev/null
 
 nbdkit -U - sh - --filter=checkwrite <<'EOF' \
        --run 'nbdsh -u "$uri" -c "h.zero (655360, 262144, 0)"'
