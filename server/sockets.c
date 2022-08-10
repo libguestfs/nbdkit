@@ -293,10 +293,14 @@ bind_vsock (sockets *socks)
       exit (EXIT_FAILURE);
   }
 
-  /* Any platform with AF_VSOCK also supports SOCK_CLOEXEC so there is
-   * no fallback path.
-   */
+#ifdef SOCK_CLOEXEC
   sock = socket (AF_VSOCK, SOCK_STREAM|SOCK_CLOEXEC, 0);
+#else
+  /* Fortunately, this code is only run at startup, so there is no
+   * risk of the fd leaking to a plugin's fork()
+   */
+  sock = set_cloexec (socket (AF_VSOCK, SOCK_STREAM, 0));
+#endif
   if (sock == -1) {
     perror ("bind_vsock: socket");
     exit (EXIT_FAILURE);
