@@ -510,9 +510,12 @@ use_linker_script=yes
 dnl Don't use linker script on FreeBSD because FreeBSD's linker is
 dnl broken.  See eg:
 dnl https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=190851
-AC_MSG_CHECKING([if we should disable the linker script (FreeBSD only)])
+dnl Also on macOS (darwin) which fails with:
+dnl ld: unknown option: --version-script=./nbdkit.syms
+dnl clang: error: linker command failed with exit code 1
+AC_MSG_CHECKING([if we should disable the linker script (FreeBSD, macOS)])
 AS_CASE([$host_os],
-  [freebsd*], [
+  [freebsd*|darwin*], [
       use_linker_script=no
       AC_MSG_RESULT([yes])
   ],
