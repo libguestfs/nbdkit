@@ -36,7 +36,7 @@ license.  See [LICENSE](LICENSE) for details.
 
 ### Requirements
 
-* Linux, FreeBSD, OpenBSD or Haiku
+* Linux, macOS, Windows, FreeBSD, OpenBSD or Haiku
 * GCC or Clang
 * bash
 * GNU make
@@ -46,8 +46,9 @@ possible to build without it:
 
 * gnutls >= 3.3.0
 
-nbdkit also works on Windows, but dependencies are more complicated.
-See the separate section at the end of this document.
+For Windows support see [the Windows section below](#Windows).
+
+For macOS support see [the macOS section below](#macOS).
 
 ### Optional dependencies
 
@@ -341,6 +342,38 @@ genhtml -o coverage gcov.info
 Open your browser and examine the `coverage/` directory.  At the time
 of writing (2020-04) test coverage of the server is reasonable, but
 things are much worse for certain plugins and filters.
+
+## macOS
+
+nbdkit works on macOS and is mostly feature complete.  Some tests may
+fail or be skipped.
+
+We have tested macOS 12 (Monterey) using MacPorts.  Other versions of
+macOS and Homebrew may work too.
+
+We installed the following MacPorts packages:
+
+* autoconf
+* autoconf-archive
+* automake
+* bash
+* coreutils
+* gcc
+* gmake
+* gsed
+* libtool
+* m4
+* ocaml
+* pkg-config
+* ranlib
+
+We configured nbdkit using:
+
+```
+./configure --enable-gcc-warnings --disable-perl \
+	    CFLAGS="-g -O2 -I/opt/local/include" \
+	    LDFLAGS="-L/opt/local/lib"
+```
 
 ## Windows
 
