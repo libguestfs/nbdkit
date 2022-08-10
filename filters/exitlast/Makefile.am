@@ -47,8 +47,11 @@ nbdkit_exitlast_filter_la_LIBADD = \
 	$(NULL)
 nbdkit_exitlast_filter_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
+if USE_LINKER_SCRIPT
+nbdkit_exitlast_filter_la_LDFLAGS += \
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+endif
 
 if HAVE_POD
 

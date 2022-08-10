@@ -107,7 +107,7 @@ nbdkit_LDFLAGS = \
 	$(DL_LDFLAGS) \
 	$(NULL)
 EXTRA_nbdkit_DEPENDENCIES = nbdkit.syms
-if USE_LINKER_SCRIPT_FOR_SERVER
+if USE_LINKER_SCRIPT
 nbdkit_LDFLAGS += -Wl,--version-script=$(srcdir)/nbdkit.syms
 endif
 

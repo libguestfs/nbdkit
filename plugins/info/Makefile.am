@@ -50,8 +50,11 @@ nbdkit_info_plugin_la_CFLAGS = \
 	$(NULL)
 nbdkit_info_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
-	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms \
 	$(NULL)
+if USE_LINKER_SCRIPT
+nbdkit_info_plugin_la_LDFLAGS += \
+	-Wl,--version-script=$(top_srcdir)/plugins/plugins.syms
+endif
 nbdkit_info_plugin_la_LIBADD = \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
 	$(GNUTLS_LIBS) \

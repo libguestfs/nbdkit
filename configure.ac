@@ -505,15 +505,15 @@ main (int argc, char *argv[])
     ])
 AM_CONDITIONAL([HAVE_ICONV], [test "x$iconv_working" = "xyes"])
 
-use_linker_script_for_server=yes
+use_linker_script=yes
 
-dnl Don't use linker script for the server on FreeBSD because
-dnl FreeBSD's linker is broken.  See eg:
+dnl Don't use linker script on FreeBSD because FreeBSD's linker is
+dnl broken.  See eg:
 dnl https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=190851
 AC_MSG_CHECKING([if we should disable the linker script (FreeBSD only)])
 AS_CASE([$host_os],
   [freebsd*], [
-      use_linker_script_for_server=no
+      use_linker_script=no
       AC_MSG_RESULT([yes])
   ],
   [AC_MSG_RESULT([no])]
@@ -704,19 +704,19 @@ AS_IF([test "x$enable_libfuzzer" = "xyes"],[
     # We have to disable the linker script for libFuzzer because Clang
     # adds loads of fuzzer and ASAN-related symbols that are required
     # by the plugins but which our linker script tries to hide.
-    use_linker_script_for_server=no
+    use_linker_script=no
 ])
 AM_CONDITIONAL([ENABLE_LIBFUZZER],[test "x$enable_libfuzzer" = "xyes"])
 
-dnl Should we use the linker script with the server?  Note
+dnl Should we use the linker script (ld --version-script)?  Note
 dnl some tests above may set this variable.
 AC_ARG_ENABLE([linker-script],
     [AS_HELP_STRING([--disable-linker-script],
                     [disable linker script for server (developers only)])],
-    [use_linker_script_for_server=$enableval],
+    [use_linker_script=$enableval],
     [])
-AM_CONDITIONAL([USE_LINKER_SCRIPT_FOR_SERVER],
-               [test "x$use_linker_script_for_server" = "xyes"])
+AM_CONDITIONAL([USE_LINKER_SCRIPT],
+               [test "x$use_linker_script" = "xyes"])
 
 dnl Bash completion.
 PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0], [
@@ -1450,7 +1450,7 @@ echo "Optional server features:"
 echo
 feature "bash-completion"     test "x$HAVE_BASH_COMPLETION_TRUE" = "x"
 feature "libfuzzer"           test "x$ENABLE_LIBFUZZER_TRUE" = "x"
-feature "linker script"       test "x$USE_LINKER_SCRIPT_FOR_SERVER_TRUE" = "x"
+feature "linker script"       test "x$USE_LINKER_SCRIPT" = "x"
 feature "manual pages"        test "x$HAVE_POD_TRUE" = "x"
 feature "SELinux"             test "x$LIBSELINUX_LIBS" != "x"
 feature "TLS"                 test "x$GNUTLS_LIBS" != "x"

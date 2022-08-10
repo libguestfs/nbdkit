@@ -50,8 +50,11 @@ nbdkit_protect_filter_la_CPPFLAGS = \
 nbdkit_protect_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_protect_filter_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) \
-	-Wl,--version-script=$(top_srcdir)/filters/filters.syms \
 	$(NULL)
+if USE_LINKER_SCRIPT
+nbdkit_protect_filter_la_LDFLAGS += \
+	-Wl,--version-script=$(top_srcdir)/filters/filters.syms
+endif
 nbdkit_protect_filter_la_LIBADD = \
 	$(top_builddir)/common/regions/libregions.la \
 	$(top_builddir)/common/utils/libutils.la \
