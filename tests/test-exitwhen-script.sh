@@ -47,7 +47,7 @@ files="$pidfile $sock"
 cleanup_fn rm -f $files
 
 # Start the unrelated process.
-sleep 1h &
+sleep $(( 60 * 60 )) &
 sleeppid=$!
 
 # Start nbdkit with the exitwhen filter.
