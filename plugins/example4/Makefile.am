@@ -45,7 +45,7 @@ CLEANFILES += nbdkit-example4-plugin
 # We have to do the rewriting here to avoid stupid exec_prefix.
 nbdkit-example4-plugin: $(source)
 	rm -f $@ $@-t
-	sed 's,\@sbindir\@,${sbindir},g' < $< > $@-t
+	$(SED) 's,\@sbindir\@,${sbindir},g' < $< > $@-t
 	mv $@-t $@
 	chmod 0555 $@
 
