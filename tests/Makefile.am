@@ -68,7 +68,6 @@ TESTS_ENVIRONMENT = \
 	LIBGUESTFS_DEBUG=1 \
 	LIBGUESTFS_TRACE=1 \
 	LIBNBD_DEBUG=1 \
-	TRUNCATE="$(TRUNCATE)" \
 	$(NULL)
 
 # Enable malloc-check as a cheap way to find some use-after-free and

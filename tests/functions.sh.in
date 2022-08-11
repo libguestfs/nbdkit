@@ -45,6 +45,7 @@ OCAMLOPT="@OCAMLOPT@"
 PYTHON="@PYTHON@"
 SOEXT="@SOEXT@"
 EXEEXT="@EXEEXT@"
+TRUNCATE="@TRUNCATE@"
 abs_top_srcdir="@abs_top_srcdir@"
 
 # Largest size of disk that qemu supports.
