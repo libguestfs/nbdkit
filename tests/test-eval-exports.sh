@@ -70,7 +70,7 @@ do_nbdkit ()
 {
     # Check how the default export name is handled
     nbdinfo --no-content nbd+unix://\?socket=$sock >eval-exports.out
-    diff -u <(sed -n 's/export="\(.*\)":/\1/p' eval-exports.out) \
+    diff -u <($SED -n 's/export="\(.*\)":/\1/p' eval-exports.out) \
          <(printf %s\\n "$1")
     # Check what exports are listed
     nbdinfo --list --json nbd+unix://\?socket=$sock >eval-exports.out

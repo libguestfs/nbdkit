@@ -117,7 +117,7 @@ do_nbdkit_fail b
 # Use 'find' to match readdir's raw order (a is not always first!)
 echo 2 > file-dir/b
 raw=$(find file-dir -type f | xargs echo)
-exp=$(echo $raw | sed 's,file-dir/\(.\),"\1",g; s/ /,/')
+exp=$(echo $raw | $SED 's,file-dir/\(.\),"\1",g; s/ /,/')
 do_nbdkit_list --no-sort "[$exp]"
 do_nbdkit_list '["a","b"]'
 do_nbdkit_fail ''

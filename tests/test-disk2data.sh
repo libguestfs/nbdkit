@@ -103,7 +103,7 @@ hexdump -C $disk
 $disk2data $disk > $cmd
 
 # Modify the generated nbdkit command.
-sed -i -e $'s/^nbdkit /nbdkit -U - --run \'nbdcopy "$uri" -\' /' $cmd
+$SED -i -e $'s/^nbdkit /nbdkit -U - --run \'nbdcopy "$uri" -\' /' $cmd
 chmod +x $cmd
 cat $cmd
 

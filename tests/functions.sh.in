@@ -45,6 +45,7 @@ OCAMLOPT="@OCAMLOPT@"
 PYTHON="@PYTHON@"
 SOEXT="@SOEXT@"
 EXEEXT="@EXEEXT@"
+SED="@SED@"
 TRUNCATE="@TRUNCATE@"
 abs_top_srcdir="@abs_top_srcdir@"
 
@@ -281,7 +282,7 @@ requires_caps ()
     local cap_eff
     local cap_str
 
-    cap_eff="$(sed -n 's/CapEff:\s*\([^0-9a-fA-F]*\)/\1/p' /proc/$$/status)"
+    cap_eff="$($SED -n 's/CapEff:\s*\([^0-9a-fA-F]*\)/\1/p' /proc/$$/status)"
     test -z "$cap_eff" && return 0
 
     cap_str=$(capsh --decode="$cap_eff")

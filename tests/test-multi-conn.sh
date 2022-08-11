@@ -287,7 +287,7 @@ setup: fast plugin --filter=cache
 flush: 2 ops
 flush: 2 ops
 EOF
-         ) <(sed -n 's/\(flush:.*ops\).*/\1/p; /^setup:/p' \
+         ) <($SED -n 's/\(flush:.*ops\).*/\1/p; /^setup:/p' \
                  test-multi-conn.stat) || fail=1
 
 exit $fail

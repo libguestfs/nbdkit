@@ -43,7 +43,7 @@ requires_filter noparallel
 
 # First, get a baseline (since a system without atomic CLOEXEC can't
 # do parallel). Then test various patterns with the sh plugin.
-max=$(nbdkit --dump-plugin file | sed -n '/^thread_model=/ s///p')
+max=$(nbdkit --dump-plugin file | $SED -n '/^thread_model=/ s///p')
 
 # With no script, thread_model matches the baseline
 out=$(nbdkit --dump-plugin sh | grep thread_model)

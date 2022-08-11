@@ -37,7 +37,7 @@ set -e
 
 requires_run
 requires_nbdsh_uri
-requires sed --version
+requires $SED --version
 requires tr --version
 
 log=data-optimum.log
@@ -57,7 +57,7 @@ do_test ()
     # Collect up all lines of debug output containing the AST
     # and concatenate them into a single string.
     actual_AST="$(
-        sed -n '
+        $SED -n '
         /BEGIN AST/,/END AST/{
             /BEGIN AST/n;
             /END AST/q;

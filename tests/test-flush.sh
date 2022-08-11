@@ -125,7 +125,7 @@ h.flush() # expect "handling flush"
 ' 2>>test-flush.err
 
 cat test-flush.err
-diff -u - <(sed -n 's/.*\( \*\*\(handling.*\)\?\).*/\1/p' test-flush.err) <<EOF
+diff -u - <($SED -n 's/.*\( \*\*\(handling.*\)\?\).*/\1/p' test-flush.err) <<EOF
  **
  **
  **
