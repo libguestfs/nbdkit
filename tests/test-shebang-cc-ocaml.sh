@@ -43,6 +43,9 @@ requires_plugin cc
 requires_run
 requires_nbdsh_uri
 
+# For unclear reasons linking the OCaml plugin fails on macOS. XXX
+requires_not test "$(uname)" = "Darwin"
+
 $script -fv -U - \
         EXTRA_CFLAGS="-I ../plugins/ocaml -I ../plugins/ocaml/.libs" \
         size=512 \

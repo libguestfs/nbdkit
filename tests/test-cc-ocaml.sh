@@ -53,6 +53,9 @@ requires $OCAMLOPT -version
 requires_nbdsh_uri
 requires nbdinfo --version
 
+# For unclear reasons linking the OCaml plugin fails on macOS. XXX
+requires_not test "$(uname)" = "Darwin"
+
 out=test-cc-ocaml.out
 cleanup_fn rm -f $out
 rm -f $out
