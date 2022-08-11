@@ -60,6 +60,9 @@ Compatibility with Perl 5.36.
 
 =head2 Server
 
+Add macOS (Darwin) support.  See the relevant section in the top level
+F<README.md> file.
+
 kTLS should now work (transparently) when available in the kernel and
 GnuTLS.  Use of kTLS will be indicated in debug output.  (Daiki Ueno,
 František Krenželok)
