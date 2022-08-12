@@ -115,7 +115,7 @@ run_test (void)
             "monitoring process (test) = %d, "
             "parent of nbdkit = %d, "
             "nbdkit = %d\n",
-            (int) getpid (), ppid, nbdpid);
+            (int) getppid (), (int) getpid (), nbdpid);
     fflush (stdout);
 
     /* Wait for the pidfile to turn up, which indicates that nbdkit has
