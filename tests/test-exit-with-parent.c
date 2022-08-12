@@ -162,8 +162,11 @@ run_test (void)
     perror ("waitpid (ppid)");
     exit (EXIT_FAILURE);
   }
-  if (WIFEXITED (status) && WEXITSTATUS (status) != 1)
+  if (WIFEXITED (status) && WEXITSTATUS (status) != 0) {
+    fprintf (stderr, "child exited unexpectedly with non-zero exit code %d\n",
+             WEXITSTATUS (status));
     exit (WEXITSTATUS (status));
+  }
   if (WIFSIGNALED (status)) {
     fprintf (stderr, "child terminated by signal %d\n", WTERMSIG (status));
     exit (EXIT_FAILURE);
