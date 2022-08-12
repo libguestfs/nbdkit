@@ -46,7 +46,6 @@
 #include <sys/wait.h>
 #endif
 
-#include "exit-with-parent.h"
 #include "test.h"
 
 static char pidpath[] = "/tmp/nbdkitpidXXXXXX";
@@ -56,7 +55,7 @@ static void run_test (void);
 int
 main (int argc, char *argv[])
 {
-  if (! can_exit_with_parent ()) {
+  if (system ("nbdkit --exit-with-parent --version") != 0) {
     printf ("%s: --exit-with-parent is not implemented on this platform, "
             "skipping\n",
             argv[0]);
