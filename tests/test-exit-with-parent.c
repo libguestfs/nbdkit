@@ -100,7 +100,7 @@ run_test (void)
     nbdpid = fork ();
     if (nbdpid == 0) {             /* exec nbdkit process */
       const char *argv[] = {
-        "nbdkit", "-U", "-", "-P", pidpath, "-f", "--exit-with-parent",
+        "nbdkit", "-U", "-", "-P", pidpath, "-fv", "--exit-with-parent",
         "example1",
         NULL
       };

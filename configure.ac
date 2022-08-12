@@ -551,6 +551,18 @@ LIBS="$DL_LIBS $LIBS"
 AC_CHECK_FUNCS([dladdr])
 LIBS="$old_LIBS"
 
+dnl Is this macOS (darwin)?
+dnl macOS requires that the server is linked to CoreFoundation.
+AC_MSG_CHECKING([if the target is macOS])
+AS_CASE([$host_os],
+  [darwin*], [
+      MACOS_LDFLAGS="-Wl,-framework,CoreFoundation"
+      AC_SUBST([MACOS_LDFLAGS])
+      AC_MSG_RESULT([yes])
+  ],
+  [AC_MSG_RESULT([no])]
+)
+
 dnl Is this Windows?
 AC_MSG_CHECKING([if the target is Windows])
 AS_CASE([$host_os],

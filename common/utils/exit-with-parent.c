@@ -81,6 +81,140 @@ can_exit_with_parent (void)
   return true;
 }
 
+#elif defined(__APPLE__)
+
+/* For macOS.
+ *
+ * Adapted from:
+ * https://developer.apple.com/documentation/corefoundation/cffiledescriptor-ru3
+ * and https://stackoverflow.com/a/6484903 (note this example is
+ * wrong).
+ */
+
+#include <CoreFoundation/CoreFoundation.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/event.h>
+
+#include "nbdkit-plugin.h"
+
+static pid_t nbdkit_pid = 0;
+
+static void
+parent_died (CFFileDescriptorRef fdref, CFOptionFlags callBackTypes,
+             void *info)
+{
+  if (nbdkit_pid > 0) {
+    nbdkit_debug ("macOS: --exit-with-parent: "
+                  "kill nbdkit (pid %d) because parent process died",
+                  nbdkit_pid);
+    kill (nbdkit_pid, SIGTERM);
+    nbdkit_pid = 0;
+    exit (EXIT_SUCCESS);
+  }
+}
+
+static void
+do_monitor (pid_t pid)
+{
+  int fd;
+  struct kevent kev;
+  CFFileDescriptorRef fdref;
+  CFRunLoopSourceRef source;
+
+  fd = kqueue ();
+  if (fd == -1)
+    _exit (EXIT_FAILURE);
+  EV_SET (&kev, pid, EVFILT_PROC, EV_ADD|EV_ENABLE, NOTE_EXIT, 0, NULL);
+  if (kevent (fd, &kev, 1, NULL, 0, NULL) == -1)
+    _exit (EXIT_FAILURE);
+
+  fdref = CFFileDescriptorCreate (kCFAllocatorDefault, fd, true,
+                                  parent_died, NULL);
+  if (fdref == NULL)
+    _exit (EXIT_FAILURE);
+  CFFileDescriptorEnableCallBacks (fdref, kCFFileDescriptorReadCallBack);
+  source =
+    CFFileDescriptorCreateRunLoopSource (kCFAllocatorDefault, fdref, 0);
+  if (source == NULL)
+    _exit (EXIT_FAILURE);
+  CFRunLoopAddSource (CFRunLoopGetMain(), source, kCFRunLoopDefaultMode);
+  CFRelease (source);
+}
+
+static void
+exit_monitor_process (CFFileDescriptorRef fdref, CFOptionFlags callBackTypes,
+                      void *info)
+{
+  nbdkit_debug ("macOS: --exit-with-parent: "
+                "monitor exiting because nbdkit exited");
+  exit (EXIT_SUCCESS);
+}
+
+static void
+do_exit_for_nbdkit (pid_t pid)
+{
+  int fd;
+  struct kevent kev;
+  CFFileDescriptorRef fdref;
+  CFRunLoopSourceRef source;
+
+  fd = kqueue ();
+  if (fd == -1)
+    _exit (EXIT_FAILURE);
+  EV_SET (&kev, pid, EVFILT_PROC, EV_ADD|EV_ENABLE, NOTE_EXIT, 0, NULL);
+  if (kevent (fd, &kev, 1, NULL, 0, NULL) == -1)
+    _exit (EXIT_FAILURE);
+
+  fdref = CFFileDescriptorCreate (kCFAllocatorDefault, fd, true,
+                                  exit_monitor_process, NULL);
+  if (fdref == NULL)
+    _exit (EXIT_FAILURE);
+  CFFileDescriptorEnableCallBacks (fdref, kCFFileDescriptorReadCallBack);
+  source =
+    CFFileDescriptorCreateRunLoopSource (kCFAllocatorDefault, fdref, 0);
+  if (source == NULL)
+    _exit (EXIT_FAILURE);
+  CFRunLoopAddSource (CFRunLoopGetMain(), source, kCFRunLoopDefaultMode);
+  CFRelease (source);
+}
+
+int
+set_exit_with_parent (void)
+{
+  pid_t ppid = getppid ();
+  pid_t monitor_pid;
+
+  nbdkit_debug ("macOS: --exit-with-parent: "
+                "registering exit with parent for ppid %d",
+                (int) ppid);
+  nbdkit_pid = getpid ();
+
+  /* We have to run a main loop (ie a new process) to get similar
+   * behaviour to --exit-with-parent on other platforms.
+   *
+   * nbdkit_pid = nbdkit's PID
+   * ppid = parent of nbdkit that we are monitoring
+   * monitor_pid = monitoring PID
+   */
+  monitor_pid = fork ();
+  if (monitor_pid == 0) {       /* Child (monitoring process) */
+    do_monitor (ppid);          /* Monitor this parent PID. */
+    do_exit_for_nbdkit (nbdkit_pid); /* Just exit if nbdkit exits. */
+    CFRunLoopRun ();
+
+    _exit (EXIT_SUCCESS);
+  }
+
+  return 0;
+}
+
+bool
+can_exit_with_parent (void)
+{
+  return true;
+}
+
 #else /* any platform that doesn't support this function */
 
 int
