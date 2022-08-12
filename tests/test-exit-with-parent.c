@@ -75,7 +75,7 @@ run_test (void)
   FILE *fp;
   ssize_t r;
   size_t n;
-  char *pidstr;
+  char *pidstr = NULL;
 
   fd = mkstemp (pidpath);
   if (fd == -1) {
