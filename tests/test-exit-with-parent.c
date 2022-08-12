@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
+#include <signal.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
