@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -34,11 +34,10 @@
  * support it.
  */
 
-#ifndef NBDKIT_EXIT_WITH_PARENT_H
-#define NBDKIT_EXIT_WITH_PARENT_H
-
 #include <config.h>
 
+#include <stdlib.h>
+#include <stdbool.h>
 #include <signal.h>
 
 #ifdef HAVE_SYS_PRCTL_H
@@ -53,27 +52,47 @@
 
 /* For Linux >= 2.1.57. */
 
-static inline int
+int
 set_exit_with_parent (void)
 {
   return prctl (PR_SET_PDEATHSIG, SIGTERM);
 }
 
-#define HAVE_EXIT_WITH_PARENT 1
+bool
+can_exit_with_parent (void)
+{
+  return true;
+}
 
 #elif defined(HAVE_SYS_PROCCTL_H) && defined(PROC_PDEATHSIG_CTL)
 
 /* For FreeBSD >= 11.2 */
 
-static inline int
+int
 set_exit_with_parent (void)
 {
   const int sig = SIGTERM;
   return procctl (P_PID, 0, PROC_PDEATHSIG_CTL, (void*) &sig);
 }
 
-#define HAVE_EXIT_WITH_PARENT 1
+bool
+can_exit_with_parent (void)
+{
+  return true;
+}
+
+#else /* any platform that doesn't support this function */
+
+int
+set_exit_with_parent (void)
+{
+  abort ();
+}
+
+bool
+can_exit_with_parent (void)
+{
+  return false;
+}
 
 #endif
-
-#endif /* NBDKIT_INTERNAL_H */

@@ -49,8 +49,6 @@
 #include "exit-with-parent.h"
 #include "test.h"
 
-#ifdef HAVE_EXIT_WITH_PARENT
-
 static char pidpath[] = "/tmp/nbdkitpidXXXXXX";
 
 static void run_test (void);
@@ -58,6 +56,13 @@ static void run_test (void);
 int
 main (int argc, char *argv[])
 {
+  if (! can_exit_with_parent ()) {
+    printf ("%s: --exit-with-parent is not implemented on this platform, "
+            "skipping\n",
+            argv[0]);
+    exit (77);
+  }
+
   run_test ();
   exit (EXIT_SUCCESS);
 }
@@ -192,14 +197,3 @@ run_test (void)
  done:
   ;
 }
-
-#else /* !HAVE_EXIT_WITH_PARENT */
-
-int
-main (int argc, char *argv[])
-{
-  printf ("--exit-with-parent is not implemented on this platform, skipping\n");
-  exit (77);
-}
-
-#endif /* !HAVE_EXIT_WITH_PARENT */

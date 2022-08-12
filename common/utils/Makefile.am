@@ -41,6 +41,8 @@ libutils_la_SOURCES = \
 	cleanup.h \
 	const-string-vector.h \
 	environ.c \
+	exit-with-parent.c \
+	exit-with-parent.h \
 	full-rw.c \
 	quote.c \
 	nbdkit-string.h \

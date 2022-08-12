@@ -260,17 +260,18 @@ main (int argc, char *argv[])
       break;
 
     case EXIT_WITH_PARENT_OPTION:
-#ifdef HAVE_EXIT_WITH_PARENT
-      exit_with_parent = true;
-      foreground = true;
+      if (can_exit_with_parent ()) {
+        exit_with_parent = true;
+        foreground = true;
+      }
+      else {
+        fprintf (stderr,
+                 "%s: --exit-with-parent is not implemented "
+                 "for this operating system\n",
+                 program_name);
+        exit (EXIT_FAILURE);
+      }
       break;
-#else
-      fprintf (stderr,
-               "%s: --exit-with-parent is not implemented "
-               "for this operating system\n",
-               program_name);
-      exit (EXIT_FAILURE);
-#endif
 
     case FILTER_OPTION:
       {
@@ -567,14 +568,10 @@ main (int argc, char *argv[])
   /* Implement --exit-with-parent early in case plugin initialization
    * takes a long time and the parent exits during that time.
    */
-#ifdef HAVE_EXIT_WITH_PARENT
-  if (exit_with_parent) {
-    if (set_exit_with_parent () == -1) {
-      perror ("nbdkit: --exit-with-parent");
-      exit (EXIT_FAILURE);
-    }
+  if (set_exit_with_parent () == -1) {
+    perror ("nbdkit: --exit-with-parent");
+    exit (EXIT_FAILURE);
   }
-#endif
 
   /* If the user has mixed up -p/--run/-s/-U/--vsock options, then
    * give an error.

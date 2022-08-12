@@ -489,11 +489,14 @@ test_exit_with_parent_SOURCES = \
 	test-exit-with-parent.c test.h \
 	$(NULL)
 test_exit_with_parent_CPPFLAGS = \
-	-I$(top_srcdir)/common/include \
+	-I$(top_srcdir)/common/utils \
 	$(NULL)
 test_exit_with_parent_CFLAGS = \
 	$(WARNINGS_CFLAGS) \
 	$(LIBGUESTFS_CFLAGS) \
+	$(NULL)
+test_exit_with_parent_LDFLAGS = \
+	$(top_builddir)/common/utils/libutils.la \
 	$(NULL)
 
 # PKI files for the TLS tests.
