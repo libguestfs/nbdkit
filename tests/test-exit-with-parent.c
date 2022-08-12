@@ -70,7 +70,7 @@ main (int argc, char *argv[])
 static void
 run_test (void)
 {
-  pid_t cpid, nbdpid;
+  pid_t ppid, nbdpid;
   int i, fd, status;
   FILE *fp;
   ssize_t r;
@@ -89,15 +89,15 @@ run_test (void)
    *
    *    monitoring process (this)
    *       |
-   *       `--- child process waits for nbdkit to start then exits (cpid)
+   *       `--- parent of nbdkit: waits for nbdkit to start then exits (ppid)
    *                |
    *                `--- exec nbdkit --exit-with-parent (pidpath)
    *
    * We can read the nbdkit PID in the monitoring process using
    * the pidpath file.
    */
-  cpid = fork ();
-  if (cpid == 0) {              /* child process */
+  ppid = fork ();
+  if (ppid == 0) {              /* parent of nbdkit */
     nbdpid = fork ();
     if (nbdpid == 0) {             /* exec nbdkit process */
       const char *argv[] = {
@@ -110,6 +110,13 @@ run_test (void)
       perror ("exec: nbdkit");
       _exit (EXIT_FAILURE);
     }
+
+    printf ("parent of nbdkit: "
+            "monitoring process (test) = %d, "
+            "parent of nbdkit = %d, "
+            "nbdkit = %d\n",
+            (int) getpid (), ppid, nbdpid);
+    fflush (stdout);
 
     /* Wait for the pidfile to turn up, which indicates that nbdkit has
      * started up successfully and is ready to serve requests.  However
@@ -138,6 +145,9 @@ run_test (void)
       sleep (1);
     }
 
+    printf ("parent of nbdkit: exiting\n");
+    fflush (stdout);
+
     /* nbdkit is now running, check that --exit-with-parent works
      * by exiting abruptly here.
      */
@@ -145,8 +155,11 @@ run_test (void)
   }
 
   /* Monitoring process. */
-  if (waitpid (cpid, &status, 0) == -1) {
-    perror ("waitpid (cpid)");
+  printf ("monitor: waiting for parent of nbdkit to finish and exit\n");
+  fflush (stdout);
+
+  if (waitpid (ppid, &status, 0) == -1) {
+    perror ("waitpid (ppid)");
     exit (EXIT_FAILURE);
   }
   if (WIFEXITED (status) && WEXITSTATUS (status) != 1)
@@ -180,6 +193,9 @@ run_test (void)
   free (pidstr);
   unlink (pidpath);
 
+  printf ("monitor: found PID of nbdkit = %d\n", nbdpid);
+  fflush (stdout);
+
   /* We expect PID to go away, but it might take a few seconds. */
   for (i = 0; i < NBDKIT_START_TIMEOUT; ++i) {
     if (kill (nbdpid, 0) == -1) {
@@ -195,5 +211,6 @@ run_test (void)
   exit (EXIT_FAILURE);
 
  done:
-  ;
+  printf ("monitor: success: nbdkit exited with parent\n");
+  fflush (stdout);
 }
