@@ -274,7 +274,19 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin (can be NULL) */
     if (pfds[0].revents & POLLOUT) {
       r = write (pfds[0].fd, wbuf, wbuflen);
       if (r == -1) {
-        nbdkit_error ("%s: write: %m", argv0);
+        if (errno == EPIPE) {
+          /* We tried to write to the script but it didn't consume
+           * the data.  Probably the script exited without reading
+           * from stdin.  This is an error in the script.
+           */
+          nbdkit_error ("%s: write to script failed because of a broken pipe: "
+                        "this can happen if the script exits without "
+                        "consuming stdin, which usually indicates a bug "
+                        "in the script",
+                        argv0);
+        }
+        else
+          nbdkit_error ("%s: write: %m", argv0);
         goto error;
       }
       wbuf += r;
