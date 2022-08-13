@@ -110,6 +110,7 @@ plugins/*/*.3
 /tests/file-data
 /tests/functions.sh
 /tests/keys.psk
+/tests/make-pki.sh
 /tests/nbdkit
 /tests/partition-disk
 /tests/pki

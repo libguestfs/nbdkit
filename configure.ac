@@ -647,6 +647,10 @@ AS_IF([test "x$GNUTLS_LIBS" != "x"],[
         gnutls_transport_is_ktls_enabled \
     ])
     LIBS="$old_LIBS"
+
+    dnl macOS has its own program called certtool and packages the
+    dnl GnuTLS tool as "gnutls-certtool".
+    AC_CHECK_PROGS([CERTTOOL],[gnutls-certtool certtool],[certtool])
 ])
 AM_CONDITIONAL([HAVE_GNUTLS_PBKDF2],
     [test "x$GNUTLS_LIBS" != "x" && test "x$ac_cv_func_gnutls_pbkdf2" = xyes])
@@ -1319,6 +1323,8 @@ AC_CONFIG_FILES([podwrapper.pl],
                 [chmod +x,-w podwrapper.pl])
 AC_CONFIG_FILES([common/protocol/generate-protostrings.sh],
                 [chmod +x,-w common/protocol/generate-protostrings.sh])
+AC_CONFIG_FILES([tests/make-pki.sh],
+                [chmod +x,-w tests/make-pki.sh])
 AC_CONFIG_FILES([Makefile
                  bash-completion/Makefile
                  common/allocators/Makefile

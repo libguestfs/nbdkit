@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2017 Red Hat Inc.
+# @configure_input@
+# Copyright (C) 2017-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,17 +36,11 @@ set -e
 # This creates the PKI files for the TLS tests.  However if certtool
 # doesn't exist, just create an empty directory instead.
 
-if [ -z "$SRCDIR" ] || [ ! -f "$SRCDIR/test-tls.sh" ]; then
-    echo "$0: script is being run from the wrong directory."
-    echo "Don't try to run this script by hand."
-    exit 1
-fi
-
 rm -rf pki pki-t
 
 mkdir pki-t
 
-if ! certtool --help >/dev/null 2>&1; then
+if ! @CERTTOOL@ --help >/dev/null 2>&1; then
     echo "$0: certtool not found, TLS tests will be skipped."
     touch pki-t/.stamp
     mv pki-t pki
@@ -53,7 +48,7 @@ if ! certtool --help >/dev/null 2>&1; then
 fi
 
 # Create the CA.
-certtool --generate-privkey > pki-t/ca-key.pem
+@CERTTOOL@ --generate-privkey > pki-t/ca-key.pem
 chmod 0600 pki-t/ca-key.pem
 
 cat > pki-t/ca.info <<EOF
@@ -61,13 +56,13 @@ cn = Test
 ca
 cert_signing_key
 EOF
-certtool --generate-self-signed \
-         --load-privkey pki-t/ca-key.pem \
-         --template pki-t/ca.info \
-         --outfile pki-t/ca-cert.pem
+@CERTTOOL@ --generate-self-signed \
+           --load-privkey pki-t/ca-key.pem \
+           --template pki-t/ca.info \
+           --outfile pki-t/ca-cert.pem
 
 # Create the server certificate and key.
-certtool --generate-privkey > pki-t/server-key.pem
+@CERTTOOL@ --generate-privkey > pki-t/server-key.pem
 chmod 0600 pki-t/server-key.pem
 
 cat > pki-t/server.info <<EOF
@@ -80,15 +75,15 @@ tls_www_server
 encryption_key
 signing_key
 EOF
-certtool --generate-certificate \
-         --load-ca-certificate pki-t/ca-cert.pem \
-         --load-ca-privkey pki-t/ca-key.pem \
-         --load-privkey pki-t/server-key.pem \
-         --template pki-t/server.info \
-         --outfile pki-t/server-cert.pem
+@CERTTOOL@ --generate-certificate \
+           --load-ca-certificate pki-t/ca-cert.pem \
+           --load-ca-privkey pki-t/ca-key.pem \
+           --load-privkey pki-t/server-key.pem \
+           --template pki-t/server.info \
+           --outfile pki-t/server-cert.pem
 
 # Create a client certificate and key.
-certtool --generate-privkey > pki-t/client-key.pem
+@CERTTOOL@ --generate-privkey > pki-t/client-key.pem
 chmod 0600 pki-t/client-key.pem
 
 cat > pki-t/client.info <<EOF
@@ -101,12 +96,12 @@ tls_www_client
 encryption_key
 signing_key
 EOF
-certtool --generate-certificate \
-         --load-ca-certificate pki-t/ca-cert.pem \
-         --load-ca-privkey pki-t/ca-key.pem \
-         --load-privkey pki-t/client-key.pem \
-         --template pki-t/client.info \
-         --outfile pki-t/client-cert.pem
+@CERTTOOL@ --generate-certificate \
+           --load-ca-certificate pki-t/ca-cert.pem \
+           --load-ca-privkey pki-t/ca-key.pem \
+           --load-privkey pki-t/client-key.pem \
+           --template pki-t/client.info \
+           --outfile pki-t/client-cert.pem
 
 # Finish off.
 touch pki-t/.stamp

@@ -496,8 +496,8 @@ test_exit_with_parent_CFLAGS = \
 # PKI files for the TLS tests.
 check_DATA += pki/.stamp
 EXTRA_DIST += make-pki.sh
-pki/.stamp: $(srcdir)/make-pki.sh
-	SRCDIR=$(srcdir) $(srcdir)/make-pki.sh
+pki/.stamp: make-pki.sh
+	./make-pki.sh
 
 # PSK keys for the TLS-PSK tests.
 check_DATA += keys.psk
