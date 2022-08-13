@@ -42,6 +42,11 @@ requires jq --version
 requires qemu-img --version
 requires qemu-img map --help
 
+# Because of macOS SIP misfeature the DYLD_* environment variable
+# added by libnbd/run is filtered out and the test won't work.  Skip
+# it entirely on Macs.
+requires_not test "$(uname)" = "Darwin"
+
 out="test-nbd-extents.out"
 expected="test-nbd-extents.expected"
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)

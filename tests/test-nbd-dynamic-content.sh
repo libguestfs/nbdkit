@@ -39,6 +39,11 @@ set -x
 requires_plugin info
 requires nbdsh --version
 
+# Because of macOS SIP misfeature the DYLD_* environment variable
+# added by libnbd/run is filtered out and the test won't work.  Skip
+# it entirely on Macs.
+requires_not test "$(uname)" = "Darwin"
+
 sock1=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 export sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 pid1="test-nbd-dynamic-content.pid1"

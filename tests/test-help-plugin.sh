@@ -51,6 +51,12 @@ do_test ()
             # the Perl plugin was compiled.
             if nbdkit perl --version; then run_test $1; fi
             ;;
+	nbd*)
+	    # Because of macOS SIP misfeature the DYLD_* environment
+	    # variable added by libnbd/run is filtered out and the
+	    # test won't work.  Skip it entirely on Macs.
+	    if test "$(uname)" != "Darwin"; then run_test $1; fi
+	    ;;
         S3*)
             # Requires Python plugin and boto3 library.
             if nbdkit python --version && $PYTHON -c 'import boto3'; then
