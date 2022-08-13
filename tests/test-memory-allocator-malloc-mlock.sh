@@ -48,7 +48,10 @@ fi
 # ulimit -l is measured in kilobytes and so for this test must be at
 # least 10 (kilobytes) and we actually check it's a bit larger to
 # allow room for error.  On Linux the default is usually 64.
-requires test `ulimit -l` -gt 16
+if test "$(ulimit -l)" != "unlimited" && test "$(ulimit -l)" -le 16; then
+    echo "$0: limit for mlock memory (ulimit -l) too low for test"
+    exit 77
+fi
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="memory-allocator-malloc-mlock.pid $sock"
