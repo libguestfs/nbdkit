@@ -34,6 +34,8 @@ source ./functions.sh
 set -e
 set -x
 
+requires stat --version
+
 sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 sock3=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 sock4a=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
