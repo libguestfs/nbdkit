@@ -48,16 +48,19 @@ fi
 
 requires nbdsh --version
 
-out=test-python-thread-model.out
+# This test only works on modern Linux (with pipe2, accept4 etc) where
+# we are able to issue parallel requests.  Other platforms have more
+# restrictive thread models.
+requires sh -c 'nbdkit python --dump-plugin | grep "^thread_model=parallel"'
+
 pid=test-python-thread-model.pid
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$out $pid $sock"
 rm -f $files
 cleanup_fn rm -f $files
 
-# Check the plugin is loadable and the effective thread model is parallel.
-nbdkit python $SCRIPT --dump-plugin >$out
-grep "^thread_model=parallel" $out
+# Check the plugin is loadable.
+nbdkit python $SCRIPT --dump-plugin
 
 start_nbdkit -P $pid -U $sock python $SCRIPT
 
