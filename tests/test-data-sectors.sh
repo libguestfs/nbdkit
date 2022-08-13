@@ -39,7 +39,7 @@ set -e
 set -x
 
 requires_nbdsh_uri
-requires truncate --version
+requires $TRUNCATE --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="data-sectors.pid sector1 sector2 sector3 $sock"

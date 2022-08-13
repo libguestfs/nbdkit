@@ -40,7 +40,7 @@ requires_nbdsh_uri
 requires qemu-img --version
 requires bash -c 'qemu-img --help | grep -- --target-image-opts'
 requires hexdump --version
-requires truncate --version
+requires $TRUNCATE --version
 requires_filter luks
 
 encrypt_disk=luks-copy1.img

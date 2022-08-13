@@ -53,7 +53,7 @@ requires dd --version
 requires nbdinfo --version
 requires nbdsh --version
 requires tr --version
-requires truncate --version
+requires $TRUNCATE --version
 
 if ! nbdinfo --help | grep -- --map ; then
     echo "$0: nbdinfo --map option required to run this test"

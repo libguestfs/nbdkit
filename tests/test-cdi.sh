@@ -39,7 +39,7 @@ set -x
 
 requires_plugin cdi
 requires_nbdsh_uri
-requires truncate --version
+requires $TRUNCATE --version
 # Although we use fake podman, we require the real jq.
 requires jq --version
 
@@ -65,13 +65,14 @@ case "$1" in
         d="$5"
         mkdir "$5"
         echo '{"layers":[{"digest":"sha256:1234"}]}' > "$5"/manifest.json
-        truncate -s $((1024*1024)) "$5"/1234
+        $TRUNCATE -s $((1024*1024)) "$5"/1234
         ;;
     *) exit 1 ;;
 esac
 EOF
 chmod +x cdi/podman
 export PATH=$PWD/cdi:$PATH
+export TRUNCATE
 
 # Start nbdkit.  It should export the 1M raw file "layer".
 start_nbdkit -P cdi.pid -U $sock cdi ignored_parameter

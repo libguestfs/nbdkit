@@ -39,7 +39,7 @@ set -x
 requires_run
 requires_nbdsh_uri
 requires nbdsh --base-allocation
-requires truncate --help
+requires $TRUNCATE --help
 requires stat --help
 
 files="test-split-extents.1 test-split-extents.2"

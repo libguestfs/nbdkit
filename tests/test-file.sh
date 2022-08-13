@@ -38,7 +38,7 @@ set -x
 
 requires_plugin file
 requires_nbdsh_uri
-requires truncate --version
+requires $TRUNCATE --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="file.pid file.img $sock"

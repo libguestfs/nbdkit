@@ -39,7 +39,7 @@ set -x
 requires_non_root
 requires_plugin file
 requires_nbdsh_uri
-requires truncate --version
+requires $TRUNCATE --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="file-readonly.pid file-readonly.img $sock"
