@@ -38,6 +38,10 @@ requires nbdinfo --version
 requires qemu-img --version
 requires_filter luks
 
+# Test fails on macOS (darwin) because of:
+# qemu-img: luks-copy-zero1.img: Unsupported cipher mode xts
+requires_not test "$(uname)" = "Darwin"
+
 disk=luks-info.img
 info=luks-info.log
 cleanup_fn rm -f $disk $info

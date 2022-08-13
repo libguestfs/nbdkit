@@ -43,6 +43,10 @@ requires hexdump --version
 requires $TRUNCATE --version
 requires_filter luks
 
+# Test fails on macOS (darwin) because of:
+# qemu-img: luks-copy-zero1.img: Unsupported cipher mode xts
+requires_not test "$(uname)" = "Darwin"
+
 encrypt_disk=luks-copy1.img
 plain_disk=luks-copy2.img
 pid=luks-copy.pid
