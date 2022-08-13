@@ -83,127 +83,78 @@ can_exit_with_parent (void)
 
 #elif defined(__APPLE__)
 
-/* For macOS.
- *
- * Adapted from:
- * https://developer.apple.com/documentation/corefoundation/cffiledescriptor-ru3
- * and https://stackoverflow.com/a/6484903 (note this example is
- * wrong).
- */
+/* For macOS. */
 
-#include <CoreFoundation/CoreFoundation.h>
 #include <unistd.h>
-#include <signal.h>
 #include <sys/event.h>
+#include <pthread.h>
 
 #include "nbdkit-plugin.h"
 
-static pid_t nbdkit_pid = 0;
-
-static void
-parent_died (CFFileDescriptorRef fdref, CFOptionFlags callBackTypes,
-             void *info)
+static void *
+exit_with_parent_loop (void *vppid)
 {
-  if (nbdkit_pid > 0) {
+  pid_t ppid = * (pid_t *) vppid;
+  int fd;
+  struct kevent kev, res[1];
+  int r;
+
+  free (vppid);
+
+  /* Register the kevent to wait for ppid to exit. */
+  fd = kqueue ();
+  if (fd == -1) {
+    nbdkit_error ("exit_with_parent_loop: kqueue: %m");
+    return NULL;
+  }
+  EV_SET (&kev, ppid, EVFILT_PROC, EV_ADD|EV_ENABLE, NOTE_EXIT, 0, NULL);
+  if (kevent (fd, &kev, 1, NULL, 0, NULL) == -1) {
+    nbdkit_error ("exit_with_parent_loop: kevent: %m");
+    close (fd);
+    return NULL;
+  }
+
+  /* Wait for the kevent to happen. */
+  r = kevent (fd, 0, 0, res, 1, NULL);
+  if (r == 1 && res[0].ident == ppid) {
+    /* Exit the whole process when the parent dies. */
     nbdkit_debug ("macOS: --exit-with-parent: "
-                  "kill nbdkit (pid %d) because parent process died",
-                  nbdkit_pid);
-    kill (nbdkit_pid, SIGTERM);
-    nbdkit_pid = 0;
+                  "exit because parent process died");
     exit (EXIT_SUCCESS);
   }
-}
 
-static void
-do_monitor (pid_t pid)
-{
-  int fd;
-  struct kevent kev;
-  CFFileDescriptorRef fdref;
-  CFRunLoopSourceRef source;
-
-  fd = kqueue ();
-  if (fd == -1)
-    _exit (EXIT_FAILURE);
-  EV_SET (&kev, pid, EVFILT_PROC, EV_ADD|EV_ENABLE, NOTE_EXIT, 0, NULL);
-  if (kevent (fd, &kev, 1, NULL, 0, NULL) == -1)
-    _exit (EXIT_FAILURE);
-
-  fdref = CFFileDescriptorCreate (kCFAllocatorDefault, fd, true,
-                                  parent_died, NULL);
-  if (fdref == NULL)
-    _exit (EXIT_FAILURE);
-  CFFileDescriptorEnableCallBacks (fdref, kCFFileDescriptorReadCallBack);
-  source =
-    CFFileDescriptorCreateRunLoopSource (kCFAllocatorDefault, fdref, 0);
-  if (source == NULL)
-    _exit (EXIT_FAILURE);
-  CFRunLoopAddSource (CFRunLoopGetMain(), source, kCFRunLoopDefaultMode);
-  CFRelease (source);
-}
-
-static void
-exit_monitor_process (CFFileDescriptorRef fdref, CFOptionFlags callBackTypes,
-                      void *info)
-{
-  nbdkit_debug ("macOS: --exit-with-parent: "
-                "monitor exiting because nbdkit exited");
-  exit (EXIT_SUCCESS);
-}
-
-static void
-do_exit_for_nbdkit (pid_t pid)
-{
-  int fd;
-  struct kevent kev;
-  CFFileDescriptorRef fdref;
-  CFRunLoopSourceRef source;
-
-  fd = kqueue ();
-  if (fd == -1)
-    _exit (EXIT_FAILURE);
-  EV_SET (&kev, pid, EVFILT_PROC, EV_ADD|EV_ENABLE, NOTE_EXIT, 0, NULL);
-  if (kevent (fd, &kev, 1, NULL, 0, NULL) == -1)
-    _exit (EXIT_FAILURE);
-
-  fdref = CFFileDescriptorCreate (kCFAllocatorDefault, fd, true,
-                                  exit_monitor_process, NULL);
-  if (fdref == NULL)
-    _exit (EXIT_FAILURE);
-  CFFileDescriptorEnableCallBacks (fdref, kCFFileDescriptorReadCallBack);
-  source =
-    CFFileDescriptorCreateRunLoopSource (kCFAllocatorDefault, fdref, 0);
-  if (source == NULL)
-    _exit (EXIT_FAILURE);
-  CFRunLoopAddSource (CFRunLoopGetMain(), source, kCFRunLoopDefaultMode);
-  CFRelease (source);
+  return NULL;
 }
 
 int
 set_exit_with_parent (void)
 {
   pid_t ppid = getppid ();
-  pid_t monitor_pid;
+  pid_t *ppid_data;
+  int r;
+  pthread_attr_t attrs;
+  pthread_t exit_with_parent_thread;
 
   nbdkit_debug ("macOS: --exit-with-parent: "
                 "registering exit with parent for ppid %d",
                 (int) ppid);
-  nbdkit_pid = getpid ();
 
-  /* We have to run a main loop (ie a new process) to get similar
+  /* We have to run a main loop (ie a new thread) to get similar
    * behaviour to --exit-with-parent on other platforms.
    *
-   * nbdkit_pid = nbdkit's PID
    * ppid = parent of nbdkit that we are monitoring
-   * monitor_pid = monitoring PID
    */
-  monitor_pid = fork ();
-  if (monitor_pid == 0) {       /* Child (monitoring process) */
-    do_monitor (ppid);          /* Monitor this parent PID. */
-    do_exit_for_nbdkit (nbdkit_pid); /* Just exit if nbdkit exits. */
-    CFRunLoopRun ();
-
-    _exit (EXIT_SUCCESS);
+  ppid_data = malloc (sizeof ppid);
+  if (ppid_data == NULL)
+    return -1;
+  *ppid_data = ppid;
+  pthread_attr_init (&attrs);
+  pthread_attr_setdetachstate (&attrs, PTHREAD_CREATE_DETACHED);
+  r = pthread_create (&exit_with_parent_thread, NULL,
+                      exit_with_parent_loop, ppid_data);
+  if (r != 0) {
+    errno = r;
+    return -1;
   }
 
   return 0;

@@ -105,7 +105,6 @@ nbdkit_LDADD = \
 nbdkit_LDFLAGS = \
 	$(PTHREAD_LIBS) \
 	$(DL_LDFLAGS) \
-	$(MACOS_LDFLAGS) \
 	$(NULL)
 EXTRA_nbdkit_DEPENDENCIES = nbdkit.syms
 if USE_LINKER_SCRIPT
