@@ -361,10 +361,12 @@ We installed the following MacPorts packages:
 * gcc
 * gmake
 * gsed
+* jq
 * libtool
 * m4
 * ocaml
 * pkg-config
+* qemu
 * ranlib
 
 We configured nbdkit using:
