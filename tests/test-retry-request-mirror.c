@@ -67,6 +67,11 @@ main (int argc, char *argv[])
   exit (77);
 #endif
 
+  if (access ("disk", F_OK) == -1) {
+    fprintf (stderr, "%s: 'disk' not built test skipped\n", argv[0]);
+    exit (77);
+  }
+
   sockpath = web_server ("disk" /* not used but must be set */, NULL);
   if (sockpath == NULL) {
     fprintf (stderr, "%s: could not start web server thread\n", argv[0]);
