@@ -95,6 +95,7 @@ main (int argc, char *argv[])
 {
   struct nbd_handle *nbd;
   int pfd[2];
+  int r;
   int err;
   pthread_t thread;
   int orig_stderr;
@@ -127,7 +128,13 @@ main (int argc, char *argv[])
   /* Start a thread which will just listen on the pipe and
    * place the log messages in a memory buffer.
    */
-  if (pipe2 (pfd, O_CLOEXEC) == -1) {
+#ifdef HAVE_PIPE2
+  r = pipe2 (pfd, O_CLOEXEC);
+#else
+  /* Just ignore the O_CLOEXEC requirement, it's only a test. */
+  r = pipe (pfd);
+#endif
+  if (r == -1) {
     perror ("pipe2");
     exit (EXIT_FAILURE);
   }
