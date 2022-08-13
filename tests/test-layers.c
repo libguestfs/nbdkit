@@ -59,7 +59,6 @@
 
 #include "byte-swapping.h"
 #include "cleanup.h"
-#include "exit-with-parent.h"
 
 /* Declare program_name. */
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME == 1
@@ -101,11 +100,11 @@ main (int argc, char *argv[])
   int orig_stderr;
   char data[512];
 
-#ifndef HAVE_EXIT_WITH_PARENT
-  printf ("%s: this test requires --exit-with-parent functionality\n",
-          program_name);
-  exit (77);
-#endif
+  if (system ("nbdkit --exit-with-parent --version") != 0) {
+    printf ("%s: this test requires --exit-with-parent functionality\n",
+            program_name);
+    exit (77);
+  }
 
   /* Prepare libnbd. */
   fprintf (stderr, "%s: beginning test\n", program_name);
