@@ -86,20 +86,23 @@ can_exit_with_parent (void)
 /* For macOS. */
 
 #include <unistd.h>
+#include <errno.h>
 #include <sys/event.h>
 #include <pthread.h>
 
 #include "nbdkit-plugin.h"
 
 static void *
-exit_with_parent_loop (void *vppid)
+exit_with_parent_loop (void *vp)
 {
-  pid_t ppid = * (pid_t *) vppid;
+  const pid_t ppid = getppid ();
   int fd;
   struct kevent kev, res[1];
   int r;
 
-  free (vppid);
+  nbdkit_debug ("macOS: --exit-with-parent: "
+                "registering exit with parent for ppid %d",
+                (int) ppid);
 
   /* Register the kevent to wait for ppid to exit. */
   fd = kqueue ();
@@ -129,29 +132,17 @@ exit_with_parent_loop (void *vppid)
 int
 set_exit_with_parent (void)
 {
-  pid_t ppid = getppid ();
-  pid_t *ppid_data;
   int r;
   pthread_attr_t attrs;
   pthread_t exit_with_parent_thread;
 
-  nbdkit_debug ("macOS: --exit-with-parent: "
-                "registering exit with parent for ppid %d",
-                (int) ppid);
-
-  /* We have to run a main loop (ie a new thread) to get similar
-   * behaviour to --exit-with-parent on other platforms.
-   *
-   * ppid = parent of nbdkit that we are monitoring
+  /* We have to block waiting for kevent, so that requires that we
+   * start a background thread.
    */
-  ppid_data = malloc (sizeof ppid);
-  if (ppid_data == NULL)
-    return -1;
-  *ppid_data = ppid;
   pthread_attr_init (&attrs);
   pthread_attr_setdetachstate (&attrs, PTHREAD_CREATE_DETACHED);
   r = pthread_create (&exit_with_parent_thread, NULL,
-                      exit_with_parent_loop, ppid_data);
+                      exit_with_parent_loop, NULL);
   if (r != 0) {
     errno = r;
     return -1;
