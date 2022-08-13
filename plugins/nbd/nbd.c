@@ -66,6 +66,10 @@
 #define USE_VSOCK 1
 #endif
 
+#ifdef __APPLE__
+#pragma clang diagnostic warning "-Wdeprecated-declarations"
+#endif
+
 /* Use '-D nbd.verbose=1' for verbose messages about the state machine. */
 NBDKIT_DLL_PUBLIC int nbd_debug_verbose = 0;
 
