@@ -63,6 +63,12 @@ main (int argc, char *argv[])
   size_t i;
   int actual_errno;
 
+#ifdef __APPLE__
+  printf ("%s: loading the OCaml plugin fails on macOS, skipping\n",
+          argv[0]);
+  exit (77);
+#endif
+
   nbd = nbd_create ();
   if (nbd == NULL) {
     fprintf (stderr, "%s\n", nbd_get_error ());
