@@ -1,0 +1,388 @@
+# THIS FILE WAS AUTO-GENERATED
+#
+#  $ lcitool manifest ci/manifest.yml
+#
+# https://gitlab.com/libvirt/libvirt-ci
+
+
+# Native build jobs
+
+x86_64-almalinux-8-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-almalinux-8-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: almalinux-8
+
+x86_64-almalinux-8-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: docker.io/library/almalinux:8
+    NAME: almalinux-8
+
+
+x86_64-almalinux-8-clang-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-almalinux-8-container
+      optional: true
+  allow_failure: false
+  variables:
+    CC: clang
+    NAME: almalinux-8
+    PERL: skip
+
+x86_64-almalinux-8-clang-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    CC: clang
+    IMAGE: docker.io/library/almalinux:8
+    NAME: almalinux-8
+    PERL: skip
+
+
+x86_64-alpine-315-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-alpine-315-container
+      optional: true
+  allow_failure: false
+  variables:
+    GOLANG: skip
+    NAME: alpine-315
+
+x86_64-alpine-315-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    GOLANG: skip
+    IMAGE: docker.io/library/alpine:3.15
+    NAME: alpine-315
+
+
+x86_64-alpine-edge-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-alpine-edge-container
+      optional: true
+  allow_failure: false
+  variables:
+    GOLANG: skip
+    NAME: alpine-edge
+
+x86_64-alpine-edge-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    GOLANG: skip
+    IMAGE: docker.io/library/alpine:edge
+    NAME: alpine-edge
+
+
+x86_64-centos-stream-8-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-centos-stream-8-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: centos-stream-8
+
+x86_64-centos-stream-8-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: quay.io/centos/centos:stream8
+    NAME: centos-stream-8
+
+
+x86_64-debian-10-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-debian-10-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: debian-10
+    RUST: skip
+
+x86_64-debian-10-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: docker.io/library/debian:10-slim
+    NAME: debian-10
+    RUST: skip
+
+
+x86_64-debian-11-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-debian-11-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: debian-11
+
+x86_64-debian-11-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: docker.io/library/debian:11-slim
+    NAME: debian-11
+
+
+x86_64-debian-sid-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-debian-sid-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: debian-sid
+
+x86_64-debian-sid-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: docker.io/library/debian:sid-slim
+    NAME: debian-sid
+
+
+x86_64-fedora-35-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-fedora-35-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: fedora-35
+
+x86_64-fedora-35-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: registry.fedoraproject.org/fedora:35
+    NAME: fedora-35
+
+
+x86_64-fedora-rawhide-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-fedora-rawhide-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: fedora-rawhide
+
+x86_64-fedora-rawhide-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: registry.fedoraproject.org/fedora:rawhide
+    NAME: fedora-rawhide
+
+
+x86_64-fedora-rawhide-clang-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-fedora-rawhide-container
+      optional: true
+  allow_failure: false
+  variables:
+    CC: clang
+    NAME: fedora-rawhide
+    PERL: skip
+
+x86_64-fedora-rawhide-clang-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    CC: clang
+    IMAGE: registry.fedoraproject.org/fedora:rawhide
+    NAME: fedora-rawhide
+    PERL: skip
+
+
+x86_64-opensuse-leap-153-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-opensuse-leap-153-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: opensuse-leap-153
+
+x86_64-opensuse-leap-153-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: registry.opensuse.org/opensuse/leap:15.3
+    NAME: opensuse-leap-153
+
+
+x86_64-opensuse-tumbleweed-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-opensuse-tumbleweed-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: opensuse-tumbleweed
+
+x86_64-opensuse-tumbleweed-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: registry.opensuse.org/opensuse/tumbleweed:latest
+    NAME: opensuse-tumbleweed
+
+
+x86_64-ubuntu-2004-prebuilt-env:
+  extends: .native_build_job_prebuilt_env
+  needs:
+    - job: x86_64-ubuntu-2004-container
+      optional: true
+  allow_failure: false
+  variables:
+    NAME: ubuntu-2004
+
+x86_64-ubuntu-2004-local-env:
+  extends: .native_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    IMAGE: docker.io/library/ubuntu:20.04
+    NAME: ubuntu-2004
+
+
+
+# Cross build jobs
+
+mingw32-fedora-35-prebuilt-env:
+  extends: .cross_build_job_prebuilt_env
+  needs:
+    - job: mingw32-fedora-35-container
+      optional: true
+  allow_failure: false
+  variables:
+    CROSS: mingw32
+    GOLANG: skip
+    NAME: fedora-35
+    PERL: skip
+    RUST: skip
+
+mingw32-fedora-35-local-env:
+  extends: .cross_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    CROSS: mingw32
+    GOLANG: skip
+    IMAGE: registry.fedoraproject.org/fedora:35
+    NAME: fedora-35
+    PERL: skip
+    RUST: skip
+
+
+mingw64-fedora-35-prebuilt-env:
+  extends: .cross_build_job_prebuilt_env
+  needs:
+    - job: mingw64-fedora-35-container
+      optional: true
+  allow_failure: false
+  variables:
+    CROSS: mingw64
+    GOLANG: skip
+    NAME: fedora-35
+    PERL: skip
+    RUST: skip
+
+mingw64-fedora-35-local-env:
+  extends: .cross_build_job_local_env
+  needs: []
+  allow_failure: false
+  variables:
+    CROSS: mingw64
+    GOLANG: skip
+    IMAGE: registry.fedoraproject.org/fedora:35
+    NAME: fedora-35
+    PERL: skip
+    RUST: skip
+
+
+# Native cirrus build jobs
+
+x86_64-freebsd-12:
+  extends: .cirrus_build_job
+  needs: []
+  allow_failure: true
+  variables:
+    CIRRUS_VM_IMAGE_NAME: freebsd-12-3
+    CIRRUS_VM_IMAGE_SELECTOR: image_family
+    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
+    INSTALL_COMMAND: pkg install -y
+    NAME: freebsd-12
+    UPDATE_COMMAND: pkg update
+    UPGRADE_COMMAND: pkg upgrade -y
+
+
+x86_64-freebsd-13:
+  extends: .cirrus_build_job
+  needs: []
+  allow_failure: true
+  variables:
+    CIRRUS_VM_IMAGE_NAME: freebsd-13-1
+    CIRRUS_VM_IMAGE_SELECTOR: image_family
+    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
+    INSTALL_COMMAND: pkg install -y
+    NAME: freebsd-13
+    UPDATE_COMMAND: pkg update
+    UPGRADE_COMMAND: pkg upgrade -y
+
+
+x86_64-freebsd-current:
+  extends: .cirrus_build_job
+  needs: []
+  allow_failure: true
+  variables:
+    CIRRUS_VM_IMAGE_NAME: freebsd-13-0-snap
+    CIRRUS_VM_IMAGE_SELECTOR: image_family
+    CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
+    INSTALL_COMMAND: pkg install -y
+    NAME: freebsd-current
+    UPDATE_COMMAND: pkg update
+    UPGRADE_COMMAND: pkg upgrade -y
+
+
+x86_64-macos-11:
+  extends: .cirrus_build_job
+  needs: []
+  allow_failure: true
+  variables:
+    CIRRUS_VM_IMAGE_NAME: big-sur-base
+    CIRRUS_VM_IMAGE_SELECTOR: image
+    CIRRUS_VM_INSTANCE_TYPE: osx_instance
+    INSTALL_COMMAND: brew install
+    NAME: macos-11
+    PATH_EXTRA: /usr/local/opt/ccache/libexec:/usr/local/opt/gettext/bin:/usr/local/opt/libpcap/bin:/usr/local/opt/libxslt/bin:/usr/local/opt/rpcgen/bin
+    PKG_CONFIG_PATH: /usr/local/opt/curl/lib/pkgconfig:/usr/local/opt/libpcap/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/ncurses/lib/pkgconfig:/usr/local/opt/readline/lib/pkgconfig
+    UPDATE_COMMAND: brew update
+    UPGRADE_COMMAND: brew upgrade

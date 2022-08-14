@@ -4,7 +4,7 @@
 #
 # https://gitlab.com/libvirt/libvirt-ci
 
-FROM docker.io/library/alpine:3.14
+FROM docker.io/library/alpine:3.15
 
 RUN apk update && \
     apk upgrade && \
@@ -13,6 +13,7 @@ RUN apk update && \
         automake \
         bash \
         bash-completion \
+        busybox \
         ca-certificates \
         cargo \
         ccache \
@@ -30,23 +31,17 @@ RUN apk update && \
         hexdump \
         iproute2 \
         jq \
-        libcom_err \
         libselinux-dev \
         libssh-dev \
         libtool \
         libtorrent \
         libvirt-dev \
-        linux-headers \
-        linux-virt \
-        lua \
+        lua5.4 \
         make \
-        musl-utils \
         ocaml \
-        openssh-client \
         perl \
         perl-dev \
         pkgconf \
-        podman \
         py3-flake8 \
         py3-pip \
         py3-setuptools \
@@ -58,7 +53,6 @@ RUN apk update && \
         sfdisk \
         socat \
         tcl \
-        util-linux \
         xz \
         xz-dev \
         zlib-dev \
@@ -71,9 +65,9 @@ RUN apk update && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/g++ && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/gcc
 
-RUN pip3 install boto3
+RUN /usr/bin/pip3 install boto3
 
+ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"
 ENV LANG "en_US.UTF-8"
 ENV MAKE "/usr/bin/make"
 ENV PYTHON "/usr/bin/python3"
-ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"

@@ -11,60 +11,55 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y eatmydata && \
     eatmydata apt-get dist-upgrade -y && \
     eatmydata apt-get install --no-install-recommends -y \
-            autoconf \
-            automake \
-            bash \
-            bash-completion \
-            bsdmainutils \
-            ca-certificates \
-            cargo \
-            ccache \
-            clang \
-            e2fsprogs \
-            expect \
-            fdisk \
-            flake8 \
-            g++ \
-            gcc \
-            genisoimage \
-            git \
-            golang \
-            gzip \
-            iproute2 \
-            jq \
-            libc-bin \
-            libc6-dev \
-            libcurl4-gnutls-dev \
-            libgnutls28-dev \
-            libguestfs-dev \
-            liblzma-dev \
-            libperl-dev \
-            libselinux1-dev \
-            libssh-gcrypt-dev \
-            libtool-bin \
-            libtorrent-dev \
-            libvirt-dev \
-            libzstd-dev \
-            linux-image-amd64 \
-            linux-libc-dev \
-            locales \
-            lua5.3 \
-            make \
-            mount \
-            ocaml \
-            openssh-client \
-            perl \
-            perl-base \
-            pkgconf \
-            python3 \
-            python3-boto3 \
-            python3-dev \
-            qemu-utils \
-            rustc \
-            socat \
-            tcl-dev \
-            xz-utils \
-            zlib1g-dev && \
+                      autoconf \
+                      automake \
+                      bash \
+                      bash-completion \
+                      bsdmainutils \
+                      ca-certificates \
+                      cargo \
+                      ccache \
+                      clang \
+                      e2fsprogs \
+                      expect \
+                      fdisk \
+                      flake8 \
+                      g++ \
+                      gcc \
+                      genisoimage \
+                      git \
+                      golang \
+                      gzip \
+                      iproute2 \
+                      jq \
+                      libcurl4-gnutls-dev \
+                      libgnutls28-dev \
+                      libguestfs-dev \
+                      liblzma-dev \
+                      libperl-dev \
+                      libselinux1-dev \
+                      libssh-gcrypt-dev \
+                      libtool-bin \
+                      libtorrent-dev \
+                      libvirt-dev \
+                      libzstd-dev \
+                      locales \
+                      lua5.3 \
+                      make \
+                      mount \
+                      ocaml \
+                      perl \
+                      perl-base \
+                      pkgconf \
+                      python3 \
+                      python3-boto3 \
+                      python3-dev \
+                      qemu-utils \
+                      rustc \
+                      socat \
+                      tcl-dev \
+                      xz-utils \
+                      zlib1g-dev && \
     eatmydata apt-get autoremove -y && \
     eatmydata apt-get autoclean -y && \
     sed -Ei 's,^# (en_US\.UTF-8 .*)$,\1,' /etc/locale.gen && \
@@ -77,7 +72,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/g++ && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/gcc
 
+ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"
 ENV LANG "en_US.UTF-8"
 ENV MAKE "/usr/bin/make"
 ENV PYTHON "/usr/bin/python3"
-ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"
