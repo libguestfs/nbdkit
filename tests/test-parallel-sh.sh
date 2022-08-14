@@ -37,7 +37,7 @@ requires test -f file-data
 requires qemu-io --version
 requires timeout 60s true
 requires dd iflag=count_bytes </dev/null
-requires stat --version
+requires $STAT --version
 
 nbdkit --dump-plugin sh | grep -q ^thread_model=parallel ||
     { echo "nbdkit lacks support for parallel requests"; exit 77; }
@@ -80,6 +80,7 @@ fi
 export curr_fds
 echo "using curr_fds=$curr_fds"
 
+export STAT
 cat > test-parallel-sh.script <<'EOF'
 #!/usr/bin/env bash
 f=test-parallel-sh.data
@@ -98,7 +99,7 @@ if test -n "$curr_fds"; then
 fi
 case $1 in
   thread_model) echo parallel ;;
-  get_size) stat -L -c %s $f || exit 1 ;;
+  get_size) $STAT -L -c %s $f || exit 1 ;;
   pread) dd iflag=skip_bytes,count_bytes skip=$4 count=$3 if=$f || exit 1 ;;
   pwrite) dd oflag=seek_bytes conv=notrunc seek=$4 of=$f || exit 1 ;;
   can_write) ;;

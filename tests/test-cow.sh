@@ -38,7 +38,7 @@ requires_plugin linuxdisk
 requires guestfish --version
 requires nbdcopy --version
 requires qemu-img --version
-requires stat --version
+requires $STAT --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="cow-base.img cow-diff.qcow2 $sock cow.pid"
@@ -51,7 +51,7 @@ mkdir cow.d
 cleanup_fn rm -rf cow.d
 nbdkit -fv -U - linuxdisk cow.d size=100M \
        --run 'nbdcopy "$uri" cow-base.img'
-lastmod="$(stat -c "%y" cow-base.img)"
+lastmod="$($STAT -c "%y" cow-base.img)"
 
 # Run nbdkit with a COW overlay.
 start_nbdkit -P cow.pid -U $sock --filter=cow file cow-base.img
@@ -63,7 +63,7 @@ guestfish --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
 EOF
 
 # The original file must not be modified.
-currmod="$(stat -c "%y" cow-base.img)"
+currmod="$($STAT -c "%y" cow-base.img)"
 
 if [ "$lastmod" != "$currmod" ]; then
     echo "$0: FAILED last modified time of base file changed"

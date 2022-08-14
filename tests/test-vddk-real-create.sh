@@ -39,7 +39,7 @@ requires test -d "$vddkdir"
 requires test -f "$vddkdir/lib64/libvixDiskLib.so"
 requires test -f disk
 requires nbdcopy --version
-requires stat --version
+requires $STAT --version
 
 # Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
 # this test if valgrinding.
@@ -59,7 +59,7 @@ files="$vmdk"
 rm -f $files
 cleanup_fn rm -f $files
 
-size="$(stat -c %s disk)"
+size="$($STAT -c %s disk)"
 
 nbdkit -fv -U - vddk libdir="$vddkdir" $vmdk \
        create=true create-size=$size \

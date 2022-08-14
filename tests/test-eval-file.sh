@@ -40,7 +40,7 @@ set -x
 requires guestfish --version
 requires test -f disk
 requires dd iflag=count_bytes </dev/null
-requires stat --version
+requires $STAT --version
 
 files="eval-file.img"
 rm -f $files
@@ -48,9 +48,10 @@ cleanup_fn rm -f $files
 
 cp disk eval-file.img
 
+export STAT
 nbdkit -fv -U - eval \
        config='ln -sf "$(realpath "$3")" $tmpdir/file' \
-       get_size='stat -Lc %s $tmpdir/file' \
+       get_size='$STAT -Lc %s $tmpdir/file' \
        pread='dd if=$tmpdir/file skip=$4 count=$3 iflag=count_bytes,skip_bytes' \
        pwrite='dd of=$tmpdir/file seek=$4 conv=notrunc oflag=seek_bytes' \
        file=eval-file.img \

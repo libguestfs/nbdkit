@@ -37,7 +37,7 @@ set -x
 requires_plugin linuxdisk
 requires guestfish --version
 requires nbdcopy --version
-requires stat --version
+requires $STAT --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="cow-block-size-base.img $sock cow-block-size.pid"
@@ -50,7 +50,7 @@ mkdir cow-block-size.d
 cleanup_fn rm -rf cow-block-size.d
 nbdkit -fv -U - linuxdisk cow-block-size.d size=100M \
        --run 'nbdcopy "$uri" cow-block-size-base.img'
-lastmod="$(stat -c "%y" cow-block-size-base.img)"
+lastmod="$($STAT -c "%y" cow-block-size-base.img)"
 
 # Run nbdkit with a COW overlay, 4M block size and copy on read.
 start_nbdkit -P cow-block-size.pid -U $sock \
@@ -64,7 +64,7 @@ guestfish --format=raw -a "nbd://?socket=$sock" -m /dev/sda1 <<EOF
 EOF
 
 # The original file must not be modified.
-currmod="$(stat -c "%y" cow-block-size-base.img)"
+currmod="$($STAT -c "%y" cow-block-size-base.img)"
 
 if [ "$lastmod" != "$currmod" ]; then
     echo "$0: FAILED last modified time of base file changed"

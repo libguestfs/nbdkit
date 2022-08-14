@@ -36,7 +36,7 @@ set -x
 
 requires test -f disk
 requires nbdcopy --version
-requires stat --version
+requires $STAT --version
 
 # Check that ssh to localhost will work without any passwords or phrases.
 #
@@ -62,7 +62,7 @@ nbdkit -v -D ssh.log=2 -U - \
 cmp disk ssh.img
 
 # Copy local file 'ssh.img' to newly created "remote" 'ssh2.img'
-size="$(stat -c %s disk)"
+size="$($STAT -c %s disk)"
 nbdkit -v -D ssh.log=2 -U - \
        ssh host=localhost $PWD/ssh2.img \
        create=true create-size=$size \

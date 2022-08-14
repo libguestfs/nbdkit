@@ -42,7 +42,7 @@ requires tar --version
 requires qemu-img --version
 requires qemu-img info --output=json /dev/null
 requires jq --version
-requires stat --version
+requires $STAT --version
 
 disk=tar-info-disk.qcow2
 out=tar-info.out
@@ -63,7 +63,7 @@ cat $out
 
 # Check various fields in the input.
 # Virtual size must be the same as the size of the original raw disk.
-test "$( jq -r -c '.["virtual-size"]' $out )" -eq "$( stat -c %s disk )"
+test "$( jq -r -c '.["virtual-size"]' $out )" -eq "$( $STAT -c %s disk )"
 
 # Format must be qcow2.
 test "$( jq -r -c '.["format"]' $out )" = "qcow2"

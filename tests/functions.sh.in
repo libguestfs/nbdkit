@@ -46,6 +46,7 @@ PYTHON="@PYTHON@"
 SOEXT="@SOEXT@"
 EXEEXT="@EXEEXT@"
 SED="@SED@"
+STAT="@STAT@"
 TRUNCATE="@TRUNCATE@"
 abs_top_srcdir="@abs_top_srcdir@"
 

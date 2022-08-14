@@ -39,7 +39,7 @@ requires_filter cache
 requires test -d /proc/self/fd
 requires qemu-io --version
 # Need the stat, cut, tr commands from coreutils.
-requires stat --version
+requires $STAT --version
 requires cut --version
 requires tr --version
 
@@ -80,8 +80,8 @@ fddir="/proc/$( cat $d/cache-max-size.pid )/fd"
 LANG=C ls -ln $fddir ||:
 fd="$fddir/$( LANG=C ls -ln $fddir | grep $TMPDIR/ | head -1 |
               tr -s ' ' | cut -d ' ' -f 9 )"
-stat -L $fd
-size=$(( $(stat -L -c '%b * %B' $fd) ))
+$STAT -L $fd
+size=$(( $($STAT -L -c '%b * %B' $fd) ))
 
 if [ "$size" -gt $(( 11 * 1024 * 1024 )) ]; then
     echo "$0: cache size is larger than 10M (actual size: $size bytes)"

@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires stat --version
+requires $STAT --version
 
 sock2=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 sock3=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
@@ -80,15 +80,15 @@ cp nozero1.img nozero5.img
 
 # Debug number of blocks and block size in the images.
 for f in {1..5}; do
-    stat -c "%n: %b allocated blocks of size %B bytes, total size %s" \
+    $STAT -c "%n: %b allocated blocks of size %B bytes, total size %s" \
          nozero$f.img
-    sizes[$f]=$(stat -c %b nozero$f.img)
+    sizes[$f]=$($STAT -c %b nozero$f.img)
 done
 
 # Check that zero with trim results in a sparse image.
 requires nbdkit -U - --filter=log file logfile=nozero1.log nozero1.img \
     --run 'nbdsh -u "$uri" -c "h.zero(1024*1024, 0)"'
-if test "$(stat -c %b nozero1.img)" = "${sizes[1]}"; then
+if test "$($STAT -c %b nozero1.img)" = "${sizes[1]}"; then
     echo "$0: can't trim file by writing zeroes"
     exit 77
 fi
@@ -146,7 +146,7 @@ cmp nozero4.img nozero5.img
 # Sanity check on sparseness: images 2-5 should not be sparse (although the
 # filesystem may have reserved additional space due to our writes)
 for i in {2..5}; do
-    if test "$(stat -c %b nozero$i.img)" -lt "${sizes[$i]}"; then
+    if test "$($STAT -c %b nozero$i.img)" -lt "${sizes[$i]}"; then
         echo "nozero$i.img was trimmed by mistake"
         fail=1
     fi

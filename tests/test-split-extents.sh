@@ -40,7 +40,7 @@ requires_run
 requires_nbdsh_uri
 requires nbdsh --base-allocation
 requires $TRUNCATE --help
-requires stat --help
+requires $STAT --help
 
 files="test-split-extents.1 test-split-extents.2"
 rm -f $files
@@ -48,7 +48,7 @@ cleanup_fn rm -f $files
 
 # Create two files, each half data and half sparse
 $TRUNCATE -s 512k test-split-extents.1
-if test "$(stat -c %b test-split-extents.1)" != 0; then
+if test "$($STAT -c %b test-split-extents.1)" != 0; then
     echo "$0: unable to create sparse file, skipping this test"
     exit 77
 fi

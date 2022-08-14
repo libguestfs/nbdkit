@@ -52,7 +52,7 @@ requires cut --version
 requires dd --version
 requires nbdinfo --version
 requires nbdsh --version
-requires stat --version
+requires $STAT --version
 requires tr --version
 requires $TRUNCATE --version
 
@@ -72,7 +72,7 @@ cleanup_fn rm -f $files
 # Create a base file which is half allocated, half sparse.
 dd if=/dev/urandom of=$base count=128 bs=1K
 $TRUNCATE -s 4M $base
-lastmod="$(stat -c "%y" $base)"
+lastmod="$($STAT -c "%y" $base)"
 
 # Run nbdkit with a COW overlay.
 start_nbdkit -P $pid -U $sock --filter=cow file $base
@@ -114,7 +114,7 @@ if [ "$(tr -s ' ' < $out | cut -d' ' -f 1-4)" != " 0 65536 0
 fi
 
 # The original file must not be modified.
-currmod="$(stat -c "%y" $base)"
+currmod="$($STAT -c "%y" $base)"
 if [ "$lastmod" != "$currmod" ]; then
     echo "$0: FAILED last modified time of base file changed"
     exit 1
