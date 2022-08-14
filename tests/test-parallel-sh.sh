@@ -37,6 +37,7 @@ requires test -f file-data
 requires qemu-io --version
 requires timeout 60s true
 requires dd iflag=count_bytes </dev/null
+requires stat --version
 
 nbdkit --dump-plugin sh | grep -q ^thread_model=parallel ||
     { echo "nbdkit lacks support for parallel requests"; exit 77; }

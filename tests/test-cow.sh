@@ -38,6 +38,7 @@ requires_plugin linuxdisk
 requires guestfish --version
 requires nbdcopy --version
 requires qemu-img --version
+requires stat --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="cow-base.img cow-diff.qcow2 $sock cow.pid"

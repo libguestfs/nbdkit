@@ -52,6 +52,7 @@ requires cut --version
 requires dd --version
 requires nbdinfo --version
 requires nbdsh --version
+requires stat --version
 requires tr --version
 requires $TRUNCATE --version
 

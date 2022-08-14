@@ -37,6 +37,7 @@ set -x
 requires_plugin linuxdisk
 requires guestfish --version
 requires nbdcopy --version
+requires stat --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="cow-block-size-base.img $sock cow-block-size.pid"

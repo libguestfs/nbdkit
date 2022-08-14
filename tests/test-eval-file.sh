@@ -40,6 +40,7 @@ set -x
 requires guestfish --version
 requires test -f disk
 requires dd iflag=count_bytes </dev/null
+requires stat --version
 
 files="eval-file.img"
 rm -f $files
