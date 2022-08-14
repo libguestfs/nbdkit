@@ -43,7 +43,6 @@ requires dd --version
 requires qemu-img --version
 requires nbdcopy --version
 requires nbdinfo --version
-requires stat --version
 
 # Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
 # this test if valgrinding.
