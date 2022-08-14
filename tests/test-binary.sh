@@ -39,11 +39,11 @@
 source ./functions.sh
 set -e
 
-requires cut --version
+requires $CUT --version
 
-binary1="$( nbdkit --dump-config           | grep ^binary= | cut -d= -f2 )"
+binary1="$( nbdkit --dump-config           | grep ^binary= | $CUT -d= -f2 )"
 binary2="$( ../server/nbdkit$EXEEXT --dump-config |
-                                             grep ^binary= | cut -d= -f2 )"
+                                             grep ^binary= | $CUT -d= -f2 )"
 
 echo binary1=$binary1
 echo binary2=$binary2

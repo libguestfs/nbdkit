@@ -40,15 +40,19 @@
 
 # Various variables defined by autoconf that test scripts might want
 # to use.
+abs_top_srcdir="@abs_top_srcdir@"
+
 CXX="@CXX@"
 OCAMLOPT="@OCAMLOPT@"
 PYTHON="@PYTHON@"
+
 SOEXT="@SOEXT@"
 EXEEXT="@EXEEXT@"
+
+CUT="@CUT@"
 SED="@SED@"
 STAT="@STAT@"
 TRUNCATE="@TRUNCATE@"
-abs_top_srcdir="@abs_top_srcdir@"
 
 # Largest size of disk that qemu supports.
 #
@@ -157,7 +161,7 @@ requires_linux_kernel_version ()
     # peculiar test, but if we cross-compiled nbdkit for Windows and
     # are running it under Wine then the host kernel will still be
     # Linux, but the test will fail anyway.
-    host_os="$(nbdkit --dump-config | grep ^host_os | cut -d= -f2)"
+    host_os="$(nbdkit --dump-config | grep ^host_os | $CUT -d= -f2)"
     if [[ ! "$host_os" =~ linux ]]; then
         echo "$0: binary was built for $host_os (not Linux), skipping test"
         exit 77
@@ -168,9 +172,9 @@ requires_linux_kernel_version ()
 
     # Test that it's the minimum version.
     # https://stackoverflow.com/a/24067243
-    requires cut --version
+    requires $CUT --version
     requires sort -V /dev/null
-    kver=$(uname -r | cut -d. -f1-2)
+    kver=$(uname -r | $CUT -d. -f1-2)
     requires test "$(printf "$kver\n$min" | sort -V | head -n 1)" = "$min"
 }
 
@@ -197,7 +201,7 @@ requires_filter ()
 # Return true if nbdkit was built (or cross-compiled) for Windows.
 is_windows ()
 {
-    host_os="$(nbdkit --dump-config | grep ^host_os | cut -d= -f2)"
+    host_os="$(nbdkit --dump-config | grep ^host_os | $CUT -d= -f2)"
     [[ "$host_os" =~ mingw|msys ]]
 }
 

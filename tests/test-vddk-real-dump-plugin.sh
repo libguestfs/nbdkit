@@ -37,7 +37,7 @@ set -x
 requires test "x$vddkdir" != "x"
 requires test -d "$vddkdir"
 requires test -f "$vddkdir/lib64/libvixDiskLib.so"
-requires cut --version
+requires $CUT --version
 
 # Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
 # this test if valgrinding.
@@ -67,5 +67,5 @@ grep ^vddk_library_version= $out
 grep ^vddk_dll= $out
 grep ^VixDiskLib_Open=1 $out
 
-dll="$(grep ^vddk_dll $out | cut -d= -f2)"
+dll="$(grep ^vddk_dll $out | $CUT -d= -f2)"
 test -f "$dll"

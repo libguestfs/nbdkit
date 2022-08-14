@@ -38,10 +38,10 @@ source ./functions.sh
 set -x
 set -e
 
-requires cut --version
+requires $CUT --version
 
-major=$( nbdkit --dump-config | grep ^version_major | cut -d= -f2 )
-minor=$( nbdkit --dump-config | grep ^version_minor | cut -d= -f2 )
+major=$( nbdkit --dump-config | grep ^version_major | $CUT -d= -f2 )
+minor=$( nbdkit --dump-config | grep ^version_minor | $CUT -d= -f2 )
 echo major=$major minor=$minor
 if [ $major -ne 1 ]; then
     echo "$0: version_major parsed by cut != 1"

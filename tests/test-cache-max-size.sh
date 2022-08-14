@@ -40,7 +40,7 @@ requires test -d /proc/self/fd
 requires qemu-io --version
 # Need the stat, cut, tr commands from coreutils.
 requires $STAT --version
-requires cut --version
+requires $CUT --version
 requires tr --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
@@ -79,7 +79,7 @@ qemu-io -f raw "nbd+unix://?socket=$sock" \
 fddir="/proc/$( cat $d/cache-max-size.pid )/fd"
 LANG=C ls -ln $fddir ||:
 fd="$fddir/$( LANG=C ls -ln $fddir | grep $TMPDIR/ | head -1 |
-              tr -s ' ' | cut -d ' ' -f 9 )"
+              tr -s ' ' | $CUT -d ' ' -f 9 )"
 $STAT -L $fd
 size=$(( $($STAT -L -c '%b * %B' $fd) ))
 

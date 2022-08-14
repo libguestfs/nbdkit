@@ -37,7 +37,7 @@ set -e
 set -x
 
 requires guestfish --version
-requires cut --version
+requires $CUT --version
 requires test -f disk
 
 # This script is called with one parameter in the form
@@ -47,9 +47,9 @@ if [ -z "$1" ]; then
     echo "$0: do not call this script directly"
     exit 1
 fi
-test_arch=$(echo "$1" | cut -d - -f 1)
-test_os=$(echo "$1" | cut -d - -f 2)
-test_version=$(echo "$1" | cut -d - -f 3-)
+test_arch=$(echo "$1" | $CUT -d - -f 1)
+test_os=$(echo "$1" | $CUT -d - -f 2)
+test_version=$(echo "$1" | $CUT -d - -f 3-)
 d="old-plugins/$test_arch/$test_os/$test_version"
 f="$d/nbdkit-file-plugin.so"
 
