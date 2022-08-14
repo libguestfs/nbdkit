@@ -4,9 +4,9 @@
 #
 # https://gitlab.com/libvirt/libvirt-ci
 
-FROM registry.opensuse.org/opensuse/tumbleweed:latest
+FROM registry.opensuse.org/opensuse/leap:15.3
 
-RUN zypper dist-upgrade -y && \
+RUN zypper update -y && \
     zypper install -y \
            autoconf \
            automake \
@@ -47,7 +47,7 @@ RUN zypper dist-upgrade -y && \
            python3-base \
            python3-boto3 \
            python3-devel \
-           python39-flake8 \
+           python3-flake8 \
            qemu-tools \
            rust \
            socat \
