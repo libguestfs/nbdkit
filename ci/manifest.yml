@@ -18,7 +18,7 @@ targets:
           CC: clang
           PERL: skip
 
-  alpine-314:
+  alpine-315:
     jobs:
       - arch: x86_64
         variables:
@@ -91,7 +91,7 @@ targets:
         # Remove when Cirrus CI starts working again and we can fix the build
         allow-failure: true
 
-  opensuse-leap-152: x86_64
+  opensuse-leap-153: x86_64
 
   opensuse-tumbleweed: x86_64
 

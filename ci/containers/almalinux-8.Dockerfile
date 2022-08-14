@@ -27,17 +27,12 @@ RUN dnf update -y && \
         gcc-c++ \
         genisoimage \
         git \
-        glibc-common \
-        glibc-devel \
         glibc-langpack-en \
         gnutls-devel \
         golang \
         gzip \
         iproute \
         jq \
-        kernel \
-        kernel-headers \
-        libcom_err-devel \
         libcurl-devel \
         libguestfs-devel \
         libnbd-devel \
@@ -50,14 +45,12 @@ RUN dnf update -y && \
         lua-devel \
         make \
         ocaml \
-        openssh-clients \
         perl \
         perl-ExtUtils-Embed \
         perl-Pod-Simple \
         perl-devel \
         perl-podlators \
         pkgconfig \
-        podman \
         python3 \
         python3-boto3 \
         python3-devel \
@@ -82,7 +75,7 @@ RUN dnf update -y && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/g++ && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/gcc
 
+ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"
 ENV LANG "en_US.UTF-8"
 ENV MAKE "/usr/bin/make"
 ENV PYTHON "/usr/bin/python3"
-ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"

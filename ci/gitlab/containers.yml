@@ -1,0 +1,108 @@
+# THIS FILE WAS AUTO-GENERATED
+#
+#  $ lcitool manifest ci/manifest.yml
+#
+# https://gitlab.com/libvirt/libvirt-ci
+
+
+# Native container jobs
+
+x86_64-almalinux-8-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: almalinux-8
+
+
+x86_64-alpine-315-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: alpine-315
+
+
+x86_64-alpine-edge-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: alpine-edge
+
+
+x86_64-centos-stream-8-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: centos-stream-8
+
+
+x86_64-debian-10-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: debian-10
+
+
+x86_64-debian-11-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: debian-11
+
+
+x86_64-debian-sid-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: debian-sid
+
+
+x86_64-fedora-35-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: fedora-35
+
+
+x86_64-fedora-rawhide-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: fedora-rawhide
+
+
+x86_64-opensuse-leap-153-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: opensuse-leap-153
+
+
+x86_64-opensuse-tumbleweed-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: opensuse-tumbleweed
+
+
+x86_64-ubuntu-2004-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: ubuntu-2004
+
+
+
+# Cross container jobs
+
+mingw32-fedora-35-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: fedora-35-cross-mingw32
+
+
+mingw64-fedora-35-container:
+  extends: .container_job
+  allow_failure: false
+  variables:
+    NAME: fedora-35-cross-mingw64
