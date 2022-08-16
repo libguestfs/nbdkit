@@ -120,10 +120,10 @@ exit_with_parent_loop (void *vp)
   /* Wait for the kevent to happen. */
   r = kevent (fd, 0, 0, res, 1, NULL);
   if (r == 1 && res[0].ident == ppid) {
-    /* Exit the whole process when the parent dies. */
+    /* Shut down the whole process when the parent dies. */
     nbdkit_debug ("macOS: --exit-with-parent: "
                   "exit because parent process died");
-    exit (EXIT_SUCCESS);
+    nbdkit_shutdown ();
   }
 
   return NULL;
