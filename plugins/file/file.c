@@ -488,6 +488,7 @@ file_open (int readonly)
 
   if (fstat (h->fd, &statbuf) == -1) {
     nbdkit_error ("fstat: %s: %m", file);
+    close (h->fd);
     free (h);
     return NULL;
   }
