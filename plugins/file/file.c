@@ -70,6 +70,7 @@
 #include "isaligned.h"
 #include "fdatasync.h"
 
+static enum { mode_none, mode_filename, mode_directory } mode = mode_none;
 static char *filename = NULL;
 static char *directory = NULL;
 
@@ -180,14 +181,23 @@ file_config (const char *key, const char *value)
    * existence checks to the last possible moment.
    */
   if (strcmp (key, "file") == 0) {
-    free (filename);
+    if (mode != mode_none) {
+    wrong_mode:
+      nbdkit_error ("%s parameter can only appear once on the command line",
+                    "file|dir");
+      return -1;
+    }
+    mode = mode_filename;
+    assert (filename == NULL);
     filename = nbdkit_realpath (value);
     if (!filename)
       return -1;
   }
   else if (strcmp (key, "directory") == 0 ||
            strcmp (key, "dir") == 0) {
-    free (directory);
+    if (mode != mode_none) goto wrong_mode;
+    mode = mode_directory;
+    assert (directory == NULL);
     directory = nbdkit_realpath (value);
     if (!directory)
       return -1;
@@ -252,22 +262,27 @@ file_config_complete (void)
   int r;
   struct stat sb;
 
-  if (!filename && !directory) {
+  if (mode == mode_none) {
     nbdkit_error ("you must supply either [file=]<FILENAME> or "
                   "dir=<DIRNAME> parameter after the plugin name "
                   "on the command line");
     return -1;
   }
-  if (filename && directory) {
-    nbdkit_error ("file= and dir= cannot be used at the same time");
-    return -1;
+  if (mode == mode_filename) {
+    assert (filename != NULL);
+    assert (directory == NULL);
+  }
+  if (mode == mode_directory) {
+    assert (filename == NULL);
+    assert (directory != NULL);
   }
 
   /* Sanity check now, rather than waiting for first client open.
    * See also comment in .config about use of nbdkit_realpath.
    * Yes, this is a harmless TOCTTOU race.
    */
-  if (filename) {
+  switch (mode) {
+  case mode_filename:
     r = stat (filename, &sb);
     if (r == 0 && S_ISDIR (sb.st_mode)) {
       nbdkit_error ("use dir= to serve files within %s", filename);
@@ -277,10 +292,14 @@ file_config_complete (void)
       nbdkit_error ("file is not regular or block device: %s", filename);
       return -1;
     }
-  }
-  else if (stat (directory, &sb) == -1 || !S_ISDIR (sb.st_mode)) {
-    nbdkit_error ("expecting a directory: %s", directory);
-    return -1;
+    break;
+  case mode_directory:
+    if (stat (directory, &sb) == -1 || !S_ISDIR (sb.st_mode)) {
+      nbdkit_error ("expecting a directory: %s", directory);
+      return -1;
+    }
+    break;
+  default: abort ();
   }
 
   return 0;
@@ -320,46 +339,51 @@ file_list_exports (int readonly, int default_only,
   struct stat sb;
   int fd;
 
-  if (!directory)
+  switch (mode) {
+  case mode_filename:
     return nbdkit_add_export (exports, "", NULL);
 
-  dir = opendir (directory);
-  if (dir == NULL) {
-    nbdkit_error ("opendir: %m");
-    return -1;
-  }
-  fd = dirfd (dir);
-  if (fd == -1) {
-    nbdkit_error ("dirfd: %m");
-    closedir (dir);
-    return -1;
-  }
-  errno = 0;
-  while ((entry = readdir (dir)) != NULL) {
-    int r = -1;
-#if HAVE_STRUCT_DIRENT_D_TYPE
-    if (entry->d_type == DT_BLK || entry->d_type == DT_REG)
-      r = 1;
-    else if (entry->d_type != DT_LNK && entry->d_type != DT_UNKNOWN)
-      r = 0;
-#endif
-    /* TODO: when chasing symlinks, is statx any nicer than fstatat? */
-    if (r < 0 && fstatat (fd, entry->d_name, &sb, 0) == 0 &&
-        (S_ISREG (sb.st_mode) || S_ISBLK (sb.st_mode)))
-      r = 1;
-    if (r == 1 && nbdkit_add_export (exports, entry->d_name, NULL) == -1) {
+  case mode_directory:
+    dir = opendir (directory);
+    if (dir == NULL) {
+      nbdkit_error ("opendir: %m");
+      return -1;
+    }
+    fd = dirfd (dir);
+    if (fd == -1) {
+      nbdkit_error ("dirfd: %m");
       closedir (dir);
       return -1;
     }
     errno = 0;
-  }
-  if (errno) {
-    nbdkit_error ("readdir: %m");
+    while ((entry = readdir (dir)) != NULL) {
+      int r = -1;
+#if HAVE_STRUCT_DIRENT_D_TYPE
+      if (entry->d_type == DT_BLK || entry->d_type == DT_REG)
+        r = 1;
+      else if (entry->d_type != DT_LNK && entry->d_type != DT_UNKNOWN)
+        r = 0;
+#endif
+      /* TODO: when chasing symlinks, is statx any nicer than fstatat? */
+      if (r < 0 && fstatat (fd, entry->d_name, &sb, 0) == 0 &&
+          (S_ISREG (sb.st_mode) || S_ISBLK (sb.st_mode)))
+        r = 1;
+      if (r == 1 && nbdkit_add_export (exports, entry->d_name, NULL) == -1) {
+        closedir (dir);
+        return -1;
+      }
+      errno = 0;
+    }
+    if (errno) {
+      nbdkit_error ("readdir: %m");
+      closedir (dir);
+      return -1;
+    }
     closedir (dir);
-    return -1;
+    return 0;
+
+  default: abort ();
   }
-  closedir (dir);
-  return 0;
 }
 
 /* The per-connection handle. */
@@ -384,7 +408,8 @@ file_open (int readonly)
   const char *file;
   int dfd = -1;
 
-  if (directory) {
+  switch (mode) {
+  case mode_directory:
     file = nbdkit_export_name ();
     if (strchr (file, '/')) {
       nbdkit_error ("exportname cannot contain /");
@@ -396,9 +421,12 @@ file_open (int readonly)
       nbdkit_error ("open %s: %m", directory);
       return NULL;
     }
-  }
-  else
+    break;
+  case mode_filename:
     file = filename;
+    break;
+  default: abort ();
+  }
 
   h = malloc (sizeof *h);
   if (h == NULL) {
@@ -680,9 +708,9 @@ file_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset,
 
 #if defined (FALLOC_FL_PUNCH_HOLE) || defined (FALLOC_FL_ZERO_RANGE)
 static int
-do_fallocate (int fd, int mode, off_t offset, off_t len)
+do_fallocate (int fd, int mode_, off_t offset, off_t len)
 {
-  int r = fallocate (fd, mode, offset, len);
+  int r = fallocate (fd, mode_, offset, len);
   if (r == -1 && errno == ENODEV) {
     /* kernel 3.10 fails with ENODEV for block device. Kernel >= 4.9 fails
        with EOPNOTSUPP in this case. Normalize errno to simplify callers. */
