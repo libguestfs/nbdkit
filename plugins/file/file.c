@@ -262,27 +262,22 @@ file_config_complete (void)
   int r;
   struct stat sb;
 
-  if (mode == mode_none) {
-    nbdkit_error ("you must supply either [file=]<FILENAME> or "
-                  "dir=<DIRNAME> parameter after the plugin name "
+  switch (mode) {
+  case mode_none:
+    nbdkit_error ("you must supply [file=]<FILENAME>, "
+                  "dir=<DIRNAME> or fd=<FD> "
+                  "parameter after the plugin name "
                   "on the command line");
     return -1;
-  }
-  if (mode == mode_filename) {
+
+  case mode_filename:
     assert (filename != NULL);
     assert (directory == NULL);
-  }
-  if (mode == mode_directory) {
-    assert (filename == NULL);
-    assert (directory != NULL);
-  }
 
-  /* Sanity check now, rather than waiting for first client open.
-   * See also comment in .config about use of nbdkit_realpath.
-   * Yes, this is a harmless TOCTTOU race.
-   */
-  switch (mode) {
-  case mode_filename:
+    /* Sanity check now, rather than waiting for first client open.
+     * See also comment in .config about use of nbdkit_realpath.  Yes,
+     * this is a harmless TOCTTOU race.
+     */
     r = stat (filename, &sb);
     if (r == 0 && S_ISDIR (sb.st_mode)) {
       nbdkit_error ("use dir= to serve files within %s", filename);
@@ -293,13 +288,16 @@ file_config_complete (void)
       return -1;
     }
     break;
+
   case mode_directory:
+    assert (filename == NULL);
+    assert (directory != NULL);
+
     if (stat (directory, &sb) == -1 || !S_ISDIR (sb.st_mode)) {
       nbdkit_error ("expecting a directory: %s", directory);
       return -1;
     }
     break;
-  default: abort ();
   }
 
   return 0;
@@ -398,53 +396,22 @@ struct handle {
   bool can_zeroout;
 };
 
-/* Create the per-connection handle. */
-static void *
-file_open (int readonly)
+/* Common code for opening a file by name, used by mode_filename and
+ * mode_directory only.  If successful, sets h->fd and may adjust
+ * h->can_write.
+ */
+static int
+open_file_by_name (struct handle *h, int readonly, int dfd, const char *file)
 {
-  struct handle *h;
-  struct stat statbuf;
   int flags;
-  const char *file;
-  int dfd = -1;
 
-  switch (mode) {
-  case mode_directory:
-    file = nbdkit_export_name ();
-    if (strchr (file, '/')) {
-      nbdkit_error ("exportname cannot contain /");
-      errno = EINVAL;
-      return NULL;
-    }
-    dfd = open (directory, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    if (dfd == -1) {
-      nbdkit_error ("open %s: %m", directory);
-      return NULL;
-    }
-    break;
-  case mode_filename:
-    file = filename;
-    break;
-  default: abort ();
-  }
-
-  h = malloc (sizeof *h);
-  if (h == NULL) {
-    nbdkit_error ("malloc: %m");
-    if (dfd != -1)
-      close (dfd);
-    return NULL;
-  }
+  assert (h->fd == -1);
 
   flags = O_CLOEXEC|O_NOCTTY;
-  if (readonly) {
+  if (readonly)
     flags |= O_RDONLY;
-    h->can_write = false;
-  }
-  else {
+  else
     flags |= O_RDWR;
-    h->can_write = true;
-  }
 
   h->fd = openat (dfd, file, flags);
   if (h->fd == -1 && !readonly) {
@@ -456,13 +423,68 @@ file_open (int readonly)
   }
   if (h->fd == -1) {
     nbdkit_error ("open: %s: %m", file);
-    if (dfd != -1)
-      close (dfd);
     free (h);
+    return -1;
+  }
+
+  return 0;
+}
+
+/* Create the per-connection handle. */
+static void *
+file_open (int readonly)
+{
+  struct handle *h;
+  struct stat statbuf;
+  const char *file;
+
+  h = malloc (sizeof *h);
+  if (h == NULL) {
+    nbdkit_error ("malloc: %m");
     return NULL;
   }
-  if (dfd != -1)
+  h->can_write = !readonly;
+  h->fd = -1;
+
+  switch (mode) {
+  case mode_filename:
+    file = filename;
+    if (open_file_by_name (h, readonly, -1, file) == -1) {
+      free (h);
+      return NULL;
+    }
+    break;
+
+  case mode_directory: {
+    int dfd;
+
+    file = nbdkit_export_name ();
+    if (strchr (file, '/')) {
+      nbdkit_error ("exportname cannot contain /");
+      free (h);
+      errno = EINVAL;
+      return NULL;
+    }
+    dfd = open (directory, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (dfd == -1) {
+      nbdkit_error ("open %s: %m", directory);
+      free (h);
+      return NULL;
+    }
+    if (open_file_by_name (h, readonly, dfd, file) == -1) {
+      free (h);
+      close (dfd);
+      return NULL;
+    }
     close (dfd);
+    break;
+  }
+
+  default:
+    abort ();
+  }
+
+  assert (h->fd >= 0);
 
   if (fstat (h->fd, &statbuf) == -1) {
     nbdkit_error ("fstat: %s: %m", file);
