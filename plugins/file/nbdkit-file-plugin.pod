@@ -11,6 +11,10 @@ nbdkit-file-plugin - nbdkit file plugin
 
  nbdkit file dir=DIRECTORY
 
+=for paragraph
+
+ nbdkit file fd=FILE_DESCRIPTOR
+
 =head1 DESCRIPTION
 
 C<nbdkit-file-plugin> is a file serving plugin for L<nbdkit(1)>.
@@ -22,10 +26,16 @@ If you use the C<dir> parameter the plugin works in a different mode
 where it serves files from the given C<DIRECTORY>, chosen by the
 client using the NBD export name.
 
+If you use the C<fd> parameter then you can pass the file descriptor
+of a single disk to the plugin, inherited from the parent process.
+This can be useful where special permissions / capabilities are needed
+to open the file or you want to run nbdkit in a sandboxed environment.
+
 =head1 PARAMETERS
 
-Either B<file> or B<dir> must be given which controls the mode of the
-plugin, either serving a single file or the files in a directory.
+B<file>, B<dir> or B<fd> must be given.  This controls the mode of the
+plugin, either serving a single file, the files in a directory, or a
+single file descriptor.
 
 =over 4
 
@@ -71,6 +81,14 @@ read-ahead twice as much as C<normal>, and C<random> turns off
 read-ahead.  See also L<posix_fadvise(2)>.
 
 The default is C<normal>.
+
+=item B<fd=>FILE_DESCRIPTOR
+
+(nbdkit E<ge> 1.34, not Windows)
+
+The parameter is the number of a file descriptor.  Serve the file or
+device already open on this file descriptor.  The file descriptor is
+usually inherited from the parent process.
 
 =item [B<file=>]FILENAME
 

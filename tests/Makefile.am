@@ -732,10 +732,12 @@ EXTRA_DIST += \
 TESTS += \
 	test-file.sh \
 	test-file-readonly.sh \
+	test-file-fd.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-file.sh \
 	test-file-readonly.sh \
+	test-file-fd.sh \
 	$(NULL)
 LIBGUESTFS_TESTS += test-file-block
 

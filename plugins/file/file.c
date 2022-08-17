@@ -70,9 +70,15 @@
 #include "isaligned.h"
 #include "fdatasync.h"
 
-static enum { mode_none, mode_filename, mode_directory } mode = mode_none;
+static enum {
+  mode_none,
+  mode_filename,
+  mode_directory,
+  mode_fd,
+} mode = mode_none;
 static char *filename = NULL;
 static char *directory = NULL;
+static int filedesc = -1;
 
 /* posix_fadvise mode: -1 = don't set it, or POSIX_FADV_*. */
 static int fadvise_mode =
@@ -184,7 +190,7 @@ file_config (const char *key, const char *value)
     if (mode != mode_none) {
     wrong_mode:
       nbdkit_error ("%s parameter can only appear once on the command line",
-                    "file|dir");
+                    "file|dir|fd");
       return -1;
     }
     mode = mode_filename;
@@ -201,6 +207,19 @@ file_config (const char *key, const char *value)
     directory = nbdkit_realpath (value);
     if (!directory)
       return -1;
+  }
+  else if (strcmp (key, "fd") == 0) {
+    if (mode != mode_none) goto wrong_mode;
+    mode = mode_fd;
+    assert (filedesc == -1);
+    if (nbdkit_parse_int ("fd", value, &filedesc) == -1)
+      return -1;
+    if (filedesc <= STDERR_FILENO) {
+      nbdkit_error ("file descriptor must be > %d because "
+                    "stdin, stdout and stderr are reserved for nbdkit",
+                    STDERR_FILENO);
+      return -1;
+    }
   }
   else if (strcmp (key, "fadvise") == 0) {
     /* As this is a hint, if the kernel doesn't support the feature
@@ -273,6 +292,7 @@ file_config_complete (void)
   case mode_filename:
     assert (filename != NULL);
     assert (directory == NULL);
+    assert (filedesc == -1);
 
     /* Sanity check now, rather than waiting for first client open.
      * See also comment in .config about use of nbdkit_realpath.  Yes,
@@ -292,12 +312,24 @@ file_config_complete (void)
   case mode_directory:
     assert (filename == NULL);
     assert (directory != NULL);
+    assert (filedesc == -1);
 
     if (stat (directory, &sb) == -1 || !S_ISDIR (sb.st_mode)) {
       nbdkit_error ("expecting a directory: %s", directory);
       return -1;
     }
     break;
+
+  case mode_fd:
+    assert (filename == NULL);
+    assert (directory == NULL);
+    assert (filedesc > STDERR_FILENO);
+
+    r = fstat (filedesc, &sb);
+    if (r == -1 || !(S_ISBLK (sb.st_mode) || S_ISREG (sb.st_mode))) {
+      nbdkit_error ("fd is not regular or block device: %d", filedesc);
+      return -1;
+    }
   }
 
   return 0;
@@ -339,6 +371,7 @@ file_list_exports (int readonly, int default_only,
 
   switch (mode) {
   case mode_filename:
+  case mode_fd:
     return nbdkit_add_export (exports, "", NULL);
 
   case mode_directory:
@@ -477,6 +510,39 @@ file_open (int readonly)
       return NULL;
     }
     close (dfd);
+    break;
+  }
+
+  case mode_fd: {
+    int r;
+
+    /* This is needed for error messages. */
+    file = "<file descriptor>";
+
+    h->fd = dup (filedesc);
+    if (h->fd == -1) {
+      nbdkit_error ("dup fd=%d: %m", filedesc);
+      free (h);
+      return NULL;
+    }
+
+    /* If the file descriptor is readonly then we should not advertise
+     * writes as they will fail later.
+     */
+    r = fcntl (h->fd, F_GETFL);
+    if (r == -1) {
+      nbdkit_error ("fcntl: F_GETFL: %m");
+      close (h->fd);
+      free (h);
+      return NULL;
+    }
+    r &= O_ACCMODE;
+    if (r == O_RDONLY)
+      h->can_write = false;
+    else if (r == O_WRONLY)
+      nbdkit_debug ("file descriptor is write-only (ie. not readable): "
+                    "NBD protocol does not support this, but continuing "
+                    "anyway!");
     break;
   }
 
