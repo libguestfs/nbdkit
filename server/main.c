@@ -172,6 +172,10 @@ dump_config (void)
   if (binary != NULL)
     printf ("%s=%s\n", "binary", binary);
   printf ("%s=%s\n", "bindir", bindir);
+  if (can_exit_with_parent ())
+    printf ("exit_with_parent=yes\n");
+  else
+    printf ("exit_with_parent=no\n");
   printf ("%s=%s\n", "filterdir", filterdir);
   printf ("%s=%s\n", "host_cpu", host_cpu);
   printf ("%s=%s\n", "host_os", host_os);

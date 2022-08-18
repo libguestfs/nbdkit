@@ -140,10 +140,6 @@ I<--exit-with-parent> is incompatible with forking into the background
 (because when we fork into the background we lose track of the parent
 process).  Therefore I<-f> / I<--foreground> is implied.
 
-This is currently implemented using a non-POSIX feature available in
-S<Linux ≥ 2.1.57> and S<FreeBSD ≥ 11.2>, so it won't work on other
-operating systems (patches welcome to make it work).
-
 If the parent application is multithreaded, then (in the Linux
 implementation) if the parent I<thread> exits, that will cause nbdkit
 to exit.  Thus in multithreaded applications you usually want to run
@@ -153,6 +149,21 @@ reliably on all operating systems).
 
 To exit when an unrelated process exits, use
 L<nbdkit-exitwhen-filter(1)> C<exit-when-process-exits> feature.
+
+=head2 Support for --exit-with-parent
+
+This is currently implemented using a non-POSIX feature available in
+S<Linux ≥ 2.1.57>, S<FreeBSD ≥ 11.2> and macOS.  It won't work on
+other operating systems (patches welcome to make it work).
+
+To test if the current binary supports this feature the most backwards
+compatible way is:
+
+ nbdkit --exit-with-parent --version && echo "supported"
+
+In nbdkit E<ge> 1.34, S<C<nbdkit --dump-config>> prints either
+C<exit_with_parent=yes> or C<exit_with_parent=no> but earlier versions
+did not have this.
 
 =head1 SEE ALSO
 
