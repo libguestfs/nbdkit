@@ -75,6 +75,7 @@ static enum {
   mode_filename,
   mode_directory,
   mode_fd,
+  mode_dirfd,
 } mode = mode_none;
 static char *filename = NULL;
 static char *directory = NULL;
@@ -187,12 +188,7 @@ file_config (const char *key, const char *value)
    * existence checks to the last possible moment.
    */
   if (strcmp (key, "file") == 0) {
-    if (mode != mode_none) {
-    wrong_mode:
-      nbdkit_error ("%s parameter can only appear once on the command line",
-                    "file|dir|fd");
-      return -1;
-    }
+    if (mode != mode_none) goto wrong_mode;
     mode = mode_filename;
     assert (filename == NULL);
     filename = nbdkit_realpath (value);
@@ -213,6 +209,19 @@ file_config (const char *key, const char *value)
     mode = mode_fd;
     assert (filedesc == -1);
     if (nbdkit_parse_int ("fd", value, &filedesc) == -1)
+      return -1;
+    if (filedesc <= STDERR_FILENO) {
+      nbdkit_error ("file descriptor must be > %d because "
+                    "stdin, stdout and stderr are reserved for nbdkit",
+                    STDERR_FILENO);
+      return -1;
+    }
+  }
+  else if (strcmp (key, "dirfd") == 0) {
+    if (mode != mode_none) goto wrong_mode;
+    mode = mode_dirfd;
+    assert (filedesc == -1);
+    if (nbdkit_parse_int ("dirfd", value, &filedesc) == -1)
       return -1;
     if (filedesc <= STDERR_FILENO) {
       nbdkit_error ("file descriptor must be > %d because "
@@ -270,8 +279,12 @@ file_config (const char *key, const char *value)
     nbdkit_error ("unknown parameter '%s'", key);
     return -1;
   }
-
   return 0;
+
+ wrong_mode:
+  nbdkit_error ("%s parameter can only appear once on the command line",
+                "file|dir|fd|dirfd");
+  return -1;
 }
 
 /* Check that the user passed exactly one parameter. */
@@ -330,6 +343,18 @@ file_config_complete (void)
       nbdkit_error ("fd is not regular or block device: %d", filedesc);
       return -1;
     }
+    break;
+
+  case mode_dirfd:
+    assert (filename == NULL);
+    assert (directory == NULL);
+    assert (filedesc > STDERR_FILENO);
+
+    r = fstat (filedesc, &sb);
+    if (r == -1 || !(S_ISDIR (sb.st_mode))) {
+      nbdkit_error ("dirfd is not a directory: %d", filedesc);
+      return -1;
+    }
   }
 
   return 0;
@@ -359,15 +384,47 @@ file_dump_plugin (void)
 #endif
 }
 
+/* Common code for listing exports of a directory. */
+static int
+list_exports_of_directory (struct nbdkit_exports *exports, DIR *dir)
+{
+  struct dirent *entry;
+
+  errno = 0;
+  while ((entry = readdir (dir)) != NULL) {
+    int r = -1;
+    struct stat sb;
+
+#if HAVE_STRUCT_DIRENT_D_TYPE
+    if (entry->d_type == DT_BLK || entry->d_type == DT_REG)
+      r = 1;
+    else if (entry->d_type != DT_LNK && entry->d_type != DT_UNKNOWN)
+      r = 0;
+#endif
+    /* TODO: when chasing symlinks, is statx any nicer than fstatat? */
+    if (r == -1 && fstatat (dirfd (dir), entry->d_name, &sb, 0) == 0 &&
+        (S_ISREG (sb.st_mode) || S_ISBLK (sb.st_mode)))
+      r = 1;
+    if (r == 1 && nbdkit_add_export (exports, entry->d_name, NULL) == -1)
+      return -1;
+    errno = 0;
+  }
+
+  if (errno) {
+    nbdkit_error ("readdir: %m");
+    return -1;
+  }
+
+  return 0;
+}
+
 static int
 file_list_exports (int readonly, int default_only,
                    struct nbdkit_exports *exports)
 {
   /* We don't fork, so no need to worry about FD_CLOEXEC on the directory */
   DIR *dir;
-  struct dirent *entry;
-  struct stat sb;
-  int fd;
+  int dfd, r;
 
   switch (mode) {
   case mode_filename:
@@ -380,38 +437,24 @@ file_list_exports (int readonly, int default_only,
       nbdkit_error ("opendir: %m");
       return -1;
     }
-    fd = dirfd (dir);
-    if (fd == -1) {
-      nbdkit_error ("dirfd: %m");
-      closedir (dir);
-      return -1;
-    }
-    errno = 0;
-    while ((entry = readdir (dir)) != NULL) {
-      int r = -1;
-#if HAVE_STRUCT_DIRENT_D_TYPE
-      if (entry->d_type == DT_BLK || entry->d_type == DT_REG)
-        r = 1;
-      else if (entry->d_type != DT_LNK && entry->d_type != DT_UNKNOWN)
-        r = 0;
-#endif
-      /* TODO: when chasing symlinks, is statx any nicer than fstatat? */
-      if (r < 0 && fstatat (fd, entry->d_name, &sb, 0) == 0 &&
-          (S_ISREG (sb.st_mode) || S_ISBLK (sb.st_mode)))
-        r = 1;
-      if (r == 1 && nbdkit_add_export (exports, entry->d_name, NULL) == -1) {
-        closedir (dir);
-        return -1;
-      }
-      errno = 0;
-    }
-    if (errno) {
-      nbdkit_error ("readdir: %m");
-      closedir (dir);
-      return -1;
-    }
+    r = list_exports_of_directory (exports, dir);
     closedir (dir);
-    return 0;
+    return r;
+
+  case mode_dirfd:
+    dfd = dup (filedesc);
+    if (dfd == -1) {
+      nbdkit_error ("dup: %m");
+      return -1;
+    }
+    dir = fdopendir (dfd);
+    if (dir == NULL) {
+      nbdkit_error ("fdopendir: %m");
+      return -1;
+    }
+    r = list_exports_of_directory (exports, dir);
+    closedir (dir); /* also closes dfd */
+    return r;
 
   default: abort ();
   }
@@ -543,6 +586,32 @@ file_open (int readonly)
       nbdkit_debug ("file descriptor is write-only (ie. not readable): "
                     "NBD protocol does not support this, but continuing "
                     "anyway!");
+    break;
+  }
+
+  case mode_dirfd: {
+    int dfd;
+
+    file = nbdkit_export_name ();
+    if (strchr (file, '/')) {
+      nbdkit_error ("exportname cannot contain /");
+      free (h);
+      errno = EINVAL;
+      return NULL;
+    }
+    /* We don't fork, so no need to worry about FD_CLOEXEC on the directory */
+    dfd = dup (filedesc);
+    if (dfd == -1) {
+      nbdkit_error ("dup dirfd=%d: %m", filedesc);
+      free (h);
+      return NULL;
+    }
+    if (open_file_by_name (h, readonly, dfd, file) == -1) {
+      free (h);
+      close (dfd);
+      return NULL;
+    }
+    close (dfd);
     break;
   }
 
