@@ -735,6 +735,7 @@ TESTS += \
 	test-file-fd.sh \
 	test-file-extents.sh \
 	test-file-dir.sh \
+	test-file-dirfd.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-file.sh \
@@ -742,19 +743,13 @@ EXTRA_DIST += \
 	test-file-fd.sh \
 	test-file-extents.sh \
 	test-file-dir.sh \
+	test-file-dirfd.sh \
 	$(NULL)
 LIBGUESTFS_TESTS += test-file-block
-LIBNBD_TESTS += test-file-dirfd
 
 test_file_block_SOURCES = test-file-block.c test.h
 test_file_block_CFLAGS = $(WARNINGS_CFLAGS) $(LIBGUESTFS_CFLAGS)
 test_file_block_LDADD = libtest.la $(LIBGUESTFS_LIBS)
-
-test_file_dirfd_SOURCES = test-file-dirfd.c
-test_file_dirfd_CPPFLAGS = -I $(top_srcdir)/common/utils
-test_file_dirfd_CFLAGS = $(WARNINGS_CFLAGS) $(LIBNBD_CFLAGS)
-test_file_dirfd_LDADD = $(LIBNBD_LIBS)
-test_file_dirfd_LDFLAGS = $(top_builddir)/common/utils/libutils.la
 
 # floppy plugin test.
 TESTS += test-floppy.sh
