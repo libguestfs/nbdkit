@@ -127,7 +127,6 @@ plugins/*/*.3
 /tests/test-exitwhen-pipe-closed
 /tests/test-ext2
 /tests/test-file-block
-/tests/test-file-dirfd
 /tests/test-golang
 /tests/test-gzip
 /tests/test-gzip-curl
