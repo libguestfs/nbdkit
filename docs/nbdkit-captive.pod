@@ -59,7 +59,7 @@ documented by the NBD project.
 As this variable may contain a bare C<?> for Unix sockets, it is
 safest to use $uri within double quotes to avoid unintentional
 globbing.  For plugins that support distinct data based on export
-names, the B<-e> option to nbdkit controls which export name will be
+names, the I<-e> option to nbdkit controls which export name will be
 set in the URI.
 
 In nbdkit E<le> 1.22 C<$nbd> tried to guess if you were using qemu or
@@ -84,7 +84,7 @@ If E<ne> "", the Unix domain socket that nbdkit is listening on.
 =item C<$exportname>
 
 The export name (which may be "") that the process should use when
-connecting to nbdkit, as set by the B<-e> (B<--exportname>) command
+connecting to nbdkit, as set by the I<-e> (I<--exportname>) command
 line option of nbdkit.  This only matters to plugins that
 differentiate what they serve based on the export name requested by
 the client.
