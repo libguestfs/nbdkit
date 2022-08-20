@@ -192,6 +192,10 @@ TESTS += \
 	test-binary.sh \
 	test-help.sh \
 	test-version.sh \
+	test-short-options.sh \
+	test-long-options.sh \
+	test-manual.sh \
+	test-synopsis.sh \
 	test-dump-config.sh \
 	test-dump-config-major-1.sh \
 	test-dump-config-version-major-minor.sh \
@@ -200,6 +204,10 @@ EXTRA_DIST += \
 	test-binary.sh \
 	test-help.sh \
 	test-version.sh \
+	test-short-options.sh \
+	test-long-options.sh \
+	test-manual.sh \
+	test-synopsis.sh \
 	test-dump-config.sh \
 	test-dump-config-major-1.sh \
 	test-dump-config-version-major-minor.sh \
