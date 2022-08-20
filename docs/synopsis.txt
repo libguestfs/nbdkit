@@ -1,19 +1,18 @@
 nbdkit [-4|--ipv4-only] [-6|--ipv6-only]
        [-D|--debug PLUGIN|FILTER|nbdkit.FLAG=N]
-       [-e|--exportname EXPORTNAME] [--exit-with-parent]
-       [--filter FILTER ...] [-f|--foreground]
+       [--exit-with-parent] [-e|--exportname EXPORTNAME]
+       [--filter=FILTER ...] [-f|--foreground]
        [-g|--group GROUP] [-i|--ipaddr IPADDR]
-       [--log stderr|syslog|null]
-       [-n|--newstyle] [--mask-handshake MASK] [--no-sr] [-o|--oldstyle]
-       [-P|--pidfile PIDFILE]
-       [-p|--port PORT] [-r|--readonly]
-       [--run CMD] [-s|--single] [--selinux-label LABEL] [--swap]
-       [-t|--threads THREADS]
-       [--tls off|on|require]
-       [--tls-certificates /path/to/certificates]
-       [--tls-psk /path/to/pskfile] [--tls-verify-peer]
-       [-U|--unix SOCKET] [-u|--user USER]
-       [-v|--verbose] [-V|--version] [--vsock]
+       [--log=stderr|syslog|null] [--mask-handshake=MASK]
+       [-n|--newstyle] [--no-sr] [-o|--oldstyle]
+       [-P|--pidfile PIDFILE] [-p|--port PORT]
+       [-r|--readonly] [--run 'COMMAND ARGS ...']
+       [--selinux-label=LABEL] [-s|--single] [--swap]
+       [-t|--threads THREADS] [--tls=off|on|require]
+       [--tls-certificates=/path/to/certificates]
+       [--tls-psk=/path/to/pskfile] [--tls-verify-peer]
+       [-U|--unix SOCKET|-] [-u|--user USER]
+       [-v|--verbose] [--vsock]
        PLUGIN [[KEY=]VALUE [KEY=VALUE [...]]]
 
 nbdkit --dump-config
@@ -21,3 +20,5 @@ nbdkit --dump-config
 nbdkit PLUGIN --dump-plugin
 
 nbdkit --help
+
+nbdkit [-V|--version]

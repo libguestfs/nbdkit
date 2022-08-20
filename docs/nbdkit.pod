@@ -235,11 +235,11 @@ This option implies I<--foreground>.
 
 =item B<-e> EXPORTNAME
 
-=item B<--export> EXPORTNAME
+=item B<--export=>EXPORTNAME
 
-=item B<--export-name> EXPORTNAME
+=item B<--export-name=>EXPORTNAME
 
-=item B<--exportname> EXPORTNAME
+=item B<--exportname=>EXPORTNAME
 
 Set a preferred exportname to expose in the shell environment created
 during I<--run>.  The use of this option without I<--run> has no
@@ -251,6 +251,13 @@ the client's choice of export name.
 If not set, the I<--run> environment is set to access the default
 exportname C<""> (empty string).
 
+=item B<--filter=>FILTER
+
+Add a filter before the plugin.  This option may be given one or more
+times to stack filters in front of the plugin.  They are processed in
+the order they appear on the command line.  See L</FILTERS> and
+L<nbdkit-filter(3)>.
+
 =item B<-f>
 
 =item B<--foreground>
@@ -259,16 +266,9 @@ exportname C<""> (empty string).
 
 I<Don't> fork into the background.
 
-=item B<--filter> FILTER
-
-Add a filter before the plugin.  This option may be given one or more
-times to stack filters in front of the plugin.  They are processed in
-the order they appear on the command line.  See L</FILTERS> and
-L<nbdkit-filter(3)>.
-
 =item B<-g> GROUP
 
-=item B<--group> GROUP
+=item B<--group=>GROUP
 
 Change group to C<GROUP> after starting up.  A group name or numeric
 group ID can be used.
@@ -280,9 +280,9 @@ See also I<-u>.
 
 =item B<-i> IPADDR
 
-=item B<--ip-addr> IPADDR
+=item B<--ip-addr=>IPADDR
 
-=item B<--ipaddr> IPADDR
+=item B<--ipaddr=>IPADDR
 
 Listen on the specified interface.  The default is to listen on all
 interfaces.  See also I<-4>, I<-6>, and I<-p>.
@@ -301,6 +301,12 @@ The default is to send error messages to stderr, unless nbdkit
 forks into the background in which case they are sent to syslog.
 
 For more details see L<nbdkit-service(1)/LOGGING>.
+
+=item B<--mask-handshake=>MASK
+
+This option can be used to mask off particular global features which
+are advertised during new-style handshake (defaulting to all supported
+bits set).  See L<nbdkit-protocol(1)>.
 
 =item B<-n>
 
@@ -333,9 +339,9 @@ See L<nbdkit-protocol(1)>.
 
 =item B<-P> PIDFILE
 
-=item B<--pid-file> PIDFILE
+=item B<--pid-file=>PIDFILE
 
-=item B<--pidfile> PIDFILE
+=item B<--pidfile=>PIDFILE
 
 Write C<PIDFILE> (containing the process ID of the server) after
 nbdkit becomes ready to accept connections.
@@ -345,7 +351,7 @@ delete the file when it exits.
 
 =item B<-p> PORT
 
-=item B<--port> PORT
+=item B<--port=>PORT
 
 Change the TCP/IP port number on which nbdkit serves requests.
 The default is C<10809>.  See also I<-i>.
@@ -366,15 +372,28 @@ L<nbdkit-cow-filter(1)> can be placed over read-only plugins to
 provide copy-on-write (or "snapshot") functionality.  If you are using
 qemu as a client then it also supports snapshots.
 
-=item B<--run> CMD
+=item B<--run> 'COMMAND ARGS ...'
 
-Run nbdkit as a captive subprocess of C<CMD>.  When C<CMD> exits,
-nbdkit is killed.  See L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
+Run nbdkit as a captive subprocess of the command.  When the command
+exits, nbdkit is killed.  See L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
 
 Note that the command is executed by F</bin/sh>.  On some platforms
 like Debian this might not be a full-featured shell.
 
 This option implies I<--foreground>.
+
+=item B<--selinux-label=>SOCKET-LABEL
+
+Apply the SELinux label C<SOCKET-LABEL> to the nbdkit listening
+socket.
+
+The common — perhaps only — use of this option is to allow libvirt
+guests which are using SELinux and sVirt confinement to access nbdkit
+Unix domain sockets.  The example below shows how to do this.  Note
+that the socket and filesystem labels are different.
+
+ nbdkit -U /tmp/sock --selinux-label=system_u:object_r:svirt_socket_t:s0 ...
+ chcon system_u:object_r:svirt_image_t:s0 /tmp/sock
 
 =item B<-s>
 
@@ -393,19 +412,6 @@ L<nbdkit-service(1)/SOCKET ACTIVATION> instead of this option.
 
 This option implies I<--foreground>.
 
-=item B<--selinux-label> SOCKET-LABEL
-
-Apply the SELinux label C<SOCKET-LABEL> to the nbdkit listening
-socket.
-
-The common — perhaps only — use of this option is to allow libvirt
-guests which are using SELinux and sVirt confinement to access nbdkit
-Unix domain sockets.  The example below shows how to do this.  Note
-that the socket and filesystem labels are different.
-
- nbdkit -U /tmp/sock --selinux-label=system_u:object_r:svirt_socket_t:s0 ...
- chcon system_u:object_r:svirt_image_t:s0 /tmp/sock
-
 =item B<--swap>
 
 (nbdkit E<ge> 1.18)
@@ -419,7 +425,7 @@ the process.
 
 =item B<-t> THREADS
 
-=item B<--threads> THREADS
+=item B<--threads=>THREADS
 
 Set the number of threads to be used per connection, which in turn
 controls the number of outstanding requests that can be processed at
@@ -436,13 +442,13 @@ is not prepared for out-of-order responses), set this to 1.
 Disable, enable or require TLS (authentication and encryption
 support).  See L<nbdkit-tls(1)>.
 
-=item B<--tls-certificates> /path/to/certificates
+=item B<--tls-certificates=>/path/to/certificates
 
 Set the path to the TLS certificates directory.  If not specified,
 some built-in paths are checked.  See L<nbdkit-tls(1)> for more
 details.
 
-=item B<--tls-psk> /path/to/pskfile
+=item B<--tls-psk=>/path/to/pskfile
 
 Set the path to the pre-shared keys (PSK) file.  If used, this
 overrides certificate authentication.  There is no built-in path.  See
@@ -455,7 +461,7 @@ check the client's certificate.
 
 =item B<-U> SOCKET
 
-=item B<--unix> SOCKET
+=item B<--unix=>SOCKET
 
 =item B<-U ->
 
@@ -479,7 +485,7 @@ private socket.  This is useful with L<nbdkit-captive(1)/CAPTIVE NBDKIT>.
 
 =item B<-u> USER
 
-=item B<--user> USER
+=item B<--user=>USER
 
 Change user to C<USER> after starting up.  A user name or numeric user
 ID can be used.
