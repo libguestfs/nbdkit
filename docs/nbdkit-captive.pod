@@ -5,7 +5,8 @@ reliably cleaned up
 
 =head1 SYNOPSIS
 
- nbdkit PLUGIN [...] [-e|--exportname EXPORTNAME] --run "CMD ARGS ..."
+ nbdkit PLUGIN [...] [-e|--exportname EXPORTNAME] \
+                     --run 'COMMAND ARGS ...'
 
 =for paragraph
 

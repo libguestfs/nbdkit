@@ -146,7 +146,7 @@ CLEANFILES += synopsis.c
 main.c: synopsis.c
 synopsis.c: $(top_srcdir)/docs/synopsis.txt
 	rm -f $@ $@-t
-	$(SED) -e 's/\(.*\)/"\1\\n"/g' $< > $@-t
+	$(SED) -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/g' $< > $@-t
 	mv $@-t $@
 
 # pkg-config / pkgconf
