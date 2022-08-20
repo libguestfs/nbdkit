@@ -182,6 +182,12 @@ iso_config_complete (void)
   "params='<PARAMS>'              Extra parameters to pass.\n" \
   "prog=<ISOPROG>                 The program used to make ISOs." \
 
+static void
+iso_dump_plugin (void)
+{
+  printf ("iso_prog=%s\n", ISOPROG);
+}
+
 static int
 iso_get_ready (void)
 {
@@ -255,6 +261,7 @@ static struct nbdkit_plugin plugin = {
   .config_complete   = iso_config_complete,
   .config_help       = iso_config_help,
   .magic_config_key  = "dir",
+  .dump_plugin       = iso_dump_plugin,
   .get_ready         = iso_get_ready,
   .open              = iso_open,
   .get_size          = iso_get_size,

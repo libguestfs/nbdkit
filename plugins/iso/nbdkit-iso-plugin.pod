@@ -7,6 +7,10 @@ nbdkit-iso-plugin - create virtual ISO (CD-ROM) from directory
  nbdkit iso [dir=]DIRECTORY [[dir=]DIRECTORY ...]
             [prog=mkisofs] [params='-JrT']
 
+=for paragraph
+
+ nbdkit iso --dump-plugin
+
 =head1 DESCRIPTION
 
 C<nbdkit-iso-plugin> is a plugin for L<nbdkit(1)> which creates a
@@ -15,7 +19,7 @@ from F<DIRECTORY> are added to a virtual ISO image which is served
 read-only over the NBD protocol.
 
 This plugin uses L<xorriso(1)>, L<genisoimage(1)> or L<mkisofs(1)> to
-create the ISO content.
+create the ISO content.  See also L</DUMP PLUGIN OUTPUT> below.
 
 To create a FAT-formatted virtual floppy disk instead of a CD, see
 L<nbdkit-floppy-plugin(1)>.  To create a Linux compatible virtual
@@ -74,6 +78,18 @@ nbdkit is compiled.  You only need to use this parameter if you want
 to override it at run time.
 
 =back
+
+=head1 DUMP PLUGIN OUTPUT
+
+Use:
+
+ nbdkit iso --dump-plugin
+
+to find out which mkisofs-like program was used when the plugin was
+compiled.  For example:
+
+ $ nbdkit iso --dump-plugin | grep ^iso_prog=
+ iso_prog=xorriso
 
 =head1 ENVIRONMENT VARIABLES
 
