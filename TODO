@@ -349,6 +349,15 @@ using ‘#define NBDKIT_API_VERSION <version>’.
   uint32_t).  Although the NBD protocol does not support 64 bit
   lengths, it might do in future.
 
+* v2 .can_zero is tri-state for filters, but bool for plugins; in v3,
+  even plugins should get a say on whether to emulate
+
+* v2 .can_extents is bool, and cannot affect our response to
+  NBD_OPT_SET_META_CONTEXT (that is, we are blindly emulating extent
+  support regardless of the export name).  In v3, .can_extents should
+  be tri-state, with an explicit way to disable that context on a
+  per-export basis.
+
 * pread could be changed to allow it to support Structured Replies
   (SRs).  This could mean allowing it to return partial data, holes,
   zeroes, etc.  For a client that negotiates SR coupled with a plugin
