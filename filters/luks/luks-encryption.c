@@ -744,6 +744,12 @@ load_header (nbdkit_next *next, const char *passphrase)
     return NULL;
   }
 
+  if (h->phdr.master_key_digest_iterations == 0) {
+    nbdkit_error ("bad LUKSv1 header: master key iterations is 0");
+    free (h);
+    return NULL;
+  }
+
   /* We derive several allocations from master_key_len so make sure
    * it's not insane.
    */
@@ -766,6 +772,11 @@ load_header (nbdkit_next *next, const char *passphrase)
       }
       if (ks->stripes >= 10000) {
         nbdkit_error ("bad LUKSv1 header: key slot %zu stripes too large", i);
+        free (h);
+        return NULL;
+      }
+      if (ks->password_iterations == 0) {
+        nbdkit_error ("bad LUKSv1 header: key slot %zu iterations is 0", i);
         free (h);
         return NULL;
       }
