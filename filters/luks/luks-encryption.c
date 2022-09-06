@@ -766,6 +766,7 @@ load_header (nbdkit_next *next, const char *passphrase)
       }
       if (ks->stripes >= 10000) {
         nbdkit_error ("bad LUKSv1 header: key slot %zu stripes too large", i);
+        free (h);
         return NULL;
       }
       start = ks->key_material_offset;
