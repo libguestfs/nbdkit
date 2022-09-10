@@ -218,7 +218,7 @@ inc_blksize_ctr (blksize_hist_t &hist, size_t blksize, size_t offset)
 
 static void
 print_align_hist(const std::unordered_map<int, size_t>& align_map)
-{    
+{
   /* Convert to ordered map (convenient, since we need to mutate counts),
    * find requests for offset zero (any alignment), and calculate total. */
   std::map<int, size_t> align_hist;
@@ -244,10 +244,10 @@ print_align_hist(const std::unordered_map<int, size_t>& align_map)
       auto it = align_hist.find(bits);
       if (it != align_hist.end())
         it->second += requests;
-    } 
+    }
     el.second += any_align_count;
   }
-  
+
   /* The smallest alignment must have the largest number of requests, so we
    * can iterate in map-order, skipping over bits for which the number of
    * requests does not change */
@@ -264,9 +264,9 @@ print_align_hist(const std::unordered_map<int, size_t>& align_map)
     }
 
     // Only print if number of requests differs from the next alignment
-    it++; 
+    it++;
     if (it == align_hist.end() || it->second != requests) {
-      fprintf (fp, "         %2d bit aligned: %5.1f%% (%zu)\n",      
+      fprintf (fp, "         %2d bit aligned: %5.1f%% (%zu)\n",
               bits, static_cast<double>(requests*100) / total, requests);
     }
   }
