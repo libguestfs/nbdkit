@@ -15,47 +15,55 @@ are written to a file once when nbdkit exits.
 
 =head1 EXAMPLE OUTPUT
 
- # nbdkit --filter=exitfirst --filter=stats memory 25G statsfile=example.txt
- # nbd-client localhost /dev/nbd1 && mkfs.ext4 /dev/nbd1 &&
+ # nbdkit --filter=exitlast --filter=stats memory 25G statsfile=example.txt
+ # nbd-client localhost /dev/nbd1 && mkfs.ext4 /dev/nbd1 && sync &&
    nbd-client -d /dev/nbd1
  [....]
  # cat example.txt
- total: 1252 ops, 3.395897 s, 25.13 GiB, 7.40 GiB/s
- read: 145 ops, 0.000133 s, 3.04 MiB, 22.34 GiB/s op, 917.58 KiB/s total
- write: 1088 ops, 0.065065 s, 132.38 MiB, 1.99 GiB/s op, 38.98 MiB/s total
- trim: 14 ops, 0.002037 s, 25.00 GiB, 12272.95 GiB/s op, 7.36 GiB/s total
+ total: 191 ops, 21.917545 s, 25.13 GiB, 1.15 GiB/s
+ read: 136 ops, 0.000230 s, 3.16 MiB, 13.43 GiB/s op, 147.83 KiB/s total
+   Request size and alignment breakdown:
+     12 bits: 68.4% (93 reqs, 372.00 KiB total)
+          12 bit aligned: 100.0% (93)
+          13 bit aligned:  72.0% (67)
+          14 bit aligned:  55.9% (52)
+          15 bit aligned:  48.4% (45)
+          16 bit aligned:  43.0% (40)
+     14 bits: 10.3% (14 reqs, 296.00 KiB total)
+          12 bit aligned: 100.0% (14)
+          13 bit aligned:  35.7% (5)
+          19 bit aligned:  21.4% (3)
+ [....]
+     other sizes:  3.7% (5 reqs, 3.16 MiB total)
+
+ write: 36 ops, 0.125460 s, 132.38 MiB, 1.03 GiB/s op, 6.04 MiB/s total
+   Request size and alignment breakdown:
+     12 bits: 50.0% (18 reqs, 72.00 KiB total)
+          12 bit aligned: 100.0% (18)
+          13 bit aligned:  77.8% (14)
+          27 bit aligned:  72.2% (13)
+          31 bit aligned:  66.7% (12)
+          32 bit aligned:  33.3% (6)
+          33 bit aligned:  22.2% (4)
+          34 bit aligned:  11.1% (2)
+     14 bits: 30.6% (11 reqs, 224.00 KiB total)
+          12 bit aligned: 100.0% (11)
+          27 bit aligned:  90.9% (10)
+     25 bits: 11.1% (4 reqs, 128.00 MiB total)
+          25 bit aligned: 100.0% (4)
+          26 bit aligned:  50.0% (2)
+          27 bit aligned:  25.0% (1)
+     16 bits:  2.8% (1 reqs, 64.00 KiB total)
+          16 bit aligned: 100.0% (1)
+
+ trim: 14 ops, 0.002687 s, 25.00 GiB, 9304.06 GiB/s op, 1.14 GiB/s total
+   Request size and alignment breakdown:
+     31 bits: 85.7% (12 reqs, 24.00 GiB total)
+          24 bit aligned: 100.0% (12)
+     24 bits:  7.1% (1 reqs, 16.00 MiB total)
+
  flush: 5 ops, 0.000002 s, 0 bytes, 0 bytes/s op, 0 bytes/s total
 
- READ request sizes:
-      4096 bytes: 66.2% of requests (96)
-          12 bit aligned: 100.0% (96)
-          13 bit aligned:  69.8% (67)
-          14 bit aligned:  54.2% (52)
-          15 bit aligned:  46.9% (45)
-          16 bit aligned:  41.7% (40)
-          17 bit aligned:  36.5% (35)
-          18 bit aligned:  31.2% (30)
-          19+ bit-aligned: 28.1% (27)
-     16384 bytes:  4.8% of requests (7)
-          13 bit aligned: 100.0% (7)
-          17 bit aligned:  71.4% (5)
-          19 bit aligned:  42.9% (3)
-     other sizes: 29.0% of requests (42)
-
- WRITE request sizes:
-    131072 bytes: 97.1% of requests (1056)
-          17 bit aligned: 100.0% (1056)
-          18 bit aligned:  50.0% (528)
-          19+ bit-aligned: 25.0% (264)
-     other sizes:  2.9% of requests (32)
-
- TRIM request sizes:
- 2147483648 bytes: 85.7% of requests (12)
-          24 bit aligned: 100.0% (12)
-     other sizes: 14.3% of requests (2)
-
- ZERO request sizes:
-     (no such requests)
 
 =head1 PARAMETERS
 
@@ -73,9 +81,15 @@ If set then we append to the file instead of replacing it.
 
 =item B<statsthreshold=>PERCENTILE
 
-Percentile of requests for which block size histogram should be printed.
-Set to zero to disable collection of block size statistics. Set to 100
-to get a list of every block size encountered. Default: 95.
+If non-zero, track request size and alignment distribution and print
+histogram.
+
+Requests are grouped by the number of bits that are needed to represent
+the request size (e.g. a request of size 3892 needs will be grouped
+with all requests of size 2^11=2048 to 2^12-1=4095), and the number of
+trailing zero bits in the offset.
+
+Histogram output is truncated to PERCENTILE of requests. Default: 95.
 
 =back
 
