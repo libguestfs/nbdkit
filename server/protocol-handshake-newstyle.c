@@ -742,6 +742,14 @@ negotiate_handshake_newstyle_options (void)
         break;
       }
 
+      if (conn->structured_replies) {
+        if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID) == -1)
+          return -1;
+        debug ("newstyle negotiation: %s: structured replies already in use",
+               name_of_nbd_opt (option));
+        break;
+      }
+
       if (send_newstyle_option_reply (option, NBD_REP_ACK) == -1)
         return -1;
 
