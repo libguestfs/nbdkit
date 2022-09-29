@@ -368,7 +368,7 @@ mod ffi {
 
     pub(super) extern fn close(selfp: *mut c_void) {
         unsafe {
-            Box::from_raw(selfp as *mut Box<dyn Server>);
+            drop(Box::from_raw(selfp as *mut Box<dyn Server>));
         }
     }
 
