@@ -63,6 +63,8 @@ send_newstyle_option_reply (uint32_t option, uint32_t reply)
   fixed_new_option_reply.reply = htobe32 (reply);
   fixed_new_option_reply.replylen = htobe32 (0);
 
+  debug ("replying to %s with %s", name_of_nbd_opt (option),
+         name_of_nbd_rep (reply));
   if (conn->send (&fixed_new_option_reply,
                   sizeof fixed_new_option_reply, 0) == -1) {
     /* The protocol document says that the client is allowed to simply
@@ -463,6 +465,8 @@ negotiate_handshake_newstyle_options (void)
 
     case NBD_OPT_LIST:
       if (optlen != 0) {
+        debug ("ignoring request, client sent unexpected payload: %s",
+               name_of_nbd_opt (option));
         if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
@@ -491,6 +495,8 @@ negotiate_handshake_newstyle_options (void)
 
     case NBD_OPT_STARTTLS:
       if (optlen != 0) {
+        debug ("ignoring request, client sent unexpected payload: %s",
+               name_of_nbd_opt (option));
         if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
@@ -719,6 +725,8 @@ negotiate_handshake_newstyle_options (void)
 
     case NBD_OPT_STRUCTURED_REPLY:
       if (optlen != 0) {
+        debug ("ignoring request, client sent unexpected payload: %s",
+               name_of_nbd_opt (option));
         if (send_newstyle_option_reply (option, NBD_REP_ERR_INVALID)
             == -1)
           return -1;
