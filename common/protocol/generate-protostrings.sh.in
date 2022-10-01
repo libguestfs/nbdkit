@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -36,6 +36,7 @@ cat <<'EOF'
  * License of this file is BSD, the same as the rest of nbdkit.
  */
 
+#include <stdio.h>
 #include "nbd-protocol.h"
 
 EOF
@@ -57,8 +58,9 @@ declare -A functions=(
 keys=$( printf '%s\n' ${!functions[@]} | sort )
 for fn in $keys; do
     echo 'extern const char *'
-    echo "name_of_nbd_$fn (int fl)"
+    echo "name_of_nbd_$fn (unsigned int fl)"
     echo '{'
+    echo '  static char buf[] = "unknown (0x00000000)";'
     echo '  switch (fl) {'
 
     # We look for the first #define <symbol> and rewrite every
@@ -68,7 +70,9 @@ for fn in $keys; do
         @SED@ 's/^#define \([_A-Z]*\).*/  case \1:\
     return "\1\";/'
 
-    echo '  default: return "unknown";'
+    echo '  default:'
+    echo '    snprintf (buf, sizeof buf, "unknown (0x%x)", fl);'
+    echo '    return buf;'
     echo '  }'
     echo '}'
     echo
