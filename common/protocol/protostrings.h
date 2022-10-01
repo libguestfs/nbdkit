@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -37,15 +37,15 @@
  * generate-protostrings.sh from the nbd-protocol.h header file.
  */
 
-extern const char *name_of_nbd_global_flag (int);
-extern const char *name_of_nbd_flag (int);
-extern const char *name_of_nbd_opt (int);
-extern const char *name_of_nbd_rep (int);
-extern const char *name_of_nbd_info (int);
-extern const char *name_of_nbd_reply_flag (int);
-extern const char *name_of_nbd_reply_type (int);
-extern const char *name_of_nbd_cmd (int);
-extern const char *name_of_nbd_cmd_flag (int);
-extern const char *name_of_nbd_error (int);
+extern const char *name_of_nbd_global_flag (unsigned int);
+extern const char *name_of_nbd_flag (unsigned int);
+extern const char *name_of_nbd_opt (unsigned int);
+extern const char *name_of_nbd_rep (unsigned int);
+extern const char *name_of_nbd_info (unsigned int);
+extern const char *name_of_nbd_reply_flag (unsigned int);
+extern const char *name_of_nbd_reply_type (unsigned int);
+extern const char *name_of_nbd_cmd (unsigned int);
+extern const char *name_of_nbd_cmd_flag (unsigned int);
+extern const char *name_of_nbd_error (unsigned int);
 
 #endif /* NBDKIT_PROTOSTRINGS_H */
