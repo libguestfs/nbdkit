@@ -424,7 +424,15 @@ negotiate_handshake_newstyle_options (void)
      */
     if (tls == 2 && !conn->using_tls &&
         !(option == NBD_OPT_ABORT || option == NBD_OPT_STARTTLS)) {
+      if (option == NBD_OPT_EXPORT_NAME) {
+        debug ("newstyle negotiation: can't reply NBD_REP_ERR_TLS_REQD to %s",
+               name_of_nbd_opt (option));
+        return -1;
+      }
       if (send_newstyle_option_reply (option, NBD_REP_ERR_TLS_REQD))
+        return -1;
+      if (conn_recv_full (data, optlen,
+                          "waiting for starttls: %m") == -1)
         return -1;
       continue;
     }
