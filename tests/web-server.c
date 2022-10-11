@@ -287,8 +287,11 @@ handle_requests (int s)
      */
     else
       handle_file_request (s, method);
+
+    fprintf (stderr, "web server: completed request\n");
   }
 
+  fprintf (stderr, "web server: closing socket\n");
   close (s);
 }
 
@@ -302,7 +305,7 @@ handle_file_request (int s, enum method method)
   const char response1_partial[] = "HTTP/1.1 206 Partial Content\r\n";
   const char response2[] =
     "Accept-rANGES:     bytes\r\n" /* See RHBZ#1837337 */
-    "Connection: keep-alive\r\n"
+    "Connection: close\r\n"
     "Content-Type: application/octet-stream\r\n";
   char response3[64];
   const char response4[] = "\r\n";
@@ -361,6 +364,7 @@ handle_mirror_redirect_request (int s)
   /* Note we send 302 (temporary redirect), same as Fedora's mirrorservice. */
   const char found[] = "HTTP/1.1 302 Found\r\nContent-Length: 0\r\n";
   char location[] = "Location: /mirrorX\r\n";
+  char close_[] = "Connection: close\r\n";
   const char eol[] = "\r\n";
 
   location[17] = rr;
@@ -370,6 +374,7 @@ handle_mirror_redirect_request (int s)
 
   xwrite (s, found, strlen (found));
   xwrite (s, location, strlen (location));
+  xwrite (s, close_, strlen (close_));
   xwrite (s, eol, strlen (eol));
 }
 
@@ -383,7 +388,7 @@ handle_mirror_data_request (int s, enum method method, char byte)
   const char response1_partial[] = "HTTP/1.1 206 Partial Content\r\n";
   const char response2[] =
     "Accept-rANGES:     bytes\r\n" /* See RHBZ#1837337 */
-    "Connection: keep-alive\r\n"
+    "Connection: close\r\n"
     "Content-Type: application/octet-stream\r\n";
   char response3[64];
   const char response4[] = "\r\n";
