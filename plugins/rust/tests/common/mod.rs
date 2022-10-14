@@ -48,6 +48,7 @@ lazy_static! {
 
 mock!{
     pub Server {}
+    #[allow(dead_code)]
     impl Server for Server {
         fn cache(&self, count: u32, offset: u64) -> Result<()>;
         fn can_cache(&self) -> Result<CacheFlags>;
