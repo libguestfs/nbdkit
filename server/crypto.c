@@ -514,8 +514,15 @@ debug_x590_cert (gnutls_session_t session)
     gnutls_x509_crt_t cert;
     gnutls_datum_t cinfo;
 
-    gnutls_x509_crt_init (&cert);
-    gnutls_x509_crt_import (cert, &cert_list[i], GNUTLS_X509_FMT_DER);
+    /* This is for debugging; best-effort is okay */
+    ret = gnutls_x509_crt_init (&cert);
+    if (ret != 0)
+      continue;
+    ret = gnutls_x509_crt_import (cert, &cert_list[i], GNUTLS_X509_FMT_DER);
+    if (ret != 0) {
+      gnutls_x509_crt_deinit (cert);
+      continue;
+    }
 
     ret = gnutls_x509_crt_print (cert, GNUTLS_CRT_PRINT_ONELINE, &cinfo);
     if (ret == 0) {
