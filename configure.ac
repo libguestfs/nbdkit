@@ -942,11 +942,16 @@ EOF
 ])
 
 dnl For developing plugins in Rust, optional.
+dnl Rust does not play nicely with VPATH builds
 AC_CHECK_PROG([CARGO],[cargo],[cargo],[no])
 AC_ARG_ENABLE([rust],
     [AS_HELP_STRING([--disable-rust], [disable Rust plugin])],
     [],
-    [enable_rust=yes])
+    [if test "x$(realpath $srcdir)" = "x$(realpath .)"; then
+       enable_rust=yes
+     else
+       enable_rust=no
+     fi])
 AM_CONDITIONAL([HAVE_RUST],
                [test "x$CARGO" != "xno" && test "x$enable_rust" != "xno"])
 
