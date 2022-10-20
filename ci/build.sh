@@ -4,7 +4,7 @@ set -xe
 
 skip_tests() {
     # Add a way to run all the tests, even the skipped ones, with an environment
-    # variable, so that it can be set fora branch or fork in GitLab.
+    # variable, so that it can be set for a branch or fork in GitLab.
     if test "$SKIPPED_TESTS" != "force"
     then
         # Skip tests from ci/skipped_tests if this is the right OS version

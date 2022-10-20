@@ -93,6 +93,8 @@ targets:
 
   opensuse-leap-153: x86_64
 
+  opensuse-leap-154: x86_64
+
   opensuse-tumbleweed: x86_64
 
   macos-11:

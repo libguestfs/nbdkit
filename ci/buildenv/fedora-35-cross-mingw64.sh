@@ -69,4 +69,4 @@ export MAKE="/usr/bin/make"
 export PYTHON="/usr/bin/python3"
 
 export ABI="x86_64-w64-mingw32"
-export CONFIGURE_OPTS="--hostx86_64-w64-mingw32"
+export CONFIGURE_OPTS="--host=x86_64-w64-mingw32"
