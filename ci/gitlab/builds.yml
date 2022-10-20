@@ -355,7 +355,7 @@ mingw64-fedora-36-local-env:
 x86_64-freebsd-12:
   extends: .cirrus_build_job
   needs: []
-  allow_failure: true
+  allow_failure: false
   variables:
     CIRRUS_VM_IMAGE_NAME: freebsd-12-3
     CIRRUS_VM_IMAGE_SELECTOR: image_family
@@ -369,7 +369,7 @@ x86_64-freebsd-12:
 x86_64-freebsd-13:
   extends: .cirrus_build_job
   needs: []
-  allow_failure: true
+  allow_failure: false
   variables:
     CIRRUS_VM_IMAGE_NAME: freebsd-13-1
     CIRRUS_VM_IMAGE_SELECTOR: image_family
@@ -383,7 +383,7 @@ x86_64-freebsd-13:
 x86_64-freebsd-current:
   extends: .cirrus_build_job
   needs: []
-  allow_failure: true
+  allow_failure: false
   variables:
     CIRRUS_VM_IMAGE_NAME: freebsd-13-0-snap
     CIRRUS_VM_IMAGE_SELECTOR: image_family
@@ -397,7 +397,7 @@ x86_64-freebsd-current:
 aarch64-macos-12:
   extends: .cirrus_build_job
   needs: []
-  allow_failure: true
+  allow_failure: false
   variables:
     CIRRUS_VM_IMAGE_NAME: ghcr.io/cirruslabs/macos-monterey-base:latest
     CIRRUS_VM_IMAGE_SELECTOR: image

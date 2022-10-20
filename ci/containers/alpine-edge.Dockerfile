@@ -42,10 +42,8 @@ RUN apk update && \
         perl \
         perl-dev \
         pkgconf \
+        py3-boto3 \
         py3-flake8 \
-        py3-pip \
-        py3-setuptools \
-        py3-wheel \
         python3 \
         python3-dev \
         qemu-img \
@@ -65,8 +63,6 @@ RUN apk update && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/clang && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/g++ && \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/gcc
-
-RUN /usr/bin/pip3 install boto3
 
 ENV CCACHE_WRAPPERSDIR "/usr/libexec/ccache-wrappers"
 ENV LANG "en_US.UTF-8"

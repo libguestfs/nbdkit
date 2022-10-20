@@ -41,10 +41,8 @@ function install_buildenv() {
         perl \
         perl-dev \
         pkgconf \
+        py3-boto3 \
         py3-flake8 \
-        py3-pip \
-        py3-setuptools \
-        py3-wheel \
         python3 \
         python3-dev \
         qemu-img \
@@ -63,7 +61,6 @@ function install_buildenv() {
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/clang
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/g++
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/gcc
-    /usr/bin/pip3 install boto3
 }
 
 export CCACHE_WRAPPERSDIR="/usr/libexec/ccache-wrappers"
