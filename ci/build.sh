@@ -70,6 +70,10 @@ main() {
 
     autoreconf -if
 
+    # These are options we want in all CI builds (if the container can't
+    # build it, we want an error). Options not mentioned here default to
+    # being auto-detected by the container, but can have explicit
+    # overrides below.
     CONFIG_ARGS="\
 --disable-libguestfs-tests
 --enable-gcc-warnings \
@@ -99,7 +103,7 @@ main() {
     if test "$PERL" = "skip"
     then
         CONFIG_ARGS="$CONFIG_ARGS --disable-perl"
-    else
+    elif test "$PERL" = "force"
         CONFIG_ARGS="$CONFIG_ARGS --enable-perl"
     fi
 

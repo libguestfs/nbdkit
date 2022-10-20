@@ -50,22 +50,24 @@ targets:
   fedora-35:
     jobs:
       - arch: x86_64
+        variables:
+          PERL: force
 
       - arch: mingw32
         variables:
-          PERL: skip
           RUST: skip
           GOLANG: skip
 
       - arch: mingw64
         variables:
-          PERL: skip
           RUST: skip
           GOLANG: skip
 
   fedora-rawhide:
     jobs:
       - arch: x86_64
+        variables:
+          PERL: force
 
       - arch: x86_64
         suffix: -clang

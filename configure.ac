@@ -806,7 +806,18 @@ AS_IF([test "x$PERL" != "xno" && test "x$enable_perl" != "xno"],[
     PERL_LDOPTS="$($PERL -MExtUtils::Embed -e 'ldopts')"
     AC_MSG_RESULT([$PERL_LDOPTS])
 
-    dnl XXX Could check these actually work.
+    dnl Check these actually work.
+    AC_MSG_CHECKING([whether Perl modules will compile])
+    old_CFLAGS="$CFLAGS"
+    old_LIBS="$LIBS"
+    CFLAGS="$PERL_CFLAGS -I$PERL_ARCHLIB/CORE $CFLAGS"
+    LIBS="$PERL_LDOPTS $LIBS"
+    AC_CHECK_FUNCS([perl_alloc])
+    CFLAGS="$old_CFLAGS"
+    LIBS="$old_LIBS"
+    if test "x$ac_cv_func_perl_alloc" != xyes; then
+      enable_perl=no
+    fi
 ])
 AM_CONDITIONAL([HAVE_PERL],[test "x$enable_perl" != "xno" && test "x$PERL" != "xno"])
 AC_SUBST([PERL_ARCHLIB])

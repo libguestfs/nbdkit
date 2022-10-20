@@ -169,6 +169,7 @@ x86_64-fedora-35-prebuilt-env:
   allow_failure: false
   variables:
     NAME: fedora-35
+    PERL: force
 
 x86_64-fedora-35-local-env:
   extends: .native_build_job_local_env
@@ -177,6 +178,7 @@ x86_64-fedora-35-local-env:
   variables:
     IMAGE: registry.fedoraproject.org/fedora:35
     NAME: fedora-35
+    PERL: force
 
 
 x86_64-fedora-rawhide-prebuilt-env:
@@ -187,6 +189,7 @@ x86_64-fedora-rawhide-prebuilt-env:
   allow_failure: false
   variables:
     NAME: fedora-rawhide
+    PERL: force
 
 x86_64-fedora-rawhide-local-env:
   extends: .native_build_job_local_env
@@ -195,6 +198,7 @@ x86_64-fedora-rawhide-local-env:
   variables:
     IMAGE: registry.fedoraproject.org/fedora:rawhide
     NAME: fedora-rawhide
+    PERL: force
 
 
 x86_64-fedora-rawhide-clang-prebuilt-env:
@@ -304,7 +308,6 @@ mingw32-fedora-35-prebuilt-env:
     CROSS: mingw32
     GOLANG: skip
     NAME: fedora-35
-    PERL: skip
     RUST: skip
 
 mingw32-fedora-35-local-env:
@@ -316,7 +319,6 @@ mingw32-fedora-35-local-env:
     GOLANG: skip
     IMAGE: registry.fedoraproject.org/fedora:35
     NAME: fedora-35
-    PERL: skip
     RUST: skip
 
 
@@ -330,7 +332,6 @@ mingw64-fedora-35-prebuilt-env:
     CROSS: mingw64
     GOLANG: skip
     NAME: fedora-35
-    PERL: skip
     RUST: skip
 
 mingw64-fedora-35-local-env:
@@ -342,7 +343,6 @@ mingw64-fedora-35-local-env:
     GOLANG: skip
     IMAGE: registry.fedoraproject.org/fedora:35
     NAME: fedora-35
-    PERL: skip
     RUST: skip
 
 
