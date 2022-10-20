@@ -1302,11 +1302,11 @@ AC_ARG_ENABLE([vddk],
      dnl newer versions which are supported only on x86-64.  Don't
      dnl compile on other platforms.
      AC_MSG_CHECKING([if the host CPU is compatible with VDDK])
-     AS_IF([test "$host_cpu" = "x86_64"],[
-        AC_MSG_RESULT([yes ($host_cpu)])
+     AS_IF([test "$host_cpu" = "x86_64" && test "$host_os" = "linux-gnu"],[
+        AC_MSG_RESULT([yes ($host)])
         enable_vddk=yes
      ],[
-        AC_MSG_RESULT([no ($host_cpu)])
+        AC_MSG_RESULT([no ($host)])
         enable_vddk=no
      ])
     ])

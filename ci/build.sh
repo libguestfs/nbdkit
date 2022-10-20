@@ -122,14 +122,12 @@ main() {
             CONFIG_ARGS="\
 $CONFIG_ARGS
 --disable-ocaml
---disable-vddk
 "
             ;;
         *)
             CONFIG_ARGS="\
 $CONFIG_ARGS
 --enable-ocaml
---enable-vddk
 "
             ;;
     esac
