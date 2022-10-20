@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2020-2021 Red Hat Inc.
+# Copyright (C) 2020-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -70,27 +70,27 @@ noinst_DATA = \
 
 examples/disk/nbdkit-godisk-plugin.so: \
 	    $(plugin_sources) examples/disk/disk.go
-	cd examples/disk && \
+	cd $(srcdir)/examples/disk && \
 	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	$(GOLANG) build -o nbdkit-godisk-plugin.so -buildmode=c-shared
+	$(GOLANG) build -o $(abs_builddir)/examples/disk/nbdkit-godisk-plugin.so -buildmode=c-shared
 
 examples/dump-plugin/nbdkit-godump-plugin.so: \
 	    $(plugin_sources) examples/dump-plugin/dumpplugin.go
-	cd examples/dump-plugin && \
+	cd $(srcdir)/examples/dump-plugin && \
 	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	$(GOLANG) build -o nbdkit-godump-plugin.so -buildmode=c-shared
+	$(GOLANG) build -o $(abs_builddir)/examples/dump-plugin/nbdkit-godump-plugin.so -buildmode=c-shared
 
 examples/minimal/nbdkit-gominimal-plugin.so: \
 	    $(plugin_sources) examples/minimal/minimal.go
-	cd examples/minimal && \
+	cd $(srcdir)/examples/minimal && \
 	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	$(GOLANG) build -o nbdkit-gominimal-plugin.so -buildmode=c-shared
+	$(GOLANG) build -o $(abs_builddir)/examples/minimal/nbdkit-gominimal-plugin.so -buildmode=c-shared
 
 examples/ramdisk/nbdkit-goramdisk-plugin.so: \
 	    $(plugin_sources) examples/ramdisk/ramdisk.go
-	cd examples/ramdisk && \
+	cd $(srcdir)/examples/ramdisk && \
 	PKG_CONFIG_PATH="$(abs_top_builddir)/server/local$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}" \
-	$(GOLANG) build -o nbdkit-goramdisk-plugin.so -buildmode=c-shared
+	$(GOLANG) build -o $(abs_builddir)/examples/ramdisk/nbdkit-goramdisk-plugin.so -buildmode=c-shared
 
 # Tests.
 TESTS = dump-plugin-examples.sh
