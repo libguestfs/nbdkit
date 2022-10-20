@@ -46,6 +46,7 @@ nbdkit_luks_filter_la_SOURCES = \
 
 nbdkit_luks_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/replacements \
 	-I$(top_srcdir)/common/utils \

@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2019-2021 Red Hat Inc.
+# Copyright (C) 2019-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -51,11 +51,12 @@ nbdkit_linuxdisk_plugin_la_SOURCES = \
 	$(NULL)
 
 nbdkit_linuxdisk_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	-I$(top_srcdir)/common/gpt \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/regions \
 	-I$(top_srcdir)/common/utils \
-	-I$(top_srcdir)/include \
 	$(NULL)
 nbdkit_linuxdisk_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_linuxdisk_plugin_la_LIBADD = \

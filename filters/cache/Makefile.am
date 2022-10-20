@@ -53,6 +53,7 @@ nbdkit_cache_filter_la_SOURCES = \
 
 nbdkit_cache_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	-I$(top_srcdir)/common/bitmap \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
