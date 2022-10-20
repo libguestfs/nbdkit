@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018-2021 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -47,9 +47,10 @@ nbdkit_cc_plugin_la_SOURCES = \
 nbdkit_cc_plugin_la_CPPFLAGS = \
 	-DCC="\"$(CC)\"" \
 	-DCFLAGS="\"$(CFLAGS)\"" \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
-	-I$(top_srcdir)/include \
 	-I. \
 	$(NULL)
 nbdkit_cc_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)

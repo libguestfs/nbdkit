@@ -337,6 +337,7 @@ test_stdio_plugin_la_SOURCES = \
 	$(NULL)
 test_stdio_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	-I$(top_srcdir)/common/replacements \
 	$(NULL)
 test_stdio_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
@@ -363,7 +364,10 @@ test_flush_plugin_la_SOURCES = \
 	test-flush-plugin.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
-test_flush_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
+test_flush_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
 test_flush_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -383,7 +387,10 @@ test_shutdown_plugin_la_SOURCES = \
 	test-shutdown-plugin.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
-test_shutdown_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
+test_shutdown_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
 test_shutdown_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -409,6 +416,7 @@ test_just_plugin_header_SOURCES = \
 	$(NULL)
 test_just_plugin_header_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	$(NULL)
 test_just_plugin_header_CFLAGS = $(WARNINGS_CFLAGS)
 
@@ -417,6 +425,7 @@ test_just_filter_header_SOURCES = \
 	$(NULL)
 test_just_filter_header_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	$(NULL)
 test_just_filter_header_CFLAGS = $(WARNINGS_CFLAGS)
 
@@ -438,6 +447,7 @@ test_ansi_c_plugin_la_SOURCES = \
 test_ansi_c_plugin_la_CPPFLAGS = \
 	-std=c90 -pedantic \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	$(NULL)
 test_ansi_c_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
@@ -464,6 +474,7 @@ test_cxx_plugin_la_SOURCES = \
 	$(NULL)
 test_cxx_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	$(NULL)
 test_cxx_plugin_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
@@ -479,6 +490,7 @@ test_cxx_filter_la_SOURCES = \
 	$(NULL)
 test_cxx_filter_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	$(NULL)
 test_cxx_filter_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
@@ -1032,6 +1044,7 @@ libvixDiskLib_la_SOURCES = \
 libvixDiskLib_la_CPPFLAGS = \
 	-I$(top_srcdir)/plugins/vddk \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
 	$(NULL)
 libvixDiskLib_la_CXXFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
@@ -1343,7 +1356,10 @@ test_layers_plugin_la_SOURCES = \
 	test-layers-plugin.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
-test_layers_plugin_la_CPPFLAGS = -I$(top_srcdir)/include
+test_layers_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
 test_layers_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -1356,7 +1372,10 @@ test_layers_filter1_la_SOURCES = \
 	test-layers-filter.c \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
-test_layers_filter1_la_CPPFLAGS = -I$(top_srcdir)/include
+test_layers_filter1_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
 test_layers_filter1_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter1"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -1369,7 +1388,10 @@ test_layers_filter2_la_SOURCES = \
 	test-layers-filter.c \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
-test_layers_filter2_la_CPPFLAGS = -I$(top_srcdir)/include
+test_layers_filter2_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
 test_layers_filter2_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter2"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
@@ -1382,7 +1404,10 @@ test_layers_filter3_la_SOURCES = \
 	test-layers-filter.c \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
-test_layers_filter3_la_CPPFLAGS = -I$(top_srcdir)/include
+test_layers_filter3_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
 test_layers_filter3_la_CFLAGS = $(WARNINGS_CFLAGS) -Dlayer='"filter3"'
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html

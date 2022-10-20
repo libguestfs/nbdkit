@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2019-2021 Red Hat Inc.
+# Copyright (C) 2019-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -40,7 +40,10 @@ nbdkit_exitlast_filter_la_SOURCES = \
 	$(top_srcdir)/include/nbdkit-filter.h \
 	$(NULL)
 
-nbdkit_exitlast_filter_la_CPPFLAGS = -I$(top_srcdir)/include
+nbdkit_exitlast_filter_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
 nbdkit_exitlast_filter_la_CFLAGS = $(WARNINGS_CFLAGS)
 nbdkit_exitlast_filter_la_LIBADD = \
 	$(IMPORT_LIBRARY_ON_WINDOWS) \
