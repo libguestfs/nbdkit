@@ -83,4 +83,4 @@ RUN nosync dnf install -y \
     ln -s /usr/bin/ccache /usr/libexec/ccache-wrappers/x86_64-w64-mingw32-gcc
 
 ENV ABI "x86_64-w64-mingw32"
-ENV CONFIGURE_OPTS "--hostx86_64-w64-mingw32"
+ENV CONFIGURE_OPTS "--host=x86_64-w64-mingw32"

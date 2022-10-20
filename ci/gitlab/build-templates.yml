@@ -26,6 +26,7 @@
 .gitlab_native_build_job_prebuilt_env:
   image: $CI_REGISTRY/$RUN_UPSTREAM_NAMESPACE/nbdkit/ci-$NAME:latest
   stage: builds
+  interruptible: true
   before_script:
     - cat /packages.txt
   rules:
@@ -61,6 +62,7 @@
 .gitlab_native_build_job_local_env:
   image: $IMAGE
   stage: builds
+  interruptible: true
   before_script:
     - source ci/buildenv/$NAME.sh
     - install_buildenv
@@ -138,6 +140,7 @@
 .gitlab_cross_build_job_prebuilt_env:
   image: $CI_REGISTRY/$RUN_UPSTREAM_NAMESPACE/nbdkit/ci-$NAME-cross-$CROSS:latest
   stage: builds
+  interruptible: true
   before_script:
     - cat /packages.txt
   rules:
@@ -173,6 +176,7 @@
 .gitlab_cross_build_job_local_env:
   image: $IMAGE
   stage: builds
+  interruptible: true
   before_script:
     - source ci/buildenv/$NAME.sh
     - install_buildenv
@@ -232,6 +236,7 @@
 .cirrus_build_job:
   stage: builds
   image: registry.gitlab.com/libvirt/libvirt-ci/cirrus-run:master
+  interruptible: true
   needs: []
   script:
     - source ci/cirrus/$NAME.vars
