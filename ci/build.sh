@@ -104,6 +104,7 @@ main() {
     then
         CONFIG_ARGS="$CONFIG_ARGS --disable-perl"
     elif test "$PERL" = "force"
+    then
         CONFIG_ARGS="$CONFIG_ARGS --enable-perl"
     fi
 
