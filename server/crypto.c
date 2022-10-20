@@ -55,7 +55,13 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 
-#ifdef HAVE_GNUTLS_TRANSPORT_IS_KTLS_ENABLED
+#if defined HAVE_GNUTLS_TRANSPORT_IS_KTLS_ENABLED && \
+  defined HAVE_GNUTLS_SOCKET_H
+#define TRY_KTLS 1
+#else
+#define TRY_KTLS 0
+#endif
+#if TRY_KTLS
 #include <gnutls/socket.h>
 #endif
 
@@ -542,7 +548,7 @@ debug_session (gnutls_session_t session)
   bool dhe = false, ecdh = false;
   int grp;
   const char *desc, *username, *hint;
-#ifdef HAVE_GNUTLS_TRANSPORT_IS_KTLS_ENABLED
+#if TRY_KTLS
   gnutls_transport_ktls_enable_flags_t ktls_enabled;
 #endif
 
@@ -552,7 +558,7 @@ debug_session (gnutls_session_t session)
   desc = gnutls_session_get_desc (session);
   if (desc) nbdkit_debug ("TLS session: %s", desc);
 
-#ifdef HAVE_GNUTLS_TRANSPORT_IS_KTLS_ENABLED
+#if TRY_KTLS
   ktls_enabled = gnutls_transport_is_ktls_enabled (session);
   switch (ktls_enabled) {
   case GNUTLS_KTLS_RECV:

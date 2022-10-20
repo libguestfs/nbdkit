@@ -646,6 +646,7 @@ AS_IF([test "x$GNUTLS_LIBS" != "x"],[
         gnutls_srp_server_get_username \
         gnutls_transport_is_ktls_enabled \
     ])
+    AC_CHECK_HEADERS([gnutls/socket.h])
     LIBS="$old_LIBS"
 
     dnl macOS has its own program called certtool and packages the
