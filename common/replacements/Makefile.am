@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2019 Red Hat Inc.
+# Copyright (C) 2019-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -32,6 +32,11 @@
 include $(top_srcdir)/common-rules.mk
 
 SUBDIRS = win32
+
+AM_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
 
 noinst_LTLIBRARIES = libcompat.la
 # sources should be empty
