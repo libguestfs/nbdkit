@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -55,6 +55,6 @@ CLEANFILES += protostrings.c
 
 protostrings.c: nbd-protocol.h generate-protostrings.sh Makefile
 	rm -f $@ $@-t
-	$(srcdir)/generate-protostrings.sh > $@-t
+	$(builddir)/generate-protostrings.sh > $@-t
 	mv $@-t $@
 	chmod 0444 $@
