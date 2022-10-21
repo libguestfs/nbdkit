@@ -43,9 +43,8 @@ set -e
 set -x
 
 requires_run
-requires nbdinfo --version
-
-# XXX Check that libnbd was built with TLS support.
+requires_nbdinfo
+requires nbdsh -c 'exit(not h.supports_tls())'
 
 # Does the nbdkit binary support TLS?
 if ! nbdkit --dump-config | grep -sq tls=yes; then

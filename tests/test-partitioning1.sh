@@ -39,7 +39,7 @@ set -e
 set -x
 
 requires_run
-requires nbdcopy --version
+requires_nbdcopy
 
 files="partitioning1.out partitioning1-p1 partitioning1-p2 partitioning1-p3 partitioning1-p4 partitioning1-p5 partitioning1-p6"
 rm -f $files

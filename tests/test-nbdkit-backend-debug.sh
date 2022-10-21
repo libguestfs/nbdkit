@@ -35,7 +35,7 @@ set -x
 set -e
 
 requires_run
-requires nbdcopy --version
+requires_nbdcopy
 
 out="test-nbdkit-backend-debug.out"
 debug="test-nbdkit-backend-debug.debug"

@@ -39,7 +39,7 @@ set -x
 requires_run
 
 # nbdcopy >= 1.5.9 required for this test.
-requires nbdcopy --version
+requires_nbdcopy
 requires_libnbd_version 1.5.9
 
 # Copy from self to self which is what this plugin is intended for.

@@ -47,6 +47,7 @@ include/*.h
 configure.ac
 Makefile.am
 **/Makefile.am
+*.in
 
 # Server and common files.
 server/*.h

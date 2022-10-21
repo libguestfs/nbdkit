@@ -43,7 +43,7 @@ requires mkfs --version
 # Note we test both qemu-img info and nbdinfo in order to exercise the
 # lesser-used exportname paths in both tools.
 requires qemu-img --version
-requires nbdinfo --version
+requires_nbdinfo
 
 dir=$(mktemp -d /tmp/nbdkit-test-dir.XXXXXX)
 cleanup_fn rm -rf $dir

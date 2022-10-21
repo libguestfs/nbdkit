@@ -43,7 +43,7 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-requires nbdinfo --version
+requires_nbdinfo
 
 out=test-vddk-run.out
 rm -f $out

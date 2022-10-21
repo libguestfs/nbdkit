@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2021 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -37,7 +37,7 @@ set -x
 requires_run
 requires_plugin null
 requires_filter delay
-requires nbdsh --version
+requires_nbdsh_uri
 
 # Test delay-close with a well-behaved client.
 

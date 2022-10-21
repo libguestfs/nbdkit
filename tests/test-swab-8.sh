@@ -37,7 +37,7 @@ set -e
 set -x
 
 requires_run
-requires nbdcopy --version
+requires_nbdcopy
 
 files="swab-8.expected swab-8.actual"
 rm -f $files

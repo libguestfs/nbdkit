@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_plugin eval
-requires nbdinfo --version
+requires_nbdinfo
 requires dd iflag=count_bytes </dev/null
 
 files="eval.out eval.missing"

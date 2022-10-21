@@ -36,7 +36,7 @@ set -x
 
 requires test -f disk
 requires guestfish --version
-requires nbdinfo --version
+requires_nbdinfo
 requires qemu-img --version
 requires qemu-nbd --version
 

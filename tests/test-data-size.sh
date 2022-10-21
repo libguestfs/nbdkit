@@ -37,7 +37,7 @@ set -e
 set -x
 
 requires_run
-requires nbdinfo --help
+requires_nbdinfo
 
 # Since this test is expected to fail, valgrind will also fail.
 if [ "$NBDKIT_VALGRIND" = "1" ]; then

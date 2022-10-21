@@ -46,7 +46,7 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-requires nbdinfo --version
+requires_nbdinfo
 
 f=test-vddk-password-fd.file
 out=test-vddk-password-fd.out

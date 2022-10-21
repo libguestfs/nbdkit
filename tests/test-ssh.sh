@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires test -f disk
-requires nbdcopy --version
+requires_nbdcopy
 requires $STAT --version
 
 # Check that ssh to localhost will work without any passwords or phrases.

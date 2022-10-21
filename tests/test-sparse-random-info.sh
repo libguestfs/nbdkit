@@ -37,7 +37,7 @@ set -e
 
 requires_run
 
-requires nbdinfo --version
+requires_nbdinfo
 if ! nbdinfo --help | grep -- --map ; then
     echo "$0: nbdinfo --map option required to run this test"
     exit 77

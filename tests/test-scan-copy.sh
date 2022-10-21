@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdcopy --version
+requires_nbdcopy
 requires_plugin sparse-random
 requires_filter scan
 

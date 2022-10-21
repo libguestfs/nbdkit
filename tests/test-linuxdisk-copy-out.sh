@@ -39,7 +39,7 @@ set -x
 
 requires_plugin linuxdisk
 requires guestfish --version
-requires nbdcopy --version
+requires_nbdcopy
 
 files="linuxdisk-copy-out.img
        linuxdisk-copy-out.test1 linuxdisk-copy-out.test2

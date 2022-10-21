@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdinfo --version
+requires_nbdinfo
 requires_filter scan
 
 # We're just testing that there are no problematic races with the

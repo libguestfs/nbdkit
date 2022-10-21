@@ -47,7 +47,7 @@ if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
     exit 77
 fi
 
-requires nbdinfo --version
+requires_nbdinfo
 requires expect -v
 
 out=test-vddk-password-interactive.out

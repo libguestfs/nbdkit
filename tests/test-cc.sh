@@ -50,7 +50,7 @@ fi
 
 requires_plugin cc
 requires_nbdsh_uri
-requires nbdinfo --version
+requires_nbdinfo
 
 out=test-cc.out
 cleanup_fn rm -f $out

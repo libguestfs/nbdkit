@@ -38,7 +38,7 @@ set -e
 set -x
 
 requires_run
-requires nbdinfo --version
+requires_nbdinfo
 requires_nbdsh_uri
 
 function do_test_info ()

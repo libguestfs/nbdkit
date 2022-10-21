@@ -40,7 +40,7 @@ set -e
 set -x
 
 requires test -f disk
-requires nbdinfo --version
+requires_nbdinfo
 
 errors="test-curl-header-script-fail.log"
 rm -f $errors

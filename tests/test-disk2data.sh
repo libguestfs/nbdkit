@@ -47,7 +47,7 @@ requires_run
 requires perl --version
 requires $PYTHON -c 'import random'
 requires_nbdsh_uri
-requires nbdcopy --version
+requires_nbdcopy
 requires hexdump --version
 
 disk2data=$srcdir/../plugins/data/disk2data.pl

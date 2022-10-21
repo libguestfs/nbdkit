@@ -41,8 +41,8 @@ requires test -r /dev/urandom
 requires cmp --version
 requires dd --version
 requires qemu-img --version
-requires nbdcopy --version
-requires nbdinfo --version
+requires_nbdcopy
+requires_nbdinfo
 
 # Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
 # this test if valgrinding.

@@ -184,6 +184,22 @@ requires_nbdsh_uri ()
     requires nbdsh -c 'exit(not h.supports_uri())'
 }
 
+# Test if nbdinfo is available
+requires_nbdinfo ()
+{
+    requires nbdinfo --version
+    # Our most common use of nbdinfo is with URIs, so require that too
+    requires_nbdsh_uri
+}
+
+# Test if nbdcopy is available
+requires_nbdcopy ()
+{
+    requires nbdcopy --version
+    # Our most common use of nbdcopy is with URIs, so require that too
+    requires_nbdsh_uri
+}
+
 # Test if a plugin has been built locally.
 requires_plugin ()
 {

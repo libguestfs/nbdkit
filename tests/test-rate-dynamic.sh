@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_run
-requires nbdcopy --version
+requires_nbdcopy
 
 files="rate-dynamic.img rate-dynamic.time rate-dynamic.err rate-dynamic.txt"
 rm -f $files

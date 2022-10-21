@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdinfo --version
+requires_nbdinfo
 requires nbdsh --version
 requires_nbdsh_uri
 # This requires Linux.

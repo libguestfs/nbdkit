@@ -37,7 +37,7 @@ set -e
 set -x
 
 requires_plugin file
-requires nbdinfo --version
+requires_nbdinfo
 requires $TRUNCATE --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)

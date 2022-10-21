@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_plugin file
-requires nbdinfo --version
+requires_nbdinfo
 requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
 

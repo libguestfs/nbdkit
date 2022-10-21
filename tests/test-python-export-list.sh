@@ -45,7 +45,7 @@ if [ "$NBDKIT_VALGRIND" = "1" ]; then
     exit 77
 fi
 
-requires nbdinfo --version
+requires_nbdinfo
 requires_nbdsh_uri
 requires nbdsh -c 'print(h.set_full_info)'
 requires jq --version
