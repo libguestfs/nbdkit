@@ -36,7 +36,7 @@ set -x
 
 requires test -f disk
 requires test -r /dev/null
-requires nbdinfo --version
+requires_nbdinfo
 
 # Write a dummy cookiefile/jar.
 cookiejar="cookiejar"

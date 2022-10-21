@@ -40,7 +40,7 @@ set -x
 requires_run
 requires_filter cow
 requires_plugin sparse-random
-requires nbdinfo --version
+requires_nbdinfo
 
 if ! nbdinfo --help | grep -- --map ; then
     echo "$0: nbdinfo --map option required to run this test"

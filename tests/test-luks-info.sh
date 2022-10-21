@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdinfo --version
+requires_nbdinfo
 requires qemu-img --version
 requires_filter luks
 

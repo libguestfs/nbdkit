@@ -35,7 +35,7 @@ set -x
 set -e
 
 requires_run
-requires nbdcopy --version
+requires_nbdcopy
 
 files="test-zero.out"
 rm -f $files

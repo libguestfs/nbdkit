@@ -38,7 +38,7 @@ set -x
 
 requires_run
 requires_nbdsh_uri
-requires nbdcopy --version
+requires_nbdcopy
 
 out=test-data-raw-copy.out
 cleanup_fn rm -f $out

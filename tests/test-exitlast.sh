@@ -40,7 +40,7 @@ if is_windows; then
     exit 77
 fi
 
-requires nbdinfo --version
+requires_nbdinfo
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="exitlast.pid $sock"

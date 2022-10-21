@@ -37,7 +37,7 @@ set -x
 requires_run
 requires_plugin null
 requires_filter delay
-requires nbdinfo --version
+requires_nbdinfo
 
 start_t=$SECONDS
 nbdkit -U - null --filter=delay delay-open=3 --run 'nbdinfo "$uri"'

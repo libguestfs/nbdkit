@@ -40,7 +40,7 @@ if is_windows; then
     exit 77
 fi
 
-requires nbdinfo --version
+requires_nbdinfo
 requires qemu-io --version
 
 plugin=.libs/test-shutdown-plugin.$SOEXT

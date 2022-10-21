@@ -36,7 +36,7 @@ set -x
 
 requires_single_mode
 requires socat -h
-requires nbdinfo --version
+requires_nbdinfo
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)
 files="$sock single.disk"

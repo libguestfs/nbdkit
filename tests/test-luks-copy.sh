@@ -34,7 +34,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdcopy --version
+requires_nbdcopy
 requires nbdsh --version
 requires_nbdsh_uri
 requires qemu-img --version

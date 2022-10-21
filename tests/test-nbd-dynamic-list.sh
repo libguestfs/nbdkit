@@ -38,7 +38,7 @@ set -x
 # export listing.
 requires_plugin sh
 requires_nbdsh_uri
-requires nbdinfo --version
+requires_nbdinfo
 
 # Does the nbd plugin support dynamic lists?
 if ! nbdkit --dump-plugin nbd | grep -sq libnbd_dynamic_list=1; then

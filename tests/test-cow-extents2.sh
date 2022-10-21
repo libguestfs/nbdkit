@@ -40,7 +40,7 @@ requires test -f disk
 requires cmp --version
 requires dd --version
 requires guestfish --version
-requires nbdcopy --version
+requires_nbdcopy
 
 copy=cow-extents2.img
 sparse=cow-extents2-sparse.img

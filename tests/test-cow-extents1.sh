@@ -50,7 +50,7 @@ requires test -r /dev/urandom
 
 requires $CUT --version
 requires dd --version
-requires nbdinfo --version
+requires_nbdinfo
 requires nbdsh --version
 requires $STAT --version
 requires tr --version

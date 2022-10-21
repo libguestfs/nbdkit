@@ -36,7 +36,7 @@ set -x
 
 requires_plugin linuxdisk
 requires guestfish --version
-requires nbdcopy --version
+requires_nbdcopy
 requires $STAT --version
 
 sock=$(mktemp -u /tmp/nbdkit-test-sock.XXXXXX)

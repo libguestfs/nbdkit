@@ -51,7 +51,7 @@ fi
 requires_plugin cc
 requires $OCAMLOPT -version
 requires_nbdsh_uri
-requires nbdinfo --version
+requires_nbdinfo
 
 # For unclear reasons linking the OCaml plugin fails on macOS. XXX
 requires_not test "$(uname)" = "Darwin"

@@ -37,7 +37,7 @@ set -x
 
 requires_plugin example2
 requires_run
-requires nbdinfo --version
+requires_nbdinfo
 requires test -f disk
 
 export LANG=C

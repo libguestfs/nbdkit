@@ -38,7 +38,7 @@ set -x
 
 requires_run
 requires_nbdsh_uri
-requires nbdcopy --version
+requires_nbdcopy
 requires hexdump --version
 
 out=data-partition.out

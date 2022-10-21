@@ -37,6 +37,7 @@ set -x
 requires_plugin eval
 requires_plugin nbd
 requires nbdsh -c 'print(h.get_block_size)'
+requires_nbdsh_uri
 
 # Create an nbdkit eval plugin which presents block size constraints.
 # Check the advertised block size constraints can be read.

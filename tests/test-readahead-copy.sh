@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_run
-requires nbdcopy --version
+requires_nbdcopy
 
 files="readahead-copy1.img readahead-copy2.img"
 rm -f $files

@@ -36,7 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdinfo --version
+requires_nbdinfo
 
 # Not supported on Windows.
 if is_windows; then

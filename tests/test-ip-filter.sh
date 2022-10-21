@@ -37,7 +37,7 @@ source ./functions.sh
 set -e
 
 requires ip -V
-requires nbdinfo --version
+requires_nbdinfo
 requires_ipv6_loopback
 
 # nbdinfo in RHEL 8 lacks a fix to libxml for parsing

@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_run
-requires nbdinfo --version
+requires_nbdinfo
 requires_filter log
 
 if ! nbdinfo --help | grep -- --map ; then

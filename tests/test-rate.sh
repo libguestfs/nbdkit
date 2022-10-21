@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_run
-requires nbdcopy --version
+requires_nbdcopy
 
 files="rate.img rate.time rate.err"
 rm -f $files

@@ -40,7 +40,7 @@ requires_run
 requires_filter checkwrite
 
 # nbdcopy >= 1.5.9 required for this test.
-requires nbdcopy --version
+requires_nbdcopy
 requires_libnbd_version 1.5.9
 
 do_test ()

@@ -42,7 +42,7 @@ source ./functions.sh
 set -e
 set -x
 
-requires nbdinfo --version
+requires_nbdinfo
 requires nbdsh --version
 requires nbdsh -c 'print(h.connect_vsock)'
 requires_nbdsh_uri

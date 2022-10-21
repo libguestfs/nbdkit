@@ -35,7 +35,7 @@ set -e
 set -x
 
 requires_plugin sh
-requires nbdcopy --version
+requires_nbdcopy
 requires dd iflag=count_bytes </dev/null
 
 files="retry-request.img retry-request-count"

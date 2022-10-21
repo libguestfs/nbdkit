@@ -37,6 +37,7 @@ set -x
 requires_plugin eval
 requires nbdsh -c 'print(h.get_block_size)'
 requires nbdsh -c 'print(h.get_strict_mode)'
+requires_nbdsh_uri
 requires dd iflag=count_bytes </dev/null
 
 nbdkit -v -U - eval \

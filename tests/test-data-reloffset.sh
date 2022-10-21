@@ -38,7 +38,7 @@ set -x
 
 requires_run
 requires_nbdsh_uri
-requires nbdinfo --version
+requires_nbdinfo
 
 out=data-reloffset.out
 rm -f $out

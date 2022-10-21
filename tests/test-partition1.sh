@@ -37,7 +37,7 @@ set -x
 requires_run
 requires sfdisk --help
 requires test -r /dev/urandom
-requires nbdcopy --version
+requires_nbdcopy
 
 # RHEL 7 sfdisk didn't have the -X option, so skip the tests here.
 if LANG=C sfdisk -X |& grep -sq "invalid option"; then
