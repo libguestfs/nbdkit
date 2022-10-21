@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -42,15 +42,24 @@ requires jq --version
 requires qemu-img --version
 requires qemu-img map --help
 
-files="test-file-extents.out test-file-extents.expected"
+files="test-file-extents.tmp test-file-extents.out test-file-extents.expected"
 rm -f $files
 cleanup_fn rm -f $files
 
-qemu-img map -f raw --output=json disk |
-    jq -c '.[] | {start:.start, length:.length, data:.data, zero:.zero}' \
-       > test-file-extents.out
-nbdkit -U - file disk --run 'qemu-img map -f raw --output=json $nbd' |
-    jq -c '.[] | {start:.start, length:.length, data:.data, zero:.zero}' \
-       > test-file-extents.expected
+# We can't guarantee whether disk will be sparse, or even what filesystem
+# it is on (qemu might avoid SEEK_HOLE for performance reasons); add some
+# debug crumbs, but don't fail the test if there is no GNU coreutils stat.
+stat disk || :
+stat -f disk || :
+
+qemu-img map -f raw --output=json disk > test-file-extents.tmp
+cat test-file-extents.tmp
+jq -c '.[] | {start:.start, length:.length, data:.data, zero:.zero}' \
+  < test-file-extents.tmp > test-file-extents.expected
+nbdkit -U - file disk --run 'qemu-img map -f raw --output=json $nbd' \
+  > test-file-extents.tmp
+cat test-file-extents.tmp
+jq -c '.[] | {start:.start, length:.length, data:.data, zero:.zero}' \
+  < test-file-extents.tmp > test-file-extents.out
 
 diff -u test-file-extents.out test-file-extents.expected
