@@ -47,7 +47,7 @@ debug (PyObject *self, PyObject *args)
 {
   const char *msg;
 
-  if (!PyArg_ParseTuple (args, "s", &msg))
+  if (!PyArg_ParseTuple (args, "s:debug", &msg))
     return NULL;
   nbdkit_debug ("%s", msg);
   Py_RETURN_NONE;
@@ -78,7 +78,7 @@ set_error (PyObject *self, PyObject *args)
 {
   int err;
 
-  if (!PyArg_ParseTuple (args, "i", &err))
+  if (!PyArg_ParseTuple (args, "i:set_error", &err))
     return NULL;
   nbdkit_set_error (err);
   last_error = err;
@@ -98,10 +98,8 @@ static PyObject *
 parse_size (PyObject *self, PyObject *args)
 {
   const char *s;
-  if (!PyArg_ParseTuple (args, "s", &s)) {
-    PyErr_SetString (PyExc_TypeError, "Expected string, got something else");
+  if (!PyArg_ParseTuple (args, "s:parse_size", &s))
     return NULL;
-  }
 
   int64_t size = nbdkit_parse_size(s);
   if (size == -1) {
