@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2021 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -115,13 +115,13 @@ parse_size (PyObject *self, PyObject *args)
 static PyMethodDef NbdkitMethods[] = {
   { "debug", debug, METH_VARARGS,
     "Print a debug message" },
-  { "export_name", export_name, METH_VARARGS,
+  { "export_name", export_name, METH_NOARGS,
     "Return the optional export name negotiated with the client" },
   { "parse_size", parse_size, METH_VARARGS,
     "Parse human-readable size strings into bytes" },
   { "set_error", set_error, METH_VARARGS,
     "Store an errno value prior to throwing an exception" },
-  { "shutdown", do_shutdown, METH_VARARGS,
+  { "shutdown", do_shutdown, METH_NOARGS,
     "Request asynchronous shutdown" },
   { NULL }
 };
