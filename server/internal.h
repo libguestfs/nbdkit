@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2021 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -232,13 +232,19 @@ struct context {
   int can_cache;
 };
 
+typedef enum {
+  STATUS_DEAD,         /* Connection is closed */
+  STATUS_CLIENT_DONE,  /* Client has sent NBD_CMD_DISC */
+  STATUS_ACTIVE,       /* Client can make requests */
+} conn_status;
+
 struct connection {
   pthread_mutex_t request_lock;
   pthread_mutex_t read_lock;
   pthread_mutex_t write_lock;
   pthread_mutex_t status_lock;
 
-  int status; /* 1 for more I/O with client, 0 for shutdown, -1 on error */
+  conn_status status;
   int status_pipe[2]; /* track status changes via poll when nworkers > 1 */
   void *crypto_session;
   int nworkers;
@@ -264,8 +270,8 @@ struct connection {
 };
 
 extern void handle_single_connection (int sockin, int sockout);
-extern int connection_get_status (void);
-extern int connection_set_status (int value);
+extern conn_status connection_get_status (void);
+extern void connection_set_status (conn_status value);
 
 /* protocol-handshake.c */
 extern int protocol_handshake (void);
@@ -280,7 +286,7 @@ extern int protocol_handshake_oldstyle (void);
 extern int protocol_handshake_newstyle (void);
 
 /* protocol.c */
-extern int protocol_recv_request_send_reply (void);
+extern void protocol_recv_request_send_reply (void);
 
 /* The context ID of base:allocation.  As far as I can tell it doesn't
  * matter what this is as long as nbdkit always returns the same

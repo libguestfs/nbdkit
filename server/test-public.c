@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2021 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -83,7 +83,7 @@ threadlocal_get_context (void)
   abort ();
 }
 
-int
+conn_status
 connection_get_status (void)
 {
   abort ();

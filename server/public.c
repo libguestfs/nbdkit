@@ -727,7 +727,8 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
    */
   bool has_quit = quit;
   assert (has_quit ||
-          (conn && conn->nworkers > 0 && connection_get_status () < 1) ||
+          (conn && conn->nworkers > 0 &&
+           connection_get_status () < STATUS_ACTIVE) ||
           (conn && (fds[2].revents & (POLLRDHUP | POLLHUP | POLLERR |
                                       POLLNVAL))));
   if (has_quit)
