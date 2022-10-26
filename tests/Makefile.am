@@ -1464,8 +1464,16 @@ EXTRA_DIST += \
 	$(NULL)
 
 # blocksize-policy filter test.
-TESTS += test-blocksize-policy.sh test-blocksize-error-policy.sh
-EXTRA_DIST += test-blocksize-policy.sh test-blocksize-error-policy.sh
+TESTS += \
+	test-blocksize-policy.sh \
+	test-blocksize-error-policy.sh \
+	test-blocksize-write-disconnect.sh \
+	$(NULL)
+EXTRA_DIST += \
+	test-blocksize-policy.sh \
+	test-blocksize-error-policy.sh \
+	test-blocksize-write-disconnect.sh \
+	$(NULL)
 
 # cache filter test.
 TESTS += \

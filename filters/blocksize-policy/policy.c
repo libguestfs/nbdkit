@@ -42,11 +42,13 @@
 #include <nbdkit-filter.h>
 
 #include "ispowerof2.h"
+#include "rounding.h"
 
 /* Block size constraints configured on the command line (0 = unset). */
 static uint32_t config_minimum;
 static uint32_t config_preferred;
 static uint32_t config_maximum;
+static uint32_t config_disconnect;
 
 /* Error policy. */
 static enum { EP_ALLOW, EP_ERROR } error_policy = EP_ALLOW;
@@ -88,6 +90,12 @@ policy_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
     r = nbdkit_parse_size (value);
     if (r == -1 || r > UINT32_MAX) goto parse_error;
     config_maximum = r;
+    return 0;
+  }
+  else if (strcmp (key, "blocksize-write-disconnect") == 0) {
+    r = nbdkit_parse_size (value);
+    if (r == -1 || r > UINT32_MAX) goto parse_error;
+    config_disconnect = r;
     return 0;
   }
 
@@ -147,6 +155,14 @@ policy_config_complete (nbdkit_next_config_complete *next,
     }
   }
 
+  if (config_minimum && config_disconnect) {
+    if (config_disconnect <= config_minimum) {
+      nbdkit_error ("blocksize-write-disonnect must be larger than "
+                    "blocksize-minimum");
+      return -1;
+    }
+  }
+
   return next (nxdata);
 }
 
@@ -192,6 +208,8 @@ policy_block_size (nbdkit_next *next, void *handle,
 
     if (config_maximum)
       *maximum = config_maximum;
+    else if (config_disconnect)
+      *maximum = ROUND_DOWN (config_disconnect, *minimum);
     else
       *maximum = 0xffffffff;
   }
@@ -220,7 +238,7 @@ policy_block_size (nbdkit_next *next, void *handle,
  * below.
  *
  * The 'data' flag is true for pread and pwrite (where we check the
- * maximum bound).  We don't check maximum for non-data- carrying
+ * maximum bound).  We don't check maximum for non-data-carrying
  * calls like zero.
  *
  * The NBD specification mandates EINVAL for block size constraint
@@ -303,6 +321,13 @@ policy_pwrite (nbdkit_next *next,
                void *handle, const void *buf, uint32_t count, uint64_t offset,
                uint32_t flags, int *err)
 {
+  if (config_disconnect && count > config_disconnect) {
+    nbdkit_error ("disconnecting client due to oversize write request");
+    nbdkit_disconnect (true);
+    *err = ESHUTDOWN;
+    return -1;
+  }
+
   if (check_policy (next, handle, "pwrite", true, count, offset, err) == -1)
     return -1;
 

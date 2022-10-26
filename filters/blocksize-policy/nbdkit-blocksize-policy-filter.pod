@@ -10,6 +10,7 @@ maximum block size, and apply error policy
         [blocksize-minimum=N]
         [blocksize-preferred=N]
         [blocksize-maximum=N]
+        [blocksize-write-disconnect=N]
 
 =head1 DESCRIPTION
 
@@ -49,6 +50,13 @@ read-modify-write for an unaligned write).  With this filter you can
 use C<blocksize-error-policy=error> to reject these requests in the
 filter with an EINVAL error.  The plugin will not see them.
 
+Normally, nbdkit will accept write requests up to 64M in length, and
+reply with a gracful error message rather than a hard disconnect for a
+buffer up to twice that large.  But many other servers (for example,
+qemu-nbd) will give a hard disconnect for a write request larger than
+32M.  With this filter you can use C<blocksize-write-disconnect=32M>
+to emulate the behavior of other servers.
+
 =head2 Combining with L<nbdkit-blocksize-filter(1)>
 
 A related filter is L<nbdkit-blocksize-filter(1)>.  That filter can
@@ -86,6 +94,19 @@ means pass the request through to the plugin.
 
 Use C<error> to return an EINVAL error back to the client.  The plugin
 will not see the badly formed request in this case.
+
+=item B<blocksize-write-disconnect=>N
+
+(nbdkit E<ge> 1.34)
+
+If a client sends a write request which is larger than the specified
+I<size> (using the usual size modifiers like C<32M>), abruptly close
+the connection.  This can be used to emulate qemu's behavior of
+disconnecting for write requests larger than 32M, rather than nbdkit's
+default of keeping the connection alive for write requests up to 128M
+(although nbdkit does not let the plugin see requests larger than
+64M).  The write disconnect size is independent of any advertised
+maximum block size or its accompanying error policy.
 
 =item B<blocksize-minimum=>N
 
