@@ -62,7 +62,7 @@ static int raw_send_socket (const void *buf, size_t len, int flags);
 #ifndef WIN32
 static int raw_send_other (const void *buf, size_t len, int flags);
 #endif
-static void raw_close (void);
+static void raw_close (int how);
 
 conn_status
 connection_get_status (void)
@@ -97,6 +97,8 @@ connection_set_status (conn_status value)
       if (write (conn->status_pipe[1], &c, 1) != 1 && errno != EAGAIN)
         debug ("failed to notify pipe-to-self: %m");
     }
+    if (conn->status >= STATUS_CLIENT_DONE && value < STATUS_CLIENT_DONE)
+      conn->close (SHUT_WR);
     conn->status = value;
   }
   if (conn->nworkers &&
@@ -348,7 +350,7 @@ free_connection (struct connection *conn)
   if (!conn)
     return;
 
-  conn->close ();
+  conn->close (SHUT_RDWR);
 
   /* Don't call the plugin again if quit has been set because the main
    * thread will be in the process of unloading it.  The plugin.unload
@@ -397,6 +399,7 @@ raw_send_socket (const void *vbuf, size_t len, int flags)
   ssize_t r;
   int f = 0;
 
+  assert (sock >= 0);
 #ifdef MSG_MORE
   if (flags & SEND_MORE)
     f |= MSG_MORE;
@@ -427,6 +430,7 @@ raw_send_other (const void *vbuf, size_t len, int flags)
   const char *buf = vbuf;
   ssize_t r;
 
+  assert (sock >= 0);
   while (len > 0) {
     r = write (sock, buf, len);
     if (r == -1) {
@@ -489,12 +493,21 @@ raw_recv (void *vbuf, size_t len)
  * close, so this function ignores errors.
  */
 static void
-raw_close (void)
+raw_close (int how)
 {
   GET_CONN;
 
-  if (conn->sockin >= 0)
-    closesocket (conn->sockin);
-  if (conn->sockout >= 0 && conn->sockin != conn->sockout)
-    closesocket (conn->sockout);
+  if (conn->sockout >= 0 && how == SHUT_WR) {
+    if (conn->sockin == conn->sockout)
+      shutdown (conn->sockout, how);
+    else
+      closesocket (conn->sockout);
+    conn->sockout = -1;
+  }
+  else {
+    if (conn->sockin >= 0)
+      closesocket (conn->sockin);
+    if (conn->sockout >= 0 && conn->sockin != conn->sockout)
+      closesocket (conn->sockout);
+  }
 }
