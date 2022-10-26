@@ -412,7 +412,7 @@ crypto_send (const void *vbuf, size_t len, int flags)
  * close, so this function ignores errors.
  */
 static void
-crypto_close (void)
+crypto_close (int how)
 {
   GET_CONN;
   gnutls_session_t session = conn->crypto_session;
@@ -420,17 +420,21 @@ crypto_close (void)
 
   assert (session != NULL);
 
-  gnutls_transport_get_int2 (session, &sockin, &sockout);
+  if (how == SHUT_WR)
+    gnutls_bye (session, GNUTLS_SHUT_WR);
+  else {
+    gnutls_transport_get_int2 (session, &sockin, &sockout);
 
-  gnutls_bye (session, GNUTLS_SHUT_RDWR);
+    gnutls_bye (session, GNUTLS_SHUT_RDWR);
 
-  if (sockin >= 0)
-    closesocket (sockin);
-  if (sockout >= 0 && sockin != sockout)
-    closesocket (sockout);
+    if (sockin >= 0)
+      closesocket (sockin);
+    if (sockout >= 0 && sockin != sockout)
+      closesocket (sockout);
 
-  gnutls_deinit (session);
-  conn->crypto_session = NULL;
+    gnutls_deinit (session);
+    conn->crypto_session = NULL;
+  }
 }
 
 #ifdef WIN32

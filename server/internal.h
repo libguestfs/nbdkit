@@ -194,7 +194,7 @@ typedef int (*connection_recv_function) (void *buf, size_t len)
 typedef int (*connection_send_function) (const void *buf, size_t len,
                                          int flags)
   __attribute__((__nonnull__ (1)));
-typedef void (*connection_close_function) (void);
+typedef void (*connection_close_function) (int how);
 
 /* struct context stores data per connection and backend.  Primarily
  * this is the filter or plugin handle, but other state is also stored
