@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014-2020 Red Hat Inc.
+ * Copyright (C) 2014-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -162,6 +162,16 @@ ocaml_nbdkit_shutdown (value unitv)
   CAMLparam1 (unitv);
 
   nbdkit_shutdown ();
+  CAMLreturn (Val_unit);
+}
+
+/* NB: noalloc function. */
+NBDKIT_DLL_PUBLIC value
+ocaml_nbdkit_disconnect (value boolv)
+{
+  CAMLparam1 (boolv);
+
+  nbdkit_disconnect (Bool_val (boolv));
   CAMLreturn (Val_unit);
 }
 

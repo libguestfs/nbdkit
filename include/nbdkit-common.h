@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2020 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -137,6 +137,7 @@ NBDKIT_EXTERN_DECL (int64_t, nbdkit_peer_pid, (void));
 NBDKIT_EXTERN_DECL (int64_t, nbdkit_peer_uid, (void));
 NBDKIT_EXTERN_DECL (int64_t, nbdkit_peer_gid, (void));
 NBDKIT_EXTERN_DECL (void, nbdkit_shutdown, (void));
+NBDKIT_EXTERN_DECL (void, nbdkit_disconnect, (int force));
 
 NBDKIT_EXTERN_DECL (const char *, nbdkit_strdup_intern,
                     (const char *str));

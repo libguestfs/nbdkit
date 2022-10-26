@@ -253,6 +253,8 @@ TESTS += \
 	test-long-name.sh \
 	test-flush.sh \
 	test-swap.sh \
+	test-disconnect.sh \
+	test-disconnect-tls.sh \
 	test-shutdown.sh \
 	test-nbdkit-backend-debug.sh \
 	test-read-password.sh \
@@ -293,6 +295,8 @@ EXTRA_DIST += \
 	test-read-password.sh \
 	test-read-password-interactive.sh \
 	test-read-password-plugin.c \
+	test-disconnect.sh \
+	test-disconnect-tls.sh \
 	test-shutdown.sh \
 	test-single-from-file.sh \
 	test-single-sh.sh \
@@ -375,6 +379,30 @@ test_flush_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) -rpath /nowhere \
 	$(NULL)
 test_flush_plugin_la_LIBADD = $(IMPORT_LIBRARY_ON_WINDOWS)
+
+# check_LTLIBRARIES won't build a shared library (see automake manual).
+# So we have to do this and add a dependency.
+noinst_LTLIBRARIES += \
+	test-disconnect-plugin.la \
+	$(NULL)
+test-disconnect.sh: test-disconnect-plugin.la
+test-disconnect-tls.sh: test-disconnect-plugin.la keys.psk
+
+test_disconnect_plugin_la_SOURCES = \
+	test-disconnect-plugin.c \
+	$(top_srcdir)/include/nbdkit-plugin.h \
+	$(NULL)
+test_disconnect_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_builddir)/include \
+	$(NULL)
+test_disconnect_plugin_la_CFLAGS = $(WARNINGS_CFLAGS)
+# For use of the -rpath option, see:
+# https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
+test_disconnect_plugin_la_LDFLAGS = \
+	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) -rpath /nowhere \
+	$(NULL)
+test_disconnect_plugin_la_LIBADD = $(IMPORT_LIBRARY_ON_WINDOWS)
 
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.

@@ -1339,7 +1339,8 @@ Plugins and filters can call L<exit(3)> in the configuration phase
 
 Once nbdkit has started serving connections, plugins and filters
 should not call L<exit(3)>.  However they may instruct nbdkit to shut
-down by calling C<nbdkit_shutdown>:
+down by calling C<nbdkit_shutdown>, or to disconnect a single client
+by calling C<nbdkit_disconnect>:
 
  void nbdkit_shutdown (void);
 
@@ -1348,6 +1349,20 @@ that it does I<not> exit the process immediately).  It ensures that
 the plugin and all filters are unloaded cleanly which may take some
 time.  Further callbacks from nbdkit into the plugin or filter may
 occur after you have called this.
+
+ void nbdkit_disconnect (int force);
+
+This function requests that the current connection be disconnected
+(I<note> that it does not affect other connections, and the client may
+try to reconnect).  It is only useful from connected callbacks (that
+is, after C<.open> and before C<.close>).  If C<force> is true, nbdkit
+will disconnect the client immediately, and the client will not
+receive any response to the current command or any other commands in
+flight in parallel threads; otherwise, nbdkit will not accept any new
+commands from the client (failing all commands other than
+C<NBD_CMD_DISC> with C<ESHUTDOWN>), but will allow existing commands
+to complete gracefully.  Either way, the next callback for the current
+connection should be C<.close>.
 
 =head1 PARSING COMMAND LINE PARAMETERS
 

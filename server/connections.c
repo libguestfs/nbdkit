@@ -90,7 +90,8 @@ connection_set_status (conn_status value)
       pthread_mutex_lock (&conn->status_lock))
     abort ();
   if (value < conn->status) {
-    if (conn->nworkers && conn->status > STATUS_CLIENT_DONE) {
+    if (conn->nworkers && conn->status > STATUS_CLIENT_DONE &&
+        value <= STATUS_CLIENT_DONE) {
       char c = 0;
 
       assert (conn->status_pipe[1] >= 0);

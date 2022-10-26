@@ -93,6 +93,18 @@ do_shutdown (PyObject *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
+/* nbdkit.disconnect */
+static PyObject *
+do_disconnect (PyObject *self, PyObject *args)
+{
+  int force;
+
+  if (!PyArg_ParseTuple (args, "p:disconnect", &force))
+    return NULL;
+  nbdkit_disconnect (force);
+  Py_RETURN_NONE;
+}
+
 /* nbdkit.parse_size */
 static PyObject *
 parse_size (PyObject *self, PyObject *args)
@@ -121,6 +133,8 @@ static PyMethodDef NbdkitMethods[] = {
     "Store an errno value prior to throwing an exception" },
   { "shutdown", do_shutdown, METH_NOARGS,
     "Request asynchronous shutdown" },
+  { "disconnect", do_disconnect, METH_VARARGS,
+    "Request disconnection from current client" },
   { NULL }
 };
 

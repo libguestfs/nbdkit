@@ -631,10 +631,10 @@ protocol_recv_request_send_reply (void)
   /* Read the request packet. */
   {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->read_lock);
+    r = conn->recv (&request, sizeof request);
     cs = connection_get_status ();
     if (cs <= STATUS_CLIENT_DONE)
       return;
-    r = conn->recv (&request, sizeof request);
     if (r == -1) {
       nbdkit_error ("read request: %m");
       connection_set_status (STATUS_DEAD);
@@ -718,7 +718,7 @@ protocol_recv_request_send_reply (void)
   }
 
   /* Perform the request.  Only this part happens inside the request lock. */
-  if (quit || connection_get_status () == STATUS_CLIENT_DONE) {
+  if (quit || cs < STATUS_ACTIVE) {
     error = ESHUTDOWN;
   }
   else {

@@ -728,7 +728,7 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
   bool has_quit = quit;
   assert (has_quit ||
           (conn && conn->nworkers > 0 &&
-           connection_get_status () < STATUS_ACTIVE) ||
+           connection_get_status () < STATUS_SHUTDOWN) ||
           (conn && (fds[2].revents & (POLLRDHUP | POLLHUP | POLLERR |
                                       POLLNVAL))));
   if (has_quit)
@@ -1096,4 +1096,16 @@ nbdkit_printf_intern (const char *fmt, ...)
   ret = nbdkit_vprintf_intern (fmt, ap);
   va_end (ap);
   return ret;
+}
+
+NBDKIT_DLL_PUBLIC void
+nbdkit_disconnect (int force)
+{
+  struct connection *conn = threadlocal_get_conn ();
+
+  if (!conn) {
+    debug ("no connection in this thread, ignoring disconnect request");
+    return;
+  }
+  connection_set_status (force ? STATUS_DEAD : STATUS_SHUTDOWN);
 }

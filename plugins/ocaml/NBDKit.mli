@@ -1,6 +1,6 @@
 (* hey emacs, this is OCaml code: -*- tuareg -*- *)
 (* nbdkit OCaml interface
- * Copyright (C) 2014-2020 Red Hat Inc.
+ * Copyright (C) 2014-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -165,6 +165,9 @@ val export_name : unit -> string
 
 (** Binding for [nbdkit_shutdown].  Requests the server shut down. *)
 val shutdown : unit -> unit
+
+(** Binding for [nbdkit_disconnect].  Requests disconnecting current client. *)
+val disconnect : bool -> unit
 
 (** Print a debug message when nbdkit is in verbose mode. *)
 val debug : ('a, unit, string, unit) format4 -> 'a

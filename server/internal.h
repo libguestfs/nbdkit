@@ -235,6 +235,7 @@ struct context {
 typedef enum {
   STATUS_DEAD,         /* Connection is closed */
   STATUS_CLIENT_DONE,  /* Client has sent NBD_CMD_DISC */
+  STATUS_SHUTDOWN,     /* Server wants soft shutdown */
   STATUS_ACTIVE,       /* Client can make requests */
 } conn_status;
 

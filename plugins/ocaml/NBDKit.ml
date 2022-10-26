@@ -166,6 +166,7 @@ external realpath : string -> string = "ocaml_nbdkit_realpath"
 external nanosleep : int -> int -> unit = "ocaml_nbdkit_nanosleep"
 external export_name : unit -> string = "ocaml_nbdkit_export_name"
 external shutdown : unit -> unit = "ocaml_nbdkit_shutdown" [@@noalloc]
+external disconnect : bool -> unit = "ocaml_nbdkit_disconnect" [@@noalloc]
 external _debug : string -> unit = "ocaml_nbdkit_debug" [@@noalloc]
 let debug fs = ksprintf _debug fs
 external version : unit -> string = "ocaml_nbdkit_version"

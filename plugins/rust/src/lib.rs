@@ -1046,6 +1046,7 @@ extern "C" {
     fn nbdkit_peer_name( addr: *mut libc::sockaddr,
                          addrlen: *mut libc::socklen_t) -> c_int;
     fn nbdkit_shutdown();
+    fn nbdkit_disconnect(force: bool);
     fn nbdkit_stdio_safe() -> c_int;
 }
 
@@ -1104,6 +1105,11 @@ pub fn peername<T: SockaddrLike>() -> std::result::Result<T, Box<dyn error::Erro
 /// Request nbdkit to asynchronously and safely shutdown the server.
 pub fn shutdown() {
     unsafe { nbdkit_shutdown() };
+}
+
+/// Request nbdkit to disconnect the current client.
+pub fn disconnect(force: bool) {
+    unsafe { nbdkit_disconnect(force) };
 }
 
 #[doc(hidden)]

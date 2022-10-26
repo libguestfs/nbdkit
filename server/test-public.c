@@ -63,6 +63,8 @@ nbdkit_debug (const char *fs, ...)
 
 bool listen_stdin;
 bool configured;
+bool verbose;
+int tls;
 
 volatile int quit;
 #ifndef WIN32
@@ -89,13 +91,17 @@ connection_get_status (void)
   abort ();
 }
 
+void
+connection_set_status (conn_status v)
+{
+  abort ();
+}
+
 const char *
 backend_default_export (struct backend *b, int readonly)
 {
   abort ();
 }
-
-int tls;
 
 /* Unit tests. */
 
