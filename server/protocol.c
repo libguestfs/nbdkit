@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2021 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -362,7 +362,7 @@ nbd_errno (int error, uint16_t flags)
   }
 }
 
-static int
+static void
 send_simple_reply (uint64_t handle, uint16_t cmd, uint16_t flags,
                    const char *buf, uint32_t count,
                    uint32_t error)
@@ -380,7 +380,8 @@ send_simple_reply (uint64_t handle, uint16_t cmd, uint16_t flags,
   r = conn->send (&reply, sizeof reply, f);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (-1);
+    connection_set_status (STATUS_DEAD);
+    return;
   }
 
   /* Send the read data buffer. */
@@ -388,14 +389,12 @@ send_simple_reply (uint64_t handle, uint16_t cmd, uint16_t flags,
     r = conn->send (buf, count, 0);
     if (r == -1) {
       nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-      return connection_set_status (-1);
+      connection_set_status (STATUS_DEAD);
     }
   }
-
-  return 1;                     /* command processed ok */
 }
 
-static int
+static void
 send_structured_reply_read (uint64_t handle, uint16_t cmd,
                             const char *buf, uint32_t count, uint64_t offset)
 {
@@ -421,7 +420,8 @@ send_structured_reply_read (uint64_t handle, uint16_t cmd,
   r = conn->send (&reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (-1);
+    connection_set_status (STATUS_DEAD);
+    return;
   }
 
   /* Send the offset + read data buffer. */
@@ -429,16 +429,15 @@ send_structured_reply_read (uint64_t handle, uint16_t cmd,
   r = conn->send (&offset_data, sizeof offset_data, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (-1);
+    connection_set_status (STATUS_DEAD);
+    return;
   }
 
   r = conn->send (buf, count, 0);
   if (r == -1) {
     nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (-1);
+    connection_set_status (STATUS_DEAD);
   }
-
-  return 1;                     /* command processed ok */
 }
 
 /* Convert a list of extents into NBD_REPLY_TYPE_BLOCK_STATUS blocks.
@@ -523,7 +522,7 @@ extents_to_block_descriptors (struct nbdkit_extents *extents,
   return blocks;
 }
 
-static int
+static void
 send_structured_reply_block_status (uint64_t handle,
                                     uint16_t cmd, uint16_t flags,
                                     uint32_t count, uint64_t offset,
@@ -543,8 +542,10 @@ send_structured_reply_block_status (uint64_t handle,
 
   blocks = extents_to_block_descriptors (extents, flags, count, offset,
                                          &nr_blocks);
-  if (blocks == NULL)
-    return connection_set_status (-1);
+  if (blocks == NULL) {
+    connection_set_status (STATUS_DEAD);
+    return;
+  }
 
   reply.magic = htobe32 (NBD_STRUCTURED_REPLY_MAGIC);
   reply.handle = handle;
@@ -556,7 +557,8 @@ send_structured_reply_block_status (uint64_t handle,
   r = conn->send (&reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (-1);
+    connection_set_status (STATUS_DEAD);
+    return;
   }
 
   /* Send the base:allocation context ID. */
@@ -564,7 +566,8 @@ send_structured_reply_block_status (uint64_t handle,
   r = conn->send (&context_id, sizeof context_id, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (-1);
+    connection_set_status (STATUS_DEAD);
+    return;
   }
 
   /* Send each block descriptor. */
@@ -573,14 +576,12 @@ send_structured_reply_block_status (uint64_t handle,
                     i == nr_blocks - 1 ? 0 : SEND_MORE);
     if (r == -1) {
       nbdkit_error ("write reply: %s: %m", name_of_nbd_cmd (cmd));
-      return connection_set_status (-1);
+      connection_set_status (STATUS_DEAD);
     }
   }
-
-  return 1;                     /* command processed ok */
 }
 
-static int
+static void
 send_structured_reply_error (uint64_t handle, uint16_t cmd, uint16_t flags,
                              uint32_t error)
 {
@@ -599,7 +600,8 @@ send_structured_reply_error (uint64_t handle, uint16_t cmd, uint16_t flags,
   r = conn->send (&reply, sizeof reply, SEND_MORE);
   if (r == -1) {
     nbdkit_error ("write error reply: %m");
-    return connection_set_status (-1);
+    connection_set_status (STATUS_DEAD);
+    return;
   }
 
   /* Send the error. */
@@ -608,18 +610,17 @@ send_structured_reply_error (uint64_t handle, uint16_t cmd, uint16_t flags,
   r = conn->send (&error_data, sizeof error_data, 0);
   if (r == -1) {
     nbdkit_error ("write data: %s: %m", name_of_nbd_cmd (cmd));
-    return connection_set_status (-1);
+    connection_set_status (STATUS_DEAD);
   }
   /* No human readable error message at the moment. */
-
-  return 1;                     /* command processed ok */
 }
 
-int
+void
 protocol_recv_request_send_reply (void)
 {
   GET_CONN;
   int r;
+  conn_status cs;
   struct nbd_request request;
   uint16_t cmd, flags;
   uint32_t magic, count, error = 0;
@@ -630,24 +631,27 @@ protocol_recv_request_send_reply (void)
   /* Read the request packet. */
   {
     ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->read_lock);
-    r = connection_get_status ();
-    if (r <= 0)
-      return r;
+    cs = connection_get_status ();
+    if (cs <= STATUS_CLIENT_DONE)
+      return;
     r = conn->recv (&request, sizeof request);
     if (r == -1) {
       nbdkit_error ("read request: %m");
-      return connection_set_status (-1);
+      connection_set_status (STATUS_DEAD);
+      return;
     }
     if (r == 0) {
       debug ("client closed input socket, closing connection");
-      return connection_set_status (0); /* disconnect */
+      connection_set_status (STATUS_CLIENT_DONE); /* disconnect */
+      return;
     }
 
     magic = be32toh (request.magic);
     if (magic != NBD_REQUEST_MAGIC) {
       nbdkit_error ("invalid request: 'magic' field is incorrect (0x%x)",
                     magic);
-      return connection_set_status (-1);
+      connection_set_status (STATUS_DEAD);
+      return;
     }
 
     flags = be16toh (request.flags);
@@ -658,14 +662,17 @@ protocol_recv_request_send_reply (void)
 
     if (cmd == NBD_CMD_DISC) {
       debug ("client sent %s, closing connection", name_of_nbd_cmd (cmd));
-      return connection_set_status (0); /* disconnect */
+      connection_set_status (STATUS_CLIENT_DONE); /* disconnect */
+      return;
     }
 
     /* Validate the request. */
     if (!validate_request (cmd, flags, offset, count, &error)) {
       if (cmd == NBD_CMD_WRITE &&
-          skip_over_write_buffer (conn->sockin, count) < 0)
-        return connection_set_status (-1);
+          skip_over_write_buffer (conn->sockin, count) < 0) {
+        connection_set_status (STATUS_DEAD);
+        return;
+      }
       goto send_reply;
     }
 
@@ -677,8 +684,10 @@ protocol_recv_request_send_reply (void)
       if (buf == NULL) {
         error = ENOMEM;
         if (cmd == NBD_CMD_WRITE &&
-            skip_over_write_buffer (conn->sockin, count) < 0)
-          return connection_set_status (-1);
+            skip_over_write_buffer (conn->sockin, count) < 0) {
+          connection_set_status (STATUS_DEAD);
+          return;
+        }
         goto send_reply;
       }
     }
@@ -702,13 +711,14 @@ protocol_recv_request_send_reply (void)
       }
       if (r == -1) {
         nbdkit_error ("read data: %s: %m", name_of_nbd_cmd (cmd));
-        return connection_set_status (-1);
+        connection_set_status (STATUS_DEAD);
+        return;
       }
     }
   }
 
   /* Perform the request.  Only this part happens inside the request lock. */
-  if (quit || !connection_get_status ()) {
+  if (quit || connection_get_status () == STATUS_CLIENT_DONE) {
     error = ESHUTDOWN;
   }
   else {
@@ -720,8 +730,8 @@ protocol_recv_request_send_reply (void)
 
   /* Send the reply packet. */
  send_reply:
-  if (connection_get_status () < 0)
-    return -1;
+  if (connection_get_status () < STATUS_CLIENT_DONE)
+    return;
 
   if (error != 0) {
     /* Since we're about to send only the limited NBD_E* errno to the
@@ -742,19 +752,14 @@ protocol_recv_request_send_reply (void)
       (cmd == NBD_CMD_READ || cmd == NBD_CMD_BLOCK_STATUS)) {
     if (!error) {
       if (cmd == NBD_CMD_READ)
-        return send_structured_reply_read (request.handle, cmd,
-                                           buf, count, offset);
+        send_structured_reply_read (request.handle, cmd, buf, count, offset);
       else /* NBD_CMD_BLOCK_STATUS */
-        return send_structured_reply_block_status (request.handle,
-                                                   cmd, flags,
-                                                   count, offset,
-                                                   extents);
+        send_structured_reply_block_status (request.handle, cmd, flags,
+                                            count, offset, extents);
     }
     else
-      return send_structured_reply_error (request.handle, cmd, flags,
-                                          error);
+      send_structured_reply_error (request.handle, cmd, flags, error);
   }
   else
-    return send_simple_reply (request.handle, cmd, flags, buf, count,
-                              error);
+    send_simple_reply (request.handle, cmd, flags, buf, count, error);
 }

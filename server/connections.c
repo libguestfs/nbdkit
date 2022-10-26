@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2021 Red Hat Inc.
+ * Copyright (C) 2013-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -64,11 +64,11 @@ static int raw_send_other (const void *buf, size_t len, int flags);
 #endif
 static void raw_close (void);
 
-int
+conn_status
 connection_get_status (void)
 {
   GET_CONN;
-  int r;
+  conn_status r;
 
   if (conn->nworkers &&
       pthread_mutex_lock (&conn->status_lock))
@@ -80,11 +80,9 @@ connection_get_status (void)
   return r;
 }
 
-/* Update the status if the new value is lower than the existing value.
- * For convenience, return the incoming value.
- */
-int
-connection_set_status (int value)
+/* Update the status if the new value is lower than the existing value. */
+void
+connection_set_status (conn_status value)
 {
   GET_CONN;
 
@@ -92,7 +90,7 @@ connection_set_status (int value)
       pthread_mutex_lock (&conn->status_lock))
     abort ();
   if (value < conn->status) {
-    if (conn->nworkers && conn->status > 0) {
+    if (conn->nworkers && conn->status > STATUS_CLIENT_DONE) {
       char c = 0;
 
       assert (conn->status_pipe[1] >= 0);
@@ -104,7 +102,6 @@ connection_set_status (int value)
   if (conn->nworkers &&
       pthread_mutex_unlock (&conn->status_lock))
     abort ();
-  return value;
 }
 
 struct worker_data {
@@ -125,7 +122,7 @@ connection_worker (void *data)
   threadlocal_set_conn (conn);
   free (worker);
 
-  while (!quit && connection_get_status () > 0)
+  while (!quit && connection_get_status () > STATUS_CLIENT_DONE)
     protocol_recv_request_send_reply ();
   debug ("exiting worker thread %s", threadlocal_get_name ());
   free (name);
@@ -177,7 +174,7 @@ handle_single_connection (int sockin, int sockout)
   if (!nworkers) {
     /* No need for a separate thread. */
     debug ("handshake complete, processing requests serially");
-    while (!quit && connection_get_status () > 0)
+    while (!quit && connection_get_status () > STATUS_CLIENT_DONE)
       protocol_recv_request_send_reply ();
   }
   else {
@@ -196,13 +193,13 @@ handle_single_connection (int sockin, int sockout)
 
       if (unlikely (!worker)) {
         perror ("malloc");
-        connection_set_status (-1);
+        connection_set_status (STATUS_DEAD);
         goto wait;
       }
       if (unlikely (asprintf (&worker->name, "%s.%d", plugin_name, nworkers)
                     < 0)) {
         perror ("asprintf");
-        connection_set_status (-1);
+        connection_set_status (STATUS_DEAD);
         free (worker);
         goto wait;
       }
@@ -212,7 +209,7 @@ handle_single_connection (int sockin, int sockout)
       if (unlikely (err)) {
         errno = err;
         perror ("pthread_create");
-        connection_set_status (-1);
+        connection_set_status (STATUS_DEAD);
         free (worker);
         goto wait;
       }
@@ -264,7 +261,7 @@ new_connection (int sockin, int sockout, int nworkers)
     goto error1;
   }
 
-  conn->status = 1;
+  conn->status = STATUS_ACTIVE;
   conn->nworkers = nworkers;
   if (nworkers) {
 #ifdef HAVE_PIPE2
