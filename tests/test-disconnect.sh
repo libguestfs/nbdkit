@@ -53,22 +53,27 @@ pid=`cat disconnect.pid`
 nbdsh -u "nbd+unix:///?socket=$sock" -c '
 import errno
 
+def waitfor(cookie):
+  while True:
+    c = h.aio_peek_command_completed()
+    if c:
+      break
+    h.poll(-1)
+  assert c == cookie
+
 buf = nbd.Buffer(1)
 c1 = h.aio_pread(buf, 1)
 c2 = h.aio_pwrite(buf, 2)
-h.poll(-1)
-assert h.aio_peek_command_completed() == c2
+waitfor(c2)
 h.aio_command_completed(c2)
 c3 = h.aio_pread(buf, 3)
-h.poll(-1)
-assert h.aio_peek_command_completed() == c3
+waitfor(c3)
 try:
   h.aio_command_completed(c3)
   assert False
 except nbd.Error as ex:
   assert ex.errnum == errno.ESHUTDOWN
-h.poll(-1)
-assert h.aio_peek_command_completed() == c1
+waitfor(c1)
 h.aio_command_completed(c1)
 h.shutdown()
 '
