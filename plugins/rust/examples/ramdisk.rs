@@ -52,7 +52,7 @@ impl Server for RamDisk {
     }
 
     fn open(_readonly: bool) -> Box<dyn Server> {
-        Box::new(RamDisk::default())
+        Box::<RamDisk>::default()
     }
 
     fn read_at(&self, buf: &mut [u8], offset: u64) -> Result<()> {

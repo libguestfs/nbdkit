@@ -73,7 +73,7 @@ fn with_fixture<F: FnMut(&mut Fixture)>(mut f: F) {
     initialize();
     let _m = MOCK_SERVER_MTX.lock().unwrap();
 
-    let mut mock = Box::new(MockServer::default());
+    let mut mock = Box::<MockServer>::default();
     mock.expect_get_size()
         .returning(|| Ok(0x4200));
     let mockp = (&mut mock) as *mut Box<MockServer>;
@@ -83,7 +83,7 @@ fn with_fixture<F: FnMut(&mut Fixture)>(mut f: F) {
 
     let pluginp = unsafe { PLUGIN.unwrap()};
     let plugin = unsafe {&*pluginp};
-    let handle = ((*plugin).open)(0);
+    let handle = (plugin.open)(0);
     let mut fixture = Fixture {
         mockp,
         plugin,
@@ -92,7 +92,7 @@ fn with_fixture<F: FnMut(&mut Fixture)>(mut f: F) {
 
     f(&mut fixture);
 
-    ((*plugin).close)(handle);
+    (plugin.close)(handle);
 }
 
 
