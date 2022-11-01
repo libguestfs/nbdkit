@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2020 Red Hat Inc.
+ * Copyright (C) 2020-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -83,6 +83,12 @@ struct sockaddr_un
 #endif
 #ifndef ESHUTDOWN
 #define ESHUTDOWN ECONNABORTED
+#endif
+
+/* Windows uses non-standard names for shutdown(how). */
+#ifndef SHUT_WR
+#define SHUT_WR SD_SEND
+#define SHUT_RDWR SD_BOTH
 #endif
 
 /* This generated function translates Winsock errors into errno codes. */

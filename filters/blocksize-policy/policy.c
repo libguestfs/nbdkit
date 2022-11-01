@@ -43,6 +43,7 @@
 
 #include "ispowerof2.h"
 #include "rounding.h"
+#include "windows-compat.h"
 
 /* Block size constraints configured on the command line (0 = unset). */
 static uint32_t config_minimum;
