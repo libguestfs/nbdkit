@@ -146,7 +146,8 @@ The script fragment behaves the same way as the corresponding method
 in L<nbdkit-sh-plugin(1)>.  In particular, parameters are identical,
 C<$tmpdir> is present and used in the same way, the exit code must be
 one of the valid exit codes described in that manual page, and error
-handling works the same way too.
+handling works the same way too.  Likewise, B<nbdkit --dump-plugin
+eval> includes a line for B<max_known_status=> in nbdkit E<ge> 1.34.
 
 Note that a C<config> callback will only handle keys not recognized as
 callback names; when picking key=value pairs that you want your script

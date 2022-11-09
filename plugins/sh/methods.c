@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2021 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -58,6 +58,10 @@ sh_dump_plugin (void)
   const char *args[] = { script, method, NULL };
   CLEANUP_FREE_STRING string o = empty_vector;
 
+  /* Dump information about the sh/eval features */
+  printf ("max_known_status=%d\n", RET_FALSE);
+
+  /* Dump any additional information from the script */
   if (script) {
     /* Call dump_plugin method. */
     switch (call_read (&o, args)) {

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -51,7 +51,9 @@ typedef enum exit_code {
   OK = 0,
   ERROR = 1,           /* all script error codes are mapped to this */
   MISSING = 2,         /* method missing */
-  RET_FALSE = 3        /* script exited with code 3 meaning false */
+  RET_FALSE = 3,       /* script exited with code 3 meaning false */
+  /* Adjust methods.c:sh_dump_plugin when defining new codes */
+  /* 4-7 is reserved since 1.8; handle like ERROR for now */
 } exit_code;
 
 extern exit_code call (const char **argv)
