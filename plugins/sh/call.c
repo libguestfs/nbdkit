@@ -413,8 +413,30 @@ handle_script_error (const char *argv0, string *ebuf, exit_code code)
     return code;
 
   case ERROR:
-  default:
+  default: /* All other values behave the same as ERROR */
     err = EIO;
+    break;
+
+  case SHUTDOWN_OK:
+    nbdkit_shutdown ();
+    return OK;
+
+  case SHUTDOWN_ERR:
+    nbdkit_shutdown ();
+    err = ESHUTDOWN;
+    break;
+
+  case DISC_FORCE:
+    nbdkit_disconnect (1);
+    return MISSING; /* Socket is killed, so client won't see response anyway */
+
+  case DISC_SOFT_OK:
+    nbdkit_disconnect (0);
+    return OK;
+
+  case DISC_SOFT_ERR:
+    nbdkit_disconnect (0);
+    err = ESHUTDOWN;
     break;
   }
 

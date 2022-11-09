@@ -59,7 +59,7 @@ sh_dump_plugin (void)
   CLEANUP_FREE_STRING string o = empty_vector;
 
   /* Dump information about the sh/eval features */
-  printf ("max_known_status=%d\n", RET_FALSE);
+  printf ("max_known_status=%d\n", DISC_SOFT_ERR);
 
   /* Dump any additional information from the script */
   if (script) {

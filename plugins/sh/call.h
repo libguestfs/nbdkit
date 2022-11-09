@@ -52,8 +52,13 @@ typedef enum exit_code {
   ERROR = 1,           /* all script error codes are mapped to this */
   MISSING = 2,         /* method missing */
   RET_FALSE = 3,       /* script exited with code 3 meaning false */
+  SHUTDOWN_OK = 4,     /* call nbdkit_shutdown(), then return OK */
+  SHUTDOWN_ERR = 5,    /* call nbdkit_shutdown(), then return ERROR */
+  DISC_FORCE = 6,      /* call nbdkit_disconnect(true); return is irrelevant */
+  DISC_SOFT_OK = 7,    /* call nbdkit_disconnect(false), return OK */
+  DISC_SOFT_ERR = 8,   /* call nbdkit_disconnect(false), return ERROR */
   /* Adjust methods.c:sh_dump_plugin when defining new codes */
-  /* 4-7 is reserved since 1.8; handle like ERROR for now */
+  /* 9-15 are reserved since 1.34; handle like ERROR for now */
 } exit_code;
 
 extern exit_code call (const char **argv)

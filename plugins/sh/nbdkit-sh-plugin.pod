@@ -96,7 +96,7 @@ The script should exit with specific exit codes:
 
 The method was executed successfully.
 
-=item 1 and 8-127
+=item 1 and 16-255
 
 There was an error.  The script may print on stderr an errno name,
 optionally followed by whitespace and a message, for example:
@@ -123,9 +123,42 @@ The requested method is not supported by the script.
 
 For methods which return booleans, this code indicates false.
 
-=item 4, 5, 6, 7
+=item 4 and 5
 
-These exit codes are reserved for future use.
+Triggers a call to the C function C<nbdkit_shutdown>, which requests
+an asynchronous exit of the nbdkit server (disconnecting all clients).
+The client will usually get a response before shutdown is complete
+(although this is racy); so once the shutdown is requested, code 4
+then behaves like code 0 (stderr is ignored, and the server tries to
+return success), and code 5 behaves like code 1 (the server tries to
+return an error to the client parsed from stderr, although a missing
+error defaults to C<ESHUTDOWN> instead of C<EIO>).
+
+=item S<6>
+
+Triggers a call to the C function C<nbdkit_disconnect> with C<force>
+set to true, which requests an abrupt disconnect of the current
+client.  The contents of stderr are irrelevant with this status, since
+the client will not get a response.
+
+=item 7 and 8
+
+Triggers a call to the C function C<nbdkit_disconnect> with C<force>
+set to false, which requests a soft disconnect of the current client
+(future client requests are rejected with C<ESHUTDOWN> without calling
+into the plugin, but current requests may complete).  Since the client
+will likely get the response to this command, code 7 then behaves like
+code 0 (stderr is ignored, and the server tries to return success),
+and code 8 behaves like code 1 (the server tries to return an error to
+the client parsed from stderr, although a missing error defaults to
+C<ESHUTDOWN> instead of C<EIO>).
+
+=item 9-15
+
+These exit codes are reserved for future use.  Note that versions of
+nbdkit E<lt> 1.34 documented that codes 8 through 15 behaved like code
+1; although it is unlikely that many scripts relied on this similarity
+in practice.
 
 =back
 
@@ -583,4 +616,4 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018-2020 Red Hat Inc.
+Copyright (C) 2018-2022 Red Hat Inc.

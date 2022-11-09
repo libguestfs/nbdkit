@@ -769,6 +769,7 @@ TESTS += \
 	test-eval-exports.sh \
 	test-eval-cache.sh \
 	test-eval-dump-plugin.sh \
+	test-eval-disconnect.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-eval.sh \
@@ -776,6 +777,7 @@ EXTRA_DIST += \
 	test-eval-exports.sh \
 	test-eval-cache.sh \
 	test-eval-dump-plugin.sh \
+	test-eval-disconnect.sh \
 	$(NULL)
 
 # file plugin test.
