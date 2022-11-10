@@ -560,10 +560,11 @@ curl_open (int readonly)
   if (ssl_cipher_list)
     curl_easy_setopt (h->c, CURLOPT_SSL_CIPHER_LIST, ssl_cipher_list);
   if (tls13_ciphers) {
-#ifdef CURLOPT_TLS13_CIPHERS
+#if (LIBCURL_VERSION_MAJOR > 7) || \
+    (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 61)
     curl_easy_setopt (h->c, CURLOPT_TLS13_CIPHERS, tls13_ciphers);
 #else
-    /* This is not available in, eg, RHEL 7 */
+    /* This is not available before curl-7.61 */
     nbdkit_error ("tls13-ciphers is not supported in this build of "
                   "nbdkit-curl-plugin");
     goto err;
