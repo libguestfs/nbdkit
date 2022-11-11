@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2022 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -397,17 +397,28 @@ call3 (const char *wbuf, size_t wbuflen, /* sent to stdin (can be NULL) */
   return ret;
 }
 
-static void
-handle_script_error (const char *argv0, string *ebuf)
+/* Normalize return codes and parse error string. */
+static exit_code
+handle_script_error (const char *argv0, string *ebuf, exit_code code)
 {
   int err;
   size_t skip = 0;
   char *p;
 
-  if (ebuf->len == 0) {
+  switch (code) {
+  case OK:
+  case MISSING:
+  case RET_FALSE:
+    /* Script successful. */
+    return code;
+
+  case ERROR:
+  default:
     err = EIO;
-    goto no_error_message;
+    break;
   }
+
+  assert (ebuf->ptr); /* Even if empty, ebuf was NUL-terminated in call3 */
 
   /* Recognize the errno values that match NBD protocol errors */
   if (ascii_strncasecmp (ebuf->ptr, "EPERM", 5) == 0) {
@@ -463,11 +474,7 @@ handle_script_error (const char *argv0, string *ebuf)
     err = EFBIG;
     skip = 5;
   }
-  /* Default to EIO. */
-  else {
-    err = EIO;
-    skip = 0;
-  }
+  /* Otherwise, use value of err populated in switch above */
 
   if (skip && ebuf->ptr[skip]) {
     if (!ascii_isspace (ebuf->ptr[skip])) {
@@ -495,13 +502,13 @@ handle_script_error (const char *argv0, string *ebuf)
     nbdkit_error ("%s: %s", argv0, &ebuf->ptr[skip]);
   }
   else {
-  no_error_message:
     nbdkit_error ("%s: script exited with error, "
                   "but did not print an error message on stderr", argv0);
   }
 
   /* Set errno. */
   errno = err;
+  return ERROR;
 }
 
 /* Call the script with parameters.  Don't write to stdin or read from
@@ -516,19 +523,7 @@ call (const char **argv)
   CLEANUP_FREE_STRING string ebuf = empty_vector;
 
   r = call3 (NULL, 0, &rbuf, &ebuf, argv);
-  switch (r) {
-  case OK:
-  case MISSING:
-  case RET_FALSE:
-    /* Script successful. */
-    return r;
-
-  case ERROR:
-  default:
-    /* Error case. */
-    handle_script_error (argv[0], &ebuf);
-    return ERROR;
-  }
+  return handle_script_error (argv[0], &ebuf, r);
 }
 
 /* Call the script with parameters.  Read from stdout and return the
@@ -541,20 +536,10 @@ call_read (string *rbuf, const char **argv)
   CLEANUP_FREE_STRING string ebuf = empty_vector;
 
   r = call3 (NULL, 0, rbuf, &ebuf, argv);
-  switch (r) {
-  case OK:
-  case MISSING:
-  case RET_FALSE:
-    /* Script successful. */
-    return r;
-
-  case ERROR:
-  default:
-    /* Error case. */
+  r = handle_script_error (argv[0], &ebuf, r);
+  if (r == ERROR)
     string_reset (rbuf);
-    handle_script_error (argv[0], &ebuf);
-    return ERROR;
-  }
+  return r;
 }
 
 /* Call the script with parameters.  Write to stdin of the script.
@@ -568,17 +553,5 @@ call_write (const char *wbuf, size_t wbuflen, const char **argv)
   CLEANUP_FREE_STRING string ebuf = empty_vector;
 
   r = call3 (wbuf, wbuflen, &rbuf, &ebuf, argv);
-  switch (r) {
-  case OK:
-  case MISSING:
-  case RET_FALSE:
-    /* Script successful. */
-    return r;
-
-  case ERROR:
-  default:
-    /* Error case. */
-    handle_script_error (argv[0], &ebuf);
-    return ERROR;
-  }
+  return handle_script_error (argv[0], &ebuf, r);
 }
