@@ -405,6 +405,19 @@ handle_script_error (const char *argv0, string *ebuf, exit_code code)
   size_t skip = 0;
   char *p;
 
+  /* ebuf->ptr might be NULL on some return paths from call3().  To
+   * make the following code easier, allocate it and reserve one byte.
+   * Note that ebuf->len is still 0 after this.
+   */
+  if (ebuf->len == 0) {
+    if (string_reserve (ebuf, 1) == -1) {
+      nbdkit_error ("realloc: %m");
+      err = EIO;
+      return ERROR;
+    }
+    ebuf->ptr[ebuf->len] = '\0';
+  }
+
   switch (code) {
   case OK:
   case MISSING:
@@ -439,8 +452,6 @@ handle_script_error (const char *argv0, string *ebuf, exit_code code)
     err = ESHUTDOWN;
     break;
   }
-
-  assert (ebuf->ptr); /* Even if empty, ebuf was NUL-terminated in call3 */
 
   /* Recognize the errno values that match NBD protocol errors */
   if (ascii_strncasecmp (ebuf->ptr, "EPERM", 5) == 0) {
