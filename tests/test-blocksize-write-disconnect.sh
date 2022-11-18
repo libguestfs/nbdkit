@@ -52,11 +52,12 @@ nbdkit -v -U - eval \
        block_size="echo 2 4096 16M" \
        get_size="echo 64M" \
        pread=' dd if=/dev/zero count=$3 iflag=count_bytes ' \
-       pwrite=' if test $3 -gt $((8*1024*1024)); then
+       pwrite='
+         dd of=/dev/null 2>/dev/null
+         if test $3 -gt $((8*1024*1024)); then
            echo ENOMEM >&2; exit 1
-         else
-           dd of=/dev/null
-         fi' \
+         fi
+       ' \
        --filter=blocksize-policy \
        blocksize-error-policy=error blocksize-write-disconnect=32M \
        --run '
