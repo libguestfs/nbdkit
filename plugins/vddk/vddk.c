@@ -77,7 +77,7 @@ NBDKIT_DLL_PUBLIC int vddk_debug_datapath = 1;
 void *dl;                              /* dlopen handle */
 bool init_called;                      /* was InitEx called */
 __thread int error_suppression;        /* threadlocal error suppression */
-int library_version;                   /* VDDK major: 6, 7, ... */
+int library_version;                   /* VDDK major: 6, 7, 8, ... */
 bool is_remote;                        /* true if remote connection */
 
 enum compression_type compression;     /* compression */
@@ -403,6 +403,8 @@ load_library (bool load_error_is_fatal)
      * our testsuite is easier to write if we point libdir directly to
      * a stub .so.
      */
+    { "lib64/libvixDiskLib.so.8", 8 },
+    { "libvixDiskLib.so.8",       8 },
     { "lib64/libvixDiskLib.so.7", 7 },
     { "libvixDiskLib.so.7",       7 },
     { "lib64/libvixDiskLib.so.6", 6 },

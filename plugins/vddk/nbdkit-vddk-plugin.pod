@@ -526,7 +526,7 @@ by this build.
 
 =item C<vddk_library_version=...>
 
-The VDDK major library version: 6, 7, ...
+The VDDK major library version: 6, 7, 8, ...
 If this is omitted it means the library could not be loaded.
 
 =item C<vddk_dll=...>
