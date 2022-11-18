@@ -62,9 +62,18 @@ nbdkit -v -U - eval \
        --run '
 nbdsh -u "$uri" -c "
 import errno
+import sys
+
+def header(msg):
+  print(\"=== %s ===\" % msg)
+  sys.stdout.flush()
 
 def check(h, size, expect_value, expect_traffic=True):
+  print(\"Testing size=%d\" % size)
+  sys.stdout.flush()
+
   assert h.aio_is_ready() is True
+
   buf = b\"0\" * size
   if hasattr(h, \"stats_bytes_sent\"):
     start = h.stats_bytes_sent()
@@ -80,25 +89,25 @@ def check(h, size, expect_value, expect_traffic=True):
       assert h.stats_bytes_sent() == start
 
 h.set_strict_mode(0)  # Bypass client-side safety checks
-# Beyond 64M
+header(\"Beyond 64M\")
 check(h, 64*1024*1024 + 1, errno.ERANGE, False)
 check(h, 64*1024*1024 + 2, errno.ERANGE, False)
-# Small reads
+header(\"Small reads\")
 check(h, 1, errno.EINVAL)
 check(h, 2, 0)
-# Near 8M boundary
+header(\"Near 8M boundary\")
 check(h, 8*1024*1024 - 2, 0)
 check(h, 8*1024*1024 - 1, errno.EINVAL)
 check(h, 8*1024*1024, 0)
 check(h, 8*1024*1024 + 1, errno.EINVAL)
 check(h, 8*1024*1024 + 2, errno.ENOMEM)
-# Near 16M boundary
+header(\"Near 16M boundary\")
 check(h, 16*1024*1024 - 2, errno.ENOMEM)
 check(h, 16*1024*1024 - 1, errno.EINVAL)
 check(h, 16*1024*1024, errno.ENOMEM)
 check(h, 16*1024*1024 + 1, errno.EINVAL)
 check(h, 16*1024*1024 + 2, errno.EINVAL)
-# Near 32M boundary
+header(\"Near 32M boundary\")
 check(h, 32*1024*1024 - 2, errno.EINVAL)
 check(h, 32*1024*1024 - 1, errno.EINVAL)
 check(h, 32*1024*1024, errno.EINVAL)
