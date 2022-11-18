@@ -77,7 +77,7 @@ int vddk_debug_datapath = 1;
 static void *dl;                           /* dlopen handle */
 static bool init_called;                   /* was InitEx called */
 static __thread int error_suppression;     /* threadlocal error suppression */
-static int library_version;                /* VDDK major: 5, 6, 7, ... */
+static int library_version;                /* VDDK major: 5, 6, 7, 8, ... */
 
 static enum { NONE = 0, ZLIB, FASTLZ, SKIPZ } compression; /* compression */
 static char *config;                       /* config */
@@ -309,6 +309,8 @@ load_library (bool load_error_is_fatal)
      * but our testsuite is easier to write if we point libdir
      * directly to a stub .so.
      */
+    { "lib64/libvixDiskLib.so.8", 8 },
+    { "libvixDiskLib.so.8",       8 },
     { "lib64/libvixDiskLib.so.7", 7 },
     { "libvixDiskLib.so.7",       7 },
     { "lib64/libvixDiskLib.so.6", 6 },
