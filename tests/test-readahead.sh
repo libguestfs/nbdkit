@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2020 Red Hat Inc.
+# Copyright (C) 2018-2022 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -45,10 +45,16 @@ cleanup_fn rm -f $files
 nbdkit -fv -U - sh - \
        --filter=readahead \
        --run 'nbdsh --uri "$uri" -c "
+import time
 for i in range(0, 512*10, 512):
     h.pread(512, i)
+# Give some time for bgthread to finish.
+time.sleep(5)
 "' <<'EOF'
 case "$1" in
+     block_size)
+         echo 512 512 512
+         ;;
      thread_model)
          echo parallel
          ;;
