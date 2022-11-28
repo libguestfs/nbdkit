@@ -42,7 +42,7 @@ files="readahead.out"
 rm -f $files
 cleanup_fn rm -f $files
 
-nbdkit -fv -U - "$@" sh - \
+nbdkit -fv -U - sh - \
        --filter=readahead \
        --run 'nbdsh --uri "$uri" -c "
 for i in range(0, 512*10, 512):
