@@ -676,7 +676,7 @@ server, which can also be very slow.
 This plugin requires VDDK E<ge> 6.5 (released Nov 2016).  It is only
 supported on the x64-64 archtecture.
 
-It has been tested with all versions up to 7.0.3 (but should work with
+It has been tested with all versions up to 8.0.0 (but should work with
 future versions).
 
 VDDK 6.7 was the first version that supported the
