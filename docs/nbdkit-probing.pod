@@ -26,7 +26,7 @@ nbdkit-probing - how to probe for nbdkit configuration and plugins
 
 You can query information about nbdkit and available plugins and
 filters using the nbdkit binary.  This can include whether nbdkit is
-installed, and whether plugins or filters and installed.
+installed, and whether plugins or filters are installed.
 
 =head2 Query if nbdkit is installed
 
