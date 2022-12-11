@@ -56,7 +56,7 @@
 static unsigned pollsecs = 60;
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-static unsigned connections = 0;
+static unsigned connections = 0; /* NB: Protected by 'lock' */
 static bool exiting = false;
 
 /* The list of events generated from command line parameters. */
@@ -310,24 +310,16 @@ check_for_event_script (const struct event *event)
 
 /* The background polling thread.
  *
- * This runs continuously in the background, but you can pause it by
- * grabbing &pause_lock (use the pause/resume_polling_thread()
- * wrappers below).
+ * This always polls every pollsecs seconds, but only checks for
+ * events when there are no connections.
  */
-static pthread_mutex_t pause_lock = PTHREAD_MUTEX_INITIALIZER;
-
 static void * __attribute__((noreturn))
 polling_thread (void *vp)
 {
   for (;;) {
     {
-      /* Note the order here is chosen to avoid possible deadlock
-       * because the caller of pause_polling_thread() always acquires
-       * &lock before &pause_lock.
-       */
       ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
-      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&pause_lock);
-      if (check_for_event ()) {
+      if (connections == 0 && check_for_event ()) {
         nbdkit_debug ("exitwhen: shutdown from polling thread");
         nbdkit_shutdown ();
       }
@@ -335,20 +327,6 @@ polling_thread (void *vp)
 
     sleep (pollsecs);
   }
-}
-
-/* Call this to pause the polling thread.  &lock must be held. */
-static void
-pause_polling_thread (void)
-{
-  pthread_mutex_lock (&pause_lock);
-}
-
-/* Call this to resume the polling thread. */
-static void
-resume_polling_thread (void)
-{
-  pthread_mutex_unlock (&pause_lock);
 }
 
 /* Read command line parameters are build events list. */
@@ -495,8 +473,6 @@ exitwhen_open (nbdkit_next_open *next, nbdkit_context *nxdata,
 
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
   connections++;
-  if (connections == 1)
-    pause_polling_thread ();
 
   return NBDKIT_HANDLE_NOT_NEEDED;
 }
@@ -514,8 +490,6 @@ exitwhen_close (void *handle)
       nbdkit_debug ("exitwhen: exiting on last client connection");
       nbdkit_shutdown ();
     }
-    else
-      resume_polling_thread ();
   }
 }
 
