@@ -282,8 +282,11 @@ do_verify_remote_host (struct ssh_handle *h)
     return -1;
 
   case SSH_KNOWN_HOSTS_UNKNOWN:
-    nbdkit_error ("host key is unknown, you must use ssh first "
-                  "and accept the host key");
+    /* See: https://gitlab.com/nbdkit/nbdkit/-/issues/10 */
+    nbdkit_error ("either the host key is unknown, you must use ssh "
+                  "first and accept the host key; or the known_hosts "
+                  "file (usually ~/.ssh/known_hosts) could not be opened, "
+                  "check that the file exists and file permissions");
     return -1;
 
   case SSH_KNOWN_HOSTS_ERROR:
