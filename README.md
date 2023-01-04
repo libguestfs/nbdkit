@@ -118,6 +118,10 @@ For the bittorrent plugin:
 
 * [libtorrent-rasterbar](https://www.libtorrent.org)
 
+For the blkio plugin:
+
+* [libblkio](https://libblkio.gitlab.io/libblkio)
+
 For the containerized data importer (CDI) plugin:
 
 * podman

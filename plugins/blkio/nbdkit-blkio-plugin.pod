@@ -1,0 +1,122 @@
+=head1 NAME
+
+nbdkit-blkio-plugin - libblkio plugin for NVMe, vhost-user, vDPA, VFIO
+
+=head1 SYNOPSIS
+
+ nbdkit blkio [driver=]DRIVER [path=FILENAME] [num-queues=N] ...
+
+=head1 DESCRIPTION
+
+nbdkit-blkio-plugin is an L<nbdkit(1)> plugin for using
+L<libblkio|https://libblkio.gitlab.io/libblkio> to access various disk
+sources used for high performance applications and virtualization.
+These include: NVMe, vhost-user, vDPA and VFIO.
+
+The first parameter after the plugin name should be the L<libblkio
+driver|https://libblkio.gitlab.io/libblkio/blkio.html#drivers>.  For
+example:
+
+ nbdkit blkio virtio-blk-vhost-user path=vhost.sock
+
+=head2 Driver: C<nvme-io_uring>
+
+ nbdkit blkio nvme-io_uring path=/dev/ng0n1
+
+Connect to an NVMe device, issuing commands through Linux io_uring
+(requires Linux E<ge> 5.19).
+
+=head2 Driver: C<virtio-blk-vfio-pci>
+
+ nbdkit blkio virtio-blk-vfio-pci path=/sys/bus/pci/devices/0000:00:01.0
+
+Connect to a PCI device which implements virtio-blk using VFIO.  The
+path is the path to the device's sysfs directory (see L<lspci(8)>).
+
+=head2 Driver: C<virtio-blk-vhost-user>
+
+ nbdkit blkio virtio-blk-vhost-user path=vhost.sock
+
+Connect to a vhost-user-blk device, such as one exported by
+L<qemu-storage-daemon(1)>.  The path is the vhost-user Unix domain
+socket.  For example:
+
+ qemu-storage-daemon \
+    --blockdev driver=file,node-name=file,filename=disk.qcow2 \
+    --blockdev driver=qcow2,node-name=qcow2,file=file \
+    --export type=vhost-user-blk,id=export,addr.type=unix,addr.path=vhost.sock,node-name=qcow2
+
+=head2 Driver: C<virtio-blk-vhost-vdpa>
+
+ nbdkit blkio virtio-blk-vhost-vdpa path=chardev
+
+Connect to a vDPA device which might be implemented in software
+(eg. VDUSE) or hardware.  The path is the vhost-vdpa character device.
+
+=head2 Driver: C<io_uring>
+
+ nbdkit blkio io_uring path=FILENAME
+
+You can use this driver to access local files and block devices
+through the libblkio C<io_uring> driver, but it is usually faster and
+easier to use L<nbdkit-file-plugin(1)>.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item [B<driver=>]DRIVER
+
+The name of the libblkio driver to use.
+
+This parameter is required.
+
+C<driver=> is a magic config key and may be omitted in most cases.
+See L<nbdkit(1)/Magic parameters>.
+
+=item PROPERTYB<=>VALUE
+
+Properties such as C<path>, C<num-entries> etc are translated to
+libblkio properties.  Consult the L<libblkio
+documentation|https://libblkio.gitlab.io/libblkio/blkio.html> for a
+complete list.
+
+=item B<get=>PROPERTY
+
+Get (print) the value of a property after connecting.  The property is
+fetched and printed in nbdkit debug output, so you will need to use
+the I<--verbose> flag.  This is useful for debugging.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F<$plugindir/nbdkit-blkio-plugin.so>
+
+The plugin.
+
+Use C<nbdkit --dump-config> to find the location of C<$plugindir>.
+
+=back
+
+=head1 VERSION
+
+C<nbdkit-blkio-plugin> first appeared in nbdkit 1.34.
+
+=head1 SEE ALSO
+
+L<nbdkit-file-plugin(1)>,
+L<lspci(8)>,
+L<qemu-storage-daemon(1)>,
+L<https://libblkio.gitlab.io/libblkio>,
+L<https://libblkio.gitlab.io/libblkio/blkio.html>.
+
+=head1 AUTHORS
+
+Richard W.M. Jones
+
+=head1 COPYRIGHT
+
+Copyright (C) 2014-2023 Red Hat Inc.

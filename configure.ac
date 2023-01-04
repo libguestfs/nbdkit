@@ -74,6 +74,7 @@ lang_plugins="\
         tcl \
         "
 non_lang_plugins="\
+        blkio \
         cdi \
         curl \
         data \
@@ -1094,6 +1095,23 @@ AS_IF([test "x$enable_golang" != "xno"],[
 ],[GOLANG=no])
 AM_CONDITIONAL([HAVE_GOLANG],[test "x$GOLANG" != "xno"])
 
+dnl Check for libblkio (only if you want to compile the blkio plugin).
+AC_ARG_WITH([libblkio],
+    [AS_HELP_STRING([--without-libblkio],
+                    [disable blkio plugin @<:@default=check@:>@])],
+    [],
+    [with_libblkio=check])
+AS_IF([test "$with_libblkio" != "no"],[
+    PKG_CHECK_MODULES([LIBBLKIO], [blkio],[
+        printf "libblkio version is "; $PKG_CONFIG --modversion blkio
+        AC_SUBST([LIBBLKIO_CFLAGS])
+        AC_SUBST([LIBBLKIO_LIBS])
+        AC_DEFINE([HAVE_LIBBLKIO],[1],[libblkio found at compile time.])
+    ],
+    [AC_MSG_WARN([libblkio not found, blkio plugin will be disabled])])
+])
+AM_CONDITIONAL([HAVE_LIBBLKIO],[test "x$LIBBLKIO_LIBS" != "x"])
+
 dnl Check for curl (only if you want to compile the curl plugin).
 AC_ARG_WITH([curl],
     [AS_HELP_STRING([--without-curl],
@@ -1402,6 +1420,7 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  include/nbdkit-version.h
                  plugins/Makefile
+                 plugins/blkio/Makefile
                  plugins/cc/Makefile
                  plugins/cdi/Makefile
                  plugins/curl/Makefile
@@ -1533,6 +1552,7 @@ feature "TLS"                 test "x$GNUTLS_LIBS" != "x"
 echo
 echo "Optional plugins:"
 echo
+feature "blkio"               test "x$HAVE_LIBBLKIO_TRUE" = "x"
 feature "curl"                test "x$HAVE_CURL_TRUE" = "x"
 feature "example4"            test "x$HAVE_PERL_TRUE" = "x"
 feature "floppy"              test "x$HAVE_ICONV_TRUE" = "x"
