@@ -361,6 +361,28 @@ authenticate (struct ssh_handle *h)
     if (rc == SSH_AUTH_SUCCESS) return 0;
   }
 
+  /* All compatible methods were tried and none worked.  Come up with
+   * an actionable diagnostic message if we recognise the problem.
+   */
+  if (!(method & SSH_AUTH_METHOD_PUBLICKEY) && password == NULL) {
+    nbdkit_error ("the server does not offer public key authentication; "
+                  "try using the password=... parameter");
+    return -1;
+  }
+  if ((method & SSH_AUTH_METHOD_PASSWORD) && password != NULL) {
+    nbdkit_error ("password authentication failed, "
+                  "is the username and password correct?");
+    return -1;
+  }
+  if (!(method & SSH_AUTH_METHOD_PASSWORD) && password != NULL) {
+    nbdkit_error ("the server does not offer password authentication "
+                  "but you tried to use a password; if you have root access "
+                  "to the server, try editing 'sshd_config' and setting "
+                  "'PasswordAuthentication yes'; otherwise try setting up "
+                  "public key authentication");
+    return -1;
+  }
+
   nbdkit_error ("all possible authentication methods failed");
   return -1;
 }
