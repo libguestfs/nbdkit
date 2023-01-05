@@ -356,10 +356,6 @@ authenticate (struct ssh_handle *h)
     if (rc == SSH_AUTH_SUCCESS) return 0;
   }
 
-  /* Example code tries keyboard-interactive here, but we cannot use
-   * that method from a server.
-   */
-
   if (password != NULL && (method & SSH_AUTH_METHOD_PASSWORD)) {
     rc = authenticate_password (h->session, password);
     if (rc == SSH_AUTH_SUCCESS) return 0;
