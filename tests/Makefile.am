@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2022 Red Hat Inc.
+# Copyright (C) 2013-2023 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -622,6 +622,12 @@ EXTRA_DIST += test-export-name.sh test-export-info.sh
 # Test block size constraints.
 TESTS += test-block-size-constraints.sh
 EXTRA_DIST += test-block-size-constraints.sh
+
+# blkio plugin test.
+if HAVE_LIBBLKIO
+TESTS += test-blkio.sh
+EXTRA_DIST += test-blkio.sh
+endif
 
 # cdi plugin test.
 TESTS += test-cdi.sh

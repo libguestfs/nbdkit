@@ -18,6 +18,8 @@ driver|https://libblkio.gitlab.io/libblkio/blkio.html#drivers>.  For
 example:
 
  nbdkit blkio virtio-blk-vhost-user path=vhost.sock
+          │              │               │
+        plugin         driver       other parameters
 
 =head2 Driver: C<nvme-io_uring>
 
