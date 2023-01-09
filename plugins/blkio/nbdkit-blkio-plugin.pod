@@ -46,7 +46,7 @@ socket.  For example:
  qemu-storage-daemon \
     --blockdev driver=file,node-name=file,filename=disk.qcow2 \
     --blockdev driver=qcow2,node-name=qcow2,file=file \
-    --export type=vhost-user-blk,id=export,addr.type=unix,addr.path=vhost.sock,node-name=qcow2
+    --export type=vhost-user-blk,id=export,addr.type=unix,addr.path=vhost.sock,node-name=qcow2,writable=on
 
 =head2 Driver: C<virtio-blk-vhost-vdpa>
 
