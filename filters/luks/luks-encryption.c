@@ -856,11 +856,13 @@ load_header (nbdkit_next *next, const char *passphrase)
 void
 free_luks_data (struct luks_data *h)
 {
-  if (h->masterkey) {
-    memset (h->masterkey, 0, h->phdr.master_key_len);
-    free (h->masterkey);
+  if (h) {
+    if (h->masterkey) {
+      memset (h->masterkey, 0, h->phdr.master_key_len);
+      free (h->masterkey);
+    }
+    free (h);
   }
-  free (h);
 }
 
 uint64_t
