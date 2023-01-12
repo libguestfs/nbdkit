@@ -39,7 +39,7 @@ path is the path to the device's sysfs directory (see L<lspci(8)>).
 
  nbdkit blkio virtio-blk-vhost-user path=vhost.sock
 
-Connect to a vhost-user-blk device, such as one exported by
+Connect to a vhost-user block device, such as one exported by
 L<qemu-storage-daemon(1)>.  The path is the vhost-user Unix domain
 socket.  For example:
 
