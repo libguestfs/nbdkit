@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2013-2022 Red Hat Inc.
+# Copyright (C) 2013-2023 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -999,6 +999,7 @@ EOF
 dnl For developing plugins in Rust, optional.
 dnl Rust does not play nicely with VPATH builds
 AC_CHECK_PROG([CARGO],[cargo],[cargo],[no])
+AC_CHECK_PROG([RUSTC],[rustc],[rustc],[no])
 AC_ARG_ENABLE([rust],
     [AS_HELP_STRING([--disable-rust], [disable Rust plugin])],
     [],
@@ -1007,8 +1008,13 @@ AC_ARG_ENABLE([rust],
      else
        enable_rust=no
      fi])
-AM_CONDITIONAL([HAVE_RUST],
-               [test "x$CARGO" != "xno" && test "x$enable_rust" != "xno"])
+AS_IF([test "x$enable_rust" != "xno" && test "x$CARGO" != "xno" && test "x$RUSTC" != "xno"],
+      [have_rust=yes], [have_rust=no])
+AM_CONDITIONAL([HAVE_RUST], [test "x$have_rust" = "xyes"])
+AS_IF([test "x$have_rust" = "xyes"], [
+    printf "cargo version: "; $CARGO --version
+    printf "rustc version: "; $RUSTC --version
+])
 
 dnl Check for Ruby, for embedding in the Ruby plugin.
 AC_CHECK_PROG([RUBY],[ruby],[ruby],[no])
