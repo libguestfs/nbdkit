@@ -56,6 +56,7 @@ x86_64-alpine-315-prebuilt-env:
   variables:
     GOLANG: skip
     NAME: alpine-315
+    RUST: skip
 
 x86_64-alpine-315-local-env:
   extends: .native_build_job_local_env
@@ -65,6 +66,7 @@ x86_64-alpine-315-local-env:
     GOLANG: skip
     IMAGE: docker.io/library/alpine:3.15
     NAME: alpine-315
+    RUST: skip
 
 
 x86_64-alpine-edge-prebuilt-env:
@@ -133,6 +135,7 @@ x86_64-debian-11-prebuilt-env:
   allow_failure: false
   variables:
     NAME: debian-11
+    RUST: skip
 
 x86_64-debian-11-local-env:
   extends: .native_build_job_local_env
@@ -141,6 +144,7 @@ x86_64-debian-11-local-env:
   variables:
     IMAGE: docker.io/library/debian:11-slim
     NAME: debian-11
+    RUST: skip
 
 
 x86_64-debian-sid-prebuilt-env:
