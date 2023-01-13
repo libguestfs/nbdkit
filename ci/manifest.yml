@@ -47,7 +47,7 @@ targets:
 
   debian-sid: x86_64
 
-  fedora-35:
+  fedora-36:
     jobs:
       - arch: x86_64
         variables:
@@ -99,9 +99,9 @@ targets:
 
   opensuse-tumbleweed: x86_64
 
-  macos-11:
+  macos-12:
     jobs:
-      - arch: x86_64
+      - arch: aarch64
         # Remove when Cirrus CI starts working again and we can fix the build
         allow-failure: true
         variables:

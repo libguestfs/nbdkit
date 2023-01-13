@@ -56,11 +56,11 @@ x86_64-debian-sid-container:
     NAME: debian-sid
 
 
-x86_64-fedora-35-container:
+x86_64-fedora-36-container:
   extends: .container_job
   allow_failure: false
   variables:
-    NAME: fedora-35
+    NAME: fedora-36
 
 
 x86_64-fedora-rawhide-container:
@@ -101,15 +101,15 @@ x86_64-ubuntu-2004-container:
 
 # Cross container jobs
 
-mingw32-fedora-35-container:
+mingw32-fedora-36-container:
   extends: .container_job
   allow_failure: false
   variables:
-    NAME: fedora-35-cross-mingw32
+    NAME: fedora-36-cross-mingw32
 
 
-mingw64-fedora-35-container:
+mingw64-fedora-36-container:
   extends: .container_job
   allow_failure: false
   variables:
-    NAME: fedora-35-cross-mingw64
+    NAME: fedora-36-cross-mingw64
