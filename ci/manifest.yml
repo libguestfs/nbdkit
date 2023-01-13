@@ -24,6 +24,8 @@ targets:
         variables:
           # cgo does not play well with musl: https://github.com/golang/go/issues/13492
           GOLANG: skip
+          # https://listman.redhat.com/archives/libguestfs/2023-January/thread.html#30476
+          RUST: skip
 
   alpine-edge:
     jobs:
@@ -44,6 +46,9 @@ targets:
   debian-11:
     jobs:
       - arch: x86_64
+        variables:
+          # https://listman.redhat.com/archives/libguestfs/2023-January/thread.html#30476
+          RUST: skip
 
   debian-sid: x86_64
 
