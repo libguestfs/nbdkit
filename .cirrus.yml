@@ -22,6 +22,7 @@ rust_test_task:
   cargo_cache:
     folder: $CARGO_HOME/registry
   build_script:
+    - rustc --version | grep -q 1.46.0 && mv plugins/rust/Cargo.lock.msrv plugins/rust/Cargo.lock
     - cd plugins/rust; cargo build $CARGO_ARGS
   test_script:
     - cd plugins/rust; cargo test $CARGO_ARGS
