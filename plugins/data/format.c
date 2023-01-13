@@ -40,6 +40,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
+#include <signal.h>
 
 #define NBDKIT_API_VERSION 2
 #include <nbdkit-plugin.h>
@@ -1950,6 +1951,9 @@ store_script_len (struct allocator *a,
   FILE *pp;
   char buf[BUFSIZ];
   size_t n;
+
+  /* Restore SIGPIPE back to SIG_DFL, since shell can't undo SIG_IGN */
+  signal (SIGPIPE, SIG_DFL);
 
   pp = popen (script, "r");
   if (pp == NULL) {
