@@ -83,7 +83,7 @@ fn with_fixture<F: FnMut(&mut Fixture)>(mut f: F) {
 
     let pluginp = unsafe { PLUGIN.unwrap()};
     let plugin = unsafe {&*pluginp};
-    let handle = ((*plugin).open)(0);
+    let handle = (plugin.open)(0);
     let mut fixture = Fixture {
         mockp,
         plugin,
@@ -92,7 +92,7 @@ fn with_fixture<F: FnMut(&mut Fixture)>(mut f: F) {
 
     f(&mut fixture);
 
-    ((*plugin).close)(handle);
+    (plugin.close)(handle);
 }
 
 
