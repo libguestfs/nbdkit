@@ -59,9 +59,11 @@ prologue (FILE *fp)
   fprintf (fp, "debug: ");
 }
 
-/* Note: preserves the previous value of errno. */
-NBDKIT_DLL_PUBLIC void
-nbdkit_vdebug (const char *fs, va_list args)
+/* Common debug function.
+ * Note: preserves the previous value of errno.
+ */
+static void
+debug_common (const char *fs, va_list args)
 {
   int err = errno;
   CLEANUP_FREE char *str = NULL;
@@ -99,43 +101,21 @@ nbdkit_vdebug (const char *fs, va_list args)
 
 /* Note: preserves the previous value of errno. */
 NBDKIT_DLL_PUBLIC void
+nbdkit_vdebug (const char *fs, va_list args)
+{
+  debug_common (fs, args);
+}
+
+/* Note: preserves the previous value of errno. */
+NBDKIT_DLL_PUBLIC void
 nbdkit_debug (const char *fs, ...)
 {
   int err = errno;
   va_list args;
-  CLEANUP_FREE char *str = NULL;
-  size_t len = 0;
-  FILE *fp;
-
-  if (!verbose)
-    return;
-
-  fp = open_memstream (&str, &len);
-  if (fp == NULL) {
-  fail:
-    /* Try to emit what we can. */
-    va_start (args, fs);
-    errno = err;
-    vfprintf (stderr, fs, args);
-    va_end (args);
-    fprintf (stderr, "\n");
-    return;
-  }
-
-  prologue (fp);
 
   va_start (args, fs);
-  errno = err;
-  vfprintf (fp, fs, args);
+  debug_common (fs, args);
   va_end (args);
-
-  fprintf (fp, "\n");
-  close_memstream (fp);
-
-  if (str)
-    fputs (str, stderr);
-  else
-    goto fail;
 
   errno = err;
 }
