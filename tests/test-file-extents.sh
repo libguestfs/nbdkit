@@ -42,6 +42,9 @@ requires jq --version
 requires qemu-img --version
 requires qemu-img map --help
 
+# The file plugin must support reading file extents.
+requires sh -c 'nbdkit file --dump-plugin | grep file_extents=yes'
+
 files="test-file-extents.tmp test-file-extents.nbdkit test-file-extents.local"
 rm -f $files
 cleanup_fn rm -f $files
