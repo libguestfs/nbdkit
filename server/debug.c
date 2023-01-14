@@ -34,12 +34,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 
-#include "internal.h"
+#include "ansi-colours.h"
 #include "open_memstream.h"
+
+#include "internal.h"
 
 static void
 prologue (FILE *fp)
@@ -63,9 +67,10 @@ prologue (FILE *fp)
  * Note: preserves the previous value of errno.
  */
 static void
-debug_common (const char *fs, va_list args)
+debug_common (bool in_server, const char *fs, va_list args)
 {
   int err = errno;
+  int tty;
   CLEANUP_FREE char *str = NULL;
   size_t len = 0;
   FILE *fp;
@@ -83,11 +88,15 @@ debug_common (const char *fs, va_list args)
     return;
   }
 
+  tty = isatty (fileno (stderr));
+  if (!in_server && tty) ansi_force_colour (ANSI_FG_BOLD_BLACK, fp);
+
   prologue (fp);
 
   errno = err;
   vfprintf (fp, fs, args);
 
+  if (!in_server && tty) ansi_force_restore (fp);
   fprintf (fp, "\n");
   close_memstream (fp);
 
@@ -103,7 +112,7 @@ debug_common (const char *fs, va_list args)
 NBDKIT_DLL_PUBLIC void
 nbdkit_vdebug (const char *fs, va_list args)
 {
-  debug_common (fs, args);
+  debug_common (false, fs, args);
 }
 
 /* Note: preserves the previous value of errno. */
@@ -114,7 +123,25 @@ nbdkit_debug (const char *fs, ...)
   va_list args;
 
   va_start (args, fs);
-  debug_common (fs, args);
+  debug_common (false, fs, args);
+  va_end (args);
+
+  errno = err;
+}
+
+/* This variant of debug is used when debug is called from the server
+ * code, via the debug() macro.
+ *
+ * Note: preserves the previous value of errno.
+ */
+void
+debug_in_server (const char *fs, ...)
+{
+  int err = errno;
+  va_list args;
+
+  va_start (args, fs);
+  debug_common (true, fs, args);
   va_end (args);
 
   errno = err;

@@ -61,6 +61,11 @@ nbdkit_debug (const char *fs, ...)
 {
 }
 
+void
+debug_in_server (const char *fs, ...)
+{
+}
+
 bool listen_stdin;
 bool configured;
 bool verbose;

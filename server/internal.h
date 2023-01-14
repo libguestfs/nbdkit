@@ -95,12 +95,6 @@
       (type *) ((char *) __mptr - offsetof(type, member));       \
     })
 
-#define debug(fs, ...)                                   \
-  do {                                                   \
-    if_verbose                                           \
-      nbdkit_debug ((fs), ##__VA_ARGS__);                \
-  } while (0)
-
 /* Maximum read or write request that we will handle. */
 #define MAX_REQUEST_SIZE (64 * 1024 * 1024)
 
@@ -153,6 +147,16 @@ extern int saved_stdout;
  */
 extern struct backend *top;
 #define for_each_backend(b) for (b = top; b != NULL; b = b->next)
+
+/* debug.c */
+#define debug(fs, ...)                                   \
+  do {                                                   \
+    if_verbose                                           \
+      debug_in_server ((fs), ##__VA_ARGS__);             \
+  } while (0)
+
+extern void debug_in_server (const char *msg, ...)
+  ATTRIBUTE_FORMAT_PRINTF (1, 2);
 
 /* quit.c */
 extern volatile int quit;
