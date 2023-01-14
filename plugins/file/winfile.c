@@ -99,6 +99,7 @@ winfile_config_complete (void)
 static void
 winfile_dump_plugin (void)
 {
+  printf ("file_extents=yes\n");
   printf ("winfile=yes\n");
 }
 

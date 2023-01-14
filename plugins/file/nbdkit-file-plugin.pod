@@ -182,6 +182,10 @@ future.
 If both set, the plugin may be able to efficiently zero ranges of
 block devices, where the driver and block device itself supports this.
 
+=item C<file_extents=yes>
+
+If set, the plugin can read file extents.
+
 =item C<file_falloc_fl_punch_hole=yes>
 
 If set, the plugin may be able to punch holes (make sparse) files and
