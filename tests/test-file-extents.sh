@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2018-2022 Red Hat Inc.
+# Copyright (C) 2018-2023 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -42,7 +42,7 @@ requires jq --version
 requires qemu-img --version
 requires qemu-img map --help
 
-files="test-file-extents.tmp test-file-extents.out test-file-extents.expected"
+files="test-file-extents.tmp test-file-extents.nbdkit test-file-extents.local"
 rm -f $files
 cleanup_fn rm -f $files
 
@@ -55,11 +55,11 @@ stat -f disk || :
 qemu-img map -f raw --output=json disk > test-file-extents.tmp
 cat test-file-extents.tmp
 jq -c '.[] | {start:.start, length:.length, data:.data, zero:.zero}' \
-  < test-file-extents.tmp > test-file-extents.expected
+  < test-file-extents.tmp > test-file-extents.local
 nbdkit -U - file disk --run 'qemu-img map -f raw --output=json $nbd' \
   > test-file-extents.tmp
 cat test-file-extents.tmp
 jq -c '.[] | {start:.start, length:.length, data:.data, zero:.zero}' \
-  < test-file-extents.tmp > test-file-extents.out
+  < test-file-extents.tmp > test-file-extents.nbdkit
 
-diff -u test-file-extents.out test-file-extents.expected
+diff -u test-file-extents.nbdkit test-file-extents.local
