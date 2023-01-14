@@ -302,6 +302,9 @@ file_dump_plugin (void)
 #ifdef BLKZEROOUT
   printf ("file_blkzeroout=yes\n");
 #endif
+#ifdef SEEK_HOLE
+  printf ("file_extents=yes\n");
+#endif
 #ifdef FALLOC_FL_PUNCH_HOLE
   printf ("file_falloc_fl_punch_hole=yes\n");
 #endif
