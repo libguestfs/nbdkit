@@ -493,7 +493,7 @@ tls_log (int level, const char *msg)
     msg = copy;
   }
 
-  nbdkit_debug ("gnutls: %d: %s", level, msg);
+  debug ("gnutls: %d: %s", level, msg);
 }
 
 /* Print additional information about the session using
@@ -514,11 +514,11 @@ debug_x590_cert (gnutls_session_t session)
     /* Note unless you use --tls-verify-peer you will always see the
      * following message.
      */
-    nbdkit_debug ("TLS: no peer certificates found");
+    debug ("TLS: no peer certificates found");
     return;
   }
 
-  nbdkit_debug ("TLS: peer provided %u certificate(s)", cert_list_size);
+  debug ("TLS: peer provided %u certificate(s)", cert_list_size);
   for (i = 0; i < cert_list_size; ++i) {
     int ret;
     gnutls_x509_crt_t cert;
@@ -536,7 +536,7 @@ debug_x590_cert (gnutls_session_t session)
 
     ret = gnutls_x509_crt_print (cert, GNUTLS_CRT_PRINT_ONELINE, &cinfo);
     if (ret == 0) {
-      nbdkit_debug ("TLS: %s", cinfo.data);
+      debug ("TLS: %s", cinfo.data);
       gnutls_free (cinfo.data);
     }
 
@@ -560,23 +560,22 @@ debug_session (gnutls_session_t session)
     return;
 
   desc = gnutls_session_get_desc (session);
-  if (desc) nbdkit_debug ("TLS session: %s", desc);
+  if (desc) debug ("TLS session: %s", desc);
 
 #if TRY_KTLS
   ktls_enabled = gnutls_transport_is_ktls_enabled (session);
   switch (ktls_enabled) {
   case GNUTLS_KTLS_RECV:
-    nbdkit_debug ("TLS: kTLS enabled for receive only"); break;
+    debug ("TLS: kTLS enabled for receive only"); break;
   case GNUTLS_KTLS_SEND:
-    nbdkit_debug ("TLS: kTLS enabled for send only"); break;
+    debug ("TLS: kTLS enabled for send only"); break;
   case GNUTLS_KTLS_DUPLEX:
-    nbdkit_debug ("TLS: kTLS enabled full duplex"); break;
+    debug ("TLS: kTLS enabled full duplex"); break;
   default:
     if ((int) ktls_enabled == 0)
-      nbdkit_debug ("TLS: kTLS disabled");
+      debug ("TLS: kTLS disabled");
     else
-      nbdkit_debug ("TLS: kTLS enabled unknown setting: %d",
-                    (int) ktls_enabled);
+      debug ("TLS: kTLS enabled unknown setting: %d", (int) ktls_enabled);
   }
 #endif
 
@@ -584,37 +583,37 @@ debug_session (gnutls_session_t session)
   cred = gnutls_auth_get_type (session);
   switch (cred) {
   case GNUTLS_CRD_SRP:
-    nbdkit_debug ("TLS: authentication: SRP (Secure Remote Password)");
+    debug ("TLS: authentication: SRP (Secure Remote Password)");
 #ifdef HAVE_GNUTLS_SRP_SERVER_GET_USERNAME
     username = gnutls_srp_server_get_username (session);
 #else
     username = NULL;
 #endif
     if (username)
-      nbdkit_debug ("TLS: SRP session username: %s", username);
+      debug ("TLS: SRP session username: %s", username);
     break;
   case GNUTLS_CRD_PSK:
-    nbdkit_debug ("TLS: authentication: PSK (Pre-Shared Key)");
+    debug ("TLS: authentication: PSK (Pre-Shared Key)");
     hint = gnutls_psk_client_get_hint (session);
     if (hint)
-      nbdkit_debug ("TLS: PSK hint: %s", hint);
+      debug ("TLS: PSK hint: %s", hint);
     username = gnutls_psk_server_get_username (session);
     if (username)
-      nbdkit_debug ("TLS: PSK username: %s", username);
+      debug ("TLS: PSK username: %s", username);
     if (kx == GNUTLS_KX_ECDHE_PSK)
       ecdh = true;
     else if (kx == GNUTLS_KX_DHE_PSK)
       dhe = true;
     break;
   case GNUTLS_CRD_ANON:
-    nbdkit_debug ("TLS: authentication: anonymous");
+    debug ("TLS: authentication: anonymous");
     if (kx == GNUTLS_KX_ANON_ECDH)
       ecdh = true;
     else if (kx == GNUTLS_KX_ANON_DH)
       dhe = true;
     break;
   case GNUTLS_CRD_CERTIFICATE:
-    nbdkit_debug ("TLS: authentication: certificate");
+    debug ("TLS: authentication: certificate");
     if (gnutls_certificate_type_get (session) == GNUTLS_CRT_X509)
       debug_x590_cert (session);
     if (kx == GNUTLS_KX_DHE_RSA || kx == GNUTLS_KX_DHE_DSS)
@@ -623,7 +622,7 @@ debug_session (gnutls_session_t session)
       ecdh = true;
     break;
   default:
-    nbdkit_debug ("TLS: authentication: unknown (%d)", (int) cred);
+    debug ("TLS: authentication: unknown (%d)", (int) cred);
   }
 
 #ifdef HAVE_GNUTLS_GROUP_GET
@@ -632,20 +631,20 @@ debug_session (gnutls_session_t session)
   grp = 0;
 #endif
   if (grp) {
-    nbdkit_debug ("TLS: negotiated group: "
+    debug ("TLS: negotiated group: "
 #ifdef HAVE_GNUTLS_GROUP_GET_NAME
-                  "%s", gnutls_group_get_name (grp));
+           "%s", gnutls_group_get_name (grp));
 #else
-                  "%d", grp);
+    "%d", grp);
 #endif
   }
   else {
     if (ecdh)
-      nbdkit_debug ("TLS: ephemeral ECDH using curve %s",
-                    gnutls_ecc_curve_get_name (gnutls_ecc_curve_get (session)));
+      debug ("TLS: ephemeral ECDH using curve %s",
+             gnutls_ecc_curve_get_name (gnutls_ecc_curve_get (session)));
     else if (dhe)
-      nbdkit_debug ("TLS: ephemeral DH using prime of %d bits",
-                    gnutls_dh_get_prime_bits (session));
+      debug ("TLS: ephemeral DH using prime of %d bits",
+             gnutls_dh_get_prime_bits (session));
   }
 }
 
