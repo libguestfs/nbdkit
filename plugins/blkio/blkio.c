@@ -61,7 +61,7 @@ DEFINE_VECTOR_TYPE(properties, struct property)
 
 static const char *driver = NULL;               /* driver name - required */
 static properties props = empty_vector;         /* other command line params */
-static const_string_vector gets = empty_vector; /* get= parameters */
+static const_string_vector get_params = empty_vector; /* get= parameters */
 
 /* XXX Should be possible to query this from libblkio. */
 static bool
@@ -103,7 +103,7 @@ bio_unload (void)
       free (props.ptr[i].value);
   properties_reset (&props);
 
-  const_string_vector_reset (&gets);
+  const_string_vector_reset (&get_params);
 }
 
 /* Called for each key=value passed on the command line. */
@@ -118,7 +118,7 @@ bio_config (const char *key, const char *value)
     driver = value;
   }
   else if (strcmp (key, "get") == 0) {
-    if (const_string_vector_append (&gets, value) == -1)
+    if (const_string_vector_append (&get_params, value) == -1)
       return -1;
   }
   else if (strcmp (key, "read-only") == 0) {
@@ -255,8 +255,8 @@ bio_open (int readonly)
   }
 
   /* Print any properties requested on the command line (get=...). */
-  for (i = 0; i < gets.len; ++i) {
-    const char *name = gets.ptr[i];
+  for (i = 0; i < get_params.len; ++i) {
+    const char *name = get_params.ptr[i];
     char *value = NULL;
 
     if (blkio_get_str (h->b, name, &value) == 0)
