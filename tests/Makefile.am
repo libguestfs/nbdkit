@@ -1807,6 +1807,7 @@ TESTS += \
 	test-retry-size.sh \
 	test-retry-reopen-fail.sh \
 	test-retry-zero-flags.sh \
+	test-retry-open.sh \
 	$(NULL)
 EXTRA_DIST += \
 	test-retry.sh \
@@ -1815,6 +1816,7 @@ EXTRA_DIST += \
 	test-retry-size.sh \
 	test-retry-reopen-fail.sh \
 	test-retry-zero-flags.sh \
+	test-retry-open.sh \
 	$(NULL)
 
 # retry-request filter test.
