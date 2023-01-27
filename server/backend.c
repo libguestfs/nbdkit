@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2021 Red Hat Inc.
+ * Copyright (C) 2013-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -312,7 +312,10 @@ backend_prepare (struct context *c)
   struct backend *b = c->b;
 
   assert (c->handle);
-  assert ((c->state & (HANDLE_OPEN | HANDLE_CONNECTED)) == HANDLE_OPEN);
+  assert (c->state & HANDLE_OPEN);
+
+  if (c->state & HANDLE_CONNECTED)
+    return 0;
 
   /* Call these in order starting from the filter closest to the
    * plugin, similar to typical .open order.  But remember that

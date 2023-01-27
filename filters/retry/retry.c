@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019-2021 Red Hat Inc.
+ * Copyright (C) 2019-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -113,45 +113,6 @@ struct retry_handle {
   bool open;
 };
 
-static void *
-retry_open (nbdkit_next_open *next, nbdkit_context *nxdata,
-            int readonly, const char *exportname, int is_tls)
-{
-  struct retry_handle *h;
-
-  if (next (nxdata, readonly, exportname) == -1)
-    return NULL;
-
-  h = malloc (sizeof *h);
-  if (h == NULL) {
-    nbdkit_error ("malloc: %m");
-    return NULL;
-  }
-
-  h->readonly = readonly;
-  h->exportname = strdup (exportname);
-  h->context = nxdata;
-  if (h->exportname == NULL) {
-    nbdkit_error ("strdup: %m");
-    free (h);
-    return NULL;
-  }
-  h->reopens = 0;
-  h->open = true;
-
-  return h;
-}
-
-static void
-retry_close (void *handle)
-{
-  struct retry_handle *h = handle;
-
-  nbdkit_debug ("reopens needed: %u", h->reopens);
-  free (h->exportname);
-  free (h);
-}
-
 /* This function encapsulates the common retry logic used across all
  * data commands.  If it returns true then the data command will retry
  * the operation.  ‘struct retry_data’ is stack data saved between
@@ -245,6 +206,64 @@ do_retry (struct retry_handle *h, struct retry_data *data,
 
   /* Retry the data command. */
   return true;
+}
+
+static void *
+retry_open (nbdkit_next_open *next, nbdkit_context *nxdata,
+            int readonly, const char *exportname, int is_tls)
+{
+  struct retry_handle *h;
+  struct retry_data data = {0};
+
+  h = malloc (sizeof *h);
+  if (h == NULL) {
+    nbdkit_error ("malloc: %m");
+    return NULL;
+  }
+
+  h->readonly = readonly;
+  h->exportname = strdup (exportname);
+  h->context = nxdata;
+  if (h->exportname == NULL) {
+    nbdkit_error ("strdup: %m");
+    free (h);
+    return NULL;
+  }
+  h->reopens = 0;
+
+  if (next (nxdata, readonly, exportname) != -1)
+    h->open = true;
+  else {
+    /* Careful - our .open must not return a handle unless do_retry()
+     * works, as the caller's next action will be calling .get_size
+     * and similar probe functions which we do not bother to wire up
+     * into retry logic because they only need to be used right after
+     * connecting.
+     */
+    nbdkit_next *next_handle = NULL;
+    int err = ESHUTDOWN;
+
+    h->open = false;
+    while (! h->open && do_retry (h, &data, &next_handle, "open", &err))
+      ;
+
+    if (! h->open) {
+      free (h->exportname);
+      free (h);
+      return NULL;
+    }
+  }
+  return h;
+}
+
+static void
+retry_close (void *handle)
+{
+  struct retry_handle *h = handle;
+
+  nbdkit_debug ("reopens needed: %u", h->reopens);
+  free (h->exportname);
+  free (h);
 }
 
 static int
