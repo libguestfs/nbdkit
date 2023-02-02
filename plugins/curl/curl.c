@@ -78,7 +78,11 @@ struct curl_slist *headers = NULL;
 const char *header_script = NULL;
 unsigned header_script_renew = 0;
 char *password = NULL;
+#ifndef HAVE_CURLOPT_PROTOCOLS_STR
 long protocols = CURLPROTO_ALL;
+#else
+const char *protocols = NULL;
+#endif
 const char *proxy = NULL;
 char *proxy_password = NULL;
 const char *proxy_user = NULL;
@@ -120,6 +124,7 @@ curl_unload (void)
   curl_global_cleanup ();
 }
 
+#ifndef HAVE_CURLOPT_PROTOCOLS_STR
 /* See <curl/curl.h> */
 static struct { const char *name; long bitmask; } curl_protocols[] = {
   { "http", CURLPROTO_HTTP },
@@ -195,6 +200,7 @@ parse_protocols (const char *value)
 
   return 0;
 }
+#endif /* !HAVE_CURLOPT_PROTOCOLS_STR */
 
 /* Called for each key=value passed on the command line. */
 static int
@@ -280,8 +286,12 @@ curl_config (const char *key, const char *value)
   }
 
   else if (strcmp (key, "protocols") == 0) {
+#ifndef HAVE_CURLOPT_PROTOCOLS_STR
     if (parse_protocols (value) == -1)
       return -1;
+#else
+    protocols = value;
+#endif
   }
 
   else if (strcmp (key, "proxy") == 0) {
@@ -521,10 +531,17 @@ curl_open (int readonly)
     curl_easy_setopt (h->c, CURLOPT_HTTPHEADER, headers);
   if (password)
     curl_easy_setopt (h->c, CURLOPT_PASSWORD, password);
+#ifndef HAVE_CURLOPT_PROTOCOLS_STR
   if (protocols != CURLPROTO_ALL) {
     curl_easy_setopt (h->c, CURLOPT_PROTOCOLS, protocols);
     curl_easy_setopt (h->c, CURLOPT_REDIR_PROTOCOLS, protocols);
   }
+#else /* HAVE_CURLOPT_PROTOCOLS_STR (new in 7.85.0) */
+  if (protocols) {
+    curl_easy_setopt (h->c, CURLOPT_PROTOCOLS_STR, protocols);
+    curl_easy_setopt (h->c, CURLOPT_REDIR_PROTOCOLS_STR, protocols);
+  }
+#endif /* HAVE_CURLOPT_PROTOCOLS_STR */
   if (proxy)
     curl_easy_setopt (h->c, CURLOPT_PROXY, proxy);
   if (proxy_password)

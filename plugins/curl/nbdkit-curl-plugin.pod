@@ -209,12 +209,10 @@ another protocol (eg. you start with an C<https://> URL which the
 server redirects to C<ftp://>).  To prevent redirects altogether see
 the C<followlocation> parameter.
 
-The value of this parameter is a comma-separated list of protocols.
-The following protocols are known: B<dict>, B<file>, B<ftp>, B<ftps>,
-B<gopher>, B<http>, B<https>, B<imap>, B<imaps>, B<ldap>, B<ldaps>,
-B<mqtt>, B<pop3>, B<pop3s>, B<rtmp>, B<rtmpe>, B<rtmps>, B<rtmpt>,
-B<rtmpte>, B<rtmpts>, B<rtsp>, B<scp>, B<sftp>, B<smb>, B<smbs>,
-B<smtp>, B<smtps>, B<telnet>, B<tftp>.
+The value of this parameter is a comma-separated list of protocols,
+for example C<protocols=https>, or C<protocols=http,https>, or
+C<protocols=file,ftp,gopher>.  For a list of known protocols, see the
+libcurl manual (L<CURLOPT_PROTOCOLS_STR(3)>).
 
 The default is to allow any protocol.
 
