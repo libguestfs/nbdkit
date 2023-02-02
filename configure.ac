@@ -1134,6 +1134,13 @@ AS_IF([test "$with_curl" != "no"],[
             AC_DEFINE([HAVE_CURLOPT_UNIX_SOCKET_PATH],[1],
                       [CURLOPT_UNIX_SOCKET_PATH found at compile time.])
             ], [], [#include <curl/curl.h>])
+        dnl Detect both CURLOPT_PROTOCOLS_STR and
+        dnl CURLOPT_REDIR_PROTOCOLS_STR.  Both were added in curl
+        dnl 7.85.0 so we assume if one exists then both do.
+        AC_CHECK_DECL([CURLOPT_PROTOCOLS_STR], [
+            AC_DEFINE([HAVE_CURLOPT_PROTOCOLS_STR],[1],
+                      [CURLOPT_PROTOCOLS_STR found at compile time.])
+            ], [], [#include <curl/curl.h>])
     ],
     [AC_MSG_WARN([curl not found, curl plugin will be disabled])])
 ])

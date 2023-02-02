@@ -49,7 +49,11 @@ extern struct curl_slist *headers;
 extern const char *header_script;
 extern unsigned header_script_renew;
 extern char *password;
+#ifndef HAVE_CURLOPT_PROTOCOLS_STR
 extern long protocols;
+#else
+extern const char *protocols;
+#endif
 extern const char *proxy;
 extern char *proxy_password;
 extern const char *proxy_user;
