@@ -64,6 +64,7 @@ extern const char *user_agent;
 /* The per-connection handle. */
 struct curl_handle {
   CURL *c;
+  int readonly;
   bool accept_range;
   int64_t exportsize;
   char errbuf[CURL_ERROR_SIZE];
