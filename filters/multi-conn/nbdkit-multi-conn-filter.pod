@@ -118,7 +118,11 @@ passed on to the plugin.
 When B<unsafe> mode is chosen, this filter blindly advertises
 multi-conn to the client even if the plugin lacks support.  This is
 dangerous, and risks data corruption if the client makes assumptions
-about flush consistency that were not actually met.
+about flush consistency that the plugin does not actually provide.
+However, for a plugin that does not yet advertise multi-conn, but
+where it is suspected that the plugin behaves consistently, this is a
+great way to run timing and accuracy tests to see whether enabling
+multi-conn in the plugin will make a difference.
 
 =item B<multi-conn-track-dirty=fast>
 
