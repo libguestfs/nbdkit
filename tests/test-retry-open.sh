@@ -37,11 +37,13 @@ set -x
 requires_plugin sh
 requires qemu-io --version
 
-files="retry-open-count"
+# Note that test-retry.sh uses "retry-open-count", so choose
+# another name here.
+files="retry-open2-count"
 rm -f $files
 cleanup_fn rm -f $files
 
-echo 0 > retry-open-count
+echo 0 > retry-open2-count
 start_t=$SECONDS
 
 # Create a custom plugin which will test retrying open.
@@ -53,8 +55,8 @@ nbdkit -v -U - \
 case "$1" in
     open)
         # Count how many times the connection is (re-)opened.
-        read i < retry-open-count
-        echo $((i+1)) > retry-open-count
+        read i < retry-open2-count
+        echo $((i+1)) > retry-open2-count
         if test $i -lt 1; then
           echo EIO >&2; exit 1
         fi
@@ -78,7 +80,7 @@ if [ $((end_t - start_t)) -lt 1 ]; then
 fi
 
 # Check the handle was opened 2 times (first open + one reopen).
-read open_count < retry-open-count
+read open_count < retry-open2-count
 if [ $open_count -ne 2 ]; then
     echo "$0: open-count ($open_count) != 2"
     exit 1
