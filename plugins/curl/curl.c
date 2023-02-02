@@ -465,6 +465,7 @@ curl_open (int readonly)
     nbdkit_error ("calloc: %m");
     return NULL;
   }
+  h->readonly = readonly;
 
   h->c = curl_easy_init ();
   if (h->c == NULL) {
@@ -781,6 +782,18 @@ curl_get_size (void *handle)
   return h->exportsize;
 }
 
+/* Multi-conn is safe for read-only connections, but HTTP does not
+ * have any concept of flushing so we cannot use it for read-write
+ * connections.
+ */
+static int
+curl_can_multi_conn (void *handle)
+{
+  struct curl_handle *h = handle;
+
+  return !! h->readonly;
+}
+
 /* NB: The terminology used by libcurl is confusing!
  *
  * WRITEFUNCTION / write_cb is used when reading from the remote server
@@ -924,6 +937,7 @@ static struct nbdkit_plugin plugin = {
   .open              = curl_open,
   .close             = curl_close,
   .get_size          = curl_get_size,
+  .can_multi_conn    = curl_can_multi_conn,
   .pread             = curl_pread,
   .pwrite            = curl_pwrite,
 };
