@@ -50,6 +50,7 @@ extern const char *url;
 
 extern const char *cainfo;
 extern const char *capath;
+extern unsigned connections;
 extern char *cookie;
 extern const char *cookiefile;
 extern const char *cookiejar;
@@ -84,13 +85,15 @@ extern int curl_debug_verbose;
 /* The per-connection handle. */
 struct handle {
   int readonly;
-  struct curl_handle *ch;
 };
 
 /* The libcurl handle and some associated fields and buffers. */
 struct curl_handle {
   /* The underlying curl handle. */
   CURL *c;
+
+  /* True if the handle is in use by a thread. */
+  bool in_use;
 
   /* These fields are used/initialized when we create the handle. */
   bool accept_range;

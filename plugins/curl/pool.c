@@ -55,6 +55,7 @@
 #include "ascii-ctype.h"
 #include "ascii-string.h"
 #include "cleanup.h"
+#include "vector.h"
 
 #include "curldefs.h"
 
@@ -66,30 +67,41 @@
   } while (0)
 
 static struct curl_handle *allocate_handle (void);
+static void free_handle (struct curl_handle *);
 static int debug_cb (CURL *handle, curl_infotype type,
                      const char *data, size_t size, void *);
 static size_t header_cb (void *ptr, size_t size, size_t nmemb, void *opaque);
 static size_t write_cb (char *ptr, size_t size, size_t nmemb, void *opaque);
 static size_t read_cb (void *ptr, size_t size, size_t nmemb, void *opaque);
 
-/* In the current implementation there is only one handle.  This lock
- * prevents it from being used multiple times.
- */
+/* This lock protects access to the curl_handles vector below. */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-/* The single curl handle.  NULL means not yet allocated. */
-static struct curl_handle *the_ch;
+/* List of curl handles.  This is allocated dynamically as more
+ * handles are requested.  Currently it does not shrink.  It may grow
+ * up to 'connections' in length.
+ */
+DEFINE_VECTOR_TYPE(curl_handle_list, struct curl_handle *)
+static curl_handle_list curl_handles = empty_vector;
+
+/* The condition is used when the curl handles vector is full and
+ * we're waiting for a thread to put_handle.
+ */
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+static size_t in_use = 0, waiting = 0;
 
 /* Close and free all handles in the pool. */
 void
 free_all_handles (void)
 {
-  if (the_ch) {
-    curl_easy_cleanup (the_ch->c);
-    if (the_ch->headers_copy)
-      curl_slist_free_all (the_ch->headers_copy);
-    free (the_ch);
-  }
+  size_t i;
+
+  nbdkit_debug ("free_all_handles: number of curl handles allocated: %zu",
+                curl_handles.len);
+
+  for (i = 0; i < curl_handles.len; ++i)
+    free_handle (curl_handles.ptr[i]);
+  curl_handle_list_reset (&curl_handles);
 }
 
 /* Get a handle from the pool.
@@ -99,25 +111,59 @@ free_all_handles (void)
 struct curl_handle *
 get_handle (void)
 {
-  int r;
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+  size_t i;
+  struct curl_handle *ch;
 
-  r = pthread_mutex_lock (&lock);
-  assert (r == 0);
-  if (!the_ch) {
-    the_ch = allocate_handle ();
-    if (!the_ch) {
-      pthread_mutex_unlock (&lock);
-      return NULL;
+ again:
+  /* Look for a handle which is not in_use. */
+  for (i = 0; i < curl_handles.len; ++i) {
+    ch = curl_handles.ptr[i];
+    if (!ch->in_use) {
+      ch->in_use = true;
+      in_use++;
+      return ch;
     }
   }
-  return the_ch;
+
+  /* If more connections are allowed, then allocate a new handle. */
+  if (curl_handles.len < connections) {
+    ch = allocate_handle ();
+    if (ch == NULL)
+      return NULL;
+    if (curl_handle_list_append (&curl_handles, ch) == -1) {
+      free_handle (ch);
+      return NULL;
+    }
+    ch->in_use = true;
+    in_use++;
+    return ch;
+  }
+
+  /* Otherwise we have run out of connections so we must wait until
+   * another thread calls put_handle.
+   */
+  assert (in_use == connections);
+  waiting++;
+  while (in_use == connections)
+    pthread_cond_wait (&cond, &lock);
+  waiting--;
+
+  goto again;
 }
 
 /* Return the handle to the pool. */
 void
 put_handle (struct curl_handle *ch)
 {
-  pthread_mutex_unlock (&lock);
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+
+  ch->in_use = false;
+  in_use--;
+
+  /* Signal the next thread which is waiting. */
+  if (waiting > 0)
+    pthread_cond_signal (&cond);
 }
 
 /* Allocate and initialize a new libcurl handle. */
@@ -483,4 +529,13 @@ read_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
   ch->read_buf += realsize;
 
   return realsize;
+}
+
+static void
+free_handle (struct curl_handle *ch)
+{
+  curl_easy_cleanup (ch->c);
+  if (ch->headers_copy)
+    curl_slist_free_all (ch->headers_copy);
+  free (ch);
 }

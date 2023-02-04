@@ -57,6 +57,7 @@ const char *url = NULL;         /* required */
 
 const char *cainfo = NULL;
 const char *capath = NULL;
+unsigned connections = 4;
 char *cookie = NULL;
 const char *cookiefile = NULL;
 const char *cookiejar = NULL;
@@ -204,6 +205,16 @@ curl_config (const char *key, const char *value)
 
   else if (strcmp (key, "capath") == 0) {
     capath =  value;
+  }
+
+  else if (strcmp (key, "connections") == 0) {
+    if (nbdkit_parse_unsigned ("connections", value,
+                               &connections) == -1)
+      return -1;
+    if (connections == 0) {
+      nbdkit_error ("connections parameter must not be 0");
+      return -1;
+    }
   }
 
   else if (strcmp (key, "cookie") == 0) {

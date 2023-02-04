@@ -54,6 +54,15 @@ that libcurl is compiled with.
 Set CA certificates directory location for libcurl. See
 L<CURLOPT_CAPATH(3)> for more information.
 
+=item B<connections=>N
+
+Open up to C<N> curl connections to the web server.  The default is 4.
+Curl connections are shared between all NBD clients, so you may wish
+to increase this if you expect many simultaneous NBD clients (or a
+single client using many multi-conn connections).
+
+See L</NBD CONNECTIONS AND CURL HANDLES> below.
+
 =item B<cookie=>COOKIE
 
 =item B<cookie=+>FILENAME
@@ -328,6 +337,19 @@ Send user-agent header when using HTTP or HTTPS.  The default is no
 user-agent header.
 
 =back
+
+=head1 NBD CONNECTIONS AND CURL HANDLES
+
+nbdkit E<le> 1.32 used a simple model where a new NBD connection would
+create a new libcurl handle.  In practice this meant there was a
+1-to-1 relationship between NBD connections and HTTP connections to
+the remote web server (assuming http: or https: URL).
+
+nbdkit E<ge> 1.34 changed to using a fixed pool of libcurl handles
+shared across all NBD connections.  You can control the maximum number
+of curl handles in the pool with the C<connections> parameter (default
+4).  Note that if there are more than 4 NBD connections, they will
+share the 4 web server connections, unless you adjust C<connections>.
 
 =head1 HEADER AND COOKIE SCRIPTS
 
