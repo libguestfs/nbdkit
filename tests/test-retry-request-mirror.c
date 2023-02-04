@@ -135,15 +135,6 @@ main (int argc, char *argv[])
     }
 
     nbd_close (nbd);
-
-    /* Reconnection in the next iteration of the loop will read from
-     * the mirror (because the curl plugin always makes a HEAD request
-     * in curl_open to read the size) which will flip the state, so we
-     * have to do it here.
-     */
-    state++;
-    if (state == 3)
-      state = 1;
   }
 
   exit (EXIT_SUCCESS);

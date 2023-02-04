@@ -86,8 +86,8 @@ static void error_from_tmpfile (const char *what, const char *tmpfile);
 
 /* This is called from any thread just before we make a curl request.
  *
- * Because the thread model is NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
- * we can be assured of exclusive access to handle here.
+ * Because the curl handle must be obtained through get_handle() we
+ * can be assured of exclusive access here.
  */
 int
 do_scripts (struct curl_handle *ch)

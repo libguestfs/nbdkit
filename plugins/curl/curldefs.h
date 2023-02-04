@@ -112,6 +112,11 @@ struct curl_handle {
   struct curl_slist *headers_copy;
 };
 
+/* pool.c */
+extern struct curl_handle *get_handle (void);
+extern void put_handle (struct curl_handle *ch);
+extern void free_all_handles (void);
+
 /* scripts.c */
 extern int do_scripts (struct curl_handle *ch);
 extern void scripts_unload (void);

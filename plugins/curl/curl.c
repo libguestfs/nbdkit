@@ -48,8 +48,6 @@
 
 #include <nbdkit-plugin.h>
 
-#include "ascii-ctype.h"
-#include "ascii-string.h"
 #include "cleanup.h"
 
 #include "curldefs.h"
@@ -112,6 +110,7 @@ curl_unload (void)
   free (password);
   free (proxy_password);
   scripts_unload ();
+  free_all_handles ();
   curl_global_cleanup ();
 }
 
@@ -433,23 +432,11 @@ curl_config_complete (void)
                   curl_easy_strerror ((r)), (ch)->errbuf);      \
   } while (0)
 
-static int debug_cb (CURL *handle, curl_infotype type,
-                     const char *data, size_t size, void *);
-static size_t header_cb (void *ptr, size_t size, size_t nmemb, void *opaque);
-static size_t write_cb (char *ptr, size_t size, size_t nmemb, void *opaque);
-static size_t read_cb (void *ptr, size_t size, size_t nmemb, void *opaque);
-
 /* Create the per-connection handle. */
 static void *
 curl_open (int readonly)
 {
   struct handle *h;
-  CURLcode r;
-#ifdef HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
-  curl_off_t o;
-#else
-  double d;
-#endif
 
   h = calloc (1, sizeof *h);
   if (h == NULL) {
@@ -458,310 +445,7 @@ curl_open (int readonly)
   }
   h->readonly = readonly;
 
-  h->ch = calloc (1, sizeof *h->ch);
-  if (h->ch == NULL) {
-    nbdkit_error ("calloc: %m");
-    free (h);
-    return NULL;
-  }
-
-  h->ch->c = curl_easy_init ();
-  if (h->ch->c == NULL) {
-    nbdkit_error ("curl_easy_init: failed: %m");
-    goto err;
-  }
-
-  if (curl_debug_verbose) {
-    /* NB: Constants must be explicitly long because the parameter is
-     * varargs.
-     */
-    curl_easy_setopt (h->ch->c, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt (h->ch->c, CURLOPT_DEBUGFUNCTION, debug_cb);
-  }
-
-  curl_easy_setopt (h->ch->c, CURLOPT_ERRORBUFFER, h->ch->errbuf);
-
-  r = CURLE_OK;
-  if (unix_socket_path) {
-#if HAVE_CURLOPT_UNIX_SOCKET_PATH
-    r = curl_easy_setopt (h->ch->c, CURLOPT_UNIX_SOCKET_PATH, unix_socket_path);
-#else
-    r = CURLE_UNKNOWN_OPTION;
-#endif
-  }
-  if (r != CURLE_OK) {
-    display_curl_error (h->ch, r, "curl_easy_setopt: CURLOPT_UNIX_SOCKET_PATH");
-    goto err;
-  }
-
-  /* Set the URL. */
-  r = curl_easy_setopt (h->ch->c, CURLOPT_URL, url);
-  if (r != CURLE_OK) {
-    display_curl_error (h->ch, r, "curl_easy_setopt: CURLOPT_URL [%s]", url);
-    goto err;
-  }
-
-  /* Various options we always set.
-   *
-   * NB: Both here and below constants must be explicitly long because
-   * the parameter is varargs.
-   *
-   * For use of CURLOPT_NOSIGNAL see:
-   * https://curl.se/libcurl/c/CURLOPT_NOSIGNAL.html
-   */
-  curl_easy_setopt (h->ch->c, CURLOPT_NOSIGNAL, 1L);
-  curl_easy_setopt (h->ch->c, CURLOPT_AUTOREFERER, 1L);
-  if (followlocation)
-    curl_easy_setopt (h->ch->c, CURLOPT_FOLLOWLOCATION, 1L);
-  curl_easy_setopt (h->ch->c, CURLOPT_FAILONERROR, 1L);
-
-  /* Options. */
-  if (cainfo) {
-    if (strlen (cainfo) == 0)
-      curl_easy_setopt (h->ch->c, CURLOPT_CAINFO, NULL);
-    else
-      curl_easy_setopt (h->ch->c, CURLOPT_CAINFO, cainfo);
-  }
-  if (capath)
-    curl_easy_setopt (h->ch->c, CURLOPT_CAPATH, capath);
-  if (cookie)
-    curl_easy_setopt (h->ch->c, CURLOPT_COOKIE, cookie);
-  if (cookiefile)
-    curl_easy_setopt (h->ch->c, CURLOPT_COOKIEFILE, cookiefile);
-  if (cookiejar)
-    curl_easy_setopt (h->ch->c, CURLOPT_COOKIEJAR, cookiejar);
-  if (headers)
-    curl_easy_setopt (h->ch->c, CURLOPT_HTTPHEADER, headers);
-  if (password)
-    curl_easy_setopt (h->ch->c, CURLOPT_PASSWORD, password);
-#ifndef HAVE_CURLOPT_PROTOCOLS_STR
-  if (protocols != CURLPROTO_ALL) {
-    curl_easy_setopt (h->ch->c, CURLOPT_PROTOCOLS, protocols);
-    curl_easy_setopt (h->ch->c, CURLOPT_REDIR_PROTOCOLS, protocols);
-  }
-#else /* HAVE_CURLOPT_PROTOCOLS_STR (new in 7.85.0) */
-  if (protocols) {
-    curl_easy_setopt (h->ch->c, CURLOPT_PROTOCOLS_STR, protocols);
-    curl_easy_setopt (h->ch->c, CURLOPT_REDIR_PROTOCOLS_STR, protocols);
-  }
-#endif /* HAVE_CURLOPT_PROTOCOLS_STR */
-  if (proxy)
-    curl_easy_setopt (h->ch->c, CURLOPT_PROXY, proxy);
-  if (proxy_password)
-    curl_easy_setopt (h->ch->c, CURLOPT_PROXYPASSWORD, proxy_password);
-  if (proxy_user)
-    curl_easy_setopt (h->ch->c, CURLOPT_PROXYUSERNAME, proxy_user);
-  if (!sslverify) {
-    curl_easy_setopt (h->ch->c, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt (h->ch->c, CURLOPT_SSL_VERIFYHOST, 0L);
-  }
-  if (ssl_version) {
-    if (strcmp (ssl_version, "tlsv1") == 0)
-      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1);
-    else if (strcmp (ssl_version, "sslv2") == 0)
-      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv2);
-    else if (strcmp (ssl_version, "sslv3") == 0)
-      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
-    else if (strcmp (ssl_version, "tlsv1.0") == 0)
-      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
-    else if (strcmp (ssl_version, "tlsv1.1") == 0)
-      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
-    else if (strcmp (ssl_version, "tlsv1.2") == 0)
-      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-    else if (strcmp (ssl_version, "tlsv1.3") == 0)
-      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
-    else {
-      display_curl_error (h->ch, r, "curl_easy_setopt: CURLOPT_SSLVERSION [%s]",
-			  ssl_version);
-      goto err;
-    }
-
-  }
-  if (ssl_cipher_list)
-    curl_easy_setopt (h->ch->c, CURLOPT_SSL_CIPHER_LIST, ssl_cipher_list);
-  if (tls13_ciphers) {
-#if (LIBCURL_VERSION_MAJOR > 7) || \
-    (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 61)
-    curl_easy_setopt (h->ch->c, CURLOPT_TLS13_CIPHERS, tls13_ciphers);
-#else
-    /* This is not available before curl-7.61 */
-    nbdkit_error ("tls13-ciphers is not supported in this build of "
-                  "nbdkit-curl-plugin");
-    goto err;
-#endif
-  }
-  if (tcp_keepalive)
-    curl_easy_setopt (h->ch->c, CURLOPT_TCP_KEEPALIVE, 1L);
-  if (!tcp_nodelay)
-    curl_easy_setopt (h->ch->c, CURLOPT_TCP_NODELAY, 0L);
-  if (timeout > 0)
-    /* NB: The cast is required here because the parameter is varargs
-     * treated as long, and not type safe.
-     */
-    curl_easy_setopt (h->ch->c, CURLOPT_TIMEOUT, (long) timeout);
-  if (user)
-    curl_easy_setopt (h->ch->c, CURLOPT_USERNAME, user);
-  if (user_agent)
-    curl_easy_setopt (h->ch->c, CURLOPT_USERAGENT, user_agent);
-
-  /* Get the file size and also whether the remote HTTP server
-   * supports byte ranges.
-   *
-   * We must run the scripts if necessary and set headers in the
-   * handle.
-   */
-  if (do_scripts (h->ch) == -1) goto err;
-  h->ch->accept_range = false;
-  curl_easy_setopt (h->ch->c, CURLOPT_NOBODY, 1L); /* No Body, not nobody! */
-  curl_easy_setopt (h->ch->c, CURLOPT_HEADERFUNCTION, header_cb);
-  curl_easy_setopt (h->ch->c, CURLOPT_HEADERDATA, h->ch);
-  r = curl_easy_perform (h->ch->c);
-  if (r != CURLE_OK) {
-    display_curl_error (h->ch, r,
-                        "problem doing HEAD request to fetch size of URL [%s]",
-                        url);
-    goto err;
-  }
-
-#ifdef HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
-  r = curl_easy_getinfo (h->ch->c, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &o);
-  if (r != CURLE_OK) {
-    display_curl_error (h->ch, r,
-                        "could not get length of remote file [%s]", url);
-    goto err;
-  }
-
-  if (o == -1) {
-    nbdkit_error ("could not get length of remote file [%s], "
-                  "is the URL correct?", url);
-    goto err;
-  }
-
-  h->ch->exportsize = o;
-#else
-  r = curl_easy_getinfo (h->ch->c, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &d);
-  if (r != CURLE_OK) {
-    display_curl_error (h->ch, r,
-                        "could not get length of remote file [%s]", url);
-    goto err;
-  }
-
-  if (d == -1) {
-    nbdkit_error ("could not get length of remote file [%s], "
-                  "is the URL correct?", url);
-    goto err;
-  }
-
-  h->ch->exportsize = d;
-#endif
-  nbdkit_debug ("content length: %" PRIi64, h->ch->exportsize);
-
-  if (ascii_strncasecmp (url, "http://", strlen ("http://")) == 0 ||
-      ascii_strncasecmp (url, "https://", strlen ("https://")) == 0) {
-    if (!h->ch->accept_range) {
-      nbdkit_error ("server does not support 'range' (byte range) requests");
-      goto err;
-    }
-
-    nbdkit_debug ("accept range supported (for HTTP/HTTPS)");
-  }
-
-  /* Get set up for reading and writing. */
-  curl_easy_setopt (h->ch->c, CURLOPT_HEADERFUNCTION, NULL);
-  curl_easy_setopt (h->ch->c, CURLOPT_HEADERDATA, NULL);
-  curl_easy_setopt (h->ch->c, CURLOPT_WRITEFUNCTION, write_cb);
-  curl_easy_setopt (h->ch->c, CURLOPT_WRITEDATA, h->ch);
-  if (!readonly) {
-    curl_easy_setopt (h->ch->c, CURLOPT_READFUNCTION, read_cb);
-    curl_easy_setopt (h->ch->c, CURLOPT_READDATA, h->ch);
-  }
-
   return h;
-
- err:
-  if (h->ch->c)
-    curl_easy_cleanup (h->ch->c);
-  free (h->ch);
-  free (h);
-  return NULL;
-}
-
-/* When using CURLOPT_VERBOSE, this callback is used to redirect
- * messages to nbdkit_debug (instead of stderr).
- */
-static int
-debug_cb (CURL *handle, curl_infotype type,
-          const char *data, size_t size, void *opaque)
-{
-  size_t origsize = size;
-  CLEANUP_FREE char *str;
-
-  /* The data parameter passed is NOT \0-terminated, but also it may
-   * have \n or \r\n line endings.  The only sane way to deal with
-   * this is to copy the string.  (The data strings may also be
-   * multi-line, but we don't deal with that here).
-   */
-  str = malloc (size + 1);
-  if (str == NULL)
-    goto out;
-  memcpy (str, data, size);
-  str[size] = '\0';
-
-  while (size > 0 && (str[size-1] == '\n' || str[size-1] == '\r')) {
-    str[size-1] = '\0';
-    size--;
-  }
-
-  switch (type) {
-  case CURLINFO_TEXT:
-    nbdkit_debug ("%s", str);
-    break;
-  case CURLINFO_HEADER_IN:
-    nbdkit_debug ("S: %s", str);
-    break;
-  case CURLINFO_HEADER_OUT:
-    nbdkit_debug ("C: %s", str);
-    break;
-  default:
-    /* Assume everything else is binary data that we cannot print. */
-    nbdkit_debug ("<data with size=%zu>", origsize);
-  }
-
- out:
-  return 0;
-}
-
-static size_t
-header_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
-{
-  struct curl_handle *ch = opaque;
-  size_t realsize = size * nmemb;
-  const char *header = ptr;
-  const char *end = header + realsize;
-  const char *accept_ranges = "accept-ranges:";
-  const char *bytes = "bytes";
-
-  if (realsize >= strlen (accept_ranges) &&
-      ascii_strncasecmp (header, accept_ranges, strlen (accept_ranges)) == 0) {
-    const char *p = strchr (header, ':') + 1;
-
-    /* Skip whitespace between the header name and value. */
-    while (p < end && *p && ascii_isspace (*p))
-      p++;
-
-    if (end - p >= strlen (bytes)
-        && strncmp (p, bytes, strlen (bytes)) == 0) {
-      /* Check that there is nothing but whitespace after the value. */
-      p += strlen (bytes);
-      while (p < end && *p && ascii_isspace (*p))
-        p++;
-
-      if (p == end || !*p)
-        ch->accept_range = true;
-    }
-  }
-
-  return realsize;
 }
 
 /* Free up the per-connection handle. */
@@ -770,22 +454,35 @@ curl_close (void *handle)
 {
   struct handle *h = handle;
 
-  curl_easy_cleanup (h->ch->c);
-  if (h->ch->headers_copy)
-    curl_slist_free_all (h->ch->headers_copy);
-  free (h->ch);
   free (h);
 }
 
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
 
+/* Calls get_handle() ... put_handle() to get a handle for the length
+ * of the current scope.
+ */
+#define GET_HANDLE_FOR_CURRENT_SCOPE(ch)                        \
+  CLEANUP_PUT_HANDLE struct curl_handle *ch = get_handle ();
+#define CLEANUP_PUT_HANDLE __attribute__((cleanup (cleanup_put_handle)))
+static void
+cleanup_put_handle (void *chp)
+{
+  struct curl_handle *ch = * (struct curl_handle **) chp;
+
+  if (ch != NULL)
+    put_handle (ch);
+}
+
 /* Get the file size. */
 static int64_t
 curl_get_size (void *handle)
 {
-  struct handle *h = handle;
+  GET_HANDLE_FOR_CURRENT_SCOPE (ch);
+  if (ch == NULL)
+    return -1;
 
-  return h->ch->exportsize;
+  return ch->exportsize;
 }
 
 /* Multi-conn is safe for read-only connections, but HTTP does not
@@ -800,42 +497,37 @@ curl_can_multi_conn (void *handle)
   return !! h->readonly;
 }
 
-/* NB: The terminology used by libcurl is confusing!
- *
- * WRITEFUNCTION / write_cb is used when reading from the remote server
- * READFUNCTION / read_cb is used when writing to the remote server.
- *
- * We use the same terminology as libcurl here.
- */
-
 /* Read data from the remote server. */
 static int
 curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
-  struct handle *h = handle;
   CURLcode r;
   char range[128];
 
+  GET_HANDLE_FOR_CURRENT_SCOPE (ch);
+  if (ch == NULL)
+    return -1;
+
   /* Run the scripts if necessary and set headers in the handle. */
-  if (do_scripts (h->ch) == -1) return -1;
+  if (do_scripts (ch) == -1) return -1;
 
   /* Tell the write_cb where we want the data to be written.  write_cb
    * will update this if the data comes in multiple sections.
    */
-  h->ch->write_buf = buf;
-  h->ch->write_count = count;
+  ch->write_buf = buf;
+  ch->write_count = count;
 
-  curl_easy_setopt (h->ch->c, CURLOPT_HTTPGET, 1L);
+  curl_easy_setopt (ch->c, CURLOPT_HTTPGET, 1L);
 
   /* Make an HTTP range request. */
   snprintf (range, sizeof range, "%" PRIu64 "-%" PRIu64,
             offset, offset + count);
-  curl_easy_setopt (h->ch->c, CURLOPT_RANGE, range);
+  curl_easy_setopt (ch->c, CURLOPT_RANGE, range);
 
   /* The assumption here is that curl will look after timeouts. */
-  r = curl_easy_perform (h->ch->c);
+  r = curl_easy_perform (ch->c);
   if (r != CURLE_OK) {
-    display_curl_error (h->ch, r, "pread: curl_easy_perform");
+    display_curl_error (ch, r, "pread: curl_easy_perform");
     return -1;
   }
 
@@ -844,62 +536,42 @@ curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
    */
 
   /* As far as I understand the cURL API, this should never happen. */
-  assert (h->ch->write_count == 0);
+  assert (ch->write_count == 0);
 
   return 0;
-}
-
-static size_t
-write_cb (char *ptr, size_t size, size_t nmemb, void *opaque)
-{
-  struct curl_handle *ch = opaque;
-  size_t orig_realsize = size * nmemb;
-  size_t realsize = orig_realsize;
-
-  assert (ch->write_buf);
-
-  /* Don't read more than the requested amount of data, even if the
-   * server or libcurl sends more.
-   */
-  if (realsize > ch->write_count)
-    realsize = ch->write_count;
-
-  memcpy (ch->write_buf, ptr, realsize);
-
-  ch->write_count -= realsize;
-  ch->write_buf += realsize;
-
-  return orig_realsize;
 }
 
 /* Write data to the remote server. */
 static int
 curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 {
-  struct handle *h = handle;
   CURLcode r;
   char range[128];
 
+  GET_HANDLE_FOR_CURRENT_SCOPE (ch);
+  if (ch == NULL)
+    return -1;
+
   /* Run the scripts if necessary and set headers in the handle. */
-  if (do_scripts (h->ch) == -1) return -1;
+  if (do_scripts (ch) == -1) return -1;
 
   /* Tell the read_cb where we want the data to be read from.  read_cb
    * will update this if the data comes in multiple sections.
    */
-  h->ch->read_buf = buf;
-  h->ch->read_count = count;
+  ch->read_buf = buf;
+  ch->read_count = count;
 
-  curl_easy_setopt (h->ch->c, CURLOPT_UPLOAD, 1L);
+  curl_easy_setopt (ch->c, CURLOPT_UPLOAD, 1L);
 
   /* Make an HTTP range request. */
   snprintf (range, sizeof range, "%" PRIu64 "-%" PRIu64,
             offset, offset + count);
-  curl_easy_setopt (h->ch->c, CURLOPT_RANGE, range);
+  curl_easy_setopt (ch->c, CURLOPT_RANGE, range);
 
   /* The assumption here is that curl will look after timeouts. */
-  r = curl_easy_perform (h->ch->c);
+  r = curl_easy_perform (ch->c);
   if (r != CURLE_OK) {
-    display_curl_error (h->ch, r, "pwrite: curl_easy_perform");
+    display_curl_error (ch, r, "pwrite: curl_easy_perform");
     return -1;
   }
 
@@ -908,27 +580,9 @@ curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
    */
 
   /* As far as I understand the cURL API, this should never happen. */
-  assert (h->ch->read_count == 0);
+  assert (ch->read_count == 0);
 
   return 0;
-}
-
-static size_t
-read_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
-{
-  struct curl_handle *ch = opaque;
-  size_t realsize = size * nmemb;
-
-  assert (ch->read_buf);
-  if (realsize > ch->read_count)
-    realsize = ch->read_count;
-
-  memcpy (ptr, ch->read_buf, realsize);
-
-  ch->read_count -= realsize;
-  ch->read_buf += realsize;
-
-  return realsize;
 }
 
 static struct nbdkit_plugin plugin = {

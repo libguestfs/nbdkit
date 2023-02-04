@@ -1,5 +1,5 @@
 # nbdkit
-# Copyright (C) 2014-2022 Red Hat Inc.
+# Copyright (C) 2014-2023 Red Hat Inc.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -39,8 +39,9 @@ plugin_LTLIBRARIES = nbdkit-curl-plugin.la
 
 nbdkit_curl_plugin_la_SOURCES = \
 	curldefs.h \
-	scripts.c \
 	curl.c \
+	pool.c \
+	scripts.c \
 	$(top_srcdir)/include/nbdkit-plugin.h \
 	$(NULL)
 
