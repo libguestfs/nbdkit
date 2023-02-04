@@ -33,7 +33,18 @@
 #ifndef NBDKIT_CURLDEFS_H
 #define NBDKIT_CURLDEFS_H
 
+#include <stdbool.h>
+
 #include "windows-compat.h"
+
+/* Macro CURL_AT_LEAST_VERSION was added in 2015 (Curl 7.43) so if the
+ * macro isn't present then Curl is very old.
+ */
+#ifdef CURL_AT_LEAST_VERSION
+#if CURL_AT_LEAST_VERSION(7, 55, 0)
+#define HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+#endif
+#endif
 
 extern const char *url;
 
@@ -58,12 +69,17 @@ extern const char *proxy;
 extern char *proxy_password;
 extern const char *proxy_user;
 extern bool sslverify;
+extern const char *ssl_cipher_list;
+extern const char *ssl_version;
+extern const char *tls13_ciphers;
 extern bool tcp_keepalive;
 extern bool tcp_nodelay;
 extern uint32_t timeout;
 extern const char *unix_socket_path;
 extern const char *user;
 extern const char *user_agent;
+
+extern int curl_debug_verbose;
 
 /* The per-connection handle. */
 struct handle {
