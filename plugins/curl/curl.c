@@ -498,7 +498,11 @@ curl_open (int readonly)
    *
    * NB: Both here and below constants must be explicitly long because
    * the parameter is varargs.
+   *
+   * For use of CURLOPT_NOSIGNAL see:
+   * https://curl.se/libcurl/c/CURLOPT_NOSIGNAL.html
    */
+  curl_easy_setopt (h->c, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt (h->c, CURLOPT_AUTOREFERER, 1L);
   if (followlocation)
     curl_easy_setopt (h->c, CURLOPT_FOLLOWLOCATION, 1L);
