@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014-2020 Red Hat Inc.
+ * Copyright (C) 2014-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -83,20 +83,37 @@ extern int curl_debug_verbose;
 
 /* The per-connection handle. */
 struct handle {
-  CURL *c;
   int readonly;
+  struct curl_handle *ch;
+};
+
+/* The libcurl handle and some associated fields and buffers. */
+struct curl_handle {
+  /* The underlying curl handle. */
+  CURL *c;
+
+  /* These fields are used/initialized when we create the handle. */
   bool accept_range;
   int64_t exportsize;
+
   char errbuf[CURL_ERROR_SIZE];
+
+  /* Before doing a read or write operation, set these to point to the
+   * buffer where you want the data to be stored / come from.  Note
+   * the confusing terminology from libcurl: write_* is used when
+   * reading, read_* is used when writing.
+   */
   char *write_buf;
   uint32_t write_count;
   const char *read_buf;
   uint32_t read_count;
+
+  /* Used by scripts.c */
   struct curl_slist *headers_copy;
 };
 
 /* scripts.c */
-extern int do_scripts (struct handle *h);
+extern int do_scripts (struct curl_handle *ch);
 extern void scripts_unload (void);
 
 #endif /* NBDKIT_CURLDEFS_H */

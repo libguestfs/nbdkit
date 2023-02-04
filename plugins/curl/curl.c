@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014-2020 Red Hat Inc.
+ * Copyright (C) 2014-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -427,10 +427,10 @@ curl_config_complete (void)
   "user-agent=<USER-AGENT>    Send user-agent header for HTTP/HTTPS."
 
 /* Translate CURLcode to nbdkit_error. */
-#define display_curl_error(h, r, fs, ...)                       \
+#define display_curl_error(ch, r, fs, ...)                      \
   do {                                                          \
     nbdkit_error ((fs ": %s: %s"), ## __VA_ARGS__,              \
-                  curl_easy_strerror ((r)), (h)->errbuf);       \
+                  curl_easy_strerror ((r)), (ch)->errbuf);      \
   } while (0)
 
 static int debug_cb (CURL *handle, curl_infotype type,
@@ -458,8 +458,15 @@ curl_open (int readonly)
   }
   h->readonly = readonly;
 
-  h->c = curl_easy_init ();
-  if (h->c == NULL) {
+  h->ch = calloc (1, sizeof *h->ch);
+  if (h->ch == NULL) {
+    nbdkit_error ("calloc: %m");
+    free (h);
+    return NULL;
+  }
+
+  h->ch->c = curl_easy_init ();
+  if (h->ch->c == NULL) {
     nbdkit_error ("curl_easy_init: failed: %m");
     goto err;
   }
@@ -468,29 +475,29 @@ curl_open (int readonly)
     /* NB: Constants must be explicitly long because the parameter is
      * varargs.
      */
-    curl_easy_setopt (h->c, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt (h->c, CURLOPT_DEBUGFUNCTION, debug_cb);
+    curl_easy_setopt (h->ch->c, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt (h->ch->c, CURLOPT_DEBUGFUNCTION, debug_cb);
   }
 
-  curl_easy_setopt (h->c, CURLOPT_ERRORBUFFER, h->errbuf);
+  curl_easy_setopt (h->ch->c, CURLOPT_ERRORBUFFER, h->ch->errbuf);
 
   r = CURLE_OK;
   if (unix_socket_path) {
 #if HAVE_CURLOPT_UNIX_SOCKET_PATH
-    r = curl_easy_setopt (h->c, CURLOPT_UNIX_SOCKET_PATH, unix_socket_path);
+    r = curl_easy_setopt (h->ch->c, CURLOPT_UNIX_SOCKET_PATH, unix_socket_path);
 #else
     r = CURLE_UNKNOWN_OPTION;
 #endif
   }
   if (r != CURLE_OK) {
-    display_curl_error (h, r, "curl_easy_setopt: CURLOPT_UNIX_SOCKET_PATH");
+    display_curl_error (h->ch, r, "curl_easy_setopt: CURLOPT_UNIX_SOCKET_PATH");
     goto err;
   }
 
   /* Set the URL. */
-  r = curl_easy_setopt (h->c, CURLOPT_URL, url);
+  r = curl_easy_setopt (h->ch->c, CURLOPT_URL, url);
   if (r != CURLE_OK) {
-    display_curl_error (h, r, "curl_easy_setopt: CURLOPT_URL [%s]", url);
+    display_curl_error (h->ch, r, "curl_easy_setopt: CURLOPT_URL [%s]", url);
     goto err;
   }
 
@@ -502,80 +509,80 @@ curl_open (int readonly)
    * For use of CURLOPT_NOSIGNAL see:
    * https://curl.se/libcurl/c/CURLOPT_NOSIGNAL.html
    */
-  curl_easy_setopt (h->c, CURLOPT_NOSIGNAL, 1L);
-  curl_easy_setopt (h->c, CURLOPT_AUTOREFERER, 1L);
+  curl_easy_setopt (h->ch->c, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt (h->ch->c, CURLOPT_AUTOREFERER, 1L);
   if (followlocation)
-    curl_easy_setopt (h->c, CURLOPT_FOLLOWLOCATION, 1L);
-  curl_easy_setopt (h->c, CURLOPT_FAILONERROR, 1L);
+    curl_easy_setopt (h->ch->c, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt (h->ch->c, CURLOPT_FAILONERROR, 1L);
 
   /* Options. */
   if (cainfo) {
     if (strlen (cainfo) == 0)
-      curl_easy_setopt (h->c, CURLOPT_CAINFO, NULL);
+      curl_easy_setopt (h->ch->c, CURLOPT_CAINFO, NULL);
     else
-      curl_easy_setopt (h->c, CURLOPT_CAINFO, cainfo);
+      curl_easy_setopt (h->ch->c, CURLOPT_CAINFO, cainfo);
   }
   if (capath)
-    curl_easy_setopt (h->c, CURLOPT_CAPATH, capath);
+    curl_easy_setopt (h->ch->c, CURLOPT_CAPATH, capath);
   if (cookie)
-    curl_easy_setopt (h->c, CURLOPT_COOKIE, cookie);
+    curl_easy_setopt (h->ch->c, CURLOPT_COOKIE, cookie);
   if (cookiefile)
-    curl_easy_setopt (h->c, CURLOPT_COOKIEFILE, cookiefile);
+    curl_easy_setopt (h->ch->c, CURLOPT_COOKIEFILE, cookiefile);
   if (cookiejar)
-    curl_easy_setopt (h->c, CURLOPT_COOKIEJAR, cookiejar);
+    curl_easy_setopt (h->ch->c, CURLOPT_COOKIEJAR, cookiejar);
   if (headers)
-    curl_easy_setopt (h->c, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt (h->ch->c, CURLOPT_HTTPHEADER, headers);
   if (password)
-    curl_easy_setopt (h->c, CURLOPT_PASSWORD, password);
+    curl_easy_setopt (h->ch->c, CURLOPT_PASSWORD, password);
 #ifndef HAVE_CURLOPT_PROTOCOLS_STR
   if (protocols != CURLPROTO_ALL) {
-    curl_easy_setopt (h->c, CURLOPT_PROTOCOLS, protocols);
-    curl_easy_setopt (h->c, CURLOPT_REDIR_PROTOCOLS, protocols);
+    curl_easy_setopt (h->ch->c, CURLOPT_PROTOCOLS, protocols);
+    curl_easy_setopt (h->ch->c, CURLOPT_REDIR_PROTOCOLS, protocols);
   }
 #else /* HAVE_CURLOPT_PROTOCOLS_STR (new in 7.85.0) */
   if (protocols) {
-    curl_easy_setopt (h->c, CURLOPT_PROTOCOLS_STR, protocols);
-    curl_easy_setopt (h->c, CURLOPT_REDIR_PROTOCOLS_STR, protocols);
+    curl_easy_setopt (h->ch->c, CURLOPT_PROTOCOLS_STR, protocols);
+    curl_easy_setopt (h->ch->c, CURLOPT_REDIR_PROTOCOLS_STR, protocols);
   }
 #endif /* HAVE_CURLOPT_PROTOCOLS_STR */
   if (proxy)
-    curl_easy_setopt (h->c, CURLOPT_PROXY, proxy);
+    curl_easy_setopt (h->ch->c, CURLOPT_PROXY, proxy);
   if (proxy_password)
-    curl_easy_setopt (h->c, CURLOPT_PROXYPASSWORD, proxy_password);
+    curl_easy_setopt (h->ch->c, CURLOPT_PROXYPASSWORD, proxy_password);
   if (proxy_user)
-    curl_easy_setopt (h->c, CURLOPT_PROXYUSERNAME, proxy_user);
+    curl_easy_setopt (h->ch->c, CURLOPT_PROXYUSERNAME, proxy_user);
   if (!sslverify) {
-    curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt (h->c, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt (h->ch->c, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt (h->ch->c, CURLOPT_SSL_VERIFYHOST, 0L);
   }
   if (ssl_version) {
     if (strcmp (ssl_version, "tlsv1") == 0)
-      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1);
+      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1);
     else if (strcmp (ssl_version, "sslv2") == 0)
-      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv2);
+      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv2);
     else if (strcmp (ssl_version, "sslv3") == 0)
-      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
+      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
     else if (strcmp (ssl_version, "tlsv1.0") == 0)
-      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
+      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
     else if (strcmp (ssl_version, "tlsv1.1") == 0)
-      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
+      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
     else if (strcmp (ssl_version, "tlsv1.2") == 0)
-      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
     else if (strcmp (ssl_version, "tlsv1.3") == 0)
-      curl_easy_setopt (h->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
+      curl_easy_setopt (h->ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
     else {
-      display_curl_error (h, r, "curl_easy_setopt: CURLOPT_SSLVERSION [%s]",
+      display_curl_error (h->ch, r, "curl_easy_setopt: CURLOPT_SSLVERSION [%s]",
 			  ssl_version);
       goto err;
     }
 
   }
   if (ssl_cipher_list)
-    curl_easy_setopt (h->c, CURLOPT_SSL_CIPHER_LIST, ssl_cipher_list);
+    curl_easy_setopt (h->ch->c, CURLOPT_SSL_CIPHER_LIST, ssl_cipher_list);
   if (tls13_ciphers) {
 #if (LIBCURL_VERSION_MAJOR > 7) || \
     (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 61)
-    curl_easy_setopt (h->c, CURLOPT_TLS13_CIPHERS, tls13_ciphers);
+    curl_easy_setopt (h->ch->c, CURLOPT_TLS13_CIPHERS, tls13_ciphers);
 #else
     /* This is not available before curl-7.61 */
     nbdkit_error ("tls13-ciphers is not supported in this build of "
@@ -584,18 +591,18 @@ curl_open (int readonly)
 #endif
   }
   if (tcp_keepalive)
-    curl_easy_setopt (h->c, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt (h->ch->c, CURLOPT_TCP_KEEPALIVE, 1L);
   if (!tcp_nodelay)
-    curl_easy_setopt (h->c, CURLOPT_TCP_NODELAY, 0L);
+    curl_easy_setopt (h->ch->c, CURLOPT_TCP_NODELAY, 0L);
   if (timeout > 0)
     /* NB: The cast is required here because the parameter is varargs
      * treated as long, and not type safe.
      */
-    curl_easy_setopt (h->c, CURLOPT_TIMEOUT, (long) timeout);
+    curl_easy_setopt (h->ch->c, CURLOPT_TIMEOUT, (long) timeout);
   if (user)
-    curl_easy_setopt (h->c, CURLOPT_USERNAME, user);
+    curl_easy_setopt (h->ch->c, CURLOPT_USERNAME, user);
   if (user_agent)
-    curl_easy_setopt (h->c, CURLOPT_USERAGENT, user_agent);
+    curl_easy_setopt (h->ch->c, CURLOPT_USERAGENT, user_agent);
 
   /* Get the file size and also whether the remote HTTP server
    * supports byte ranges.
@@ -603,23 +610,24 @@ curl_open (int readonly)
    * We must run the scripts if necessary and set headers in the
    * handle.
    */
-  if (do_scripts (h) == -1) goto err;
-  h->accept_range = false;
-  curl_easy_setopt (h->c, CURLOPT_NOBODY, 1L); /* No Body, not nobody! */
-  curl_easy_setopt (h->c, CURLOPT_HEADERFUNCTION, header_cb);
-  curl_easy_setopt (h->c, CURLOPT_HEADERDATA, h);
-  r = curl_easy_perform (h->c);
+  if (do_scripts (h->ch) == -1) goto err;
+  h->ch->accept_range = false;
+  curl_easy_setopt (h->ch->c, CURLOPT_NOBODY, 1L); /* No Body, not nobody! */
+  curl_easy_setopt (h->ch->c, CURLOPT_HEADERFUNCTION, header_cb);
+  curl_easy_setopt (h->ch->c, CURLOPT_HEADERDATA, h->ch);
+  r = curl_easy_perform (h->ch->c);
   if (r != CURLE_OK) {
-    display_curl_error (h, r,
+    display_curl_error (h->ch, r,
                         "problem doing HEAD request to fetch size of URL [%s]",
                         url);
     goto err;
   }
 
 #ifdef HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
-  r = curl_easy_getinfo (h->c, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &o);
+  r = curl_easy_getinfo (h->ch->c, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &o);
   if (r != CURLE_OK) {
-    display_curl_error (h, r, "could not get length of remote file [%s]", url);
+    display_curl_error (h->ch, r,
+                        "could not get length of remote file [%s]", url);
     goto err;
   }
 
@@ -629,11 +637,12 @@ curl_open (int readonly)
     goto err;
   }
 
-  h->exportsize = o;
+  h->ch->exportsize = o;
 #else
-  r = curl_easy_getinfo (h->c, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &d);
+  r = curl_easy_getinfo (h->ch->c, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &d);
   if (r != CURLE_OK) {
-    display_curl_error (h, r, "could not get length of remote file [%s]", url);
+    display_curl_error (h->ch, r,
+                        "could not get length of remote file [%s]", url);
     goto err;
   }
 
@@ -643,13 +652,13 @@ curl_open (int readonly)
     goto err;
   }
 
-  h->exportsize = d;
+  h->ch->exportsize = d;
 #endif
-  nbdkit_debug ("content length: %" PRIi64, h->exportsize);
+  nbdkit_debug ("content length: %" PRIi64, h->ch->exportsize);
 
   if (ascii_strncasecmp (url, "http://", strlen ("http://")) == 0 ||
       ascii_strncasecmp (url, "https://", strlen ("https://")) == 0) {
-    if (!h->accept_range) {
+    if (!h->ch->accept_range) {
       nbdkit_error ("server does not support 'range' (byte range) requests");
       goto err;
     }
@@ -658,20 +667,21 @@ curl_open (int readonly)
   }
 
   /* Get set up for reading and writing. */
-  curl_easy_setopt (h->c, CURLOPT_HEADERFUNCTION, NULL);
-  curl_easy_setopt (h->c, CURLOPT_HEADERDATA, NULL);
-  curl_easy_setopt (h->c, CURLOPT_WRITEFUNCTION, write_cb);
-  curl_easy_setopt (h->c, CURLOPT_WRITEDATA, h);
+  curl_easy_setopt (h->ch->c, CURLOPT_HEADERFUNCTION, NULL);
+  curl_easy_setopt (h->ch->c, CURLOPT_HEADERDATA, NULL);
+  curl_easy_setopt (h->ch->c, CURLOPT_WRITEFUNCTION, write_cb);
+  curl_easy_setopt (h->ch->c, CURLOPT_WRITEDATA, h->ch);
   if (!readonly) {
-    curl_easy_setopt (h->c, CURLOPT_READFUNCTION, read_cb);
-    curl_easy_setopt (h->c, CURLOPT_READDATA, h);
+    curl_easy_setopt (h->ch->c, CURLOPT_READFUNCTION, read_cb);
+    curl_easy_setopt (h->ch->c, CURLOPT_READDATA, h->ch);
   }
 
   return h;
 
  err:
-  if (h->c)
-    curl_easy_cleanup (h->c);
+  if (h->ch->c)
+    curl_easy_cleanup (h->ch->c);
+  free (h->ch);
   free (h);
   return NULL;
 }
@@ -724,7 +734,7 @@ debug_cb (CURL *handle, curl_infotype type,
 static size_t
 header_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
 {
-  struct handle *h = opaque;
+  struct curl_handle *ch = opaque;
   size_t realsize = size * nmemb;
   const char *header = ptr;
   const char *end = header + realsize;
@@ -747,7 +757,7 @@ header_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
         p++;
 
       if (p == end || !*p)
-        h->accept_range = true;
+        ch->accept_range = true;
     }
   }
 
@@ -760,9 +770,10 @@ curl_close (void *handle)
 {
   struct handle *h = handle;
 
-  curl_easy_cleanup (h->c);
-  if (h->headers_copy)
-    curl_slist_free_all (h->headers_copy);
+  curl_easy_cleanup (h->ch->c);
+  if (h->ch->headers_copy)
+    curl_slist_free_all (h->ch->headers_copy);
+  free (h->ch);
   free (h);
 }
 
@@ -774,7 +785,7 @@ curl_get_size (void *handle)
 {
   struct handle *h = handle;
 
-  return h->exportsize;
+  return h->ch->exportsize;
 }
 
 /* Multi-conn is safe for read-only connections, but HTTP does not
@@ -806,25 +817,25 @@ curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
   char range[128];
 
   /* Run the scripts if necessary and set headers in the handle. */
-  if (do_scripts (h) == -1) return -1;
+  if (do_scripts (h->ch) == -1) return -1;
 
   /* Tell the write_cb where we want the data to be written.  write_cb
    * will update this if the data comes in multiple sections.
    */
-  h->write_buf = buf;
-  h->write_count = count;
+  h->ch->write_buf = buf;
+  h->ch->write_count = count;
 
-  curl_easy_setopt (h->c, CURLOPT_HTTPGET, 1L);
+  curl_easy_setopt (h->ch->c, CURLOPT_HTTPGET, 1L);
 
   /* Make an HTTP range request. */
   snprintf (range, sizeof range, "%" PRIu64 "-%" PRIu64,
             offset, offset + count);
-  curl_easy_setopt (h->c, CURLOPT_RANGE, range);
+  curl_easy_setopt (h->ch->c, CURLOPT_RANGE, range);
 
   /* The assumption here is that curl will look after timeouts. */
-  r = curl_easy_perform (h->c);
+  r = curl_easy_perform (h->ch->c);
   if (r != CURLE_OK) {
-    display_curl_error (h, r, "pread: curl_easy_perform");
+    display_curl_error (h->ch, r, "pread: curl_easy_perform");
     return -1;
   }
 
@@ -833,7 +844,7 @@ curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
    */
 
   /* As far as I understand the cURL API, this should never happen. */
-  assert (h->write_count == 0);
+  assert (h->ch->write_count == 0);
 
   return 0;
 }
@@ -841,22 +852,22 @@ curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 static size_t
 write_cb (char *ptr, size_t size, size_t nmemb, void *opaque)
 {
-  struct handle *h = opaque;
+  struct curl_handle *ch = opaque;
   size_t orig_realsize = size * nmemb;
   size_t realsize = orig_realsize;
 
-  assert (h->write_buf);
+  assert (ch->write_buf);
 
   /* Don't read more than the requested amount of data, even if the
    * server or libcurl sends more.
    */
-  if (realsize > h->write_count)
-    realsize = h->write_count;
+  if (realsize > ch->write_count)
+    realsize = ch->write_count;
 
-  memcpy (h->write_buf, ptr, realsize);
+  memcpy (ch->write_buf, ptr, realsize);
 
-  h->write_count -= realsize;
-  h->write_buf += realsize;
+  ch->write_count -= realsize;
+  ch->write_buf += realsize;
 
   return orig_realsize;
 }
@@ -870,25 +881,25 @@ curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
   char range[128];
 
   /* Run the scripts if necessary and set headers in the handle. */
-  if (do_scripts (h) == -1) return -1;
+  if (do_scripts (h->ch) == -1) return -1;
 
   /* Tell the read_cb where we want the data to be read from.  read_cb
    * will update this if the data comes in multiple sections.
    */
-  h->read_buf = buf;
-  h->read_count = count;
+  h->ch->read_buf = buf;
+  h->ch->read_count = count;
 
-  curl_easy_setopt (h->c, CURLOPT_UPLOAD, 1L);
+  curl_easy_setopt (h->ch->c, CURLOPT_UPLOAD, 1L);
 
   /* Make an HTTP range request. */
   snprintf (range, sizeof range, "%" PRIu64 "-%" PRIu64,
             offset, offset + count);
-  curl_easy_setopt (h->c, CURLOPT_RANGE, range);
+  curl_easy_setopt (h->ch->c, CURLOPT_RANGE, range);
 
   /* The assumption here is that curl will look after timeouts. */
-  r = curl_easy_perform (h->c);
+  r = curl_easy_perform (h->ch->c);
   if (r != CURLE_OK) {
-    display_curl_error (h, r, "pwrite: curl_easy_perform");
+    display_curl_error (h->ch, r, "pwrite: curl_easy_perform");
     return -1;
   }
 
@@ -897,7 +908,7 @@ curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
    */
 
   /* As far as I understand the cURL API, this should never happen. */
-  assert (h->read_count == 0);
+  assert (h->ch->read_count == 0);
 
   return 0;
 }
@@ -905,17 +916,17 @@ curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 static size_t
 read_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
 {
-  struct handle *h = opaque;
+  struct curl_handle *ch = opaque;
   size_t realsize = size * nmemb;
 
-  assert (h->read_buf);
-  if (realsize > h->read_count)
-    realsize = h->read_count;
+  assert (ch->read_buf);
+  if (realsize > ch->read_count)
+    realsize = ch->read_count;
 
-  memcpy (ptr, h->read_buf, realsize);
+  memcpy (ptr, ch->read_buf, realsize);
 
-  h->read_count -= realsize;
-  h->read_buf += realsize;
+  ch->read_count -= realsize;
+  ch->read_buf += realsize;
 
   return realsize;
 }

@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2014-2020 Red Hat Inc.
+ * Copyright (C) 2014-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -80,8 +80,8 @@ scripts_unload (void)
   free (cookies_from_script);
 }
 
-static int run_header_script (struct handle *);
-static int run_cookie_script (struct handle *);
+static int run_header_script (struct curl_handle *);
+static int run_cookie_script (struct curl_handle *);
 static void error_from_tmpfile (const char *what, const char *tmpfile);
 
 /* This is called from any thread just before we make a curl request.
@@ -90,7 +90,7 @@ static void error_from_tmpfile (const char *what, const char *tmpfile);
  * we can be assured of exclusive access to handle here.
  */
 int
-do_scripts (struct handle *h)
+do_scripts (struct curl_handle *ch)
 {
   time_t now;
   struct curl_slist *p;
@@ -108,7 +108,7 @@ do_scripts (struct handle *h)
     time (&now);
     if (!header_script_has_run ||
         (header_script_renew > 0 && now - header_last >= header_script_renew)) {
-      if (run_header_script (h) == -1)
+      if (run_header_script (ch) == -1)
         return -1;
       header_last = now;
       header_script_has_run = true;
@@ -120,7 +120,7 @@ do_scripts (struct handle *h)
     time (&now);
     if (!cookie_script_has_run ||
         (cookie_script_renew > 0 && now - cookie_last >= cookie_script_renew)) {
-      if (run_cookie_script (h) == -1)
+      if (run_cookie_script (ch) == -1)
         return -1;
       cookie_last = now;
       cookie_script_has_run = true;
@@ -133,28 +133,28 @@ do_scripts (struct handle *h)
    * because unfortunately curl doesn't take a copy.  Since we don't
    * know which other threads might be using it, we must make a copy
    * of the global list (headers_from_script) per handle
-   * (h->headers_copy).  For CURLOPT_COOKIE, curl internally takes a
+   * (ch->headers_copy).  For CURLOPT_COOKIE, curl internally takes a
    * copy so we don't need to do this.
    */
-  if (h->headers_copy) {
-    curl_easy_setopt (h->c, CURLOPT_HTTPHEADER, NULL);
-    curl_slist_free_all (h->headers_copy);
-    h->headers_copy = NULL;
+  if (ch->headers_copy) {
+    curl_easy_setopt (ch->c, CURLOPT_HTTPHEADER, NULL);
+    curl_slist_free_all (ch->headers_copy);
+    ch->headers_copy = NULL;
   }
   for (p = headers_from_script; p != NULL; p = p->next) {
     if (curl_debug_scripts)
       nbdkit_debug ("header-script: setting header %s", p->data);
-    h->headers_copy = curl_slist_append (h->headers_copy, p->data);
-    if (h->headers_copy == NULL) {
+    ch->headers_copy = curl_slist_append (ch->headers_copy, p->data);
+    if (ch->headers_copy == NULL) {
       nbdkit_error ("curl_slist_append: %m");
       return -1;
     }
   }
-  curl_easy_setopt (h->c, CURLOPT_HTTPHEADER, h->headers_copy);
+  curl_easy_setopt (ch->c, CURLOPT_HTTPHEADER, ch->headers_copy);
 
   if (curl_debug_scripts && cookies_from_script)
     nbdkit_debug ("cookie-script: setting cookie %s", cookies_from_script);
-  curl_easy_setopt (h->c, CURLOPT_COOKIE, cookies_from_script);
+  curl_easy_setopt (ch->c, CURLOPT_COOKIE, cookies_from_script);
 
   return 0;
 }
@@ -163,7 +163,7 @@ do_scripts (struct handle *h)
  * header-script.
  */
 static int
-run_header_script (struct handle *h)
+run_header_script (struct curl_handle *ch)
 {
   int fd;
   char tmpfile[] = "/tmp/errorsXXXXXX";
@@ -243,7 +243,7 @@ run_header_script (struct handle *h)
  * cookie-script.
  */
 static int
-run_cookie_script (struct handle *h)
+run_cookie_script (struct curl_handle *ch)
 {
   int fd;
   char tmpfile[] = "/tmp/errorsXXXXXX";
