@@ -452,7 +452,7 @@ static size_t read_cb (void *ptr, size_t size, size_t nmemb, void *opaque);
 static void *
 curl_open (int readonly)
 {
-  struct curl_handle *h;
+  struct handle *h;
   CURLcode r;
 #ifdef HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
   curl_off_t o;
@@ -729,7 +729,7 @@ debug_cb (CURL *handle, curl_infotype type,
 static size_t
 header_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
 {
-  struct curl_handle *h = opaque;
+  struct handle *h = opaque;
   size_t realsize = size * nmemb;
   const char *header = ptr;
   const char *end = header + realsize;
@@ -763,7 +763,7 @@ header_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
 static void
 curl_close (void *handle)
 {
-  struct curl_handle *h = handle;
+  struct handle *h = handle;
 
   curl_easy_cleanup (h->c);
   if (h->headers_copy)
@@ -777,7 +777,7 @@ curl_close (void *handle)
 static int64_t
 curl_get_size (void *handle)
 {
-  struct curl_handle *h = handle;
+  struct handle *h = handle;
 
   return h->exportsize;
 }
@@ -789,7 +789,7 @@ curl_get_size (void *handle)
 static int
 curl_can_multi_conn (void *handle)
 {
-  struct curl_handle *h = handle;
+  struct handle *h = handle;
 
   return !! h->readonly;
 }
@@ -806,7 +806,7 @@ curl_can_multi_conn (void *handle)
 static int
 curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 {
-  struct curl_handle *h = handle;
+  struct handle *h = handle;
   CURLcode r;
   char range[128];
 
@@ -846,7 +846,7 @@ curl_pread (void *handle, void *buf, uint32_t count, uint64_t offset)
 static size_t
 write_cb (char *ptr, size_t size, size_t nmemb, void *opaque)
 {
-  struct curl_handle *h = opaque;
+  struct handle *h = opaque;
   size_t orig_realsize = size * nmemb;
   size_t realsize = orig_realsize;
 
@@ -870,7 +870,7 @@ write_cb (char *ptr, size_t size, size_t nmemb, void *opaque)
 static int
 curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 {
-  struct curl_handle *h = handle;
+  struct handle *h = handle;
   CURLcode r;
   char range[128];
 
@@ -910,7 +910,7 @@ curl_pwrite (void *handle, const void *buf, uint32_t count, uint64_t offset)
 static size_t
 read_cb (void *ptr, size_t size, size_t nmemb, void *opaque)
 {
-  struct curl_handle *h = opaque;
+  struct handle *h = opaque;
   size_t realsize = size * nmemb;
 
   assert (h->read_buf);

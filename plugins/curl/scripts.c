@@ -80,17 +80,17 @@ scripts_unload (void)
   free (cookies_from_script);
 }
 
-static int run_header_script (struct curl_handle *);
-static int run_cookie_script (struct curl_handle *);
+static int run_header_script (struct handle *);
+static int run_cookie_script (struct handle *);
 static void error_from_tmpfile (const char *what, const char *tmpfile);
 
 /* This is called from any thread just before we make a curl request.
  *
  * Because the thread model is NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
- * we can be assured of exclusive access to curl_handle here.
+ * we can be assured of exclusive access to handle here.
  */
 int
-do_scripts (struct curl_handle *h)
+do_scripts (struct handle *h)
 {
   time_t now;
   struct curl_slist *p;
@@ -163,7 +163,7 @@ do_scripts (struct curl_handle *h)
  * header-script.
  */
 static int
-run_header_script (struct curl_handle *h)
+run_header_script (struct handle *h)
 {
   int fd;
   char tmpfile[] = "/tmp/errorsXXXXXX";
@@ -243,7 +243,7 @@ run_header_script (struct curl_handle *h)
  * cookie-script.
  */
 static int
-run_cookie_script (struct curl_handle *h)
+run_cookie_script (struct handle *h)
 {
   int fd;
   char tmpfile[] = "/tmp/errorsXXXXXX";
@@ -352,7 +352,7 @@ scripts_unload (void)
 }
 
 int
-do_scripts (struct curl_handle *h)
+do_scripts (struct handle *h)
 {
   if (!header_script && !cookie_script)
     return 0;

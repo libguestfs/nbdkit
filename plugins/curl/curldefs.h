@@ -66,7 +66,7 @@ extern const char *user;
 extern const char *user_agent;
 
 /* The per-connection handle. */
-struct curl_handle {
+struct handle {
   CURL *c;
   int readonly;
   bool accept_range;
@@ -80,7 +80,7 @@ struct curl_handle {
 };
 
 /* scripts.c */
-extern int do_scripts (struct curl_handle *h);
+extern int do_scripts (struct handle *h);
 extern void scripts_unload (void);
 
 #endif /* NBDKIT_CURLDEFS_H */
