@@ -468,6 +468,11 @@ curl_close (void *handle)
   free (h);
 }
 
+/* This plugin could support the parallel thread model.  It currently
+ * uses serialize_requests because parallel has the unfortunate effect
+ * of pessimising common workloads.  See:
+ * https://listman.redhat.com/archives/libguestfs/2023-February/030618.html
+ */
 #define THREAD_MODEL NBDKIT_THREAD_MODEL_SERIALIZE_REQUESTS
 
 /* Calls get_handle() ... put_handle() to get a handle for the length
