@@ -18,7 +18,9 @@ more (see: S<C<curl -V>>).
 B<Note:> This plugin supports writes.  However for HTTP, you may not
 want nbdkit to issue PUT requests to the remote server (which probably
 doesn't understand them).  To force nbdkit to use a readonly
-connection, pass the I<-r> flag.
+connection, pass the I<-r> flag.  Using the I<-r> flag also enables
+NBD multi-conn, which usually performs much better (if the client
+supports it).
 
 Although this plugin can access SFTP (ie. SSH) servers, it is much
 better to use L<nbdkit-ssh-plugin(1)>.  This plugin can be used to
