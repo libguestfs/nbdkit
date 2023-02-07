@@ -132,8 +132,12 @@ See L</HEADER AND COOKIE SCRIPTS> below.
 
 (nbdkit E<ge> 1.26)
 
-Follow redirects from the server.  The default is true (to follow
-redirects), but you can set this to false to prevent this.
+Do not follow redirects from the server.  The default is true (follow
+redirects).
+
+You can follow redirects but avoid redirecting to a less secure
+protocol (eg. HTTPS redirecting to FTP) by using the C<protocols>
+parameter instead.
 
 =item B<header=>HEADER
 
