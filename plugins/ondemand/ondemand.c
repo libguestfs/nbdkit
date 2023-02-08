@@ -179,6 +179,7 @@ ondemand_get_ready (void)
   "size=<SIZE>      (required) Virtual filesystem size.\n" \
   "label=<LABEL>               The filesystem label.\n" \
   "type=ext4|...               The filesystem type.\n" \
+  "wait=true                   Wait instead of rejecting second client.\n" \
   "command=<COMMAND>           Alternate command instead of mkfs."
 
 /* Because we rewind the exportsdir handle, we need a lock to protect
