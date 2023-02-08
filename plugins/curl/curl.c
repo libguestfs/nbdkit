@@ -409,6 +409,7 @@ curl_config_complete (void)
 #define curl_config_help \
   "cainfo=<CAINFO>            Path to Certificate Authority file.\n" \
   "capath=<CAPATH>            Path to directory with CA certificates.\n" \
+  "connections=<N>            Number of libcurl connections to use.\n" \
   "cookie=<COOKIE>            Set HTTP/HTTPS cookies.\n" \
   "cookiefile=                Enable cookie processing.\n" \
   "cookiefile=<FILENAME>      Read cookies from file.\n" \
