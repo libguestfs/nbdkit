@@ -224,6 +224,7 @@ if HAVE_PLUGINS
 TESTS += \
 	test-help-example1.sh \
 	test-help-plugin.sh \
+	test-plugin-docs.sh \
 	test-version-example1.sh \
 	test-version-plugin.sh \
 	test-version-filter.sh \
@@ -282,6 +283,7 @@ EXTRA_DIST += \
 	test-foreground.sh \
 	test-help-example1.sh \
 	test-help-plugin.sh \
+	test-plugin-docs.sh \
 	test-ipv4-lo.sh \
 	test-ipv6-lo.sh \
 	test-long-name.sh \
