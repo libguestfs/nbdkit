@@ -425,13 +425,13 @@ curl_config_complete (void)
   "proxy=<PROXY>              Set proxy URL.\n" \
   "proxy-password=<PASSWORD>  The proxy password.\n" \
   "proxy-user=<USER>          The proxy user.\n" \
-  "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
   "sslverify=false            Do not verify SSL certificate of remote host.\n" \
-  "ssl-version=<VERSION>      Specify preferred TLS/SSL version.\n " \
   "ssl-cipher-list=C1:C2:..   Specify TLS/SSL cipher suites to be used.\n" \
-  "tls13-ciphers=C1:C2:..     Specify TLS 1.3 cipher suites to be used.\n" \
+  "ssl-version=<VERSION>      Specify preferred TLS/SSL version.\n" \
   "tcp-keepalive=true         Enable TCP keepalives.\n" \
   "tcp-nodelay=false          Disable Nagle’s algorithm.\n" \
+  "timeout=<TIMEOUT>          Set the timeout for requests (seconds).\n" \
+  "tls13-ciphers=C1:C2:..     Specify TLS 1.3 cipher suites to be used.\n" \
   "unix-socket-path=<PATH>    Open Unix domain socket instead of TCP/IP.\n" \
   "url=<URL>       (required) The disk image URL to serve.\n" \
   "user=<USER>                The user to log in as.\n" \
