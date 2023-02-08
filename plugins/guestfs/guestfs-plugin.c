@@ -179,12 +179,15 @@ plugin_guestfs_config_complete (void)
   return 0;
 }
 
-#define plugin_guestfs_config_help                              \
+#define plugin_guestfs_config_help                                  \
   "connect=<URI>       (optional) libvirt connection URI\n"         \
+  "debug=on                       enable libguestfs debugging\n"    \
   "domain=<DOMAIN>                libvirt domain name\n"            \
   "disk=<DISK>                    disk name\n"                      \
+  "export=DEVICE|FILE  (required) export device or file\n"          \
+  "format=<FORMAT>                specify the format of next disk\n" \
   "mount=inspect|MOUNT            mount filesystems\n"              \
-  "export=DEVICE|FILE  (required) export device or file"
+  "trace=on                       enable libguestfs call tracing"
 
 /* Free up the structures used to store the command line arguments.
  * Note the static strings don't need to be freed.
