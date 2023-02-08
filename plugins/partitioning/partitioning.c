@@ -271,7 +271,10 @@ partitioning_config_complete (void)
 
 #define partitioning_config_help \
   "file=<FILENAME>  (required) File(s) containing partitions\n" \
-  "partition-type=mbr|gpt      Partition type"
+  "partition-type=mbr|gpt      Partition type\n" \
+  "alignment=<N>               Set the alignment (bytes)\n" \
+  "mbr-id=default|0xN          Set the MBR type byte\n" \
+  "type-guid=default|GUID      Set the GPT partition type GUID"
 
 static int
 partitioning_get_ready (void)
