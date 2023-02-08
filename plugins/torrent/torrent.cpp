@@ -288,9 +288,15 @@ torrent_config_complete (void)
 }
 
 #define torrent_config_help \
-  "torrent=<TORRENT>   (required) Torrent or magnet link.\n" \
-  "file=DISK.iso                  File to serve within torrent.\n" \
-  "cache=DIR                      Set directory to store partial downloads."
+  "torrent=<TORRENT>   (required) Torrent or magnet link\n" \
+  "file=DISK.iso                  File to serve within torrent\n" \
+  "cache=DIR                      Set directory to store partial downloads\n" \
+  "connections-limit=N            Set limit on peer connections (dflt: 200)\n" \
+  "download-rate-limit=BPS        Set download rate limit (bps)\n" \
+  "listen-interfaces=IP:PORT,...  Set listening ports\n" \
+  "outgoing-interfaces=IP,IP,...  Set outgoing IP addresses\n" \
+  "upload-rate-limit=BPS          Set upload rate limit (bps)\n" \
+  "user-agent=STRING              Set the user-agent"
 
 /* We got the metadata. */
 static void
