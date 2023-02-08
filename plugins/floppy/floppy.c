@@ -114,8 +114,9 @@ floppy_config_complete (void)
 }
 
 #define floppy_config_help \
-  "dir=<DIRECTORY>     (required) The directory to serve.\n" \
-  "label=<LABEL>                  The volume label." \
+  "dir=<DIRECTORY>     (required) The directory to serve\n" \
+  "label=<LABEL>                  The volume label\n" \
+  "size=<SIZE>                    Optional total disk size"
 
 static int
 floppy_get_ready (void)
