@@ -287,10 +287,12 @@ file_config_complete (void)
 }
 
 #define file_config_help \
-  "[file=]<FILENAME>     The filename to serve.\n" \
-  "dir=<DIRNAME>         A directory containing files to serve.\n" \
-  "cache=<MODE>          Set use of caching (default, none).\n" \
-  "fadvise=<LEVEL>       Set fadvise hint (normal, random, sequential).\n" \
+  "[file=]<FILENAME>       The filename to serve\n" \
+  "fd=<FILE_DESCRIPTOR>    Serve file attached to file descriptor\n" \
+  "dir=<DIRNAME>           A directory containing files to serve\n" \
+  "dirfd=<FILE_DESCRIPTOR> Serve dir attached to file descriptor\n" \
+  "cache=<MODE>            Set use of caching (default, none)\n" \
+  "fadvise=<LEVEL>         Set fadvise hint (normal, random, sequential)"
 
 /* Print some extra information about how the plugin was compiled. */
 static void
