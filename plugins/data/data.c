@@ -185,7 +185,10 @@ data_config_complete (void)
 }
 
 #define data_config_help \
-  "data|raw|base64=...     Specify disk data on the command line\n" \
+  "allocator=sparse|...    Backend allocation strategy\n" \
+  "base64=...              Specify base64 disk data on the command line\n" \
+  "[data=]...              Specify disk data using special format\n" \
+  "raw=...                 Specify raw disk data\n" \
   "size=<SIZE>             Size of the backing disk"
 
 /* Parse raw|base64|data parameter and set the final size. */
