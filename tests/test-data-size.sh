@@ -40,10 +40,7 @@ requires_run
 requires_nbdinfo
 
 # Since this test is expected to fail, valgrind will also fail.
-if [ "$NBDKIT_VALGRIND" = "1" ]; then
-    echo "$0: skipping test under valgrind."
-    exit 77
-fi
+skip_if_valgrind
 
 size ()
 {

@@ -39,11 +39,6 @@ requires $PYTHON -c 'import unittest'
 requires $PYTHON -c 'import nbd'
 requires test -f test_python.py
 requires test -f test-python-plugin.py
-
-# Python has proven very difficult to valgrind, therefore it is disabled.
-if [ "$NBDKIT_VALGRIND" = "1" ]; then
-    echo "$0: skipping Python test under valgrind."
-    exit 77
-fi
+skip_if_valgrind "because Python code leaks memory"
 
 $PYTHON -m unittest test_python

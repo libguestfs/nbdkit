@@ -38,12 +38,7 @@ requires hexdump --version
 requires $PYTHON --version
 requires_nbdcopy
 requires_plugin python
-
-# Python has proven very difficult to valgrind, therefore it is disabled.
-if [ "$NBDKIT_VALGRIND" = "1" ]; then
-    echo "$0: skipping Python test under valgrind."
-    exit 77
-fi
+skip_if_valgrind "because Python code leaks memory"
 
 # There is a fake boto3 module in test-S3/ which we use as a test
 # harness for the plugin.

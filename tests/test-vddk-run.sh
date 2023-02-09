@@ -36,13 +36,7 @@ source ./functions.sh
 set -e
 set -x
 
-# Testing $LD_LIBRARY_PATH stuff breaks valgrind, so skip the rest of
-# this test if valgrinding.
-if [ "x$NBDKIT_VALGRIND" = "x1" ]; then
-    echo "$0: skipped LD_LIBRARY_PATH test when doing valgrind"
-    exit 77
-fi
-
+skip_if_valgrind "because setting LD_LIBRARY_PATH breaks valgrind"
 requires_nbdinfo
 
 out=test-vddk-run.out

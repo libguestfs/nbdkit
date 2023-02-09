@@ -316,6 +316,17 @@ requires_caps ()
     done
 }
 
+# skip_if_valgrind ["reason"]
+#
+# Skip test under 'make check-valgrind'.  An optional reason can be given.
+skip_if_valgrind ()
+{
+    if [ "$NBDKIT_VALGRIND" = "1" ]; then
+        echo "$0: skipping test under valgrind $@"
+        exit 77
+    fi
+}
+
 # start_nbdkit -P pidfile args...
 #
 # Run nbdkit with args and wait for it to start up.  If it fails to

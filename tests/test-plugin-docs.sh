@@ -37,10 +37,7 @@ source ./functions.sh
 set -e
 
 # There's no point doing this test under valgrind.
-if [ "$NBDKIT_VALGRIND" = "1" ]; then
-    echo "$0: skipping this test under valgrind."
-    exit 77
-fi
+skip_if_valgrind
 
 rm -f plugin-keys.txt pod-keys.txt
 cleanup_fn rm -f plugin-keys.txt pod-keys.txt

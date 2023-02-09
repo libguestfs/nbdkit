@@ -37,12 +37,7 @@ set -x
 
 requires $PYTHON --version
 requires $PYTHON -c 'import unittest'
-
-# Python has proven very difficult to valgrind, therefore it is disabled.
-if [ "$NBDKIT_VALGRIND" = "1" ]; then
-    echo "$0: skipping Python test under valgrind."
-    exit 77
-fi
+skip_if_valgrind "because Python code leaks memory"
 
 export PYTHONPATH=$srcdir/../plugins/S3:$srcdir/test-S3:$PYTHONPATH
 
