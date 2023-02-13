@@ -128,6 +128,11 @@ DEFINE_VECTOR_TYPE(l1_dir, struct l1_entry);
 
 struct sparse_array {
   struct allocator a;           /* Must come first. */
+
+  /* This lock is highly contended.  When hammering the memory plugin
+   * with 8 fio threads, about 30% of the total system time was taken
+   * just waiting for this lock.  Fixing this is quite hard.
+   */
   pthread_mutex_t lock;
   l1_dir l1_dir;                /* L1 directory. */
 };
