@@ -275,6 +275,16 @@ Don't verify the SSL certificate of the remote host.
 
 =item B<ssl-version=tlsv1.3>
 
+=item B<ssl-version=max-default>
+
+=item B<ssl-version=max-tlsv1.0>
+
+=item B<ssl-version=max-tlsv1.1>
+
+=item B<ssl-version=max-tlsv1.2>
+
+=item B<ssl-version=max-tlsv1.3>
+
 Set the SSL ciphers and TLS version.  For further information see
 L<CURLOPT_SSL_CIPHER_LIST(3)> and L<CURLOPT_SSLVERSION(3)>.
 

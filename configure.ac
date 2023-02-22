@@ -1141,6 +1141,27 @@ AS_IF([test "$with_curl" != "no"],[
             AC_DEFINE([HAVE_CURLOPT_PROTOCOLS_STR],[1],
                       [CURLOPT_PROTOCOLS_STR found at compile time.])
             ], [], [#include <curl/curl.h>])
+        dnl Detect various newer SSL versions, added in 7.54.0
+        AC_CHECK_DECL([CURL_SSLVERSION_MAX_DEFAULT], [
+            AC_DEFINE([HAVE_CURL_SSLVERSION_MAX_DEFAULT],[1],
+                      [CURL_SSLVERSION_MAX_DEFAULT found at compile time.])
+            ], [], [#include <curl/curl.h>])
+        AC_CHECK_DECL([CURL_SSLVERSION_MAX_TLSv1_0], [
+            AC_DEFINE([HAVE_CURL_SSLVERSION_MAX_TLSv1_0],[1],
+                      [CURL_SSLVERSION_MAX_TLSv1_0 found at compile time.])
+            ], [], [#include <curl/curl.h>])
+        AC_CHECK_DECL([CURL_SSLVERSION_MAX_TLSv1_1], [
+            AC_DEFINE([HAVE_CURL_SSLVERSION_MAX_TLSv1_1],[1],
+                      [CURL_SSLVERSION_MAX_TLSv1_1 found at compile time.])
+            ], [], [#include <curl/curl.h>])
+        AC_CHECK_DECL([CURL_SSLVERSION_MAX_TLSv1_2], [
+            AC_DEFINE([HAVE_CURL_SSLVERSION_MAX_TLSv1_2],[1],
+                      [CURL_SSLVERSION_MAX_TLSv1_2 found at compile time.])
+            ], [], [#include <curl/curl.h>])
+        AC_CHECK_DECL([CURL_SSLVERSION_MAX_TLSv1_3], [
+            AC_DEFINE([HAVE_CURL_SSLVERSION_MAX_TLSv1_3],[1],
+                      [CURL_SSLVERSION_MAX_TLSv1_3 found at compile time.])
+            ], [], [#include <curl/curl.h>])
     ],
     [AC_MSG_WARN([curl not found, curl plugin will be disabled])])
 ])

@@ -332,6 +332,26 @@ curl_config (const char *key, const char *value)
       ssl_version = CURL_SSLVERSION_TLSv1_2;
     else if (strcmp (value, "tlsv1.3") == 0)
       ssl_version = CURL_SSLVERSION_TLSv1_3;
+#ifdef HAVE_CURL_SSLVERSION_MAX_DEFAULT
+    else if (strcmp (value, "max-default") == 0)
+      ssl_version = CURL_SSLVERSION_MAX_DEFAULT;
+#endif
+#ifdef HAVE_CURL_SSLVERSION_MAX_TLSv1_0
+    else if (strcmp (value, "max-tlsv1.0") == 0)
+      ssl_version = CURL_SSLVERSION_MAX_TLSv1_0;
+#endif
+#ifdef HAVE_CURL_SSLVERSION_MAX_TLSv1_1
+    else if (strcmp (value, "max-tlsv1.1") == 0)
+      ssl_version = CURL_SSLVERSION_MAX_TLSv1_1;
+#endif
+#ifdef HAVE_CURL_SSLVERSION_MAX_TLSv1_2
+    else if (strcmp (value, "max-tlsv1.2") == 0)
+      ssl_version = CURL_SSLVERSION_MAX_TLSv1_2;
+#endif
+#ifdef HAVE_CURL_SSLVERSION_MAX_TLSv1_3
+    else if (strcmp (value, "max-tlsv1.3") == 0)
+      ssl_version = CURL_SSLVERSION_MAX_TLSv1_3;
+#endif
     else {
       nbdkit_error ("unknown ssl-version: %s", value);
       return -1;
