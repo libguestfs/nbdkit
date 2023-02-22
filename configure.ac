@@ -1141,6 +1141,27 @@ AS_IF([test "$with_curl" != "no"],[
             AC_DEFINE([HAVE_CURLOPT_PROTOCOLS_STR],[1],
                       [CURLOPT_PROTOCOLS_STR found at compile time.])
             ], [], [#include <curl/curl.h>])
+        dnl Detect various HTTP version enums supported by curl.
+        AC_CHECK_DECL([CURL_HTTP_VERSION_2_0], [
+            AC_DEFINE([HAVE_CURL_HTTP_VERSION_2_0],[1],
+                      [CURL_HTTP_VERSION_2_0 found at compile time.])
+            ], [], [#include <curl/curl.h>])
+        AC_CHECK_DECL([CURL_HTTP_VERSION_2TLS], [
+            AC_DEFINE([HAVE_CURL_HTTP_VERSION_2TLS],[1],
+                      [CURL_HTTP_VERSION_2TLS found at compile time.])
+            ], [], [#include <curl/curl.h>])
+        AC_CHECK_DECL([CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE], [
+            AC_DEFINE([HAVE_CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE],[1],
+                      [CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE found at compile time.])
+            ], [], [#include <curl/curl.h>])
+        AC_CHECK_DECL([CURL_HTTP_VERSION_3], [
+            AC_DEFINE([HAVE_CURL_HTTP_VERSION_3],[1],
+                      [CURL_HTTP_VERSION_3 found at compile time.])
+            ], [], [#include <curl/curl.h>])
+        AC_CHECK_DECL([CURL_HTTP_VERSION_3ONLY], [
+            AC_DEFINE([HAVE_CURL_HTTP_VERSION_3ONLY],[1],
+                      [CURL_HTTP_VERSION_3ONLY found at compile time.])
+            ], [], [#include <curl/curl.h>])
         dnl Detect various newer SSL versions, added in 7.54.0
         AC_CHECK_DECL([CURL_SSLVERSION_MAX_DEFAULT], [
             AC_DEFINE([HAVE_CURL_SSLVERSION_MAX_DEFAULT],[1],

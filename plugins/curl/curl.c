@@ -67,6 +67,7 @@ bool followlocation = true;
 struct curl_slist *headers = NULL;
 const char *header_script = NULL;
 unsigned header_script_renew = 0;
+long http_version = CURL_HTTP_VERSION_NONE;
 char *password = NULL;
 #ifndef HAVE_CURLOPT_PROTOCOLS_STR
 long protocols = CURLPROTO_ALL;
@@ -280,6 +281,39 @@ curl_config (const char *key, const char *value)
       return -1;
   }
 
+  else if (strcmp (key, "http-version") == 0) {
+    if (strcmp (value, "none") == 0)
+      http_version = CURL_HTTP_VERSION_NONE;
+    else if (strcmp (value, "1.0") == 0)
+      http_version = CURL_HTTP_VERSION_1_0;
+    else if (strcmp (value, "1.1") == 0)
+      http_version = CURL_HTTP_VERSION_1_1;
+#ifdef HAVE_CURL_HTTP_VERSION_2_0
+    else if (strcmp (value, "2.0") == 0)
+      http_version = CURL_HTTP_VERSION_2_0;
+#endif
+#ifdef HAVE_CURL_HTTP_VERSION_2TLS
+    else if (strcmp (value, "2TLS") == 0)
+      http_version = CURL_HTTP_VERSION_2TLS;
+#endif
+#ifdef HAVE_CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE
+    else if (strcmp (value, "2-prior-knowledge") == 0)
+      http_version = CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE;
+#endif
+#ifdef HAVE_CURL_HTTP_VERSION_3
+    else if (strcmp (value, "3") == 0)
+      http_version = CURL_HTTP_VERSION_3;
+#endif
+#ifdef HAVE_CURL_HTTP_VERSION_3ONLY
+    else if (strcmp (value, "3only") == 0)
+      http_version = CURL_HTTP_VERSION_3ONLY;
+#endif
+    else {
+      nbdkit_error ("unknown http-version: %s", value);
+      return -1;
+    }
+  }
+
   else if (strcmp (key, "password") == 0) {
     free (password);
     if (nbdkit_read_password (value, &password) == -1)
@@ -460,6 +494,7 @@ curl_config_complete (void)
   "header=<HEADER>            Set HTTP/HTTPS header.\n" \
   "header-script=<SCRIPT>     Script to set HTTP/HTTPS headers.\n" \
   "header-script-renew=<SECS> Time to renew HTTP/HTTPS headers.\n" \
+  "http-version=none|...      Force a particular HTTP protocol.\n" \
   "password=<PASSWORD>        The password for the user account.\n" \
   "protocols=PROTO,PROTO,..   Limit protocols allowed.\n" \
   "proxy=<PROXY>              Set proxy URL.\n" \
