@@ -259,6 +259,8 @@ Don't verify the SSL certificate of the remote host.
 
 =item B<ssl-cipher-list=>CIPHER[:CIPHER...]
 
+=item B<ssl-version=default>
+
 =item B<ssl-version=tlsv1>
 
 =item B<ssl-version=sslv2>

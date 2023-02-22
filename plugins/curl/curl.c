@@ -78,7 +78,7 @@ char *proxy_password = NULL;
 const char *proxy_user = NULL;
 bool sslverify = true;
 const char *ssl_cipher_list = NULL;
-const char *ssl_version = NULL;
+long ssl_version = CURL_SSLVERSION_DEFAULT;
 const char *tls13_ciphers = NULL;
 bool tcp_keepalive = false;
 bool tcp_nodelay = true;
@@ -315,8 +315,28 @@ curl_config (const char *key, const char *value)
     sslverify = r;
   }
 
-  else if (strcmp (key, "ssl-version") == 0)
-    ssl_version = value;
+  else if (strcmp (key, "ssl-version") == 0) {
+    if (strcmp (value, "default") == 0)
+      ssl_version = CURL_SSLVERSION_DEFAULT;
+    else if (strcmp (value, "tlsv1") == 0)
+      ssl_version = CURL_SSLVERSION_TLSv1;
+    else if (strcmp (value, "sslv2") == 0)
+      ssl_version = CURL_SSLVERSION_SSLv2;
+    else if (strcmp (value, "sslv3") == 0)
+      ssl_version = CURL_SSLVERSION_SSLv3;
+    else if (strcmp (value, "tlsv1.0") == 0)
+      ssl_version = CURL_SSLVERSION_TLSv1_0;
+    else if (strcmp (value, "tlsv1.1") == 0)
+      ssl_version = CURL_SSLVERSION_TLSv1_1;
+    else if (strcmp (value, "tlsv1.2") == 0)
+      ssl_version = CURL_SSLVERSION_TLSv1_2;
+    else if (strcmp (value, "tlsv1.3") == 0)
+      ssl_version = CURL_SSLVERSION_TLSv1_3;
+    else {
+      nbdkit_error ("unknown ssl-version: %s", value);
+      return -1;
+    }
+  }
 
   else if (strcmp (key, "ssl-cipher-list") == 0)
     ssl_cipher_list = value;

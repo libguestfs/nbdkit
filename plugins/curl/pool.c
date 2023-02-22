@@ -275,28 +275,8 @@ allocate_handle (void)
     curl_easy_setopt (ch->c, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt (ch->c, CURLOPT_SSL_VERIFYHOST, 0L);
   }
-  if (ssl_version) {
-    if (strcmp (ssl_version, "tlsv1") == 0)
-      curl_easy_setopt (ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1);
-    else if (strcmp (ssl_version, "sslv2") == 0)
-      curl_easy_setopt (ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv2);
-    else if (strcmp (ssl_version, "sslv3") == 0)
-      curl_easy_setopt (ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
-    else if (strcmp (ssl_version, "tlsv1.0") == 0)
-      curl_easy_setopt (ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
-    else if (strcmp (ssl_version, "tlsv1.1") == 0)
-      curl_easy_setopt (ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
-    else if (strcmp (ssl_version, "tlsv1.2") == 0)
-      curl_easy_setopt (ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-    else if (strcmp (ssl_version, "tlsv1.3") == 0)
-      curl_easy_setopt (ch->c, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
-    else {
-      display_curl_error (ch, r, "curl_easy_setopt: CURLOPT_SSLVERSION [%s]",
-			  ssl_version);
-      goto err;
-    }
-
-  }
+  if (ssl_version != CURL_SSLVERSION_DEFAULT)
+    curl_easy_setopt (ch->c, CURLOPT_SSLVERSION, (long) ssl_version);
   if (ssl_cipher_list)
     curl_easy_setopt (ch->c, CURLOPT_SSL_CIPHER_LIST, ssl_cipher_list);
   if (tls13_ciphers) {

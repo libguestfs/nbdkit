@@ -71,7 +71,7 @@ extern char *proxy_password;
 extern const char *proxy_user;
 extern bool sslverify;
 extern const char *ssl_cipher_list;
-extern const char *ssl_version;
+extern long ssl_version;
 extern const char *tls13_ciphers;
 extern bool tcp_keepalive;
 extern bool tcp_nodelay;
