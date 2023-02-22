@@ -298,9 +298,6 @@ allocate_handle (void)
   if (!tcp_nodelay)
     curl_easy_setopt (ch->c, CURLOPT_TCP_NODELAY, 0L);
   if (timeout > 0)
-    /* NB: The cast is required here because the parameter is varargs
-     * treated as long, and not type safe.
-     */
     curl_easy_setopt (ch->c, CURLOPT_TIMEOUT, (long) timeout);
   if (user)
     curl_easy_setopt (ch->c, CURLOPT_USERNAME, user);
