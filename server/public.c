@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2022 Red Hat Inc.
+ * Copyright (C) 2013-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -1107,5 +1107,8 @@ nbdkit_disconnect (int force)
     debug ("no connection in this thread, ignoring disconnect request");
     return;
   }
-  connection_set_status (force ? STATUS_DEAD : STATUS_SHUTDOWN);
+  if (connection_set_status (force ? STATUS_DEAD : STATUS_SHUTDOWN)) {
+    ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
+    conn->close (SHUT_WR);
+  }
 }

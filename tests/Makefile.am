@@ -256,6 +256,8 @@ TESTS += \
 	test-swap.sh \
 	test-disconnect.sh \
 	test-disconnect-tls.sh \
+	test-client-death.sh \
+	test-client-death-tls.sh \
 	test-shutdown.sh \
 	test-nbdkit-backend-debug.sh \
 	test-read-password.sh \
@@ -299,6 +301,8 @@ EXTRA_DIST += \
 	test-read-password-plugin.c \
 	test-disconnect.sh \
 	test-disconnect-tls.sh \
+	test-client-death.sh \
+	test-client-death-tls.sh \
 	test-shutdown.sh \
 	test-single-from-file.sh \
 	test-single-sh.sh \
@@ -405,6 +409,8 @@ test_disconnect_plugin_la_LDFLAGS = \
 	-module -avoid-version -shared $(NO_UNDEFINED_ON_WINDOWS) -rpath /nowhere \
 	$(NULL)
 test_disconnect_plugin_la_LIBADD = $(IMPORT_LIBRARY_ON_WINDOWS)
+
+test-client-death-tls.sh: keys.psk
 
 # check_LTLIBRARIES won't build a shared library (see automake manual).
 # So we have to do this and add a dependency.

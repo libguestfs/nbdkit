@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2022 Red Hat Inc.
+ * Copyright (C) 2013-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -80,11 +80,14 @@ connection_get_status (void)
   return r;
 }
 
-/* Update the status if the new value is lower than the existing value. */
-void
+/* Update the status if the new value is lower than the existing value.
+ * Return true if the caller should shutdown.
+ */
+bool
 connection_set_status (conn_status value)
 {
   GET_CONN;
+  bool ret = false;
 
   if (conn->nworkers &&
       pthread_mutex_lock (&conn->status_lock))
@@ -99,12 +102,13 @@ connection_set_status (conn_status value)
         debug ("failed to notify pipe-to-self: %m");
     }
     if (conn->status >= STATUS_CLIENT_DONE && value < STATUS_CLIENT_DONE)
-      conn->close (SHUT_WR);
+      ret = true;
     conn->status = value;
   }
   if (conn->nworkers &&
       pthread_mutex_unlock (&conn->status_lock))
     abort ();
+  return ret;
 }
 
 struct worker_data {
@@ -126,7 +130,10 @@ connection_worker (void *data)
   free (worker);
 
   while (!quit && connection_get_status () > STATUS_CLIENT_DONE)
-    protocol_recv_request_send_reply ();
+    if (protocol_recv_request_send_reply ()) {
+      ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&conn->write_lock);
+      conn->close (SHUT_WR);
+    }
   debug ("exiting worker thread %s", threadlocal_get_name ());
   free (name);
   return NULL;
@@ -178,7 +185,8 @@ handle_single_connection (int sockin, int sockout)
     /* No need for a separate thread. */
     debug ("handshake complete, processing requests serially");
     while (!quit && connection_get_status () > STATUS_CLIENT_DONE)
-      protocol_recv_request_send_reply ();
+      if (protocol_recv_request_send_reply ())
+        conn->close (SHUT_WR);
   }
   else {
     /* Create thread pool to process requests. */
@@ -400,7 +408,10 @@ raw_send_socket (const void *vbuf, size_t len, int flags)
   ssize_t r;
   int f = 0;
 
-  assert (sock >= 0);
+  if (sock < 0) {
+    errno = EBADF;
+    return -1;
+  }
 #ifdef MSG_MORE
   if (flags & SEND_MORE)
     f |= MSG_MORE;
@@ -492,6 +503,8 @@ raw_recv (void *vbuf, size_t len)
 
 /* There's no place in the NBD protocol to send back errors from
  * close, so this function ignores errors.
+ *
+ * If @how == SHUT_WR and conn->nworkers > 1, the caller holds write_lock.
  */
 static void
 raw_close (int how)

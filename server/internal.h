@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2013-2022 Red Hat Inc.
+ * Copyright (C) 2013-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -244,10 +244,13 @@ typedef enum {
 } conn_status;
 
 struct connection {
-  pthread_mutex_t request_lock;
-  pthread_mutex_t read_lock;
-  pthread_mutex_t write_lock;
-  pthread_mutex_t status_lock;
+  /* Listed in precedence order: do not grab earlier locks in this list
+   * while holding a later lock.
+   */
+  pthread_mutex_t request_lock; /* Forces serialization of requests */
+  pthread_mutex_t read_lock; /* Read entire client payload off wire */
+  pthread_mutex_t write_lock; /* Protect sockout, write response to wire */
+  pthread_mutex_t status_lock; /* Track current status of client */
 
   conn_status status;
   int status_pipe[2]; /* track status changes via poll when nworkers > 1 */
@@ -269,14 +272,16 @@ struct connection {
   const char *exportname;
 
   int sockin, sockout;
+  /* If nworkers > 1, only call this while read_lock is held */
   connection_recv_function recv;
+  /* If nworkers > 1, only call these while write_lock is held */
   connection_send_function send;
   connection_close_function close;
 };
 
 extern void handle_single_connection (int sockin, int sockout);
 extern conn_status connection_get_status (void);
-extern void connection_set_status (conn_status value);
+extern bool connection_set_status (conn_status value);
 
 /* protocol-handshake.c */
 extern int protocol_handshake (void);
@@ -291,7 +296,7 @@ extern int protocol_handshake_oldstyle (void);
 extern int protocol_handshake_newstyle (void);
 
 /* protocol.c */
-extern void protocol_recv_request_send_reply (void);
+extern bool protocol_recv_request_send_reply (void);
 
 /* The context ID of base:allocation.  As far as I can tell it doesn't
  * matter what this is as long as nbdkit always returns the same
