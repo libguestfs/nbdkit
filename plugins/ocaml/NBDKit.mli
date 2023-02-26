@@ -33,7 +33,8 @@
 
 (** Interface between plugins written in OCaml and the nbdkit server.
 
-    Read [nbdkit-ocaml-plugin(3)] first. *)
+    Read these man pages for additional information:
+    nbdkit-ocaml-plugin(3) and nbdkit-plugin(3) *)
 
 (** Flags passed from the server to various callbacks. *)
 type flags = flag list
