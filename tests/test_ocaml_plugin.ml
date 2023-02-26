@@ -52,6 +52,12 @@ let () =
      *)
     assert (isdir (NBDKit.realpath test_dir))
 
+(* Test [NBDKit.version ()] returns a sensible looking string. *)
+let () =
+  let ver = NBDKit.version () in
+  assert (String.length ver > 2);
+  assert (String.sub ver 0 2 = "1.")
+
 let load () =
   NBDKit.debug "test ocaml plugin loaded"
 
