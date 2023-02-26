@@ -194,6 +194,13 @@ ocaml_nbdkit_version (value unitv)
   CAMLreturn (rv);
 }
 
+/* NB: noalloc function. */
+NBDKIT_DLL_PUBLIC value
+ocaml_nbdkit_api_version (value unitv)
+{
+  return Val_int (NBDKIT_API_VERSION);
+}
+
 NBDKIT_DLL_PUBLIC value
 ocaml_nbdkit_peer_pid (value unitv)
 {

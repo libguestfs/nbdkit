@@ -58,6 +58,10 @@ let () =
   assert (String.length ver > 2);
   assert (String.sub ver 0 2 = "1.")
 
+(* Test [NBDKit.api_version ()]. *)
+let () =
+  assert (NBDKit.api_version () = 2)
+
 let load () =
   NBDKit.debug "test ocaml plugin loaded"
 

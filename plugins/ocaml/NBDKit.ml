@@ -170,6 +170,7 @@ external disconnect : bool -> unit = "ocaml_nbdkit_disconnect" [@@noalloc]
 external _debug : string -> unit = "ocaml_nbdkit_debug" [@@noalloc]
 let debug fs = ksprintf _debug fs
 external version : unit -> string = "ocaml_nbdkit_version"
+external api_version : unit -> int = "ocaml_nbdkit_api_version"
 external peer_pid : unit -> int64 = "ocaml_nbdkit_peer_pid"
 external peer_uid : unit -> int64 = "ocaml_nbdkit_peer_uid"
 external peer_gid : unit -> int64 = "ocaml_nbdkit_peer_gid"

@@ -175,6 +175,11 @@ val debug : ('a, unit, string, unit) format4 -> 'a
 (** Return the version of nbdkit that the plugin was compiled with. *)
 val version : unit -> string
 
+(** Return the nbdkit API version used by the plugin.
+
+    See [NBDKIT_API_VERSION] in nbdkit-plugin(3). *)
+val api_version : unit -> int
+
 (** Binding for [nbdkit_peer_pid]. *)
 val peer_pid : unit -> int64
 
