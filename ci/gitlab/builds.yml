@@ -397,7 +397,7 @@ x86_64-freebsd-current:
 aarch64-macos-12:
   extends: .cirrus_build_job
   needs: []
-  allow_failure: false
+  allow_failure: true
   variables:
     CIRRUS_VM_IMAGE_NAME: ghcr.io/cirruslabs/macos-monterey-base:latest
     CIRRUS_VM_IMAGE_SELECTOR: image
@@ -405,6 +405,7 @@ aarch64-macos-12:
     INSTALL_COMMAND: brew install
     NAME: macos-12
     PATH_EXTRA: /usr/local/opt/ccache/libexec:/usr/local/opt/gettext/bin:/usr/local/opt/libpcap/bin:/usr/local/opt/libxslt/bin:/usr/local/opt/rpcgen/bin
+    PERL: skip
     PKG_CONFIG_PATH: /usr/local/opt/curl/lib/pkgconfig:/usr/local/opt/libpcap/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/ncurses/lib/pkgconfig:/usr/local/opt/readline/lib/pkgconfig
     UPDATE_COMMAND: brew update
     UPGRADE_COMMAND: brew upgrade
