@@ -93,6 +93,9 @@ struct curl_handle {
   /* The underlying curl handle. */
   CURL *c;
 
+  /* Index of this handle in the pool (for debugging). */
+  size_t i;
+
   /* True if the handle is in use by a thread. */
   bool in_use;
 

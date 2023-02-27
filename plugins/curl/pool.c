@@ -59,6 +59,9 @@
 
 #include "curldefs.h"
 
+/* Use '-D curl.pool=1' to debug handle pool. */
+NBDKIT_DLL_PUBLIC int curl_debug_pool = 0;
+
 /* Translate CURLcode to nbdkit_error. */
 #define display_curl_error(ch, r, fs, ...)                      \
   do {                                                          \
@@ -96,8 +99,9 @@ free_all_handles (void)
 {
   size_t i;
 
-  nbdkit_debug ("free_all_handles: number of curl handles allocated: %zu",
-                curl_handles.len);
+  if (curl_debug_pool)
+    nbdkit_debug ("free_all_handles: number of curl handles allocated: %zu",
+                  curl_handles.len);
 
   for (i = 0; i < curl_handles.len; ++i)
     free_handle (curl_handles.ptr[i]);
@@ -122,6 +126,8 @@ get_handle (void)
     if (!ch->in_use) {
       ch->in_use = true;
       in_use++;
+      if (curl_debug_pool)
+        nbdkit_debug ("get_handle: %zu", ch->i);
       return ch;
     }
   }
@@ -135,8 +141,11 @@ get_handle (void)
       free_handle (ch);
       return NULL;
     }
+    ch->i = curl_handles.len - 1;
     ch->in_use = true;
     in_use++;
+    if (curl_debug_pool)
+      nbdkit_debug ("get_handle: %zu", ch->i);
     return ch;
   }
 
@@ -157,6 +166,9 @@ void
 put_handle (struct curl_handle *ch)
 {
   ACQUIRE_LOCK_FOR_CURRENT_SCOPE (&lock);
+
+  if (curl_debug_pool)
+    nbdkit_debug ("put_handle: %zu", ch->i);
 
   ch->in_use = false;
   in_use--;
