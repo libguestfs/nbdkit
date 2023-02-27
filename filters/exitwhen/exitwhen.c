@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2019-2020 Red Hat Inc.
+ * Copyright (C) 2019-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -43,6 +43,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 
 #include <pthread.h>
 
