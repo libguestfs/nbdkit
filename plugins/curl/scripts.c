@@ -352,7 +352,7 @@ scripts_unload (void)
 }
 
 int
-do_scripts (struct handle *h)
+do_scripts (struct curl_handle *ch)
 {
   if (!header_script && !cookie_script)
     return 0;
