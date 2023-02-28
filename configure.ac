@@ -621,9 +621,7 @@ AS_IF([test "x$with_selinux" = xyes && test "x$LIBSELINUX_LIBS" = x], [
 
 dnl Check for GnuTLS (optional, for TLS support).
 AC_ARG_WITH([gnutls],
-    [AS_HELP_STRING([--without-gnutls], [disable TLS support via GnuTLS @<:@default=check@:>@])],
-    [],
-    [: m4_divert_text([DEFAULTS], [with_manpages=check])])
+    [AS_HELP_STRING([--without-gnutls], [disable TLS support via GnuTLS @<:@default=check@:>@])])
 
 AS_IF([test "x$with_gnutls" != xno], [
     PKG_CHECK_MODULES([GNUTLS], [gnutls >= 3.3.0], [
@@ -753,9 +751,7 @@ AM_CONDITIONAL([USE_LINKER_SCRIPT],
 
 dnl Bash completion.
 AC_ARG_WITH([bash-completions],
-    [AS_HELP_STRING([--without-bash-completions], [disable installing bash completions @<:@default=check@:>@])],
-    [],
-    [: m4_divert_text([DEFAULTS], [with_readline=check])])
+    [AS_HELP_STRING([--without-bash-completions], [disable installing bash completions @<:@default=check@:>@])])
 
 AS_IF([test "x$with_bash_completions" != xno], [
     PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0], [
@@ -791,7 +787,7 @@ AC_ARG_WITH([manpages],
 enable_pod=no
 AC_CHECK_PROGS([PERL], [perl], [])
 
-AS_IF([test "x$enable_manpages" != xno], [
+AS_IF([test "x$with_manpages" != xno], [
     AS_IF([test "x$PERL" != "x"],[
         AC_MSG_CHECKING([if we have perl Pod::Man and Pod::Simple])
         AS_IF([$PERL -MPod::Man -MPod::Simple -e 1 >&AS_MESSAGE_LOG_FD 2>&1],[
@@ -801,7 +797,7 @@ AS_IF([test "x$enable_manpages" != xno], [
     ])
 ])
 
-AS_IF([test "x$enable_pod" = xno && test "x$enable_manpages" = xyes], [
+AS_IF([test "x$enable_pod" = xno && test "x$with_manpages" = xyes], [
     AC_MSG_ERROR([man-pages requested but required packages not found])
 ])
 
