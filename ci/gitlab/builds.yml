@@ -377,6 +377,7 @@ x86_64-freebsd-13:
     GOLANG: skip
     INSTALL_COMMAND: pkg install -y
     NAME: freebsd-13
+    PERL: skip
     UPDATE_COMMAND: pkg update
     UPGRADE_COMMAND: pkg upgrade -y
 
@@ -392,6 +393,7 @@ x86_64-freebsd-current:
     GOLANG: skip
     INSTALL_COMMAND: pkg install -y
     NAME: freebsd-current
+    PERL: skip
     UPDATE_COMMAND: pkg update
     UPGRADE_COMMAND: pkg upgrade -y
 

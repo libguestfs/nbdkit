@@ -87,12 +87,14 @@ targets:
       - arch: x86_64
         variables:
           GOLANG: skip
+          PERL: skip
 
   freebsd-current:
     jobs:
       - arch: x86_64
         variables:
           GOLANG: skip
+          PERL: skip
 
   opensuse-leap-153: x86_64
 
