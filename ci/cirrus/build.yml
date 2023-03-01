@@ -9,6 +9,9 @@ env:
   PKG_CONFIG_PATH: "@PKG_CONFIG_PATH@"
   PYTHON: "@PYTHON@"
   MAKE: "@MAKE@"
+  PERL: "@PERL@"
+  GOLANG: "@GOLANG@"
+  RUST: "@RUST@"
 
 build_task:
   install_script:
