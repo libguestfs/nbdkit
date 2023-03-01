@@ -1097,7 +1097,7 @@ libvixDiskLib_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_builddir)/include \
 	$(NULL)
-libvixDiskLib_la_CXXFLAGS = $(WARNINGS_CFLAGS)
+libvixDiskLib_la_CFLAGS = $(WARNINGS_CFLAGS)
 # For use of the -rpath option, see:
 # https://lists.gnu.org/archive/html/libtool/2007-07/msg00067.html
 libvixDiskLib_la_LDFLAGS = \

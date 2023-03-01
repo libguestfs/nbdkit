@@ -1,5 +1,5 @@
 /* nbdkit
- * Copyright (C) 2018-2020 Red Hat Inc.
+ * Copyright (C) 2018-2023 Red Hat Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -100,7 +100,7 @@ static struct setting settings[] = {
   { "user-agent",          "user_agent",          pack.user_agent,
     STRING },
 };
-static libtorrent::alert_category_t alerts =
+static libtorrent::alert_category_t alert_cats =
     libtorrent::alert_category::error
   | libtorrent::alert_category::piece_progress
   | libtorrent::alert_category::status
@@ -282,7 +282,7 @@ torrent_config_complete (void)
   pack.set_bool (pack.strict_end_game_mode, false);
   pack.set_bool (pack.announce_to_all_trackers, true);
   pack.set_bool (pack.announce_to_all_tiers, true);
-  pack.set_int (pack.alert_mask, alerts);
+  pack.set_int (pack.alert_mask, alert_cats);
 
   return 0;
 }
@@ -359,13 +359,14 @@ handle_alert (libtorrent::alert *alert)
 
   nbdkit_debug ("torrent: %s", alert->message().c_str());
 
-  if (metadata_received_alert *p = alert_cast<metadata_received_alert>(alert)) {
-    handle = p->handle;
+  if (metadata_received_alert *p1 =
+      alert_cast<metadata_received_alert>(alert)) {
+    handle = p1->handle;
     got_metadata ();
   }
 
-  else if (add_torrent_alert *p = alert_cast<add_torrent_alert>(alert)) {
-    handle = p->handle;
+  else if (add_torrent_alert *p2 = alert_cast<add_torrent_alert>(alert)) {
+    handle = p2->handle;
     if (handle.status().has_metadata)
       got_metadata ();
   }
