@@ -64,11 +64,10 @@ test_int64_vector (void)
 {
   int64_vector v = empty_vector;
   size_t i;
-  int r;
   int64_t tmp, *p;
 
   for (i = 0; i < 10; ++i) {
-    r = int64_vector_insert (&v, i, 0);
+    int r = int64_vector_insert (&v, i, 0);
     assert (r == 0);
   }
 
