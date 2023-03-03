@@ -1013,8 +1013,7 @@ free_interns (void)
   struct connection *conn = threadlocal_get_conn ();
   string_vector *list = conn ? &conn->interns : &global_interns;
 
-  string_vector_iter (list, (void *) free);
-  string_vector_reset (list);
+  string_vector_empty (list);
 }
 
 static const char *

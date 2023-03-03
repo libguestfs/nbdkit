@@ -128,8 +128,7 @@ make_iso (void)
 static void
 iso_unload (void)
 {
-  string_vector_iter (&dirs, (void *) free);
-  free (dirs.ptr);
+  string_vector_empty (&dirs);
 
   if (fd >= 0)
     close (fd);

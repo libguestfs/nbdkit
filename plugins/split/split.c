@@ -64,8 +64,7 @@ static pthread_mutex_t lseek_lock = PTHREAD_MUTEX_INITIALIZER;
 static void
 split_unload (void)
 {
-  string_vector_iter (&filenames, (void *) free);
-  free (filenames.ptr);
+  string_vector_empty (&filenames);
 }
 
 static int

@@ -111,7 +111,6 @@ copy_environ (char **env, ...)
   return ret.ptr;
 
  error:
-  string_vector_iter (&ret, (void *) free);
-  free (ret.ptr);
+  string_vector_empty (&ret);
   return NULL;
 }
