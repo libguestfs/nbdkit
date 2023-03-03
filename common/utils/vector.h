@@ -52,7 +52,7 @@
 /* Use of this macro defines a new type called ‘name’ containing an
  * extensible vector of ‘type’ elements.  For example:
  *
- *   DEFINE_VECTOR_TYPE(string_vector, char *)
+ *   DEFINE_VECTOR_TYPE (string_vector, char *)
  *
  * defines a new type called ‘string_vector’ as a vector of ‘char *’.
  * You can create variables of this type:
@@ -94,7 +94,7 @@
    * allocated and capacity is increased, but the vector length is      \
    * not increased and the new elements are not initialized.            \
    */                                                                   \
-  static inline int __attribute__((__unused__))                         \
+  static inline int __attribute__ ((__unused__))                        \
   name##_reserve (name *v, size_t n)                                    \
   {                                                                     \
     return generic_vector_reserve ((struct generic_vector *)v, n,       \
@@ -104,7 +104,7 @@
   /* Same as _reserve, but the allocation will be page aligned.  Note   \
    * that the machine page size must be divisible by sizeof (type).     \
    */                                                                   \
-  static inline int __attribute__((__unused__))                         \
+  static inline int __attribute__ ((__unused__))                        \
   name##_reserve_page_aligned (name *v, size_t n)                       \
   {                                                                     \
     return generic_vector_reserve_page_aligned ((struct generic_vector *)v, \
@@ -112,7 +112,7 @@
   }                                                                     \
                                                                         \
   /* Insert at i'th element.  i=0 => beginning  i=len => append */      \
-  static inline int __attribute__((__unused__))                         \
+  static inline int __attribute__ ((__unused__))                        \
   name##_insert (name *v, type elem, size_t i)                          \
   {                                                                     \
     assert (i <= v->len);                                               \
@@ -126,14 +126,14 @@
   }                                                                     \
                                                                         \
   /* Append a new element to the end of the vector. */                  \
-  static inline int __attribute__((__unused__))                         \
+  static inline int __attribute__ ((__unused__))                        \
   name##_append (name *v, type elem)                                    \
   {                                                                     \
     return name##_insert (v, elem, v->len);                             \
   }                                                                     \
                                                                         \
   /* Remove i'th element.  i=0 => beginning  i=len-1 => end */          \
-  static inline void __attribute__((__unused__))                        \
+  static inline void __attribute__ ((__unused__))                       \
   name##_remove (name *v, size_t i)                                     \
   {                                                                     \
     assert (i < v->len);                                                \
@@ -142,7 +142,7 @@
   }                                                                     \
                                                                         \
   /* Remove all elements and deallocate the vector. */                  \
-  static inline void __attribute__((__unused__))                        \
+  static inline void __attribute__ ((__unused__))                       \
   name##_reset (name *v)                                                \
   {                                                                     \
     free (v->ptr);                                                      \
@@ -151,7 +151,7 @@
   }                                                                     \
                                                                         \
   /* Iterate over the vector, calling f() on each element. */           \
-  static inline void __attribute__((__unused__))                        \
+  static inline void __attribute__ ((__unused__))                       \
   name##_iter (name *v, void (*f) (type elem))                          \
   {                                                                     \
     size_t i;                                                           \
@@ -160,7 +160,7 @@
   }                                                                     \
                                                                         \
   /* Sort the elements of the vector. */                                \
-  static inline void __attribute__((__unused__))                        \
+  static inline void __attribute__ ((__unused__))                       \
   name##_sort (name *v,                                                 \
                int (*compare) (const type *p1, const type *p2))         \
   {                                                                     \
@@ -170,7 +170,7 @@
   /* Search for an exactly matching element in the vector using a       \
    * binary search.  Returns a pointer to the element or NULL.          \
    */                                                                   \
-  static inline type * __attribute__((__unused__))                      \
+  static inline type * __attribute__ ((__unused__))                     \
   name##_search (const name *v, const void *key,                        \
                  int (*compare) (const void *key, const type *v))       \
   {                                                                     \
@@ -179,7 +179,7 @@
   }                                                                     \
                                                                         \
   /* Make a new vector with the same elements. */                       \
-  static inline int __attribute__((__unused__))                         \
+  static inline int __attribute__ ((__unused__))                        \
   name##_duplicate (name *v, name *copy)                                \
   {                                                                     \
     /* Note it's allowed for v and copy to be the same pointer. */      \

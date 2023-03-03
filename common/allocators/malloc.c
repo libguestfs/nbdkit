@@ -55,7 +55,7 @@
  * malloc, with optional mlock.
  */
 
-DEFINE_VECTOR_TYPE(bytearray, uint8_t);
+DEFINE_VECTOR_TYPE (bytearray, uint8_t);
 
 struct m_alloc {
   struct allocator a;           /* Must come first. */
@@ -315,7 +315,7 @@ static struct allocator_functions functions = {
   .extents = m_alloc_extents,
 };
 
-static void register_malloc (void) __attribute__((constructor));
+static void register_malloc (void) __attribute__ ((constructor));
 
 static void
 register_malloc (void)

@@ -54,7 +54,7 @@ static int64_t size = 0;        /* Size of the disk in bytes. */
 static uint32_t seed;           /* Random seed. */
 static double percent = 10;     /* Percentage of data. */
 static uint64_t runlength =     /* Expected average run length of data (bytes)*/
-  UINT64_C(16*1024*1024);
+  UINT64_C (16*1024*1024);
 static int random_content;      /* false: Repeat same byte  true: Random bytes*/
 
 /* We need to store 1 bit per block.  Using a 4K block size means we
@@ -568,4 +568,4 @@ static struct nbdkit_plugin plugin = {
   .errno_is_preserved = 1,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

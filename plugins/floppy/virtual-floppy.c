@@ -140,8 +140,8 @@ create_virtual_floppy (const char *dir, const char *label, uint64_t size,
 
   if (size > 0) {
     uint64_t data_size = size - (2080 * SECTOR_SIZE);
-    data_size = data_size - 2 * DIV_ROUND_UP((data_size / CLUSTER_SIZE + 2) * 4,
-                                             CLUSTER_SIZE) * CLUSTER_SIZE;
+    data_size = data_size - 2 * DIV_ROUND_UP ((data_size / CLUSTER_SIZE + 2) * 4,
+                                              CLUSTER_SIZE) * CLUSTER_SIZE;
     if (data_used_size > data_size) {
       nbdkit_error ("filesystem is larger than \"size\" bytes");
       return -1;
@@ -337,12 +337,12 @@ visit (const char *dir, struct virtual_floppy *floppy)
   closedir (DIR);
  error1:
   err = errno;
-#if defined(__GNUC__) && __GNUC__ >= 5
+#if defined (__GNUC__) && __GNUC__ >= 5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
 #endif
   chdir (origdir);
-#if defined(__GNUC__) && __GNUC__ >= 5
+#if defined (__GNUC__) && __GNUC__ >= 5
 #pragma GCC diagnostic pop
 #endif
   errno = err;

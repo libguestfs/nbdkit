@@ -711,7 +711,7 @@ nbdkit_nanosleep (unsigned sec, unsigned nsec)
   /* Block all signals to this thread during the poll, so we don't
    * have to worry about EINTR
    */
-  if (sigfillset(&all))
+  if (sigfillset (&all))
     abort ();
   switch (ppoll (fds, ARRAY_SIZE (fds), &ts, &all)) {
   case -1:
@@ -826,8 +826,8 @@ nbdkit_peer_name (struct sockaddr *addr, socklen_t *addrlen)
   return 0;
 }
 
-#if defined(SO_PEERCRED) && \
-  (defined(HAVE_STRUCT_UCRED_UID) || defined(HAVE_STRUCT_SOCKPEERCRED_UID))
+#if defined (SO_PEERCRED) && \
+  (defined (HAVE_STRUCT_UCRED_UID) || defined (HAVE_STRUCT_SOCKPEERCRED_UID))
 
 #define GET_PEERCRED_DEFINED 1
 

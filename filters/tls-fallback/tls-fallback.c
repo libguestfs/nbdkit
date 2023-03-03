@@ -243,4 +243,4 @@ static struct nbdkit_filter filter = {
   .pread              = tls_fallback_pread,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

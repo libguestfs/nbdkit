@@ -75,32 +75,32 @@ struct allocator_functions {
    * nor does it implement bounds checking.
    */
   int (*set_size_hint) (struct allocator *a, uint64_t size)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
   /* Read bytes from [offset, offset+count-1] and copy into buf.
    */
   int (*read) (struct allocator *a, void *buf,
                uint64_t count, uint64_t offset)
-  __attribute__((__nonnull__ (1, 2)));
+  __attribute__ ((__nonnull__ (1, 2)));
 
   /* Write bytes from buf to [offset, offset+count-1].  Because this
    * can allocate memory, it can fail (returning -1).
    */
   int (*write) (struct allocator *a, const void *buf,
                 uint64_t count, uint64_t offset)
-  __attribute__((__nonnull__ (1, 2)));
+  __attribute__ ((__nonnull__ (1, 2)));
 
   /* Fill range [offset, offset+count-1] with a single byte ‘c’.
    * If c == '\0', this is the same as .zero below.
    */
   int (*fill) (struct allocator *a, char c, uint64_t count, uint64_t offset)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
   /* Zero range [offset, offset+count-1].  For all allocators zero and
    * trim are the same operation.
    */
   int (*zero) (struct allocator *a, uint64_t count, uint64_t offset)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
   /* Blit (copy) between two allocators.  Copy count bytes from
    * a1.[offset1, offset1+count-1] to a2.[offset2, offset2+count-1].
@@ -114,13 +114,13 @@ struct allocator_functions {
    */
   int (*blit) (struct allocator *a1, struct allocator *a2,
                uint64_t count, uint64_t offset1, uint64_t offset2)
-  __attribute__((__nonnull__ (1, 2)));
+  __attribute__ ((__nonnull__ (1, 2)));
 
   /* Return information about allocated pages and holes. */
   int (*extents) (struct allocator *a,
                   uint64_t count, uint64_t offset,
                   struct nbdkit_extents *extents)
-  __attribute__((__nonnull__ (1, 4)));
+  __attribute__ ((__nonnull__ (1, 4)));
 };
 
 struct allocator {
@@ -144,10 +144,10 @@ struct allocator {
  * On error, calls nbdkit_error and returns NULL.
  */
 extern struct allocator *create_allocator (const char *type, bool debug)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 #define CLEANUP_FREE_ALLOCATOR \
-  __attribute__((cleanup (cleanup_free_allocator)))
+  __attribute__ ((cleanup (cleanup_free_allocator)))
 extern void cleanup_free_allocator (struct allocator **ap);
 
 #endif /* NBDKIT_ALLOCATOR_H */

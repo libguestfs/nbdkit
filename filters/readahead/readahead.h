@@ -46,7 +46,7 @@ struct command {
   uint64_t offset;
   uint32_t count;
 };
-DEFINE_VECTOR_TYPE(command_queue, struct command);
+DEFINE_VECTOR_TYPE (command_queue, struct command);
 
 struct bgthread_ctrl {
   command_queue cmds;           /* Command queue. */

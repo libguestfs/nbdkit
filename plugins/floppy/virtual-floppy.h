@@ -39,7 +39,7 @@
 #include "regions.h"
 #include "vector.h"
 
-DEFINE_VECTOR_TYPE(idxs, size_t);
+DEFINE_VECTOR_TYPE (idxs, size_t);
 
 struct partition_entry {
   uint8_t bootable;             /* 0x00 or 0x80 if bootable */
@@ -48,7 +48,7 @@ struct partition_entry {
   uint8_t chs2[3];              /* always set to chs_too_large */
   uint32_t start_sector;        /* 2048 */
   uint32_t num_sectors;
-} __attribute__((packed));
+} __attribute__ ((packed));
 
 struct bootsector {
   uint8_t jmp_insn[3];
@@ -91,7 +91,7 @@ struct bootsector {
   struct partition_entry partition[4]; /* 0x01BE - partition table */
 
   uint8_t boot_signature[2];           /* 0x01FE - 0x55 0xAA */
-} __attribute__((packed));
+} __attribute__ ((packed));
 
 struct fsinfo {
   uint8_t signature[4];         /* 0x52 0x52 0x61 0x41 "RRaA" */
@@ -101,7 +101,7 @@ struct fsinfo {
   uint32_t last_free_cluster;
   uint8_t reserved2[12];
   uint8_t signature3[4];        /* 0x00 0x00 0x55 0xAA */
-} __attribute__((packed));
+} __attribute__ ((packed));
 
 struct file {
   char *name;                   /* Filename. */
@@ -111,7 +111,7 @@ struct file {
   uint32_t nr_clusters;         /* Number of clusters. */
 };
 
-DEFINE_VECTOR_TYPE(files, struct file);
+DEFINE_VECTOR_TYPE (files, struct file);
 
 /* On disk directory entry (non-LFN). */
 struct dir_entry {
@@ -133,9 +133,9 @@ struct dir_entry {
   uint16_t mdate;               /* 0x18 */
   uint16_t cluster_lo;          /* 0x1A - first cluster (low word) */
   uint32_t size;                /* 0x1C - file size */
-} __attribute__((packed));
+} __attribute__ ((packed));
 
-DEFINE_VECTOR_TYPE(dir_entries, struct dir_entry);
+DEFINE_VECTOR_TYPE (dir_entries, struct dir_entry);
 
 /* On disk directory entry (LFN). */
 struct lfn_entry {
@@ -147,7 +147,7 @@ struct lfn_entry {
   uint16_t name2[6];            /* next six UTF-16LE characters */
   uint16_t cluster_lo;          /* 0x1A - always 0x0000 */
   uint16_t name3[2];            /* last two UTF-16LE characters */
-} __attribute__((packed));
+} __attribute__ ((packed));
 
 struct dir {
   size_t pdi;                   /* Link to parent directory (for root, 0). */
@@ -170,7 +170,7 @@ struct dir {
   dir_entries table;
 };
 
-DEFINE_VECTOR_TYPE(dirs, struct dir);
+DEFINE_VECTOR_TYPE (dirs, struct dir);
 
 struct virtual_floppy {
   /* Virtual disk layout. */
@@ -228,20 +228,20 @@ struct virtual_floppy {
 #define CLUSTER_SIZE (SECTOR_SIZE * SECTORS_PER_CLUSTER)
 
 extern void init_virtual_floppy (struct virtual_floppy *floppy)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int create_virtual_floppy (const char *dir, const char *label,
                                   uint64_t size,
                                   struct virtual_floppy *floppy)
-  __attribute__((__nonnull__ (1, 2, 4)));
+  __attribute__ ((__nonnull__ (1, 2, 4)));
 extern void free_virtual_floppy (struct virtual_floppy *floppy)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int create_directory (size_t di, const char *label,
                              struct virtual_floppy *floppy)
-  __attribute__((__nonnull__ (2, 3)));
+  __attribute__ ((__nonnull__ (2, 3)));
 extern int update_directory_first_cluster (size_t di,
                                            struct virtual_floppy *floppy)
-  __attribute__((__nonnull__ (2)));
+  __attribute__ ((__nonnull__ (2)));
 extern void pad_string (const char *label, size_t n, uint8_t *out)
-  __attribute__((__nonnull__ (1, 3)));
+  __attribute__ ((__nonnull__ (1, 3)));
 
 #endif /* NBDKIT_VIRTUAL_FLOPPY_H */

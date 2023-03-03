@@ -395,4 +395,4 @@ static struct nbdkit_filter filter = {
   .extents           = policy_extents,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

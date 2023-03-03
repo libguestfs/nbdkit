@@ -50,8 +50,8 @@
 
 #define APPENDS 1000000
 
-DEFINE_VECTOR_TYPE(int64_vector, int64_t);
-DEFINE_VECTOR_TYPE(uint32_vector, uint32_t);
+DEFINE_VECTOR_TYPE (int64_vector, int64_t);
+DEFINE_VECTOR_TYPE (uint32_vector, uint32_t);
 
 static int
 compare (const int64_t *a, const int64_t *b)

@@ -78,13 +78,13 @@ struct handle {
   char *name; /* Used when byname==true to assign group */
   struct group *group; /* All connections grouped with this one */
 };
-DEFINE_VECTOR_TYPE(conns_vector, struct handle *);
+DEFINE_VECTOR_TYPE (conns_vector, struct handle *);
 struct group {
   conns_vector conns;
   char *name;
   bool dirty; /* True if any connection in group is dirty */
 };
-DEFINE_VECTOR_TYPE(group_vector, struct group *);
+DEFINE_VECTOR_TYPE (group_vector, struct group *);
 static group_vector groups = empty_vector;
 
 /* Accept 'multi-conn-mode=mode', 'multi-conn-track-dirty=level', and
@@ -524,4 +524,4 @@ static struct nbdkit_filter filter = {
   .flush             = multi_conn_flush,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

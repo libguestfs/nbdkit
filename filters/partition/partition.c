@@ -305,4 +305,4 @@ static struct nbdkit_filter filter = {
   .cache              = partition_cache,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

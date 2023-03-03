@@ -107,4 +107,4 @@ static struct nbdkit_filter filter = {
   .cache             = nocache_cache,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

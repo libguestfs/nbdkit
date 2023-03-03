@@ -36,7 +36,7 @@
 #include "vector.h"
 
 struct key_value { char *key, *value; };
-DEFINE_VECTOR_TYPE(allocator_parameters, struct key_value);
+DEFINE_VECTOR_TYPE (allocator_parameters, struct key_value);
 
 extern void register_allocator (const struct allocator_functions *);
 

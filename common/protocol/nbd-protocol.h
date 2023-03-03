@@ -40,8 +40,8 @@
  * these structures.
  */
 
-#if defined(__GNUC__) || defined(__clang__)
-#define NBD_ATTRIBUTE_PACKED __attribute__((__packed__))
+#if defined (__GNUC__) || defined (__clang__)
+#define NBD_ATTRIBUTE_PACKED __attribute__ ((__packed__))
 #else
 #error "Please port to your compiler's notion of a packed struct"
 #endif
@@ -58,8 +58,8 @@ struct nbd_old_handshake {
   char zeroes[124];           /* must be sent as zero bytes */
 } NBD_ATTRIBUTE_PACKED;
 
-#define NBD_MAGIC       UINT64_C(0x4e42444d41474943) /* ASCII "NBDMAGIC" */
-#define NBD_OLD_VERSION UINT64_C(0x0000420281861253)
+#define NBD_MAGIC       UINT64_C (0x4e42444d41474943) /* ASCII "NBDMAGIC" */
+#define NBD_OLD_VERSION UINT64_C (0x0000420281861253)
 
 /* New-style handshake. */
 struct nbd_new_handshake {
@@ -68,7 +68,7 @@ struct nbd_new_handshake {
   uint16_t gflags;            /* global flags */
 } NBD_ATTRIBUTE_PACKED;
 
-#define NBD_NEW_VERSION UINT64_C(0x49484156454F5054) /* ASCII "IHAVEOPT" */
+#define NBD_NEW_VERSION UINT64_C (0x49484156454F5054) /* ASCII "IHAVEOPT" */
 
 /* New-style handshake option (sent by the client to us). */
 struct nbd_new_option {
@@ -95,7 +95,7 @@ struct nbd_fixed_new_option_reply {
   uint32_t replylen;
 } NBD_ATTRIBUTE_PACKED;
 
-#define NBD_REP_MAGIC UINT64_C(0x3e889045565a9)
+#define NBD_REP_MAGIC UINT64_C (0x3e889045565a9)
 
 /* Global flags. */
 #define NBD_FLAG_FIXED_NEWSTYLE    (1 << 0)

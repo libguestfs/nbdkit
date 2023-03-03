@@ -185,4 +185,4 @@ static struct nbdkit_filter filter = {
   .zero              = nozero_zero,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

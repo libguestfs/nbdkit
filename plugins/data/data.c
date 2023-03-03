@@ -38,7 +38,7 @@
 #include <inttypes.h>
 #include <string.h>
 
-#if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
+#if defined (HAVE_GNUTLS) && defined (HAVE_GNUTLS_BASE64_DECODE2)
 #include <gnutls/gnutls.h>
 #endif
 
@@ -70,7 +70,7 @@ NBDKIT_DLL_PUBLIC int data_debug_dir;
 
 /* Collect extra parameters for data $VARs. */
 struct param { const char *key; const char *value; };
-DEFINE_VECTOR_TYPE(param_list, struct param);
+DEFINE_VECTOR_TYPE (param_list, struct param);
 static param_list params;
 
 /* On unload, free the sparse array. */
@@ -85,7 +85,7 @@ data_unload (void)
 static int
 read_base64 (const char *value, uint64_t *size_ret)
 {
-#if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
+#if defined (HAVE_GNUTLS) && defined (HAVE_GNUTLS_BASE64_DECODE2)
   gnutls_datum_t in, out;
   int err;
 
@@ -242,7 +242,7 @@ data_get_ready (void)
 static void
 data_dump_plugin (void)
 {
-#if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
+#if defined (HAVE_GNUTLS) && defined (HAVE_GNUTLS_BASE64_DECODE2)
   printf ("data_base64=yes\n");
 #endif
 #ifdef HAVE_MLOCK
@@ -386,4 +386,4 @@ static struct nbdkit_plugin plugin = {
   .errno_is_preserved = 1,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

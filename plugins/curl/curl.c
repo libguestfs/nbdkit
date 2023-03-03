@@ -554,9 +554,9 @@ curl_close (void *handle)
 /* Calls get_handle() ... put_handle() to get a handle for the length
  * of the current scope.
  */
-#define GET_HANDLE_FOR_CURRENT_SCOPE(ch)                        \
+#define GET_HANDLE_FOR_CURRENT_SCOPE(ch) \
   CLEANUP_PUT_HANDLE struct curl_handle *ch = get_handle ();
-#define CLEANUP_PUT_HANDLE __attribute__((cleanup (cleanup_put_handle)))
+#define CLEANUP_PUT_HANDLE __attribute__ ((cleanup (cleanup_put_handle)))
 static void
 cleanup_put_handle (void *chp)
 {
@@ -694,4 +694,4 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = curl_pwrite,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

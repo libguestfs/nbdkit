@@ -76,11 +76,11 @@ struct virtual_disk {
 
 /* virtual-disk.c */
 extern void init_virtual_disk (struct virtual_disk *disk)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int create_virtual_disk (struct virtual_disk *disk)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern void free_virtual_disk (struct virtual_disk *disk)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 /* partition-gpt.c */
 extern int create_partition_table (struct virtual_disk *disk);

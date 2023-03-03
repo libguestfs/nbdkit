@@ -104,7 +104,7 @@ reclaim (int fd, struct bitmap *bm)
     nbdkit_debug ("cache: fstat: %m");
     return;
   }
-  cache_allocated = statbuf.st_blocks * UINT64_C(512);
+  cache_allocated = statbuf.st_blocks * UINT64_C (512);
 
   if (reclaiming) {
     /* Keep reclaiming until the cache size drops below the low threshold. */

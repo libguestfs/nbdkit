@@ -41,7 +41,7 @@
  * macro isn't present then Curl is very old.
  */
 #ifdef CURL_AT_LEAST_VERSION
-#if CURL_AT_LEAST_VERSION(7, 55, 0)
+#if CURL_AT_LEAST_VERSION (7, 55, 0)
 #define HAVE_CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
 #endif
 #endif

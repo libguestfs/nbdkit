@@ -64,8 +64,8 @@ NBDKIT_DLL_PUBLIC int vddk_debug_datapath = 1;
 /* For each VDDK API define a global variable.  These globals are
  * initialized when the plugin is loaded (by vddk_get_ready).
  */
-#define STUB(fn,ret,args) ret (*fn) args
-#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
+#define STUB(fn, ret, args) ret (*fn) args
+#define OPTIONAL_STUB(fn, ret, args) STUB (fn, ret, args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
@@ -463,13 +463,13 @@ load_library (bool load_error_is_fatal)
   assert (library_version >= 6);
 
   /* Load symbols. */
-#define STUB(fn,ret,args)                                         \
+#define STUB(fn, ret, args)                                       \
   do {                                                            \
     fn = dlsym (dl, #fn);                                         \
     if (fn == NULL)                                               \
       missing_required_symbol (#fn);                              \
   } while (0)
-#define OPTIONAL_STUB(fn,ret,args) fn = dlsym (dl, #fn)
+#define OPTIONAL_STUB(fn, ret, args) fn = dlsym (dl, #fn)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
@@ -592,7 +592,7 @@ vddk_dump_plugin (void)
   if (library_version > 0)
     printf ("vddk_library_version=%d\n", library_version);
 
-#if defined(HAVE_DLADDR)
+#if defined (HAVE_DLADDR)
   /* It would be nice to print the version of VDDK from the shared
    * library, but VDDK does not provide it.  Instead we can get the
    * path to the library using the glibc extension dladdr, and then
@@ -613,8 +613,8 @@ vddk_dump_plugin (void)
    * ones.  That is so if we update the baseline VDDK in future and
    * make optional into required APIs, the output doesn't change.
    */
-#define STUB(fn,ret,args) if (fn != NULL) printf ("%s=1\n", #fn);
-#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
+#define STUB(fn, ret, args) if (fn != NULL) printf ("%s=1\n", #fn);
+#define OPTIONAL_STUB(fn, ret, args) STUB (fn, ret, args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
@@ -1051,4 +1051,4 @@ static struct nbdkit_plugin plugin = {
   .extents           = vddk_extents,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

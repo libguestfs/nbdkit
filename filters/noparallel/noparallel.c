@@ -81,4 +81,4 @@ static struct nbdkit_filter filter = {
   .thread_model      = noparallel_thread_model,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

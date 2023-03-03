@@ -44,7 +44,7 @@
  * https://sourceware.org/bugzilla/show_bug.cgi?id=19920
  * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69908
  */
-static inline const char * __attribute__((__nonnull__ (1)))
+static inline const char * __attribute__ ((__nonnull__ (1)))
 next_non_zero (const char *buffer, size_t size)
 {
   size_t i;

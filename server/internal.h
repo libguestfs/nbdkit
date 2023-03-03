@@ -56,7 +56,7 @@
 /* Define unlikely macro, but only for GCC.  These are used to move
  * debug and error handling code out of hot paths.
  */
-#if defined(__GNUC__)
+#if defined (__GNUC__)
 #define unlikely(x) __builtin_expect (!!(x), 0)
 #define if_verbose if (unlikely (verbose))
 #else
@@ -64,7 +64,7 @@
 #define if_verbose if (verbose)
 #endif
 
-#if defined(__SANITIZE_ADDRESS__)
+#if defined (__SANITIZE_ADDRESS__)
 # define DO_DLCLOSE 0
 #elif ENABLE_LIBFUZZER
 /* XXX This causes dlopen in the server to leak during fuzzing.
@@ -92,7 +92,7 @@
 
 #define container_of(ptr, type, member) ({                       \
       const typeof (((type *) 0)->member) *__mptr = (ptr);       \
-      (type *) ((char *) __mptr - offsetof(type, member));       \
+      (type *) ((char *) __mptr - offsetof (type, member));      \
     })
 
 /* Maximum read or write request that we will handle. */
@@ -194,10 +194,10 @@ enum {
 };
 
 typedef int (*connection_recv_function) (void *buf, size_t len)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 typedef int (*connection_send_function) (const void *buf, size_t len,
                                          int flags)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 typedef void (*connection_close_function) (int how);
 
 /* struct context stores data per connection and backend.  Primarily
@@ -287,7 +287,7 @@ extern bool connection_set_status (conn_status value);
 extern int protocol_handshake (void);
 extern int protocol_common_open (uint64_t *exportsize, uint16_t *flags,
                                  const char *exportname)
-  __attribute__((__nonnull__ (1, 2, 3)));
+  __attribute__ ((__nonnull__ (1, 2, 3)));
 
 /* protocol-handshake-oldstyle.c */
 extern int protocol_handshake_oldstyle (void);
@@ -323,16 +323,16 @@ extern void log_verror (const char *fs, va_list args);
 
 /* log-*.c */
 extern void log_stderr_verror (const char *fs, va_list args)
-  ATTRIBUTE_FORMAT_PRINTF(1, 0);
+  ATTRIBUTE_FORMAT_PRINTF (1, 0);
 extern void log_syslog_verror (const char *fs, va_list args)
-  ATTRIBUTE_FORMAT_PRINTF(1, 0);
+  ATTRIBUTE_FORMAT_PRINTF (1, 0);
 
 /* vfprintf.c */
 #if !HAVE_VFPRINTF_PERCENT_M
 #include <stdio.h>
 #define vfprintf replace_vfprintf
 extern int replace_vfprintf (FILE *f, const char *fmt, va_list args)
-  __attribute__((__format__ (printf, 2, 0)));
+  __attribute__ ((__format__ (printf, 2, 0)));
 #endif
 
 /* backend.c */
@@ -420,18 +420,18 @@ struct backend {
 
 extern void backend_init (struct backend *b, struct backend *next, size_t index,
                           const char *filename, void *dl, const char *type)
-  __attribute__((__nonnull__ (1, 4, 5, 6)));
+  __attribute__ ((__nonnull__ (1, 4, 5, 6)));
 extern void backend_load (struct backend *b, const char *name,
                           void (*load) (void))
-  __attribute__((__nonnull__ (1 /* not 2 */)));
+  __attribute__ ((__nonnull__ (1 /* not 2 */)));
 extern void backend_unload (struct backend *b, void (*unload) (void))
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 extern int backend_list_exports (struct backend *b, int readonly,
                                  struct nbdkit_exports *exports)
-  __attribute__((__nonnull__ (1, 3)));
+  __attribute__ ((__nonnull__ (1, 3)));
 extern const char *backend_default_export (struct backend *b, int readonly)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 /* exportname is only valid for this call and almost certainly will be
  * freed on return of this function, so backends must save the
  * exportname if they need to refer to it later.
@@ -439,84 +439,84 @@ extern const char *backend_default_export (struct backend *b, int readonly)
 extern struct context *backend_open (struct backend *b,
                                      int readonly, const char *exportname,
                                      int shared)
-  __attribute__((__nonnull__ (1, 3)));
+  __attribute__ ((__nonnull__ (1, 3)));
 extern int backend_prepare (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_finalize (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern void backend_close (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern bool backend_valid_range (struct context *c,
                                  uint64_t offset, uint32_t count)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 extern const char *backend_export_description (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int64_t backend_get_size (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_block_size (struct context *c,
                                uint32_t *minimum, uint32_t *preferred,
                                uint32_t *maximum)
-  __attribute__((__nonnull__ (1, 2, 3, 4)));
+  __attribute__ ((__nonnull__ (1, 2, 3, 4)));
 extern int backend_can_write (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_can_flush (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_is_rotational (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_can_trim (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_can_zero (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_can_fast_zero (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_can_extents (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_can_fua (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_can_multi_conn (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern int backend_can_cache (struct context *c)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 extern int backend_pread (struct context *c,
                           void *buf, uint32_t count, uint64_t offset,
                           uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 2, 6)));
+  __attribute__ ((__nonnull__ (1, 2, 6)));
 extern int backend_pwrite (struct context *c,
                            const void *buf, uint32_t count, uint64_t offset,
                            uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 2, 6)));
+  __attribute__ ((__nonnull__ (1, 2, 6)));
 extern int backend_flush (struct context *c,
                           uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 3)));
+  __attribute__ ((__nonnull__ (1, 3)));
 extern int backend_trim (struct context *c,
                          uint32_t count, uint64_t offset, uint32_t flags,
                          int *err)
-  __attribute__((__nonnull__ (1, 5)));
+  __attribute__ ((__nonnull__ (1, 5)));
 extern int backend_zero (struct context *c,
                          uint32_t count, uint64_t offset, uint32_t flags,
                          int *err)
-  __attribute__((__nonnull__ (1, 5)));
+  __attribute__ ((__nonnull__ (1, 5)));
 extern int backend_extents (struct context *c,
                             uint32_t count, uint64_t offset, uint32_t flags,
                             struct nbdkit_extents *extents, int *err)
-  __attribute__((__nonnull__ (1, 5, 6)));
+  __attribute__ ((__nonnull__ (1, 5, 6)));
 extern int backend_cache (struct context *c,
                           uint32_t count, uint64_t offset,
                           uint32_t flags, int *err)
-  __attribute__((__nonnull__ (1, 5)));
+  __attribute__ ((__nonnull__ (1, 5)));
 
 /* plugins.c */
 extern struct backend *plugin_register (size_t index, const char *filename,
                                         void *dl, struct nbdkit_plugin *(*plugin_init) (void))
-  __attribute__((__nonnull__ (2, 3, 4)));
+  __attribute__ ((__nonnull__ (2, 3, 4)));
 
 /* filters.c */
 extern struct backend *filter_register (struct backend *next, size_t index,
                                         const char *filename, void *dl,
                                         struct nbdkit_filter *(*filter_init) (void))
-  __attribute__((__nonnull__ (1, 3, 4, 5)));
+  __attribute__ ((__nonnull__ (1, 3, 4, 5)));
 
 /* locks.c */
 extern unsigned thread_model;
@@ -530,18 +530,18 @@ extern void lock_unload (void);
 extern void unlock_unload (void);
 
 /* sockets.c */
-DEFINE_VECTOR_TYPE(sockets, int);
-extern void bind_unix_socket (sockets *) __attribute__((__nonnull__ (1)));
-extern void bind_tcpip_socket (sockets *) __attribute__((__nonnull__ (1)));
-extern void bind_vsock (sockets *) __attribute__((__nonnull__ (1)));
+DEFINE_VECTOR_TYPE (sockets, int);
+extern void bind_unix_socket (sockets *) __attribute__ ((__nonnull__ (1)));
+extern void bind_tcpip_socket (sockets *) __attribute__ ((__nonnull__ (1)));
+extern void bind_vsock (sockets *) __attribute__ ((__nonnull__ (1)));
 extern void accept_incoming_connections (const sockets *socks)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 /* threadlocal.c */
 extern void threadlocal_init (void);
 extern void threadlocal_new_server_thread (void);
 extern void threadlocal_set_name (const char *name)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern const char *threadlocal_get_name (void);
 extern void threadlocal_set_instance_num (size_t instance_num);
 extern size_t threadlocal_get_instance_num (void);
@@ -554,10 +554,10 @@ extern struct context *threadlocal_get_context (void);
 
 extern struct context *threadlocal_push_context (struct context *ctx);
 extern void threadlocal_pop_context (struct context **ctx);
-#define CLEANUP_CONTEXT_POP __attribute__((cleanup (threadlocal_pop_context)))
+#define CLEANUP_CONTEXT_POP __attribute__ ((cleanup (threadlocal_pop_context)))
 #define PUSH_CONTEXT_FOR_SCOPE(ctx)                                     \
   CLEANUP_CONTEXT_POP CLANG_UNUSED_VARIABLE_WORKAROUND                  \
-  struct context *NBDKIT_UNIQUE_NAME(_ctx) = threadlocal_push_context (ctx)
+  struct context *NBDKIT_UNIQUE_NAME (_ctx) = threadlocal_push_context (ctx)
 
 /* Macro which sets local variable struct connection *conn from
  * thread-local storage, asserting that it is non-NULL.  If you want

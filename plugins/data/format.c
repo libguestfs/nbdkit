@@ -85,7 +85,7 @@ substring (string s, size_t offset, size_t len)
 }
 
 typedef size_t node_id;         /* references a node in expr_table below */
-DEFINE_VECTOR_TYPE(node_ids, node_id);
+DEFINE_VECTOR_TYPE (node_ids, node_id);
 
 enum expr_type {
   EXPR_NULL = 0,              /* null expression, no effect */
@@ -151,7 +151,7 @@ struct expr {
  * explicitly, in particular because if the table hasn't yet been
  * allocated then there is no zeroth element).
  */
-DEFINE_VECTOR_TYPE(expr_list, expr_t);
+DEFINE_VECTOR_TYPE (expr_list, expr_t);
 static expr_list expr_table;
 
 /* Add the expression to the table, returning the node_id. */
@@ -1480,7 +1480,7 @@ exprs_can_combine (expr_t e0, expr_t e1, node_id *id_rtn)
     switch (e1.t) {
     case EXPR_BYTE:             /* byte byte => fill | string */
       if (e0.b == e1.b) {
-        *id_rtn = new_node (expr (EXPR_FILL, e0.b, UINT64_C(2)));
+        *id_rtn = new_node (expr (EXPR_FILL, e0.b, UINT64_C (2)));
       }
       else {
         if (string_append (&s, e0.b) == -1 ||

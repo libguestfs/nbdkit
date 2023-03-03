@@ -37,10 +37,10 @@
 
 #include "vector.h"
 
-DEFINE_VECTOR_TYPE(const_string_vector, const char *);
+DEFINE_VECTOR_TYPE (const_string_vector, const char *);
 
 /* This frees only the array. */
 #define CLEANUP_FREE_CONST_STRING_VECTOR \
-  __attribute__((cleanup (const_string_vector_reset)))
+  __attribute__ ((cleanup (const_string_vector_reset)))
 
 #endif /* CONST_STRING_VECTOR_H */

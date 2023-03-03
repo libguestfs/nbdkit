@@ -58,20 +58,20 @@
 
 #ifdef __HAIKU__
 #include <ByteOrder.h>
-#define htobe16(x) B_HOST_TO_BENDIAN_INT16(x)
-#define htole16(x) B_HOST_TO_LENDIAN_INT16(x)
-#define be16toh(x) B_BENDIAN_TO_HOST_INT16(x)
-#define le16toh(x) B_LENDIAN_TO_HOST_INT16(x)
+#define htobe16(x) B_HOST_TO_BENDIAN_INT16 (x)
+#define htole16(x) B_HOST_TO_LENDIAN_INT16 (x)
+#define be16toh(x) B_BENDIAN_TO_HOST_INT16 (x)
+#define le16toh(x) B_LENDIAN_TO_HOST_INT16 (x)
 
-#define htobe32(x) B_HOST_TO_BENDIAN_INT32(x)
-#define htole32(x) B_HOST_TO_LENDIAN_INT32(x)
-#define be32toh(x) B_BENDIAN_TO_HOST_INT32(x)
-#define le32toh(x) B_LENDIAN_TO_HOST_INT32(x)
+#define htobe32(x) B_HOST_TO_BENDIAN_INT32 (x)
+#define htole32(x) B_HOST_TO_LENDIAN_INT32 (x)
+#define be32toh(x) B_BENDIAN_TO_HOST_INT32 (x)
+#define le32toh(x) B_LENDIAN_TO_HOST_INT32 (x)
 
-#define htobe64(x) B_HOST_TO_BENDIAN_INT64(x)
-#define htole64(x) B_HOST_TO_LENDIAN_INT64(x)
-#define be64toh(x) B_BENDIAN_TO_HOST_INT64(x)
-#define le64toh(x) B_LENDIAN_TO_HOST_INT64(x)
+#define htobe64(x) B_HOST_TO_BENDIAN_INT64 (x)
+#define htole64(x) B_HOST_TO_LENDIAN_INT64 (x)
+#define be64toh(x) B_BENDIAN_TO_HOST_INT64 (x)
+#define le64toh(x) B_LENDIAN_TO_HOST_INT64 (x)
 #endif
 
 /* If we didn't define bswap_16, bswap_32 and bswap_64 already above,

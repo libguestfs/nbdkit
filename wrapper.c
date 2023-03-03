@@ -105,7 +105,7 @@ passthru (const char *s)
     abort ();
 }
 
-static void __attribute__((format (printf, 1, 2)))
+static void __attribute__ ((format (printf, 1, 2)))
 passthru_format (const char *fs, ...)
 {
   va_list args;
@@ -233,9 +233,9 @@ main (int argc, char *argv[])
 #endif
 
   /* Needed for plugins written in OCaml. */
-#if defined(WIN32)
+#if defined (WIN32)
 #define LD_LIBRARY_PATH "PATH"
-#elif defined(__APPLE__)
+#elif defined (__APPLE__)
 #define LD_LIBRARY_PATH "DYLD_LIBRARY_PATH"
 #else
 #define LD_LIBRARY_PATH "LD_LIBRARY_PATH"

@@ -272,4 +272,4 @@ static struct nbdkit_filter filter = {
   .zero              = checkwrite_trim_zero,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

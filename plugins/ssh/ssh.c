@@ -776,4 +776,4 @@ static struct nbdkit_plugin plugin = {
   .can_multi_conn    = ssh_can_multi_conn,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

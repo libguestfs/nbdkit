@@ -376,4 +376,4 @@ static struct nbdkit_filter filter = {
   .pread              = gzip_pread,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

@@ -56,7 +56,7 @@
 /* This constructor runs when the plugin loads, and initializes the
  * OCaml runtime, and lets the plugin set up its callbacks.
  */
-static void constructor (void) __attribute__((constructor));
+static void constructor (void) __attribute__ ((constructor));
 static void
 constructor (void)
 {

@@ -45,7 +45,7 @@
 #include "vector.h"
 
 /* The list of registered allocators. */
-DEFINE_VECTOR_TYPE(allocator_list, const struct allocator_functions *);
+DEFINE_VECTOR_TYPE (allocator_list, const struct allocator_functions *);
 static allocator_list allocators = empty_vector;
 
 void

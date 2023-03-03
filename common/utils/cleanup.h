@@ -44,20 +44,20 @@ extern "C" {
 
 /* Work around clang bug: https://bugs.llvm.org/show_bug.cgi?id=43482 */
 #ifdef __clang__
-#define CLANG_UNUSED_VARIABLE_WORKAROUND __attribute__((__unused__))
+#define CLANG_UNUSED_VARIABLE_WORKAROUND __attribute__ ((__unused__))
 #else
 #define CLANG_UNUSED_VARIABLE_WORKAROUND
 #endif
 
 /* cleanup.c */
 extern void cleanup_free (void *ptr);
-#define CLEANUP_FREE __attribute__((cleanup (cleanup_free)))
+#define CLEANUP_FREE __attribute__ ((cleanup (cleanup_free)))
 
 extern void cleanup_mutex_unlock (pthread_mutex_t **ptr);
-#define CLEANUP_MUTEX_UNLOCK __attribute__((cleanup (cleanup_mutex_unlock)))
+#define CLEANUP_MUTEX_UNLOCK __attribute__ ((cleanup (cleanup_mutex_unlock)))
 
-#define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex)                           \
-  ACQUIRE_LOCK_FOR_CURRENT_SCOPE_1((mutex), NBDKIT_UNIQUE_NAME(_lock))
+#define ACQUIRE_LOCK_FOR_CURRENT_SCOPE(mutex) \
+  ACQUIRE_LOCK_FOR_CURRENT_SCOPE_1 ((mutex), NBDKIT_UNIQUE_NAME (_lock))
 #define ACQUIRE_LOCK_FOR_CURRENT_SCOPE_1(mutex, lock)                   \
   CLEANUP_MUTEX_UNLOCK pthread_mutex_t *lock = mutex;                   \
   do {                                                                  \
@@ -66,10 +66,10 @@ extern void cleanup_mutex_unlock (pthread_mutex_t **ptr);
   } while (0)
 
 extern void cleanup_rwlock_unlock (pthread_rwlock_t **ptr);
-#define CLEANUP_RWLOCK_UNLOCK __attribute__((cleanup (cleanup_rwlock_unlock)))
+#define CLEANUP_RWLOCK_UNLOCK __attribute__ ((cleanup (cleanup_rwlock_unlock)))
 
-#define ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE(rwlock)                         \
-  ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE_1((rwlock), NBDKIT_UNIQUE_NAME(_lock))
+#define ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE(rwlock) \
+  ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE_1 ((rwlock), NBDKIT_UNIQUE_NAME (_lock))
 #define ACQUIRE_WRLOCK_FOR_CURRENT_SCOPE_1(rwlock, lock)                \
   CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *lock = rwlock;                \
   do {                                                                  \
@@ -77,8 +77,8 @@ extern void cleanup_rwlock_unlock (pthread_rwlock_t **ptr);
     assert (!_r);                                                       \
   } while (0)
 
-#define ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE(rwlock)                         \
-  ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE_1((rwlock), NBDKIT_UNIQUE_NAME(_lock))
+#define ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE(rwlock) \
+  ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE_1 ((rwlock), NBDKIT_UNIQUE_NAME (_lock))
 #define ACQUIRE_RDLOCK_FOR_CURRENT_SCOPE_1(rwlock, lock)                \
   CLEANUP_RWLOCK_UNLOCK pthread_rwlock_t *lock = rwlock;                \
   do {                                                                  \
@@ -89,10 +89,10 @@ extern void cleanup_rwlock_unlock (pthread_rwlock_t **ptr);
 /* cleanup-nbdkit.c */
 struct nbdkit_extents;
 extern void cleanup_extents_free (struct nbdkit_extents **ptr);
-#define CLEANUP_EXTENTS_FREE __attribute__((cleanup (cleanup_extents_free)))
+#define CLEANUP_EXTENTS_FREE __attribute__ ((cleanup (cleanup_extents_free)))
 struct nbdkit_exports;
 extern void cleanup_exports_free (struct nbdkit_exports **ptr);
-#define CLEANUP_EXPORTS_FREE __attribute__((cleanup (cleanup_exports_free)))
+#define CLEANUP_EXPORTS_FREE __attribute__ ((cleanup (cleanup_exports_free)))
 
 #ifdef __cplusplus
 } /* extern "C" */

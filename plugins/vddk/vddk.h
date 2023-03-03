@@ -80,8 +80,8 @@ extern int vddk_debug_extents;
 extern int vddk_debug_datapath;
 extern int vddk_debug_stats;
 
-#define STUB(fn,ret,args) extern ret (*fn) args
-#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
+#define STUB(fn, ret, args) extern ret (*fn) args
+#define OPTIONAL_STUB(fn, ret, args) STUB (fn, ret, args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
@@ -146,7 +146,7 @@ struct command {
   enum { SUBMITTED, SUCCEEDED, FAILED } status;
 };
 
-DEFINE_VECTOR_TYPE(command_queue, struct command *)
+DEFINE_VECTOR_TYPE (command_queue, struct command *)
 
 /* The per-connection handle. */
 struct vddk_handle {
@@ -181,8 +181,8 @@ struct vddk_stat {
   uint64_t bytes;               /* bytes transferred, datapath calls only */
 };
 extern pthread_mutex_t stats_lock;
-#define STUB(fn,ret,args) extern struct vddk_stat stats_##fn;
-#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
+#define STUB(fn, ret, args) extern struct vddk_stat stats_##fn;
+#define OPTIONAL_STUB(fn, ret, args) STUB (fn, ret, args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB

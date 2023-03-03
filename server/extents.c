@@ -56,7 +56,7 @@
 #define MAX_EXTENTS (1 * 1024 * 1024)
 
 /* Appendable list of extents. */
-DEFINE_VECTOR_TYPE(extents, struct nbdkit_extent);
+DEFINE_VECTOR_TYPE (extents, struct nbdkit_extent);
 
 struct nbdkit_extents {
   extents extents;
@@ -221,14 +221,14 @@ nbdkit_extents_aligned (struct context *next_c,
   size_t i;
   struct nbdkit_extent *e, *e2;
 
-  assert (IS_ALIGNED(count | offset, align));
+  assert (IS_ALIGNED (count | offset, align));
 
   /* Perform an initial query, then scan for the first unaligned extent. */
   if (next->extents (next_c, count, offset, flags, exts, err) == -1)
     return -1;
   for (i = 0; i < exts->extents.len; ++i) {
     e = &exts->extents.ptr[i];
-    if (!IS_ALIGNED(e->length, align)) {
+    if (!IS_ALIGNED (e->length, align)) {
       /* If the unalignment is past align, just truncate and return early */
       if (e->offset + e->length > offset + align) {
         e->length = ROUND_DOWN (e->length, align);

@@ -447,4 +447,4 @@ static struct nbdkit_filter filter = {
   .pwrite             = luks_pwrite,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

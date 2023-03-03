@@ -801,4 +801,4 @@ static struct nbdkit_filter filter = {
   .extents           = cow_extents,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

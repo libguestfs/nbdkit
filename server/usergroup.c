@@ -50,7 +50,7 @@
 
 #include "internal.h"
 
-#if defined(HAVE_PWD_H) && defined(HAVE_GRP_H)
+#if defined (HAVE_PWD_H) && defined (HAVE_GRP_H)
 
 static uid_t parseuser (const char *);
 static gid_t parsegroup (const char *);

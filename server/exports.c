@@ -48,7 +48,7 @@
 #define MAX_EXPORTS 10000
 
 /* Appendable list of exports. */
-DEFINE_VECTOR_TYPE(exports, struct nbdkit_export);
+DEFINE_VECTOR_TYPE (exports, struct nbdkit_export);
 
 struct nbdkit_exports {
   exports exports;

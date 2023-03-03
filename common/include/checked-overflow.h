@@ -46,7 +46,7 @@
 #ifndef NBDKIT_CHECKED_OVERFLOW_H
 #define NBDKIT_CHECKED_OVERFLOW_H
 
-#if !defined(__GNUC__) && !defined(__clang__)
+#if !defined (__GNUC__) && !defined (__clang__)
 #error "this file may need to be ported to your compiler"
 #endif
 
@@ -66,9 +66,9 @@
  * mathematical sum are stored to "*r".
  */
 #if HAVE_DECL___BUILTIN_ADD_OVERFLOW
-#define ADD_OVERFLOW(a, b, r) ADD_OVERFLOW_BUILTIN((a), (b), (r))
+#define ADD_OVERFLOW(a, b, r) ADD_OVERFLOW_BUILTIN ((a), (b), (r))
 #else
-#define ADD_OVERFLOW(a, b, r) ADD_OVERFLOW_FALLBACK((a), (b), (r))
+#define ADD_OVERFLOW(a, b, r) ADD_OVERFLOW_FALLBACK ((a), (b), (r))
 #endif
 
 /* Multiply "a" and "b", both of (possibly different) unsigned integer types,
@@ -83,9 +83,9 @@
  * the mathematical product are stored to "*r".
  */
 #if HAVE_DECL___BUILTIN_MUL_OVERFLOW
-#define MUL_OVERFLOW(a, b, r) MUL_OVERFLOW_BUILTIN((a), (b), (r))
+#define MUL_OVERFLOW(a, b, r) MUL_OVERFLOW_BUILTIN ((a), (b), (r))
 #else
-#define MUL_OVERFLOW(a, b, r) MUL_OVERFLOW_FALLBACK((a), (b), (r))
+#define MUL_OVERFLOW(a, b, r) MUL_OVERFLOW_FALLBACK ((a), (b), (r))
 #endif
 
 /* The ADD_OVERFLOW_BUILTIN and MUL_OVERFLOW_BUILTIN function-like macros
@@ -99,22 +99,22 @@
  * variably modified type.
  */
 #if HAVE_DECL___BUILTIN_ADD_OVERFLOW
-#define ADD_OVERFLOW_BUILTIN(a, b, r)      \
-  ({                                       \
-    STATIC_ASSERT_UNSIGNED_INT (a);        \
-    STATIC_ASSERT_UNSIGNED_INT (b);        \
-    STATIC_ASSERT_UNSIGNED_INT (*(r));     \
-    __builtin_add_overflow((a), (b), (r)); \
+#define ADD_OVERFLOW_BUILTIN(a, b, r)       \
+  ({                                        \
+    STATIC_ASSERT_UNSIGNED_INT (a);         \
+    STATIC_ASSERT_UNSIGNED_INT (b);         \
+    STATIC_ASSERT_UNSIGNED_INT (*(r));      \
+    __builtin_add_overflow ((a), (b), (r)); \
   })
 #endif
 
 #if HAVE_DECL___BUILTIN_MUL_OVERFLOW
-#define MUL_OVERFLOW_BUILTIN(a, b, r)      \
-  ({                                       \
-    STATIC_ASSERT_UNSIGNED_INT (a);        \
-    STATIC_ASSERT_UNSIGNED_INT (b);        \
-    STATIC_ASSERT_UNSIGNED_INT (*(r));     \
-    __builtin_mul_overflow((a), (b), (r)); \
+#define MUL_OVERFLOW_BUILTIN(a, b, r)       \
+  ({                                        \
+    STATIC_ASSERT_UNSIGNED_INT (a);         \
+    STATIC_ASSERT_UNSIGNED_INT (b);         \
+    STATIC_ASSERT_UNSIGNED_INT (*(r));      \
+    __builtin_mul_overflow ((a), (b), (r)); \
   })
 #endif
 
@@ -173,10 +173,10 @@
  *
  * The expression "x" is not evaluated, unless it has variably modified type.
  */
-#define STATIC_ASSERT_UNSIGNED_INT(x)                                       \
-  do {                                                                      \
-    typedef char NBDKIT_UNIQUE_NAME(_x_has_uint_type)[(typeof (x))-1 > 0 ? 1 : -1] \
-      __attribute__((__unused__));                                          \
+#define STATIC_ASSERT_UNSIGNED_INT(x)                                               \
+  do {                                                                              \
+    typedef char NBDKIT_UNIQUE_NAME (_x_has_uint_type)[(typeof (x))-1 > 0 ? 1 : -1] \
+      __attribute__ ((__unused__));                                                 \
   } while (0)
 
 /* Assign the sum "a + b" to "*r", using uintmax_t modular arithmetic.

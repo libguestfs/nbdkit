@@ -37,7 +37,7 @@
 
 #include "vector.h"
 
-DEFINE_VECTOR_TYPE(string, char);
-#define CLEANUP_FREE_STRING __attribute__((cleanup (string_reset)))
+DEFINE_VECTOR_TYPE (string, char);
+#define CLEANUP_FREE_STRING __attribute__ ((cleanup (string_reset)))
 
 #endif /* NBDKIT_STRING_H */

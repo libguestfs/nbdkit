@@ -55,7 +55,7 @@ set_error (VALUE self, VALUE arg)
   int err;
   VALUE v;
 
-  if (TYPE(arg) == T_CLASS) {
+  if (TYPE (arg) == T_CLASS) {
     v = rb_const_get (arg, rb_intern ("Errno"));
     err = NUM2INT (v);
   } else if (TYPE (arg) == T_OBJECT) {
@@ -545,4 +545,4 @@ static struct nbdkit_plugin plugin = {
   .zero              = plugin_rb_zero,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

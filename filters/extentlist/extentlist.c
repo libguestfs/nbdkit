@@ -58,7 +58,7 @@ struct extent {
   uint64_t offset, length;
   uint32_t type;
 };
-DEFINE_VECTOR_TYPE(extent_list, struct extent);
+DEFINE_VECTOR_TYPE (extent_list, struct extent);
 static extent_list extents;
 
 static void
@@ -328,4 +328,4 @@ static struct nbdkit_filter filter = {
   .extents           = extentlist_extents,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

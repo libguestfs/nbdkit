@@ -73,22 +73,22 @@ struct region {
 };
 
 /* Vector of struct region. */
-DEFINE_VECTOR_TYPE(regions, struct region);
+DEFINE_VECTOR_TYPE (regions, struct region);
 
 extern void init_regions (regions *regions)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 extern void free_regions (regions *regions)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 /* Return the number of regions. */
-static inline size_t __attribute__((__nonnull__ (1)))
+static inline size_t __attribute__ ((__nonnull__ (1)))
 nr_regions (regions *rs)
 {
   return rs->len;
 }
 
 /* Return the virtual size of the disk. */
-static inline int64_t __attribute__((__nonnull__ (1)))
+static inline int64_t __attribute__ ((__nonnull__ (1)))
 virtual_size (regions *rs)
 {
   if (rs->len == 0)
@@ -102,7 +102,7 @@ virtual_size (regions *rs)
  */
 extern const struct region *find_region (const regions *regions,
                                          uint64_t offset)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 /* Append one region of a given length, plus up to two optional
  * padding regions.

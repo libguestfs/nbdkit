@@ -92,8 +92,8 @@ find_gpt_partition (nbdkit_next *next,
    * array (twice) plus other GPT overheads.  Otherwise it is likely
    * that the GPT header is bogus.
    */
-  if (size < INT64_C(3)*SECTOR_SIZE +
-      INT64_C(2) * nr_partition_entries * size_partition_entry) {
+  if (size < INT64_C (3) * SECTOR_SIZE +
+      INT64_C (2) * nr_partition_entries * size_partition_entry) {
     nbdkit_error ("GPT partition table is too large for this disk");
     return -1;
   }

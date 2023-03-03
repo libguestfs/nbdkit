@@ -86,7 +86,7 @@ static struct rule *deny_rules, *deny_rules_last;
 static void
 print_rule (const char *name, const struct rule *rule, const char *suffix)
 {
-#if defined(INET_NTOP)
+#if defined (INET_NTOP)
   union {
     char addr4[INET_ADDRSTRLEN];
     char addr6[INET6_ADDRSTRLEN];
@@ -103,7 +103,7 @@ print_rule (const char *name, const struct rule *rule, const char *suffix)
   case ANYV6:
     nbdkit_debug ("%s=anyipv6%s", name, suffix);
     break;
-#if defined(INET_NTOP)
+#if defined (INET_NTOP)
   case IPV4:
     inet_ntop (AF_INET, &rule->u.ipv4, u.addr4, sizeof u.addr4);
     nbdkit_debug ("%s=ipv4:%s/%u%s", name, u.addr4, rule->prefixlen, suffix);
@@ -479,7 +479,7 @@ matches_rule (const struct rule *rule,
   const struct sockaddr_in *sin;
   uint32_t cin, rin, mask;
   const struct sockaddr_in6 *sin6;
-#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
+#if defined (AF_VSOCK) && defined (VMADDR_CID_ANY)
   const struct sockaddr_vm *svm;
 #endif
 
@@ -522,7 +522,7 @@ matches_rule (const struct rule *rule,
     if (family != AF_UNIX) return false;
     return nbdkit_peer_gid () == rule->u.id;
 
-#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
+#if defined (AF_VSOCK) && defined (VMADDR_CID_ANY)
   case ANYVSOCK:
     return family == AF_VSOCK;
 
@@ -576,7 +576,7 @@ check_if_allowed (const struct sockaddr *addr)
    * sockets, see the manual.
    */
   if (family != AF_INET && family != AF_INET6 && family != AF_UNIX
-#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
+#if defined (AF_VSOCK) && defined (VMADDR_CID_ANY)
       && family != AF_VSOCK
 #endif
       )
@@ -633,4 +633,4 @@ static struct nbdkit_filter filter = {
   .preconnect        = ip_preconnect,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

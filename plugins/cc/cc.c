@@ -64,7 +64,7 @@ static const char *extra_cflags;
 
 /* List of parameters for the subplugin. */
 struct key_value { const char *key, *value; };
-DEFINE_VECTOR_TYPE(params_vector, struct key_value);
+DEFINE_VECTOR_TYPE (params_vector, struct key_value);
 static params_vector params = empty_vector;
 
 /* The subplugin. */
@@ -643,4 +643,4 @@ static struct nbdkit_plugin plugin = {
   .errno_is_preserved = 1,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

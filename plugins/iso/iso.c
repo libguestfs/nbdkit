@@ -271,4 +271,4 @@ static struct nbdkit_plugin plugin = {
   .errno_is_preserved = 1,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

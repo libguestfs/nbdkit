@@ -116,4 +116,4 @@ static struct nbdkit_plugin plugin = {
   .flush             = flush_flush,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

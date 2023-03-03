@@ -600,4 +600,4 @@ static struct nbdkit_plugin plugin = {
   .flush             = plugin_guestfs_flush,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

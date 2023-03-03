@@ -49,4 +49,4 @@ static struct nbdkit_plugin plugin = {
   .pwrite            = my_pwrite,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

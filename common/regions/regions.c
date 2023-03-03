@@ -82,7 +82,7 @@ find_region (const regions *rs, uint64_t offset)
  * and contiguous) is maintained.  Note it is not possible to
  * construct regions out of order using this function.
  */
-static int __attribute__((__nonnull__ (1)))
+static int __attribute__ ((__nonnull__ (1)))
 append_one_region (regions *rs, struct region region)
 {
   /* The assertions in this function are meant to maintain the

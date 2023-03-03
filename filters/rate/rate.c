@@ -265,7 +265,7 @@ maybe_sleep (struct bucket *bucket, pthread_mutex_t *lock,
    * multiply this by 10 to include start/stop but let's not
    * second-guess the transport layers underneath.
    */
-  bits = count * UINT64_C(8);
+  bits = count * UINT64_C (8);
 
   while (bits > 0) {
     /* Run the token bucket algorithm. */
@@ -336,4 +336,4 @@ static struct nbdkit_filter filter = {
   .pwrite            = rate_pwrite,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

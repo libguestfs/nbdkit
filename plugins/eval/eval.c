@@ -97,7 +97,7 @@ struct method_script {
   const char *method;
   char *script;
 };
-DEFINE_VECTOR_TYPE(method_script_list, struct method_script);
+DEFINE_VECTOR_TYPE (method_script_list, struct method_script);
 static method_script_list method_scripts;
 
 static int
@@ -430,4 +430,4 @@ static struct nbdkit_plugin plugin = {
   .errno_is_preserved = 1,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

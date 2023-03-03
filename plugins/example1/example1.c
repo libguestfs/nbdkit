@@ -170,4 +170,4 @@ static struct nbdkit_plugin plugin = {
   .pread             = example1_pread,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

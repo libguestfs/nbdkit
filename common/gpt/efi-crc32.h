@@ -36,6 +36,6 @@
 #include <stdint.h>
 
 extern uint32_t efi_crc32 (const void *buf, size_t len)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 #endif /* NBDKIT_EFI_CRC32_H */

@@ -48,7 +48,7 @@
 #include <sys/procctl.h>
 #endif
 
-#if defined(HAVE_SYS_PRCTL_H) && defined(PR_SET_PDEATHSIG)
+#if defined (HAVE_SYS_PRCTL_H) && defined (PR_SET_PDEATHSIG)
 
 /* For Linux >= 2.1.57. */
 
@@ -64,7 +64,7 @@ can_exit_with_parent (void)
   return true;
 }
 
-#elif defined(HAVE_SYS_PROCCTL_H) && defined(PROC_PDEATHSIG_CTL)
+#elif defined (HAVE_SYS_PROCCTL_H) && defined (PROC_PDEATHSIG_CTL)
 
 /* For FreeBSD >= 11.2 */
 
@@ -81,7 +81,7 @@ can_exit_with_parent (void)
   return true;
 }
 
-#elif defined(__APPLE__)
+#elif defined (__APPLE__)
 
 /* For macOS. */
 

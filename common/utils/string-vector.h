@@ -37,13 +37,13 @@
 
 #include "vector.h"
 
-DEFINE_VECTOR_TYPE(string_vector, char *);
+DEFINE_VECTOR_TYPE (string_vector, char *);
 
 /* This frees both the array and the strings. */
 #define CLEANUP_FREE_STRING_VECTOR \
-  __attribute__((cleanup (cleanup_free_string_vector)))
+  __attribute__ ((cleanup (cleanup_free_string_vector)))
 
-static void __attribute__((__unused__))
+static void __attribute__ ((__unused__))
 cleanup_free_string_vector (string_vector *v)
 {
   string_vector_iter (v, (void*)free);

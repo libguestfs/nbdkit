@@ -52,7 +52,7 @@ struct range {
   int64_t size;
   char status;
 };
-DEFINE_VECTOR_TYPE(ranges, struct range);
+DEFINE_VECTOR_TYPE (ranges, struct range);
 
 struct mapfile {
   int ranges_count;
@@ -208,4 +208,4 @@ static struct nbdkit_filter filter = {
   .pread             = ddrescue_pread,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

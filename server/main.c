@@ -372,7 +372,7 @@ main (int argc, char *argv[])
       break;
 
     case VSOCK_OPTION:
-#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
+#if defined (AF_VSOCK) && defined (VMADDR_CID_ANY)
       vsock = true;
       break;
 #else
@@ -1092,7 +1092,7 @@ error_if_stdio_closed (void)
 static void
 switch_stdio (void)
 {
-#if defined(F_DUPFD_CLOEXEC) || defined(F_DUPFD)
+#if defined (F_DUPFD_CLOEXEC) || defined (F_DUPFD)
   fflush (stdin);
   fflush (NULL);
   if (listen_stdin || run) {

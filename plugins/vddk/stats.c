@@ -54,13 +54,13 @@ pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 /* For each VDDK API define a variable to store the time taken (used
  * to implement -D vddk.stats=1).
  */
-#define STUB(fn,ret,args) struct vddk_stat stats_##fn = { .name = #fn }
-#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
+#define STUB(fn, ret, args) struct vddk_stat stats_##fn = { .name = #fn }
+#define OPTIONAL_STUB(fn, ret, args) STUB (fn, ret, args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB
 
-DEFINE_VECTOR_TYPE(statlist, struct vddk_stat)
+DEFINE_VECTOR_TYPE (statlist, struct vddk_stat)
 
 static int
 stat_compare (const void *vp1, const void *vp2)
@@ -88,8 +88,8 @@ display_stats (void)
 
   if (!vddk_debug_stats) return;
 
-#define STUB(fn,ret,args) statlist_append (&stats, stats_##fn)
-#define OPTIONAL_STUB(fn,ret,args) STUB(fn,ret,args)
+#define STUB(fn, ret, args) statlist_append (&stats, stats_##fn)
+#define OPTIONAL_STUB(fn, ret, args) STUB (fn, ret, args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB

@@ -38,7 +38,7 @@ extern void uri_quote (const char *str, FILE *fp);
 extern int exit_status_to_nbd_error (int status, const char *cmd);
 extern int set_cloexec (int fd);
 extern int set_nonblock (int fd);
-extern char **copy_environ (char **env, ...) __attribute__((__sentinel__));
+extern char **copy_environ (char **env, ...) __attribute__ ((__sentinel__));
 extern char *make_temporary_directory (void);
 extern ssize_t full_pread (int fd, void *buf, size_t count, off_t offset);
 extern ssize_t full_pwrite (int fd, const void *buf, size_t count, off_t offset);

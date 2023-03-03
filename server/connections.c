@@ -333,7 +333,7 @@ new_connection (int sockin, int sockout, int nworkers)
 
   return conn;
 
-#if defined(HAVE_PIPE2) || defined(HAVE_PIPE)
+#if defined (HAVE_PIPE2) || defined (HAVE_PIPE)
  error2:
 #endif
   if (conn->status_pipe[0] >= 0)

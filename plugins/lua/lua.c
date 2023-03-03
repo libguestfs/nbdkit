@@ -551,4 +551,4 @@ static struct nbdkit_plugin plugin = {
   .zero              = lua_plugin_zero,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

@@ -71,13 +71,13 @@ get_id (struct handle *h)
  */
 extern void enter (struct handle *h, log_id_t id, const char *act,
                    const char *fmt, ...)
-  ATTRIBUTE_FORMAT_PRINTF(4, 5);
+  ATTRIBUTE_FORMAT_PRINTF (4, 5);
 extern void leave (struct handle *h, log_id_t id, const char *act,
                    const char *fmt, ...)
-  ATTRIBUTE_FORMAT_PRINTF(4, 5);
+  ATTRIBUTE_FORMAT_PRINTF (4, 5);
 extern void print (struct handle *h, const char *act,
                    const char *fmt, ...)
-  ATTRIBUTE_FORMAT_PRINTF(3, 4);
+  ATTRIBUTE_FORMAT_PRINTF (3, 4);
 
 /* In the case where leave() only has to print result-or-error, this
  * simplified version is used instead.
@@ -100,7 +100,7 @@ extern void leave_simple2 (struct leave_simple_params *params);
 
 #define LOG(h, act, r, err, ...)                                        \
   log_id_t id = get_id (h);                                             \
-  __attribute__((cleanup (leave_simple2)))                              \
+  __attribute__ ((cleanup (leave_simple2)))                             \
   CLANG_UNUSED_VARIABLE_WORKAROUND                                      \
   struct leave_simple_params _params = { h, id, act, &r, err };         \
   enter ((h), id, (act), ##__VA_ARGS__)

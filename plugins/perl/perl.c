@@ -136,7 +136,7 @@ check_perl_failure (void)
   return 0;
 }
 
-XS(xs_debug)
+XS (xs_debug)
 {
   dXSARGS;
   if (items >= 1)
@@ -146,7 +146,7 @@ XS(xs_debug)
 
 static int last_error;
 
-XS(xs_set_error)
+XS (xs_set_error)
 {
   dXSARGS;
   /* Is it worth adding error checking for bad arguments? */
@@ -176,23 +176,23 @@ xs_init (pTHX)
 #define DEFINE_FLAG(n)                           \
   gv = gv_fetchpv ("Nbdkit::" #n, TRUE, SVt_PV); \
   GvMULTI_on (gv);                               \
-  sv_setiv (GvSV(gv), NBDKIT_ ## n)
+  sv_setiv (GvSV (gv), NBDKIT_ ## n)
 
-  DEFINE_FLAG(FLAG_MAY_TRIM);
-  DEFINE_FLAG(FLAG_FUA);
-  DEFINE_FLAG(FLAG_REQ_ONE);
-  DEFINE_FLAG(FLAG_FAST_ZERO);
+  DEFINE_FLAG (FLAG_MAY_TRIM);
+  DEFINE_FLAG (FLAG_FUA);
+  DEFINE_FLAG (FLAG_REQ_ONE);
+  DEFINE_FLAG (FLAG_FAST_ZERO);
 
-  DEFINE_FLAG(FUA_NONE);
-  DEFINE_FLAG(FUA_EMULATE);
-  DEFINE_FLAG(FUA_NATIVE);
+  DEFINE_FLAG (FUA_NONE);
+  DEFINE_FLAG (FUA_EMULATE);
+  DEFINE_FLAG (FUA_NATIVE);
 
-  DEFINE_FLAG(CACHE_NONE);
-  DEFINE_FLAG(CACHE_EMULATE);
-  DEFINE_FLAG(CACHE_NATIVE);
+  DEFINE_FLAG (CACHE_NONE);
+  DEFINE_FLAG (CACHE_EMULATE);
+  DEFINE_FLAG (CACHE_NATIVE);
 
-  DEFINE_FLAG(EXTENT_HOLE);
-  DEFINE_FLAG(EXTENT_ZERO);
+  DEFINE_FLAG (EXTENT_HOLE);
+  DEFINE_FLAG (EXTENT_ZERO);
 }
 
 static void
@@ -685,4 +685,4 @@ static struct nbdkit_plugin plugin = {
   .zero              = perl_zero,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

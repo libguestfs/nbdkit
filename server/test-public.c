@@ -205,7 +205,7 @@ test_nbdkit_parse_ints (void)
 {
   bool pass = true;
 
-#define PARSE(...) PARSE_(__VA_ARGS__)
+#define PARSE(...) PARSE_ (__VA_ARGS__)
 #define PARSE_(TYPE, FORMAT, TEST, RET, EXPECTED)                       \
   do {                                                                  \
     error_flagged = false;                                              \

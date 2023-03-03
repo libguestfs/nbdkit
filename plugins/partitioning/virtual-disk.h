@@ -42,7 +42,7 @@
 #include "gpt.h"
 #include "regions.h"
 
-#define SECTOR_SIZE UINT64_C(512)
+#define SECTOR_SIZE UINT64_C (512)
 
 /* Maximum size of MBR disks.  This is an approximation based on the
  * known limit (2^32 sectors) and an estimate based on the amount of
@@ -88,7 +88,7 @@ struct file {
   char type_guid[16];           /* partition type GUID of this partition */
 };
 
-DEFINE_VECTOR_TYPE(files, struct file);
+DEFINE_VECTOR_TYPE (files, struct file);
 
 extern files the_files;
 extern regions the_regions;
@@ -101,7 +101,7 @@ extern int create_virtual_disk_layout (void);
  * characteristics which make them unlike general GUIDs.
  */
 extern int parse_guid (const char *str, char *out)
-  __attribute__((__nonnull__ (1, 2)));
+  __attribute__ ((__nonnull__ (1, 2)));
 
 /* Internal function for creating a single MBR PTE.  The GPT code
  * calls this for creating the protective MBR.
@@ -109,7 +109,7 @@ extern int parse_guid (const char *str, char *out)
 extern void create_mbr_partition_table_entry (const struct region *,
                                               bool bootable, int partition_id,
                                               unsigned char *)
-  __attribute__((__nonnull__ (1, 4)));
+  __attribute__ ((__nonnull__ (1, 4)));
 
 /* Create MBR or GPT layout. */
 extern void create_mbr_layout (void);

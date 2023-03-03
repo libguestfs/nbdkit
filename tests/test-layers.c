@@ -73,7 +73,7 @@
 static void *start_log_capture (void *);
 static void log_verify_seen (const char *msg);
 static void log_verify_seen_in_order (const char *msg, ...)
-  __attribute__((sentinel));
+  __attribute__ ((sentinel));
 static void log_free (void);
 static void short_sleep (void);
 
@@ -697,7 +697,7 @@ static void short_sleep (void)
  * NB: The log buffer is NOT \0-terminated.
  */
 
-static void no_message_error (const char *msg) __attribute__((noreturn));
+static void no_message_error (const char *msg) __attribute__ ((noreturn));
 
 static void
 no_message_error (const char *msg)
@@ -716,7 +716,7 @@ log_verify_seen (const char *msg)
 }
 
 static void messages_out_of_order (const char *msg1, const char *msg2)
-  __attribute__((noreturn));
+  __attribute__ ((noreturn));
 
 static void
 messages_out_of_order (const char *msg1, const char *msg2)

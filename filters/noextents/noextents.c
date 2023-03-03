@@ -47,4 +47,4 @@ static struct nbdkit_filter filter = {
   .can_extents       = noextents_can_extents,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

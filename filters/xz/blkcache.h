@@ -41,13 +41,13 @@ typedef struct blkcache_stats {
 } blkcache_stats;
 
 extern blkcache *new_blkcache (size_t maxdepth);
-extern void free_blkcache (blkcache *) __attribute__((__nonnull__ (1)));
+extern void free_blkcache (blkcache *) __attribute__ ((__nonnull__ (1)));
 extern char *get_block (blkcache *, uint64_t offset,
                         uint64_t *start, uint64_t *size)
-  __attribute__((__nonnull__ (1, 3, 4)));
+  __attribute__ ((__nonnull__ (1, 3, 4)));
 extern int put_block (blkcache *, uint64_t start, uint64_t size, char *data)
-  __attribute__((__nonnull__ (1, 4)));
+  __attribute__ ((__nonnull__ (1, 4)));
 extern void blkcache_get_stats (blkcache *, blkcache_stats *ret)
-  __attribute__((__nonnull__ (1, 2)));
+  __attribute__ ((__nonnull__ (1, 2)));
 
 #endif /* NBDKIT_XZFILE_H */

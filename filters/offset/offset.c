@@ -190,4 +190,4 @@ static struct nbdkit_filter filter = {
   .cache             = offset_cache,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

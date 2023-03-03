@@ -77,4 +77,4 @@ static struct nbdkit_filter filter = {
   .close             = exitlast_close,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

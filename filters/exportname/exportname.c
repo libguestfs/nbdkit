@@ -342,4 +342,4 @@ static struct nbdkit_filter filter = {
   .export_description = exportname_export_description,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

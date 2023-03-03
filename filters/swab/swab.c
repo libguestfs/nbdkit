@@ -250,4 +250,4 @@ static struct nbdkit_filter filter = {
   .cache             = swab_cache,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

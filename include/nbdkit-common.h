@@ -41,8 +41,8 @@
 #include <stdint.h>
 #include <errno.h>
 
-#if !defined(_WIN32) && !defined(__MINGW32__) && \
-    !defined(__CYGWIN__) && !defined(_MSC_VER)
+#if !defined (_WIN32) && !defined (__MINGW32__) && \
+    !defined (__CYGWIN__) && !defined (_MSC_VER)
 #include <sys/socket.h>
 #else
 #include <ws2tcpip.h>
@@ -54,10 +54,10 @@
 extern "C" {
 #endif
 
-#if (defined(__GNUC__) || defined(__clang__)) && \
-    defined(HAVE_VFPRINTF_PERCENT_M)
+#if (defined (__GNUC__) || defined (__clang__)) && \
+    defined (HAVE_VFPRINTF_PERCENT_M)
 #define ATTRIBUTE_FORMAT_PRINTF(fmtpos, argpos) \
-  __attribute__((__format__ (__printf__, fmtpos, argpos)))
+  __attribute__ ((__format__ (__printf__, fmtpos, argpos)))
 #else
 #define ATTRIBUTE_FORMAT_PRINTF(fmtpos, argpos)
 #endif
@@ -85,11 +85,11 @@ extern "C" {
 
 #ifndef WIN32
 #define NBDKIT_EXTERN_DECL(ret, fn, args) extern ret fn args
-#define NBDKIT_DLL_PUBLIC __attribute__((__visibility__("default")))
+#define NBDKIT_DLL_PUBLIC __attribute__ ((__visibility__ ("default")))
 #else
 #define NBDKIT_EXTERN_DECL(ret, fn, args) \
-  extern __declspec(dllexport) ret fn args
-#define NBDKIT_DLL_PUBLIC __declspec(dllexport)
+  extern __declspec (dllexport) ret fn args
+#define NBDKIT_DLL_PUBLIC __declspec (dllexport)
 #endif
 
 NBDKIT_EXTERN_DECL (void, nbdkit_error,

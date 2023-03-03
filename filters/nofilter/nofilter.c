@@ -39,4 +39,4 @@ static struct nbdkit_filter filter = {
   .longname          = "nbdkit nofilter filter",
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

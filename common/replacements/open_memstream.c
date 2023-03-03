@@ -62,7 +62,7 @@ struct file_to_memstream {
   char **ptr;
   size_t *size;
 };
-DEFINE_VECTOR_TYPE(file_vector, struct file_to_memstream)
+DEFINE_VECTOR_TYPE (file_vector, struct file_to_memstream)
 static file_vector files = empty_vector;
 
 FILE *
@@ -77,7 +77,7 @@ open_memstream (char **ptr, size_t *size)
   if (ret > MAX_PATH || ret == 0)
     return NULL;
 
-  ret = GetTempFileName (tmppath, TEXT("nbdkit"), 0, f2m.tmpname);
+  ret = GetTempFileName (tmppath, TEXT ("nbdkit"), 0, f2m.tmpname);
   if (!ret)
     return NULL;
 

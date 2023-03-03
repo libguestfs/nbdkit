@@ -52,7 +52,7 @@ bitmap_resize (struct bitmap *bm, uint64_t new_size)
   size_t new_bm_size;
 
   new_bm_size_u64 = DIV_ROUND_UP (new_size,
-                                  bm->blksize * UINT64_C(8) / bm->bpb);
+                                  bm->blksize * UINT64_C (8) / bm->bpb);
   if (new_bm_size_u64 > SIZE_MAX) {
     nbdkit_error ("bitmap too large for this architecture");
     return -1;

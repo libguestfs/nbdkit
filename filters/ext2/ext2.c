@@ -528,4 +528,4 @@ static struct nbdkit_filter filter = {
   .flush              = ext2_flush,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

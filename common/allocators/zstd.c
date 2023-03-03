@@ -85,7 +85,7 @@ struct l1_entry {
   struct l2_entry *l2_dir;      /* Pointer to L2 directory (L2_SIZE entries). */
 };
 
-DEFINE_VECTOR_TYPE(l1_dir, struct l1_entry);
+DEFINE_VECTOR_TYPE (l1_dir, struct l1_entry);
 
 struct zstd_array {
   struct allocator a;           /* Must come first. */
@@ -645,7 +645,7 @@ static struct allocator_functions functions = {
   .extents = zstd_array_extents,
 };
 
-static void register_zstd_array (void) __attribute__((constructor));
+static void register_zstd_array (void) __attribute__ ((constructor));
 
 static void
 register_zstd_array (void)

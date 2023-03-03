@@ -64,7 +64,7 @@ struct bitmap {
   size_t size;                  /* Size of bitmap in bytes. */
 };
 
-static inline void __attribute__((__nonnull__ (1)))
+static inline void __attribute__ ((__nonnull__ (1)))
 bitmap_init (struct bitmap *bm, unsigned blocksize, unsigned bpb)
 {
   assert (is_power_of_2 (blocksize));
@@ -99,10 +99,10 @@ bitmap_free (struct bitmap *bm)
  * Returns -1 on error, setting nbdkit_error.
  */
 extern int bitmap_resize (struct bitmap *bm, uint64_t new_size)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 /* Clear the bitmap (set everything to zero). */
-static inline void  __attribute__((__nonnull__ (1)))
+static inline void  __attribute__ ((__nonnull__ (1)))
 bitmap_clear (struct bitmap *bm)
 {
   memset (bm->bitmap, 0, bm->size);
@@ -125,7 +125,7 @@ bitmap_clear (struct bitmap *bm)
 /* Return the bit(s) associated with the given block.
  * If the request is out of range, returns the default value.
  */
-static inline unsigned __attribute__((__nonnull__ (1)))
+static inline unsigned __attribute__ ((__nonnull__ (1)))
 bitmap_get_blk (const struct bitmap *bm, uint64_t blk, unsigned default_)
 {
   BITMAP_OFFSET_BIT_MASK (bm, blk);
@@ -139,7 +139,7 @@ bitmap_get_blk (const struct bitmap *bm, uint64_t blk, unsigned default_)
 }
 
 /* As above but works with virtual disk offset in bytes. */
-static inline unsigned __attribute__((__nonnull__ (1)))
+static inline unsigned __attribute__ ((__nonnull__ (1)))
 bitmap_get (const struct bitmap *bm, uint64_t offset, unsigned default_)
 {
   return bitmap_get_blk (bm, offset / bm->blksize, default_);
@@ -148,7 +148,7 @@ bitmap_get (const struct bitmap *bm, uint64_t offset, unsigned default_)
 /* Set the bit(s) associated with the given block.
  * If out of range, it is ignored.
  */
-static inline void __attribute__((__nonnull__ (1)))
+static inline void __attribute__ ((__nonnull__ (1)))
 bitmap_set_blk (const struct bitmap *bm, uint64_t blk, unsigned v)
 {
   BITMAP_OFFSET_BIT_MASK (bm, blk);
@@ -163,7 +163,7 @@ bitmap_set_blk (const struct bitmap *bm, uint64_t blk, unsigned v)
 }
 
 /* As above bit works with virtual disk offset in bytes. */
-static inline void __attribute__((__nonnull__ (1)))
+static inline void __attribute__ ((__nonnull__ (1)))
 bitmap_set (const struct bitmap *bm, uint64_t offset, unsigned v)
 {
   return bitmap_set_blk (bm, offset / bm->blksize, v);
@@ -178,6 +178,6 @@ bitmap_set (const struct bitmap *bm, uint64_t offset, unsigned v)
  * bitmap.
  */
 extern int64_t bitmap_next (const struct bitmap *bm, uint64_t blk)
-  __attribute__((__nonnull__ (1)));
+  __attribute__ ((__nonnull__ (1)));
 
 #endif /* NBDKIT_BITMAP_H */

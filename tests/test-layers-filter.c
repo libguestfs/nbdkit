@@ -458,4 +458,4 @@ static struct nbdkit_filter filter = {
   .cache             = test_layers_filter_cache,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

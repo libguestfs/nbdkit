@@ -49,7 +49,7 @@
 #include <arpa/inet.h>
 #endif
 
-#if defined(HAVE_GNUTLS) && defined(HAVE_GNUTLS_BASE64_DECODE2)
+#if defined (HAVE_GNUTLS) && defined (HAVE_GNUTLS_BASE64_DECODE2)
 #include <gnutls/gnutls.h>
 #define HAVE_BASE64 1
 #endif
@@ -475,4 +475,4 @@ static struct nbdkit_plugin plugin = {
   .errno_is_preserved = 1,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

@@ -52,7 +52,7 @@ caml_alloc_initialized_string (mlsize_t len, const char *p)
  * ensures that the calls are paired properly.
  */
 #define LEAVE_BLOCKING_SECTION_FOR_CURRENT_SCOPE() \
-  __attribute__((unused, cleanup (cleanup_enter_blocking_section))) \
+  __attribute__ ((unused, cleanup (cleanup_enter_blocking_section))) \
   int _unused;                                              \
   caml_leave_blocking_section ()
 static inline void

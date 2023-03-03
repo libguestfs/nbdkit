@@ -48,10 +48,10 @@
 
 #undef MIN
 #define MIN(x, y) \
-  MIN_1((x), (y), NBDKIT_UNIQUE_NAME(_x), NBDKIT_UNIQUE_NAME(_y))
+  MIN_1 ((x), (y), NBDKIT_UNIQUE_NAME (_x), NBDKIT_UNIQUE_NAME (_y))
 #undef MAX
 #define MAX(x, y) \
-  MAX_1((x), (y), NBDKIT_UNIQUE_NAME(_x), NBDKIT_UNIQUE_NAME(_y))
+  MAX_1 ((x), (y), NBDKIT_UNIQUE_NAME (_x), NBDKIT_UNIQUE_NAME (_y))
 
 #ifdef HAVE_AUTO_TYPE
 

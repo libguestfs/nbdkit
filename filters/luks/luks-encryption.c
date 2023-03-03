@@ -69,7 +69,7 @@ struct luks_keyslot {
   char password_salt[LUKS_SALTSIZE];
   uint32_t key_material_offset;
   uint32_t stripes;
-} __attribute__((__packed__));
+} __attribute__ ((__packed__));
 
 /* LUKS superblock. */
 struct luks_phdr {
@@ -86,7 +86,7 @@ struct luks_phdr {
   uint8_t uuid[40];
 
   struct luks_keyslot keyslot[LUKS_NUMKEYS]; /* Key slots. */
-} __attribute__((__packed__));
+} __attribute__ ((__packed__));
 
 /* Block cipher mode of operation.
  * https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation

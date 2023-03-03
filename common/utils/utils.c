@@ -211,7 +211,7 @@ make_temporary_directory (void)
     return NULL;
   }
 
-  ret = GetTempFileName (tmppath, TEXT("nbdkit"), 0, tmpname);
+  ret = GetTempFileName (tmppath, TEXT ("nbdkit"), 0, tmpname);
   if (!ret) {
     fprintf (stderr, "mkdtemp: GetTempFileName: %lu\n", GetLastError ());
     return NULL;

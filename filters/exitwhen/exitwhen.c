@@ -81,7 +81,7 @@ struct event {
 #endif
   } u;
 };
-DEFINE_VECTOR_TYPE(event_list, struct event);
+DEFINE_VECTOR_TYPE (event_list, struct event);
 static event_list events = empty_vector;
 
 static void
@@ -317,7 +317,7 @@ check_for_event_script (const struct event *event)
  * This always polls every pollsecs seconds, but only checks for
  * events when there are no connections.
  */
-static void * __attribute__((noreturn))
+static void * __attribute__ ((noreturn))
 polling_thread (void *vp)
 {
   for (;;) {
@@ -341,7 +341,7 @@ exitwhen_config (nbdkit_next_config *next, nbdkit_backend *nxdata,
   struct event event;
 
   if (0) ;
-#if defined(EVENT_FILE_CREATED) && defined(EVENT_FILE_DELETED)
+#if defined (EVENT_FILE_CREATED) && defined (EVENT_FILE_DELETED)
   else if (strcmp (key, "exit-when-file-created") == 0 ||
       strcmp (key, "exit-when-file-deleted") == 0) {
     char c = key[15];
@@ -511,4 +511,4 @@ static struct nbdkit_filter filter = {
   .close             = exitwhen_close,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

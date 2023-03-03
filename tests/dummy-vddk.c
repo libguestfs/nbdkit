@@ -46,8 +46,8 @@
 
 #include "vddk-structs.h"
 
-#define STUB(fn,ret,args) extern ret fn args;
-#define OPTIONAL_STUB(fn,ret,args)
+#define STUB(fn, ret, args) extern ret fn args;
+#define OPTIONAL_STUB(fn, ret, args)
 #include "vddk-stubs.h"
 #undef STUB
 #undef OPTIONAL_STUB

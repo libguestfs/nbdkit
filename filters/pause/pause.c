@@ -370,4 +370,4 @@ static struct nbdkit_filter filter = {
   .cache             = pause_cache,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

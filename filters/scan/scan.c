@@ -271,4 +271,4 @@ static struct nbdkit_filter filter = {
   .pread             = scan_pread,
 };
 
-NBDKIT_REGISTER_FILTER(filter)
+NBDKIT_REGISTER_FILTER (filter)

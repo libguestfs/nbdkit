@@ -278,7 +278,7 @@ bind_tcpip_socket (sockets *socks)
 void
 bind_vsock (sockets *socks)
 {
-#if defined(AF_VSOCK) && defined(VMADDR_CID_ANY)
+#if defined (AF_VSOCK) && defined (VMADDR_CID_ANY)
   uint32_t vsock_port;
   int sock;
   struct sockaddr_vm addr;

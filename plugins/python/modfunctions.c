@@ -113,13 +113,13 @@ parse_size (PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple (args, "s:parse_size", &s))
     return NULL;
 
-  int64_t size = nbdkit_parse_size(s);
+  int64_t size = nbdkit_parse_size (s);
   if (size == -1) {
     PyErr_SetString (PyExc_ValueError, "Unable to parse string as size");
     return NULL;
   }
 
-  return PyLong_FromSize_t((size_t)size);
+  return PyLong_FromSize_t ((size_t)size);
 }
 
 static PyMethodDef NbdkitMethods[] = {

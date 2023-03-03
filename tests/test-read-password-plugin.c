@@ -133,4 +133,4 @@ static struct nbdkit_plugin plugin = {
   .pread             = password_pread,
 };
 
-NBDKIT_REGISTER_PLUGIN(plugin)
+NBDKIT_REGISTER_PLUGIN (plugin)

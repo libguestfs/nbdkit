@@ -48,7 +48,7 @@
 #define BUILD_BUG_STRUCT_SIZE(cond) \
   (sizeof (struct { int: (cond) ? 1 : -1; }))
 #define BUILD_BUG_UNLESS_TRUE(cond) \
-  (BUILD_BUG_STRUCT_SIZE(cond) - BUILD_BUG_STRUCT_SIZE(cond))
+  (BUILD_BUG_STRUCT_SIZE (cond) - BUILD_BUG_STRUCT_SIZE (cond))
 
 #define TYPE_IS_ARRAY(a) \
   (!__builtin_types_compatible_p (typeof (a), typeof (&(a)[0])))

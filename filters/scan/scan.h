@@ -49,7 +49,7 @@ struct command {
   enum { CMD_QUIT, CMD_NOTIFY_PREAD } type;
   uint64_t offset;
 };
-DEFINE_VECTOR_TYPE(command_queue, struct command);
+DEFINE_VECTOR_TYPE (command_queue, struct command);
 
 struct bgthread_ctrl {
   command_queue cmds;           /* Command queue. */
