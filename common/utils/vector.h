@@ -44,6 +44,9 @@
 #include <assert.h>
 #include <string.h>
 
+#include "compiler-macros.h"
+#include "static-assert.h"
+
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wunused-function"
 #pragma clang diagnostic ignored "-Wduplicate-decl-specifier"
@@ -199,6 +202,38 @@
   struct name
 
 #define empty_vector { .ptr = NULL, .len = 0, .cap = 0 }
+
+/* This macro should only be used if:
+ * - the vector contains pointers, and
+ * - the pointed-to objects are:
+ *   - neither const- nor volatile-qualified, and
+ *   - allocated with malloc() or equivalent.
+ */
+#define ADD_VECTOR_EMPTY_METHOD(name)                                  \
+  /* Call free() on each element of the vector, then reset the vector. \
+   */                                                                  \
+  static inline void __attribute__ ((__unused__))                      \
+  name##_empty (name *v)                                               \
+  {                                                                    \
+    size_t i;                                                          \
+    for (i = 0; i < v->len; ++i) {                                     \
+      STATIC_ASSERT (TYPE_IS_POINTER (v->ptr[i]),                      \
+                     _vector_contains_pointers);                       \
+      free (v->ptr[i]);                                                \
+    }                                                                  \
+    name##_reset (v);                                                  \
+  }                                                                    \
+                                                                       \
+  /* Force callers to supply ';'. */                                   \
+  struct name
+
+/* Convenience macro tying together DEFINE_VECTOR_TYPE() and
+ * ADD_VECTOR_EMPTY_METHOD(). Inherit and forward the requirement for a
+ * trailing semicolon from ADD_VECTOR_EMPTY_METHOD() to the caller.
+ */
+#define DEFINE_POINTER_VECTOR_TYPE(name, type) \
+  DEFINE_VECTOR_TYPE (name, type);             \
+  ADD_VECTOR_EMPTY_METHOD (name)
 
 struct generic_vector {
   void *ptr;

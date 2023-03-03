@@ -37,7 +37,7 @@
 
 #include "vector.h"
 
-DEFINE_VECTOR_TYPE (string_vector, char *);
+DEFINE_POINTER_VECTOR_TYPE (string_vector, char *);
 
 /* This frees both the array and the strings. */
 #define CLEANUP_FREE_STRING_VECTOR \

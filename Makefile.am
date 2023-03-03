@@ -58,6 +58,7 @@ noinst_PROGRAMS = nbdkit
 nbdkit_SOURCES = wrapper.c server/options.h
 nbdkit_CPPFLAGS = \
 	-I$(top_srcdir)/server \
+	-I$(top_srcdir)/common/include \
 	-I$(top_srcdir)/common/utils \
 	-I$(top_srcdir)/common/replacements \
 	-Dbuilddir=\"$(abs_top_builddir)\" \
