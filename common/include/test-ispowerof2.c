@@ -58,5 +58,15 @@ main (void)
   for (i = 4; i <= 0x80000000; i <<= 1)
     assert (! is_power_of_2 (i-1));
 
+  /* Check log_2_bits on some known values. */
+  assert (log_2_bits (1) == 0);
+  assert (log_2_bits (512) == 9);
+  assert (log_2_bits (4096) == 12);
+  assert (log_2_bits (0x80000000) == 31);
+#if SIZEOF_LONG == 8
+  assert (log_2_bits (0x100000000) == 32);
+  assert (log_2_bits (0x8000000000000000) == 63);
+#endif
+
   exit (EXIT_SUCCESS);
 }

@@ -344,6 +344,9 @@ test (void)
     ]
 )
 
+dnl Check sizeof long.
+AC_CHECK_SIZEOF(long)
+
 dnl Check for other headers, all optional.
 AC_CHECK_HEADERS([\
         alloca.h \
