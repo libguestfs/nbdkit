@@ -91,8 +91,8 @@
   typedef struct name name;                                             \
                                                                         \
   /* Reserve n elements at the end of the vector.  Note space is        \
-   * allocated and capacity is increased, but the vector length         \
-   * is not increased and the new elements are not initialized.         \
+   * allocated and capacity is increased, but the vector length is      \
+   * not increased and the new elements are not initialized.            \
    */                                                                   \
   static inline int                                                     \
   name##_reserve (name *v, size_t n)                                    \
