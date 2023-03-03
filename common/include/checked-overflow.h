@@ -53,6 +53,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "static-assert.h"
 #include "unique-name.h"
 
 /* Add "a" and "b", both of (possibly different) unsigned integer types, and
@@ -173,11 +174,8 @@
  *
  * The expression "x" is not evaluated, unless it has variably modified type.
  */
-#define STATIC_ASSERT_UNSIGNED_INT(x)                                               \
-  do {                                                                              \
-    typedef char NBDKIT_UNIQUE_NAME (_x_has_uint_type)[(typeof (x))-1 > 0 ? 1 : -1] \
-      __attribute__ ((__unused__));                                                 \
-  } while (0)
+#define STATIC_ASSERT_UNSIGNED_INT(x) \
+  STATIC_ASSERT ((typeof (x))-1 > 0, _x_has_uint_type)
 
 /* Assign the sum "a + b" to "*r", using uintmax_t modular arithmetic.
  *

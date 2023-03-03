@@ -38,6 +38,7 @@
 #include <assert.h>
 
 #include "array-size.h"
+#include "static-assert.h"
 
 struct st { const char *s; int i; };
 
@@ -60,42 +61,26 @@ static struct st st4_0[4] __attribute__ ((__unused__));
 int
 main (void)
 {
-  assert (ARRAY_SIZE (s0) == 0);
-  assert (ARRAY_SIZE (s1) == 1);
-  assert (ARRAY_SIZE (s3) == 3);
-  assert (ARRAY_SIZE (s4) == 4);
-  assert (ARRAY_SIZE (i0) == 0);
-  assert (ARRAY_SIZE (i1) == 1);
-  assert (ARRAY_SIZE (i3) == 3);
-  assert (ARRAY_SIZE (i4) == 4);
-  assert (ARRAY_SIZE (st0) == 0);
-  assert (ARRAY_SIZE (st1) == 1);
-  assert (ARRAY_SIZE (st3) == 3);
-  assert (ARRAY_SIZE (st4) == 4);
-  assert (ARRAY_SIZE (st4_0) == 4);
-
-#ifdef static_assert
-  static_assert (ARRAY_SIZE (s0) == 0, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (s1) == 1, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (s3) == 3, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (s4) == 4, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (i0) == 0, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (i1) == 1, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (i3) == 3, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (i4) == 4, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (st0) == 0, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (st1) == 1, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (st3) == 3, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (st4) == 4, "ARRAY_SIZE macro does not work");
-  static_assert (ARRAY_SIZE (st4_0) == 4, "ARRAY_SIZE macro does not work");
-#endif
+  STATIC_ASSERT (ARRAY_SIZE (s0) == 0, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (s1) == 1, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (s3) == 3, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (s4) == 4, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (i0) == 0, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (i1) == 1, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (i3) == 3, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (i4) == 4, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (st0) == 0, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (st1) == 1, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (st3) == 3, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (st4) == 4, _array_size_macro_works);
+  STATIC_ASSERT (ARRAY_SIZE (st4_0) == 4, _array_size_macro_works);
 
   /* You can uncomment this to test the negative case.  Unfortunately
    * it's difficult to automate this test.
    */
 #if 0
   int *p = i4;
-  assert (ARRAY_SIZE (p) == 4);
+  STATIC_ASSERT (ARRAY_SIZE (p) == 4, _array_size_macro_is_applied_to_array);
 #endif
 
   exit (EXIT_SUCCESS);

@@ -49,6 +49,7 @@ EXTRA_DIST = \
 	nextnonzero.h \
 	random.h \
 	rounding.h \
+	static-assert.h \
 	tvdiff.h \
 	unique-name.h \
 	unix-path-max.h \
