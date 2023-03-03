@@ -57,7 +57,7 @@ struct property {
   char *value;
   bool value_needs_free;
 };
-DEFINE_VECTOR_TYPE (properties, struct property)
+DEFINE_VECTOR_TYPE (properties, struct property);
 
 static const char *driver = NULL;               /* driver name - required */
 static properties props = empty_vector;         /* other command line params */

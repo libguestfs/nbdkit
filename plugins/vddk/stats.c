@@ -60,7 +60,7 @@ pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 #undef STUB
 #undef OPTIONAL_STUB
 
-DEFINE_VECTOR_TYPE (statlist, struct vddk_stat)
+DEFINE_VECTOR_TYPE (statlist, struct vddk_stat);
 
 static int
 stat_compare (const void *vp1, const void *vp2)

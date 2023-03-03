@@ -146,7 +146,7 @@ struct command {
   enum { SUBMITTED, SUCCEEDED, FAILED } status;
 };
 
-DEFINE_VECTOR_TYPE (command_queue, struct command *)
+DEFINE_VECTOR_TYPE (command_queue, struct command *);
 
 /* The per-connection handle. */
 struct vddk_handle {

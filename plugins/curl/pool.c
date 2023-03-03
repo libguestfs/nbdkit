@@ -84,7 +84,7 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
  * handles are requested.  Currently it does not shrink.  It may grow
  * up to 'connections' in length.
  */
-DEFINE_VECTOR_TYPE (curl_handle_list, struct curl_handle *)
+DEFINE_VECTOR_TYPE (curl_handle_list, struct curl_handle *);
 static curl_handle_list curl_handles = empty_vector;
 
 /* The condition is used when the curl handles vector is full and

@@ -52,7 +52,7 @@
 /* Use of this macro defines a new type called ‘name’ containing an
  * extensible vector of ‘type’ elements.  For example:
  *
- *   DEFINE_VECTOR_TYPE (string_vector, char *)
+ *   DEFINE_VECTOR_TYPE (string_vector, char *);
  *
  * defines a new type called ‘string_vector’ as a vector of ‘char *’.
  * You can create variables of this type:
@@ -195,6 +195,8 @@
     return 0;                                                           \
   }                                                                     \
                                                                         \
+  /* End with duplicate declaration, so callers must supply ';'. */     \
+  struct name
 
 #define empty_vector { .ptr = NULL, .len = 0, .cap = 0 }
 

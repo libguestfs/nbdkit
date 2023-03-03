@@ -62,7 +62,7 @@ struct file_to_memstream {
   char **ptr;
   size_t *size;
 };
-DEFINE_VECTOR_TYPE (file_vector, struct file_to_memstream)
+DEFINE_VECTOR_TYPE (file_vector, struct file_to_memstream);
 static file_vector files = empty_vector;
 
 FILE *

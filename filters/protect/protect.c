@@ -57,7 +57,7 @@
  * 'range_list' stores the list of protected ranges, unsorted.
  */
 struct range { uint64_t start, end; const char *description; };
-DEFINE_VECTOR_TYPE (ranges, struct range)
+DEFINE_VECTOR_TYPE (ranges, struct range);
 static ranges range_list;
 
 /* region_list covers the whole address space with protected and
