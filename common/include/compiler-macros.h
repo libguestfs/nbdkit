@@ -50,12 +50,39 @@
 #define BUILD_BUG_UNLESS_TRUE(cond) \
   (BUILD_BUG_STRUCT_SIZE (cond) - BUILD_BUG_STRUCT_SIZE (cond))
 
-#define TYPE_IS_ARRAY(a) \
-  (!__builtin_types_compatible_p (typeof (a), typeof (&(a)[0])))
+/* Each of TYPE_IS_POINTER() and TYPE_IS_ARRAY() produces a build failure if it
+ * is invoked with an object that has neither pointer-to-object type nor array
+ * type.
+ *
+ * C99 6.5.2.1 constrains one of the operands of the subscript operator to have
+ * pointer-to-object type, and the other operand to have integer type. In the
+ * replacement text of TYPE_IS_POINTER(), we use [0] as subscript (providing the
+ * integer operand), therefore the macro argument (p) is constrained to have
+ * pointer-to-object type.
+ *
+ * If TYPE_IS_POINTER() is invoked with a pointer that has pointer-to-object
+ * type, the constraint is directly satisfied, and TYPE_IS_POINTER() evaluates,
+ * at compile time, to 1.
+ *
+ * If TYPE_IS_POINTER() is invoked with an array, the constraint of the
+ * subscript operator is satisfied again -- because the array argument "decays"
+ * to a pointer to the array's initial element (C99 6.3.2p3) --, and
+ * TYPE_IS_POINTER() evaluates, at compile time, to 0.
+ *
+ * If TYPE_IS_POINTER() is invoked with an argument having any other type, then
+ * the subscript operator constraint is not satisfied, and C99 5.1.1.3p1
+ * requires the emission of a diagnostic message -- the build breaks. Therefore,
+ * TYPE_IS_ARRAY() can be defined simply as the logical negation of
+ * TYPE_IS_POINTER().
+ */
+#define TYPE_IS_POINTER(p) \
+  (__builtin_types_compatible_p (typeof (p), typeof (&(p)[0])))
+#define TYPE_IS_ARRAY(a) (!TYPE_IS_POINTER (a))
 
 #else /* __cplusplus */
 
 #define BUILD_BUG_UNLESS_TRUE(cond) 0
+#define TYPE_IS_POINTER(p) 1
 #define TYPE_IS_ARRAY(a) 1
 
 #endif /* __cplusplus */
