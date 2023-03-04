@@ -129,4 +129,4 @@ Based on the virt-v2v OVA importer written by Tomáš Golembiovský.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2017-2020 Red Hat Inc.
+Copyright Red Hat

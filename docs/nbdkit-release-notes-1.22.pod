@@ -247,4 +247,4 @@ Authors of nbdkit 1.22:
 
 =head1 COPYRIGHT
 
-Copyright (C) 2020 Red Hat Inc.
+Copyright Red Hat

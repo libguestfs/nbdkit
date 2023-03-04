@@ -123,4 +123,4 @@ Nikolaus Rath
 
 =head1 COPYRIGHT
 
-Copyright (C) 2019-2022 Red Hat Inc.
+Copyright Red Hat

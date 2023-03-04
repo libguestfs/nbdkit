@@ -575,4 +575,4 @@ Nir Soffer
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013-2021 Red Hat Inc.
+Copyright Red Hat

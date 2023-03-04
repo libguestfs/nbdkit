@@ -155,4 +155,4 @@ Eric Blake
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018 Red Hat Inc.
+Copyright Red Hat

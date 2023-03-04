@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- perl -*-
 # Convert disk image or file to nbdkit-data-plugin command line.
-# Copyright (C) 2018 Red Hat Inc.
+# Copyright Red Hat
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -106,7 +106,7 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2018 Red Hat Inc.
+Copyright Red Hat
 
 =cut
 

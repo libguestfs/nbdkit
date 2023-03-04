@@ -588,4 +588,4 @@ Parts derived from Alexander Graf's "QEMU Block driver for CURL images".
 
 =head1 COPYRIGHT
 
-Copyright (C) 2014-2020 Red Hat Inc.
+Copyright Red Hat

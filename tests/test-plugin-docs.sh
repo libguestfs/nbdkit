@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # nbdkit
-# Copyright (C) 2014-2023 Red Hat Inc.
+# Copyright Red Hat
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are

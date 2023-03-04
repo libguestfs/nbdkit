@@ -48,7 +48,7 @@ Richard W.M. Jones
 
 =head1 COPYRIGHT
 
-Copyright (C) 2017 Red Hat Inc.
+Copyright Red Hat
 
 =cut
 

@@ -29,7 +29,7 @@ https://gitlab.com/nbdkit/nbdkit
 
 ## License
 
-This software is copyright (C) Red Hat Inc. and licensed under a BSD
+This software is Copyright Red Hat and licensed under a BSD
 license.  See [LICENSE](LICENSE) for details.
 
 ## Building from source
