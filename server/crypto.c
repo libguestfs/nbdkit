@@ -371,7 +371,7 @@ crypto_recv (void *vbuf, size_t len)
 #define MAX_SEND_MORE_LEN (64 * 1024)
 
 /* Write buffer to GnuTLS and either succeed completely
- * (returns 0) or fail (returns -1). flags is ignored for now.
+ * (returns 0) or fail (returns -1).
  */
 static int
 crypto_send (const void *vbuf, size_t len, int flags)
