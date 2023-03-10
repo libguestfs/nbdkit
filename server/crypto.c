@@ -379,31 +379,46 @@ crypto_send (const void *vbuf, size_t len, int flags)
   GET_CONN;
   gnutls_session_t session = conn->crypto_session;
   const char *buf = vbuf;
+  int err;
   ssize_t r;
 
   assert (session != NULL);
 
   if (len + gnutls_record_check_corked (session) > MAX_SEND_MORE_LEN) {
-    if (gnutls_record_uncork (session, GNUTLS_RECORD_WAIT) < 0)
+    errno = 0;
+    err = gnutls_record_uncork (session, GNUTLS_RECORD_WAIT);
+    if (err < 0) {
+      nbdkit_error ("gnutls_record_uncork: %s", gnutls_strerror (err));
+      if (errno == 0) errno = EIO;
       return -1;
+    }
   }
   else if (flags & SEND_MORE)
     gnutls_record_cork (session);
 
   while (len > 0) {
+    errno = 0;
     r = gnutls_record_send (session, buf, len);
     if (r < 0) {
       if (r == GNUTLS_E_INTERRUPTED || r == GNUTLS_E_AGAIN)
         continue;
+      nbdkit_error ("gnutls_record_send: %s", gnutls_strerror (r));
+      if (errno == 0) errno = EIO;
       return -1;
     }
     buf += r;
     len -= r;
   }
 
-  if (!(flags & SEND_MORE) &&
-      gnutls_record_uncork (session, GNUTLS_RECORD_WAIT) < 0)
-    return -1;
+  if (!(flags & SEND_MORE)) {
+    errno = 0;
+    err = gnutls_record_uncork (session, GNUTLS_RECORD_WAIT);
+    if (err < 0) {
+      nbdkit_error ("gnutls_record_uncork: %s", gnutls_strerror (err));
+      if (errno == 0) errno = EIO;
+      return -1;
+    }
+  }
 
   return 0;
 }
