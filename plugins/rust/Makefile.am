@@ -52,10 +52,13 @@ noinst_SCRIPTS = \
 	target/release/examples/libramdisk.so \
 	$(NULL)
 
-target/release/libnbdkit.rlib: Cargo.toml src/lib.rs
+Cargo.lock: Cargo.toml
+	if [ `rustc --version | awk -F "." '{print $2}'` -lt 60 ]; then mv plugins/rust/Cargo.lock.msrv plugins/rust/Cargo.lock; else cargo update; fi
+
+target/release/libnbdkit.rlib: Cargo.lock Cargo.toml src/lib.rs
 	cargo build --release
 
-target/release/examples/libramdisk.so: Cargo.toml examples/ramdisk.rs
+target/release/examples/libramdisk.so: Cargo.lock Cargo.toml examples/ramdisk.rs
 	cargo build --release --example ramdisk
 
 distclean-local:
